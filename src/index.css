@@ -167,6 +167,15 @@
     --chart-grid: 200 16% 88%;
     --chart-axis: 200 10% 45%;
     --chart-area-opacity: 0.22;
+
+    /* ── Tendência: a única série que ganha saturação ────────────────────
+       A paleta de gráficos é deliberadamente dessaturada (o roxo da marca
+       está reservado a acção). A curva de tendência é a excepção: é o número
+       que vai ao conselho, desenha-se sozinha num painel inteiro e precisa de
+       se ler à distância. O painel fica branco como os restantes cartões: o
+       peso vem da curva e do gradiente, não de uma superfície com tinta. */
+    --chart-trend: 217 89% 58%;
+    --chart-trend-guide: 217 89% 58%;
     
     /* Neutral */
     --neutral: 200 15% 50%;
@@ -349,6 +358,11 @@
     --chart-grid: 216 20% 26%;
     --chart-axis: 200 14% 72%;
     --chart-area-opacity: 0.34;
+
+    /* Tendência — dark: a curva sobe de luminosidade para não desaparecer
+       sobre o navy do cartão. */
+    --chart-trend: 213 94% 68%;
+    --chart-trend-guide: 213 94% 68%;
     
     /* Neutral */
     --neutral: 200 12% 62%;

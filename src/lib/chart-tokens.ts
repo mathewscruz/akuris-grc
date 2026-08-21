@@ -23,6 +23,16 @@ export const CHART_SERIES = [
 export const chartSeries = (index: number): string =>
   CHART_SERIES[((index % CHART_SERIES.length) + CHART_SERIES.length) % CHART_SERIES.length];
 
+/**
+ * Tendência — a curva que ocupa um painel inteiro.
+ *
+ * A única série com saturação. Usa-se no `TrendAreaChart` e em mais lado
+ * nenhum — se aparecer noutro gráfico, deixa de haver hierarquia entre "o
+ * número principal" e os restantes.
+ */
+export const CHART_TREND = 'hsl(var(--chart-trend))';
+export const CHART_TREND_GUIDE = 'hsl(var(--chart-trend-guide))';
+
 export const CHART_GRID = 'hsl(var(--chart-grid))';
 export const CHART_AXIS = 'hsl(var(--chart-axis))';
 export const CHART_TOOLTIP_BG = 'hsl(var(--popover))';

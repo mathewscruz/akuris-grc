@@ -24,6 +24,17 @@ const MONTH_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set',
 
 export interface TrendPoint {
   label: string;
+  /**
+   * Score médio da carteira no fim daquele mês — a curva que se desenha.
+   *
+   * "Acima do apetite" é a métrica certa para o KPI e para o alerta, mas é uma
+   * contagem pequena e quase sempre plana: com um risco acima do limite, a
+   * curva é uma linha reta em 1 e não mostra evolução nenhuma. O score médio
+   * move-se a cada reavaliação, que é o que um gráfico de tendência tem de
+   * mostrar — e desce quando a carteira melhora, porque cada ponto usa a
+   * avaliação VIGENTE naquele mês e não a de hoje.
+   */
+  scoreMedio: number | null;
   /** Riscos acima do apetite no fim daquele mês. */
   acimaApetite: number;
   /** Riscos avaliados existentes no fim daquele mês — o denominador. */
@@ -101,6 +112,7 @@ export function useRiskScoreTrend() {
 
         let acima = 0;
         let total = 0;
+        let somaScores = 0;
         for (const r of riscoList) {
           if (new Date(r.created_at) >= monthEnd) continue; // ainda não existia
 
@@ -118,9 +130,15 @@ export function useRiskScoreTrend() {
 
           if (score === null) continue; // risco por avaliar não conta em nenhum lado
           total += 1;
+          somaScores += score;
           if (apetite !== null && score > apetite) acima += 1;
         }
-        points.push({ label: MONTH_PT[labelDate.getMonth()], acimaApetite: acima, total });
+        points.push({
+          label: MONTH_PT[labelDate.getMonth()],
+          scoreMedio: total > 0 ? Math.round((somaScores / total) * 10) / 10 : null,
+          acimaApetite: acima,
+          total,
+        });
       }
       return points;
     },

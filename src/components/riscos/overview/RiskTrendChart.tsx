@@ -1,30 +1,29 @@
 /**
- * RiskTrendChart — quantos riscos estão acima do apetite, mês a mês.
+ * RiskTrendChart — evolução do score médio da carteira, mês a mês.
  *
- * O título era "Evolução do score consolidado" e o número, a soma dos P×I da
- * carteira, aparecia como "131 / apetite 16" — um agregado comparado com um
- * limiar por risco. A linha de referência do apetite era estruturalmente
- * inatingível, e a curva subia sempre que se cadastrava um risco novo.
+ * A curva mostra o SCORE, que é o que se move; o apetite entra como número de
+ * contexto e no tooltip. Foram precisas duas voltas para chegar aqui:
  *
- * Agora a série é uma contagem: zero é a meta, e a linha desce quando um risco
- * é tratado. O denominador (riscos avaliados) fica ao lado para dar escala.
+ * O gráfico original somava os P×I de toda a carteira e comparava o resultado
+ * com o limite de apetite, que é um limiar POR RISCO: lia-se "131 / apetite
+ * 16", a linha de referência ficava colada ao eixo e a curva subia sempre que
+ * se cadastrava um risco novo.
+ *
+ * Ao trocar a série para a CONTAGEM de riscos acima do apetite, o número
+ * passou a estar certo — e o gráfico deixou de dizer o que quer que fosse:
+ * com um risco acima do limite, a curva é uma linha horizontal em 1.
+ *
+ * O score médio move-se a cada reavaliação e desce quando a carteira melhora,
+ * porque cada ponto usa a avaliação VIGENTE naquele mês. Tem a fraqueza de
+ * qualquer média — cadastrar riscos baixos baixa-a —, e é por isso que o
+ * número que dispara o alerta continua a ser "acima do apetite", que vive no
+ * cartão de KPI, no banner e no tooltip deste gráfico.
  */
 import { useMemo, useState } from 'react';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  ReferenceLine,
-  Tooltip as RTooltip,
-  CartesianGrid,
-} from 'recharts';
-import { cn } from '@/lib/utils';
 import type { TrendPoint } from '@/hooks/useRiskScoreTrend';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_FONT } from '@/lib/chart-tokens';
+import { TrendAreaChart, type TrendBreakdown } from '@/components/ui/trend-area-chart';
+import { PeriodoSelect, type OpcaoPeriodo } from '@/components/ui/periodo-select';
 
 interface Props {
   /** 12 pontos mensais (mais antigo → atual) vindos de useRiskScoreTrend. */
@@ -39,118 +38,67 @@ export function RiskTrendChart({ points }: Props) {
   const { t } = useLanguage();
   const [range, setRange] = useState<Range>('6M');
 
-  const data = useMemo(() => {
-    const months = RANGE_MONTHS[range];
-    return (points || []).slice(-months);
-  }, [points, range]);
+  const janela = useMemo(() => (points || []).slice(-RANGE_MONTHS[range]), [points, range]);
 
-  const atual = data.length ? data[data.length - 1] : null;
-  const anterior = data.length > 1 ? data[data.length - 2] : null;
-  const delta = atual && anterior ? atual.acimaApetite - anterior.acimaApetite : null;
+  const atual = janela.length ? janela[janela.length - 1] : null;
+  const anterior = janela.length > 1 ? janela[janela.length - 2] : null;
+  const delta =
+    atual?.scoreMedio != null && anterior?.scoreMedio != null
+      ? Math.round((atual.scoreMedio - anterior.scoreMedio) * 10) / 10
+      : null;
+
+  const pontos = janela.map((p) => ({ label: p.label, valor: p.scoreMedio }));
+
+  // No tooltip, o topo é o total de riscos e as linhas de baixo a repartição —
+  // repetir a série no topo e outra vez no primeiro marcador dava o mesmo
+  // número duas vezes seguidas.
+  const totalDoPonto = (i: number) => janela[i]?.total ?? 0;
+
+  const divisaoDoPonto = (i: number): TrendBreakdown[] => {
+    const p = janela[i];
+    if (!p) return [];
+    return [
+      {
+        label: t('riscosVisoes.overview.riskTrendChart.tooltipAcima'),
+        valor: p.acimaApetite,
+        tom: 'destaque',
+      },
+      {
+        label: t('riscosVisoes.overview.riskTrendChart.tooltipDentro'),
+        valor: Math.max(p.total - p.acimaApetite, 0),
+        tom: 'neutro',
+      },
+    ];
+  };
+
+  const opcoesPeriodo: OpcaoPeriodo<Range>[] = [
+    { value: '3M', label: t('riscosVisoes.overview.riskTrendChart.range3M') },
+    { value: '6M', label: t('riscosVisoes.overview.riskTrendChart.range6M') },
+    { value: '12M', label: t('riscosVisoes.overview.riskTrendChart.range12M') },
+  ];
+
+  // Sem parâmetro de tipo no JSX: `<PeriodoSelect<Range> …>` é TSX válido e o
+  // `tsc` aceita-o, mas o SWC do plugin do Lovable falha a analisá-lo com
+  // "Expected jsx identifier" — e reporta o erro no componente EXTERIOR, o que
+  // manda quem procura para o sítio errado. O tipo vem de `opcoesPeriodo`.
+  const seletorPeriodo = (
+    <PeriodoSelect valor={range} onChange={(v: Range) => setRange(v)} opcoes={opcoesPeriodo} />
+  );
 
   return (
-    <div className="bg-card border border-border rounded-lg p-5">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div className="text-xs font-semibold text-muted-foreground">
-            {t('riscosVisoes.overview.riskTrendChart.titulo')}
-          </div>
-          <div className="text-xl font-semibold tabular-nums tracking-tight mt-1">
-            {atual?.acimaApetite ?? 0}
-            <span className="text-sm text-muted-foreground font-normal">
-              {' '}
-              {t('riscosVisoes.overview.riskTrendChart.deTotal', { total: atual?.total ?? 0 })}
-            </span>
-            {delta !== null && delta !== 0 && (
-              <span
-                className={cn(
-                  'ml-2 text-xs font-medium tabular-nums',
-                  delta < 0 ? 'text-success' : 'text-destructive',
-                )}
-              >
-                {delta > 0 ? `+${delta}` : delta}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-micro">
-          {(['3M', '6M', '12M'] as Range[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRange(r)}
-              className={cn(
-                'px-2.5 py-1 rounded font-medium transition-colors',
-                range === r ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="h-[200px] -ml-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="riskTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={chartSeries(0)} stopOpacity={1} />
-                <stop offset="100%" stopColor={chartSeries(0)} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke={CHART_GRID} strokeDasharray="2 4" vertical={false} />
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: CHART_FONT.axis, fill: CHART_AXIS }}
-            />
-            <YAxis hide domain={[0, 'auto']} allowDecimals={false} />
-            {/* A meta é zero — a única referência que faz sentido numa contagem
-                de excedentes. */}
-            <ReferenceLine
-              y={0}
-              stroke={CHART_AXIS}
-              strokeDasharray="4 4"
-              strokeWidth={1.2}
-              label={{
-                value: t('riscosVisoes.overview.riskTrendChart.meta'),
-                fontSize: CHART_FONT.axis,
-                fill: CHART_AXIS,
-                position: 'right',
-              }}
-            />
-            <RTooltip
-              contentStyle={{
-                background: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 8,
-                fontSize: CHART_FONT.label,
-              }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(v: number) => [v, t('riscosVisoes.overview.riskTrendChart.scoreTooltip')]}
-            />
-            <Area
-              type="monotone"
-              dataKey="acimaApetite"
-              fill="url(#riskTrendGrad)"
-              fillOpacity={CHART_AREA_OPACITY}
-              stroke="none"
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="acimaApetite"
-              stroke={chartSeries(0)}
-              strokeWidth={2}
-              dot={{ r: 3, fill: 'hsl(var(--card))', stroke: chartSeries(0), strokeWidth: 1.6 }}
-              activeDot={{ r: 4 }}
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <TrendAreaChart
+      eyebrow={t('riscosVisoes.overview.riskTrendChart.titulo')}
+      valor={atual?.scoreMedio ?? '—'}
+      sufixo={t('riscosVisoes.overview.riskTrendChart.sufixoScore', {
+        acima: atual?.acimaApetite ?? 0,
+      })}
+      delta={delta}
+      pontos={pontos}
+      tooltipLabel={t('riscosVisoes.overview.riskTrendChart.tooltipTotal')}
+      tooltipValor={totalDoPonto}
+      divisao={divisaoDoPonto}
+      altura={200}
+      seletor={seletorPeriodo}
+    />
   );
 }

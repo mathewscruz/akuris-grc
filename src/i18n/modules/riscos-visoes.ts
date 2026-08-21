@@ -91,7 +91,7 @@ export const riscosVisoes = {
       },
       overview: {
         appetiteBanner: {
-          titulo: 'Riscos acima do apetite',
+          titulo: 'Evolução do score de risco',
           descricaoSingular: 'risco exige decisão de tratamento ou aceitação formal esta semana.',
           descricaoPlural: 'riscos exigem decisão de tratamento ou aceitação formal esta semana.',
           verNaMatriz: 'Ver na matriz',
@@ -102,10 +102,17 @@ export const riscosVisoes = {
           semCategoria: 'Sem categoria',
         },
         riskTrendChart: {
-          titulo: 'Riscos acima do apetite',
+          titulo: 'Evolução do score de risco',
           scoreTooltip: 'Acima do apetite',
           deTotal: 'de {total} avaliados',
           meta: 'meta',
+          sufixoScore: 'score médio · {acima} acima do apetite',
+          tooltipTotal: 'riscos avaliados',
+          tooltipAcima: 'acima do apetite',
+          tooltipDentro: 'dentro do apetite',
+          range3M: 'Últimos 3 meses',
+          range6M: 'Últimos 6 meses',
+          range12M: 'Últimos 12 meses',
         },
         riskWatchlist: {
           eyebrow: 'Watchlist',
@@ -223,7 +230,7 @@ export const riscosVisoes = {
       },
       overview: {
         appetiteBanner: {
-          titulo: 'Risks above appetite',
+          titulo: 'Risk score evolution',
           descricaoSingular: 'risk requires a treatment or formal acceptance decision this week.',
           descricaoPlural: 'risks require a treatment or formal acceptance decision this week.',
           verNaMatriz: 'View on matrix',
@@ -234,10 +241,17 @@ export const riscosVisoes = {
           semCategoria: 'No category',
         },
         riskTrendChart: {
-          titulo: 'Risks above appetite',
+          titulo: 'Risk score evolution',
           scoreTooltip: 'Above appetite',
           deTotal: 'of {total} assessed',
           meta: 'target',
+          sufixoScore: 'average score · {acima} above appetite',
+          tooltipTotal: 'risks assessed',
+          tooltipAcima: 'above appetite',
+          tooltipDentro: 'within appetite',
+          range3M: 'Last 3 months',
+          range6M: 'Last 6 months',
+          range12M: 'Last 12 months',
         },
         riskWatchlist: {
           eyebrow: 'Watchlist',

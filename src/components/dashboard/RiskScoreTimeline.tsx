@@ -1,24 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { TrendAreaChart, type TrendBreakdown } from '@/components/ui/trend-area-chart';
+import { PeriodoSelect, type OpcaoPeriodo } from '@/components/ui/periodo-select';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
-import { IconTrendUp, IconTrendDown, IconMinus, IconChartLine } from '@/components/icons';
+import { IconChartLine } from '@/components/icons';
 import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { apetiteScoreDaConfig } from '@/components/riscos/matriz-config';
 import {
@@ -32,8 +23,10 @@ type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface PointData {
   date: string;
-  /** Riscos acima do apetite (menor = melhor). null quando não havia riscos avaliados. */
+  /** Score médio da carteira no fim do período. `null` sem riscos avaliados. */
   score: number | null;
+  /** Riscos acima do apetite — o número que dispara o alerta. */
+  acima: number;
   total: number;
   criticos: number;
   altos: number;
@@ -182,6 +175,7 @@ export function RiskScoreTimeline() {
       let criticos = 0;
       let altos = 0;
       let existentes = 0;
+      let somaScores = 0;
       for (const r of riscos) {
         if (!jaExistiaEm(r.created_at, end)) continue;
         const vigente = avaliacaoVigente(porRisco.get(r.id), end);
@@ -189,13 +183,15 @@ export function RiskScoreTimeline() {
         const sev = vigente?.severidade ?? r.severidade_inicial;
         if (score === null || score === undefined) continue; // ainda por avaliar
         existentes += 1;
+        somaScores += score;
         if (apetite !== null && score > apetite) acima += 1;
         if (sev === 'critico') criticos += 1;
         if (sev === 'alto') altos += 1;
       }
       return {
         date: label,
-        score: existentes === 0 ? null : acima,
+        score: existentes === 0 ? null : Math.round((somaScores / existentes) * 10) / 10,
+        acima,
         total: existentes,
         criticos,
         altos,
@@ -208,7 +204,7 @@ export function RiskScoreTimeline() {
 
     const last = valid[valid.length - 1];
     const prev = valid[valid.length - 2];
-    const diff = prev ? last.score - prev.score : 0;
+    const diff = prev ? Math.round((last.score - prev.score) * 10) / 10 : 0;
     return {
       displayData: points,
       latestScore: last.score,
@@ -223,19 +219,23 @@ export function RiskScoreTimeline() {
   }, [riscos, historico, period, intlLocale, t, apetite]);
 
   /**
-   * Escala em contagem: começa sempre no zero, porque zero é a meta e a
-   * distância até lá é a leitura do gráfico. Marcas inteiras — meio risco
-   * acima do apetite não existe.
+   * O tooltip mostra a repartição do período: quantos excedem o apetite e
+   * quantos ficam dentro. Os dois números já vinham calculados por bucket —
+   * só não havia onde os mostrar, e o tooltip antigo escrevia "· 2 crít · 5
+   * altos" numa linha de texto corrido.
    */
-  const escalaY = useMemo(() => {
-    const valores = displayData.map((p) => p.score).filter((v): v is number => v !== null);
-    const maior = Math.max(1, ...valores);
-    const passo = Math.max(1, Math.ceil(maior / 4));
-    const alto = passo * 4;
-    const marcas: number[] = [];
-    for (let v = 0; v <= alto; v += passo) marcas.push(v);
-    return { dominio: [0, alto] as [number, number], marcas };
-  }, [displayData]);
+  const divisaoDoPonto = (i: number): TrendBreakdown[] => {
+    const p = displayData[i];
+    if (!p || p.score === null) return [];
+    return [
+      { label: t('dashWidgets.timeline.aboveAppetite'), valor: p.acima, tom: 'destaque' },
+      {
+        label: t('dashWidgets.timeline.withinAppetite'),
+        valor: Math.max(p.total - p.acima, 0),
+        tom: 'neutro',
+      },
+    ];
+  };
 
   if (isLoading) {
     return (
@@ -252,168 +252,55 @@ export function RiskScoreTimeline() {
     );
   }
 
-  return (
-    <Card className="relative h-full w-full flex flex-col overflow-hidden min-w-0">
-      <CornerAccent />
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
-        <div className="space-y-1 min-w-0">
+  if (displayData.length === 0 || latestScore === null) {
+    return (
+      <Card className="relative h-full w-full flex flex-col overflow-hidden">
+        <CornerAccent />
+        <CardHeader>
           <CardTitle className="text-base">{t('dashboard.riskEvolution')}</CardTitle>
-          <p className="text-micro text-muted-foreground">
-            {t('dashWidgets.timeline.subtitle')}
-          </p>
-          {latestScore !== null && (
-            <div className="flex items-center gap-2 text-sm flex-wrap">
-              <span className="font-bold text-foreground tabular-nums">{latestScore}</span>
-              <span className="text-xs text-muted-foreground">
-                {t('dashWidgets.timeline.aboveAppetite')}
-              </span>
-              {delta && (
-                <span
-                  className={`inline-flex items-center gap-1 text-xs font-medium ${
-                    delta.dir === 'down'
-                      ? 'text-success'
-                      : delta.dir === 'up'
-                      ? 'text-destructive'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {delta.dir === 'down' && <IconTrendDown className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'up' && <IconTrendUp className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'flat' && <IconMinus className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.value > 0 ? '+' : ''}
-                  {delta.value.toFixed(0)}
-                  <span className="text-muted-foreground font-normal">{t('dashWidgets.timeline.vsPrevious')}</span>
-                </span>
-              )}
-              {totalAtual > 0 && (
-                <span className="text-micro text-muted-foreground">{t('dashWidgets.timeline.risksCount', { count: totalAtual })}</span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex gap-0.5 rounded-md border border-border p-0.5 bg-muted/30 shrink-0">
-          {periods.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => setPeriod(p.value)}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                period === p.value
-                  ? 'bg-background text-foreground shadow-sm font-medium'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-3 flex-1 flex flex-col min-h-0">
-        {displayData.length === 0 || latestScore === null ? (
+        </CardHeader>
+        <CardContent>
           <div className="flex flex-col items-center justify-center h-[260px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
             <IconChartLine className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             <div className="text-center space-y-1 max-w-[280px]">
               <p className="text-sm font-medium text-foreground">{t('dashWidgets.timeline.emptyTitle')}</p>
-              <p className="text-xs text-muted-foreground">
-                {t('dashWidgets.timeline.emptyDescription')}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('dashWidgets.timeline.emptyDescription')}</p>
             </div>
           </div>
-        ) : (
-          <div className="relative flex-1 min-h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={displayData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="riskExposureFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartSeries(0)} stopOpacity={1} />
-                    <stop offset="100%" stopColor={chartSeries(0)} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={CHART_GRID}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
-                  axisLine={{ stroke: CHART_GRID }}
-                  tickLine={false}
-                />
-                {/*
-                  O eixo acompanha os dados, não o intervalo teórico.
+        </CardContent>
+      </Card>
+    );
+  }
 
-                  Estava fixo em 0–100 com marcas de 25 em 25. Com a exposição
-                  entre 50 e 75 — que é o caso comum — metade da área do
-                  gráfico ficava vazia e a variação real espremia-se em dois
-                  centímetros. A meta continua sempre visível, senão deixava de
-                  se poder ver a distância até ela.
-                */}
-                <YAxis
-                  domain={escalaY.dominio}
-                  ticks={escalaY.marcas}
-                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
-                  tickFormatter={(v) => `${v}`}
-                  axisLine={false}
-                  tickLine={false}
-                  width={32}
-                />
-                <ReferenceLine
-                  y={GOAL_VALUE}
-                  stroke={CHART_AXIS}
-                  strokeDasharray="4 4"
-                  label={{
-                    value: t('dashWidgets.timeline.goalZero'),
-                    /*
-                      `position: 'right'` punha o rótulo FORA da área de
-                      desenho: "Meta ≤ 20" saía cortado no "M" contra a borda
-                      direita do cartão. Dentro, alinhado à direita, cabe.
-                    */
-                    position: 'insideTopRight',
-                    fill: CHART_AXIS,
-                    fontSize: CHART_FONT.axis,
-                  }}
-                />
-                <Tooltip
-                  cursor={{ stroke: chartSeries(0), strokeWidth: 1, strokeDasharray: '3 3' }}
-                  contentStyle={CHART_TOOLTIP_STYLE}
-                  labelStyle={{
-                    color: 'hsl(var(--muted-foreground))',
-                    fontSize: CHART_FONT.axis,
-                    marginBottom: 4,
-                  }}
-                  itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: CHART_FONT.label }}
-                  formatter={(value: number | null, _name, item: any) => {
-                    if (value === null || value === undefined)
-                      return [t('dashWidgets.timeline.noData'), t('dashWidgets.timeline.exposure')];
-                    const p = item?.payload as PointData | undefined;
-                    const extra = p
-                      ? t('dashWidgets.timeline.tooltipExtra', { crit: p.criticos, high: p.altos })
-                      : '';
-                    return [`${value}${extra}`, t('dashWidgets.timeline.aboveAppetiteLabel')];
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="score"
-                  stroke={chartSeries(0)}
-                  strokeWidth={2.5}
-                  fill="url(#riskExposureFill)"
-                  fillOpacity={CHART_AREA_OPACITY}
-                  connectNulls={false}
-                  dot={{ fill: chartSeries(0), r: 3 }}
-                  activeDot={{
-                    r: 6,
-                    fill: chartSeries(0),
-                    stroke: 'hsl(var(--background))',
-                    strokeWidth: 2,
-                  }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+  const totalDoPonto = (i: number) => displayData[i]?.total ?? 0;
+  const acimaAtual = displayData.length
+    ? displayData[displayData.length - 1].acima
+    : 0;
+
+  const opcoesPeriodo: OpcaoPeriodo<TimeRange>[] = periods.map((p) => ({
+    value: p.value,
+    label: p.label,
+  }));
+
+  // Sem parâmetro de tipo no JSX (`<PeriodoSelect<TimeRange> …>`): é TSX
+  // válido e o `tsc` aceita-o, mas o SWC do plugin do Lovable falha a
+  // analisá-lo. O tipo vem da anotação de `opcoesPeriodo`.
+  const seletorPeriodo = (
+    <PeriodoSelect valor={period} onChange={(v: TimeRange) => setPeriod(v)} opcoes={opcoesPeriodo} />
+  );
+
+  return (
+    <TrendAreaChart
+      className="h-full w-full"
+      eyebrow={t('dashboard.riskEvolution')}
+      valor={latestScore}
+      sufixo={t('dashWidgets.timeline.sufixoScore', { acima: acimaAtual })}
+      delta={delta ? delta.value : null}
+      pontos={displayData.map((p) => ({ label: p.date, valor: p.score }))}
+      tooltipLabel={t('dashWidgets.timeline.tooltipTotal')}
+      divisao={divisaoDoPonto}
+      tooltipValor={totalDoPonto}
+      seletor={seletorPeriodo}
+    />
   );
 }
