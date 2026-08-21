@@ -1,110 +1,51 @@
 /**
- * DashboardHeader — refresh agrupado e em PT-BR (AKURIS QA-016).
+ * DashboardHeader — o cabeçalho é o título, e mais nada.
  *
- * No mobile o timestamp era ocultado e sobrava um ícone solto numa linha
- * própria (`flex-col sm:flex-row`), aparentemente desconectado do título; o
- * nome acessível era "Refresh", em inglês, enquanto o resto da interface está
- * em português.
+ * Este ficheiro testava o botão "atualizar": nome acessível em PT-BR, região
+ * viva a anunciar "Atualizando…", trava contra ficar preso nesse estado. Todo
+ * esse comportamento foi REMOVIDO — o painel passou a atualizar-se sozinho
+ * (`useDashboardLive`), e com ele saíram o botão, o carimbo "Atualizado às
+ * HH:MM" e a acção primária "Relatório executivo".
+ *
+ * O que fica é a guarda contra o regresso: se algum destes voltar ao cabeçalho
+ * sem que a decisão seja revista, o teste falha e diz porquê.
  */
-import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 
 afterEach(() => cleanup());
 
-const ATUALIZADO_EM = new Date(2026, 7, 5, 21, 18).getTime();
-
-// O cabeçalho passou a ter a acção primária da página ("Relatório executivo"),
-// e com ela navegação — daí o Router. Sem ele, `useNavigate` rebenta.
-function envolver(no: React.ReactNode) {
-  return (
+function renderHeader() {
+  return render(
     <MemoryRouter>
-      <TooltipProvider>{no}</TooltipProvider>
-    </MemoryRouter>
+      <TooltipProvider>
+        <DashboardHeader />
+      </TooltipProvider>
+    </MemoryRouter>,
   );
 }
 
-function renderHeader(props: Partial<React.ComponentProps<typeof DashboardHeader>> = {}) {
-  const onRefresh = vi.fn();
-  const utils = render(
-    envolver(<DashboardHeader dataUpdatedAt={ATUALIZADO_EM} onRefresh={onRefresh} {...props} />)
-  );
-  return { ...utils, onRefresh };
-}
-
-function botaoRefresh() {
-  return screen.getByRole('button', { name: 'Atualizar indicadores' });
-}
-
-describe('DashboardHeader — nome acessível em PT-BR (AKURIS QA-016)', () => {
-  it('nomeia a ação como "Atualizar indicadores", não "Refresh"', () => {
+describe('DashboardHeader', () => {
+  it('mostra o título da página', () => {
     renderHeader();
 
-    expect(botaoRefresh()).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
   });
 
-  it('aciona o refresh do Dashboard ao clicar', () => {
-    const { onRefresh } = renderHeader();
-
-    fireEvent.click(botaoRefresh());
-
-    expect(onRefresh).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('DashboardHeader — agrupamento no mobile (AKURIS QA-016)', () => {
-  it('mantém a ação na mesma linha do título, sem empilhar no mobile', () => {
+  it('não traz nenhum controlo no cabeçalho', () => {
     renderHeader();
 
-    const header = screen.getByRole('heading', { name: 'Dashboard' }).parentElement;
-
-    expect(header).not.toBeNull();
-    // `flex-col` empilhava o ícone numa linha própria abaixo do título.
-    expect(header!.className).not.toMatch(/\bflex-col\b/);
-    expect(header!.className).toMatch(/\bflex-row\b|\bflex\b/);
-    // O botão precisa continuar dentro do mesmo cabeçalho do título.
-    expect(header!).toContainElement(botaoRefresh());
-  });
-});
-
-describe('DashboardHeader — feedback de atualização (AKURIS QA-016)', () => {
-  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
-  afterEach(() => vi.useRealTimers());
-
-  it('anuncia "Atualizando…" em região viva ao acionar', () => {
-    renderHeader();
-
-    fireEvent.click(botaoRefresh());
-
-    const status = screen.getByRole('status');
-    expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(status).toHaveTextContent('Atualizando…');
-  });
-
-  it('anuncia "Atualizado" quando os indicadores voltam com novo timestamp', () => {
-    const { rerender } = renderHeader();
-
-    fireEvent.click(botaoRefresh());
-    expect(screen.getByRole('status')).toHaveTextContent('Atualizando…');
-
-    rerender(
-      envolver(<DashboardHeader dataUpdatedAt={ATUALIZADO_EM + 60_000} onRefresh={vi.fn()} />)
-    );
-
-    expect(screen.getByRole('status')).toHaveTextContent('Atualizado');
-  });
-
-  it('não fica preso em "Atualizando…" se o timestamp nunca mudar', () => {
-    renderHeader();
-
-    fireEvent.click(botaoRefresh());
-    expect(screen.getByRole('status')).toHaveTextContent('Atualizando…');
-
-    act(() => { vi.advanceTimersByTime(15_000); });
-
-    expect(screen.getByRole('status')).not.toHaveTextContent('Atualizando…');
+    // O painel atualiza-se sozinho: pedir um clique para ver a verdade é
+    // trabalho do utilizador que a máquina faz melhor.
+    expect(screen.queryByRole('button', { name: 'Atualizar indicadores' })).toBeNull();
+    // O carimbo só servia para confessar que o ecrã podia já não ser verdade.
+    expect(screen.queryByText(/Atualizado às/i)).toBeNull();
+    // O que há para fazer vive no rodapé de cada painel, com o número que o
+    // justifica — um botão genérico no canto competia com todos eles.
+    expect(screen.queryByRole('button', { name: /Relatório executivo/i })).toBeNull();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 });

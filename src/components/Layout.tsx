@@ -147,7 +147,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <KpiDrillDownProvider>
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-[hsl(var(--layout-shell))]">
+      {/*
+        `h-screen` e não `min-h-screen`: com altura mínima, o casco crescia com
+        o conteúdo, o documento inteiro rolava e o cabeçalho subia com ele. Com
+        altura FIXA, quem rola é o `main` — e o cabeçalho, que é irmão dele,
+        fica onde está. Era isto que faltava para o cabeçalho ser fixo; um
+        `sticky` não resolvia, porque o painel tem `overflow-hidden` e um
+        ancestral com overflow quebra o sticky dos descendentes.
+
+        `overflow-hidden` no casco impede a barra de rolagem dupla.
+      */}
+      <div className="h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden flex w-full bg-[hsl(var(--layout-shell))]">
         <AppSidebar />
         
         {/* Dialog modal obrigatório de troca de senha */}

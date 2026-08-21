@@ -113,7 +113,7 @@ export function GrcHealthBreakdown() {
           /* Legenda binária: substitui a leitura de oito barras uma a uma. */
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
               {t('dashWidgets.radar.prontos', { count: prontos })}
             </span>
             <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
@@ -200,19 +200,28 @@ export function GrcHealthBreakdown() {
                       </span>
                     </span>
 
+                    {/*
+                      Um domínio em dia mostra a barra CHEIA e verde.
+
+                      Antes o verde-equivalente era uma barra roxa parada em
+                      73% ou 93% — e uma barra por encher lê-se como trabalho
+                      por fazer, mesmo quando o domínio está em dia. O valor
+                      exacto continua ao lado, em número; a barra responde à
+                      pergunta binária, que é a que a legenda do topo faz.
+                    */}
                     <span
                       className={cn(
                         'mt-2.5 block h-1.5 overflow-hidden rounded-full',
-                        !l.hasData ? 'bg-muted' : pronto ? 'bg-primary/15' : 'bg-warning/15',
+                        !l.hasData ? 'bg-muted' : pronto ? 'bg-success/15' : 'bg-warning/15',
                       )}
                     >
                       {l.hasData && (
                         <span
                           className={cn(
                             'block h-full rounded-full',
-                            pronto ? 'bg-primary' : 'bg-warning',
+                            pronto ? 'w-full bg-success' : 'bg-warning',
                           )}
-                          style={{ width: `${Math.max(2, l.score)}%` }}
+                          style={pronto ? undefined : { width: `${Math.max(2, l.score)}%` }}
                         />
                       )}
                     </span>

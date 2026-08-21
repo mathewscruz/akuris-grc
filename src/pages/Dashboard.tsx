@@ -23,7 +23,7 @@ import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useQueryClient } from '@tanstack/react-query';
+import { useDashboardLive } from '@/hooks/useDashboardLive';
 
 /**
  * Painel — o estado do GRC, e o que fazer a seguir.
@@ -58,7 +58,16 @@ export default function Dashboard() {
   // para o dashboard. Não disparamos aqui para evitar reaparecer ao navegar
   // de volta para o dashboard a partir de outras páginas.
   const [drillKey, setDrillKey] = useState<DrillDownKey | null>(null);
-  const queryClient = useQueryClient();
+
+  /*
+    O painel atualiza-se sozinho.
+
+    Substitui o botão "atualizar" e o carimbo "Atualizado às HH:MM": subscreve
+    as tabelas de onde saem estes números e reconsulta o que ficou velho. Ver
+    `useDashboardLive` — e a migration que põe as tabelas na publicação de
+    Realtime, sem a qual a subscrição liga e nunca recebe nada.
+  */
+  useDashboardLive();
 
   const ativosStats = useAtivosStats();
   const controlesStats = useControlesStats();
@@ -69,7 +78,7 @@ export default function Dashboard() {
   const planosStats = usePlanosAcaoStats();
   const ddStats = useDueDiligenceStats();
   const denunciasStats = useDenunciasStats();
-  const { data: dashboardData, isLoading: dashboardLoading, dataUpdatedAt } = useDashboardStats();
+  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardStats();
 
   // Todos os indicadores exibidos têm de entrar no estado de carregamento —
   // caso contrário a página renderiza `|| 0` para os que ainda não chegaram e
@@ -85,37 +94,6 @@ export default function Dashboard() {
     ddStats.isLoading ||
     denunciasStats.isLoading ||
     dashboardLoading;
-
-  // Esta lista tem de cobrir *todas* as queries que alimentam o dashboard.
-  // Faltar uma faz o botão "atualizar" mostrar dados antigos sem qualquer aviso.
-  const DASHBOARD_QUERY_KEYS = [
-    'dashboard-stats',
-    'ativos-stats',
-    'controles-stats',
-    'incidentes-stats',
-    'contratos-stats',
-    'documentos-stats',
-    'riscos-stats',
-    'planos-acao-stats',
-    'due-diligence-stats',
-    'denuncias-stats',
-    'gap-analysis-stats',
-    // Faltavam as dos cartões de frameworks e maturidade: o botão "atualizar"
-    // mostrava dados antigos sem qualquer aviso.
-    'frameworks-overview',
-    'maturity-trend',
-    'recent-activities',
-    // O bloco "minhas pendências" tem chave própria; sem ela, o refresh
-    // atualizava a empresa inteira e deixava a minha lista para trás.
-    'minhas-pendencias-projeto',
-    'minhas-pendencias-planos',
-  ] as const;
-
-  const handleRefreshAll = () => {
-    DASHBOARD_QUERY_KEYS.forEach((key) => {
-      queryClient.invalidateQueries({ queryKey: [key] });
-    });
-  };
 
   if (isLoading) {
     return (
@@ -133,12 +111,7 @@ export default function Dashboard() {
   return (
     <TooltipProvider>
       <div className="space-y-5 animate-fade-in w-full max-w-full overflow-x-hidden flex flex-1 flex-col">
-        <DashboardHeader
-          userName={profile?.nome || 'Usuário'}
-          criticalCount={criticalAlerts}
-          dataUpdatedAt={dataUpdatedAt}
-          onRefresh={handleRefreshAll}
-        />
+        <DashboardHeader />
 
         {/*
           Saudação e contexto, em texto corrido.
@@ -149,7 +122,7 @@ export default function Dashboard() {
           documentos". Continua clicável; muda o peso, não a função.
         */}
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-bold text-foreground">
             {t('dashboard_v3.hello', { name: profile?.nome || 'Usuário' })}
           </p>
 

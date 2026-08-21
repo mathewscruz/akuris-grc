@@ -105,8 +105,13 @@
     
     /* Realce de interação — o ÚNICO fundo que muda quando o rato passa.
      * Os planos são todos brancos e separados por fio de borda; o que dá vida
-     * à interface é este roxo muito leve da marca, não caixas cinzentas. */
-    --accent: 252 40% 96%;
+     * à interface é este roxo muito leve da marca, não caixas cinzentas.
+     *
+     * Suavizado: a 40% de saturação e 96% de luminosidade, a linha realçada
+     * cortava contra o branco com uma aresta dura — via-se o rectângulo antes
+     * de se ver o conteúdo. Menos croma e mais luz mantêm o realce legível
+     * sem que a margem entre a linha e o branco se leia como uma borda. */
+    --accent: 252 32% 97.5%;
     --accent-foreground: 252 80% 50%;
 
     /* Destructive / Error — saturação reduzida p/ harmonia Navy */
@@ -240,7 +245,7 @@
     
     /* Table hover */
     /* Mesmo realce da linha de tabela e de tudo o resto: um só hover. */
-    --table-row-hover: 252 40% 96%;
+    --table-row-hover: 252 32% 97.5%;   /* acompanha --accent: ver superficies-neutras.test.ts */
 
     /* Sidebar - Light Mode */
     --sidebar-background: 230 25% 7%;

@@ -286,7 +286,19 @@ export function AppSidebar() {
       className="transition-ui duration-200 ease-out sidebar-gradient"
       collapsible="icon"
     >
-      <SidebarHeader className={`border-b border-sidebar-border ${isDense ? 'h-12' : 'h-14'} overflow-hidden`}>
+      {/*
+        O fio por baixo do logótipo tem de cair no MESMO y que o fio por baixo
+        do cabeçalho, e não caía: os dois blocos têm a mesma altura (`h-14`),
+        mas o painel de conteúdo flutua com `m-2` e uma borda de 1px, o que
+        empurrava o cabeçalho ~8px para baixo. As duas linhas ficavam
+        desencontradas na junção com a barra lateral.
+
+        A margem de topo repete exactamente esse desvio — o espaçamento vem do
+        `theme()`, para acompanhar a escala em vez de ser um número mágico.
+      */}
+      <SidebarHeader
+        className={`mt-[calc(theme(spacing.2)+1px)] border-b border-sidebar-border ${isDense ? 'h-12' : 'h-14'} overflow-hidden`}
+      >
         <div className="flex items-center justify-center px-1 py-2 h-full">
           <img 
             key={`sidebar-logo-${logoUpdateKey}-${Date.now()}`}
