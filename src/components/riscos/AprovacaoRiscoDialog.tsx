@@ -62,6 +62,9 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
         .update({
           status_aprovacao: 'pendente_aprovacao',
           aprovador_id: aprovadorId,
+          // A coluna existia e nunca era preenchida: sem ela, "há quanto tempo
+          // este risco espera aprovação" não tem resposta em lado nenhum.
+          data_envio_aprovacao: new Date().toISOString(),
           historico_aprovacao: novoHistorico
         })
         .eq('id', risco.id)

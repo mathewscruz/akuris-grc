@@ -21,13 +21,6 @@ import { severidadeDeFaixas, type Severidade } from '@/lib/metrics/riscos';
 /** Alias do vocabulário canónico, sem o estado 'indefinido'. */
 export type Severity = Exclude<Severidade, 'indefinido'>;
 
-export const NIVEL_LABELS: Record<Severity, string> = {
-  critico: 'Crítico',
-  alto: 'Alto',
-  medio: 'Médio',
-  baixo: 'Baixo',
-};
-
 /**
  * Normaliza um valor de probabilidade/impacto para número.
  *
@@ -75,7 +68,7 @@ export function scoreFromMatriz(p: number, i: number, metodo?: string | null): n
 }
 
 /** Faixa (nível) da matriz em que o score cai; null se não houver faixas. */
-export function faixaFromScore(score: number, niveis?: NivelRisco[] | null): NivelRisco | null {
+function faixaFromScore(score: number, niveis?: NivelRisco[] | null): NivelRisco | null {
   if (!niveis || niveis.length === 0) return null;
   return niveis.find((n) => score >= n.min && score <= n.max) ?? null;
 }
@@ -183,10 +176,6 @@ export const SEVERITY_LETTER: Record<Severity, string> = {
   medio: 'M',
   baixo: 'B',
 };
-
-export function severityLetter(sev: Severity): string {
-  return SEVERITY_LETTER[sev];
-}
 
 /** Ordem perceptual da escala (maior = mais grave), para comparar faixas. */
 export const SEVERITY_RANK: Record<Severity, number> = { baixo: 1, medio: 2, alto: 3, critico: 4 };

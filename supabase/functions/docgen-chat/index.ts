@@ -573,11 +573,18 @@ serve(async (req) => {
           .eq('empresa_id', empresa_id_resolved)
           .in('criticidade', ['critica', 'alta', 'crítica'])
           .limit(8),
+        /*
+          Filtrava `nivel_risco_residual` por uma lista de rótulos, o que
+          deixava de fora duas populações inteiras: quem renomeou as faixas
+          ("Extremo", "Elevado") e quem ainda não avaliou o residual — que é a
+          maioria da carteira. O documento gerado dizia "sem riscos altos".
+        */
         supabase
           .from('riscos')
-          .select('nome, nivel_risco_residual, status, categoria_id')
+          .select('nome, nivel_risco_residual, nivel_risco_inicial, severidade_efetiva, score_efetivo, status, categoria_id')
           .eq('empresa_id', empresa_id_resolved)
-          .in('nivel_risco_residual', ['critico', 'alto', 'crítico'])
+          .in('severidade_efetiva', ['critico', 'alto'])
+          .order('score_efetivo', { ascending: false })
           .limit(8),
         supabase
           .from('gap_analysis_assessments')
@@ -593,7 +600,7 @@ serve(async (req) => {
           nome: a.nome, tipo: a.tipo, criticidade: a.criticidade, proprietario: a.proprietario,
         })),
         riscos_altos: (riscosRes.data || []).map((r: any) => ({
-          nome: r.nome, nivel: r.nivel_risco_residual, status: r.status,
+          nome: r.nome, nivel: r.nivel_risco_residual || r.nivel_risco_inicial, status: r.status,
         })),
         frameworks: (frameworksRes.data || []).map((f: any) => ({
           framework_id: f.framework_id,

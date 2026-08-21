@@ -16,11 +16,23 @@ const MODULE_TABLES: Record<string, string> = {
   ativos: 'ativos',
 };
 
-// Campos permitidos para INSERT via API pública (allowlist por módulo)
+/*
+  Campos permitidos para INSERT via API pública (allowlist por módulo).
+
+  Quatro destes nomes não existiam no schema — `controles.frequencia_teste` e
+  `controles.responsavel` (são `frequencia` e `responsavel_id`),
+  `incidentes.tipo` e `incidentes.gravidade` (são `tipo_incidente` e
+  `criticidade`). Quem os enviasse recebia um erro do PostgREST sobre uma
+  coluna desconhecida, numa API que documentava esses nomes como aceites.
+
+  `riscos.matriz_id` saiu: a matriz é a vigente da empresa e o trigger
+  `trg_risco_calcular` sobrescreve o que vier de fora. Aceitar o campo era
+  prometer um controlo que não existe.
+*/
 const WRITABLE_FIELDS: Record<string, string[]> = {
-  riscos: ['nome', 'descricao', 'responsavel', 'probabilidade_inicial', 'impacto_inicial', 'categoria_id', 'matriz_id'],
-  controles: ['nome', 'descricao', 'tipo', 'criticidade', 'frequencia_teste', 'responsavel', 'categoria_id'],
-  incidentes: ['titulo', 'descricao', 'tipo', 'gravidade', 'data_ocorrencia', 'data_deteccao'],
+  riscos: ['nome', 'descricao', 'responsavel', 'probabilidade_inicial', 'impacto_inicial', 'categoria_id'],
+  controles: ['nome', 'descricao', 'tipo', 'criticidade', 'frequencia', 'responsavel_id', 'categoria_id'],
+  incidentes: ['titulo', 'descricao', 'tipo_incidente', 'criticidade', 'data_ocorrencia', 'data_deteccao'],
   auditorias: ['nome', 'tipo', 'prioridade', 'data_inicio', 'data_fim_prevista'],
   documentos: ['nome', 'descricao', 'tipo', 'classificacao', 'tags', 'data_vencimento'],
   ativos: ['nome', 'tipo', 'descricao', 'criticidade', 'proprietario', 'localizacao', 'fornecedor', 'versao'],
@@ -28,9 +40,9 @@ const WRITABLE_FIELDS: Record<string, string[]> = {
 
 // Campos seguros para leitura (evita expor dados sensíveis)
 const SAFE_FIELDS: Record<string, string> = {
-  riscos: 'id, nome, descricao, status, nivel_risco_inicial, responsavel, created_at, updated_at',
-  controles: 'id, nome, descricao, tipo, status, criticidade, frequencia_teste, responsavel, created_at, updated_at',
-  incidentes: 'id, titulo, descricao, tipo, gravidade, status, data_ocorrencia, data_deteccao, created_at, updated_at',
+  riscos: 'id, codigo, nome, descricao, status, nivel_risco_inicial, nivel_risco_residual, score_efetivo, severidade_efetiva, responsavel, created_at, updated_at',
+  controles: 'id, nome, descricao, tipo, status, criticidade, frequencia, responsavel_id, created_at, updated_at',
+  incidentes: 'id, titulo, descricao, tipo_incidente, criticidade, status, data_ocorrencia, data_deteccao, created_at, updated_at',
   auditorias: 'id, nome, tipo, status, prioridade, data_inicio, data_fim_prevista, created_at, updated_at',
   documentos: 'id, nome, descricao, tipo, status, classificacao, data_vencimento, created_at, updated_at',
   ativos: 'id, nome, tipo, descricao, status, criticidade, proprietario, localizacao, created_at, updated_at',

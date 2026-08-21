@@ -63,7 +63,7 @@ async function fetchSpecificMentions(
 ): Promise<string> {
   const text = userMessage.toLowerCase();
   const patterns = [
-    { module: 'riscos',      regex: /(?:risco|riscos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'riscos', label: 'RISCO', fields: 'nome, descricao, nivel_risco_inicial, nivel_risco_residual, status, responsavel, aceito', searchField: 'nome' },
+    { module: 'riscos',      regex: /(?:risco|riscos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'riscos', label: 'RISCO', fields: 'nome, descricao, nivel_risco_inicial, nivel_risco_residual, severidade_efetiva, score_efetivo, status, responsavel, aceito', searchField: 'nome' },
     { module: 'controles',   regex: /(?:controle|controles)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'controles', label: 'CONTROLE', fields: 'nome, descricao, status, criticidade, frequencia, proxima_avaliacao', searchField: 'nome' },
     { module: 'incidentes',  regex: /(?:incidente|incidentes)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'incidentes', label: 'INCIDENTE', fields: 'titulo, descricao, criticidade, status, tipo, data_ocorrencia', searchField: 'titulo' },
     { module: 'contratos',   regex: /(?:contrato|contratos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'contratos', label: 'CONTRATO', fields: 'nome, descricao, status, valor, data_inicio, data_fim', searchField: 'nome' },
@@ -114,7 +114,7 @@ async function buildContextSummary(
     ativosRes, contasRes, dadosRes,
     planosRes, fornecedoresRes
   ] = await Promise.all([
-    can('riscos')              ? supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, status, aceito, status_aprovacao, responsavel').eq('empresa_id', empresaId) : empty(),
+    can('riscos')              ? supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, severidade_efetiva, score_efetivo, status, aceito, status_aprovacao, responsavel').eq('empresa_id', empresaId) : empty(),
     can('controles')           ? supabase.from('controles').select('id, nome, status, proxima_avaliacao, criticidade, frequencia').eq('empresa_id', empresaId) : empty(),
     can('incidentes')          ? supabase.from('incidentes').select('id, titulo, criticidade, status, tipo').eq('empresa_id', empresaId) : empty(),
     can('denuncia')            ? supabase.from('denuncias').select('id, titulo, status, gravidade, anonima').eq('empresa_id', empresaId) : empty(),
@@ -168,7 +168,7 @@ async function buildContextSummary(
   const blocks: string[] = ['DADOS DA EMPRESA (use APENAS estes dados, NUNCA invente):'];
 
   if (can('riscos')) blocks.push(`\nRISCOS (${riscos.length} total):
-- ${riscos.filter(r => ['critico', 'muito_alto', 'alto', 'Crítico', 'Muito Alto', 'Alto'].includes(r.nivel_risco_inicial || '')).length} altos/críticos
+- ${riscos.filter(r => isSevero(r.severidade_efetiva)).length} altos/críticos
 - ${riscos.filter(r => r.aceito === true).length} aceitos formalmente
 - ${riscos.filter(r => !r.status || r.status === 'identificado').length} identificados (sem tratamento)
 - ${riscos.filter(r => r.status === 'em_tratamento' || r.status === 'tratado').length} em tratamento ou tratados

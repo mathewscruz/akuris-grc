@@ -36,7 +36,7 @@ import {
   contarRiscosPorSeveridade,
   type Severidade,
 } from '@/lib/metrics/riscos';
-import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
+import { useMatrizConfigEmpresa, MATRIZ_QUERY_KEY } from '@/hooks/useMatrizConfigEmpresa';
 import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -451,7 +451,7 @@ export function Riscos() {
   };
 
   const handleMatrizDialogSuccess = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['riscos-matriz-config'], refetchType: 'all' });
+    await queryClient.invalidateQueries({ queryKey: [MATRIZ_QUERY_KEY], refetchType: 'all' });
     await invalidateRiscos();
     setMatrizDialogOpen(false);
   };

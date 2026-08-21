@@ -57,16 +57,21 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
 
+    /*
+      `classify-risk` foi removida daqui.
+
+      Nenhum ecrã a invocava, e o seu prompt pedia à IA uma escala própria
+      ("Muito Baixa | Baixa | Média | Alta | Muito Alta" para probabilidade, e
+      um `nivel_risco` de SEIS valores) que não corresponde a matriz nenhuma.
+      Depois de o nível passar a ser calculado pelo banco, ligá-la seria
+      reintroduzir exactamente o problema que a reestruturação resolveu: uma
+      severidade escrita por fora, sem relação com a matriz da empresa.
+
+      Se voltar a ser precisa, o contrato certo é a IA sugerir a POSIÇÃO na
+      escala da empresa (1..N em probabilidade e impacto) e o resto sair do
+      trigger, como em toda a gente.
+    */
     switch (action) {
-      case 'classify-risk':
-        systemPrompt = "Você é um especialista em gestão de riscos corporativos. Responda APENAS com JSON válido, sem markdown.";
-        userPrompt = `Analise o risco abaixo e sugira classificação automática:
-Nome: ${data.nome}
-Descrição: ${data.descricao || 'Não informada'}
-
-Retorne JSON: {"categoria":"string","probabilidade":"Muito Baixa|Baixa|Média|Alta|Muito Alta","impacto":"Muito Baixo|Baixo|Médio|Alto|Muito Alto","nivel_risco":"Muito Baixo|Baixo|Médio|Alto|Muito Alto|Crítico","justificativa":"string com 2-3 frases"}`;
-        break;
-
       case 'triage-denuncia':
         systemPrompt = "Você é um especialista em compliance e canal de denúncias. Responda APENAS com JSON válido, sem markdown.";
         userPrompt = `Classifique a seguinte denúncia:

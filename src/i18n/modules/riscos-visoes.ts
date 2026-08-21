@@ -103,7 +103,6 @@ export const riscosVisoes = {
         },
         riskTrendChart: {
           titulo: 'Riscos acima do apetite',
-          apetite: 'apetite',
           scoreTooltip: 'Acima do apetite',
           deTotal: 'de {total} avaliados',
           meta: 'meta',
@@ -236,7 +235,6 @@ export const riscosVisoes = {
         },
         riskTrendChart: {
           titulo: 'Risks above appetite',
-          apetite: 'appetite',
           scoreTooltip: 'Above appetite',
           deTotal: 'of {total} assessed',
           meta: 'target',

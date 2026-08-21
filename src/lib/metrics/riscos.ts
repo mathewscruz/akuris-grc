@@ -171,17 +171,3 @@ export const contarRiscosPorSeveridade = (
   baixos: countBy(riscos, (r) => isRiscoBaixo(r, faixas)),
   indefinidos: countBy(riscos, (r) => severidadeRisco(r, faixas) === 'indefinido'),
 });
-
-/**
- * Exposição da carteira: quantos riscos estão acima do apetite.
- *
- * Substitui os dois "scores consolidados" que existiam — a soma dos P×I de
- * todos os riscos (que o gráfico comparava com o limite POR risco, "131 /
- * apetite 16") e o índice 0–100 do painel (uma média ponderada, que MELHORAVA
- * quando se cadastravam riscos baixos). Contar o que excede o apetite é a única
- * das três que responde à pergunta que o conselho faz.
- */
-export const contarAcimaDoApetite = (
-  riscos: RiscoLike[] | null | undefined,
-  apetiteScore?: number | null,
-): number => countBy(riscos, (r) => isAcimaDoApetite(r, apetiteScore));

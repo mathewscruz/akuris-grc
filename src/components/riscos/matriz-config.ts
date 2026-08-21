@@ -37,7 +37,7 @@ export interface MatrizConfiguracao {
 
 export const DEFAULT_MATRIZ_NOME = 'Matriz Padrão 5×5';
 
-export const DEFAULT_METODO_CALCULO: MetodoCalculo = 'multiplicacao';
+const DEFAULT_METODO_CALCULO: MetodoCalculo = 'multiplicacao';
 
 export const DEFAULT_ESCALA_PROBABILIDADE: EscalaItem[] = [
   { valor: '1', descricao: 'Muito Raro' },
@@ -66,14 +66,6 @@ export const DEFAULT_NIVEIS_RISCO: NivelRisco[] = [
   { min: 10, max: 16, nivel: 'Alto', cor: '#f97316' },
   { min: 17, max: 25, nivel: 'Crítico', cor: '#dc2626' },
 ];
-
-/** Mensagem acionável quando a configuração não pôde ser carregada/provisionada. */
-export const MATRIZ_CONFIG_ERRO_TITULO = 'Matriz de risco não configurada';
-
-export const MATRIZ_CONFIG_ERRO_DESCRICAO =
-  'Não foi possível carregar a configuração da matriz (escalas e faixas de nível). ' +
-  'Sem ela o nível de risco não pode ser calculado e novos riscos não podem ser criados. ' +
-  'Abra "Configurar Matriz" para criar ou revisar a matriz da sua empresa.';
 
 /**
  * Nível de risco a partir de probabilidade × impacto e das faixas da matriz.

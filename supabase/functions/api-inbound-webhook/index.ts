@@ -120,14 +120,23 @@ serve(async (req) => {
         break;
       }
       case 'riscos': {
+        /*
+          Este insert nunca funcionou: `categoria`, `probabilidade` e `impacto`
+          não são colunas de `riscos` (os nomes reais têm sufixo `_inicial`), e
+          `nivel_risco_inicial` é escrito pelo trigger `trg_risco_calcular`.
+          Todo risco que entrasse por webhook era recusado pelo PostgREST.
+
+          Agora entram probabilidade e impacto na escala da matriz, e o nível
+          sai do banco — a mesma regra de quem cria pelo formulário.
+        */
+        const posicao = mapEscala(body.severity || body.level);
         const { error } = await supabase.from('riscos').insert({
           empresa_id: empresaId,
           nome: body.title || body.nome || body.risk_name || `Risco via ${webhook.nome}`,
           descricao: body.description || body.descricao || JSON.stringify(body),
-          categoria: body.category || body.categoria || 'Tecnologia',
-          nivel_risco_inicial: mapNivelRisco(body.severity || body.level),
-          probabilidade: body.probability || body.probabilidade || 'Possível',
-          impacto: body.impact || body.impacto || 'Moderado',
+          probabilidade_inicial: Number(body.probability ?? body.probabilidade) || posicao,
+          impacto_inicial: Number(body.impact ?? body.impacto) || posicao,
+          status: 'identificado',
         });
         insertError = error;
         break;
@@ -210,20 +219,33 @@ serve(async (req) => {
   }
 });
 
+/**
+ * Severidade de quem chama → vocabulário canónico do produto.
+ *
+ * Devolvia o feminino ('critica'/'alta'/'media'/'baixa'), que a migration
+ * `20260821110000` deixou de aceitar: o CHECK recusaria a linha inteira. Um
+ * alerta legítimo de um SIEM passaria a ser rejeitado no webhook.
+ */
 function mapCriticidade(severity?: string): string {
-  if (!severity) return 'media';
-  const s = severity.toLowerCase();
-  if (['critical', 'critica', 'p1', '1'].includes(s)) return 'critica';
-  if (['high', 'alta', 'p2', '2'].includes(s)) return 'alta';
-  if (['medium', 'media', 'p3', '3'].includes(s)) return 'media';
-  return 'baixa';
+  const s = (severity || '').toLowerCase().trim();
+  if (['critical', 'critica', 'critico', 'p1', '1'].includes(s)) return 'critico';
+  if (['high', 'alta', 'alto', 'p2', '2'].includes(s)) return 'alto';
+  if (['low', 'baixa', 'baixo', 'p4', '4'].includes(s)) return 'baixo';
+  return 'medio';
 }
 
-function mapNivelRisco(severity?: string): string {
-  if (!severity) return 'Médio';
-  const s = severity.toLowerCase();
-  if (['critical', 'critica', 'p1'].includes(s)) return 'Crítico';
-  if (['high', 'alto', 'p2'].includes(s)) return 'Alto';
-  if (['medium', 'medio', 'p3'].includes(s)) return 'Médio';
-  return 'Baixo';
+/**
+ * Severidade de quem chama → posição na escala da matriz.
+ *
+ * `mapNivelRisco` devolvia o RÓTULO ("Crítico") para gravar directamente em
+ * `nivel_risco_inicial`. O nível deixou de ser entrada; o que se pode dizer de
+ * fora é onde o risco cai na escala, e o banco decide o resto.
+ */
+function mapEscala(severity?: string): number {
+  switch (mapCriticidade(severity)) {
+    case 'critico': return 5;
+    case 'alto': return 4;
+    case 'baixo': return 2;
+    default: return 3;
+  }
 }

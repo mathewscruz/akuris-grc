@@ -44,7 +44,7 @@ export function isTratamentoConcluido(status?: string | null): boolean {
 }
 
 /** Tratamento cancelado não conta como pendência nem como conclusão. */
-export function isTratamentoCancelado(status?: string | null): boolean {
+function isTratamentoCancelado(status?: string | null): boolean {
   const v = norm(status);
   return v === 'cancelado' || v === 'cancelada';
 }
