@@ -30,7 +30,13 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useRiscosStats, type RiscosStats } from '@/hooks/useRiscosStats';
-import { severidadeRiscoEfetiva, type Severidade } from '@/lib/metrics/riscos';
+import {
+  severidadeRisco,
+  isAcimaDoApetite,
+  contarRiscosPorSeveridade,
+  type Severidade,
+} from '@/lib/metrics/riscos';
+import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -57,14 +63,10 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure } from '@/components/riscos/risk-utils';
+import { slaFromRevisao, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure } from '@/components/riscos/risk-utils';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTratamentoRequerido } from '@/components/riscos/risk-status';
-import {
-  apetiteScoreFromNiveis,
-  type NivelRisco,
-  type EscalaItem,
-} from '@/components/riscos/matriz-config';
+import { apetiteScoreDaConfig, apetiteLabelDaConfig } from '@/components/riscos/matriz-config';
 import { filterUuids, splitResponsavel } from '@/lib/uuid';
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
@@ -117,13 +119,6 @@ interface Risco {
   aprovador_id?: string;
   historico_aprovacao?: any;
   created_by?: string;
-}
-
-interface MatrizConfig {
-  niveis_risco: NivelRisco[];
-  escala_probabilidade?: EscalaItem[];
-  escala_impacto?: EscalaItem[];
-  metodo_calculo?: string | null;
 }
 
 export function Riscos() {
@@ -182,9 +177,12 @@ export function Riscos() {
           probabilidade_inicial, impacto_inicial,
           probabilidade_residual, impacto_residual,
           nivel_risco_inicial, nivel_risco_residual,
+          score_inicial, score_residual, score_efetivo,
+          severidade_inicial, severidade_residual, severidade_efetiva,
+          impacto_financeiro,
           status, responsavel, controles_existentes, mitigacao_snapshot,
           causas, consequencias, aceito, justificativa_aceite,
-          created_at, data_proxima_revisao,
+          created_at, updated_at, data_proxima_revisao,
           status_aprovacao, aprovador_id, historico_aprovacao,
           categoria:riscos_categorias(nome, cor),
           matriz:riscos_matrizes(nome)
@@ -221,34 +219,19 @@ export function Riscos() {
         }, {} as Record<string, number>);
       }
 
-      // Impacto financeiro em query SEPARADA e tolerante a erro: se a coluna
-      // ainda não existir na base (migração não aplicada), a lista de riscos
-      // NÃO quebra — apenas a exposição fica indisponível até a migração.
-      let financeMap: Record<string, number | null> = {};
-      if (riscoIds.length > 0) {
-        const { data: fin, error: finErr } = await supabase
-          .from('riscos')
-          .select('id, impacto_financeiro')
-          .in('id', riscoIds);
-        if (!finErr && fin) {
-          financeMap = Object.fromEntries(fin.map((r: any) => [r.id, r.impacto_financeiro]));
-        }
-      }
-
       // Histórico real de avaliações → pontos da coluna "Tend.". Sem histórico
       // suficiente a tabela mostra "sem histórico" (nunca uma linha inventada).
       const historicoMap: Record<string, number[]> = {};
       if (riscoIds.length > 0) {
         const { data: hist, error: histErr } = await supabase
           .from('riscos_historico_avaliacoes')
-          .select('risco_id, probabilidade, impacto, created_at')
+          .select('risco_id, score, created_at')
           .in('risco_id', riscoIds)
           .order('created_at', { ascending: true });
         if (!histErr && hist) {
-          hist.forEach((h: any) => {
-            const score = scoreFromPI(h.probabilidade, h.impacto);
-            if (!score) return;
-            (historicoMap[h.risco_id] ||= []).push(score);
+          hist.forEach((h) => {
+            if (!h.score) return;
+            (historicoMap[h.risco_id] ||= []).push(h.score);
           });
         }
       }
@@ -268,7 +251,6 @@ export function Riscos() {
             tratamentos_concluidos: concluidos,
             status_efetivo: coerente.status,
             status_ajuste_motivo: coerente.motivo,
-            impacto_financeiro: financeMap[risco.id] ?? null,
             historico_scores: historicoMap[risco.id] ?? [],
           };
         });
@@ -314,43 +296,14 @@ export function Riscos() {
     staleTime: 1000 * 60 * 2,
   });
 
-  // React Query for matriz config
-  //
-  // AKURIS QA-055: `.single()` respondia HTTP 406/PGRST116 quando a empresa não
-  // tinha linha de configuração, e o erro era engolido (`const { data }`).
-  // Agora: `.maybeSingle()` distingue "não existe" (null, estado acionável) de
-  // erro real (lançado, tratado por `isError`), com o tenant explícito no filtro
-  // além da RLS.
+  // A matriz vigente da empresa vem do hook partilhado — esta página tinha uma
+  // segunda cópia da consulta, com `.limit(1)` sobre todas as matrizes.
   const {
     data: matrizConfig = null,
     isLoading: matrizConfigLoading,
     isError: matrizConfigError,
     refetch: refetchMatrizConfig,
-  } = useQuery({
-    queryKey: ['riscos-matriz-config', profile?.empresa_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('riscos_matriz_configuracao')
-        .select('niveis_risco, escala_probabilidade, escala_impacto, metodo_calculo, matriz:riscos_matrizes!inner(empresa_id)')
-        .eq('matriz.empresa_id', profile!.empresa_id)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      return {
-        niveis_risco: data.niveis_risco as unknown as NivelRisco[],
-        escala_probabilidade: data.escala_probabilidade as unknown as EscalaItem[],
-        escala_impacto: data.escala_impacto as unknown as EscalaItem[],
-        metodo_calculo: data.metodo_calculo as string | null,
-      } as MatrizConfig;
-    },
-    enabled: !!profile?.empresa_id,
-    retry: 1,
-    staleTime: 1000 * 60 * 5,
-  });
+  } = useMatrizConfigEmpresa();
 
   /** Configuração indisponível: sem linha (ausente) ou consulta com erro. */
   const matrizConfigIndisponivel = !matrizConfigLoading && (matrizConfigError || !matrizConfig);
@@ -425,8 +378,10 @@ export function Riscos() {
     const matchesStatus = !statusFilter || statusFilter === 'all' || (risco.status_efetivo ?? risco.status) === statusFilter;
     // Mesmo critério do badge: filtrar pela inerente devolvia riscos cuja
     // severidade apresentada era outra.
+    const rotulo = (v?: string | null) =>
+      (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
     const matchesNivel = !nivelFilter || nivelFilter === 'all' ||
-      (risco.nivel_risco_residual || risco.nivel_risco_inicial) === nivelFilter;
+      rotulo(risco.nivel_risco_residual || risco.nivel_risco_inicial) === rotulo(nivelFilter);
     const matchesAceito = !aceitoFilter || aceitoFilter === 'all' || 
                          (aceitoFilter === 'aceito' && risco.aceito) ||
                          (aceitoFilter === 'nao_aceito' && !risco.aceito);
@@ -550,10 +505,10 @@ export function Riscos() {
    * cabeçalho da página, precisa dela: exportava `sortedRiscos` enquanto o
    * ecrã mostrava 13 linhas, e o ficheiro saía com 31.
    */
-  const apetiteScore: number | null = apetiteScoreFromNiveis(matrizConfig?.niveis_risco);
+  const apetiteScore: number | null = apetiteScoreDaConfig(matrizConfig);
   const viewFilters: Record<SavedView, (r: Risco) => boolean> = useMemo(() => ({
     todos: () => true,
-    acima_apetite: (r) => isAcimaApetite(r, apetiteScore),
+    acima_apetite: (r) => isAcimaDoApetite(r, apetiteScore),
     sem_responsavel: (r) => !r.responsavel_nome && !(r as any).responsavel_por_resolver,
     revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
     meus_riscos: (r) => !!profile?.user_id && r.responsavel === profile.user_id,
@@ -569,7 +524,7 @@ export function Riscos() {
    */
   const statsDaExportacao = useMemo(() => {
     const porSeveridade = (nivel: Severidade) =>
-      viewedRiscos.filter((r) => severidadeRiscoEfetiva(r, matrizConfig?.niveis_risco) === nivel).length;
+      viewedRiscos.filter((r) => severidadeRisco(r) === nivel).length;
     const efetivo = (r: Risco) => r.status_efetivo ?? r.status;
     return {
       ...(stats ?? ({} as RiscosStats)),
@@ -644,7 +599,7 @@ export function Riscos() {
       label: t('riscos.page.columns.name'),
       sortable: true,
       render: (value: any, risco: Risco) => {
-        const sev = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
+        const sev = severidadeRisco(risco);
         const dot =
           sev === 'critico' ? 'bg-destructive' :
           sev === 'alto' ? 'bg-warning' :
@@ -675,8 +630,17 @@ export function Riscos() {
       // nome, o detalhe do risco, o mapa de calor e o dashboard. Mostrar aqui a
       // inerente fazia a mesma linha exibir duas severidades diferentes.
       render: (_value: string, risco: Risco) => {
+        // Cor e letra pela severidade canónica; texto pelo rótulo da empresa.
+        // `resolveSeverityTone` conhece uma lista fechada de palavras — a quem
+        // chamasse à faixa "Extremo" devolvia cinzento sem letra, e a coluna
+        // inteira ficava sem escala visual.
         const nivel = risco.nivel_risco_residual || risco.nivel_risco_inicial;
-        return <StatusBadge {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>;
+        if (!nivel) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <StatusBadge {...resolveNivelRiscoTone(severidadeRisco(risco))}>
+            {formatStatus(nivel)}
+          </StatusBadge>
+        );
       },
     },
     {
@@ -808,17 +772,21 @@ export function Riscos() {
       onChange: (value: string) => setStatusFilter(value === 'all' ? '' : value)
     },
     {
+      // As opções são as faixas da matriz vigente, não uma lista fixa.
+      //
+      // A lista fixa era 'Crítico' / 'Muito Alto' / 'Alto' / 'Médio' / 'Baixo' /
+      // 'Muito Baixo' e comparava com o texto gravado por igualdade exacta:
+      // escolher "Alto" numa tabela com seis badges "Alto" devolvia "Nenhum
+      // risco encontrado", porque o gravado era "alto". E quem tinha renomeado
+      // as faixas via um filtro sem uma única opção correspondente aos dados.
       key: 'nivel',
       label: t('riscos.page.filters.level'),
       type: 'select' as const,
       options: [
         { value: 'all', label: t('riscos.page.filters.all') },
-        { value: 'Crítico', label: t('riscos.page.level.critico') },
-        { value: 'Muito Alto', label: t('riscos.page.level.muitoAlto') },
-        { value: 'Alto', label: t('riscos.page.level.alto') },
-        { value: 'Médio', label: t('riscos.page.level.medio') },
-        { value: 'Baixo', label: t('riscos.page.level.baixo') },
-        { value: 'Muito Baixo', label: t('riscos.page.level.muitoBaixo') }
+        ...[...(matrizConfig?.niveis_risco ?? [])]
+          .sort((a, b) => b.min - a.min)
+          .map((n) => ({ value: n.nivel, label: n.nivel })),
       ],
       value: nivelFilter,
       onChange: (value: string) => setNivelFilter(value === 'all' ? '' : value)
@@ -898,7 +866,7 @@ export function Riscos() {
           // Derivações compartilhadas para Visão geral e Matriz
           // Apetite score = max do nível marcado como limite de apetite na config da
           // matriz (fallback: nível "médio", para matrizes sem a marcação).
-          const acimaApetite = riscos.filter((r) => isAcimaApetite(r, apetiteScore)).length;
+          const acimaApetite = riscos.filter((r) => isAcimaDoApetite(r, apetiteScore)).length;
           // Alinhado à coluna Resp. da tabela: conta riscos sem nome de responsável
           // resolvido (um ID que não resolve para um perfil também aparece como "—").
           const semResponsavel = riscos.filter((r) => !r.responsavel_nome).length;
@@ -906,15 +874,17 @@ export function Riscos() {
           // Status efetivo (AKURIS QA-065): o KPI acompanha o badge exibido.
           const emTratamento = riscos.filter((r) => (r.status_efetivo ?? r.status) === 'em_tratamento').length;
 
-          // Counts por severidade (residual||inicial)
-          const sevCounts = riscos.reduce(
-            (acc, r) => {
-              const s = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
-              acc[s]++;
-              return acc;
-            },
-            { critico: 0, alto: 0, medio: 0, baixo: 0 } as Record<'critico' | 'alto' | 'medio' | 'baixo', number>,
-          );
+          // Contagem por severidade — a MESMA de que a exportação e o painel se
+          // servem. Esta página tinha duas: os cartões liam o rótulo gravado e
+          // a exportação lia as faixas, e o cartão dizia "2 Críticos" com um só
+          // risco em célula crítica no mapa de calor logo abaixo.
+          const contagem = contarRiscosPorSeveridade(riscos);
+          const sevCounts = {
+            critico: contagem.criticos,
+            alto: contagem.altos,
+            medio: contagem.medios,
+            baixo: contagem.baixos,
+          };
 
           // Risks da célula selecionada — respeita o modo do heatmap (inerente/residual)
           const cellRisks = matrixCell
@@ -956,7 +926,7 @@ export function Riscos() {
               />
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2"><RiskTrendChart points={trendPoints} apetite={apetiteScore} /></div>
+                <div className="lg:col-span-2"><RiskTrendChart points={trendPoints} /></div>
                 <RiskCategoryBars riscos={riscos as any} />
               </div>
               <RiskWatchlist
@@ -987,7 +957,11 @@ export function Riscos() {
                     onModeChange={(m) => { setMatrixMode(m); setMatrixCell(undefined); }}
                     config={matrizConfig}
                   />
-                  <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
+                  <AppetiteFooter
+                    apetiteLabel={apetiteLabelDaConfig(matrizConfig) ?? undefined}
+                    apetiteScore={apetiteScore}
+                    acimaCount={acimaApetite}
+                  />
                 </div>
                 {matrixCell && (
                   <HeatmapCellPanel

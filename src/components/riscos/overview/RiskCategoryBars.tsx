@@ -2,12 +2,16 @@
  * RiskCategoryBars — distribuição de riscos por categoria, com stack por severidade.
  */
 import { useMemo } from 'react';
-import { severityFromNivel, type Severity } from '@/components/riscos/risk-utils';
+import { type Severity } from '@/components/riscos/risk-utils';
+import { severidadeRisco } from '@/lib/metrics/riscos';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
-  nivel_risco_inicial: string;
+  nivel_risco_inicial?: string | null;
   nivel_risco_residual?: string | null;
+  severidade_efetiva?: string | null;
+  severidade_inicial?: string | null;
+  severidade_residual?: string | null;
   categoria?: { nome: string } | null;
 }
 
@@ -28,8 +32,9 @@ export function RiskCategoryBars({ riscos }: Props) {
   const rows = useMemo(() => {
     const map = new Map<string, { nome: string; critico: number; alto: number; medio: number; baixo: number; total: number }>();
     riscos.forEach((r) => {
+      const sev = severidadeRisco(r);
+      if (sev === 'indefinido') return; // risco por avaliar não entra na distribuição
       const nome = r.categoria?.nome || semCategoriaLabel;
-      const sev = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
       const cur = map.get(nome) || { nome, critico: 0, alto: 0, medio: 0, baixo: 0, total: 0 };
       cur[sev] += 1;
       cur.total += 1;

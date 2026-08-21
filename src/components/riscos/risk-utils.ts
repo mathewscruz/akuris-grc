@@ -1,13 +1,25 @@
 /**
- * Utilidades compartilhadas pelo módulo de Riscos (Visão geral, Matriz, Tabela, Drawer).
- * Mantém regras de score, derivações de SLA, ID curto e mapeamentos para tons semânticos.
+ * Utilidades de APRESENTAÇÃO do módulo de Riscos.
+ *
+ * O cálculo saiu daqui. Score, nível e severidade são hoje colunas escritas
+ * pelo trigger `trg_risco_calcular` (ver
+ * `supabase/migrations/20260821100000_risco_calculado_no_banco.sql`) e lidos
+ * através de `@/lib/metrics/riscos`. Este ficheiro chegou a ter quatro funções
+ * a responder "qual é a severidade disto?" — `severityFromNivel`,
+ * `severityFromScore`, `severityFromScoreConfig` e `scoreFromPI` — cada uma
+ * com uma regra ligeiramente diferente, e cada ecrã escolhia a sua.
+ *
+ * O que fica: formatação, SLA, iniciais, e a aritmética de PRÉ-VISUALIZAÇÃO da
+ * matriz (colorir uma célula vazia do mapa de calor, mostrar o nível enquanto
+ * se preenche o formulário). Nada disto grava.
  */
 import { differenceInDays } from 'date-fns';
 import { tGlobal } from '@/lib/i18n-global';
 import type { NivelRisco } from '@/components/riscos/matriz-config';
-import { severidadeDeFaixas, type FaixaMatriz } from '@/lib/metrics/riscos';
+import { severidadeDeFaixas, type Severidade } from '@/lib/metrics/riscos';
 
-export type Severity = 'critico' | 'alto' | 'medio' | 'baixo';
+/** Alias do vocabulário canónico, sem o estado 'indefinido'. */
+export type Severity = Exclude<Severidade, 'indefinido'>;
 
 export const NIVEL_LABELS: Record<Severity, string> = {
   critico: 'Crítico',
@@ -16,42 +28,23 @@ export const NIVEL_LABELS: Record<Severity, string> = {
   baixo: 'Baixo',
 };
 
-const norm = (s?: string | null) =>
-  (s ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-
 /**
- * Converte qualquer rótulo de nível para a chave canónica.
+ * Normaliza um valor de probabilidade/impacto para número.
  *
- * Delega em `severidadeDeFaixas`, que é o vocabulário único do produto — antes
- * conhecia quatro palavras e devolvia "baixo" para todo o resto. Numa empresa
- * que renomeou as faixas da sua matriz (Baixo/Moderado/Elevado/Extremo, como a
- * Fast2Mine), a carteira inteira lia-se **Baixos 15 · Críticos 0** e o mapa de
- * calor pintava tudo de verde, enquanto o PDF — que já usava o mapa canónico —
- * contava 13 médios sobre os mesmos riscos.
- *
- * Passando as `faixas` da matriz activa, quem manda é a POSIÇÃO da faixa; sem
- * elas, o mapa de rótulos conhecidos. `indefinido` continua a colapsar para
- * "baixo" porque `Severity` aqui não tem esse estado.
- */
-export function severityFromNivel(raw?: string | null, faixas?: FaixaMatriz[] | null): Severity {
-  const s = severidadeDeFaixas(raw, faixas);
-  return s === 'indefinido' ? 'baixo' : s;
-}
-
-/**
- * Mapa de valores textuais legados de probabilidade/impacto → escala canônica 1–5.
- * Riscos antigos gravaram texto ("provavel", "catastrofico"); os novos gravam
- * número ("1".."5"). Este mapa permite normalizar ambos para a mesma escala.
+ * As colunas passaram a ser `smallint`, mas o formulário ainda entrega string
+ * (`<Select value="4">`) e há JSON de escalas com `valor: "4"`. Continua a
+ * aceitar os rótulos legados porque a biblioteca de riscos e alguns payloads de
+ * importação ainda os trazem.
  */
 const SCALE_MAP: Record<string, number> = {
-  // Probabilidade
   raro: 1,
+  muito_raro: 1,
   improvavel: 2,
   possivel: 3,
+  ocasional: 3,
   provavel: 4,
   quase_certo: 5,
   muito_provavel: 5,
-  // Impacto
   insignificante: 1,
   menor: 2,
   moderado: 3,
@@ -59,62 +52,49 @@ const SCALE_MAP: Record<string, number> = {
   catastrofico: 5,
 };
 
-/**
- * Normaliza um valor de probabilidade/impacto para a escala canônica 1–5.
- * Aceita número ("1".."5") ou texto legado ("provavel", "catastrofico").
- * Retorna null quando não há valor reconhecível. Fonte única de verdade para
- * toda conversão prob/impacto → número (matriz, sparkline, score, exibição).
- */
+const norm = (s?: string | null) =>
+  (s ?? '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 export function toScaleNumber(value?: string | number | null): number | null {
   if (value === null || value === undefined || value === '') return null;
   const n = Number(value);
-  if (Number.isFinite(n) && n >= 1 && n <= 5) return Math.round(n);
+  if (Number.isFinite(n) && n >= 1 && n <= 20) return Math.round(n);
   const key = norm(value as string).replace(/\s+/g, '_');
   return SCALE_MAP[key] ?? null;
 }
 
-/** Exibição "P × I" normalizada: sempre número (ou "—"), nunca texto legado. */
+/** Exibição "P × I" normalizada: sempre número (ou "—"). */
 export function formatScaleValue(value?: string | number | null): string {
   const n = toScaleNumber(value);
   return n === null ? '—' : n.toString();
 }
 
-/** Score derivado de prob × imp. Aceita número ("1"-"5") ou texto legado. */
-export function scoreFromPI(prob?: string | number | null, imp?: string | number | null): number {
-  const p = toScaleNumber(prob) ?? 0;
-  const i = toScaleNumber(imp) ?? 0;
-  return p * i;
-}
-
-/** Mapeamento score → severidade (fallback quando não há matriz configurada). */
-export function severityFromScore(score: number): Severity {
-  if (score >= 16) return 'critico';
-  if (score >= 10) return 'alto';
-  if (score >= 5) return 'medio';
-  return 'baixo';
-}
-
-/** Score de uma célula P×I respeitando o método de cálculo da matriz ativa. */
+/** Score de uma célula P×I respeitando o método de cálculo da matriz. */
 export function scoreFromMatriz(p: number, i: number, metodo?: string | null): number {
   return metodo === 'soma' ? p + i : p * i;
 }
 
-/** Faixa (nível) da matriz ativa em que o score cai; null se não houver faixas. */
+/** Faixa (nível) da matriz em que o score cai; null se não houver faixas. */
 export function faixaFromScore(score: number, niveis?: NivelRisco[] | null): NivelRisco | null {
   if (!niveis || niveis.length === 0) return null;
   return niveis.find((n) => score >= n.min && score <= n.max) ?? null;
 }
 
 /**
- * FONTE ÚNICA de severidade por score (AKURIS QA-061): deriva das faixas
- * (min/max) guardadas na configuração da matriz ativa. Só cai nos limiares
- * fixos de `severityFromScore` quando a empresa não tem faixas configuradas.
+ * Severidade de um score — só para PRÉ-VISUALIZAÇÃO (células do mapa de calor,
+ * nível calculado no formulário). Para um risco gravado, use
+ * `severidadeRisco()` de `@/lib/metrics/riscos`, que lê a coluna canónica.
+ *
+ * Sem faixas configuradas devolve `null` em vez de adivinhar: os limiares fixos
+ * que aqui estavam (16 / 10 / 5) assumiam escala 5×5 multiplicativa e mentiam
+ * em qualquer outra.
  */
-export function severityFromScoreConfig(score: number, niveis?: NivelRisco[] | null): Severity {
+export function severidadePrevista(score: number, niveis?: NivelRisco[] | null): Severity | null {
   const faixa = faixaFromScore(score, niveis);
-  return faixa ? severityFromNivel(faixa.nivel) : severityFromScore(score);
+  if (!faixa) return null;
+  const sev = severidadeDeFaixas(faixa.nivel, niveis);
+  return sev === 'indefinido' ? null : sev;
 }
-
 
 /** ID curto display-only: "R-014" derivado dos últimos 3 chars do uuid. */
 export function shortRiskId(uuid?: string | null, codigo?: string | null): string {
@@ -125,33 +105,32 @@ export function shortRiskId(uuid?: string | null, codigo?: string | null): strin
 }
 
 /**
- * Fator de probabilidade (1–5 → chance aproximada) para ponderar o impacto
- * financeiro. Exposição = impacto_financeiro × fator. Escala deliberadamente
- * simples e monotônica (não é modelo atuarial).
- */
-const PROB_FACTOR: Record<number, number> = { 1: 0.1, 2: 0.3, 3: 0.5, 4: 0.7, 5: 0.9 };
-
-/**
- * Exposição financeira estimada = impacto financeiro (perda potencial) ×
- * fator da probabilidade (residual, se houver; senão inicial). Retorna null
- * quando não há impacto financeiro informado.
+ * Exposição financeira estimada = impacto financeiro × probabilidade da
+ * ocorrência, com a probabilidade lida como fracção da escala.
+ *
+ * Antes existia uma tabela fixa `{1: 0.1 … 5: 0.9}`: numa escala de seis ou
+ * sete níveis — que o formulário de matriz sempre permitiu criar — o factor
+ * saía `undefined` e a exposição de todos esses riscos era `NaN`.
  */
 export function financialExposure(
   impactoFinanceiro?: number | string | null,
   probabilidade?: string | number | null,
+  escalaMax = 5,
 ): number | null {
   const valor = typeof impactoFinanceiro === 'string' ? Number(impactoFinanceiro) : impactoFinanceiro;
   if (valor === null || valor === undefined || !Number.isFinite(valor) || valor <= 0) return null;
   const p = toScaleNumber(probabilidade);
-  const factor = p ? PROB_FACTOR[p] : 1;
-  return valor * factor;
+  if (p === null) return valor;
+  const max = Math.max(escalaMax, p);
+  // Fracção linear com margem: o menor nível não vale 0 nem o maior vale 1.
+  const fator = (p - 0.5) / max;
+  return valor * fator;
 }
 
 /**
  * A formatação monetária vive em `@/hooks/useEmpresaMoeda` (moeda configurada
  * por empresa). Não voltar a fixar BRL aqui.
  */
-
 
 export type SlaStatus = 'no_prazo' | 'atencao' | 'vencido' | 'sem_revisao';
 
@@ -195,34 +174,6 @@ export function relativeShort(iso?: string | null): string {
 }
 
 /**
- * Risco "acima do apetite". Quando um limite de apetite (score máximo aceitável)
- * é informado, compara o score numérico do risco (residual||inicial) a ele.
- * Sem apetite configurado (ou risco sem P×I), cai no fallback por severidade
- * (alto/crítico), preservando o comportamento anterior.
- */
-export function isAcimaApetite(
-  r: {
-    nivel_risco_residual?: string | null;
-    nivel_risco_inicial?: string | null;
-    probabilidade_residual?: string | number | null;
-    impacto_residual?: string | number | null;
-    probabilidade_inicial?: string | number | null;
-    impacto_inicial?: string | number | null;
-  },
-  apetiteScore?: number | null,
-): boolean {
-  if (apetiteScore != null) {
-    const score = scoreFromPI(
-      r.probabilidade_residual ?? r.probabilidade_inicial,
-      r.impacto_residual ?? r.impacto_inicial,
-    );
-    if (score > 0) return score > apetiteScore;
-  }
-  const sev = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
-  return sev === 'critico' || sev === 'alto';
-}
-
-/**
  * Letra redundante à cor da escala de severidade (WCAG 1.4.1 — a informação
  * nunca pode depender só da cor). C = Crítico, A = Alto, M = Médio, B = Baixo.
  */
@@ -253,31 +204,50 @@ export interface MovimentoRisco {
 /**
  * Movimento inerente → residual de cada risco, em coordenadas da matriz.
  * Riscos sem residual avaliado ficam com `to: null` (só o ponto inerente).
+ *
+ * As severidades vêm das colunas gravadas; as coordenadas, de
+ * probabilidade/impacto — as mesmas de que o banco derivou o score, portanto
+ * o ponto e a cor não podem divergir.
  */
 export function computeMovimentos(
   riscos: Array<{
     id: string;
-    probabilidade_inicial?: string | null;
-    impacto_inicial?: string | null;
-    probabilidade_residual?: string | null;
-    impacto_residual?: string | null;
+    probabilidade_inicial?: number | string | null;
+    impacto_inicial?: number | string | null;
+    probabilidade_residual?: number | string | null;
+    impacto_residual?: number | string | null;
+    severidade_inicial?: string | null;
+    severidade_residual?: string | null;
   }>,
   niveis?: NivelRisco[] | null,
   metodo?: string | null,
 ): MovimentoRisco[] {
   const out: MovimentoRisco[] = [];
+  const sevDe = (gravada?: string | null, p?: number | null, i?: number | null): Severity | null => {
+    const s = norm(gravada);
+    if (s === 'critico' || s === 'alto' || s === 'medio' || s === 'baixo') return s;
+    if (p === null || p === undefined || i === null || i === undefined) return null;
+    return severidadePrevista(scoreFromMatriz(p, i, metodo), niveis);
+  };
+
   riscos.forEach((r) => {
     const pi = toScaleNumber(r.probabilidade_inicial);
     const ii = toScaleNumber(r.impacto_inicial);
     if (pi === null || ii === null) return;
-    const sevFrom = severityFromScoreConfig(scoreFromMatriz(pi, ii, metodo), niveis);
+    const sevFrom = sevDe(r.severidade_inicial, pi, ii);
+    if (!sevFrom) return;
+
     const pr = toScaleNumber(r.probabilidade_residual);
     const ir = toScaleNumber(r.impacto_residual);
     if (pr === null || ir === null) {
       out.push({ id: r.id, from: { p: pi, i: ii }, to: null, sevFrom, sevTo: null, direcao: null });
       return;
     }
-    const sevTo = severityFromScoreConfig(scoreFromMatriz(pr, ir, metodo), niveis);
+    const sevTo = sevDe(r.severidade_residual, pr, ir);
+    if (!sevTo) {
+      out.push({ id: r.id, from: { p: pi, i: ii }, to: null, sevFrom, sevTo: null, direcao: null });
+      return;
+    }
     const delta = SEVERITY_RANK[sevTo] - SEVERITY_RANK[sevFrom];
     out.push({
       id: r.id,

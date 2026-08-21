@@ -6,6 +6,7 @@ export const riscosVisoes = {
           apetite: 'Apetite:',
           score: 'score',
           acima: '{count} acima do apetite',
+          semApetite: 'por definir',
         },
         heatmapCellPanel: {
           celulaSelecionada: 'Célula selecionada',
@@ -73,6 +74,7 @@ export const riscosVisoes = {
             medio: 'Médio',
             baixo: 'Baixo',
           },
+          foraDaMatriz: 'Fora das faixas da matriz',
         },
         severityKpiRow: {
           labels: {
@@ -100,9 +102,11 @@ export const riscosVisoes = {
           semCategoria: 'Sem categoria',
         },
         riskTrendChart: {
-          titulo: 'Evolução do score consolidado',
+          titulo: 'Riscos acima do apetite',
           apetite: 'apetite',
-          scoreTooltip: 'Score',
+          scoreTooltip: 'Acima do apetite',
+          deTotal: 'de {total} avaliados',
+          meta: 'meta',
         },
         riskWatchlist: {
           eyebrow: 'Watchlist',
@@ -135,6 +139,7 @@ export const riscosVisoes = {
           apetite: 'Appetite:',
           score: 'score',
           acima: '{count} above appetite',
+          semApetite: 'not set',
         },
         heatmapCellPanel: {
           celulaSelecionada: 'Selected cell',
@@ -202,6 +207,7 @@ export const riscosVisoes = {
             medio: 'Medium',
             baixo: 'Low',
           },
+          foraDaMatriz: 'Outside the matrix bands',
         },
         severityKpiRow: {
           labels: {
@@ -229,9 +235,11 @@ export const riscosVisoes = {
           semCategoria: 'No category',
         },
         riskTrendChart: {
-          titulo: 'Consolidated score evolution',
+          titulo: 'Risks above appetite',
           apetite: 'appetite',
-          scoreTooltip: 'Score',
+          scoreTooltip: 'Above appetite',
+          deTotal: 'of {total} assessed',
+          meta: 'target',
         },
         riskWatchlist: {
           eyebrow: 'Watchlist',

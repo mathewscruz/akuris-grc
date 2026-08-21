@@ -31,6 +31,8 @@ export interface MatrizConfiguracao {
   escala_impacto?: EscalaItem[];
   niveis_risco?: NivelRisco[];
   metodo_calculo?: string | null;
+  /** Limite de apetite em score. Coluna própria desde a migration 20260821100000. */
+  apetite_score?: number | null;
 }
 
 export const DEFAULT_MATRIZ_NOME = 'Matriz Padrão 5×5';
@@ -77,6 +79,11 @@ export const MATRIZ_CONFIG_ERRO_DESCRICAO =
  * Nível de risco a partir de probabilidade × impacto e das faixas da matriz.
  * Retorna `null` — nunca um valor inventado — quando falta configuração ou o
  * resultado não cai em nenhuma faixa.
+ *
+ * PRÉ-VISUALIZAÇÃO apenas: mostra o nível enquanto o utilizador preenche o
+ * formulário e no cartão de residual sugerido. O valor que fica gravado é
+ * sempre o que `public.risco_avaliar` calcula — a mesma regra, do lado do
+ * banco, onde não há como um ecrã esquecer-se de a aplicar.
  */
 export function nivelRiscoFromConfig(
   probabilidade: string | number | null | undefined,
@@ -97,11 +104,30 @@ export function nivelRiscoFromConfig(
   return faixa?.nivel || null;
 }
 
-/** Score máximo tolerado (limite de apetite) declarado na configuração. */
-export function apetiteScoreFromNiveis(niveis?: NivelRisco[] | null): number | null {
+/**
+ * Score máximo tolerado (limite de apetite).
+ *
+ * Vem da coluna `apetite_score`. O caminho antigo — procurar `apetite: true`
+ * dentro do JSON das faixas e, não encontrando, uma faixa chamada "médio" —
+ * devolvia `null` a qualquer empresa que tivesse renomeado as faixas. Nesse
+ * estado, "Acima do apetite" caía num atalho por severidade e o limite
+ * configurado deixava de valer, sem nada no ecrã dizer isso.
+ */
+export function apetiteScoreDaConfig(config?: MatrizConfiguracao | null): number | null {
+  if (!config) return null;
+  if (typeof config.apetite_score === 'number') return config.apetite_score;
+  const niveis = config.niveis_risco;
   if (!niveis || niveis.length === 0) return null;
-  const norm = (s?: string) =>
-    (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  const lvl = niveis.find((n) => n.apetite) || niveis.find((n) => norm(n.nivel) === 'medio');
-  return lvl ? lvl.max : null;
+  const marcado = niveis.find((n) => n.apetite);
+  if (marcado) return marcado.max;
+  // Sem marcação: a segunda faixa a contar de baixo — mesmo critério do backfill.
+  const ordenadas = [...niveis].sort((a, b) => a.min - b.min);
+  return (ordenadas[1] ?? ordenadas[0])?.max ?? null;
+}
+
+/** Rótulo da faixa correspondente ao limite de apetite — o da empresa, não "Médio". */
+export function apetiteLabelDaConfig(config?: MatrizConfiguracao | null): string | null {
+  const score = apetiteScoreDaConfig(config);
+  if (score === null) return null;
+  return config?.niveis_risco?.find((n) => n.max === score)?.nivel ?? null;
 }

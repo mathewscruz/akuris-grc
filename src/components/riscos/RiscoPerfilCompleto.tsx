@@ -15,9 +15,10 @@ import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import {
-  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, type Severity,
+  initials, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, type Severity,
 } from '@/components/riscos/risk-utils';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
+import { severidadeRisco } from '@/lib/metrics/riscos';
 
 /** Variável de cor da severidade para o fundo levíssimo do painel. */
 const SEV_TINT: Record<Severity, string> = {
@@ -36,6 +37,8 @@ import { IconEdit, IconClose, IconShieldCheck, IconShield, IconArrowRight, IconM
 interface Risco {
   id: string; nome: string; descricao?: string; status: string;
   nivel_risco_inicial: string; nivel_risco_residual?: string | null;
+  score_inicial?: number | null; score_residual?: number | null; score_efetivo?: number | null;
+  severidade_inicial?: string | null; severidade_residual?: string | null; severidade_efetiva?: string | null;
   probabilidade_inicial?: string; impacto_inicial?: string;
   probabilidade_residual?: string; impacto_residual?: string;
   impacto_financeiro?: number | null;
@@ -72,12 +75,13 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
   const { t } = useLanguage();
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
-  const inicialScore = useMemo(() => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial), [risco]);
-  const residualScore = useMemo(() => scoreFromPI(risco?.probabilidade_residual, risco?.impacto_residual), [risco]);
+  const inicialScore = useMemo(() => risco?.score_inicial ?? 0, [risco]);
+  const residualScore = useMemo(() => risco?.score_residual ?? 0, [risco]);
 
   if (!risco) return null;
 
-  const sevAtual = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
+  const sevCanonica = severidadeRisco(risco);
+  const sevAtual: Severity = sevCanonica === 'indefinido' ? 'baixo' : sevCanonica;
   const scoreAtual = residualScore || inicialScore;
   const sla = slaFromRevisao(risco.data_proxima_revisao);
   const exposicao = financialExposure(risco.impacto_financeiro, risco.probabilidade_residual ?? risco.probabilidade_inicial);
@@ -138,7 +142,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <div className="flex items-center gap-4">
               <ScoreRing score={scoreAtual} sev={sevAtual} size={84} />
               <div className="min-w-0 flex flex-col items-start gap-1.5">
-                <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                <StatusBadge {...resolveNivelRiscoTone(sevAtual)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
                 <span title={isError ? (detailError instanceof Error ? detailError.message : t('sweepRiscos.riscos.detail.falhaCarregarDetalhes')) : statusCoerente.motivo ?? undefined}>

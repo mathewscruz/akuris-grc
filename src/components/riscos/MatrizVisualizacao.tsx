@@ -24,9 +24,9 @@ interface Matriz {
 interface Risco {
   id: string;
   nome: string;
-  probabilidade_inicial: string;
-  impacto_inicial: string;
-  nivel_risco_inicial: string;
+  probabilidade_inicial: number | null;
+  impacto_inicial: number | null;
+  nivel_risco_inicial: string | null;
 }
 
 interface Props {

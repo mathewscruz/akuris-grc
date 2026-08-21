@@ -21,8 +21,8 @@ interface Props {
 
 interface HistoricoAvaliacao {
   id: string;
-  probabilidade: string;
-  impacto: string;
+  probabilidade: number | null;
+  impacto: number | null;
   nivel_risco: string;
   tipo: string;
   observacoes: string | null;

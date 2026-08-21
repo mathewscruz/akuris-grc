@@ -98,9 +98,10 @@ export function ResidualSugeridoCard({
       const { error } = await supabase
         .from('riscos')
         .update({
-          probabilidade_residual: String(sugestao.probabilidade),
-          impacto_residual: String(sugestao.impacto),
-          nivel_risco_residual: nivelSugerido,
+          probabilidade_residual: sugestao.probabilidade,
+          impacto_residual: sugestao.impacto,
+          // `nivel_risco_residual` é do trigger — enviá-lo daqui seria abrir
+          // outra vez a porta a um rótulo que a matriz não confirma.
           mitigacao_snapshot: {
             fingerprint,
             fator: resumo.fator,

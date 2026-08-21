@@ -5,7 +5,7 @@
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
-import { relativeShort, scoreFromMatriz, severityFromScoreConfig, shortRiskId } from '@/components/riscos/risk-utils';
+import { relativeShort, scoreFromMatriz, severidadePrevista, shortRiskId } from '@/components/riscos/risk-utils';
 import type { MatrizConfiguracao } from '@/components/riscos/matriz-config';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconClose } from '@/components/icons';
@@ -36,7 +36,7 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, co
   const score = scoreFromMatriz(cell.p, cell.i, config?.metodo_calculo);
   // Severidade derivada das faixas da matriz ativa (AKURIS QA-061).
   const faixa = config?.niveis_risco?.find((n) => score >= n.min && score <= n.max) ?? null;
-  const sev = severityFromScoreConfig(score, config?.niveis_risco);
+  const sev = severidadePrevista(score, config?.niveis_risco) ?? 'baixo';
   const nivelLabel = {
     medio: t('riscosVisoes.matrix.heatmapCellPanel.nivel.medio'),
     critico: t('riscosVisoes.matrix.heatmapCellPanel.nivel.critico'),

@@ -28,8 +28,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   initials,
-  scoreFromPI,
-  severityFromNivel,
   shortRiskId,
   slaFromRevisao,
   getSlaLabels,
@@ -59,6 +57,7 @@ import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/componen
 import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconChevron, IconEdit, IconClose, IconView, IconWarning, IconAdd, IconExternal, IconShieldCheck, IconShield, IconHistory, IconArrowRight, IconChevronLeft, IconMoney, IconLayers, IconTag, IconPerson, IconCalendarClock, IconTimer, IconChevronDown, IconMessage, IconExpand } from '@/components/icons';
+import { severidadeRisco } from '@/lib/metrics/riscos';
 
 interface Risco {
   id: string;
@@ -71,6 +70,12 @@ interface Risco {
   impacto_inicial?: string;
   probabilidade_residual?: string;
   impacto_residual?: string;
+  score_inicial?: number | null;
+  score_residual?: number | null;
+  score_efetivo?: number | null;
+  severidade_inicial?: string | null;
+  severidade_residual?: string | null;
+  severidade_efetiva?: string | null;
   impacto_financeiro?: number | null;
   causas?: string;
   consequencias?: string;
@@ -167,11 +172,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
   };
 
   const inicialScore = useMemo(
-    () => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial),
+    () => risco?.score_inicial ?? 0,
     [risco],
   );
   const residualScore = useMemo(
-    () => scoreFromPI(risco?.probabilidade_residual, risco?.impacto_residual),
+    () => risco?.score_residual ?? 0,
     [risco],
   );
 
@@ -193,7 +198,8 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
     ? { status: risco.status, ajustado: false, motivo: null as string | null }
     : deriveRiscoStatus(risco.status, detail?.tratamentos ?? []);
   const tratadoBloqueado = !detailUnavailable && !podeMarcarTratado(detail?.tratamentos ?? []);
-  const sevAtual = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
+  const sevCanonica = severidadeRisco(risco);
+  const sevAtual = sevCanonica === 'indefinido' ? 'baixo' : sevCanonica;
   const scoreAtual = residualScore || inicialScore;
   const exposicao = financialExposure(
     risco.impacto_financeiro,
@@ -374,7 +380,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 );
                 const evo = [...(detail?.historico || [])]
                   .reverse()
-                  .map((h) => scoreFromPI(h.probabilidade, h.impacto))
+                  .map((h) => h.score ?? 0)
                   .filter((s) => s > 0);
                 if (exp === null && evo.length < 2) return null;
                 return (

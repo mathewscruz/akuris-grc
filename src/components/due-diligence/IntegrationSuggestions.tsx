@@ -44,9 +44,11 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
           empresa_id: profile.empresa_id,
           nome: `Risco de Fornecedor - ${assessment.fornecedor_nome}`,
           descricao: t('dueDiligence.integrationSuggestions.riskDescription', { score: scorePorcentagem.toFixed(1) }),
-          probabilidade_inicial: scorePorcentagem < 40 ? 'provavel' : scorePorcentagem < 60 ? 'possivel' : 'improvavel',
-          impacto_inicial: scorePorcentagem < 40 ? 'maior' : scorePorcentagem < 60 ? 'moderado' : 'menor',
-          nivel_risco_inicial: scorePorcentagem < 40 ? 'alto' : scorePorcentagem < 60 ? 'medio' : 'baixo',
+          // Escala numérica; o nível sai do trigger, pela matriz da empresa.
+          // Antes esta integração escrevia 'provavel'/'maior'/'alto' — texto
+          // solto que não correspondia às faixas de matriz nenhuma.
+          probabilidade_inicial: scorePorcentagem < 40 ? 4 : scorePorcentagem < 60 ? 3 : 2,
+          impacto_inicial: scorePorcentagem < 40 ? 4 : scorePorcentagem < 60 ? 3 : 2,
           status: 'identificado',
           data_identificacao: new Date().toISOString()
         });

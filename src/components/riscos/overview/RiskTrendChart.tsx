@@ -1,8 +1,13 @@
 /**
- * RiskTrendChart — evolução do score consolidado nos últimos N meses.
- * Consome a série REAL de useRiskScoreTrend (score vigente em cada mês, a partir
- * do histórico de avaliações), não uma acumulação do score atual. Recharts
- * ComposedChart: gradiente de área + linha + ReferenceLine (apetite).
+ * RiskTrendChart — quantos riscos estão acima do apetite, mês a mês.
+ *
+ * O título era "Evolução do score consolidado" e o número, a soma dos P×I da
+ * carteira, aparecia como "131 / apetite 16" — um agregado comparado com um
+ * limiar por risco. A linha de referência do apetite era estruturalmente
+ * inatingível, e a curva subia sempre que se cadastrava um risco novo.
+ *
+ * Agora a série é uma contagem: zero é a meta, e a linha desce quando um risco
+ * é tratado. O denominador (riscos avaliados) fica ao lado para dar escala.
  */
 import { useMemo, useState } from 'react';
 import {
@@ -24,23 +29,24 @@ import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_FONT } f
 interface Props {
   /** 12 pontos mensais (mais antigo → atual) vindos de useRiskScoreTrend. */
   points: TrendPoint[];
-  apetite?: number | null;
 }
 
 type Range = '3M' | '6M' | '12M';
 
 const RANGE_MONTHS: Record<Range, number> = { '3M': 3, '6M': 6, '12M': 12 };
 
-export function RiskTrendChart({ points, apetite }: Props) {
+export function RiskTrendChart({ points }: Props) {
   const { t } = useLanguage();
   const [range, setRange] = useState<Range>('6M');
 
   const data = useMemo(() => {
     const months = RANGE_MONTHS[range];
-    return (points || []).slice(-months).map((p) => ({ label: p.label, score: p.score }));
+    return (points || []).slice(-months);
   }, [points, range]);
 
-  const currentScore = data.length ? data[data.length - 1].score : 0;
+  const atual = data.length ? data[data.length - 1] : null;
+  const anterior = data.length > 1 ? data[data.length - 2] : null;
+  const delta = atual && anterior ? atual.acimaApetite - anterior.acimaApetite : null;
 
   return (
     <div className="bg-card border border-border rounded-lg p-5">
@@ -50,10 +56,21 @@ export function RiskTrendChart({ points, apetite }: Props) {
             {t('riscosVisoes.overview.riskTrendChart.titulo')}
           </div>
           <div className="text-xl font-semibold tabular-nums tracking-tight mt-1">
-            {currentScore}
-            {apetite ? (
-              <span className="text-sm text-muted-foreground font-normal"> / {t('riscosVisoes.overview.riskTrendChart.apetite')} {apetite}</span>
-            ) : null}
+            {atual?.acimaApetite ?? 0}
+            <span className="text-sm text-muted-foreground font-normal">
+              {' '}
+              {t('riscosVisoes.overview.riskTrendChart.deTotal', { total: atual?.total ?? 0 })}
+            </span>
+            {delta !== null && delta !== 0 && (
+              <span
+                className={cn(
+                  'ml-2 text-xs font-medium tabular-nums',
+                  delta < 0 ? 'text-success' : 'text-destructive',
+                )}
+              >
+                {delta > 0 ? `+${delta}` : delta}
+              </span>
+            )}
           </div>
         </div>
         <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-micro">
@@ -89,21 +106,21 @@ export function RiskTrendChart({ points, apetite }: Props) {
               tickLine={false}
               tick={{ fontSize: CHART_FONT.axis, fill: CHART_AXIS }}
             />
-            <YAxis hide />
-            {apetite ? (
-              <ReferenceLine
-                y={apetite}
-                stroke={CHART_AXIS}
-                strokeDasharray="4 4"
-                strokeWidth={1.2}
-                label={{
-                  value: t('riscosVisoes.overview.riskTrendChart.apetite'),
-                  fontSize: CHART_FONT.axis,
-                  fill: CHART_AXIS,
-                  position: 'right',
-                }}
-              />
-            ) : null}
+            <YAxis hide domain={[0, 'auto']} allowDecimals={false} />
+            {/* A meta é zero — a única referência que faz sentido numa contagem
+                de excedentes. */}
+            <ReferenceLine
+              y={0}
+              stroke={CHART_AXIS}
+              strokeDasharray="4 4"
+              strokeWidth={1.2}
+              label={{
+                value: t('riscosVisoes.overview.riskTrendChart.meta'),
+                fontSize: CHART_FONT.axis,
+                fill: CHART_AXIS,
+                position: 'right',
+              }}
+            />
             <RTooltip
               contentStyle={{
                 background: 'hsl(var(--card))',
@@ -116,7 +133,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
             />
             <Area
               type="monotone"
-              dataKey="score"
+              dataKey="acimaApetite"
               fill="url(#riskTrendGrad)"
               fillOpacity={CHART_AREA_OPACITY}
               stroke="none"
@@ -124,7 +141,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
             />
             <Line
               type="monotone"
-              dataKey="score"
+              dataKey="acimaApetite"
               stroke={chartSeries(0)}
               strokeWidth={2}
               dot={{ r: 3, fill: 'hsl(var(--card))', stroke: chartSeries(0), strokeWidth: 1.6 }}

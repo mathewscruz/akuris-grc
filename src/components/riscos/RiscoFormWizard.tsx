@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { financialExposure } from './risk-utils';
+import { nivelRiscoFromConfig, type MatrizConfiguracao } from './matriz-config';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -301,37 +302,19 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     }
   };
 
-  const calcularNivelRisco = (probabilidade: string, impacto: string, metodoCalculo: string = 'multiplicacao'): string => {
-    if (!selectedMatriz?.configuracao || !probabilidade || !impacto) return '';
+  /**
+   * Pré-visualização do nível enquanto se preenche. Era uma cópia local da
+   * mesma aritmética que vive em `nivelRiscoFromConfig` — e o que ia para o
+   * banco vinha desta cópia. Hoje o valor gravado é sempre o do trigger
+   * `trg_risco_calcular`; isto aqui só mostra.
+   */
+  const configMatriz = (selectedMatriz?.configuracao ?? null) as MatrizConfiguracao | null;
 
-    const probValue = parseInt(probabilidade);
-    const impactValue = parseInt(impacto);
-    
-    if (isNaN(probValue) || isNaN(impactValue)) return '';
-    
-    const resultado = metodoCalculo === 'multiplicacao' 
-      ? probValue * impactValue
-      : probValue + impactValue;
+  const nivelInicialCalculado =
+    nivelRiscoFromConfig(watchProbabilidade, watchImpacto, configMatriz) || '';
 
-    const config = selectedMatriz.configuracao as any;
-    const nivel = config.niveis_risco?.find((n: any) => 
-      resultado >= n.min && resultado <= n.max
-    );
-
-    return nivel?.nivel || '';
-  };
-
-  const nivelInicialCalculado = calcularNivelRisco(
-    watchProbabilidade, 
-    watchImpacto,
-    (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
-  );
-
-  const nivelResidualCalculado = calcularNivelRisco(
-    watchProbabilidadeResidual || '', 
-    watchImpactoResidual || '',
-    (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
-  );
+  const nivelResidualCalculado =
+    nivelRiscoFromConfig(watchProbabilidadeResidual, watchImpactoResidual, configMatriz) || '';
 
   /**
    * Reavaliar (probabilidade, impacto ou controlos) invalida o aceite vigente.
@@ -422,24 +405,20 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     setLoading(true);
 
     try {
-      const nivelInicial = calcularNivelRisco(
-        data.probabilidade_inicial, 
-        data.impacto_inicial,
-        (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
+      // O nível não é enviado: `trg_risco_calcular` calcula-o a partir de
+      // probabilidade × impacto e da matriz vigente. Mandá-lo daqui era a via
+      // por onde entravam os rótulos que depois divergiam da matriz.
+      const nivelInicial = nivelRiscoFromConfig(
+        data.probabilidade_inicial, data.impacto_inicial, configMatriz,
       );
-
       if (!nivelInicial) {
         toast.error(t('fin.riscos.wizard.erroCalculoNivel'));
         setLoading(false);
         return;
       }
-      const nivelResidual = data.probabilidade_residual && data.impacto_residual 
-        ? calcularNivelRisco(
-            data.probabilidade_residual, 
-            data.impacto_residual,
-            (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
-          )
-        : null;
+      const nivelResidual = nivelRiscoFromConfig(
+        data.probabilidade_residual, data.impacto_residual, configMatriz,
+      );
 
       // Se aceite marcado: NÃO marcar aceito=true, enviar para aprovação
       const isNovoAceite = data.aceito && (!risco?.status_aceite || risco?.status_aceite === 'rejeitado');
@@ -451,14 +430,12 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         ...(codigoManual ? { codigo: codigoManual } : {}),
         descricao: data.descricao,
         empresa_id: profile.empresa_id,
-        matriz_id: data.matriz_id || null,
+        // `matriz_id` e os níveis são preenchidos pelo trigger.
         categoria_id: data.categoria_id || null,
-        probabilidade_inicial: data.probabilidade_inicial,
-        impacto_inicial: data.impacto_inicial,
-        nivel_risco_inicial: nivelInicial,
-        probabilidade_residual: data.probabilidade_residual || null,
-        impacto_residual: data.impacto_residual || null,
-        nivel_risco_residual: nivelResidual,
+        probabilidade_inicial: Number(data.probabilidade_inicial),
+        impacto_inicial: Number(data.impacto_inicial),
+        probabilidade_residual: data.probabilidade_residual ? Number(data.probabilidade_residual) : null,
+        impacto_residual: data.impacto_residual ? Number(data.impacto_residual) : null,
         status: invalidarAceite ? 'em_revisao' : data.status,
         responsavel: data.responsavel || null,
         controles_existentes: data.controles_existentes || null,
@@ -575,8 +552,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           {
             risco_id: riscoId,
             empresa_id: profile.empresa_id,
-            probabilidade: data.probabilidade_inicial,
-            impacto: data.impacto_inicial,
+            probabilidade: Number(data.probabilidade_inicial),
+            impacto: Number(data.impacto_inicial),
             nivel_risco: nivelInicial,
             tipo: 'inicial',
             avaliado_por: profile.user_id,
@@ -585,8 +562,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           ...(nivelResidual ? [{
             risco_id: riscoId,
             empresa_id: profile.empresa_id,
-            probabilidade: data.probabilidade_residual!,
-            impacto: data.impacto_residual!,
+            probabilidade: Number(data.probabilidade_residual),
+            impacto: Number(data.impacto_residual),
             nivel_risco: nivelResidual,
             tipo: 'residual',
             avaliado_por: profile.user_id,

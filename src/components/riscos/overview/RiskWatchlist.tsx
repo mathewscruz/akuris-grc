@@ -8,28 +8,38 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
-import { severityFromNivel } from '@/components/riscos/risk-utils';
-import type { FaixaMatriz } from '@/lib/metrics/riscos';
+import {
+  severidadeRisco,
+  isAcimaDoApetite,
+  scoreRisco,
+  type FaixaMatriz,
+} from '@/lib/metrics/riscos';
+import { deriveRiscoStatus } from '@/components/riscos/risk-status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconTime, IconChevron, IconArrowRight } from '@/components/icons';
-import {
-  initials,
-  isAcimaApetite,
-  relativeShort,
-  scoreFromPI,
-  shortRiskId,
-} from '@/components/riscos/risk-utils';
+import { initials, relativeShort, shortRiskId } from '@/components/riscos/risk-utils';
+
+/** Status coerente com a evidência de tratamentos (a mesma regra da tabela). */
+const statusExibido = (r: { status: string; tratamentos_requeridos?: number; tratamentos_concluidos?: number }) =>
+  deriveRiscoStatus(r.status, {
+    requeridos: r.tratamentos_requeridos ?? 0,
+    concluidos: r.tratamentos_concluidos ?? 0,
+  }).status;
 
 interface Risco {
   id: string;
   nome: string;
   status: string;
+  tratamentos_requeridos?: number;
+  tratamentos_concluidos?: number;
   nivel_risco_inicial: string;
   nivel_risco_residual?: string | null;
-  probabilidade_inicial?: string;
-  impacto_inicial?: string;
-  probabilidade_residual?: string;
-  impacto_residual?: string;
+  score_efetivo?: number | null;
+  score_inicial?: number | null;
+  score_residual?: number | null;
+  severidade_efetiva?: string | null;
+  severidade_inicial?: string | null;
+  severidade_residual?: string | null;
   responsavel_nome?: string | null;
   responsavel_foto?: string | null;
   categoria?: { nome: string } | null;
@@ -55,12 +65,8 @@ export function RiskWatchlist({ riscos, totalCount, apetiteScore, faixas, onOpen
     // argumento, e a função lê o segundo argumento como limite de apetite. A
     // regra virava "score > posição na lista": um risco Crítico de score 20 na
     // posição 30 desaparecia da lista de prioridades.
-    .filter((r) => isAcimaApetite(r, apetiteScore))
-    .sort((a, b) => {
-      const sa = scoreFromPI(a.probabilidade_residual || a.probabilidade_inicial, a.impacto_residual || a.impacto_inicial);
-      const sb = scoreFromPI(b.probabilidade_residual || b.probabilidade_inicial, b.impacto_residual || b.impacto_inicial);
-      return sb - sa;
-    })
+    .filter((r) => isAcimaDoApetite(r, apetiteScore))
+    .sort((a, b) => (scoreRisco(b) ?? 0) - (scoreRisco(a) ?? 0))
     .slice(0, 5);
 
   return (
@@ -90,7 +96,7 @@ export function RiskWatchlist({ riscos, totalCount, apetiteScore, faixas, onOpen
         <ul>
           {watchlist.map((r, idx) => {
             const nivel = r.nivel_risco_residual || r.nivel_risco_inicial;
-            const sev = severityFromNivel(nivel, faixas);
+            const sev = severidadeRisco(r, faixas);
             const sevDot =
               sev === 'critico' ? 'bg-destructive' :
               sev === 'alto' ? 'bg-warning' :
@@ -99,10 +105,7 @@ export function RiskWatchlist({ riscos, totalCount, apetiteScore, faixas, onOpen
               sev === 'critico' ? 'ring-destructive/20' :
               sev === 'alto' ? 'ring-warning/25' :
               sev === 'medio' ? 'ring-warning/15' : 'ring-success/25';
-            const score = scoreFromPI(
-              r.probabilidade_residual || r.probabilidade_inicial,
-              r.impacto_residual || r.impacto_inicial,
-            );
+            const score = scoreRisco(r);
             return (
               <li
                 key={r.id}
@@ -123,11 +126,14 @@ export function RiskWatchlist({ riscos, totalCount, apetiteScore, faixas, onOpen
                     </span>
                   </div>
                 </div>
-                <StatusBadge {...resolveNivelRiscoTone(nivel)}>
-                  {formatStatus(nivel)} · {score}
+                <StatusBadge {...resolveNivelRiscoTone(sev)}>
+                  {formatStatus(nivel)}{score !== null ? ` · ${score}` : ''}
                 </StatusBadge>
-                <StatusBadge {...resolveRiscoStatusTone(r.status)}>
-                  {formatStatus(r.status)}
+                {/* Status coerente com os tratamentos, como na tabela. A
+                    watchlist lia `r.status` cru: o mesmo risco aparecia
+                    "Tratado" aqui e "Analisado" na aba ao lado. */}
+                <StatusBadge {...resolveRiscoStatusTone(statusExibido(r))}>
+                  {formatStatus(statusExibido(r))}
                 </StatusBadge>
                 <div className="inline-flex items-center gap-2 text-xs text-foreground/85">
                   <Avatar className="h-6 w-6">

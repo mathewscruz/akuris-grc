@@ -1,54 +1,66 @@
 /**
- * useRiskScoreTrend — série temporal REAL do score de risco consolidado.
+ * useRiskScoreTrend — evolução da exposição da carteira, mês a mês.
  *
- * Diferente da versão anterior (que somava o score ATUAL de cada risco em todos
- * os meses desde a criação — logo nunca mostrava redução), aqui o score de cada
- * mês reflete a avaliação vigente naquele momento:
- *   score(risco, mês M) = P×I da avaliação mais recente com created_at ≤ fim de M
- *                          (fallback: P×I inicial do risco, sua linha de base).
- * Assim, quando um risco é reavaliado para baixo, a curva realmente cai no mês
- * da reavaliação. Fonte: riscos_historico_avaliacoes.
+ * A métrica mudou. Antes esta série era a SOMA dos P×I de todos os riscos, e o
+ * gráfico desenhava por cima uma linha de referência com o limite de apetite,
+ * que é um limiar POR RISCO: o cabeçalho lia-se "131 / apetite 16" e a linha
+ * ficava colada ao eixo, permanentemente ultrapassada. Uma soma também sobe só
+ * por se cadastrarem riscos — cresce quando a gestão de risco está a funcionar.
+ *
+ * O painel tinha ainda uma terceira métrica, um índice 0–100 ponderado por
+ * severidade, que era uma média: acrescentar riscos baixos MELHORAVA o número.
+ *
+ * Passa a ser uma só, e a que o conselho pergunta: **quantos riscos estão
+ * acima do apetite**. Cada ponto usa a avaliação vigente naquele mês
+ * (`riscos_historico_avaliacoes`), por isso tratar um risco faz a curva descer.
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { scoreFromPI } from '@/components/riscos/risk-utils';
+import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
+import { apetiteScoreDaConfig } from '@/components/riscos/matriz-config';
 
 const MONTH_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 export interface TrendPoint {
   label: string;
-  score: number;
-  count: number;
+  /** Riscos acima do apetite no fim daquele mês. */
+  acimaApetite: number;
+  /** Riscos avaliados existentes no fim daquele mês — o denominador. */
+  total: number;
 }
 
 interface RiscoBase {
   id: string;
   created_at: string;
-  probabilidade_inicial: string | null;
-  impacto_inicial: string | null;
+  score_inicial: number | null;
 }
 
 interface Avaliacao {
   risco_id: string;
   created_at: string;
-  probabilidade: string | null;
-  impacto: string | null;
+  score: number | null;
+  tipo: string | null;
 }
 
-/** Retorna 12 pontos mensais (mais antigo → atual). O gráfico recorta a janela desejada. */
+/** Entre duas avaliações do mesmo instante, a residual é a que vigora. */
+const ordemDoTipo = (tipo?: string | null) => (tipo === 'residual' ? 1 : 0);
+
+/** Retorna 12 pontos mensais (mais antigo → atual). O gráfico recorta a janela. */
 export function useRiskScoreTrend() {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
+  const { data: matriz } = useMatrizConfigEmpresa();
+  const apetite = apetiteScoreDaConfig(matriz);
 
   return useQuery({
-    queryKey: ['risco-score-trend', empresaId],
+    queryKey: ['risco-score-trend', empresaId, apetite],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<TrendPoint[]> => {
       const { data: riscos, error } = await supabase
         .from('riscos')
-        .select('id, created_at, probabilidade_inicial, impacto_inicial')
+        .select('id, created_at, score_inicial')
         .eq('empresa_id', empresaId!);
       if (error) throw error;
 
@@ -59,52 +71,56 @@ export function useRiskScoreTrend() {
       if (ids.length > 0) {
         const { data: hist } = await supabase
           .from('riscos_historico_avaliacoes')
-          .select('risco_id, created_at, probabilidade, impacto')
+          .select('risco_id, created_at, score, tipo')
           .in('risco_id', ids)
           .order('created_at', { ascending: true });
         historico = (hist || []) as Avaliacao[];
       }
 
-      // Avaliações agrupadas por risco (já ordenadas asc por created_at)
       const histByRisco = new Map<string, Avaliacao[]>();
       historico.forEach((h) => {
         const arr = histByRisco.get(h.risco_id) || [];
         arr.push(h);
         histByRisco.set(h.risco_id, arr);
       });
+      // O formulário grava inerente e residual no mesmo `insert`, com carimbo
+      // igual ao microssegundo: sem este desempate a curva mostra o risco antes
+      // do tratamento no mês em que ele foi tratado.
+      histByRisco.forEach((lista) =>
+        lista.sort((a, b) => {
+          const dt = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return dt !== 0 ? dt : ordemDoTipo(a.tipo) - ordemDoTipo(b.tipo);
+        }),
+      );
 
       const now = new Date();
       const points: TrendPoint[] = [];
       for (let back = 11; back >= 0; back--) {
-        // fim do mês (exclusivo): primeiro dia do mês seguinte
         const monthEnd = new Date(now.getFullYear(), now.getMonth() - back + 1, 1);
         const labelDate = new Date(now.getFullYear(), now.getMonth() - back, 1);
 
+        let acima = 0;
         let total = 0;
-        let count = 0;
         for (const r of riscoList) {
           if (new Date(r.created_at) >= monthEnd) continue; // ainda não existia
-          const avals = histByRisco.get(r.id);
+
           let score: number | null = null;
-          if (avals && avals.length > 0) {
-            // última avaliação com created_at < monthEnd
+          const avals = histByRisco.get(r.id);
+          if (avals?.length) {
             for (let k = avals.length - 1; k >= 0; k--) {
               if (new Date(avals[k].created_at) < monthEnd) {
-                score = scoreFromPI(avals[k].probabilidade, avals[k].impacto);
+                score = avals[k].score;
                 break;
               }
             }
           }
-          if (score === null) {
-            // sem avaliação registrada até o mês → linha de base (P×I inicial)
-            score = scoreFromPI(r.probabilidade_inicial, r.impacto_inicial);
-          }
-          if (score > 0) {
-            total += score;
-            count += 1;
-          }
+          if (score === null) score = r.score_inicial; // linha de base
+
+          if (score === null) continue; // risco por avaliar não conta em nenhum lado
+          total += 1;
+          if (apetite !== null && score > apetite) acima += 1;
         }
-        points.push({ label: MONTH_PT[labelDate.getMonth()], score: total, count });
+        points.push({ label: MONTH_PT[labelDate.getMonth()], acimaApetite: acima, total });
       }
       return points;
     },

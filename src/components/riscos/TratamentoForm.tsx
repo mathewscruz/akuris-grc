@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { UserSelect } from './UserSelect';
 import { Checkbox } from '@/components/ui/checkbox';
-import { severityFromNivel } from './risk-utils';
+import { severidadeRisco } from '@/lib/metrics/riscos';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
@@ -142,7 +142,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         // Gera plano de ação vinculado (rastreabilidade risco → tratamento → ação)
         if (gerarPlano && profile.empresa_id) {
           try {
-            const sev = severityFromNivel(riscoData?.nivel_risco_residual || riscoData?.nivel_risco_inicial);
+            const sev = severidadeRisco(riscoData ?? {});
             const prioridade = sev === 'critico' ? 'alta' : sev === 'alto' ? 'alta' : sev === 'medio' ? 'media' : 'baixa';
             const tituloRisco = riscoData?.nome || 'Risco';
             const { error: planoError } = await supabase.from('planos_acao').insert({

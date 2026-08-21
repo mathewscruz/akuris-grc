@@ -11,7 +11,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 ;
 import { cn } from '@/lib/utils';
 import {
-  severityFromScoreConfig,
+  severidadePrevista,
   scoreFromMatriz,
   shortRiskId,
   toScaleNumber,
@@ -196,7 +196,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
       return [...niveis]
         .sort((a, b) => b.max - a.max)
         .map((n) => {
-          const sev = severityFromScoreConfig(n.max, niveis);
+          const sev = severidadePrevista(n.max, niveis) ?? 'baixo';
           return { key: `${n.nivel}-${n.min}`, label: `${n.nivel} (${n.min}–${n.max})`, cls: SEV_DOT[sev], letter: SEVERITY_LETTER[sev] };
         });
     }
@@ -323,9 +323,11 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                 </div>
                 {imps.map((i) => {
                   const score = scoreFromMatriz(p, i, metodo);
-                  const sev = severityFromScoreConfig(score, niveis);
                   const faixa = niveis?.find((n) => score >= n.min && score <= n.max);
-                  const nivelLabel = faixa?.nivel ?? t(`riscosVisoes.matrix.riskHeatmap.legenda.${sev}`);
+                  // Célula sem faixa: a matriz não cobre este resultado. Fica
+                  // neutra em vez de herdar a cor da faixa mais baixa.
+                  const sev = severidadePrevista(score, niveis) ?? 'baixo';
+                  const nivelLabel = faixa?.nivel ?? t('riscosVisoes.matrix.riskHeatmap.foraDaMatriz');
 
                   const cellRisks = byCell.get(`${p}-${i}`) || [];
                   const isSel = selected?.p === p && selected?.i === i;

@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -7663,17 +7658,23 @@ export type Database = {
           historico_aprovacao: Json | null
           id: string
           impacto_financeiro: number | null
-          impacto_inicial: string
-          impacto_residual: string | null
+          impacto_inicial: number
+          impacto_residual: number | null
           justificativa_aceite: string | null
           matriz_id: string | null
           mitigacao_snapshot: Json | null
-          nivel_risco_inicial: string
+          nivel_risco_inicial: string | null
           nivel_risco_residual: string | null
           nome: string
-          probabilidade_inicial: string
-          probabilidade_residual: string | null
+          probabilidade_inicial: number
+          probabilidade_residual: number | null
           responsavel: string | null
+          score_efetivo: number | null
+          score_inicial: number | null
+          score_residual: number | null
+          severidade_efetiva: string | null
+          severidade_inicial: string | null
+          severidade_residual: string | null
           status: string
           status_aceite: string | null
           status_aprovacao: string | null
@@ -7705,17 +7706,23 @@ export type Database = {
           historico_aprovacao?: Json | null
           id?: string
           impacto_financeiro?: number | null
-          impacto_inicial: string
-          impacto_residual?: string | null
+          impacto_inicial: number
+          impacto_residual?: number | null
           justificativa_aceite?: string | null
           matriz_id?: string | null
           mitigacao_snapshot?: Json | null
-          nivel_risco_inicial: string
+          nivel_risco_inicial?: string | null
           nivel_risco_residual?: string | null
           nome: string
-          probabilidade_inicial: string
-          probabilidade_residual?: string | null
+          probabilidade_inicial: number
+          probabilidade_residual?: number | null
           responsavel?: string | null
+          score_efetivo?: number | null
+          score_inicial?: number | null
+          score_residual?: number | null
+          severidade_efetiva?: string | null
+          severidade_inicial?: string | null
+          severidade_residual?: string | null
           status?: string
           status_aceite?: string | null
           status_aprovacao?: string | null
@@ -7747,17 +7754,23 @@ export type Database = {
           historico_aprovacao?: Json | null
           id?: string
           impacto_financeiro?: number | null
-          impacto_inicial?: string
-          impacto_residual?: string | null
+          impacto_inicial?: number
+          impacto_residual?: number | null
           justificativa_aceite?: string | null
           matriz_id?: string | null
           mitigacao_snapshot?: Json | null
-          nivel_risco_inicial?: string
+          nivel_risco_inicial?: string | null
           nivel_risco_residual?: string | null
           nome?: string
-          probabilidade_inicial?: string
-          probabilidade_residual?: string | null
+          probabilidade_inicial?: number
+          probabilidade_residual?: number | null
           responsavel?: string | null
+          score_efetivo?: number | null
+          score_inicial?: number | null
+          score_residual?: number | null
+          severidade_efetiva?: string | null
+          severidade_inicial?: string | null
+          severidade_residual?: string | null
           status?: string
           status_aceite?: string | null
           status_aprovacao?: string | null
@@ -8074,11 +8087,13 @@ export type Database = {
           created_at: string
           empresa_id: string
           id: string
-          impacto: string
+          impacto: number
           nivel_risco: string
           observacoes: string | null
-          probabilidade: string
+          probabilidade: number
           risco_id: string
+          score: number | null
+          severidade: string | null
           tipo: string
         }
         Insert: {
@@ -8086,11 +8101,13 @@ export type Database = {
           created_at?: string
           empresa_id: string
           id?: string
-          impacto: string
+          impacto: number
           nivel_risco: string
           observacoes?: string | null
-          probabilidade: string
+          probabilidade: number
           risco_id: string
+          score?: number | null
+          severidade?: string | null
           tipo?: string
         }
         Update: {
@@ -8098,11 +8115,13 @@ export type Database = {
           created_at?: string
           empresa_id?: string
           id?: string
-          impacto?: string
+          impacto?: number
           nivel_risco?: string
           observacoes?: string | null
-          probabilidade?: string
+          probabilidade?: number
           risco_id?: string
+          score?: number | null
+          severidade?: string | null
           tipo?: string
         }
         Relationships: [
@@ -8124,6 +8143,7 @@ export type Database = {
       }
       riscos_matriz_configuracao: {
         Row: {
+          apetite_score: number | null
           created_at: string
           escala_impacto: Json
           escala_probabilidade: Json
@@ -8134,6 +8154,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          apetite_score?: number | null
           created_at?: string
           escala_impacto: Json
           escala_probabilidade: Json
@@ -8144,6 +8165,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          apetite_score?: number | null
           created_at?: string
           escala_impacto?: Json
           escala_probabilidade?: Json
@@ -8165,6 +8187,7 @@ export type Database = {
       }
       riscos_matrizes: {
         Row: {
+          ativa: boolean
           created_at: string
           descricao: string | null
           empresa_id: string
@@ -8173,6 +8196,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativa?: boolean
           created_at?: string
           descricao?: string | null
           empresa_id: string
@@ -8181,6 +8205,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativa?: boolean
           created_at?: string
           descricao?: string | null
           empresa_id?: string
@@ -8388,7 +8413,22 @@ export type Database = {
           observacoes?: string | null
           ropa_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ropa_dados_vinculados_dados_pessoais_id_fkey"
+            columns: ["dados_pessoais_id"]
+            isOneToOne: false
+            referencedRelation: "dados_pessoais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ropa_dados_vinculados_ropa_id_fkey"
+            columns: ["ropa_id"]
+            isOneToOne: false
+            referencedRelation: "ropa_registros"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ropa_exercicio_anexos: {
         Row: {
@@ -9212,6 +9252,7 @@ export type Database = {
       }
       criar_matriz_com_configuracao: {
         Args: {
+          p_apetite_score?: number
           p_descricao: string
           p_escala_impacto: Json
           p_escala_probabilidade: Json
@@ -9452,7 +9493,51 @@ export type Database = {
         Args: { review_id_param: string }
         Returns: boolean
       }
+      risco_avaliar: {
+        Args: {
+          p_empresa_id: string
+          p_impacto: number
+          p_probabilidade: number
+        }
+        Returns: {
+          nivel: string
+          score: number
+          severidade: string
+        }[]
+      }
+      risco_escala_numero: { Args: { p_valor: string }; Returns: number }
+      risco_matriz_vigente: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          apetite_score: number
+          escala_impacto: Json
+          escala_probabilidade: Json
+          matriz_id: string
+          metodo_calculo: string
+          niveis_risco: Json
+        }[]
+      }
       risco_pertence_empresa: { Args: { risco_id: string }; Returns: boolean }
+      risco_severidade_da_faixa: {
+        Args: { p_niveis: Json; p_nivel: string }
+        Returns: string
+      }
+      riscos_previsao_reclassificacao: {
+        Args: { p_metodo_calculo?: string; p_niveis_risco: Json }
+        Returns: {
+          codigo: string
+          nivel_atual: string
+          nivel_novo: string
+          nome: string
+          risco_id: string
+        }[]
+      }
+      riscos_recalcular: { Args: never; Returns: number }
+      riscos_recalcular_empresa: {
+        Args: { p_empresa_id: string }
+        Returns: number
+      }
+      ropa_chave_da_base_legal: { Args: { p_texto: string }; Returns: string }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
       unaccent_immutable_fallback: { Args: { p_text: string }; Returns: string }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }

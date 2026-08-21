@@ -19,8 +19,11 @@ export interface RiscoHistoricoItem {
   id: string;
   created_at: string;
   tipo: string;
-  probabilidade: string;
-  impacto: string;
+  probabilidade: number | null;
+  impacto: number | null;
+  /** Score e severidade calculados no banco (migration 20260821100000). */
+  score: number | null;
+  severidade: string | null;
   nivel_risco: string;
   observacoes: string | null;
   avaliado_por: string | null;
@@ -47,7 +50,7 @@ export function useRiscoDetail(riscoId: string | null) {
           .order('created_at', { ascending: false }),
         supabase
           .from('riscos_historico_avaliacoes')
-          .select('id, created_at, tipo, probabilidade, impacto, nivel_risco, observacoes, avaliado_por')
+          .select('id, created_at, tipo, probabilidade, impacto, score, severidade, nivel_risco, observacoes, avaliado_por')
           .eq('risco_id', riscoId!)
           .order('created_at', { ascending: false }),
         supabase

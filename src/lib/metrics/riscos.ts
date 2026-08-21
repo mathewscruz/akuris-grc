@@ -13,7 +13,12 @@ export interface FaixaMatriz {
   cor?: string;
 }
 
-/** Mapeamento por rótulo — cobre dados legados e variantes pt-PT/pt-BR. */
+/**
+ * Mapeamento por rótulo — para os módulos que ainda classificam por texto
+ * (`incidentes.criticidade`, `ativos.criticidade`, `controles.criticidade`).
+ *
+ * Riscos já NÃO passa por aqui: tem coluna canónica no banco.
+ */
 const LABEL_SEVERIDADE: Record<string, Severidade> = {
   critico: 'critico',
   critica: 'critico',
@@ -39,6 +44,10 @@ const LABEL_SEVERIDADE: Record<string, Severidade> = {
 /**
  * Severidade a partir das faixas da matriz activa: a posição da faixa manda
  * (última faixa = crítico), independentemente do rótulo escolhido pela empresa.
+ *
+ * Esta é a MESMA aritmética que `public.risco_severidade_da_faixa` no banco.
+ * As duas existem porque o formulário de matriz precisa pré-visualizar a
+ * classificação antes de gravar; a verdade gravada vem sempre do banco.
  */
 export const severidadeDeFaixas = (
   nivel: string | null | undefined,
@@ -62,6 +71,14 @@ export const severidadeDeFaixas = (
 };
 
 export interface RiscoLike {
+  /** Coluna canónica: 'baixo' | 'medio' | 'alto' | 'critico'. Escrita só pelo trigger. */
+  severidade_efetiva?: string | null;
+  severidade_inicial?: string | null;
+  severidade_residual?: string | null;
+  score_efetivo?: number | null;
+  score_inicial?: number | null;
+  score_residual?: number | null;
+  /** Rótulo da empresa ("Crítico", "Extremo", "Intolerável"). Só para exibir. */
   nivel_risco_inicial?: string | null;
   nivel_risco_residual?: string | null;
   aceito?: boolean | null;
@@ -69,25 +86,28 @@ export interface RiscoLike {
   data_proxima_revisao?: string | null;
 }
 
+const canonica = (v?: string | null): Severidade | null => {
+  const s = norm(v);
+  return s === 'critico' || s === 'alto' || s === 'medio' || s === 'baixo' ? s : null;
+};
+
 /**
  * Severidade do risco: **residual quando existe, senão inerente**.
  *
- * O comentario antigo aqui dizia "inerente — é a usada nos cartões e nas
- * listas", e ja nao era verdade: a tabela de Riscos, o filtro de nível, o
- * pontinho da linha e as contagens do topo passaram todos a usar
- * `residual || inicial`. O que ficou para tras foi tudo o resto — as
- * estatísticas, o radar do painel e os DOIS geradores de PDF.
+ * Lê `severidade_efetiva`, coluna gerada no banco a partir do score e da
+ * posição da faixa na matriz vigente da empresa. Antes, esta função recebia as
+ * faixas e reclassificava o RÓTULO em cada chamada — e quem esquecia de passar
+ * as faixas obtinha outro resultado. Foi assim que o mesmo risco apareceu como
+ * "Crítico" no cartão e "Alto" no mapa de calor, no mesmo ecrã.
  *
- * O efeito era mensuravel e mau: com os seis riscos da base local, o ecra
- * dizia 0 críticos e 1 alto, e o PDF exportado desse mesmo ecra dizia 1
- * crítico e 4 altos. O utilizador exporta o relatorio do que acabou de ver e
- * recebe numeros contrarios.
- *
- * A decisão de produto já estava tomada no ecra; aqui é só o resto a seguir.
- * Residual é também o que um registo de riscos deve reportar para decisão:
- * o que sobra depois dos controlos.
+ * O parâmetro `faixas` continua aceite (e ignorado quando a coluna existe) para
+ * não obrigar a tocar em todos os chamadores de uma vez, e serve de rede para
+ * linhas ainda não recalculadas.
  */
 export const severidadeRisco = (r: RiscoLike, faixas?: FaixaMatriz[] | null): Severidade =>
+  canonica(r.severidade_efetiva) ??
+  canonica(r.severidade_residual) ??
+  canonica(r.severidade_inicial) ??
   severidadeDeFaixas(r.nivel_risco_residual || r.nivel_risco_inicial, faixas);
 
 /** Nome antigo, mantido porque dois ecrãs o chamam explicitamente. */
@@ -98,7 +118,24 @@ export const severidadeRiscoEfetiva = severidadeRisco;
  * depois lado a lado — a matriz e o detalhe do risco. Nunca para contagem.
  */
 export const severidadeRiscoInerente = (r: RiscoLike, faixas?: FaixaMatriz[] | null): Severidade =>
-  severidadeDeFaixas(r.nivel_risco_inicial, faixas);
+  canonica(r.severidade_inicial) ?? severidadeDeFaixas(r.nivel_risco_inicial, faixas);
+
+/** Score efectivo (residual quando existe). `null` quando o risco não foi avaliado. */
+export const scoreRisco = (r: RiscoLike): number | null =>
+  r.score_efetivo ?? r.score_residual ?? r.score_inicial ?? null;
+
+/**
+ * Risco acima do apetite: score efectivo maior que o limite da matriz vigente.
+ *
+ * Uma regra só, comparando números. A anterior comparava por severidade quando
+ * não conseguia resolver o apetite — e "não conseguia" era o caso de todas as
+ * empresas que tinham renomeado as faixas.
+ */
+export const isAcimaDoApetite = (r: RiscoLike, apetiteScore?: number | null): boolean => {
+  const score = scoreRisco(r);
+  if (score === null || apetiteScore === null || apetiteScore === undefined) return false;
+  return score > apetiteScore;
+};
 
 export const isRiscoCritico = (r: RiscoLike, faixas?: FaixaMatriz[] | null) =>
   severidadeRisco(r, faixas) === 'critico';
@@ -113,7 +150,7 @@ export const isRiscoBaixo = (r: RiscoLike, faixas?: FaixaMatriz[] | null) =>
 export type EstadoRisco = 'aceito' | 'tratado' | 'aberto';
 export const estadoRisco = (r: RiscoLike): EstadoRisco => {
   if (r.aceito) return 'aceito';
-  if (r.nivel_risco_residual) return 'tratado';
+  if (r.severidade_residual || r.nivel_risco_residual) return 'tratado';
   return 'aberto';
 };
 
@@ -134,3 +171,17 @@ export const contarRiscosPorSeveridade = (
   baixos: countBy(riscos, (r) => isRiscoBaixo(r, faixas)),
   indefinidos: countBy(riscos, (r) => severidadeRisco(r, faixas) === 'indefinido'),
 });
+
+/**
+ * Exposição da carteira: quantos riscos estão acima do apetite.
+ *
+ * Substitui os dois "scores consolidados" que existiam — a soma dos P×I de
+ * todos os riscos (que o gráfico comparava com o limite POR risco, "131 /
+ * apetite 16") e o índice 0–100 do painel (uma média ponderada, que MELHORAVA
+ * quando se cadastravam riscos baixos). Contar o que excede o apetite é a única
+ * das três que responde à pergunta que o conselho faz.
+ */
+export const contarAcimaDoApetite = (
+  riscos: RiscoLike[] | null | undefined,
+  apetiteScore?: number | null,
+): number => countBy(riscos, (r) => isAcimaDoApetite(r, apetiteScore));
