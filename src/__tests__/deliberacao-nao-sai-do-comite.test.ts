@@ -92,10 +92,15 @@ describe('a deliberação da apuração não chega a quem denunciou', () => {
       'src/pages/DenunciaConsulta.tsx',
       'src/components/denuncia/CanalLayout.tsx',
       'src/components/denuncia/SolicitarReuniao.tsx',
+      /* Entrou depois: lia a VIEW `denuncias_configuracoes_publicas` direto, e
+         uma view herda a RLS de quem a consulta tal como uma tabela. Trocado
+         pelo RPC `get_canal_config_publica`. A guarda não o via porque só
+         olhava para telas — e o hook é que faz o pedido pelas três. */
+      'src/hooks/useCanalDenuncia.ts',
     ];
 
     const infractoras = publicas.filter((f) =>
-      /\.from\(\s*'denuncias(_[a-z]+)?'\s*\)/.test(readFileSync(f, 'utf8')),
+      /\.from\(\s*'denuncias(_[a-z_]+)?'\s*\)/.test(readFileSync(f, 'utf8')),
     );
 
     expect(
