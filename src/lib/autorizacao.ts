@@ -84,8 +84,13 @@ export function chaveDePlano(modulo: string): string {
  * Sem configurações não há como configurar o que se comprou — incluindo o
  * próprio canal. Bloqueá-la deixaria o cliente com um produto que não
  * consegue ligar.
+ *
+ * `dashboard` e `projetos` também: nenhum plano os vende (não estão em
+ * `MODULOS_DISPONIVEIS`), logo o teto do plano recusava-os a TODA a gente —
+ * até ao plano mais alto. São transversais, não são módulos de catálogo.
  */
-export const SEMPRE_PERMITIDOS = new Set(['configuracoes']);
+export const SEMPRE_PERMITIDOS = new Set(['configuracoes', 'dashboard', 'projetos']);
+
 
 export interface EntradaDeDecisao {
   papel: PapelUtilizador | undefined;
