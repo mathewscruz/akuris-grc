@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconAdd, IconEdit, IconDelete, IconCalendar, IconTest, IconPerson } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconCalendar, IconTest, IconPerson, IconCheck } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +13,18 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resultadoTesteLabel, resultadoTesteTone } from "@/lib/controle-testes";
 import { openStorageFile } from "@/lib/storage";
+import { useAuth } from "@/components/AuthProvider";
 import { useQuery as useProfilesQuery } from "@tanstack/react-query";
 
 interface ControleTeste {
+  estado?: string;
+  atestado_por?: string | null;
+  atestado_em?: string | null;
+  created_by?: string | null;
+  eficacia_desenho?: string | null;
+  eficacia_operacional?: string | null;
+  amostra_total?: number | null;
+  amostra_excecoes?: number | null;
   id: string;
   controle_id: string;
   data_teste: string;
@@ -42,6 +51,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   // Buscar testes do controle
   const { data: testes = [], isLoading } = useQuery({
@@ -67,6 +77,41 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     },
   });
   const nomePorUser = new Map((perfis as any[]).map((p) => [p.user_id, p.nome]));
+
+  /* O tom acompanha o que falta fazer, não o que já se fez. */
+  const tomDoEstado = (estado?: string) =>
+    estado === 'atestado' ? 'success'
+      : estado === 'submetido' ? 'warning'
+      : estado === 'devolvido' ? 'destructive'
+      : 'neutral';
+
+  /*
+    Quem executou não atesta.
+
+    O banco recusa de qualquer forma — mas deixar o botão activo para depois
+    devolver um erro é fazer a pessoa descobrir a regra ao bater nela.
+  */
+  const souExecutor = (teste: ControleTeste) =>
+    !!user?.id && (teste.testador_id === user.id || teste.created_by === user.id);
+
+  const mudarEstado = async (teste: ControleTeste, estado: 'submetido' | 'atestado') => {
+    const { error } = await supabase
+      .from('controles_testes')
+      .update(estado === 'atestado' ? { estado, atestado_por: user?.id ?? null } : { estado })
+      .eq('id', teste.id);
+    if (error) {
+      toast({
+        title: error.message.includes('não pode atestá-lo')
+          ? t('t4.testes.erroAutoAtestacao')
+          : t('controlesAuditorias.tlErroEstado'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['controles_testes'] });
+    queryClient.invalidateQueries({ queryKey: ['controles-stats'] });
+    toast({ title: t(`t4.testes.estado.${estado}`) });
+  };
 
   // Deletar teste
   const deleteTesteMutation = useMutation({
@@ -190,6 +235,14 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/*
+                      O estado antes do resultado: um «eficaz» por atestar e um
+                      «eficaz» atestado não valem o mesmo numa auditoria, e a
+                      lista não distinguia os dois.
+                    */}
+                    <StatusBadge tone={tomDoEstado(teste.estado)}>
+                      {t(`t4.testes.estado.${teste.estado || 'rascunho'}`)}
+                    </StatusBadge>
                     {getResultadoBadge(teste.resultado)}
                   </div>
                 </div>
@@ -219,6 +272,65 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                   <div className="mb-3">
                     <p className="text-sm text-muted-foreground mb-1">{t('controlesAuditorias.tlEvidencias')}</p>
                     <p className="text-sm">{teste.evidencias}</p>
+                  </div>
+                )}
+
+                {(teste.amostra_total != null || teste.eficacia_desenho) && (
+                  <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-micro text-muted-foreground">
+                    {teste.eficacia_desenho && (
+                      <span>
+                        {t('t4.testes.campoDesenho')}:{' '}
+                        {t(`t4.testes.eficacia.${teste.eficacia_desenho}`)}
+                      </span>
+                    )}
+                    {teste.eficacia_operacional && (
+                      <span>
+                        {t('t4.testes.campoOperacional')}:{' '}
+                        {t(`t4.testes.eficacia.${teste.eficacia_operacional}`)}
+                      </span>
+                    )}
+                    {teste.amostra_total != null && (
+                      <span className="tabular-nums">
+                        {t('t4.testes.campoAmostra')}: {teste.amostra_total}
+                        {teste.amostra_excecoes != null
+                          ? ` · ${t('t4.testes.campoExcecoes')}: ${teste.amostra_excecoes}`
+                          : ''}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Quem atestou, ou o convite a atestar. */}
+                {teste.estado === 'atestado' && teste.atestado_em ? (
+                  <p className="mb-3 flex items-center gap-1.5 text-micro font-medium text-state-done">
+                    <IconCheck className="h-3 w-3" strokeWidth={1.5} />
+                    {t('t4.testes.atestadoPor', {
+                      nome: nomePorUser.get(teste.atestado_por || '') || '—',
+                      data: formatDateOnly(teste.atestado_em),
+                    })}
+                  </p>
+                ) : (
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {teste.estado !== 'submetido' && (
+                      <Button variant="outline" size="sm" onClick={() => mudarEstado(teste, 'submetido')}>
+                        {t('t4.testes.submeter')}
+                      </Button>
+                    )}
+                    {teste.estado === 'submetido' && (
+                      <Button
+                        size="sm"
+                        disabled={souExecutor(teste)}
+                        title={souExecutor(teste) ? t('t4.testes.erroAutoAtestacao') : undefined}
+                        onClick={() => mudarEstado(teste, 'atestado')}
+                      >
+                        {t('t4.testes.atestar')}
+                      </Button>
+                    )}
+                    <span className="text-micro text-muted-foreground">
+                      {souExecutor(teste) && teste.estado === 'submetido'
+                        ? t('t4.testes.erroAutoAtestacao')
+                        : t('t4.testes.avisoAtestacao')}
+                    </span>
                   </div>
                 )}
                 

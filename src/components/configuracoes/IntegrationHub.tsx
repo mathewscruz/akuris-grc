@@ -29,10 +29,15 @@ const SlackLogo = () => (
 
 const TeamsLogo = () => (
   <svg viewBox="0 0 48 48" className="w-8 h-8">
-    <path fill="#5059C9" d="M44 22v10c0 2.2-1.8 4-4 4h-4V18h4C42.2 18 44 19.8 44 22z"/>
-    <circle fill="#5059C9" cx="36" cy="12" r="4"/>
-    <circle fill="#7B83EB" cx="28" cy="10" r="6"/>
-    <path fill="#7B83EB" d="M36 18H20c-2.2 0-4 1.8-4 4v14c0 5.5 4.5 10 10 10s10-4.5 10-10V22C36 19.8 34.2 18 32 18z"/>
+    {/* Silhueta à direita e o disco por cima — as duas peças roxas da marca. */}
+    <path fill="#5059C9" d="M44.5 23v9.2c0 2.4-2 4.4-4.4 4.4h-3.9V18.6h3.9c2.4 0 4.4 2 4.4 4.4z"/>
+    <circle fill="#5059C9" cx="37.1" cy="11.4" r="4.2"/>
+    <circle fill="#7B83EB" cx="27.6" cy="9.3" r="6.2"/>
+    <path fill="#7B83EB" d="M33.6 18.6H21.7c-2.3 0-4.2 1.9-4.2 4.2v11.9c0 5.6 4.5 10.1 10.1 10.1s10.1-4.5 10.1-10.1V22.8c0-2.3-1.9-4.2-4.1-4.2z"/>
+    {/* O quadrado com o T — é ele que faz a marca ser o Teams e não um ícone
+        genérico de pessoas. Estava em falta. */}
+    <rect fill="#4B53BC" x="2.5" y="12.5" width="23" height="23" rx="2.2"/>
+    <path fill="#FFFFFF" d="M20.4 18.9H7.6v2.9h4.7v11.3h3.4V21.8h4.7z"/>
   </svg>
 );
 
@@ -50,6 +55,16 @@ const JiraLogo = () => (
         <stop offset="100%" stopColor="#2684ff"/>
       </linearGradient>
     </defs>
+    {/*
+      ATENÇÃO — esta é a única das quatro que continua a não ser a marca certa.
+
+      A cor é da Atlassian, mas o chevron aponta para a esquerda e o da Jira
+      aponta para cima. Tentei corrigir por rotação e por redesenho: a rotação
+      corta fora do viewBox e o redesenho perdeu o chevron. Fica a original,
+      que é a menos errada das três versões, à espera do SVG oficial da
+      Atlassian — adivinhar geometria de marca alheia é como se chega a três
+      versões erradas seguidas.
+    */}
     <path fill="url(#jira-a)" d="M15.52 1.09L1.09 15.52a.75.75 0 000 1.06l14.43 14.43a.75.75 0 001.06 0l7.22-7.22L16.03 16l7.77-7.79-7.22-7.22a.75.75 0 00-1.06.1z"/>
     <path fill="url(#jira-b)" d="M15.52 9.44L9.06 16l6.46 6.56 6.97-6.97a.84.84 0 000-1.18z"/>
   </svg>
@@ -62,13 +77,20 @@ const AzureLogo = () => (
         <stop offset="0%" stopColor="#114a8b"/>
         <stop offset="100%" stopColor="#0669bc"/>
       </linearGradient>
+      <linearGradient id="azure-b" x1="30%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stopColor="#3ccbf4"/>
+        <stop offset="100%" stopColor="#2892df"/>
+      </linearGradient>
       <linearGradient id="azure-c" x1="40%" y1="0%" x2="57%" y2="100%">
         <stop offset="0%" stopColor="#3ccbf4"/>
         <stop offset="100%" stopColor="#2892df"/>
       </linearGradient>
     </defs>
-    <path fill="url(#azure-a)" d="M33.34 6.54H56.8L32.54 88.55a3.58 3.58 0 01-3.4 2.45H7.9a3.58 3.58 0 01-3.39-4.71L28 9a3.58 3.58 0 013.34-2.46z"/>
-    <path fill="url(#azure-c)" d="M33.34 6.54a3.54 3.54 0 00-3.38 2.51L6.51 86.32a3.58 3.58 0 003.39 4.68h22.62a3.73 3.73 0 002.87-2.39l5.06-14.89 17.76 16.6a3.64 3.64 0 002.3.68h24.44l-10.7-30.74-36.08.02L56.8 6.54z"/>
+    <path fill="url(#azure-a)" d="M33.3 6.5h23.5L32.5 88.6a3.6 3.6 0 01-3.4 2.4H7.9a3.6 3.6 0 01-3.4-4.7L28 9a3.6 3.6 0 013.3-2.5z"/>
+    {/* A face do meio — o gradiente `azure-b` era declarado e nunca usado, e
+        o "A" ficava com duas peças em vez de três. */}
+    <path fill="url(#azure-b)" d="M67.8 61.2H30.5a1.7 1.7 0 00-1.1 2.9l24 22.4a3.6 3.6 0 002.5 1h21.4z"/>
+    <path fill="url(#azure-c)" d="M63.9 9a3.6 3.6 0 00-3.4-2.5H33.6a3.6 3.6 0 013.4 2.5l23.5 77.3a3.6 3.6 0 01-3.4 4.7h26.9a3.6 3.6 0 003.4-4.7z"/>
   </svg>
 );
 

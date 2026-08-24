@@ -174,9 +174,29 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         created_by: userData.user?.id,
       };
 
+      /* O vocabulário do evento não é o do banco: a tradução é explícita. */
+      const gravidadePorCriticidade: Record<string, 'baixa' | 'media' | 'alta' | 'critica'> = {
+        baixo: 'baixa', medio: 'media', alto: 'alta', critico: 'critica',
+      };
+
       if (incidente) {
         const { error } = await supabase.from('incidentes').update(incidenteData).eq('id', incidente.id);
         if (error) throw error;
+
+        /*
+          A edição também avisa.
+
+          `incidente_atualizado` estava no catálogo, oferecia-se como caixa no
+          Slack, e nada o disparava.
+        */
+        await notify('incidente_atualizado', {
+          titulo: t('sweepRiscos.incidentes.notifyAtualizado', { titulo: data.titulo }),
+          descricao: data.descricao || undefined,
+          link: `${window.location.origin}/incidentes`,
+          gravidade: gravidadePorCriticidade[data.criticidade!] || 'media',
+          dados: { tipo: data.tipo_incidente, criticidade: data.criticidade },
+        });
+
         toast({ title: t('incidentesComp.incidente.toastUpdated') });
       } else {
         const { error } = await supabase.from('incidentes').insert([incidenteData]);
@@ -185,20 +205,13 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         // A criticidade do incidente é canónica ('baixo'...'critico'); o
         // evento de integração usa o seu próprio vocabulário. A tradução é
         // aqui, e não uma coincidência de grafia entre os dois.
-        const gravidadeMap: Record<string, 'baixa' | 'media' | 'alta' | 'critica'> = {
-          baixo: 'baixa',
-          medio: 'media',
-          alto: 'alta',
-          critico: 'critica',
-        };
-
         await notify(
           data.criticidade === 'critico' ? 'incidente_critico' : 'incidente_criado',
           {
             titulo: t('sweepRiscos.incidentes.notifyNovoIncidente', { titulo: data.titulo }),
             descricao: data.descricao || t('sweepRiscos.incidentes.notifyDescricaoDefault', { tipo: data.tipo_incidente }),
             link: `${window.location.origin}/incidentes`,
-            gravidade: gravidadeMap[data.criticidade] || 'media',
+            gravidade: gravidadePorCriticidade[data.criticidade] || 'media',
             dados: { tipo: data.tipo_incidente, criticidade: data.criticidade },
           }
         );

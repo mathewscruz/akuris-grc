@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { IconEdit, IconDelete, IconDownload, IconUpload, IconCalendar, IconSend, IconFile, IconMessage, IconPerson, IconMail, IconShield, IconActivity, IconLink, IconAttach, IconTest } from '@/components/icons';
+import { IconEdit, IconDelete, IconDownload, IconUpload, IconCalendar, IconSend, IconFile, IconMessage, IconPerson, IconMail, IconShield, IconActivity, IconLink, IconAttach, IconTest, IconChecklist } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -35,6 +35,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 }
 import TestesList from "@/components/controles/TestesList";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PlanosAcaoVinculados } from "@/components/riscos/PlanosAcaoVinculados";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { notificarVarios } from '@/lib/notificar';
@@ -570,6 +571,19 @@ export function ControleDetalheDialog({
                 <IconShield className="h-4 w-4" />
                 {t('vinculoReq.tabRequisitos', { count: requisitosLigados?.length || 0 })}
               </TabsTrigger>
+              {/*
+                O que se faz quando o controlo falha.
+
+                Riscos, Gap Analysis e Auditoria abrem plano de acção com um
+                botão; Controlos não abria nenhum. O componente já existia e já
+                era genérico — faltava ligá-lo. Sem isto, a pessoa que testa e
+                encontra a falha não tinha para onde a encaminhar sem sair do
+                módulo e recriar o contexto à mão.
+              */}
+              <TabsTrigger value="planos" className="flex items-center gap-2">
+                <IconChecklist className="h-4 w-4" strokeWidth={1.5} />
+                {t('controlesAuditorias.cddTabPlanos')}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="comentarios" className="flex flex-col space-y-4">
@@ -822,6 +836,14 @@ export function ControleDetalheDialog({
                   )}
                 </div>
               </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="planos" className="flex flex-col space-y-4">
+              <PlanosAcaoVinculados
+                modulo="controles"
+                registroId={controle.id}
+                registroTitulo={controle.nome}
+              />
             </TabsContent>
           </Tabs>
 

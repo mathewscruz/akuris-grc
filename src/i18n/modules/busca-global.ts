@@ -51,7 +51,9 @@ export const buscaGlobal = {
     },
     planosVinculados: {
       title: 'Planos de ação',
-      empty: 'Nenhum plano de ação ligado a este risco',
+      /* O componente serve riscos E controles desde 22/08 — o texto não
+         pode nomear só um deles. */
+      empty: 'Nenhum plano de ação ligado a este registro',
       create: 'Criar plano de ação',
       count: '{count} plano(s) de ação',
     },
@@ -104,7 +106,7 @@ export const buscaGlobal = {
     },
     planosVinculados: {
       title: 'Action plans',
-      empty: 'No action plan linked to this risk',
+      empty: 'No action plan linked to this record',
       create: 'Create action plan',
       count: '{count} action plan(s)',
     },

@@ -28,6 +28,13 @@ interface ControleTeste {
   evidencia_url?: string | null;
   evidencia_nome?: string | null;
   proxima_avaliacao?: string;
+  estado?: string;
+  eficacia_desenho?: string | null;
+  eficacia_operacional?: string | null;
+  amostra_total?: number | null;
+  amostra_excecoes?: number | null;
+  atestado_por?: string | null;
+  created_by?: string | null;
 }
 
 interface ControlesTestesDialogProps {
@@ -48,6 +55,16 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
     evidencia_url: "",
     evidencia_nome: "",
     proxima_avaliacao: "",
+    /*
+      Desenho e operação são duas perguntas. Um controlo pode estar bem
+      desenhado e não ser executado, ou ser executado à risca e não cobrir o
+      risco — `resultado` sozinho obrigava a escolher qual delas responder.
+    */
+    eficacia_desenho: "nao_avaliado",
+    eficacia_operacional: "nao_avaliado",
+    /* Sem população nem excepções, o teste não se repete nem se audita. */
+    amostra_total: "",
+    amostra_excecoes: "",
   };
   const [formData, setFormData] = useState(emptyForm);
   const [isDirty, setIsDirty] = useState(false);
@@ -79,6 +96,10 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
         evidencia_url: teste.evidencia_url || "",
         evidencia_nome: teste.evidencia_nome || "",
         proxima_avaliacao: teste.proxima_avaliacao || "",
+        eficacia_desenho: teste.eficacia_desenho || "nao_avaliado",
+        eficacia_operacional: teste.eficacia_operacional || "nao_avaliado",
+        amostra_total: teste.amostra_total != null ? String(teste.amostra_total) : "",
+        amostra_excecoes: teste.amostra_excecoes != null ? String(teste.amostra_excecoes) : "",
       });
     } else {
       setFormData(emptyForm);
@@ -142,6 +163,10 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
         evidencia_url: data.evidencia_url || null,
         evidencia_nome: data.evidencia_nome || null,
         proxima_avaliacao: data.proxima_avaliacao || null,
+        eficacia_desenho: data.eficacia_desenho || null,
+        eficacia_operacional: data.eficacia_operacional || null,
+        amostra_total: data.amostra_total === '' ? null : Number(data.amostra_total),
+        amostra_excecoes: data.amostra_excecoes === '' ? null : Number(data.amostra_excecoes),
       };
 
       if (teste) {
@@ -225,6 +250,70 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
               </SelectContent>
             </Select>
           </div>
+
+        {/*
+          Desenho e operação, e a amostra.
+
+          O `resultado` sozinho obrigava a escolher qual das duas perguntas se
+          estava a responder — e um teste sem população nem excepções não se
+          repete nem se audita.
+        */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="eficacia_desenho">{t('t4.testes.campoDesenho')}</Label>
+            <Select
+              value={formData.eficacia_desenho}
+              onValueChange={(v) => update({ eficacia_desenho: v })}
+            >
+              <SelectTrigger id="eficacia_desenho"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="eficaz">{t('t4.testes.eficacia.eficaz')}</SelectItem>
+                <SelectItem value="deficiente">{t('t4.testes.eficacia.deficiente')}</SelectItem>
+                <SelectItem value="nao_avaliado">{t('t4.testes.eficacia.nao_avaliado')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-micro text-muted-foreground">{t('t4.testes.ajudaDesenho')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="eficacia_operacional">{t('t4.testes.campoOperacional')}</Label>
+            <Select
+              value={formData.eficacia_operacional}
+              onValueChange={(v) => update({ eficacia_operacional: v })}
+            >
+              <SelectTrigger id="eficacia_operacional"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="eficaz">{t('t4.testes.eficacia.eficaz')}</SelectItem>
+                <SelectItem value="deficiente">{t('t4.testes.eficacia.deficiente')}</SelectItem>
+                <SelectItem value="nao_avaliado">{t('t4.testes.eficacia.nao_avaliado')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-micro text-muted-foreground">{t('t4.testes.ajudaOperacional')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amostra_total">{t('t4.testes.campoAmostra')}</Label>
+            <Input
+              id="amostra_total"
+              type="number"
+              min={0}
+              value={formData.amostra_total}
+              onChange={(e) => update({ amostra_total: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amostra_excecoes">{t('t4.testes.campoExcecoes')}</Label>
+            <Input
+              id="amostra_excecoes"
+              type="number"
+              min={0}
+              value={formData.amostra_excecoes}
+              onChange={(e) => update({ amostra_excecoes: e.target.value })}
+            />
+            <p className="text-micro text-muted-foreground">{t('t4.testes.ajudaExcecoes')}</p>
+          </div>
+        </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

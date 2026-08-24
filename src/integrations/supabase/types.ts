@@ -2797,49 +2797,76 @@ export type Database = {
       }
       controles_testes: {
         Row: {
+          amostra_excecoes: number | null
+          amostra_total: number | null
+          atestado_em: string | null
+          atestado_por: string | null
           controle_id: string
           created_at: string
           created_by: string | null
           data_teste: string
+          eficacia_desenho: string | null
+          eficacia_operacional: string | null
+          estado: string
           evidencia_nome: string | null
           evidencia_url: string | null
           evidencias: string | null
           id: string
           observacoes: string | null
+          parecer_atestacao: string | null
           proxima_avaliacao: string | null
           resultado: string
+          submetido_em: string | null
           testador: string | null
           testador_id: string | null
           updated_at: string
         }
         Insert: {
+          amostra_excecoes?: number | null
+          amostra_total?: number | null
+          atestado_em?: string | null
+          atestado_por?: string | null
           controle_id: string
           created_at?: string
           created_by?: string | null
           data_teste: string
+          eficacia_desenho?: string | null
+          eficacia_operacional?: string | null
+          estado?: string
           evidencia_nome?: string | null
           evidencia_url?: string | null
           evidencias?: string | null
           id?: string
           observacoes?: string | null
+          parecer_atestacao?: string | null
           proxima_avaliacao?: string | null
           resultado: string
+          submetido_em?: string | null
           testador?: string | null
           testador_id?: string | null
           updated_at?: string
         }
         Update: {
+          amostra_excecoes?: number | null
+          amostra_total?: number | null
+          atestado_em?: string | null
+          atestado_por?: string | null
           controle_id?: string
           created_at?: string
           created_by?: string | null
           data_teste?: string
+          eficacia_desenho?: string | null
+          eficacia_operacional?: string | null
+          estado?: string
           evidencia_nome?: string | null
           evidencia_url?: string | null
           evidencias?: string | null
           id?: string
           observacoes?: string | null
+          parecer_atestacao?: string | null
           proxima_avaliacao?: string | null
           resultado?: string
+          submetido_em?: string | null
           testador?: string | null
           testador_id?: string | null
           updated_at?: string
@@ -9652,6 +9679,22 @@ export type Database = {
         Returns: boolean
       }
       e_do_comite_denuncias: { Args: never; Returns: boolean }
+      eficacia_dos_controles: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          amostra_excecoes: number
+          amostra_total: number
+          atestado_em: string
+          atestado_por: string
+          controle_id: string
+          data_teste: string
+          eficacia_desenho: string
+          eficacia_operacional: string
+          resultado: string
+          testador_id: string
+          ultimo_teste_id: string
+        }[]
+      }
       empresas_do_canal: {
         Args: never
         Returns: {

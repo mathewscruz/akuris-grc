@@ -23,7 +23,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
 import { criticidadeControle, resultadoTeste } from '@/lib/metrics/controles';
 import { severidadeRiscoEfetiva, SEVERIDADES, type Severidade } from '@/lib/metrics/riscos';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
-import { formatMonthYearLabel, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
+import { formatMonthYearLabel, intlLocale, parseDataLocal, formatarDiaParaDB, formatDateOnly } from '@/lib/date-utils';
 import { pct } from '@/lib/metrics/core';
 
 interface RelatoriosDialogProps {
@@ -50,7 +50,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
         .select(`
           *,
           categoria:controles_categorias(nome, cor),
-          testes:controles_testes(resultado, data_teste),
+          testes:controles_testes(resultado, data_teste, estado, eficacia_desenho, eficacia_operacional, amostra_total, amostra_excecoes, testador_id, atestado_por, atestado_em),
           riscos:controles_riscos(*)
         `);
       
@@ -96,6 +96,22 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       return { total, ativos, criticos, preventivos };
     }
   });
+
+  /*
+    O último teste ATESTADO de cada controlo.
+
+    O relatório provava que o controlo EXISTE — nome, tipo, criticidade,
+    estado. A pergunta do auditor é a seguinte: foi testado, quando, por quem,
+    com que resultado, e quem confirmou. Um teste por atestar não entra: sem o
+    segundo par de olhos, é declaração e não prova.
+  */
+  const ultimoAtestado = (c: any) => {
+    const atestados = (c.testes ?? []).filter((t: any) => t.estado === 'atestado');
+    if (atestados.length === 0) return null;
+    return [...atestados].sort((a: any, b: any) =>
+      String(b.data_teste ?? '').localeCompare(String(a.data_teste ?? '')),
+    )[0];
+  };
 
   /** Riscos da empresa e os seus vínculos a controlos — base da cobertura e dos gaps. */
   const { data: riscosCobertura } = useQuery({
@@ -203,17 +219,35 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
 
     if (formato === 'excel') {
       exportCSV(
-        ['Nome', 'Tipo', 'Criticidade', 'Status', 'Frequencia Teste', 'Responsavel'],
-        controles.map((c: any) => [
-          c.nome,
-          formatLabel(c.tipo || ''),
-          formatLabel(c.criticidade || ''),
-          formatLabel(c.status || ''),
-          // As colunas sao `frequencia` e `responsavel_id`. Com os nomes
-          // errados, as duas saiam vazias nas 116 linhas do CSV.
-          formatLabel(c.frequencia || ''),
-          nomePorUtilizador[c.responsavel_id] || '',
-        ]),
+        [
+          'Codigo', 'Nome', 'Tipo', 'Criticidade', 'Status', 'Frequencia', 'Responsavel',
+          // A partir daqui é o que responde ao auditor.
+          'Ultimo teste', 'Resultado', 'Eficacia desenho', 'Eficacia operacional',
+          'Itens testados', 'Excecoes', 'Testado por', 'Atestado por', 'Atestado em',
+        ],
+        controles.map((c: any) => {
+          const teste = ultimoAtestado(c);
+          return [
+            c.codigo || '',
+            c.nome,
+            formatLabel(c.tipo || ''),
+            formatLabel(c.criticidade || ''),
+            formatLabel(c.status || ''),
+            // As colunas sao `frequencia` e `responsavel_id`. Com os nomes
+            // errados, as duas saiam vazias nas 116 linhas do CSV.
+            formatLabel(c.frequencia || ''),
+            nomePorUtilizador[c.responsavel_id] || '',
+            teste ? formatarDiaParaDB(parseDataLocal(teste.data_teste)) : t('controlesAuditorias.rdSemTesteAtestado'),
+            teste ? formatLabel(teste.resultado || '') : '',
+            teste?.eficacia_desenho ? formatLabel(teste.eficacia_desenho) : '',
+            teste?.eficacia_operacional ? formatLabel(teste.eficacia_operacional) : '',
+            teste?.amostra_total ?? '',
+            teste?.amostra_excecoes ?? '',
+            teste ? (nomePorUtilizador[teste.testador_id] || '') : '',
+            teste ? (nomePorUtilizador[teste.atestado_por] || '') : '',
+            teste?.atestado_em ? formatDateOnly(teste.atestado_em) : '',
+          ];
+        }),
         'relatorio_controles'
       );
       toast({ title: t('controlesAuditorias.rdToastCsvExportedTitle'), description: t('controlesAuditorias.rdToastCsvExportedDesc', { count: controles.length }) });
@@ -251,7 +285,12 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
         { text: t('controlesAuditorias.rdPdfColNome'), x: margin + 2 },
         { text: t('controlesAuditorias.rdPdfColTipo'), x: margin + 72 },
         { text: t('controlesAuditorias.rdPdfColCriticidade'), x: margin + 102 },
-        { text: t('controlesAuditorias.rdPdfColStatus'), x: margin + 140 },
+        { text: t('controlesAuditorias.rdPdfColStatus'), x: margin + 128 },
+        /* As três colunas que respondem ao auditor: quando foi testado, com que
+           resultado, e quem confirmou. Sem elas o relatório provava que o
+           controlo existe — nunca que funciona. */
+        { text: t('controlesAuditorias.rdPdfColTeste'), x: margin + 148 },
+        { text: t('controlesAuditorias.rdPdfColAtestado'), x: margin + 172 },
       ], y, margin, contentWidth);
       y += 5;
 
@@ -267,10 +306,22 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
         }
         doc.setFontSize(7);
         doc.setTextColor(AKURIS_COLORS.text);
-        doc.text((c.nome || '').substring(0, 38), margin + 2, y);
-        doc.text(formatLabel(c.tipo || ''), margin + 72, y);
-        doc.text(formatLabel(c.criticidade || ''), margin + 102, y);
-        doc.text(formatLabel(c.status || ''), margin + 140, y);
+        const teste = ultimoAtestado(c);
+        doc.text((c.nome || '').substring(0, 34), margin + 2, y);
+        doc.text(formatLabel(c.tipo || ''), margin + 68, y);
+        doc.text(formatLabel(c.criticidade || ''), margin + 98, y);
+        doc.text(formatLabel(c.status || ''), margin + 128, y);
+
+        if (teste) {
+          doc.text(formatarDiaParaDB(parseDataLocal(teste.data_teste)), margin + 148, y);
+          doc.text((nomePorUtilizador[teste.atestado_por] || '—').substring(0, 16), margin + 172, y);
+        } else {
+          /* Um controlo sem teste atestado tem de saltar à vista no papel: é
+             precisamente a linha sobre a qual o auditor vai perguntar. */
+          doc.setTextColor(190, 70, 70);
+          doc.text(t('controlesAuditorias.rdSemTesteAtestado'), margin + 148, y);
+          doc.setTextColor(AKURIS_COLORS.text);
+        }
         y += 5.5;
       });
 

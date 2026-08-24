@@ -13,7 +13,9 @@ export const INTEGRATION_EVENTS: IntegrationEvent[] = [
   // Incidentes
   { id: 'incidente_criado', label: 'Incidente criado', modulo: 'Incidentes' },
   { id: 'incidente_atualizado', label: 'Incidente atualizado', modulo: 'Incidentes' },
-  { id: 'incidente_resolvido', label: 'Incidente resolvido', modulo: 'Incidentes' },
+  /* Não há `incidente_resolvido`: o produto não tem, hoje, um sítio onde um
+     incidente seja dado por resolvido — o formulário não mexe no estado. Um
+     evento sem ponto de disparo é uma caixa que promete o que não pode dar. */
   { id: 'incidente_critico', label: 'Incidente crítico detectado', modulo: 'Incidentes' },
 
   // Riscos
@@ -46,9 +48,14 @@ export const INTEGRATION_EVENTS: IntegrationEvent[] = [
   { id: 'ativo_criado', label: 'Ativo cadastrado', modulo: 'Ativos' },
   { id: 'ativo_atualizado', label: 'Ativo atualizado', modulo: 'Ativos' },
 
-  // Políticas
-  { id: 'politica_criada', label: 'Política criada', modulo: 'Políticas' },
-  { id: 'politica_atualizada', label: 'Política atualizada', modulo: 'Políticas' },
+  /*
+    Não há eventos de «Políticas».
+
+    Estavam declarados e ofereciam-se como caixas no Slack e no Teams — e não
+    existe módulo de Políticas no produto, só a página pública de privacidade.
+    Uma caixa que se liga para um módulo inexistente é pior do que uma caixa a
+    menos: promete um aviso que nunca podia chegar.
+  */
 
   // Planos de Ação
   { id: 'plano_acao_criado', label: 'Plano de ação criado', modulo: 'Planos de Ação' },
