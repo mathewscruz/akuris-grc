@@ -41,13 +41,16 @@ Deno.serve(async (req) => {
 
     if (action === 'consult') {
       const { empresa_slug, protocolo, codigo } = body;
-      if (!empresa_slug || !protocolo || !codigo) {
+      if (!empresa_slug || !protocolo) {
         return json({ error: 'missing_parameters' }, 400);
       }
+      /* Denúncias anteriores ao código de acompanhamento não têm código
+         nenhum para dar — a RPC aceita-as só com o protocolo. */
+      const codigoLimpo = codigo ? String(codigo).trim() : '';
       const { data, error } = await supabase.rpc('consult_denuncia_publica', {
         p_empresa_slug: String(empresa_slug),
         p_protocolo: String(protocolo),
-        p_tracking_hash: await sha256(String(codigo).trim()),
+        p_tracking_hash: codigoLimpo ? await sha256(codigoLimpo) : '',
       });
       if (error) return json({ error: error.message }, 400);
       if (!data) return json({ error: 'not_found' }, 404);
