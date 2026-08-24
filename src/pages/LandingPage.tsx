@@ -54,6 +54,9 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [demoOpen, setDemoOpen] = useState(false);
+  /* A navegação some abaixo de 1024px e não tinha substituto — numa página de
+     coluna única com âncoras, isso é ficar sem navegação nenhuma. */
+  const [menuAberto, setMenuAberto] = useState(false);
 
   const modules = useMemo(() => buildModules(t), [t]);
   const frameworks = useMemo(() => buildFrameworks(t), [t]);
@@ -68,8 +71,20 @@ const LandingPage = () => {
   const score = useCountUp(87, 1200);
 
   const scrollTo = (id: string) => {
+    /* Fecha a gaveta antes de rolar: deixá-la aberta esconderia justamente o
+       sítio para onde a pessoa acabou de pedir para ir. */
+    setMenuAberto(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  /** As secções da página, num sítio só — barra e gaveta dizem o mesmo. */
+  const SECOES = [
+    { id: "produto", rotulo: t("publico.landing.nav.produto") },
+    { id: "modulos", rotulo: t("publico.landing.nav.modulos") },
+    { id: "frameworks", rotulo: t("publico.landing.nav.frameworks") },
+    { id: "seguranca", rotulo: t("publico.landing.nav.seguranca") },
+    { id: "contato", rotulo: t("publico.landing.nav.contato") },
+  ];
 
   return (
     <div className="lp-root">
@@ -81,24 +96,64 @@ const LandingPage = () => {
       {/* NAV */}
       <header className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="lp-container lp-nav-inner">
-          <a href="#topo" className="flex items-center gap-3" aria-label="Akuris">
-            <img src={akurisLogo} alt="Akuris" className="h-8 w-auto" />
+          <a href="#topo" className="lp-nav-brand" aria-label="Akuris">
+            <img src={akurisLogo} alt="Akuris" />
           </a>
           <nav className="lp-nav-links" aria-label={t("publico.landing.nav.principal")}>
-            <button onClick={() => scrollTo("produto")}>{t("publico.landing.nav.produto")}</button>
-            <button onClick={() => scrollTo("modulos")}>{t("publico.landing.nav.modulos")}</button>
-            <button onClick={() => scrollTo("frameworks")}>{t("publico.landing.nav.frameworks")}</button>
-            <button onClick={() => scrollTo("seguranca")}>{t("publico.landing.nav.seguranca")}</button>
-            <button onClick={() => scrollTo("contato")}>{t("publico.landing.nav.contato")}</button>
+            {SECOES.map((s) => (
+              <button key={s.id} onClick={() => scrollTo(s.id)}>
+                {s.rotulo}
+              </button>
+            ))}
           </nav>
           <div className="lp-nav-cta">
-            <LanguageSelector variant="dark" />
+            <span className="lp-nav-lang">
+              <LanguageSelector variant="dark" />
+            </span>
             <button className="lp-btn lp-btn-ghost" onClick={() => navigate("/auth")}>
               {t("publico.landing.nav.acessar")}
             </button>
             <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
               {t("publico.landing.nav.demo")} <span className="arr">→</span>
             </button>
+            <button
+              type="button"
+              className="lp-nav-toggle"
+              aria-expanded={menuAberto}
+              aria-controls="lp-menu"
+              aria-label={t("publico.landing.nav.menu")}
+              onClick={() => setMenuAberto((a) => !a)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+
+        <div id="lp-menu" className={menuAberto ? "lp-nav-drawer aberto" : "lp-nav-drawer"}>
+          <div className="lp-container">
+            <nav aria-label={t("publico.landing.nav.principal")}>
+              {SECOES.map((s) => (
+                <button key={s.id} onClick={() => scrollTo(s.id)}>
+                  {s.rotulo}
+                </button>
+              ))}
+            </nav>
+            <button
+              className="lp-btn lp-btn-ghost"
+              onClick={() => {
+                setMenuAberto(false);
+                navigate("/auth");
+              }}
+            >
+              {t("publico.landing.nav.acessar")}
+            </button>
+            {/* O idioma sai da barra e vem para cá: é escolha rara, e na barra
+                estava a disputar espaço com o botão que traz a demonstração. */}
+            <div className="lp-nav-drawer-lang">
+              <LanguageSelector variant="dark" />
+            </div>
           </div>
         </div>
       </header>

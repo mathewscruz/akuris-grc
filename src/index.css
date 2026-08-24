@@ -744,6 +744,19 @@ input:-webkit-autofill:focus {
   padding-right: var(--lp-pad);
 }
 
+/*
+  O cabeçalho é `sticky` com 72px de altura e as secções tinham
+  `scroll-margin-top: 0`: clicar em «Frameworks» aterrava a secção no topo do
+  documento, com os primeiros 72px por baixo da barra. Hoje o padding generoso
+  disfarça — mas é sorte, não desenho, e desaparece assim que alguém apertar o
+  espaçamento.
+*/
+.lp-root [id] { scroll-margin-top: 88px; }
+.lp-root { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-root { scroll-behavior: auto; }
+}
+
 .lp-eyebrow {
   font-family: var(--lp-mono);
   font-size: 12px;
@@ -834,6 +847,15 @@ input:-webkit-autofill:focus {
   height: 72px;
   gap: 32px;
 }
+/*
+  O logótipo não se deixa espremer.
+
+  A barra é flex e, no telemóvel, os dois botões de acção ocupavam 299 dos 311
+  pixels disponíveis. Sem `flex-shrink: 0`, o `<a>` da marca era comprimido até
+  LARGURA ZERO: a landing page da marca deixava de mostrar a marca.
+*/
+.lp-nav-brand { flex-shrink: 0; }
+.lp-nav-brand img { display: block; height: 32px; width: auto; }
 .lp-nav-links {
   display: flex;
   align-items: center;
@@ -843,6 +865,80 @@ input:-webkit-autofill:focus {
 }
 .lp-nav-links a:hover, .lp-nav-links button:hover { color: var(--lp-text); }
 .lp-nav-cta { display: flex; align-items: center; gap: 12px; }
+
+/*
+  O menu do telemóvel.
+
+  `.lp-nav-links` desaparecia abaixo de 1024px e nada tomava o lugar: as cinco
+  secções da página ficavam sem porta de entrada em qualquer ecrã pequeno.
+  Numa página de coluna única com navegação por âncora, isso é ficar sem
+  navegação de todo.
+*/
+.lp-nav-toggle {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-r-2);
+  background: transparent;
+  color: var(--lp-text);
+  transition: background .2s ease, border-color .2s ease;
+}
+.lp-nav-toggle:hover { background: rgba(255, 255, 255, 0.05); }
+.lp-nav-toggle span {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform .25s ease, opacity .2s ease;
+}
+.lp-nav-toggle span + span { margin-top: 4px; }
+/* Aberto, os três traços viram um X — o botão diz o que faz a seguir. */
+.lp-nav-toggle[aria-expanded='true'] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.lp-nav-toggle[aria-expanded='true'] span:nth-child(2) { opacity: 0; }
+.lp-nav-toggle[aria-expanded='true'] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+/*
+  A gaveta sai do fluxo, de propósito.
+
+  Enquanto empurrava a página, abri-la deslocava o hero 390px para baixo — e,
+  pior, ao navegar a partir dela o destino saía errado por exactamente essa
+  altura: o `scrollIntoView` media a posição com a gaveta aberta e a gaveta
+  fechava logo a seguir. Em `absolute` não há nada a medir de errado.
+*/
+.lp-nav-drawer {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
+  border-top: 1px solid var(--lp-line);
+  background: rgba(10, 22, 40, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
+}
+.lp-nav-drawer nav { display: grid; padding: 8px 0 16px; }
+.lp-nav-drawer nav button {
+  text-align: left;
+  padding: 14px 0;
+  font-size: 16px;
+  color: var(--lp-text);
+  border-bottom: 1px solid var(--lp-line);
+}
+.lp-nav-drawer nav button:last-child { border-bottom: 0; }
+/* A acção que a barra deixou de ter espaço para mostrar volta aqui dentro. */
+.lp-nav-drawer .lp-btn { width: 100%; justify-content: center; margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-nav-toggle span { transition: none; }
+}
 
 /* HERO */
 .lp-hero {
@@ -892,7 +988,16 @@ input:-webkit-autofill:focus {
 .lp-hero-meta {
   margin-top: 56px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /*
+    `minmax(0, 1fr)` e não `1fr`.
+
+    Com `1fr`, as colunas não descem abaixo do seu min-content — e rótulos como
+    «IMPLANTAÇÃO» impunham uma largura mínima que empurrava a coluna inteira do
+    hero para 356px dentro de um ecrã de 375. O `overflow: hidden` da secção
+    escondia o sintoma: não havia barra lateral, e o título, o parágrafo e os
+    botões ficavam todos decepados 13px antes do fim.
+  */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
   background: var(--lp-line);
   border: 1px solid var(--lp-line);
@@ -1078,12 +1183,24 @@ input:-webkit-autofill:focus {
 .lp-root .lp-section:nth-of-type(even) .lp-hero-meta > div { background: var(--lp-ink-2); }
 .lp-root .lp-section + .lp-section { border-top: 0; }
 .lp-root .lp-section.lp-autonomia { background: var(--lp-ink-0); }
+/*
+  O cabeçalho de secção, sem o vazio ao meio.
+
+  Era `1fr 1.6fr`: uma coluna de ~440px a hospedar um rótulo de 12px, e o título
+  atirado para a direita. Duas consequências, e a segunda é a que importa —
+  o título ficava indentado ~283px em relação ao conteúdo que introduz, a
+  flutuar sobre nada, enquanto os módulos e as tabelas começavam à esquerda.
+
+  Passa a ser uma coluna só, alinhada com o que encabeça. Não é perda de
+  carácter: era exactamente assim que já se comportava abaixo dos 1024px — o
+  desktop é que destoava. O `max-width` mantém o título em duas linhas, que é o
+  ritmo que a serifada em peso 300 pede.
+*/
 .lp-section-head {
   display: grid;
-  grid-template-columns: 1fr 1.6fr;
-  gap: 64px;
+  gap: 8px;
   margin-bottom: 64px;
-  align-items: end;
+  max-width: 760px;
 }
 .lp-section-head h2 {
   font-family: var(--lp-serif);
@@ -1091,7 +1208,7 @@ input:-webkit-autofill:focus {
   font-size: clamp(34px, 4vw, 52px);
   line-height: 1.05;
   letter-spacing: -0.02em;
-  margin: 14px 0 0;
+  margin: 0;
   color: var(--lp-text);
   text-wrap: balance;
 }
@@ -1599,13 +1716,36 @@ input:-webkit-autofill:focus {
   .lp-cta-meta { align-items: flex-start; }
   .lp-foot { grid-template-columns: 1fr 1fr; gap: 32px; }
   .lp-nav-links { display: none; }
+  /* Sai a navegação em linha, entra o botão que a abre. */
+  .lp-nav-toggle { display: flex; flex-direction: column; }
+  .lp-nav-drawer.aberto { display: block; }
+  /*
+    A barra fica com o essencial: marca, o botão que traz a demonstração, e o
+    menu. «Aceder à plataforma» e o seletor de idioma descem para a gaveta —
+    somados, os quatro elementos pediam 380px numa faixa útil de 311.
+  */
+  .lp-nav-inner { gap: 12px; }
+  .lp-nav-cta .lp-btn-ghost { display: none; }
+  .lp-nav-lang { display: none; }
+  .lp-nav-cta .lp-btn-primary { white-space: nowrap; }
+  .lp-nav-drawer-lang { margin-top: 16px; }
 }
 @media (max-width: 640px) {
+  /*
+    32px de cada lado num ecrã de 375 são 17% da largura gastos em margem — e
+    eram eles que não deixavam a barra caber com marca, acção e menu ao mesmo
+    tempo. 20px é a goteira habitual do telemóvel.
+  */
+  .lp-root { --lp-pad: 20px; }
   .lp-hero { padding: 56px 0 32px; }
   .lp-fw-grid { grid-template-columns: repeat(2, 1fr); }
   .lp-flow { grid-template-columns: 1fr; }
   .lp-metrics { grid-template-columns: 1fr; }
   .lp-foot { grid-template-columns: 1fr; }
+  /* Três números lado a lado a 375px não são três números: são três colunas
+     ilegíveis a rebentar a caixa. Empilham. */
+  .lp-hero-meta { grid-template-columns: 1fr; }
+  .lp-section-head { margin-bottom: 40px; }
 }
 
 /* ============================================================

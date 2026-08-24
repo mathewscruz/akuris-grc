@@ -19,6 +19,7 @@ export const publico = {
         contato: 'Contato',
         acessar: 'Acessar plataforma',
         demo: 'Solicitar demo',
+        menu: 'Abrir menu',
       },
       hero: {
         titulo: 'Governança, riscos e\u00a0compliance em um',
@@ -351,6 +352,7 @@ export const publico = {
         contato: 'Contact',
         acessar: 'Sign in',
         demo: 'Request a demo',
+        menu: 'Open menu',
       },
       hero: {
         titulo: 'Governance, risk and\u00a0compliance in a',
