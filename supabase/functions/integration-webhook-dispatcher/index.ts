@@ -216,6 +216,53 @@ function buildJiraPayload(titulo: string, descricao: string | undefined, evento:
   };
 }
 
+/**
+ * ServiceNow — a Table API, e a matriz de prioridade que ela espera.
+ *
+ * O ServiceNow não aceita uma «gravidade»: calcula a prioridade a partir de
+ * `impact` × `urgency`, ambos de 1 a 3. Mandar só um dos dois deixa o outro no
+ * valor por omissão e o chamado entra como P5, que é onde os chamados morrem.
+ *
+ * `correlation_id` é o que evita duplicado: se o mesmo evento do mesmo registo
+ * for despachado duas vezes — um reenvio, uma repetição — a instância sabe que
+ * é o mesmo. Sem ele, cada tentativa abre um chamado novo.
+ */
+function buildServiceNowPayload(titulo: string, descricao: string | undefined, evento: string, gravidade: string | undefined, link: string | undefined, dados: any, timestamp: string | undefined, categoria: string) {
+  const grav = formatGravidade(gravidade);
+  const modulo = extrairModulo(evento);
+  const ts = new Date(timestamp || Date.now()).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+  const MATRIZ: Record<string, { impact: string; urgency: string }> = {
+    critica: { impact: '1', urgency: '1' },
+    alta: { impact: '1', urgency: '2' },
+    media: { impact: '2', urgency: '2' },
+    baixa: { impact: '3', urgency: '3' },
+  };
+  const escala = MATRIZ[(gravidade || 'media').toLowerCase()] || MATRIZ.media;
+
+  let corpo = `${descricao || 'Sem descrição'}\n\n`;
+  corpo += `--- Detalhes do evento Akuris ---\n`;
+  corpo += `Módulo: ${modulo}\n`;
+  corpo += `Evento: ${formatEvento(evento)}\n`;
+  corpo += `Gravidade: ${grav.label}\n`;
+  corpo += `Data/Hora: ${ts}\n`;
+  if (dados?.responsavel) corpo += `Responsável: ${dados.responsavel}\n`;
+  if (dados?.status) corpo += `Status: ${dados.status}\n`;
+  if (dados?.prazo) corpo += `Prazo: ${dados.prazo}\n`;
+  if (dados?.id) corpo += `ID no Akuris: ${dados.id}\n`;
+  if (link) corpo += `\nAbrir no Akuris: ${link}\n`;
+
+  return {
+    short_description: `[Akuris] ${titulo}`,
+    description: corpo,
+    category: categoria,
+    impact: escala.impact,
+    urgency: escala.urgency,
+    correlation_id: `akuris:${evento}:${dados?.id ?? timestamp ?? ''}`,
+    correlation_display: 'Akuris GRC',
+  };
+}
+
 function buildWebhookPayload(titulo: string, descricao: string | undefined, evento: string, gravidade: string | undefined, link: string | undefined, dados: any, timestamp: string | undefined, empresa_id: string) {
   const grav = formatGravidade(gravidade);
   const modulo = extrairModulo(evento);
@@ -441,6 +488,60 @@ serve(async (req) => {
             } else {
               const errBody = await jiraResponse.text();
               console.error(`Jira API error: ${errBody}`);
+            }
+            break;
+          }
+
+          case 'servicenow': {
+            const snConfig: any = integration.configuracoes || {};
+            const snInstancia = (integration.webhook_url || '').replace(/\/+$/, '');
+            const snUtilizador = snConfig.utilizador as string;
+            const snTabela = (snConfig.tabela as string) || 'incident';
+            const snCategoria = (snConfig.categoria as string) || 'inquiry';
+
+            const { data: snFull } = await supabase
+              .from('integracoes_config')
+              .select('credenciais_encrypted')
+              .eq('id', integration.id)
+              .single();
+
+            let snCreds: any = null;
+            try {
+              snCreds = typeof snFull?.credenciais_encrypted === 'string'
+                ? JSON.parse(snFull.credenciais_encrypted)
+                : snFull?.credenciais_encrypted;
+            } catch { snCreds = null; }
+
+            const snSenha = snCreds?.senha;
+
+            if (!snInstancia || !snUtilizador || !snSenha) {
+              console.error('ServiceNow credentials incomplete');
+              success = false;
+              responseStatus = 0;
+              break;
+            }
+
+            const snPayload = buildServiceNowPayload(titulo, descricao, evento, gravidade, link, dados, timestamp, snCategoria);
+            const snAuth = btoa(`${snUtilizador}:${snSenha}`);
+
+            const snResponse = await fetch(`${snInstancia}/api/now/table/${snTabela}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Basic ${snAuth}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(snPayload)
+            });
+
+            success = snResponse.ok;
+            responseStatus = snResponse.status;
+
+            if (success) {
+              const snData = await snResponse.json();
+              console.log(`ServiceNow record created: ${snData?.result?.number ?? '(sem numero)'}`);
+            } else {
+              console.error(`ServiceNow API error: ${await snResponse.text()}`);
             }
             break;
           }

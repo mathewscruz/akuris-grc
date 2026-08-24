@@ -70,10 +70,16 @@ serve(async (req) => {
       });
     }
 
-    const { tipo, webhook_url, email, api_token, instance_url, project_key, headers } = await req.json();
+    const { tipo, webhook_url, email, api_token, instance_url, project_key, headers, utilizador, senha, tabela } = await req.json();
 
-    // Validate outbound URL against SSRF for all non-Jira cases; Jira uses instance_url.
-    const urlToCheck = tipo === 'jira' ? instance_url : webhook_url;
+    /*
+      SSRF: o que se valida é o URL para onde vamos sair.
+
+      Jira e ServiceNow não usam webhook: apontam para a instância do cliente,
+      e é esse endereço que tem de passar pela validação. Esquecê-lo aqui
+      transformaria o teste de conexão num scanner da rede interna.
+    */
+    const urlToCheck = tipo === 'jira' || tipo === 'servicenow' ? instance_url : webhook_url;
     const check = validateUrl(urlToCheck);
     if (!check.ok) {
       return new Response(JSON.stringify({ success: false, error: check.error }), {
@@ -223,6 +229,48 @@ serve(async (req) => {
             errorMessage = `Projeto ${project_key} não encontrado`;
             break;
           }
+        }
+
+        success = true;
+        break;
+      }
+
+      case 'servicenow': {
+        /*
+          `sysparm_limit=1` num GET à tabela configurada.
+
+          Autenticar só não chega: a conta de integração pode existir e não ter
+          permissão na tabela onde vamos escrever, e isso só apareceria no
+          primeiro evento a sério.
+        */
+        const snAuth = btoa(`${utilizador}:${senha}`);
+        const snTabela = tabela || 'incident';
+
+        const snResponse = await fetch(
+          `${instance_url}/api/now/table/${snTabela}?sysparm_limit=1`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${snAuth}`,
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (snResponse.status === 401) {
+          success = false;
+          errorMessage = 'Falha na autenticação: utilizador ou senha inválidos';
+          break;
+        }
+        if (snResponse.status === 403) {
+          success = false;
+          errorMessage = `Sem permissão na tabela ${snTabela}`;
+          break;
+        }
+        if (!snResponse.ok) {
+          success = false;
+          errorMessage = `ServiceNow respondeu ${snResponse.status}`;
+          break;
         }
 
         success = true;

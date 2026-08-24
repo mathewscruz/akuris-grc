@@ -20,6 +20,8 @@ import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor }
 import { useLanguage } from '@/contexts/LanguageContext';
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { ConsultaReceita } from './ConsultaReceita';
+import type { ConsultaCnpj } from '@/lib/cnpj';
 
 interface Fornecedor {
   id: string;
@@ -34,6 +36,9 @@ interface Fornecedor {
   categoria?: string;
   tipo: string;
   created_at?: string;
+  dados_receita?: ConsultaCnpj | null;
+  receita_consultada_em?: string | null;
+  receita_situacao?: string | null;
 }
 
 interface FornecedorFormData {
@@ -45,6 +50,33 @@ interface FornecedorFormData {
   contato_responsavel: string;
   observacoes: string;
   categoria: string;
+  /**
+   * A fotografia da Receita anda com o formulário.
+   *
+   * Guardar só ao gravar o fornecedor é deliberado: consultar não é um acto
+   * que altere o cadastro, e uma consulta abandonada a meio não deve deixar
+   * rasto nenhum.
+   */
+  consultaReceita: ConsultaCnpj | null;
+}
+
+/**
+ * As três colunas da consulta andam sempre juntas.
+ *
+ * `dados_receita` sem `receita_consultada_em` é um snapshot sem data — o banco
+ * recusa (CHECK `fornecedores_receita_datada`), e com razão: um snapshot sem
+ * data é indistinguível de um snapshot de há três anos.
+ *
+ * Devolve objecto vazio quando não houve consulta, para não apagar por
+ * omissão o que já estava gravado ao editar outro campo qualquer.
+ */
+function camposDaReceita(consulta: ConsultaCnpj | null) {
+  if (!consulta) return {};
+  return {
+    dados_receita: consulta as unknown as Record<string, unknown>,
+    receita_consultada_em: consulta.consultado_em,
+    receita_situacao: consulta.cadastro.situacao_cadastral,
+  };
 }
 
 const CATEGORIAS = [
@@ -88,7 +120,8 @@ export function FornecedoresManager() {
     endereco: '',
     contato_responsavel: '',
     observacoes: '',
-    categoria: ''
+    categoria: '',
+    consultaReceita: null
   });
 
   const { toast } = useToast();
@@ -177,6 +210,7 @@ export function FornecedoresManager() {
           contato_responsavel: data.contato_responsavel || null,
           observacoes: data.observacoes || null,
           categoria: data.categoria || null,
+          ...camposDaReceita(data.consultaReceita),
           empresa_id: profile?.empresa_id,
           status: 'ativo',
           tipo: 'fornecedor'
@@ -208,6 +242,7 @@ export function FornecedoresManager() {
           contato_responsavel: data.contato_responsavel || null,
           observacoes: data.observacoes || null,
           categoria: data.categoria || null,
+          ...camposDaReceita(data.consultaReceita),
         })
         .eq('id', id);
 
@@ -244,7 +279,7 @@ export function FornecedoresManager() {
   });
 
   const resetForm = () => {
-    setFormData({ nome: '', email: '', cnpj: '', telefone: '', endereco: '', contato_responsavel: '', observacoes: '', categoria: '' });
+    setFormData({ nome: '', email: '', cnpj: '', telefone: '', endereco: '', contato_responsavel: '', observacoes: '', categoria: '', consultaReceita: null });
   };
 
   const handleEdit = (fornecedor: Fornecedor) => {
@@ -257,7 +292,8 @@ export function FornecedoresManager() {
       endereco: fornecedor.endereco || '',
       contato_responsavel: fornecedor.contato_responsavel || '',
       observacoes: fornecedor.observacoes || '',
-      categoria: fornecedor.categoria || ''
+      categoria: fornecedor.categoria || '',
+      consultaReceita: fornecedor.dados_receita ?? null
     });
     setDialogOpen(true);
   };
@@ -366,9 +402,28 @@ export function FornecedoresManager() {
                     <Label htmlFor="email">{t('dueDiligence.fornecedoresManager.fieldEmail')}</Label>
                     <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cnpj">{t('dueDiligence.fornecedoresManager.fieldCnpj')}</Label>
-                    <Input id="cnpj" value={formData.cnpj} onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })} />
+                  <div className="col-span-2">
+                    <ConsultaReceita
+                      cnpj={formData.cnpj}
+                      onCnpjChange={(cnpj) => setFormData((f) => ({ ...f, cnpj }))}
+                      consulta={formData.consultaReceita}
+                      onConsulta={(c) => setFormData((f) => ({ ...f, consultaReceita: c }))}
+                      onPreencher={(d) =>
+                        setFormData((f) => ({
+                          ...f,
+                          /*
+                            O que a Receita sabe melhor sobrepõe-se; o que ela
+                            não tem não apaga o que a pessoa escreveu. Telefone
+                            e e-mail do cadastro público são quase sempre da
+                            sede, e raramente o contacto que interessa.
+                          */
+                          nome: d.nome || f.nome,
+                          endereco: d.endereco || f.endereco,
+                          telefone: f.telefone || d.telefone,
+                          email: f.email || d.email,
+                        }))
+                      }
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="telefone">{t('dueDiligence.fornecedoresManager.fieldPhone')}</Label>

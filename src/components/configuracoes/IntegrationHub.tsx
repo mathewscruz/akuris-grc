@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink } from '@/components/icons';
+import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink, IconChecklist, IconScale } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import { TeamsConfigDialog } from './integrations/TeamsConfigDialog';
 import { WebhooksConfigDialog } from './integrations/WebhooksConfigDialog';
 import { JiraConfigDialog } from './integrations/JiraConfigDialog';
 import { AzureConfigDialog } from './integrations/AzureConfigDialog';
+import { ServiceNowConfigDialog } from './integrations/ServiceNowConfigDialog';
+import { TransparenciaConfigDialog } from './integrations/TransparenciaConfigDialog';
 import { IntegrationLogViewer } from './integrations/IntegrationLogViewer';
 import { ApiKeysManager } from './ApiKeysManager';
 import { InboundWebhooksManager } from './InboundWebhooksManager';
@@ -98,6 +100,24 @@ const WebhookIcon = () => (
   <IconPlug className="w-5 h-5 shrink-0 text-primary" />
 );
 
+/*
+  ServiceNow e Portal da Transparência usam ícone genérico, na cor da marca.
+
+  É deliberado, e vem da lição do Jira: tentei redesenhar de cabeça uma marca
+  alheia três vezes e as três saíram erradas. Um ícone claramente genérico é
+  honesto — lê-se como «ícone do produto», não como «logótipo». Uma aproximação
+  desenhada a olho lê-se como o logótipo, e está errada.
+
+  Trocar pelo SVG oficial quando o tivermos.
+*/
+const ServiceNowLogo = () => (
+  <IconChecklist className="w-5 h-5 shrink-0" style={{ color: '#62D84E' }} />
+);
+
+const TransparenciaLogo = () => (
+  <IconScale className="w-5 h-5 shrink-0" style={{ color: '#1351B4' }} />
+);
+
 interface Integration {
   id: string;
   tipo: string;
@@ -171,6 +191,26 @@ const buildIntegracoesDisponiveis = (t: (k: string) => string): Integration[] =>
     cor: '#0078D4',
     Logo: AzureLogo
   },
+  {
+    id: 'servicenow',
+    tipo: 'servicenow',
+    nome: t('configIntegrations.hub.integracoes.servicenow.nome'),
+    descricao: t('configIntegrations.hub.integracoes.servicenow.descricao'),
+    categoria: 'itsm',
+    disponivel: true,
+    cor: '#62D84E',
+    Logo: ServiceNowLogo
+  },
+  {
+    id: 'transparencia',
+    tipo: 'transparencia',
+    nome: t('configIntegrations.hub.integracoes.transparencia.nome'),
+    descricao: t('configIntegrations.hub.integracoes.transparencia.descricao'),
+    categoria: 'dados_publicos',
+    disponivel: true,
+    cor: '#1351B4',
+    Logo: TransparenciaLogo
+  },
 ];
 
 const buildCategorias = (t: (k: string) => string) => ({
@@ -178,6 +218,7 @@ const buildCategorias = (t: (k: string) => string) => ({
   automacao: { nome: t('configIntegrations.hub.categorias.automacao.nome'), descricao: t('configIntegrations.hub.categorias.automacao.descricao') },
   itsm: { nome: t('configIntegrations.hub.categorias.itsm.nome'), descricao: t('configIntegrations.hub.categorias.itsm.descricao') },
   cloud: { nome: t('configIntegrations.hub.categorias.cloud.nome'), descricao: t('configIntegrations.hub.categorias.cloud.descricao') },
+  dados_publicos: { nome: t('configIntegrations.hub.categorias.dados_publicos.nome'), descricao: t('configIntegrations.hub.categorias.dados_publicos.descricao') },
 });
 
 export function IntegrationHub() {
@@ -195,6 +236,8 @@ export function IntegrationHub() {
   const [webhooksDialogOpen, setWebhooksDialogOpen] = useState(false);
   const [jiraDialogOpen, setJiraDialogOpen] = useState(false);
   const [azureDialogOpen, setAzureDialogOpen] = useState(false);
+  const [serviceNowDialogOpen, setServiceNowDialogOpen] = useState(false);
+  const [transparenciaDialogOpen, setTransparenciaDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchIntegrations();
@@ -268,6 +311,12 @@ export function IntegrationHub() {
         break;
       case 'azure':
         setAzureDialogOpen(true);
+        break;
+      case 'servicenow':
+        setServiceNowDialogOpen(true);
+        break;
+      case 'transparencia':
+        setTransparenciaDialogOpen(true);
         break;
     }
   };
@@ -446,6 +495,20 @@ export function IntegrationHub() {
             onOpenChange={setAzureDialogOpen}
             empresaId={empresaId}
             existingConfig={getExistingConfig('azure') as any}
+            onSaved={fetchIntegrations}
+          />
+          <ServiceNowConfigDialog
+            open={serviceNowDialogOpen}
+            onOpenChange={setServiceNowDialogOpen}
+            empresaId={empresaId}
+            existingConfig={getExistingConfig('servicenow') as any}
+            onSaved={fetchIntegrations}
+          />
+          <TransparenciaConfigDialog
+            open={transparenciaDialogOpen}
+            onOpenChange={setTransparenciaDialogOpen}
+            empresaId={empresaId}
+            existingConfig={getExistingConfig('transparencia') as any}
             onSaved={fetchIntegrations}
           />
         </>
