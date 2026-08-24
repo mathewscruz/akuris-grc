@@ -108,6 +108,17 @@ Deno.serve(async (req) => {
   try {
     const resposta = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
     if (resposta.status === 404) return json({ erro: 'cnpj_nao_encontrado' }, 404);
+    /*
+      400 é a BrasilAPI a dizer que o CNPJ não passa nos dígitos — não que
+      esteja fora do ar. Dobrá-lo em `fonte_indisponivel` mandava a pessoa
+      tentar de novo daí a um bocado, para o mesmo resultado, com o ecrã a
+      culpar um servidor que respondeu perfeitamente.
+
+      O ecrã já confere os dígitos antes de chamar, por isso isto quase nunca
+      acontece. Mas caminho defensivo que mente é pior do que caminho defensivo
+      nenhum: um dia alguém chama esta função de outro sítio.
+    */
+    if (resposta.status === 400) return json({ erro: 'cnpj_invalido' }, 400);
     if (!resposta.ok) {
       console.error('BrasilAPI devolveu', resposta.status);
       return json({ erro: 'fonte_indisponivel' }, 502);
