@@ -131,7 +131,7 @@ export default function DenunciaConsulta() {
   /* Recarrega sem passar pelo formulário — usado depois de pedir reunião ou
      de aceitar a acta, para o ecrã mostrar já o novo estado. */
   const recarregar = async () => {
-    if (!empresa || !protocolo.trim() || !codigo.trim()) return;
+    if (!empresa || !protocolo.trim()) return;
     const { data } = await supabase.functions.invoke('create-denuncia', {
       body: {
         action: 'consult',
@@ -157,7 +157,7 @@ export default function DenunciaConsulta() {
   const buscarDenuncia = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!empresa || !protocolo.trim() || !codigo.trim()) {
+    if (!empresa || !protocolo.trim()) {
       toast({
         title: t('publicPortal.denunciaConsulta.error'),
         description: t('publicPortal.denunciaConsulta.typeProtocol'),
@@ -346,7 +346,6 @@ export default function DenunciaConsulta() {
                   onChange={(e) => setCodigo(e.target.value.trim())}
                   placeholder={t('publicPortal.denunciaConsulta.codePlaceholder')}
                   className="font-mono"
-                  required
                 />
               </div>
               <Button type="submit" disabled={searching}>

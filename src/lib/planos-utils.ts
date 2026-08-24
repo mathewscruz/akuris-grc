@@ -23,6 +23,8 @@ export interface Plano {
 }
 
 export const MODULOS_DISPONIVEIS = [
+  { key: 'dashboard', label: 'Painel (Dashboard)' },
+  { key: 'projetos', label: 'Projetos' },
   { key: 'riscos', label: 'Riscos' },
   { key: 'controles', label: 'Controles Internos' },
   { key: 'documentos', label: 'Documentos' },

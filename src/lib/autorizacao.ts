@@ -87,6 +87,8 @@ export function chaveDePlano(modulo: string): string {
  */
 export const SEMPRE_PERMITIDOS = new Set(['configuracoes']);
 
+
+
 export interface EntradaDeDecisao {
   papel: PapelUtilizador | undefined;
   modulo: string;
