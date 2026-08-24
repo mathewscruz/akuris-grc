@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink, IconChecklist, IconScale, IconUsers } from '@/components/icons';
+import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink, IconScale } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,29 +47,17 @@ const TeamsLogo = () => (
 // Logos removidos: OneDrive, Google Drive, Zapier (placeholders sem funcionalidade)
 
 const JiraLogo = () => (
-  <svg viewBox="0 0 32 32" className="w-8 h-8">
-    <defs>
-      <linearGradient id="jira-a" x1="99%" y1="26%" x2="24%" y2="99%">
-        <stop offset="18%" stopColor="#0052cc"/>
-        <stop offset="100%" stopColor="#2684ff"/>
-      </linearGradient>
-      <linearGradient id="jira-b" x1="12%" y1="80%" x2="79%" y2="20%">
-        <stop offset="18%" stopColor="#0052cc"/>
-        <stop offset="100%" stopColor="#2684ff"/>
-      </linearGradient>
-    </defs>
-    {/*
-      ATENÇÃO — esta é a única das quatro que continua a não ser a marca certa.
+  /*
+    Marca oficial da Atlassian, finalmente.
 
-      A cor é da Atlassian, mas o chevron aponta para a esquerda e o da Jira
-      aponta para cima. Tentei corrigir por rotação e por redesenho: a rotação
-      corta fora do viewBox e o redesenho perdeu o chevron. Fica a original,
-      que é a menos errada das três versões, à espera do SVG oficial da
-      Atlassian — adivinhar geometria de marca alheia é como se chega a três
-      versões erradas seguidas.
-    */}
-    <path fill="url(#jira-a)" d="M15.52 1.09L1.09 15.52a.75.75 0 000 1.06l14.43 14.43a.75.75 0 001.06 0l7.22-7.22L16.03 16l7.77-7.79-7.22-7.22a.75.75 0 00-1.06.1z"/>
-    <path fill="url(#jira-b)" d="M15.52 9.44L9.06 16l6.46 6.56 6.97-6.97a.84.84 0 000-1.18z"/>
+    Esta foi errada tres vezes: uma por rotacao (cortava fora do viewBox), uma
+    por redesenho (virou um losango solido) e uma por ficar como estava, com o
+    chevron a apontar para o lado errado. O problema nunca foi a geometria ser
+    dificil -- foi eu insistir em desenha-la de cabeca. Agora e o path oficial,
+    e o unico juizo que fica meu e a cor de marca (#2684FF).
+  */
+  <svg viewBox="0 0 24 24" className="w-8 h-8" fill="#2684FF" aria-hidden="true">
+    <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z" />
   </svg>
 );
 
@@ -102,26 +90,52 @@ const WebhookIcon = () => (
 );
 
 /*
-  ServiceNow e Portal da Transparência usam ícone genérico, na cor da marca.
+  ServiceNow: o «o» de «now», recortado do logótipo oficial.
 
-  É deliberado, e vem da lição do Jira: tentei redesenhar de cabeça uma marca
-  alheia três vezes e as três saíram erradas. Um ícone claramente genérico é
-  honesto — lê-se como «ícone do produto», não como «logótipo». Uma aproximação
-  desenhada a olho lê-se como o logótipo, e está errada.
+  O logótipo da ServiceNow é um wordmark — «servicenow» por extenso, numa caixa
+  de 130 por 19. A vinte pixels de altura seria uma mancha ilegível. Mas dentro
+  dele vive o glifo que a própria ServiceNow usa como marca compacta: o «o»
+  verde, com o entalhe em baixo.
 
-  Trocar pelo SVG oficial quando o tivermos.
+  O `viewBox` recorta esse glifo do desenho original em vez de o redesenhar —
+  são as coordenadas oficiais, na cor oficial (#81B5A1), sem uma curva minha
+  pelo meio.
 */
 const ServiceNowLogo = () => (
-  <IconChecklist className="w-5 h-5 shrink-0" style={{ color: '#62D84E' }} />
+  <svg viewBox="95.3 5.4 15.2 14" className="w-8 h-8 shrink-0" aria-hidden="true">
+    <path
+      fill="#81B5A1"
+      d="m102.8 5.762c-4.2 0-7.5 3.3-7.5 7.5 0 2.2 0.9 4.2 2.3 5.6 0.5 0.5 1.4 0.5 2 0.1 0.8-0.7 2-1.1 3.2-1.1 1.3 0 2.3 0.4 3.2 1.1 0.6 0.5 1.4 0.4 2-0.2 1.4-1.4 2.3-3.3 2.3-5.5-0.1-4.1-3.4-7.5-7.5-7.5m-0.1 11.4c-2.3 0-3.8-1.7-3.8-3.8s1.5-3.8 3.8-3.8 3.8 1.7 3.8 3.8-1.5 3.8-3.8 3.8"
+    />
+  </svg>
 );
 
+/* O «G» de quatro cores, nas quatro demãos oficiais. */
+const GoogleWorkspaceLogo = () => (
+  <svg viewBox="0 0 128 128" className="w-8 h-8 shrink-0" aria-hidden="true">
+    <path fill="#e33629" d="M44.59 4.21a64 64 0 0142.61.37 61.22 61.22 0 0120.35 12.62c-2 2.14-4.11 4.14-6.15 6.22Q95.58 29.23 89.77 35a34.28 34.28 0 00-13.64-8 37.17 37.17 0 00-37.46 9.74 39.25 39.25 0 00-9.18 14.91L8.76 35.6A63.53 63.53 0 0144.59 4.21z" />
+    <path fill="#f8bd00" d="M3.26 51.5a62.93 62.93 0 015.5-15.9l20.73 16.09a38.31 38.31 0 000 24.63q-10.36 8-20.73 16.08a63.33 63.33 0 01-5.5-40.9z" />
+    <path fill="#587dbd" d="M65.27 52.15h59.52a74.33 74.33 0 01-1.61 33.58 57.44 57.44 0 01-16 26.26c-6.69-5.22-13.41-10.4-20.1-15.62a29.72 29.72 0 0012.66-19.54H65.27c-.01-8.22 0-16.45 0-24.68z" />
+    <path fill="#319f43" d="M8.75 92.4q10.37-8 20.73-16.08A39.3 39.3 0 0044 95.74a37.16 37.16 0 0014.08 6.08 41.29 41.29 0 0015.1 0 36.16 36.16 0 0013.93-5.5c6.69 5.22 13.41 10.4 20.1 15.62a57.13 57.13 0 01-25.9 13.47 67.6 67.6 0 01-32.36-.35 63 63 0 01-23-11.59A63.73 63.73 0 018.75 92.4z" />
+  </svg>
+);
+
+/*
+  O Portal da Transparência fica com ícone genérico, e é decisão, não desleixo.
+
+  Não é uma marca de fornecedor: é um serviço do governo federal, cuja
+  identidade visual é a do gov.br — um wordmark, sem símbolo compacto. Desenhar
+  um seria inventar um brasão que não existe, que foi exactamente o erro que
+  cometi três vezes com o Jira. Um ícone claramente genérico lê-se como ícone;
+  uma aproximação desenhada a olho lê-se como logótipo, e está errada.
+
+  A cor é a oficial do gov.br (#1351B4), e a balança diz do que a integração
+  trata: listas restritivas.
+*/
 const TransparenciaLogo = () => (
   <IconScale className="w-5 h-5 shrink-0" style={{ color: '#1351B4' }} />
 );
 
-const GoogleWorkspaceLogo = () => (
-  <IconUsers className="w-5 h-5 shrink-0" style={{ color: '#1A73E8' }} />
-);
 
 interface Integration {
   id: string;
