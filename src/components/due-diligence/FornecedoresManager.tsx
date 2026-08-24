@@ -22,6 +22,7 @@ import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { ConsultaReceita } from './ConsultaReceita';
 import type { ConsultaCnpj } from '@/lib/cnpj';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Fornecedor {
   id: string;
@@ -36,7 +37,7 @@ interface Fornecedor {
   categoria?: string;
   tipo: string;
   created_at?: string;
-  dados_receita?: ConsultaCnpj | null;
+  dados_receita?: ConsultaCnpj | Json | null;
   receita_consultada_em?: string | null;
   receita_situacao?: string | null;
 }
@@ -73,7 +74,9 @@ interface FornecedorFormData {
 function camposDaReceita(consulta: ConsultaCnpj | null) {
   if (!consulta) return {};
   return {
-    dados_receita: consulta as unknown as Record<string, unknown>,
+    /* `Json` do lado do banco; a forma continua a ser `ConsultaCnpj`, e é
+       `montarConsulta` quem a garante — na ida e na volta. */
+    dados_receita: consulta as unknown as Json,
     receita_consultada_em: consulta.consultado_em,
     receita_situacao: consulta.cadastro.situacao_cadastral,
   };
@@ -293,7 +296,7 @@ export function FornecedoresManager() {
       contato_responsavel: fornecedor.contato_responsavel || '',
       observacoes: fornecedor.observacoes || '',
       categoria: fornecedor.categoria || '',
-      consultaReceita: fornecedor.dados_receita ?? null
+      consultaReceita: (fornecedor.dados_receita as ConsultaCnpj | null) ?? null
     });
     setDialogOpen(true);
   };

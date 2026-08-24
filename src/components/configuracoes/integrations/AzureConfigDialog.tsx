@@ -161,7 +161,19 @@ export function AzureConfigDialog({
           sync_options: selectedSync,
           sync_interval: syncInterval,
           has_secret: true
-        }
+        },
+        /*
+          O segredo tem mesmo de ser gravado.
+
+          Estava aqui um comentario a dizer «salvar credenciais de forma segura»
+          e nenhuma linha a faze-lo: a configuracao gravava, o cartao dizia
+          «conectado», o teste de conexao passava (porque leva o segredo no
+          proprio pedido) -- e a sincronizacao morria sempre em «Credenciais
+          Azure incompletas», porque nunca houvera credencial nenhuma guardada.
+
+          Em branco ao editar significa «mantem a que la esta», nao «apaga».
+        */
+        ...(clientSecret ? { credenciais_encrypted: JSON.stringify({ client_secret: clientSecret }) } : {}),
       };
 
       if (existingConfig?.id) {
@@ -179,9 +191,6 @@ export function AzureConfigDialog({
           .insert(configData);
         if (error) throw error;
       }
-
-      // Salvar credenciais de forma segura (em produção, usar Vault)
-      // Por enquanto, armazenamos criptografado na config
 
       toast.success(t('configIntegrations.azure.toastConfigurado'), {
         description: t('configIntegrations.azure.toastConfiguradoDesc')

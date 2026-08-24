@@ -29,6 +29,7 @@ import { formatStatus } from "@/lib/text-utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveTipoAcessoTone, resolveAtivoTone } from "@/lib/status-tone";
+import { SincronizarDiretorio } from "./SincronizarDiretorio";
 
 interface Sistema {
   id: string;
@@ -48,6 +49,9 @@ interface SistemaUsuario {
   ativo: boolean;
   sistema_id: string;
   sistema?: { nome_sistema: string };
+  /** De onde veio a linha: 'entra_id', ou null quando foi escrita à mão. */
+  origem: string | null;
+  sincronizado_em: string | null;
 }
 
 export function SistemaUsuariosList() {
@@ -156,6 +160,26 @@ export function SistemaUsuariosList() {
       render: (row) => row.sistema?.nome_sistema || "-",
     },
     {
+      /*
+        Numa revisão, «veio do diretório esta manhã» e «alguém escreveu isto há
+        catorze meses» não merecem a mesma confiança — e até agora eram
+        indistinguíveis na tela.
+      */
+      key: "origem",
+      label: t("revisaoAcessosComp.usuariosList.columnOrigem"),
+      sortable: true,
+      render: (row) =>
+        row.origem ? (
+          <StatusBadge tone="info">
+            {t(`revisaoAcessosComp.usuariosList.origem.${row.origem}`)}
+          </StatusBadge>
+        ) : (
+          <span className="text-muted-foreground">
+            {t("revisaoAcessosComp.usuariosList.origem.manual")}
+          </span>
+        ),
+    },
+    {
       key: "departamento",
       label: t("revisaoAcessosComp.usuariosList.columnDepartamento"),
       sortable: true,
@@ -236,10 +260,13 @@ export function SistemaUsuariosList() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
-            <IconAdd className="h-4 w-4 mr-2" />
-            {t("revisaoAcessosComp.usuariosList.buttonNovo")}
-          </Button>
+          <div className="flex gap-2">
+            <SincronizarDiretorio onSincronizado={invalidateCache} />
+            <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
+              <IconAdd className="h-4 w-4 mr-2" />
+              {t("revisaoAcessosComp.usuariosList.buttonNovo")}
+            </Button>
+          </div>
         </div>
 
         <EmptyState
@@ -279,10 +306,13 @@ export function SistemaUsuariosList() {
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
-          <IconAdd className="h-4 w-4 mr-2" />
-          {t("revisaoAcessosComp.usuariosList.buttonNovo")}
-        </Button>
+        <div className="flex gap-2">
+          <SincronizarDiretorio onSincronizado={invalidateCache} />
+          <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
+            <IconAdd className="h-4 w-4 mr-2" />
+            {t("revisaoAcessosComp.usuariosList.buttonNovo")}
+          </Button>
+        </div>
       </div>
 
       <DataTable

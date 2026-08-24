@@ -5170,6 +5170,7 @@ export type Database = {
           cnpj: string | null
           contato_responsavel: string | null
           created_at: string
+          dados_receita: Json | null
           data_cadastro: string | null
           email: string | null
           empresa_id: string
@@ -5177,6 +5178,8 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
+          receita_consultada_em: string | null
+          receita_situacao: string | null
           status: string
           telefone: string | null
           tipo: string
@@ -5188,6 +5191,7 @@ export type Database = {
           cnpj?: string | null
           contato_responsavel?: string | null
           created_at?: string
+          dados_receita?: Json | null
           data_cadastro?: string | null
           email?: string | null
           empresa_id: string
@@ -5195,6 +5199,8 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
+          receita_consultada_em?: string | null
+          receita_situacao?: string | null
           status?: string
           telefone?: string | null
           tipo?: string
@@ -5206,6 +5212,7 @@ export type Database = {
           cnpj?: string | null
           contato_responsavel?: string | null
           created_at?: string
+          dados_receita?: Json | null
           data_cadastro?: string | null
           email?: string | null
           empresa_id?: string
@@ -5213,6 +5220,8 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
+          receita_consultada_em?: string | null
+          receita_situacao?: string | null
           status?: string
           telefone?: string | null
           tipo?: string
@@ -9157,6 +9166,9 @@ export type Database = {
           nivel_privilegio: string | null
           nome_usuario: string
           observacoes: string | null
+          origem: string | null
+          origem_id: string | null
+          sincronizado_em: string | null
           sistema_id: string
           tipo_acesso: string | null
           updated_at: string | null
@@ -9176,6 +9188,9 @@ export type Database = {
           nivel_privilegio?: string | null
           nome_usuario: string
           observacoes?: string | null
+          origem?: string | null
+          origem_id?: string | null
+          sincronizado_em?: string | null
           sistema_id: string
           tipo_acesso?: string | null
           updated_at?: string | null
@@ -9195,6 +9210,9 @@ export type Database = {
           nivel_privilegio?: string | null
           nome_usuario?: string
           observacoes?: string | null
+          origem?: string | null
+          origem_id?: string | null
+          sincronizado_em?: string | null
           sistema_id?: string
           tipo_acesso?: string | null
           updated_at?: string | null
@@ -10001,6 +10019,10 @@ export type Database = {
         Returns: number
       }
       severidade_canonica: { Args: { p_valor: string }; Returns: string }
+      sistema_do_diretorio: {
+        Args: { p_categoria?: string; p_empresa_id: string; p_nome: string }
+        Returns: string
+      }
       solicitar_reuniao_denuncia: {
         Args: {
           p_denuncia_id: string
