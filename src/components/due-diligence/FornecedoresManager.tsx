@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconView, IconMore, IconOrg, IconMail, IconPhone, IconShield, IconChecklist } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconView, IconMore, IconOrg } from '@/components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -12,13 +12,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DataTable, type Column } from '@/components/ui/data-table';
 import { useToast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor } from '@/lib/fornecedor-status';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { ConsultaReceita } from './ConsultaReceita';
 import type { ConsultaCnpj } from '@/lib/cnpj';
@@ -101,7 +101,6 @@ export function FornecedoresManager() {
   const [detalheFornecedor, setDetalheFornecedor] = useState<any>(null);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   /**
    * Sem filtro por omissão.
    *
@@ -334,6 +333,107 @@ export function FornecedoresManager() {
     return <StatusBadge tone="destructive" intensity="high">{score.toFixed(0)}%</StatusBadge>;
   };
 
+  /*
+    A lista era de cartões, com o nome seguido de três selos — categoria,
+    estado e «Nunca avaliado». O resto do Akuris usa `DataTable` em vinte
+    módulos, e o que era selo colado ao título é coluna em todos eles.
+
+    Nada se perdeu: categoria, avaliação e estado continuam lá, cada um na sua
+    coluna, onde se pode ordenar por eles e comparar linha a linha — que é
+    precisamente o que não se conseguia fazer quando estavam empilhados ao lado
+    do nome.
+  */
+  const colunas: Column<any>[] = [
+    {
+      key: 'nome',
+      label: t('dueDiligence.fornecedoresManager.colNome'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <span className={f.status === 'inativo' ? 'text-muted-foreground' : 'font-medium'}>
+          {f.nome}
+        </span>
+      ),
+    },
+    {
+      key: 'cnpj',
+      label: t('dueDiligence.fornecedoresManager.colCnpj'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <span className="whitespace-nowrap tabular-nums">{f.cnpj || '-'}</span>
+      ),
+    },
+    {
+      key: 'categoria',
+      label: t('dueDiligence.fornecedoresManager.colCategoria'),
+      sortable: true,
+      render: (_: any, f: any) => (f.categoria ? formatStatus(f.categoria) : '-'),
+    },
+    {
+      key: 'email',
+      label: t('dueDiligence.fornecedoresManager.colEmail'),
+      render: (_: any, f: any) => f.email || '-',
+    },
+    {
+      key: 'telefone',
+      label: t('dueDiligence.fornecedoresManager.colTelefone'),
+      render: (_: any, f: any) => (
+        <span className="whitespace-nowrap">{f.telefone || '-'}</span>
+      ),
+    },
+    {
+      key: 'avaliacao',
+      label: t('dueDiligence.fornecedoresManager.colAvaliacao'),
+      render: (_: any, f: any) => getRiskBadge(f._assessmentStats),
+    },
+    {
+      key: 'status',
+      label: t('dueDiligence.fornecedoresManager.colStatus'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <StatusBadge tone={tomDoStatusFornecedor(f.status)}>
+          {rotuloStatusFornecedor(f.status, t)}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'acoes',
+      label: t('dueDiligence.fornecedoresManager.colAcoes'),
+      render: (_: any, fornecedor: any) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+              <IconMore className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onClick={() => {
+              const event = new CustomEvent('navigateToDueDiligence', {
+                detail: { tab: 'assessments', filter: { fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome } }
+              });
+              window.dispatchEvent(event);
+            }}>
+              <IconView className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.viewAssessments')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              const event = new CustomEvent('createAssessment', {
+                detail: { fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome }
+              });
+              window.dispatchEvent(event);
+            }}>
+              <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newAssessment')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleEdit(fornecedor)}>
+              <IconEdit className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.edit')}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialog({ open: true, fornecedor })}>
+              <IconDelete className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.remove')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
   const filteredFornecedores = fornecedores.filter(f => {
     if (statusFilter !== 'all' && f.status !== statusFilter) return false;
     if (searchTerm) {
@@ -345,46 +445,23 @@ export function FornecedoresManager() {
 
   return (
     <>
+      {/*
+        O botao de criar fica ACIMA do quadro, nao dentro.
+
+        E onde esta nos outros modulos -- Controles empurra-o para o cabecalho
+        da pagina, Revisao de Acessos poe-o na linha de cima. Busca e filtro
+        passam a ser os do `DataTable`: havia aqui uma barra propria, com o seu
+        Input e o seu painel de filtros, a fazer a mesma coisa de outra maneira
+        e noutro sitio do ecra.
+      */}
+      <div className="mb-4 flex items-center justify-end">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newSupplier')}
+        </Button>
+      </div>
+
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <div className="p-6 pb-4">
-            <div className="flex items-center justify-between gap-4 mb-4">
-              <div className="relative flex-1 max-w-sm">
-                <Input placeholder={t('dueDiligence.fornecedoresManager.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-                  <IconFilter className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.filters')}
-                </Button>
-                <Button size="sm" onClick={() => setDialogOpen(true)}>
-                  <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newSupplier')}
-                </Button>
-              </div>
-            </div>
-            
-            {showFilters && (
-              <div className="bg-card rounded-lg p-4 mb-4 flex items-center gap-4 border border-border">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm">{t('dueDiligence.fornecedoresManager.statusLabel')}</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('fornecedorStatus.todos')}</SelectItem>
-                      {opcoesStatusFornecedor(t).map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {(statusFilter !== 'all' || searchTerm) && (
-                  <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setSearchTerm(''); }}>
-                    <IconClose className="h-4 w-4 mr-1" />{t('dueDiligence.fornecedoresManager.clearFilters')}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-          
           <DialogShell
             open={dialogOpen}
             onOpenChange={handleOpenChange}
@@ -460,103 +537,41 @@ export function FornecedoresManager() {
               </form>
           </DialogShell>
           
-          <div className="p-6 pt-0">
-            {isLoading ? (
-              <div className="text-center py-8"><p>{t('dueDiligence.fornecedoresManager.loading')}</p></div>
-            ) : (
-              <div className="space-y-3">
-                {filteredFornecedores.map((fornecedor: any) => (
-                  <Card
-                    key={fornecedor.id}
-                    {...(() => {
-                      const props = rowOpenProps(() => setDetalheFornecedor(fornecedor), fornecedor.nome, CARD_HOVER);
-                      return { ...props, className: `${props.className} ${fornecedor.status === 'inativo' ? 'opacity-60' : ''}` };
-                    })()}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            <IconOrg className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <h3 className="text-lg font-semibold truncate">{fornecedor.nome}</h3>
-                                {fornecedor.status !== 'ativo' && (
-                                  <StatusBadge tone={tomDoStatusFornecedor(fornecedor.status)}>
-                                    {rotuloStatusFornecedor(fornecedor.status, t)}
-                                  </StatusBadge>
-                                )}
-                                {fornecedor.categoria && (
-                                  <StatusBadge tone="neutral" variant="outline">{formatStatus(fornecedor.categoria)}</StatusBadge>
-                                )}
-                                {getRiskBadge(fornecedor._assessmentStats)}
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                                {fornecedor.email && (
-                                  <span className="flex items-center gap-1"><IconMail className="w-3 h-3" />{fornecedor.email}</span>
-                                )}
-                                {fornecedor.telefone && (
-                                  <span className="flex items-center gap-1"><IconPhone className="w-3 h-3" />{fornecedor.telefone}</span>
-                                )}
-                                {fornecedor.cnpj && <span>{t('dueDiligence.fornecedoresManager.cnpjLabel', { cnpj: fornecedor.cnpj })}</span>}
-                                {fornecedor._assessmentStats.total > 0 && (
-                                  <span className="flex items-center gap-1">
-                                    <IconChecklist className="w-3 h-3" />
-                                    {t('dueDiligence.fornecedoresManager.assessmentsCount', { count: fornecedor._assessmentStats.total })}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 ml-4">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <IconMore className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => {
-                                const event = new CustomEvent('navigateToDueDiligence', {
-                                  detail: { tab: 'assessments', filter: { fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome } }
-                                });
-                                window.dispatchEvent(event);
-                              }}>
-                                <IconView className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.viewAssessments')}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                const event = new CustomEvent('createAssessment', {
-                                  detail: { fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome }
-                                });
-                                window.dispatchEvent(event);
-                              }}>
-                                <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newAssessment')}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(fornecedor)}>
-                                <IconEdit className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.edit')}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialog({ open: true, fornecedor })}>
-                                <IconDelete className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.remove')}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                
-                {filteredFornecedores.length === 0 && (
-                  <div className="text-center py-8">
-                    <IconOrg className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">{t('dueDiligence.fornecedoresManager.emptyList')}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <DataTable
+            data={filteredFornecedores}
+            columns={colunas}
+            loading={isLoading}
+            onRowClick={(f) => setDetalheFornecedor(f)}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder={t('dueDiligence.fornecedoresManager.searchPlaceholder')}
+            filters={[
+              {
+                key: 'status',
+                label: t('dueDiligence.fornecedoresManager.statusLabel'),
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: [
+                  { value: 'all', label: t('fornecedorStatus.todos') },
+                  ...opcoesStatusFornecedor(t),
+                ],
+              },
+            ]}
+            emptyState={{
+              icon: <IconOrg className="h-10 w-10" />,
+              title: t('dueDiligence.fornecedoresManager.emptyList'),
+              description:
+                searchTerm || statusFilter !== 'all'
+                  ? t('dueDiligence.fornecedoresManager.emptyFiltered')
+                  : t('dueDiligence.fornecedoresManager.emptyDefault'),
+              action: {
+                label: t('dueDiligence.fornecedoresManager.newSupplier'),
+                onClick: () => setDialogOpen(true),
+              },
+            }}
+            paginated
+            pageSize={10}
+          />
         </CardContent>
       </Card>
 
