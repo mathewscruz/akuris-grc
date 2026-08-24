@@ -123,7 +123,10 @@ export const revisaoAcessosComp = {
         toastErrorTitle: 'Erro',
       },
       sincronizar: {
-        botao: 'Sincronizar do Entra ID',
+        botao: {
+          entraId: 'Sincronizar do Entra ID',
+          google: 'Sincronizar do Google Workspace',
+        },
         sincronizando: 'Sincronizando...',
         toastOk: '{criados} novos, {atualizados} atualizados, {desativados} desativados',
         toastFalha: 'A sincronização falhou',
@@ -289,7 +292,10 @@ export const revisaoAcessosComp = {
         toastErrorTitle: 'Error',
       },
       sincronizar: {
-        botao: 'Sync from Entra ID',
+        botao: {
+          entraId: 'Sync from Entra ID',
+          google: 'Sync from Google Workspace',
+        },
         sincronizando: 'Syncing...',
         toastOk: '{criados} new, {atualizados} updated, {desativados} deactivated',
         toastFalha: 'Sync failed',

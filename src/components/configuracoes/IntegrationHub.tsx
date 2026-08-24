@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink, IconChecklist, IconScale } from '@/components/icons';
+import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink, IconChecklist, IconScale, IconUsers } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { JiraConfigDialog } from './integrations/JiraConfigDialog';
 import { AzureConfigDialog } from './integrations/AzureConfigDialog';
 import { ServiceNowConfigDialog } from './integrations/ServiceNowConfigDialog';
 import { TransparenciaConfigDialog } from './integrations/TransparenciaConfigDialog';
+import { GoogleWorkspaceConfigDialog } from './integrations/GoogleWorkspaceConfigDialog';
 import { IntegrationLogViewer } from './integrations/IntegrationLogViewer';
 import { ApiKeysManager } from './ApiKeysManager';
 import { InboundWebhooksManager } from './InboundWebhooksManager';
@@ -118,6 +119,10 @@ const TransparenciaLogo = () => (
   <IconScale className="w-5 h-5 shrink-0" style={{ color: '#1351B4' }} />
 );
 
+const GoogleWorkspaceLogo = () => (
+  <IconUsers className="w-5 h-5 shrink-0" style={{ color: '#1A73E8' }} />
+);
+
 interface Integration {
   id: string;
   tipo: string;
@@ -202,6 +207,16 @@ const buildIntegracoesDisponiveis = (t: (k: string) => string): Integration[] =>
     Logo: ServiceNowLogo
   },
   {
+    id: 'google_workspace',
+    tipo: 'google_workspace',
+    nome: t('configIntegrations.hub.integracoes.google_workspace.nome'),
+    descricao: t('configIntegrations.hub.integracoes.google_workspace.descricao'),
+    categoria: 'cloud',
+    disponivel: true,
+    cor: '#1A73E8',
+    Logo: GoogleWorkspaceLogo
+  },
+  {
     id: 'transparencia',
     tipo: 'transparencia',
     nome: t('configIntegrations.hub.integracoes.transparencia.nome'),
@@ -238,6 +253,7 @@ export function IntegrationHub() {
   const [azureDialogOpen, setAzureDialogOpen] = useState(false);
   const [serviceNowDialogOpen, setServiceNowDialogOpen] = useState(false);
   const [transparenciaDialogOpen, setTransparenciaDialogOpen] = useState(false);
+  const [googleDialogOpen, setGoogleDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchIntegrations();
@@ -317,6 +333,9 @@ export function IntegrationHub() {
         break;
       case 'transparencia':
         setTransparenciaDialogOpen(true);
+        break;
+      case 'google_workspace':
+        setGoogleDialogOpen(true);
         break;
     }
   };
@@ -509,6 +528,13 @@ export function IntegrationHub() {
             onOpenChange={setTransparenciaDialogOpen}
             empresaId={empresaId}
             existingConfig={getExistingConfig('transparencia') as any}
+            onSaved={fetchIntegrations}
+          />
+          <GoogleWorkspaceConfigDialog
+            open={googleDialogOpen}
+            onOpenChange={setGoogleDialogOpen}
+            empresaId={empresaId}
+            existingConfig={getExistingConfig('google_workspace') as any}
             onSaved={fetchIntegrations}
           />
         </>

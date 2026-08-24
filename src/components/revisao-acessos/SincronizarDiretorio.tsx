@@ -7,8 +7,9 @@
  * Uma revisão sobre dados velhos é pior do que nenhuma, porque dá o carimbo sem
  * dar a garantia.
  *
- * O botão só aparece quando há diretório ligado. Um botão que falha sempre
- * ensina a pessoa a ignorar aquele canto do ecrã.
+ * Só aparece o que está ligado. Um botão que falha sempre ensina a pessoa a
+ * ignorar aquele canto do ecrã — e quem tem os dois diretórios ligados vê os
+ * dois, porque são listas diferentes e sincronizar cada uma é decisão separada.
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -24,13 +25,19 @@ interface Props {
   onSincronizado: () => void;
 }
 
+/** Cada diretório: como está gravado, que função o traz, e como se chama. */
+const DIRETORIOS = [
+  { tipo: 'azure', funcao: 'azure-integration', rotulo: 'entraId' },
+  { tipo: 'google_workspace', funcao: 'google-workspace', rotulo: 'google' },
+] as const;
+
 export function SincronizarDiretorio({ onSincronizado }: Props) {
   const { empresaId } = useEmpresaId();
   const { t } = useLanguage();
-  const [sincronizando, setSincronizando] = useState(false);
+  const [emCurso, setEmCurso] = useState<string | null>(null);
 
-  const { data: temDiretorio } = useQuery({
-    queryKey: ['diretorio-ligado', empresaId],
+  const { data: ligados = [] } = useQuery({
+    queryKey: ['diretorios-ligados', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -38,20 +45,20 @@ export function SincronizarDiretorio({ onSincronizado }: Props) {
         .from('integracoes_config')
         .select('tipo_integracao')
         .eq('empresa_id', empresaId!)
-        .eq('tipo_integracao', 'azure')
         .eq('status', 'conectado')
-        .maybeSingle();
+        .in(
+          'tipo_integracao',
+          DIRETORIOS.map((d) => d.tipo),
+        );
       if (error) throw error;
-      return !!data;
+      return (data ?? []).map((c) => c.tipo_integracao);
     },
   });
 
-  if (!temDiretorio) return null;
-
-  const sincronizar = async () => {
-    setSincronizando(true);
+  const sincronizar = async (dir: (typeof DIRETORIOS)[number]) => {
+    setEmCurso(dir.tipo);
     try {
-      const { data, error } = await supabase.functions.invoke('azure-integration', {
+      const { data, error } = await supabase.functions.invoke(dir.funcao, {
         body: { action: 'sync_usuarios' },
       });
       if (error) throw error;
@@ -73,7 +80,8 @@ export function SincronizarDiretorio({ onSincronizado }: Props) {
         /*
           A coluna de MFA vazia tem duas causas opostas — ninguém falha, ou não
           houve permissão para olhar. Calar-se aqui deixava a segunda passar por
-          primeira.
+          primeira. Só o Entra chega aqui: no Google o segundo fator vem no
+          mesmo pedido dos utilizadores.
         */
         toast.info(t('revisaoAcessosComp.sincronizar.semPermissaoMfa'));
       }
@@ -84,7 +92,7 @@ export function SincronizarDiretorio({ onSincronizado }: Props) {
         error: e instanceof Error ? e.message : String(e),
       });
       /*
-        A mensagem do provedor NAO vem para o toast.
+        A mensagem do provedor NÃO vem para o toast.
 
         O Entra devolve coisas como «AADSTS90002: Tenant … not found» com trace
         id e correlation id — oito linhas que ninguém lê em dois segundos, e que
@@ -97,16 +105,28 @@ export function SincronizarDiretorio({ onSincronizado }: Props) {
         description: t('revisaoAcessosComp.sincronizar.verHistorico'),
       });
     } finally {
-      setSincronizando(false);
+      setEmCurso(null);
     }
   };
 
+  const disponiveis = DIRETORIOS.filter((d) => ligados.includes(d.tipo));
+  if (disponiveis.length === 0) return null;
+
   return (
-    <Button variant="outline" onClick={sincronizar} disabled={sincronizando}>
-      <IconRefresh className={`mr-2 h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} />
-      {sincronizando
-        ? t('revisaoAcessosComp.sincronizar.sincronizando')
-        : t('revisaoAcessosComp.sincronizar.botao')}
-    </Button>
+    <>
+      {disponiveis.map((dir) => (
+        <Button
+          key={dir.tipo}
+          variant="outline"
+          onClick={() => sincronizar(dir)}
+          disabled={emCurso !== null}
+        >
+          <IconRefresh className={`mr-2 h-4 w-4 ${emCurso === dir.tipo ? 'animate-spin' : ''}`} />
+          {emCurso === dir.tipo
+            ? t('revisaoAcessosComp.sincronizar.sincronizando')
+            : t(`revisaoAcessosComp.sincronizar.botao.${dir.rotulo}`)}
+        </Button>
+      ))}
+    </>
   );
 }
