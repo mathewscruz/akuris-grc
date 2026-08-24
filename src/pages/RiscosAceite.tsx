@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatDateOnly, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveNivelRiscoTone, resolveRevisaoTone } from '@/lib/status-tone';
+import { resolveNivelRiscoTone } from '@/lib/status-tone';
 import { differenceInCalendarDays } from 'date-fns';
 import { AceiteDetalheDialog } from '@/components/riscos/AceiteDetalheDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
@@ -243,18 +243,6 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     }
   };
 
-  const getRevisaoBadge = (dataRevisao?: string) => {
-    const status = getRevisaoStatus(dataRevisao);
-    if (status === 'sem_data') return <StatusBadge tone="neutral">{t('riscos.aceite.review.noDate')}</StatusBadge>;
-    if (!dataRevisao) return null;
-    const dias = differenceInCalendarDays(parseDataLocal(dataRevisao), new Date());
-    switch (status) {
-      case 'vencida': return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.overdue')}</StatusBadge>;
-      case 'proxima': return <StatusBadge {...resolveRevisaoTone(dias)}>{dias}{t('riscos.aceite.review.daysLeftSuffix')}</StatusBadge>;
-      case 'ok': return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.onTrack')}</StatusBadge>;
-    }
-  };
-
   const columns: Array<Column<RiscoAceito>> = [
     { key: 'nome', label: t('riscos.aceite.columns.risk'), sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
     // Severidade efectiva, como na tabela de Riscos. Mostrar aqui a inerente
@@ -265,12 +253,8 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
     {
       key: 'data_proxima_revisao', label: t('riscos.aceite.columns.review'), sortable: true,
-      render: (value: string) => (
-        <div className="flex flex-col gap-1">
-          <span className="text-sm">{value ? formatDateOnly(value) : '-'}</span>
-          {getRevisaoBadge(value)}
-        </div>
-      ),
+      /* Só a data: o selo por baixo repetia o que ela já diz. */
+      render: (value: string) => <span className="text-sm">{value ? formatDateOnly(value) : '-'}</span>,
     },
     {
       key: 'aceite_valido_ate', label: 'Válido até', sortable: true,

@@ -414,13 +414,6 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
     return diffDays > 0 && diffDays <= 7;
   };
 
-  const getDaysUntilExpiration = (dateString: string) => {
-    const expirationDate = new Date(dateString);
-    const now = new Date();
-    const diffTime = expirationDate.getTime() - now.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
   const canSendReminder = (assessment: Assessment) => {
     return assessment.status !== 'concluido' && !isExpired(assessment.data_expiracao);
   };
@@ -674,11 +667,10 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                             {t('dueDiligence.assessmentsManagerEnhanced.expired')}
                           </StatusBadge>
                         )}
-                        {isExpiringSoon(assessment.data_expiracao) && assessment.status !== 'concluido' && !isExpired(assessment.data_expiracao) && (
-                          <StatusBadge tone="warning">
-                            {t('dueDiligence.assessmentsManagerEnhanced.expiresIn', { dias: getDaysUntilExpiration(assessment.data_expiracao) })}
-                          </StatusBadge>
-                        )}
+                        {/* «Vence em Nd» saiu: a data de expiração está no
+                            próprio cartão, e o selo só a repetia. «Expirado»
+                            fica — esse não é contagem, é um estado que muda o
+                            que a pessoa faz a seguir. */}
                       </div>
                     </div>
                   </CardHeader>

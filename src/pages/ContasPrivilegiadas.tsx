@@ -3,7 +3,6 @@ import { IconAdd, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, Ico
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveRevisaoTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -277,22 +276,7 @@ export default function ContasPrivilegiadas() {
         const expiracao = new Date(conta.data_expiracao + 'T00:00:00');
         const diffDays = Math.ceil((expiracao.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (diffDays < 0 && conta.status === 'ativo') {
-          return (
-            <div className="flex items-center gap-2">
-              <span>{formatDateOnly(conta.data_expiracao)}</span>
-              <StatusBadge {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.contas.badgeExpirada')}</StatusBadge>
-            </div>
-          );
-        } else if (diffDays <= 30 && diffDays >= 0 && conta.status === 'ativo') {
-          return (
-            <div className="flex items-center gap-2">
-              <span>{formatDateOnly(conta.data_expiracao)}</span>
-              <StatusBadge {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.contas.badgeVenceEm', { dias: diffDays })}</StatusBadge>
-            </div>
-          );
-        }
-
+        /* Só a data: o selo repetia o que ela já diz. */
         return formatDateOnly(conta.data_expiracao);
       }
     },

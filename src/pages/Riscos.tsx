@@ -551,19 +551,7 @@ export function Riscos() {
     } as RiscosStats;
   }, [viewedRiscos, stats, matrizConfig]);
 
-  const getRevisaoBadge = (dataRevisao?: string) => {
-    if (!dataRevisao) return null;
-    const dias = differenceInDays(new Date(dataRevisao), new Date());
-    if (dias < 0) {
-      return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.page.overdue')}</StatusBadge>;
-    }
-    if (dias <= 7) {
-      return <StatusBadge {...resolveRevisaoTone(dias)}>{dias}d</StatusBadge>;
-    }
-    return null;
-  };
-
-  // `getAprovacaoBadge` vivia aqui e nunca foi chamado — código morto que
+  // `getRevisaoBadge` e `getAprovacaoBadge` viviam aqui e nunca foram chamados — código morto que
   // ainda carregava o vocabulário antigo (`pendente` em vez de
   // `pendente_aprovacao`). Removido: o estado de aprovação mostra-se no
   // diálogo de Aprovação, que é onde se decide.

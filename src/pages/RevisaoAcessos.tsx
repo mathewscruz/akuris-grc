@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { resolveRevisaoTone, resolveWorkflowStatusTone } from "@/lib/status-tone";
+import { resolveWorkflowStatusTone } from "@/lib/status-tone";
 import { ReviewDialog } from "@/components/revisao-acessos/ReviewDialog";
 import { ReviewItemsDialog } from "@/components/revisao-acessos/ReviewItemsDialog";
 import { SistemaUsuariosList } from "@/components/revisao-acessos/SistemaUsuariosList";
@@ -142,27 +142,14 @@ export default function RevisaoAcessos() {
       return formatDateOnly(dataLimite);
     }
 
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const limite = new Date(dataLimite + 'T00:00:00');
-    const diffDays = Math.ceil((limite.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    /*
+      Só a data.
 
-    if (diffDays < 0) {
-      return (
-        <div className="flex items-center gap-2">
-          <span>{formatDateOnly(dataLimite)}</span>
-          <StatusBadge {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.revisao.badgeVencida')}</StatusBadge>
-        </div>
-      );
-    } else if (diffDays <= 7) {
-      return (
-        <div className="flex items-center gap-2">
-          <span>{formatDateOnly(dataLimite)}</span>
-          <StatusBadge {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.revisao.badgeVenceEm', { dias: diffDays })}</StatusBadge>
-        </div>
-      );
-    }
-
+      Havia aqui um selo colado ao prazo — «Vence em 7d», «Vencida» — calculado
+      a partir da data que está ao lado. Dizia o que a data já dizia, e num
+      quadro em que quase todas as linhas o traziam deixava de se ler como
+      alerta e passava a ler-se como enfeite.
+    */
     return formatDateOnly(dataLimite);
   };
 

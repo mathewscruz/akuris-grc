@@ -17,7 +17,6 @@ import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import {
   resolveClassificacaoTone,
   resolveItemStatusTone,
-  resolveRevisaoTone,
   resolveTipoDocumentoTone,
 } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -70,31 +69,6 @@ function getTipoBadge(tipo: string) {
       {capitalizeText(tipo)}
     </StatusBadge>
   );
-}
-
-function getVencimentoBadge(dataVencimento: string | null | undefined, vencidoLabel: string) {
-  if (!dataVencimento) return null;
-
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const dataVenc = new Date(dataVencimento + 'T00:00:00');
-  const diffDays = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) {
-    return (
-      <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">
-        {vencidoLabel}
-      </StatusBadge>
-    );
-  }
-  if (diffDays <= 30) {
-    return (
-      <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">
-        {diffDays}d
-      </StatusBadge>
-    );
-  }
-  return null;
 }
 
 interface DocumentoAcoesMenuProps<T extends DocumentoListaItem>
@@ -269,7 +243,6 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                     <span className="whitespace-nowrap">
                       {formatDateOnly(documento.data_vencimento)}
                     </span>
-                    {getVencimentoBadge(documento.data_vencimento, t('documentos.lista.vencido'))}
                   </CampoCard>
                   <CampoCard label={t('documentos.lista.classificacao')}>
                     {/* Confidencial mantém a saliência do ícone usada na tabela */}
@@ -353,7 +326,6 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                   <TableCell>
                     <div className="flex items-center whitespace-nowrap">
                       {formatDateOnly(documento.data_vencimento)}
-                      {getVencimentoBadge(documento.data_vencimento, t('documentos.lista.vencido'))}
                     </div>
                   </TableCell>
                   <TableCell>

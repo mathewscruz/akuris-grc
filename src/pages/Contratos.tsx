@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveRevisaoTone } from '@/lib/status-tone';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
@@ -317,22 +316,6 @@ export default function Contratos() {
     );
   };
 
-  const getVencimentoBadge = (dataFim: string | null) => {
-    if (!dataFim) return null;
-    
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const dataVenc = new Date(dataFim + 'T00:00:00');
-    const diffDays = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-      return <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">{formatStatus('vencido')}</StatusBadge>;
-    } else if (diffDays <= 30) {
-      return <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">{diffDays}d</StatusBadge>;
-    }
-    return null;
-  };
-
   const handleExportCSV = () => {
     const headers = [t('fin.comum.numero'), t('fin.comum.nome'), t('fin.comum.fornecedor'), t('fin.comum.tipo'), t('fin.comum.status'), t('fin.comum.valor'), t('fin.comum.inicio'), t('fin.comum.fim')];
     const rows = filteredContratos.map(c => [
@@ -608,10 +591,7 @@ export default function Contratos() {
                             }
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center whitespace-nowrap">
-                              {formatDateOnly(contrato.data_fim)}
-                              {getVencimentoBadge(contrato.data_fim)}
-                            </div>
+                            <span className="whitespace-nowrap">{formatDateOnly(contrato.data_fim)}</span>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center justify-end">

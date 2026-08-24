@@ -113,7 +113,10 @@ export const GerenciamentoPlanos: React.FC = () => {
                       {plano.nome}
                       {plano.is_destaque && <IconStar className="h-4 w-4 text-primary fill-primary" />}
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground font-mono">{plano.codigo}</p>
+                    {/* O código (`canal_denuncia`, `compliance_start`) é chave
+                        interna: casa o plano com o tecto de módulos em
+                        `chaveDePlano`. Não diz nada a quem gere planos, e no
+                        cartão lia-se como se fosse parte do nome. */}
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch

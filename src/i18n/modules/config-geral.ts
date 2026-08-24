@@ -77,11 +77,6 @@ export const configGeral = {
         warnChange: 'Ao alterar o identificador, os links e QR já divulgados deixam de funcionar.',
       },
       organizacaoTab: {
-        emailConfigTitle: 'Configuração de Email',
-        emailConfigDescription: 'Teste se o sistema está enviando emails corretamente',
-        testEmailLabel: 'Testar Envio de Email',
-        testEmailDescription: 'Envia um email de teste para verificar a configuração',
-        testEmailButton: 'Enviar Email de Teste',
       },
       emailCampanhaEditor: {
         titleEdit: 'Editar campanha',
@@ -141,18 +136,6 @@ export const configGeral = {
         signatureTeam: 'Equipe Akuris',
         footerLine1: 'Este é um e-mail automático enviado pela plataforma Akuris.',
         footerLine2: 'Governança, Risco e Compliance',
-      },
-      emailTestDialog: {
-        title: 'Enviar E-mail de Teste',
-        description: 'Envie um e-mail de teste para visualizar o novo layout profissional',
-        cancelButton: 'Cancelar',
-        sendButton: 'Enviar Teste',
-        sending: 'Enviando...',
-        emailLabel: 'E-mail de destino',
-        emailPlaceholder: 'seu@email.com',
-        toastInvalidEmail: 'Por favor, insira um e-mail válido',
-        toastSuccess: 'E-mail de teste enviado com sucesso! Verifique sua caixa de entrada.',
-        toastError: 'Erro ao enviar e-mail de teste',
       },
       inboundWebhooks: {
         title: 'Webhooks de Entrada',
@@ -320,11 +303,6 @@ export const configGeral = {
         warnChange: 'Changing the identifier breaks links and QR codes already shared.',
       },
       organizacaoTab: {
-        emailConfigTitle: 'Email Configuration',
-        emailConfigDescription: 'Test whether the system is sending emails correctly',
-        testEmailLabel: 'Test Email Sending',
-        testEmailDescription: 'Sends a test email to verify the configuration',
-        testEmailButton: 'Send Test Email',
       },
       emailCampanhaEditor: {
         titleEdit: 'Edit campaign',
@@ -384,18 +362,6 @@ export const configGeral = {
         signatureTeam: 'Akuris Team',
         footerLine1: 'This is an automatic email sent by the Akuris platform.',
         footerLine2: 'Governance, Risk and Compliance',
-      },
-      emailTestDialog: {
-        title: 'Send Test Email',
-        description: 'Send a test email to preview the new professional layout',
-        cancelButton: 'Cancel',
-        sendButton: 'Send Test',
-        sending: 'Sending...',
-        emailLabel: 'Destination email',
-        emailPlaceholder: 'your@email.com',
-        toastInvalidEmail: 'Please enter a valid email',
-        toastSuccess: 'Test email sent successfully! Check your inbox.',
-        toastError: 'Error sending test email',
       },
       inboundWebhooks: {
         title: 'Inbound Webhooks',
