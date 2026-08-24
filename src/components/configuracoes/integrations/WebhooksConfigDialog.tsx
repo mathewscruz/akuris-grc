@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EventosDaIntegracao } from './EventosDaIntegracao';
 
 interface WebhooksConfigDialogProps {
   open: boolean;
@@ -324,33 +325,11 @@ export function WebhooksConfigDialog({
             )}
           </div>
 
-          {/* Eventos */}
-          <div className="space-y-3">
-            <Label>{t('configIntegrations.webhooks.eventosLabel')}</Label>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-              {EVENTOS_DISPONIVEIS.map(evento => (
-                <div
-                  key={evento.id}
-                  className="flex items-center gap-2"
-                >
-                  <Checkbox
-                    id={`wh-${evento.id}`}
-                    checked={selectedEvents.includes(evento.id)}
-                    onCheckedChange={() => toggleEvent(evento.id)}
-                  />
-                  <label
-                    htmlFor={`wh-${evento.id}`}
-                    className="text-xs cursor-pointer flex-1"
-                  >
-                    {t(`configIntegrations.events.${evento.id}.label`)}
-                  </label>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t('configIntegrations.webhooks.eventosSelecionados', { count: selectedEvents.length })}
-            </p>
-          </div>
+          <EventosDaIntegracao
+            prefixo="wh"
+            valor={selectedEvents}
+            onChange={setSelectedEvents}
+          />
 
           {/* Exemplo de payload */}
           <div className="space-y-2">

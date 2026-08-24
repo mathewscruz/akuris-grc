@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EventosDaIntegracao, TODOS_OS_EVENTOS } from './EventosDaIntegracao';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { getEventosDisponiveis } from '@/lib/integration-events';
@@ -76,7 +77,7 @@ export function ServiceNowConfigDialog({
     (existingConfig?.configuracoes?.categoria as string) || 'inquiry',
   );
   const [eventos, setEventos] = useState<string[]>(
-    (existingConfig?.configuracoes?.eventos as string[]) || [],
+    (existingConfig?.configuracoes?.eventos as string[]) ?? TODOS_OS_EVENTOS,
   );
   const [salvando, setSalvando] = useState(false);
   const [testando, setTestando] = useState(false);
@@ -246,32 +247,11 @@ export function ServiceNowConfigDialog({
           />
         </div>
 
-        <div className="space-y-3">
-          <Label>{t('configIntegrations.servicenow.eventosLabel')}</Label>
-          <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto">
-            {EVENTOS_DISPONIVEIS.map((evento) => (
-              <div key={evento.id} className="flex items-center gap-3 rounded-md p-2 hover:bg-accent">
-                <Checkbox
-                  id={`sn-${evento.id}`}
-                  checked={eventos.includes(evento.id)}
-                  onCheckedChange={() =>
-                    setEventos((atual) =>
-                      atual.includes(evento.id)
-                        ? atual.filter((e) => e !== evento.id)
-                        : [...atual, evento.id],
-                    )
-                  }
-                />
-                <label htmlFor={`sn-${evento.id}`} className="flex-1 cursor-pointer text-sm">
-                  {t(`configIntegrations.events.${evento.id}.label`)}
-                </label>
-                <Badge variant="outline" className="text-xs">
-                  {t(`configIntegrations.events.${evento.id}.modulo`)}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
+        <EventosDaIntegracao
+          prefixo="sn"
+          valor={eventos}
+          onChange={setEventos}
+        />
 
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" onClick={testar} disabled={testando}>

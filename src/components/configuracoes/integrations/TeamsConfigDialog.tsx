@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EventosDaIntegracao } from './EventosDaIntegracao';
 
 interface TeamsConfigDialogProps {
   open: boolean;
@@ -268,36 +269,11 @@ export function TeamsConfigDialog({
             )}
           </div>
 
-          {/* Eventos */}
-          <div className="space-y-3">
-            <Label>{t('configIntegrations.teams.eventosLabel')}</Label>
-            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-              {EVENTOS_DISPONIVEIS.map(evento => (
-                <div
-                  key={evento.id}
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-accent"
-                >
-                  <Checkbox
-                    id={`teams-${evento.id}`}
-                    checked={selectedEvents.includes(evento.id)}
-                    onCheckedChange={() => toggleEvent(evento.id)}
-                    disabled={saving}
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor={`teams-${evento.id}`}
-                      className="text-sm cursor-pointer"
-                    >
-                      {t(`configIntegrations.events.${evento.id}.label`)}
-                    </label>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {t(`configIntegrations.events.${evento.id}.modulo`)}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </div>
+          <EventosDaIntegracao
+            prefixo="teams"
+            valor={selectedEvents}
+            onChange={setSelectedEvents}
+          />
 
           {/* Link documentação */}
           <a

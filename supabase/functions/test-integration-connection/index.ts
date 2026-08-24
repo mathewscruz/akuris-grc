@@ -92,6 +92,10 @@ serve(async (req) => {
 
     let success = false;
     let errorMessage = '';
+    /* Descoberta: o que o teste conseguiu ler do outro lado, para o ecra
+       poder oferecer listas em vez de pedir para adivinhar. */
+    let projetos: Array<{ key: string; name: string }> = [];
+    let tiposDeItem: string[] = [];
 
     switch (tipo) {
       case 'slack': {
@@ -196,81 +200,76 @@ serve(async (req) => {
       }
 
       case 'jira': {
-        // Testar autenticação com Jira
+        /*
+          O teste nao se limita a dizer "autenticou".
+
+          A chave do projeto era caixa de texto e o tipo de item uma lista de
+          cinco valores fixos -- que podem simplesmente nao existir na
+          instancia do cliente. Escrevia-se "GRC", gravava-se, o cartao ficava
+          verde, e o erro so aparecia no primeiro evento a serio: um 400 do
+          Jira dentro de um log que ninguem abre.
+
+          Agora o teste traz de volta os projetos a que esta conta tem acesso
+          e, quando ja ha projeto escolhido, os tipos de item DESSE projeto. O
+          ecra deixa de pedir para adivinhar e passa a oferecer uma lista.
+        */
         const auth = btoa(`${email}:${api_token}`);
-        
-        // Primeiro testar autenticação buscando o usuário atual
+        const cabecalhos = {
+          'Authorization': `Basic ${auth}`,
+          'Accept': 'application/json'
+        };
+
         const jiraResponse = await fetch(`${instance_url}/rest/api/3/myself`, {
           method: 'GET',
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/json'
-          }
+          headers: cabecalhos
         });
 
         if (!jiraResponse.ok) {
           success = false;
-          errorMessage = `Falha na autenticação: ${jiraResponse.status}`;
+          errorMessage = jiraResponse.status === 401
+            ? 'Falha na autenticacao: confira o e-mail e o token de API'
+            : `Falha na autenticacao: ${jiraResponse.status}`;
           break;
         }
 
-        // Se tiver project_key, verificar se o projeto existe
-        if (project_key) {
-          const projectResponse = await fetch(`${instance_url}/rest/api/3/project/${project_key}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Basic ${auth}`,
-              'Content-Type': 'application/json'
-            }
-          });
+        const projRes = await fetch(
+          `${instance_url}/rest/api/3/project/search?maxResults=100&orderBy=name`,
+          { method: 'GET', headers: cabecalhos }
+        );
+        if (projRes.ok) {
+          const corpoProj = await projRes.json();
+          projetos = (corpoProj.values || []).map((pr: any) => ({ key: pr.key, name: pr.name }));
+        }
 
-          if (!projectResponse.ok) {
+        /*
+           Autenticar e nao ver projeto nenhum e um problema de permissao, e
+           vale a pena dize-lo agora -- e nao no primeiro incidente critico.
+        */
+        if (projetos.length === 0) {
+          success = false;
+          errorMessage = 'A conta autentica mas nao ve nenhum projeto. Confirme as permissoes do utilizador de integracao.';
+          break;
+        }
+
+        if (project_key) {
+          if (!projetos.some((pr) => pr.key === project_key)) {
             success = false;
-            errorMessage = `Projeto ${project_key} não encontrado`;
+            errorMessage = `Projeto ${project_key} nao encontrado nesta instancia`;
             break;
           }
-        }
 
-        success = true;
-        break;
-      }
-
-      case 'servicenow': {
-        /*
-          `sysparm_limit=1` num GET à tabela configurada.
-
-          Autenticar só não chega: a conta de integração pode existir e não ter
-          permissão na tabela onde vamos escrever, e isso só apareceria no
-          primeiro evento a sério.
-        */
-        const snAuth = btoa(`${utilizador}:${senha}`);
-        const snTabela = tabela || 'incident';
-
-        const snResponse = await fetch(
-          `${instance_url}/api/now/table/${snTabela}?sysparm_limit=1`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Basic ${snAuth}`,
-              'Accept': 'application/json'
-            }
+          /* Tipos de item DESTE projeto. Falhar aqui nao invalida o teste: o
+             ecra cai na lista de sempre e a pessoa escolhe a mao. */
+          const tiposRes = await fetch(
+            `${instance_url}/rest/api/3/issue/createmeta/${project_key}/issuetypes`,
+            { method: 'GET', headers: cabecalhos }
+          );
+          if (tiposRes.ok) {
+            const corpoTipos = await tiposRes.json();
+            tiposDeItem = (corpoTipos.issueTypes || corpoTipos.values || [])
+              .filter((tp: any) => !tp.subtask)
+              .map((tp: any) => tp.name);
           }
-        );
-
-        if (snResponse.status === 401) {
-          success = false;
-          errorMessage = 'Falha na autenticação: utilizador ou senha inválidos';
-          break;
-        }
-        if (snResponse.status === 403) {
-          success = false;
-          errorMessage = `Sem permissão na tabela ${snTabela}`;
-          break;
-        }
-        if (!snResponse.ok) {
-          success = false;
-          errorMessage = `ServiceNow respondeu ${snResponse.status}`;
-          break;
         }
 
         success = true;
@@ -284,7 +283,7 @@ serve(async (req) => {
     console.log(`Connection test result: ${success ? 'SUCCESS' : 'FAILED'} - ${errorMessage}`);
 
     return new Response(
-      JSON.stringify({ success, error: errorMessage || null }),
+      JSON.stringify({ success, error: errorMessage || null, projetos, tiposDeItem }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 

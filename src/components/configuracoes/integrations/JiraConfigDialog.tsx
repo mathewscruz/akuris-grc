@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EventosDaIntegracao, TODOS_OS_EVENTOS } from './EventosDaIntegracao';
 interface JiraConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +48,18 @@ export function JiraConfigDialog({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  /*
+    O que o teste descobriu do outro lado.
+
+    Enquanto estiver vazio, o ecra pede para escrever; assim que o teste
+    responde, passa a oferecer. Nao ha razao para pedir a alguem que decore a
+    chave de um projeto que a API sabe listar.
+  */
+  const [projetos, setProjetos] = useState<Array<{ key: string; name: string }>>([]);
+  const [tiposDoProjeto, setTiposDoProjeto] = useState<string[]>([]);
+  const [eventos, setEventos] = useState<string[]>(
+    (existingConfig?.configuracoes?.eventos as string[]) ?? TODOS_OS_EVENTOS,
+  );
 
   const handleTestConnection = async () => {
     if (!instanceUrl || !email || !apiToken) {
@@ -72,6 +85,8 @@ export function JiraConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
+        setProjetos(data.projetos ?? []);
+        setTiposDoProjeto(data.tiposDeItem ?? []);
         toast.success(t('configIntegrations.jira.toastConexaoOk'), {
           description: t('configIntegrations.jira.toastConexaoOkDesc')
         });
@@ -113,6 +128,7 @@ export function JiraConfigDialog({
           email,
           project_key: projectKey,
           issue_type: issueType,
+          eventos,
           has_token: true
         },
         ...(apiToken ? { credenciais_encrypted: JSON.stringify({ api_token: apiToken }) } : {}),
@@ -274,14 +290,31 @@ export function JiraConfigDialog({
           {/* Project Key */}
           <div className="space-y-2">
             <Label htmlFor="jira-project">{t('configIntegrations.jira.fieldProject')}</Label>
-            <Input
-              id="jira-project"
-              placeholder={t('campos.comum.exProjectKey')}
-              value={projectKey}
-              onChange={(e) => setProjectKey(e.target.value.toUpperCase())}
-            />
+            {projetos.length > 0 ? (
+              <Select value={projectKey} onValueChange={setProjectKey}>
+                <SelectTrigger id="jira-project">
+                  <SelectValue placeholder={t('configIntegrations.jira.escolhaProjeto')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projetos.map((pr) => (
+                    <SelectItem key={pr.key} value={pr.key}>
+                      {pr.name} ({pr.key})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="jira-project"
+                placeholder={t('campos.comum.exProjectKey')}
+                value={projectKey}
+                onChange={(e) => setProjectKey(e.target.value.toUpperCase())}
+              />
+            )}
             <p className="text-xs text-muted-foreground">
-              {t('configIntegrations.jira.fieldProjectHelp')}
+              {projetos.length > 0
+                ? t('configIntegrations.jira.projetosEncontrados', { total: projetos.length })
+                : t('configIntegrations.jira.testeParaListar')}
             </p>
           </div>
 
@@ -293,14 +326,35 @@ export function JiraConfigDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Task">{t('configIntegrations.jira.issueTask')}</SelectItem>
-                <SelectItem value="Bug">{t('configIntegrations.jira.issueBug')}</SelectItem>
-                <SelectItem value="Story">{t('configIntegrations.jira.issueStory')}</SelectItem>
-                <SelectItem value="Incident">{t('configIntegrations.jira.issueIncident')}</SelectItem>
-                <SelectItem value="Service Request">{t('configIntegrations.jira.issueServiceRequest')}</SelectItem>
+                {tiposDoProjeto.length > 0 ? (
+                  tiposDoProjeto.map((tp) => (
+                    <SelectItem key={tp} value={tp}>{tp}</SelectItem>
+                  ))
+                ) : (
+                  /*
+                    Os cinco de sempre, enquanto o teste nao trouxer os reais.
+                    Sao um palpite razoavel -- e um palpite: "Incident" e
+                    "Service Request" so existem em projetos de Service
+                    Management, e "Story" so em projetos ageis.
+                  */
+                  <>
+                    <SelectItem value="Task">{t('configIntegrations.jira.issueTask')}</SelectItem>
+                    <SelectItem value="Bug">{t('configIntegrations.jira.issueBug')}</SelectItem>
+                    <SelectItem value="Story">{t('configIntegrations.jira.issueStory')}</SelectItem>
+                    <SelectItem value="Incident">{t('configIntegrations.jira.issueIncident')}</SelectItem>
+                    <SelectItem value="Service Request">{t('configIntegrations.jira.issueServiceRequest')}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
+            {tiposDoProjeto.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {t('configIntegrations.jira.tiposDoProjeto', { projeto: projectKey })}
+              </p>
+            )}
           </div>
+
+          <EventosDaIntegracao prefixo="jira" valor={eventos} onChange={setEventos} />
 
           {/* Testar conexão */}
           <div className="flex items-center gap-2">

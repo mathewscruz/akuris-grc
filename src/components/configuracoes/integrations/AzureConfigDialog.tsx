@@ -58,6 +58,16 @@ export function AzureConfigDialog({
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  /*
+    O que a app consegue mesmo ler, endpoint a endpoint.
+
+    Autenticar nao chega: `/organization` responde a qualquer app registada,
+    mesmo sem uma unica permissao concedida. Sem esta lista, o cartao ficava
+    verde e o 403 aparecia semanas depois, na primeira sincronizacao.
+  */
+  const [capacidades, setCapacidades] = useState<
+    Array<{ chave: string; concedida: boolean; permissao: string }>
+  >([]);
   const [lastSyncInfo, setLastSyncInfo] = useState<{ count: number; date: string } | null>(null);
 
   const handleTestConnection = async () => {
@@ -84,6 +94,7 @@ export function AzureConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
+        setCapacidades(data.capacidades ?? []);
         toast.success(t('configIntegrations.azure.toastConexaoOk'), {
           description: t('configIntegrations.azure.toastConexaoOkDesc').replace('{tenant}', data.tenant_name || tenantId)
         });
@@ -366,8 +377,37 @@ export function AzureConfigDialog({
                 {t('configIntegrations.azure.btnTestar')}
               </Button>
             </div>
-            {testResult === 'success' && (
+            {testResult === 'success' && capacidades.length === 0 && (
               <p className="text-xs text-success">{t('configIntegrations.azure.testSuccess')}</p>
+            )}
+            {capacidades.length > 0 && (
+              <div className="space-y-1.5 rounded-md border p-3">
+                <p className="text-xs font-medium">{t('configIntegrations.azure.permissoesTitulo')}</p>
+                <ul className="space-y-1">
+                  {capacidades.map((c) => (
+                    <li key={c.chave} className="flex items-start gap-2 text-xs">
+                      {c.concedida ? (
+                        <IconSuccess className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                      ) : (
+                        <IconError className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                      )}
+                      <span className={c.concedida ? '' : 'text-destructive'}>
+                        {t(`configIntegrations.azure.capacidade.${c.chave}`)}
+                        {!c.concedida && (
+                          /* A linha para copiar para o portal: sem isto, "falta
+                             permissao" e um beco sem saida. */
+                          <span className="ml-1 font-mono">— {c.permissao}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {capacidades.some((c) => !c.concedida) && (
+                  <p className="pt-1 text-xs text-muted-foreground">
+                    {t('configIntegrations.azure.permissoesComoConceder')}
+                  </p>
+                )}
+              </div>
             )}
             {testResult === 'error' && (
               <p className="text-xs text-destructive">{t('configIntegrations.azure.testError')}</p>

@@ -33,6 +33,12 @@ export const configIntegrations = {
           transparencia: { nome: 'Portal da Transparência', descricao: 'Verifica CEIS, CNEP e acordos de leniência na consulta de CNPJ da Due Diligence. Sem esta chave, as listas restritivas ficam marcadas como não verificadas.' },
         },
       },
+      eventos: {
+        titulo: 'Eventos que esta integração recebe',
+        marcarTodos: 'Marcar todos',
+        desmarcarTodos: 'Desmarcar todos',
+        nenhumRecebeTodos: 'Nenhum evento marcado — nesse estado a integração recebe TODOS os eventos. Para receber só alguns, marque-os.',
+      },
       google: {
         titulo: 'Google Workspace',
         descricao: 'Traga usuários e administradores do seu diretório Google.',
@@ -107,6 +113,15 @@ export const configIntegrations = {
         toastFalhaGuardar: 'Não foi possível salvar',
       },
       azure: {
+        permissoesTitulo: 'O que esta aplicação consegue ler',
+        permissoesComoConceder: 'No portal do Azure, em Registos de aplicação › API permissions, conceda as permissões em falta como Application permission e clique em "Grant admin consent".',
+        capacidade: {
+          utilizadores: 'Usuários do diretório',
+          grupos: 'Grupos',
+          papeis: 'Papéis administrativos',
+          dispositivos: 'Dispositivos do Intune',
+          mfa: 'Registro de segundo fator',
+        },
         title: 'Configurar Microsoft Azure / Intune',
         description: 'Sincronize dispositivos do Intune e Azure AD com o módulo de Ativos.',
         tabConfig: 'Configuração',
@@ -184,6 +199,10 @@ export const configIntegrations = {
         toastErroDesconectar: 'Erro ao desconectar',
       },
       jira: {
+        escolhaProjeto: 'Escolha o projeto',
+        projetosEncontrados: '{total} projeto(s) encontrado(s) nesta instância.',
+        testeParaListar: 'Teste a conexão para escolher o projeto de uma lista, em vez de digitar a chave.',
+        tiposDoProjeto: 'Tipos de item existentes no projeto {projeto}.',
         title: 'Configurar Jira Service Management',
         description: 'Crie tickets no Jira automaticamente a partir de incidentes e riscos.',
         comoFuncionaTitle: 'Como funciona',
@@ -410,6 +429,12 @@ export const configIntegrations = {
           transparencia: { nome: 'Portal da Transparencia', descricao: 'Checks CEIS, CNEP and leniency agreements during the CNPJ lookup in Due Diligence. Without this key, debarment lists stay marked as not checked.' },
         },
       },
+      eventos: {
+        titulo: 'Events this integration receives',
+        marcarTodos: 'Select all',
+        desmarcarTodos: 'Clear all',
+        nenhumRecebeTodos: 'No event selected — in this state the integration receives ALL events. To receive only some, select them.',
+      },
       google: {
         titulo: 'Google Workspace',
         descricao: 'Bring users and admins from your Google directory.',
@@ -484,6 +509,15 @@ export const configIntegrations = {
         toastFalhaGuardar: 'Could not save',
       },
       azure: {
+        permissoesTitulo: 'What this application can read',
+        permissoesComoConceder: 'In the Azure portal, under App registrations › API permissions, grant the missing permissions as Application permission and click "Grant admin consent".',
+        capacidade: {
+          utilizadores: 'Directory users',
+          grupos: 'Groups',
+          papeis: 'Administrative roles',
+          dispositivos: 'Intune devices',
+          mfa: 'Second-factor registration',
+        },
         title: 'Configure Microsoft Azure / Intune',
         description: 'Sync Intune and Azure AD devices with the Assets module.',
         tabConfig: 'Configuration',
@@ -561,6 +595,10 @@ export const configIntegrations = {
         toastErroDesconectar: 'Error disconnecting',
       },
       jira: {
+        escolhaProjeto: 'Choose the project',
+        projetosEncontrados: '{total} project(s) found in this instance.',
+        testeParaListar: 'Test the connection to pick the project from a list instead of typing its key.',
+        tiposDoProjeto: 'Issue types available in project {projeto}.',
         title: 'Configure Jira Service Management',
         description: 'Automatically create Jira tickets from incidents and risks.',
         comoFuncionaTitle: 'How it works',

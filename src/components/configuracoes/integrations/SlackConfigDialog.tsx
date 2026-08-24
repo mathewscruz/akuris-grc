@@ -26,7 +26,9 @@ import { INTEGRATION_EVENTS } from '@/lib/integration-events';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EventosDaIntegracao } from './EventosDaIntegracao';
 const EVENTOS_DISPONIVEIS = INTEGRATION_EVENTS;
+
 
 export function SlackConfigDialog({
   open,
@@ -258,35 +260,11 @@ export function SlackConfigDialog({
             )}
           </div>
 
-          {/* Eventos */}
-          <div className="space-y-3">
-            <Label>{t('configIntegrations.slack.eventosLabel')}</Label>
-            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-              {EVENTOS_DISPONIVEIS.map(evento => (
-                <div
-                  key={evento.id}
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-accent"
-                >
-                  <Checkbox
-                    id={evento.id}
-                    checked={selectedEvents.includes(evento.id)}
-                    onCheckedChange={() => toggleEvent(evento.id)}
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor={evento.id}
-                      className="text-sm cursor-pointer"
-                    >
-                      {t(`configIntegrations.events.${evento.id}.label`)}
-                    </label>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {t(`configIntegrations.events.${evento.id}.modulo`)}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </div>
+          <EventosDaIntegracao
+            prefixo="slack"
+            valor={selectedEvents}
+            onChange={setSelectedEvents}
+          />
 
           {/* Link documentação */}
           <a

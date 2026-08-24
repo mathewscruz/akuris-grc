@@ -299,8 +299,62 @@ serve(async (req) => {
           const orgData = await response.json();
           const tenantName = orgData.value?.[0]?.displayName || tenant_id;
 
+          /*
+            Autenticar nao chega -- e era so isso que este teste fazia.
+
+            `/organization` responde a qualquer app registada, mesmo sem uma
+            unica permissao concedida. O cartao ficava verde, a pessoa dava a
+            configuracao por feita, e o 403 aparecia semanas depois na primeira
+            sincronizacao, com uma mensagem do Graph que nao diz o que fazer.
+
+            Agora tocamos em cada endpoint que vamos mesmo usar e devolvemos o
+            que passou e o que falta -- com o nome da permissao que resolve.
+            Uma permissao em falta deixa de ser um misterio e passa a ser uma
+            linha para copiar para o portal.
+          */
+          const capacidades: Array<{
+            chave: string;
+            concedida: boolean;
+            permissao: string;
+          }> = [];
+
+          const testar = async (chave: string, url: string, permissao: string) => {
+            try {
+              const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+              capacidades.push({ chave, concedida: r.ok, permissao });
+            } catch {
+              capacidades.push({ chave, concedida: false, permissao });
+            }
+          };
+
+          await testar(
+            'utilizadores',
+            'https://graph.microsoft.com/v1.0/users?$top=1&$select=id',
+            'User.Read.All',
+          );
+          await testar(
+            'grupos',
+            'https://graph.microsoft.com/v1.0/groups?$top=1&$select=id',
+            'Group.Read.All',
+          );
+          await testar(
+            'papeis',
+            'https://graph.microsoft.com/v1.0/directoryRoles?$top=1',
+            'RoleManagement.Read.Directory',
+          );
+          await testar(
+            'dispositivos',
+            'https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$top=1',
+            'DeviceManagementManagedDevices.Read.All',
+          );
+          await testar(
+            'mfa',
+            'https://graph.microsoft.com/v1.0/reports/authenticationMethods/userRegistrationDetails?$top=1',
+            'AuditLog.Read.All',
+          );
+
           return new Response(
-            JSON.stringify({ success: true, tenant_name: tenantName }),
+            JSON.stringify({ success: true, tenant_name: tenantName, capacidades }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         } catch (error) {
