@@ -18,7 +18,7 @@ export interface AkurisToastOptions {
   description?: string;
   /** Ação opcional (label + onClick). */
   action?: { label: string; onClick: () => void };
-  /** Duração em ms. Default 4500. */
+  /** Duração em ms. Por omissão herda a do Toaster (2s). */
   duration?: number;
   /** Id estável — reutiliza (substitui) o mesmo toast em vez de empilhar. */
   id?: string | number;
@@ -39,7 +39,7 @@ export function akurisToast({
   title,
   description,
   action,
-  duration = 4500,
+  duration,
   id,
 }: AkurisToastOptions) {
   const label = eyebrow ? `${eyebrow} · ${title}` : title;

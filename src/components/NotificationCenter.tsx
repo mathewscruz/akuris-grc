@@ -3,6 +3,7 @@ import { IconExternal, IconCheck, IconSuccess, IconBell, IconArrowRight } from '
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useNotificacoesLidas } from '@/hooks/useNotificacoesLidas';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,7 +18,6 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { resolveNotificationModule } from '@/lib/notification-icons';
 import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/text-utils';
-import { logger } from '@/lib/logger';
 import { APROVACOES_PENDENTES_SELECT } from '@/components/documentos/aprovacoes-query';
 import { resolveNotificationTarget } from '@/lib/notification-target';
 import { ChangelogPanel, useChangelogFeed } from '@/components/changelog/ChangelogPanel';
@@ -36,26 +36,12 @@ interface Notification {
   isAutomatic?: boolean;
 }
 
-const STORAGE_KEY = 'readAutomaticNotifications';
-
-const getReadAutomaticNotifications = (): Set<string> => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? new Set(JSON.parse(stored)) : new Set();
-  } catch {
-    return new Set();
-  }
-};
-
-const markAutomaticNotificationAsRead = (notificationId: string) => {
-  try {
-    const readNotifications = getReadAutomaticNotifications();
-    readNotifications.add(notificationId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...readNotifications]));
-  } catch (error) {
-    logger.error('Erro ao salvar notificação como lida', { error: (error as Error)?.message, module: 'notifications' });
-  }
-};
+/*
+  O estado «lida» das notificações calculadas vivia aqui, em `localStorage`,
+  numa chave sem dono. Era por navegador e não por pessoa, sumia com qualquer
+  limpeza, e só marcava ao CLICAR — abrir o painel, ler tudo e fechar não
+  marcava nada. Mudou-se para a base, em `useNotificacoesLidas`.
+*/
 
 const getNotificationDisplay = (
   notification: Notification,
@@ -83,7 +69,7 @@ const NotificationCenter: React.FC = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const { t, locale } = useLanguage();
-  const [readAutomaticIds, setReadAutomaticIds] = useState<Set<string>>(getReadAutomaticNotifications());
+  const { lidas: readAutomaticIds, marcarLidas } = useNotificacoesLidas();
 
   // Buscar notificações manuais
   const { data: notifications = [], isLoading } = useQuery({
@@ -443,14 +429,7 @@ const NotificationCenter: React.FC = () => {
   });
 
   const handleMarkAllAsRead = () => {
-    const unreadAutomatic = automaticNotifications.filter(n => !n.read);
-    unreadAutomatic.forEach(n => markAutomaticNotificationAsRead(n.id));
-    setReadAutomaticIds(prev => {
-      const newSet = new Set(prev);
-      unreadAutomatic.forEach(n => newSet.add(n.id));
-      return newSet;
-    });
-    queryClient.invalidateQueries({ queryKey: ['automatic-notifications'] });
+    marcarLidas(automaticNotifications.filter((n) => !n.read).map((n) => n.id));
     markAllAsReadMutation.mutate();
   };
 
@@ -459,13 +438,7 @@ const NotificationCenter: React.FC = () => {
   const markRead = (notification: Notification) => {
     if (notification.read) return;
     if (notification.isAutomatic) {
-      markAutomaticNotificationAsRead(notification.id);
-      setReadAutomaticIds(prev => {
-        const newSet = new Set(prev);
-        newSet.add(notification.id);
-        return newSet;
-      });
-      queryClient.invalidateQueries({ queryKey: ['automatic-notifications'] });
+      marcarLidas([notification.id]);
     } else {
       markAsReadMutation.mutate(notification.id);
     }
@@ -628,6 +601,21 @@ const NotificationCenter: React.FC = () => {
         onOpenChange={(next) => {
           setIsOpen(next);
           if (next && tab === 'news') changelog.markSeen();
+          /*
+            Ver é ler.
+
+            Antes, so clicar numa notificacao a marcava — e ninguem clica em
+            «contrato X vence em 30 dias» para depois voltar atras. O resultado
+            era um sino permanentemente vermelho, que se aprende a ignorar. Ao
+            fechar o painel, o que esteve a vista fica lido.
+          */
+          if (!next) {
+            marcarLidas(allNotifications.filter((n) => n.isAutomatic && !n.read).map((n) => n.id));
+            const gravadasPorLer = allNotifications
+              .filter((n) => !n.isAutomatic && !n.read)
+              .map((n) => n.id);
+            if (gravadasPorLer.length > 0) markAllAsReadMutation.mutate();
+          }
         }}
       >
         <PopoverTrigger asChild>

@@ -21,9 +21,22 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       position="top-right"
       expand={true}
-      visibleToasts={4}
+      /*
+        Três é o limite, e dois segundos é a duração.
+        
+        Estava em quatro visíveis e 4,5s cada: uma acção que dispara três avisos
+        seguidos tapava o canto do ecrã durante quase cinco segundos. Um aviso
+        de confirmação não é para ser lido com atenção — é para se ver de canto
+        de olho que a coisa correu bem. O que exige leitura tem de estar no
+        ecrã, não num aviso que foge.
+
+        Quem precisar de mais tempo passa `duration` na chamada, e a guarda em
+        `src/__tests__/aviso-nao-se-demora.test.ts` obriga a que seja excepção
+        deliberada e rara.
+      */
+      visibleToasts={3}
       richColors={false}
-      duration={4500}
+      duration={2000}
       gap={12}
       offset={16}
       icons={{

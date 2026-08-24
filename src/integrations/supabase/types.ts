@@ -34,6 +34,18 @@ export type Database = {
   }
   public: {
     Tables: {
+      _snapshot_fusao: {
+        Row: {
+          "?column?": number | null
+        }
+        Insert: {
+          "?column?"?: number | null
+        }
+        Update: {
+          "?column?"?: number | null
+        }
+        Relationships: []
+      }
       access_review_history: {
         Row: {
           acao_tomada: string
@@ -6456,6 +6468,24 @@ export type Database = {
           },
         ]
       }
+      notificacoes_lidas: {
+        Row: {
+          chave: string
+          lida_em: string
+          user_id: string
+        }
+        Insert: {
+          chave: string
+          lida_em?: string
+          user_id: string
+        }
+        Update: {
+          chave?: string
+          lida_em?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -9816,8 +9846,13 @@ export type Database = {
           status: string
         }[]
       }
+      marcar_notificacoes_lidas: {
+        Args: { p_chaves: string[] }
+        Returns: number
+      }
       matriz_pertence_empresa: { Args: { matriz_id: string }; Returns: boolean }
       modulos_da_empresa: { Args: never; Returns: string[] }
+      podar_notificacoes_lidas: { Args: never; Returns: number }
       pode_ver_denuncia: { Args: { p_denuncia_id: string }; Returns: boolean }
       popular_ativos_demo: {
         Args: { p_empresa_id: string; p_user_id: string }
