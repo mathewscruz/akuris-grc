@@ -311,7 +311,22 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
             className="grid relative"
             style={{
               gridTemplateColumns: `auto repeat(${nImp}, 1fr)`,
-              gridTemplateRows: `repeat(${nProb}, 76px) auto`,
+              /*
+                As linhas crescem com o ecrã, em vez de ficarem em 76px.
+
+                A matriz é o ecrã inteiro do módulo de Riscos -- é para onde se
+                olha primeiro -- e ficava numa faixa baixa com metade da altura
+                por usar. As células apertadas obrigavam a contar as bolinhas
+                em vez de as ver: com 8 riscos numa célula de 76px, o número e
+                a etiqueta disputam o mesmo espaço.
+
+                `minmax` mantém o piso de 76px, para o telemóvel e para as
+                matrizes 3x3 não colapsarem, e deixa o resto esticar. O
+                `min-height` é o que faz a grelha reclamar a altura: sem ele,
+                `1fr` resolve-se pelo conteúdo e nada muda.
+              */
+              gridTemplateRows: `repeat(${nProb}, minmax(76px, 1fr)) auto`,
+              minHeight: 'min(62vh, 620px)',
               gap: 4,
             }}
           >

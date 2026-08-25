@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconView, IconMore, IconOrg } from '@/components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -125,9 +125,26 @@ interface Props {
    * só para isto -- a busca continua a levar direto ao item.
    */
   focoId?: string | null;
+  /**
+   * Quando a PÁGINA põe o botão de criar no cabeçalho, o gestor esconde o seu.
+   *
+   * O botão vivia numa linha própria por cima da tabela, alinhado à direita --
+   * fora do sítio onde está em todos os outros módulos, que é à altura do
+   * título. Quem passa de Riscos para Due Diligence procura-o em cima e não o
+   * encontra. A página abre o diálogo pelo `ref`.
+   */
+  botaoNovoNoCabecalho?: boolean;
 }
 
-export function FornecedoresManager({ acoesAvaliacao, focoId }: Props = {}) {
+/** O que a página pode pedir ao gestor. */
+export interface FornecedoresManagerHandle {
+  abrirNovo: () => void;
+}
+
+export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(function FornecedoresManager(
+  { acoesAvaliacao, focoId, botaoNovoNoCabecalho }: Props,
+  ref,
+) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -163,6 +180,9 @@ export function FornecedoresManager({ acoesAvaliacao, focoId }: Props = {}) {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // A página abre o diálogo de criar a partir do seu cabeçalho.
+  useImperativeHandle(ref, () => ({ abrirNovo: () => setDialogOpen(true) }), []);
 
   // Fetch fornecedores with assessment stats
   const { data: fornecedores = [], isLoading } = useQuery({
@@ -562,11 +582,13 @@ export function FornecedoresManager({ acoesAvaliacao, focoId }: Props = {}) {
         Input e o seu painel de filtros, a fazer a mesma coisa de outra maneira
         e noutro sitio do ecra.
       */}
-      <div className="mb-4 flex items-center justify-end">
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newSupplier')}
-        </Button>
-      </div>
+      {!botaoNovoNoCabecalho && (
+        <div className="mb-4 flex items-center justify-end">
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newSupplier')}
+          </Button>
+        </div>
+      )}
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
@@ -739,4 +761,4 @@ export function FornecedoresManager({ acoesAvaliacao, focoId }: Props = {}) {
 
     </>
   );
-}
+});

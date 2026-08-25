@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { TemplatesManager } from '@/components/due-diligence/TemplatesManager';
 import { AssessmentsManagerEnhanced } from '@/components/due-diligence/AssessmentsManagerEnhanced';
-import { FornecedoresManager } from '@/components/due-diligence/FornecedoresManager';
+import { FornecedoresManager, type FornecedoresManagerHandle } from '@/components/due-diligence/FornecedoresManager';
+import { Button } from '@/components/ui/button';
+import { IconAdd } from '@/components/icons';
 import { DueDiligenceDashboard } from '@/components/due-diligence/DueDiligenceDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
@@ -13,6 +15,9 @@ export default function DueDiligence() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('fornecedores');
+  // O botão de criar vive no cabeçalho, como nos outros módulos; o gestor
+  // abre o seu próprio diálogo quando a página lho pede.
+  const gestorFornecedores = useRef<FornecedoresManagerHandle>(null);
   const [assessmentFilter, setAssessmentFilter] = useState<{ fornecedorId?: string; fornecedorNome?: string } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [focoAvaliacao, setFocoAvaliacao] = useState<string | null>(null);
@@ -62,6 +67,14 @@ export default function DueDiligence() {
       <PageHeader
         title={t('modules.dueDiligence.title')}
         description={t('modules.dueDiligence.description')}
+        actions={
+          activeTab === 'fornecedores' ? (
+            <Button onClick={() => gestorFornecedores.current?.abrirNovo()}>
+              <IconAdd className="h-4 w-4 mr-2" />
+              {t('dueDiligence.fornecedoresManager.newSupplier')}
+            </Button>
+          ) : undefined
+        }
       />
 
       {/* Dashboard always visible on top */}
@@ -76,6 +89,8 @@ export default function DueDiligence() {
 
         <TabsContent value="fornecedores" className="space-y-6">
           <FornecedoresManager
+            ref={gestorFornecedores}
+            botaoNovoNoCabecalho
             acoesAvaliacao={{
               ver: (f) => {
                 setAssessmentFilter({ fornecedorId: f.id, fornecedorNome: f.nome });

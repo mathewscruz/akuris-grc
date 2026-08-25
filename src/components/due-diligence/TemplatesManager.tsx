@@ -621,18 +621,34 @@ export function TemplatesManager() {
             </div>
 
             {filteredTemplates.length > 0 ? (
-              <div className="space-y-3 p-6 pt-0">
+              /*
+                Linhas separadas por um fio, nao cartoes dentro de um cartao.
+
+                Cada template era um `Card` com borda propria DENTRO do `Card`
+                da lista -- duas molduras por linha -- e os «Padrao» levavam
+                ainda uma tinta amarela (`bg-warning/5`) que os fazia gritar
+                mais alto do que o conteudo. Com dez templates, a tela era um
+                mosaico de caixas.
+
+                Aqui segue o padrao do resto do produto: superficie unica,
+                divisao por fio, e um so realce no hover.
+              */
+              <div className="divide-y divide-border border-t">
                 {filteredTemplates.map((template) => (
-                  <Card key={template.id} className={`${!template.ativo ? 'opacity-60' : ''} ${template.padrao ? 'border-warning/30 bg-warning/5' : ''}`}>
-                    <CardContent className="p-4">
+                  <div
+                    key={template.id}
+                    className={`px-6 py-4 transition-ui hover:bg-accent/40 ${!template.ativo ? 'opacity-60' : ''}`}
+                  >
+                    <div className="contents">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-lg font-semibold truncate">{template.nome}</h3>
+                                <h3 className="text-sm font-medium truncate">{template.nome}</h3>
+                                {/* Selo neutro: «padrao» e uma origem, nao um aviso. */}
                                 {template.padrao && (
-                                  <StatusBadge tone="warning">
+                                  <StatusBadge tone="neutral">
                                     {t('dueDiligence.templatesManager.defaultBadge')}
                                   </StatusBadge>
                                 )}
@@ -652,6 +668,7 @@ export function TemplatesManager() {
                                 {template.ativo ? t('dueDiligence.templatesManager.statusActive') : t('dueDiligence.templatesManager.statusInactive')}
                               </StatusBadge>
                               <span className="text-xs">{t('dueDiligence.templatesManager.versionPrefix', { versao: String(template.versao) })}</span>
+                              <span className="text-xs">{t('dueDiligence.templatesManager.createdOn', { data: formatDateOnly(template.created_at) })}</span>
                             </div>
                           </div>
                         </div>
@@ -676,8 +693,17 @@ export function TemplatesManager() {
 
                           <Tooltip>
                             <TooltipTrigger asChild>
+                              {/*
+                                Contornado, nao cheio.
+
+                                Era `variant="default"` com `bg-primary` por
+                                cima -- um botao roxo solido repetido em CADA
+                                linha. Numa lista, dez accoes primarias sao
+                                zero accoes primarias: nada se destaca porque
+                                tudo se destaca.
+                              */}
                               <Button
-                                variant="default"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                   const event = new CustomEvent('createAssessmentFromTemplate', {
@@ -685,7 +711,6 @@ export function TemplatesManager() {
                                   });
                                   window.dispatchEvent(event);
                                 }}
-                                className="bg-primary"
                               >
                                 <IconAdd className="h-4 w-4 mr-1" />
                                 {t('dueDiligence.templatesManager.useTemplate')}
@@ -759,11 +784,13 @@ export function TemplatesManager() {
                         </div>
                       </div>
                       
-                      <div className="text-xs text-muted-foreground mt-2 border-t pt-2">
-                        {t('dueDiligence.templatesManager.createdOn', { data: formatDateOnly(template.created_at) })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      {/*
+                        A data volta para a linha do resto: tinha um fio so
+                        para si e ocupava uma altura inteira para dizer uma
+                        coisa que nem sequer se procura.
+                      */}
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (

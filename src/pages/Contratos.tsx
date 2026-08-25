@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { IconHistory, IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconInfo, IconFile, IconMoney, IconTrendUp, IconOrg, IconChart, IconFlag } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
@@ -21,7 +21,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { logger } from '@/lib/logger';
 import { ContratoDialogWizard } from '@/components/contratos/ContratoDialogWizard';
-import { FornecedoresManager } from '@/components/due-diligence/FornecedoresManager';
+import { FornecedoresManager, type FornecedoresManagerHandle } from '@/components/due-diligence/FornecedoresManager';
 import { MarcosDialog } from '@/components/contratos/MarcosDialog';
 import { DocumentosDialog } from '@/components/contratos/DocumentosDialog';
 import { AditivosDialog } from '@/components/contratos/AditivosDialog';
@@ -84,6 +84,8 @@ export default function Contratos() {
   const [marcosDialogOpen, setMarcosDialogOpen] = useState(false);
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('contratos');
+  // Cada aba tem a sua acção no cabeçalho: contrato numa, fornecedor na outra.
+  const gestorFornecedores = useRef<FornecedoresManagerHandle>(null);
   const [aditivosDialogOpen, setAditivosDialogOpen] = useState(false);
   const [trilhaDialogOpen, setTrilhaDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -435,7 +437,12 @@ export default function Contratos() {
                 <IconAdd className="h-4 w-4 mr-2" />
                 {t('fin.contratos.novo')}
               </Button>
-            ) : null
+            ) : (
+              <Button onClick={() => gestorFornecedores.current?.abrirNovo()}>
+                <IconAdd className="h-4 w-4 mr-2" />
+                {t('fin.fornecedores.novo')}
+              </Button>
+            )
           }
           secondaryActions={[
             { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <IconDownload className="h-4 w-4" />, onClick: handleExportCSV },
@@ -574,7 +581,11 @@ export default function Contratos() {
               vindo da busca global abre o fornecedor pedido. As avaliações de
               due diligence ficam no seu módulo — aqui não se injectam acções.
             */}
-            <FornecedoresManager focoId={searchParams.get('focus')} />
+            <FornecedoresManager
+              ref={gestorFornecedores}
+              botaoNovoNoCabecalho
+              focoId={searchParams.get('focus')}
+            />
           </TabsContent>
 
         </Tabs>

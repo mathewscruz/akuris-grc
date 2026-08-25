@@ -944,7 +944,20 @@ export function Riscos() {
           const matrixNode = (
             <div className="space-y-4">
               <SeverityKpiRow counts={sevCounts} />
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
+              {/*
+                A coluna do painel só existe quando há painel.
+
+                Era `lg:grid-cols-[1fr_320px]` fixo: 320px reservados para o
+                detalhe da célula, que só aparece depois de se clicar numa. Sem
+                selecção -- que é o estado em que a matriz é aberta -- ficava
+                uma faixa vazia de 320px à direita, e a matriz espremida no
+                resto. Numa tela larga isso é um terço do ecrã a não fazer nada.
+              */}
+              <div
+                className={`grid grid-cols-1 gap-4 items-start ${
+                  matrixCell ? 'lg:grid-cols-[1fr_320px]' : 'lg:grid-cols-1'
+                }`}
+              >
                 <div className="space-y-3">
                   <RiskHeatmap
                     riscos={riscos as any}
