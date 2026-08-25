@@ -72,6 +72,11 @@ interface Categoria {
   cor: string;
 }
 
+/* Referência estável para "sem categorias": um `[]` escrito na desestruturação
+   da query nasceria novo a cada render e faria tremer quem depende dele. */
+const SEM_CATEGORIAS: Categoria[] = [];
+const SEM_DOCUMENTOS: Documento[] = [];
+
 export default function Documentos() {
   const { t } = useLanguage();
   useFocusRow();
@@ -80,8 +85,6 @@ export default function Documentos() {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const queryClient = useQueryClient();
-  const [documentosFiltrados, setDocumentosFiltrados] = useState<Documento[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoria, setSelectedCategoria] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -114,7 +117,7 @@ export default function Documentos() {
   const { data: statsDocumentos } = useDocumentosStats();
 
   // React Query para documentos
-  const { data: documentos = [], isLoading: loading } = useQuery({
+  const { data: documentos = SEM_DOCUMENTOS, isLoading: loading } = useQuery({
     queryKey: ['documentos', empresaId],
     queryFn: async () => {
       if (!empresaId) return [];
@@ -154,8 +157,22 @@ export default function Documentos() {
     [perfis],
   );
 
-  // Fetch categorias via React Query
-  const { data: categoriasData = [] } = useQuery({
+  /*
+    Uma só fonte para as categorias: a query.
+
+    Havia um `useState` a espelhar isto, alimentado por um `useEffect` que
+    dependia do resultado da query. Com o valor por omissão escrito na
+    desestruturação (`= []`), enquanto `data` fosse `undefined` -- ou seja,
+    todo o carregamento frio, antes de `empresaId` chegar -- nascia um ARRAY
+    NOVO a cada render. O efeito via uma dependência nova, chamava `setState`,
+    provocava outro render, e o React acabava por abortar com "Maximum update
+    depth exceeded". A página piscava e queimava CPU até a query resolver.
+
+    O espelho não servia para nada (ninguém lhe mexia; era só passado como
+    prop), por isso desaparece. O vazio passa a ser uma constante partilhada,
+    para a referência não mudar entre renders.
+  */
+  const { data: categorias = SEM_CATEGORIAS } = useQuery({
     queryKey: ['documentos-categorias', empresaId],
     queryFn: async () => {
       if (!empresaId) return [];
@@ -169,14 +186,6 @@ export default function Documentos() {
     },
     enabled: !!empresaId,
   });
-
-  useEffect(() => {
-    setCategorias(categoriasData);
-  }, [categoriasData]);
-
-  useEffect(() => {
-    aplicarFiltros();
-  }, [documentos, searchTerm, selectedCategoria, selectedStatus, selectedTipo, filtrosAvancados]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -220,7 +229,21 @@ export default function Documentos() {
     }
   }, [searchParams, documentos, setSearchParams]);
 
-  const aplicarFiltros = () => {
+  /*
+    Filtrar é derivar, não guardar.
+
+    Isto era um `useState` alimentado por um `useEffect` que dependia de
+    `documentos`. Com o valor por omissão escrito na desestruturação da query
+    (`= []`), enquanto `data` fosse `undefined` -- todo o carregamento frio --
+    nascia um ARRAY NOVO a cada render, o efeito via dependência nova, chamava
+    `setState`, e o React abortava com "Maximum update depth exceeded". A
+    página queimava CPU e piscava até a query resolver.
+
+    Como valor derivado o problema não existe: não há estado para dessincronizar
+    nem efeito para disparar, e o resultado recalcula-se só quando algo de que
+    depende muda de facto.
+  */
+  const documentosFiltrados = useMemo(() => {
     let filtered = [...documentos];
 
     // Filtro de busca simples
@@ -325,8 +348,8 @@ export default function Documentos() {
       }
     }
 
-    setDocumentosFiltrados(filtered);
-  };
+    return filtered;
+  }, [documentos, searchTerm, selectedCategoria, selectedStatus, selectedTipo, filtrosAvancados]);
 
   const handleDeleteDocumento = (id: string) => {
     setDeleteConfirm({ open: true, documentoId: id });
