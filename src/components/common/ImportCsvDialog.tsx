@@ -311,7 +311,23 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
       setImportProgress(Math.round(((i + 1) / validRows.length) * 100));
     }
 
-    setStep('success');
+    /*
+      Só se declara sucesso se alguma linha entrou.
+
+      O passo `success` é um visto verde com "importação concluída". Era
+      atingido sempre -- inclusive quando as 200 linhas do ficheiro falhavam
+      todas. O toast de erro passava e desaparecia; o que ficava no ecrã era o
+      visto verde. Quem se afastou durante a barra de progresso voltava e lia
+      que tinha corrido bem.
+
+      Falhando tudo, fica-se na pré-visualização, onde os erros por linha estão
+      à vista e se pode corrigir o ficheiro.
+    */
+    if (successCount > 0) {
+      setStep('success');
+    } else {
+      setStep('preview');
+    }
 
     if (successCount > 0) {
       toast.success(texts.toastImportSuccess(successCount));

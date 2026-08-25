@@ -113,6 +113,18 @@ export const gapAnalysis = {
       },
       audit: {
         user: 'Usuário', system: 'Sistema', noChanges: 'Nenhuma alteração registrada',
+        // A trilha da auditoria mostra o estado de cada mudança. Estas chaves
+        // não existiam: o `t()` caía no seu recurso de emergência e devolvia o
+        // último segmento humanizado -- «Nao Conforme», sem acento, e «Na» em
+        // vez de «Não aplicável». Em inglês, saía português.
+        status: {
+          conforme: 'Conforme',
+          parcial: 'Parcial',
+          naoConforme: 'Não conforme',
+          na: 'Não aplicável',
+          naoAvaliado: 'Não avaliado',
+          pendente: 'Pendente',
+        },
       },
       pdfExport: {
         board: {
@@ -1023,6 +1035,14 @@ export const gapAnalysis = {
       },
       audit: {
         user: 'User', system: 'System', noChanges: 'No changes recorded',
+        status: {
+          conforme: 'Compliant',
+          parcial: 'Partial',
+          naoConforme: 'Non-compliant',
+          na: 'Not applicable',
+          naoAvaliado: 'Not assessed',
+          pendente: 'Pending',
+        },
       },
       pdfExport: {
         board: {

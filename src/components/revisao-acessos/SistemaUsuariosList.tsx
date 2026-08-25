@@ -318,6 +318,9 @@ export function SistemaUsuariosList() {
       <DataTable
         columns={columns}
         data={usuarios || []}
+        /* Sem isto, durante a leitura ficavam cabeçalhos de coluna sobre um
+           vazio branco -- sem indicação nenhuma de que algo estava a carregar. */
+        loading={loading}
         searchable
         searchPlaceholder={t("revisaoAcessosComp.usuariosList.searchPlaceholder")}
         pageSize={10}

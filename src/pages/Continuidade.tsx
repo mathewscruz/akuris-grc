@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { matchesSearch } from '@/lib/search-utils';
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconShield, IconFileCheck, IconTest, IconChecklist, IconCalendarClock } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ export default function Continuidade() {
   const [planoDialog, setPlanoDialog] = useState<{ open: boolean; plano?: any }>({ open: false });
   const [detalheDialog, setDetalheDialog] = useState<{ open: boolean; plano?: any }>({ open: false });
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: planos = [], isLoading } = useQuery({
     queryKey: ['continuidade-planos', empresaId],
@@ -77,6 +79,15 @@ export default function Continuidade() {
     const semRTO = planos.filter((p: any) => p.rto_horas == null).length;
     return { proximasRevisoes, semResponsavel, semRTO };
   }, [planos]);
+
+  // A caixa de busca existia mas não estava ligada a nada: escrevia-se e o
+  // campo ficava vazio. Filtra pelo que se lê na tabela -- nome, tipo, estado.
+  const planosFiltrados = useMemo(() => {
+    if (!searchTerm.trim()) return planos;
+    return (planos as any[]).filter((p) =>
+      matchesSearch(searchTerm, p.nome, p.tipo, p.status, p.descricao),
+    );
+  }, [planos, searchTerm]);
 
   const handleDelete = async () => {
     try {
@@ -263,10 +274,12 @@ export default function Continuidade() {
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
-            data={planos}
+            data={planosFiltrados}
             columns={columns}
             onRowClick={(row) => setDetalheDialog({ open: true, plano: row })}
             searchable
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
             searchPlaceholder={t('fin.continuidade.buscar')}
             loading={isLoading}
             emptyState={{

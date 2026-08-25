@@ -192,7 +192,19 @@ export function DataTable<T extends Record<string, any>>({
       <div className="p-4 sm:p-6 pb-4">
         <ModuleToolbar
           searchValue={searchable ? searchValue : undefined}
-          onSearchChange={searchable ? (onSearchChange ?? (() => {})) : undefined}
+          /*
+            Sem `onSearchChange` de quem chama, NÃO se desenha caixa de busca.
+
+            Havia aqui um `?? (() => {})`. Como o `ModuleToolbar` decide mostrar
+            a busca por `typeof onSearchChange === "function"`, aquele handler
+            de mentira contava como função: o campo aparecia, presa a
+            `searchValue = ""`, com o `onChange` a não fazer nada. Quem
+            escrevia não via NEM AS LETRAS -- lia-se como aplicação travada, não
+            como busca sem resultados. Eram oito ecrãs assim.
+
+            Melhor não oferecer do que oferecer algo que não responde.
+          */
+          onSearchChange={searchable ? onSearchChange : undefined}
           searchPlaceholder={_searchPlaceholder}
           filters={filters.map((filter) => (
             <ToolbarField key={filter.key} label={filter.label}>
@@ -377,7 +389,11 @@ export function DataTable<T extends Record<string, any>>({
                     >
                       {column.render
                         ? column.render(item[column.key as keyof T], item)
-                        : String(item[column.key as keyof T] || '-')
+                        /* `??` e não `||`: um `0` (ou `false`) é um valor, não
+                           uma ausência. Com `||`, uma licença com 0 postos lia-se
+                           "—" na tabela e "0" no cartão do telemóvel -- o mesmo
+                           dado com duas verdades conforme o tamanho do ecrã. */
+                        : String(item[column.key as keyof T] ?? '-')
                       }
                     </TableCell>
                   ))}

@@ -335,6 +335,8 @@ export default function SistemasContent() {
             data={filteredAndSortedSistemas}
             columns={sistemasColumns}
             onRowClick={(sistema) => setDetalheSistema(sistema)}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
             searchPlaceholder={t("governancaComp.sistemas.searchPlaceholder")}
             filters={sistemasFilters}
             sortField={sortField}

@@ -1,6 +1,9 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
+import { avisoDeConsultaFalhada, descreveErro } from '@/lib/erro-de-consulta';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
@@ -66,7 +69,33 @@ const isNetworkError = (error: unknown): boolean => {
   return false;
 };
 
+/*
+  Uma consulta que falha tem de o dizer.
+
+  Nenhum dos ecrãs de lista lê o `isError` da sua consulta -- só o `data`, que
+  cai no `[]` por omissão. Quando a consulta rebenta (rede, RLS, coluna
+  renomeada), a tabela mostra o ESTADO VAZIO: "Nenhum documento cadastrado --
+  comece criando documentos". Num produto de compliance isto é o pior erro
+  possível: o auditor conclui que a empresa não tem política nenhuma, quando na
+  verdade a leitura falhou.
+
+  Tratar isto ecrã a ecrã seriam catorze sítios e um esquecimento garantido no
+  próximo. Aqui apanha-se no sítio por onde todas passam. O ecrã continua a
+  mostrar o que sabe; o aviso é que deixa de faltar.
+*/
+const queryCache = new QueryCache({
+  onError: (error, query) => {
+    logger.error('Consulta falhou', {
+      chave: JSON.stringify(query.queryKey),
+      erro: descreveErro(error),
+    });
+    const aviso = avisoDeConsultaFalhada(query.queryKey);
+    toast.error(aviso.titulo, { id: aviso.id, description: aviso.descricao });
+  },
+});
+
 const queryClient = new QueryClient({
+  queryCache,
   defaultOptions: {
     queries: {
       staleTime: 2 * 60 * 1000,
