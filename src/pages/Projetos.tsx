@@ -8,6 +8,10 @@ import { StatStrip } from '@/components/ui/stat-strip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { Progress } from '@/components/ui/progress';
 import { useProjetos } from '@/hooks/useProjetos';
 import { useProjetoStats } from '@/hooks/useProjetoStats';
 import { ProjetoDialog } from '@/components/projetos/ProjetoDialog';
@@ -15,6 +19,7 @@ import { ProjetoActionsMenu } from '@/components/projetos/ProjetoActionsMenu';
 import type { Projeto } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/lib/i18n-format';
+import { parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 
 const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'info'> = {
@@ -29,6 +34,47 @@ export default function Projetos() {
   const { t, locale } = useLanguage();
   const { data: projetos = [], isLoading } = useProjetos();
   const { data: stats } = useProjetoStats();
+  const { empresaId } = useEmpresaId();
+
+  /*
+    O cartao dizia nome, estado, descricao e duas datas -- e mais nada.
+
+    Nenhuma dessas coisas responde a pergunta que se faz ao olhar para uma
+    lista de projetos: em que pe esta? Um projeto com 40 tarefas por fazer e
+    um com tudo concluido tinham exactamente o mesmo aspecto, e so se
+    distinguiam entrando em cada um.
+
+    Uma consulta agregada para todos os projetos, em vez de uma por cartao:
+    com dez projetos seriam dez consultas a fazer a mesma coisa.
+  */
+  const { data: tarefasPorProjeto } = useQuery({
+    queryKey: ['projetos-progresso', empresaId],
+    enabled: !!empresaId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projeto_tarefas' as never)
+        .select('projeto_id, concluida_em, prazo, projetos!inner(empresa_id)')
+        .eq('projetos.empresa_id', empresaId!);
+      if (error) throw error;
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const mapa = new Map<string, { total: number; feitas: number; atrasadas: number }>();
+      for (const t of (data ?? []) as any[]) {
+        const linha = mapa.get(t.projeto_id) ?? { total: 0, feitas: 0, atrasadas: 0 };
+        linha.total += 1;
+        if (t.concluida_em) linha.feitas += 1;
+        // `parseDataLocal`, nao `new Date`: `prazo` e coluna `date`, e
+        // `new Date('2026-08-25')` e meia-noite UTC -- o dia ANTERIOR a oeste
+        // de Greenwich. Uma tarefa que vence hoje apareceria atrasada.
+        else if (t.prazo && parseDataLocal(t.prazo) < hoje) linha.atrasadas += 1;
+        mapa.set(t.projeto_id, linha);
+      }
+      return mapa;
+    },
+  });
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<Projeto | null>(null);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
@@ -90,7 +136,11 @@ export default function Projetos() {
           action={!mostrarArquivados ? { label: t('projetos.page.createProject'), onClick: openNovo } : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        /*
+          Quatro colunas em ecras largos: com tres, um monitor de 2000px punha
+          cartoes gordos e meia tela vazia por baixo.
+        */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {visiveis.map((p) => (
             <Card
               key={p.id}
@@ -109,7 +159,35 @@ export default function Projetos() {
                   </div>
                 </div>
                 {p.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{p.descricao}</p>}
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+
+                {(() => {
+                  const c = tarefasPorProjeto?.get(p.id);
+                  const total = c?.total ?? 0;
+                  const feitas = c?.feitas ?? 0;
+                  const pct = total ? Math.round((feitas / total) * 100) : 0;
+                  return (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          {total
+                            ? t('projetos.page.cardProgresso', { feitas: String(feitas), total: String(total) })
+                            : t('projetos.page.cardSemTarefas')}
+                        </span>
+                        {total > 0 && <span className="font-medium tabular-nums">{pct}%</span>}
+                      </div>
+                      {/* Sem tarefas nao ha barra: uma barra a zero le-se como
+                          «nao comecou», e nao comecar e diferente de nao ter. */}
+                      {total > 0 && <Progress value={pct} className="h-1.5" />}
+                      {!!c?.atrasadas && (
+                        <p className="text-xs text-destructive">
+                          {t('projetos.page.cardAtrasadas', { n: String(c.atrasadas) })}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2.5">
                   <span>{p.data_inicio ? formatDate(p.data_inicio, locale) : '—'}</span>
                   <span>→ {p.data_fim_prevista ? formatDate(p.data_fim_prevista, locale) : '—'}</span>
                 </div>

@@ -120,7 +120,18 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
   };
 
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-72 rounded-lg border border-border bg-muted/30 p-3 transition-ui ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
+    /*
+      As colunas esticam para ocupar o quadro.
+
+      Eram `w-72` fixos com `flex-shrink-0`: num monitor largo, quatro colunas
+      de 288px deixavam mais de metade do quadro vazio a direita, e as tarefas
+      espremidas numa coluna estreita ao lado de todo esse espaco por usar.
+
+      `flex-1` com piso e tecto: com poucas colunas crescem ate 26rem -- passar
+      disso torna o cartao de tarefa uma linha larga e dificil de ler -- e com
+      muitas param nos 17rem e o `overflow-x-auto` do pai trata do resto.
+    */
+    <div ref={setNodeRef} className={`flex-1 min-w-[17rem] max-w-[26rem] rounded-lg border border-border bg-muted/30 p-3 transition-ui ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: coluna.cor ?? '#64748b' }} />
@@ -131,7 +142,9 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
           <IconAdd className="h-4 w-4" />
         </Button>
       </div>
-      <div className="space-y-2 min-h-[100px]">
+      {/* O corpo cresce com o ecra: 100px deixava o quadro atarracado,
+          com mais moldura do que conteudo. */}
+      <div className="space-y-2 min-h-[min(48vh,420px)]">
         {tarefas.map((tt) => (
           <DraggableTask key={tt.id} tarefa={tt} onClick={() => onEdit(tt)} />
         ))}
