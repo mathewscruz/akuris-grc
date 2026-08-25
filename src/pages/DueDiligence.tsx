@@ -15,13 +15,9 @@ export default function DueDiligence() {
   const [assessmentFilter, setAssessmentFilter] = useState<{ fornecedorId?: string; fornecedorNome?: string } | null>(null);
 
   useEffect(() => {
-    const handleNavigation = (event: CustomEvent) => {
-      setActiveTab(event.detail.tab);
-      if (event.detail.filter) {
-        setAssessmentFilter(event.detail.filter);
-      }
-    };
-
+    // Vindo de um template: abre a aba de avaliações e pede a criação já com o
+    // template escolhido. (A navegação por fornecedor deixou de passar pelo
+    // `window`: o gestor de fornecedores chama as acções directamente.)
     const handleCreateAssessmentFromTemplate = (event: CustomEvent) => {
       setActiveTab('assessments');
       setTimeout(() => {
@@ -31,12 +27,10 @@ export default function DueDiligence() {
         window.dispatchEvent(createEvent);
       }, 100);
     };
-    
-    window.addEventListener('navigateToDueDiligence', handleNavigation as EventListener);
+
     window.addEventListener('createAssessmentFromTemplate', handleCreateAssessmentFromTemplate as EventListener);
-    
+
     return () => {
-      window.removeEventListener('navigateToDueDiligence', handleNavigation as EventListener);
       window.removeEventListener('createAssessmentFromTemplate', handleCreateAssessmentFromTemplate as EventListener);
     };
   }, []);
@@ -59,7 +53,27 @@ export default function DueDiligence() {
         </TabsList>
 
         <TabsContent value="fornecedores" className="space-y-6">
-          <FornecedoresManager />
+          <FornecedoresManager
+            acoesAvaliacao={{
+              ver: (f) => {
+                setAssessmentFilter({ fornecedorId: f.id, fornecedorNome: f.nome });
+                setActiveTab('assessments');
+              },
+              nova: (f) => {
+                setAssessmentFilter({ fornecedorId: f.id, fornecedorNome: f.nome });
+                setActiveTab('assessments');
+                // A aba de avaliações só monta ao trocar; o pedido de "nova"
+                // chega logo a seguir, quando já há quem o ouça.
+                setTimeout(() => {
+                  window.dispatchEvent(
+                    new CustomEvent('createAssessment', {
+                      detail: { fornecedorId: f.id, fornecedorNome: f.nome },
+                    }),
+                  );
+                }, 100);
+              },
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="assessments" className="space-y-6">

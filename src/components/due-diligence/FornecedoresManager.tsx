@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconView, IconMore, IconOrg } from '@/components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { resolveCriticidadeTone } from '@/lib/status-tone';
 import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor } from '@/lib/fornecedor-status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
@@ -36,6 +37,7 @@ interface Fornecedor {
   status: string;
   categoria?: string;
   tipo: string;
+  avaliacao_risco?: string;
   created_at?: string;
   dados_receita?: ConsultaCnpj | Json | null;
   receita_consultada_em?: string | null;
@@ -51,6 +53,8 @@ interface FornecedorFormData {
   contato_responsavel: string;
   observacoes: string;
   categoria: string;
+  tipo: string;
+  avaliacao_risco: string;
   /**
    * A fotografia da Receita anda com o formulário.
    *
@@ -94,7 +98,36 @@ const CATEGORIAS = [
   'Outro'
 ];
 
-export function FornecedoresManager() {
+/**
+ * Um só gestor de fornecedores, para os dois módulos que os geriam.
+ *
+ * Antes: a aba de Fornecedores em Contratos e a de Due Diligence eram duas
+ * telas sobre a MESMA tabela, com campos e capacidades diferentes -- só a de
+ * DD consultava a Receita, só a de Contratos tinha PJ/PF e avaliação de risco.
+ * Um fornecedor criado num lado nascia pobre no outro.
+ *
+ * Agora é este componente, com o superconjunto: consulta à Receita, PJ/PF,
+ * avaliação de risco, contagem de contratos e as avaliações de due diligence.
+ * As acções de avaliação (Ver / Nova) vêm por `props`, porque são o único
+ * pedaço que difere entre os módulos: em DD abrem a aba de avaliações na mesma
+ * página; em Contratos levam ao módulo de Due Diligence. O gestor não precisa
+ * de saber qual dos dois -- só de as chamar.
+ */
+interface Props {
+  /** Quando presente, mostra "Ver avaliações"/"Nova avaliação" no menu. */
+  acoesAvaliacao?: {
+    ver: (fornecedor: { id: string; nome: string }) => void;
+    nova: (fornecedor: { id: string; nome: string }) => void;
+  };
+  /**
+   * Deep-link da busca global: ao chegar com um `focoId`, abre logo esse
+   * fornecedor para edição. Substitui o diálogo que a aba de Contratos tinha
+   * só para isto -- a busca continua a levar direto ao item.
+   */
+  focoId?: string | null;
+}
+
+export function FornecedoresManager({ acoesAvaliacao, focoId }: Props = {}) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -123,6 +156,8 @@ export function FornecedoresManager() {
     contato_responsavel: '',
     observacoes: '',
     categoria: '',
+    tipo: 'pessoa_juridica',
+    avaliacao_risco: 'baixo',
     consultaReceita: null
   });
 
@@ -141,6 +176,17 @@ export function FornecedoresManager() {
         .order('nome');
 
       if (error) throw error;
+
+      // Contagem de contratos por fornecedor -- a coluna que a aba de Contratos
+      // mostrava e que não se quer perder na unificação.
+      const { data: contratos } = await supabase
+        .from('contratos')
+        .select('fornecedor_id')
+        .eq('empresa_id', empresaId!);
+      const contratosPorForn = new Map<string, number>();
+      (contratos || []).forEach((c: any) => {
+        if (c.fornecedor_id) contratosPorForn.set(c.fornecedor_id, (contratosPorForn.get(c.fornecedor_id) || 0) + 1);
+      });
 
       // Fetch assessment stats for all fornecedores
       const { data: assessments } = await supabase
@@ -182,6 +228,7 @@ export function FornecedoresManager() {
 
       return (fornecedoresData || []).map(f => ({
         ...f,
+        _contratosCount: contratosPorForn.get(f.id) || 0,
         _assessmentStats:
           assessmentMap.get(f.id) ||
           (f.email ? assessmentMap.get(`email:${f.email.trim().toLowerCase()}`) : undefined) ||
@@ -212,16 +259,20 @@ export function FornecedoresManager() {
           contato_responsavel: data.contato_responsavel || null,
           observacoes: data.observacoes || null,
           categoria: data.categoria || null,
+          tipo: data.tipo || 'pessoa_juridica',
+          avaliacao_risco: data.avaliacao_risco || 'baixo',
           ...camposDaReceita(data.consultaReceita),
           empresa_id: profile?.empresa_id,
           status: 'ativo',
-          tipo: 'fornecedor'
         });
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fornecedores-with-stats'] });
+      // A lista simples ['fornecedores'] alimenta o wizard de contrato e o
+      // detalhe do contrato; mantê-la fresca quando o gestor vive em Contratos.
+      queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
       setDialogOpen(false);
       resetForm();
       toast({ title: t('dueDiligence.fornecedoresManager.toastCreatedTitle'), description: t('dueDiligence.fornecedoresManager.toastCreatedDescription') });
@@ -244,6 +295,8 @@ export function FornecedoresManager() {
           contato_responsavel: data.contato_responsavel || null,
           observacoes: data.observacoes || null,
           categoria: data.categoria || null,
+          tipo: data.tipo || 'pessoa_juridica',
+          avaliacao_risco: data.avaliacao_risco || 'baixo',
           ...camposDaReceita(data.consultaReceita),
         })
         .eq('id', id);
@@ -252,6 +305,9 @@ export function FornecedoresManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fornecedores-with-stats'] });
+      // A lista simples ['fornecedores'] alimenta o wizard de contrato e o
+      // detalhe do contrato; mantê-la fresca quando o gestor vive em Contratos.
+      queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
       setDialogOpen(false);
       resetForm();
       setEditingFornecedor(null);
@@ -272,6 +328,9 @@ export function FornecedoresManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fornecedores-with-stats'] });
+      // A lista simples ['fornecedores'] alimenta o wizard de contrato e o
+      // detalhe do contrato; mantê-la fresca quando o gestor vive em Contratos.
+      queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
       setDeleteDialog({ open: false, fornecedor: null });
       toast({ title: t('dueDiligence.fornecedoresManager.toastCreatedTitle'), description: t('dueDiligence.fornecedoresManager.toastRemovedDescription') });
     },
@@ -281,7 +340,7 @@ export function FornecedoresManager() {
   });
 
   const resetForm = () => {
-    setFormData({ nome: '', email: '', cnpj: '', telefone: '', endereco: '', contato_responsavel: '', observacoes: '', categoria: '', consultaReceita: null });
+    setFormData({ nome: '', email: '', cnpj: '', telefone: '', endereco: '', contato_responsavel: '', observacoes: '', categoria: '', tipo: 'pessoa_juridica', avaliacao_risco: 'baixo', consultaReceita: null });
   };
 
   const handleEdit = (fornecedor: Fornecedor) => {
@@ -295,10 +354,23 @@ export function FornecedoresManager() {
       contato_responsavel: fornecedor.contato_responsavel || '',
       observacoes: fornecedor.observacoes || '',
       categoria: fornecedor.categoria || '',
+      tipo: fornecedor.tipo || 'pessoa_juridica',
+      avaliacao_risco: fornecedor.avaliacao_risco || 'baixo',
       consultaReceita: (fornecedor.dados_receita as ConsultaCnpj | null) ?? null
     });
     setDialogOpen(true);
   };
+
+  // Deep-link: abre o fornecedor pedido assim que a lista o tiver, uma só vez.
+  const focoTratado = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focoId || focoTratado.current === focoId) return;
+    const alvo = fornecedores.find((f) => f.id === focoId);
+    if (alvo) {
+      focoTratado.current = focoId;
+      handleEdit(alvo);
+    }
+  }, [focoId, fornecedores]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -316,6 +388,18 @@ export function FornecedoresManager() {
   const handleOpenChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) { setEditingFornecedor(null); resetForm(); }
+  };
+
+  // O nível de risco declarado (baixo/médio/alto/crítico) traduz-se pelas chaves
+  // que o resto do Akuris já usa, para o selo não ficar preso ao português.
+  const rotuloRisco = (v?: string) => {
+    switch (v) {
+      case 'baixo': return t('campos.opcoes.baixo');
+      case 'medio': return t('campos.opcoes.medio');
+      case 'alto': return t('campos.opcoes.alto');
+      case 'critico': return t('campos.opcoes.critico');
+      default: return v ? formatStatus(v) : '-';
+    }
   };
 
   const getRiskBadge = (stats: { total: number; lastScore: number | null; pending: number }) => {
@@ -369,6 +453,15 @@ export function FornecedoresManager() {
       render: (_: any, f: any) => (f.categoria ? formatStatus(f.categoria) : '-'),
     },
     {
+      key: 'tipo',
+      label: t('dueDiligence.fornecedoresManager.colTipo'),
+      sortable: true,
+      render: (_: any, f: any) =>
+        f.tipo === 'pessoa_fisica'
+          ? t('dueDiligence.fornecedoresManager.tipoPF')
+          : t('dueDiligence.fornecedoresManager.tipoPJ'),
+    },
+    {
       key: 'email',
       label: t('dueDiligence.fornecedoresManager.colEmail'),
       render: (_: any, f: any) => f.email || '-',
@@ -379,6 +472,27 @@ export function FornecedoresManager() {
       render: (_: any, f: any) => (
         <span className="whitespace-nowrap">{f.telefone || '-'}</span>
       ),
+    },
+    {
+      key: 'contratos',
+      label: t('dueDiligence.fornecedoresManager.colContratos'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <span className="tabular-nums">{f._contratosCount ?? 0}</span>
+      ),
+    },
+    {
+      key: 'avaliacao_risco',
+      label: t('dueDiligence.fornecedoresManager.colRisco'),
+      sortable: true,
+      render: (_: any, f: any) =>
+        f.avaliacao_risco ? (
+          <StatusBadge {...resolveCriticidadeTone(f.avaliacao_risco)}>
+            {rotuloRisco(f.avaliacao_risco)}
+          </StatusBadge>
+        ) : (
+          '-'
+        ),
     },
     {
       key: 'avaliacao',
@@ -406,22 +520,16 @@ export function FornecedoresManager() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onClick={() => {
-              const event = new CustomEvent('navigateToDueDiligence', {
-                detail: { tab: 'assessments', filter: { fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome } }
-              });
-              window.dispatchEvent(event);
-            }}>
-              <IconView className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.viewAssessments')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              const event = new CustomEvent('createAssessment', {
-                detail: { fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome }
-              });
-              window.dispatchEvent(event);
-            }}>
-              <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newAssessment')}
-            </DropdownMenuItem>
+            {acoesAvaliacao && (
+              <>
+                <DropdownMenuItem onClick={() => acoesAvaliacao.ver({ id: fornecedor.id, nome: fornecedor.nome })}>
+                  <IconView className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.viewAssessments')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => acoesAvaliacao.nova({ id: fornecedor.id, nome: fornecedor.nome })}>
+                  <IconAdd className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newAssessment')}
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuItem onClick={() => handleEdit(fornecedor)}>
               <IconEdit className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.edit')}
             </DropdownMenuItem>
@@ -517,6 +625,28 @@ export function FornecedoresManager() {
                         {CATEGORIAS.map((cat) => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tipo">{t('dueDiligence.fornecedoresManager.fieldTipo')}</Label>
+                    <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pessoa_juridica">{t('dueDiligence.fornecedoresManager.tipoPJ')}</SelectItem>
+                        <SelectItem value="pessoa_fisica">{t('dueDiligence.fornecedoresManager.tipoPF')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="avaliacao_risco">{t('dueDiligence.fornecedoresManager.fieldRisco')}</Label>
+                    <Select value={formData.avaliacao_risco} onValueChange={(value) => setFormData({ ...formData, avaliacao_risco: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
+                        <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
+                        <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
+                        <SelectItem value="critico">{t('campos.opcoes.critico')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

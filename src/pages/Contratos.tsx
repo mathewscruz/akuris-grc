@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { IconHistory, IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconInfo, IconFile, IconMoney, IconUsers, IconTrendUp, IconOrg, IconChart, IconFlag } from '@/components/icons';
+import { IconHistory, IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconInfo, IconFile, IconMoney, IconTrendUp, IconOrg, IconChart, IconFlag } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { logger } from '@/lib/logger';
 import { ContratoDialogWizard } from '@/components/contratos/ContratoDialogWizard';
-import { FornecedorDialog } from '@/components/contratos/FornecedorDialog';
+import { FornecedoresManager } from '@/components/due-diligence/FornecedoresManager';
 import { MarcosDialog } from '@/components/contratos/MarcosDialog';
 import { DocumentosDialog } from '@/components/contratos/DocumentosDialog';
 import { AditivosDialog } from '@/components/contratos/AditivosDialog';
@@ -68,23 +68,6 @@ interface Contrato {
   } | null;
 }
 
-interface Fornecedor {
-  id: string;
-  nome: string;
-  cnpj: string;
-  email: string;
-  telefone: string;
-  endereco: string;
-  contato_responsavel: string;
-  tipo: string;
-  status: string;
-  categoria: string;
-  avaliacao_risco: string;
-  data_cadastro: string;
-  observacoes: string;
-  contratos_count?: number;
-}
-
 export default function Contratos() {
   const { t } = useLanguage();
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
@@ -93,17 +76,11 @@ export default function Contratos() {
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchTermFornecedor, setSearchTermFornecedor] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [tipoFilter, setTipoFilter] = useState('todos');
-  const [statusFornecedorFilter, setStatusFornecedorFilter] = useState('todos');
-  const [categoriaFornecedorFilter, setCategoriaFornecedorFilter] = useState('todos');
-  const [riscoFornecedorFilter, setRiscoFornecedorFilter] = useState('todos');
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [detalheContrato, setDetalheContrato] = useState<Contrato | null>(null);
-  const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [fornecedorDialogOpen, setFornecedorDialogOpen] = useState(false);
   const [marcosDialogOpen, setMarcosDialogOpen] = useState(false);
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('contratos');
@@ -112,10 +89,9 @@ export default function Contratos() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [relatoriosOpen, setRelatoriosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; type: 'contrato' | 'fornecedor' }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({
     open: false,
     id: '',
-    type: 'contrato'
   });
   const { toast } = useToast();
   
@@ -186,23 +162,10 @@ export default function Contratos() {
         .order('nome');
 
       if (error) throw error;
-
-      const { data: contratosData } = await supabase
-        .from('contratos')
-        .select('fornecedor_id')
-        .eq('empresa_id', empresaId);
-
-      const contratosCountMap: Record<string, number> = {};
-      (contratosData || []).forEach(c => {
-        if (c.fornecedor_id) {
-          contratosCountMap[c.fornecedor_id] = (contratosCountMap[c.fornecedor_id] || 0) + 1;
-        }
-      });
-
-      return (data || []).map(f => ({
-        ...f,
-        contratos_count: contratosCountMap[f.id] || 0
-      }));
+      // Esta lista alimenta o selector do wizard de contrato e o selo de risco
+      // na gaveta do contrato. A contagem de contratos por fornecedor -- que a
+      // antiga aba mostrava -- vive agora no gestor unico (Due Diligence).
+      return data || [];
     },
     enabled: !!empresaId,
   });
@@ -226,11 +189,9 @@ export default function Contratos() {
       setDialogOpen(true);
       return;
     }
-    const fornecedor = fornecedores.find((f) => f.id === focusId);
-    if (fornecedor) {
+    if (fornecedores.some((f) => f.id === focusId)) {
+      // O gestor de fornecedores recebe o `focoId` e abre o registo sozinho.
       setCurrentTab('fornecedores');
-      setSelectedFornecedor(fornecedor);
-      setFornecedorDialogOpen(true);
     }
   }, [searchParams, contratos, fornecedores]);
 
@@ -242,24 +203,19 @@ export default function Contratos() {
     queryClient.invalidateQueries({ queryKey: ['contratos-stats'] });
   };
 
-  const handleEdit = (item: Contrato | Fornecedor, type: 'contrato' | 'fornecedor') => {
-    if (type === 'contrato') {
-      setSelectedContrato(item as Contrato);
-      setDialogOpen(true);
-    } else {
-      setSelectedFornecedor(item as Fornecedor);
-      setFornecedorDialogOpen(true);
-    }
+  const handleEdit = (item: Contrato) => {
+    setSelectedContrato(item);
+    setDialogOpen(true);
   };
 
-  const handleDelete = (id: string, type: 'contrato' | 'fornecedor') => {
-    setDeleteConfirm({ open: true, id, type });
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ open: true, id });
   };
 
   const confirmDelete = async () => {
     try {
       const { error } = await supabase
-        .from(deleteConfirm.type === 'contrato' ? 'contratos' : 'fornecedores')
+        .from('contratos')
         .delete()
         .eq('id', deleteConfirm.id);
 
@@ -267,27 +223,19 @@ export default function Contratos() {
 
       toast({
         title: t('fin.comum.sucesso'),
-        description: `${deleteConfirm.type === 'contrato' ? 'Contrato' : t('fin.comum.fornecedor')} excluído com sucesso`,
+        description: `Contrato excluído com sucesso`,
       });
 
       invalidateData();
-      setDeleteConfirm({ open: false, id: '', type: 'contrato' });
+      setDeleteConfirm({ open: false, id: '' });
     } catch (error) {
       logger.error('Erro ao excluir', { error: error instanceof Error ? error.message : String(error) });
       toast({
         title: t('fin.comum.erro'),
-        description: `Erro ao excluir ${deleteConfirm.type === 'contrato' ? 'contrato' : 'fornecedor'}`,
+        description: `Erro ao excluir contrato`,
         variant: "destructive",
       });
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    return (
-      <StatusBadge {...resolveContratoStatusTone(status)}>
-        {formatStatus(status)}
-      </StatusBadge>
-    );
   };
 
   /** Estado derivado (camada única de métricas): vencido não fica "ativo". */
@@ -335,12 +283,6 @@ export default function Contratos() {
     toast({ title: t('fin.comum.exportacaoConcluida'), description: t('fin.comum.csvBaixado') });
   };
 
-  // Categorias únicas de fornecedores
-  const categoriasFornecedor = useMemo(() => {
-    const cats = new Set(fornecedores.map(f => f.categoria).filter(Boolean));
-    return Array.from(cats) as string[];
-  }, [fornecedores]);
-
   const filteredContratos = useMemo(() => {
     return contratos.filter(contrato => {
       const matchesSearch = contrato.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -353,27 +295,12 @@ export default function Contratos() {
     });
   }, [contratos, searchTerm, statusFilter, tipoFilter]);
 
-  const filteredFornecedores = useMemo(() => {
-    return fornecedores.filter(fornecedor => {
-      const matchesSearch = fornecedor.nome.toLowerCase().includes(searchTermFornecedor.toLowerCase()) ||
-             fornecedor.cnpj?.toLowerCase().includes(searchTermFornecedor.toLowerCase());
-      const matchesStatus = statusFornecedorFilter === 'todos' || fornecedor.status === statusFornecedorFilter;
-      const matchesCategoria = categoriaFornecedorFilter === 'todos' || fornecedor.categoria === categoriaFornecedorFilter;
-      const matchesRisco = riscoFornecedorFilter === 'todos' || fornecedor.avaliacao_risco === riscoFornecedorFilter;
-      return matchesSearch && matchesStatus && matchesCategoria && matchesRisco;
-    });
-  }, [fornecedores, searchTermFornecedor, statusFornecedorFilter, categoriaFornecedorFilter, riscoFornecedorFilter]);
-
   // Ordenação A-Z / Z-A
   const contratoAccessors = useMemo(() => ({
     fornecedor: (c: any) => c.fornecedores?.nome ?? '',
     valor: (c: any) => (c.valor === null || c.valor === undefined ? null : Number(c.valor)),
   }), []);
   const { sorted: sortedContratos, sort: sortContratos, toggleSort: toggleSortContratos } = useTableSort(filteredContratos as any[], contratoAccessors);
-  const fornecedorAccessors = useMemo(() => ({
-    contratos_count: (f: any) => Number(f.contratos_count ?? 0),
-  }), []);
-  const { sorted: sortedFornecedores, sort: sortFornecedores, toggleSort: toggleSortFornecedores } = useTableSort(filteredFornecedores as any[], fornecedorAccessors);
 
   /*
     A paginacao manual saiu -- o `DataTable` traz a sua, ja traduzida.
@@ -462,7 +389,7 @@ export default function Contratos() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={() => handleEdit(contrato, 'contrato')}>
+              <DropdownMenuItem onClick={() => handleEdit(contrato)}>
                 <IconEdit className="mr-2 h-4 w-4" />
                 {t('sweepDados.contratos.editar')}
               </DropdownMenuItem>
@@ -484,7 +411,7 @@ export default function Contratos() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => handleDelete(contrato.id, 'contrato')}
+                onClick={() => handleDelete(contrato.id)}
                 className="text-destructive"
               >
                 <IconDelete className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
@@ -495,80 +422,6 @@ export default function Contratos() {
     },
   ];
 
-  const colunasFornecedores: Column<any>[] = [
-    {
-      key: 'nome',
-      label: t('fin.comum.nome'),
-      sortable: true,
-      render: (_: any, f: any) => (
-        <div>
-          <div className="font-medium">{f.nome}</div>
-          <div className="text-sm text-muted-foreground">{f.cnpj}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'tipo',
-      label: t('fin.comum.tipo'),
-      sortable: true,
-      render: (_: any, f: any) => (
-        <Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(f.tipo)}</Badge>
-      ),
-    },
-    {
-      key: 'categoria',
-      label: t('cardsKpi.sweep.contratos.categoria'),
-      sortable: true,
-      render: (_: any, f: any) => (
-        <Badge variant="secondary" className="capitalize whitespace-nowrap">{f.categoria || '-'}</Badge>
-      ),
-    },
-    {
-      key: 'contratos_count',
-      label: t('cardsKpi.sweep.contratos.contratos'),
-      sortable: true,
-      render: (_: any, f: any) => <Badge variant="outline">{f.contratos_count || 0}</Badge>,
-    },
-    {
-      key: 'avaliacao_risco',
-      label: t('cardsKpi.sweep.contratos.risco'),
-      sortable: true,
-      render: (_: any, f: any) => (f.avaliacao_risco ? getRiskBadge(f.avaliacao_risco) : '-'),
-    },
-    {
-      key: 'status',
-      label: t('fin.comum.status'),
-      sortable: true,
-      render: (_: any, f: any) => getStatusBadge(f.status),
-    },
-    {
-      key: 'acoes',
-      label: t('fin.comum.acoes'),
-      render: (_: any, fornecedor: any) => (
-        <div className="flex items-center justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                <IconMore className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={() => handleEdit(fornecedor, 'fornecedor')}>
-                <IconEdit className="h-4 w-4 mr-2" />
-                {t('sweepDados.contratos.editar')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => handleDelete(fornecedor.id, 'fornecedor')}
-              >
-                <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <TooltipProvider>
@@ -582,12 +435,7 @@ export default function Contratos() {
                 <IconAdd className="h-4 w-4 mr-2" />
                 {t('fin.contratos.novo')}
               </Button>
-            ) : (
-              <Button onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
-                <IconAdd className="h-4 w-4 mr-2" />
-                {t('fin.fornecedores.novo')}
-              </Button>
-            )
+            ) : null
           }
           secondaryActions={[
             { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <IconDownload className="h-4 w-4" />, onClick: handleExportCSV },
@@ -720,69 +568,13 @@ export default function Contratos() {
 
           {/* Fornecedores Tab */}
           <TabsContent value="fornecedores" className="space-y-4">
-            <Card className="rounded-lg border overflow-hidden">
-              <CardContent className="p-0">
-                <DataTable
-                  data={sortedFornecedores}
-                  columns={colunasFornecedores}
-                  sortField={sortFornecedores?.field}
-                  sortDirection={sortFornecedores?.direction}
-                  onSort={toggleSortFornecedores}
-                  loading={loadingFornecedores}
-                  searchValue={searchTermFornecedor}
-                  onSearchChange={setSearchTermFornecedor}
-                  searchPlaceholder={t('fin.fornecedores.buscar')}
-                  filters={[
-                    {
-                      key: 'status',
-                      label: t('fin.comum.status'),
-                      value: statusFornecedorFilter,
-                      onChange: setStatusFornecedorFilter,
-                      options: [
-                        { value: 'todos', label: t('campos.filtros.todosStatus') },
-                        { value: 'ativo', label: t('campos.opcoes.ativo') },
-                        { value: 'inativo', label: t('campos.opcoes.inativo') },
-                        { value: 'suspenso', label: t('campos.opcoes.suspenso') },
-                      ],
-                    },
-                    {
-                      key: 'categoria',
-                      label: t('campos.comum.categoria'),
-                      value: categoriaFornecedorFilter,
-                      onChange: setCategoriaFornecedorFilter,
-                      options: [
-                        { value: 'todos', label: t('campos.filtros.todasCategorias') },
-                        ...categoriasFornecedor.map((cat) => ({ value: cat, label: cat })),
-                      ],
-                    },
-                    {
-                      key: 'risco',
-                      label: t('campos.comum.risco'),
-                      value: riscoFornecedorFilter,
-                      onChange: setRiscoFornecedorFilter,
-                      options: [
-                        { value: 'todos', label: t('campos.filtros.todosRiscos') },
-                        { value: 'baixo', label: t('campos.opcoes.baixo') },
-                        { value: 'medio', label: t('campos.opcoes.medio') },
-                        { value: 'alto', label: t('campos.opcoes.alto') },
-                        { value: 'critico', label: t('fin.comum.critico') },
-                      ],
-                    },
-                  ]}
-                  emptyState={{
-                    icon: <IconUsers className="h-8 w-8" />,
-                    title: t('fin.fornecedores.nenhum'),
-                    description: t('cardsKpi.contratos.emptyFornecedores'),
-                    action: {
-                      label: t('fin.fornecedores.novo'),
-                      onClick: () => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); },
-                    },
-                  }}
-                  paginated
-                  pageSize={10}
-                />
-              </CardContent>
-            </Card>
+            {/*
+              Um só gestor de fornecedores, partilhado com Due Diligence: mesma
+              tabela, consulta à Receita, PJ/PF e avaliação de risco. O `focoId`
+              vindo da busca global abre o fornecedor pedido. As avaliações de
+              due diligence ficam no seu módulo — aqui não se injectam acções.
+            */}
+            <FornecedoresManager focoId={searchParams.get('focus')} />
           </TabsContent>
 
         </Tabs>
@@ -796,12 +588,6 @@ export default function Contratos() {
           fornecedores={fornecedores}
         />
 
-        <FornecedorDialog
-          fornecedor={selectedFornecedor}
-          open={fornecedorDialogOpen}
-          onOpenChange={setFornecedorDialogOpen}
-          onSuccess={invalidateData}
-        />
 
         <MarcosDialog
           contrato={selectedContrato}
@@ -840,8 +626,8 @@ export default function Contratos() {
         <ConfirmDialog
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-          title={deleteConfirm.type === 'contrato' ? t('sweepDados.contratos.excluirTitleContrato') : t('sweepDados.contratos.excluirTitleFornecedor')}
-          description={deleteConfirm.type === 'contrato' ? t('sweepDados.contratos.excluirDescContrato') : t('sweepDados.contratos.excluirDescFornecedor')}
+          title={t('sweepDados.contratos.excluirTitleContrato')}
+          description={t('sweepDados.contratos.excluirDescContrato')}
           confirmText={t('fin.comum.excluir')}
           variant="destructive"
           onConfirm={confirmDelete}
@@ -862,7 +648,7 @@ export default function Contratos() {
             </>
           ) : undefined}
           actions={detalheContrato ? (
-            <Button variant="outline" size="sm" onClick={() => { const c = detalheContrato; setDetalheContrato(null); handleEdit(c, 'contrato'); }}>
+            <Button variant="outline" size="sm" onClick={() => { const c = detalheContrato; setDetalheContrato(null); handleEdit(c); }}>
               {t('fin.comum.editar')}
             </Button>
           ) : undefined}
