@@ -917,8 +917,10 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       assessment={{
                         id: scoreDialog.assessment.id,
                         fornecedor_nome: scoreDialog.assessment.fornecedor_nome,
-                        score_final: scoreDialog.assessment.score_final
+                        score_final: scoreDialog.assessment.score_final,
+                        fornecedor_id: (scoreDialog.assessment as any).fornecedor_id ?? null,
                       }}
+                      onAprovado={fetchAssessments}
                     />
                   )}
                 </div>

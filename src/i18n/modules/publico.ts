@@ -113,6 +113,7 @@ export const publico = {
           'Auditoria externa é fotografia: cara, anual e sempre desatualizada. O Akuris é o espelho que sua organização olha todos os dias. Saiba seu nível real de conformidade agora, não daqui a oito meses, quando a não conformidade já virou multa.',
         posturaTitulo: 'Postura consolidada',
         atualizado: '● Atualizado agora',
+        exemplo: 'Exemplo ilustrativo',
         sub: '+12 pontos vs. último trimestre, sem auditor externo na sala.',
         rowIso: 'ISO 27001 · Anexo A',
         rowLgpd: 'LGPD · Art. 50 (boas práticas)',
@@ -141,6 +142,7 @@ export const publico = {
       },
       metricas: {
         eyebrow: 'Resultado',
+        nota: 'Cenário ilustrativo, construído a partir de projetos-tipo. Os resultados variam com o ponto de partida, o âmbito e a dedicação da equipa.',
         titulo: 'Não é dashboard.',
         tituloEm: 'É decisão informada, em horas — não em semanas.',
         m1Label: 'Tempo em auditoria',
@@ -446,6 +448,7 @@ export const publico = {
           'An external audit is a photograph: expensive, annual and always out of date. Akuris is the mirror your organisation looks into every day. Know your real compliance level now, not eight months from now, when non-compliance has already become a fine.',
         posturaTitulo: 'Consolidated posture',
         atualizado: '● Updated just now',
+        exemplo: 'Illustrative example',
         sub: '+12 points vs. last quarter, with no external auditor in the room.',
         rowIso: 'ISO 27001 · Annex A',
         rowLgpd: 'LGPD · Art. 50 (good practices)',
@@ -474,6 +477,7 @@ export const publico = {
       },
       metricas: {
         eyebrow: 'Outcome',
+        nota: 'Illustrative scenario based on typical projects. Results vary with the starting point, scope and team commitment.',
         titulo: 'Not a dashboard.',
         tituloEm: 'Informed decisions in hours — not weeks.',
         m1Label: 'Time spent on audits',

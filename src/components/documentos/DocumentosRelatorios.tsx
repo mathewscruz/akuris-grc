@@ -20,6 +20,7 @@ interface Documento {
   versao?: number;
   created_at?: string;
   descricao?: string;
+  categoria_id?: string | null;
 }
 
 interface Categoria {
@@ -39,8 +40,9 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  const exportCSV = (dados: Documento[], nomeArquivo: string) => {
+  const exportCSV = (dados: Documento[], nomeArquivo: string, comCategoria = false) => {
     const headers = [
+      ...(comCategoria ? [t('documentosExtras.relatorios.csvCategoria')] : []),
       t('documentosExtras.relatorios.csvNome'),
       t('documentosExtras.relatorios.csvTipo'),
       t('documentosExtras.relatorios.csvClassificacao'),
@@ -50,6 +52,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       t('documentosExtras.relatorios.csvDataCriacao'),
     ];
     const rows = dados.map(doc => [
+      ...(comCategoria ? [nomeDaCategoria(doc)] : []),
       doc.nome,
       formatLabel(doc.tipo),
       doc.classificacao ? formatLabel(doc.classificacao) : "",
@@ -175,13 +178,40 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
     }
   };
 
+  /** Nome da categoria do documento, ou o rótulo de "sem categoria". */
+  const nomeDaCategoria = (doc: Documento) =>
+    categorias.find((c) => c.id === doc.categoria_id)?.nome
+      ?? t('documentosExtras.relatorios.semCategoria');
+
   const gerarRelatorioPorCategoria = () => {
     setGerando('categoria');
     try {
-      exportCSV(documentos, 'documentos_por_categoria');
+      /*
+        Isto chamava-se "Relatório por Categoria" e exportava o inventário
+        inteiro, sem coluna de categoria e sem agrupar -- a prop `categorias`
+        chegava ao componente e não era usada em lado nenhum. O ficheiro saía
+        com o nome `documentos_por_categoria` e era, palavra por palavra, o
+        mesmo do relatório geral.
+
+        Agora agrupa mesmo: ordena por categoria (os sem categoria no fim, não
+        misturados no meio) e leva a categoria como primeira coluna.
+      */
+      const semCategoria = t('documentosExtras.relatorios.semCategoria');
+      const ordenados = [...documentos].sort((a, b) => {
+        const ca = nomeDaCategoria(a);
+        const cb = nomeDaCategoria(b);
+        if (ca !== cb) {
+          if (ca === semCategoria) return 1;
+          if (cb === semCategoria) return -1;
+          return ca.localeCompare(cb);
+        }
+        return (a.nome || '').localeCompare(b.nome || '');
+      });
+
+      exportCSV(ordenados, 'documentos_por_categoria', true);
       toast({
         title: t('documentosExtras.relatorios.relatorioGerado'),
-        description: t('documentosExtras.relatorios.exportados', { qtd: String(documentos.length) }),
+        description: t('documentosExtras.relatorios.exportados', { qtd: String(ordenados.length) }),
       });
     } catch {
       toast({ title: t('documentosExtras.relatorios.erroTitulo'), description: t('documentosExtras.relatorios.erroGerar'), variant: "destructive" });

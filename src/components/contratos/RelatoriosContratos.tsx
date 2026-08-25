@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useEmpresaMoeda, formatMoeda, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -64,6 +65,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
   });
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { moeda: moedaEmpresa } = useEmpresaMoeda();
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -207,7 +209,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
           // A coluna e `valor`. `valor_total` nao existe em `contratos`, por
           // isso esta coluna saia vazia em 100% das linhas do CSV enquanto o
           // cabecalho do mesmo ficheiro imprimia o total somado.
-          c.valor ? Number(c.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+          c.valor ? formatMoeda(Number(c.valor), moedaDoContrato(c)) : '',
           c.data_inicio ? formatDateOnly(c.data_inicio) : '',
           c.data_fim ? formatDateOnly(c.data_fim) : '',
         ]),
@@ -240,7 +242,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
       y = addSectionTitle(doc, t('contratosAtivos.relatoriosContratos.pdfSummarySection'), y, margin);
       doc.setFontSize(10);
       doc.setTextColor(AKURIS_COLORS.text);
-      const valorFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(estatisticasGerais.valorTotal);
+      const valorFormatado = textoTotalPorMoeda(dados.contratos.filter((c: any) => isContratoVigente(c)));
       doc.text(t('contratosAtivos.relatoriosContratos.pdfSummaryLine').replace('{total}', String(estatisticasGerais.totalContratos)).replace('{ativos}', String(estatisticasGerais.contratosAtivos)).replace('{valor}', valorFormatado), margin + 8, y);
       y += 12;
 
@@ -270,7 +272,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
         doc.text((c.nome || '-').substring(0, 34), margin + 32, y);
         doc.text(formatLabel(c.tipo || ''), margin + 95, y);
         doc.text(formatLabel(c.status || ''), margin + 125, y);
-        doc.text(c.valor ? Number(c.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-', margin + 150, y);
+        doc.text(c.valor ? formatMoeda(Number(c.valor), moedaDoContrato(c)) : '-', margin + 150, y);
         y += 5.5;
       });
 
@@ -319,6 +321,36 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
       mes,
       marcos: count
     }));
+  };
+
+  /*
+    Moeda: a do contrato, não «R$» cravado.
+
+    Cinco pontos deste ficheiro escreviam `currency: 'BRL'` à mão. Uma empresa
+    configurada em euros via os seus próprios valores rotulados como reais --
+    no ecrã, no CSV e no PDF. E o "Valor Total" somava `c.valor` de contratos
+    de moedas diferentes SEM converter, pondo uma etiqueta de real no
+    resultado. Somar euros com reais não dá dinheiro nenhum.
+
+    Agora cada contrato é formatado na sua moeda, e o total é somado POR moeda:
+    com uma só moeda lê-se como antes; com várias, aparecem lado a lado em vez
+    de se fundirem num número que não existe.
+  */
+  const moedaDoContrato = (c: any): MoedaCodigo => (c?.moeda as MoedaCodigo) || moedaEmpresa;
+
+  const totaisPorMoeda = (contratos: any[]): Array<[MoedaCodigo, number]> => {
+    const acc = new Map<MoedaCodigo, number>();
+    for (const c of contratos) {
+      const m = moedaDoContrato(c);
+      acc.set(m, (acc.get(m) || 0) + Number(c.valor || 0));
+    }
+    return [...acc.entries()].sort((a, b) => b[1] - a[1]);
+  };
+
+  const textoTotalPorMoeda = (contratos: any[]) => {
+    const totais = totaisPorMoeda(contratos);
+    if (!totais.length) return formatMoeda(0, moedaEmpresa);
+    return totais.map(([m, v]) => formatMoeda(v, m)).join(' + ');
   };
 
   const estatisticasGerais = {
@@ -437,10 +469,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(estatisticasGerais.valorTotal)}
+                      {textoTotalPorMoeda(dados.contratos.filter((c: any) => isContratoVigente(c)))}
                     </div>
                   </CardContent>
                 </Card>
@@ -507,10 +536,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                         <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                         <Tooltip 
                           formatter={(value: number) => [
-                            new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL'
-                            }).format(value),
+                            formatMoeda(value, moedaEmpresa),
                             t('contratosAtivos.relatoriosContratos.tooltipValue')
                           ]}
                         />

@@ -327,6 +327,18 @@ const LandingPage = () => {
               </div>
             ))}
           </div>
+          {/*
+            Estes quatro números (−64%, 3,8×, +42%, 12 semanas) estavam sob o
+            rótulo «Resultado», sem fonte, metodologia nem amostra. Num produto
+            de compliance vendido a compliance officers, uma alegação
+            quantitativa sem substanciação é risco de publicidade enganosa --
+            e contradiz o que o próprio produto ensina.
+
+            Enquanto não houver dados de clientes para os sustentar, ficam
+            identificados como cenário ilustrativo. Substituir por números
+            medidos é uma melhoria; deixá-los a passar por medidos, não.
+          */}
+          <p className="lp-metrics-nota">{t("publico.landing.metricas.nota")}</p>
         </div>
       </section>
 
@@ -348,14 +360,27 @@ const LandingPage = () => {
               <p className="lede">{t("publico.landing.autonomia.lede")}</p>
             </div>
 
+            {/*
+              Ilustração, não leitura ao vivo.
+
+              Este cartão mostra um índice de 87/100 e barras de 92/88/81 --
+              todos literais no código -- e trazia por cima o selo «● Atualizado
+              agora». Um dado estático a afirmar que acabou de ser medido. Era
+              também o único mockup da página sem `aria-hidden`: um leitor de
+              ecrã anunciava-o como conteúdo real.
+
+              Agora diz o que é, e sai da árvore de acessibilidade como os
+              outros mockups (hero, matriz de risco, feed).
+            */}
             <div
               className="lp-card lp-posture lp-posture-xl"
               data-reveal
+              aria-hidden="true"
               style={{ ["--lp-reveal-delay" as string]: "120ms" }}
             >
               <div className="lp-card-title">
                 <span className="t">{t("publico.landing.autonomia.posturaTitulo")}</span>
-                <span className="t lp-live">{t("publico.landing.autonomia.atualizado")}</span>
+                <span className="t">{t("publico.landing.autonomia.exemplo")}</span>
               </div>
               <div className="score">
                 87<sup>/100</sup>

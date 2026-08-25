@@ -172,7 +172,16 @@ export function DocumentoDialog({ open, onOpenChange, documento, categorias = []
       return;
     }
 
-    if (formData.requer_aprovacao && !documento && !aprovadorId) {
+    /*
+      Sem aprovador não se pede aprovação -- nem ao criar, nem ao editar.
+
+      A condição tinha `!documento`, ou seja, só valia para documento novo. Ao
+      EDITAR um documento e ligar «requer aprovação» sem escolher aprovador, o
+      documento ia para `pendente` sem que ninguém fosse pedido: ficava à espera
+      de uma decisão que nenhuma pessoa podia tomar. Encontrei dois assim na
+      base, um parado desde Outubro de 2025.
+    */
+    if (formData.requer_aprovacao && !aprovadorId) {
       setActiveTab('classificacao');
       toast({ title: t('documentos.dialogs.aprovadorObrigatorioFluxo'), variant: 'destructive' });
       return;
@@ -266,16 +275,52 @@ export function DocumentoDialog({ open, onOpenChange, documento, categorias = []
             data_solicitacao: new Date().toISOString(),
           }]);
           if (aprovError) {
+            /*
+              Isto só ia para o log, e a pessoa via «Documento criado».
+
+              O documento tinha acabado de ser gravado com `status: 'pendente'`
+              (linha ~227), por isso ficava eternamente à espera de uma
+              aprovação que nunca fora pedida -- invisível para o aprovador e
+              para quem o criou. Num produto de compliance, é a evidência que
+              não existe.
+
+              Agora: avisa-se, e o documento não fica preso. Volta a rascunho,
+              que é a verdade -- ninguém foi chamado a decidir.
+            */
             logger.error('Erro ao criar solicitação de aprovação:', aprovError);
-          } else {
-            try {
-              await supabase.functions.invoke('send-approval-notification', {
-                body: { documento_id: documentoId, aprovador_id: aprovadorId, solicitante_id: userData.user.id },
-              });
-            } catch (emailError) {
-              logger.error('Erro ao notificar aprovador:', emailError);
+            // A própria reversão tem de ser verificada: se ELA falhar, o
+            // documento fica preso na mesma e é preciso sabê-lo.
+            const { error: erroReverter } = await supabase
+              .from('documentos')
+              .update({ status: 'rascunho', requer_aprovacao: false })
+              .eq('id', documentoId);
+            if (erroReverter) {
+              logger.error('Falha ao reverter documento para rascunho:', erroReverter);
             }
-            toast({ title: t('documentos.dialogs.solicitacaoAutomatica') });
+            toast({
+              title: t('documentos.dialogs.solicitacaoFalhouTitulo'),
+              description: t('documentos.dialogs.solicitacaoFalhouDescricao'),
+              variant: 'destructive',
+            });
+          } else {
+            /*
+              `functions.invoke` devolve `{ data, error }` -- NÃO lança. O
+              try/catch em volta era decorativo: um 500 do envio caía no caminho
+              feliz e o toast anunciava «aprovador notificado». Agora o texto
+              diz o que de facto aconteceu.
+            */
+            const { error: erroAviso } = await supabase.functions.invoke('send-approval-notification', {
+              body: { documento_id: documentoId, aprovador_id: aprovadorId, solicitante_id: userData.user.id },
+            });
+            if (erroAviso) {
+              logger.error('Erro ao notificar aprovador:', erroAviso);
+              toast({
+                title: t('documentos.dialogs.solicitacaoSemAviso'),
+                description: t('documentos.dialogs.solicitacaoSemAvisoDescricao'),
+              });
+            } else {
+              toast({ title: t('documentos.dialogs.solicitacaoAutomatica') });
+            }
           }
         }
       }

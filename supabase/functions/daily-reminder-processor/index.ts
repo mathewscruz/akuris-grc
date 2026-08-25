@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     // Buscar todas as empresas com lembretes habilitados
     const { data: empresasAtivas, error: empresasError } = await supabase
       .from('empresa_reminder_settings')
-      .select('empresa_id')
+      .select('empresa_id, due_diligence_expiracao_ativo, due_diligence_expiracao_dias')
       .eq('reminders_enabled', true)
 
     if (empresasError) {
@@ -66,6 +66,27 @@ Deno.serve(async (req) => {
           console.error(`Erro ao processar empresa ${empresa.empresa_id}:`, error)
           totalErros++
           continue
+        }
+
+        /*
+          Lembrete de expiração de due diligence.
+
+          A função `process-due-diligence-reminders` já existia e funcionava --
+          faltava-lhe quem a chamasse. Enquanto isso, o painel de automações
+          mostrava um interruptor LIGADO a prometer este aviso, e nada o
+          enviava. Agora corre quando a empresa o pediu, e só então.
+        */
+        if (empresa.due_diligence_expiracao_ativo) {
+          const { error: erroDd } = await supabase.functions.invoke('process-due-diligence-reminders', {
+            body: {
+              empresa_id: empresa.empresa_id,
+              days_before_expiration: empresa.due_diligence_expiracao_dias ?? 7,
+            },
+          })
+          if (erroDd) {
+            console.error(`Erro no lembrete de due diligence da empresa ${empresa.empresa_id}:`, erroDd)
+            totalErros++
+          }
         }
 
         console.log(`Empresa ${empresa.empresa_id} processada:`, data)

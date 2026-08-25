@@ -7,6 +7,8 @@ import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
+import { exportCSV } from "@/lib/csv-utils";
+import { formatDateOnly } from "@/lib/date-utils";
 import { useReviewData } from "@/hooks/useReviewData";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput } from "@/lib/date-utils";
@@ -49,6 +51,45 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
     [review?.id],
     { cacheKey: `review-items-${review?.id}` }
   );
+
+  /*
+    Exportar a revisão de acessos.
+
+    O botão existia, com ícone de descarregar, e não tinha `onClick` -- num
+    módulo cuja razão de ser é produzir a evidência que o auditor pede em papel.
+
+    Exporta o que está na tela (respeitando a busca), pela lib partilhada, para
+    o ficheiro sair com o mesmo formato do resto do produto.
+  */
+  const exportarRevisao = () => {
+    const linhas = filteredItems ?? [];
+    if (!linhas.length) {
+      toast({
+        title: t("revisaoAcessosComp.itemsDialog.exportVazioTitulo"),
+        description: t("revisaoAcessosComp.itemsDialog.exportVazioDescricao"),
+      });
+      return;
+    }
+    exportCSV(
+      [
+        t("revisaoAcessosComp.itemsDialog.colUsuario"),
+        t("revisaoAcessosComp.itemsDialog.colSistema"),
+        t("revisaoAcessosComp.itemsDialog.colNivel"),
+        t("revisaoAcessosComp.itemsDialog.colDecisao"),
+        t("revisaoAcessosComp.itemsDialog.colJustificativa"),
+        t("revisaoAcessosComp.itemsDialog.colRevisadoEm"),
+      ],
+      linhas.map((i: any) => [
+        i.usuario_beneficiario ?? '',
+        i.sistema_nome ?? '',
+        i.nivel_acesso ?? '',
+        i.decisao ?? '',
+        i.justificativa ?? '',
+        i.data_revisao ? formatDateOnly(i.data_revisao) : '',
+      ]),
+      `revisao-acessos-${review?.id ?? 'export'}`,
+    );
+  };
 
   const handleDecision = (item: any) => {
     setSelectedItem(item);
@@ -154,7 +195,7 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                 <IconSuccess className="mr-2 h-4 w-4" />
                 {t("revisaoAcessosComp.itemsDialog.buttonFinalizar")}
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={exportarRevisao}>
                 <IconDownload className="mr-2 h-4 w-4" />
                 {t("revisaoAcessosComp.itemsDialog.buttonExportar")}
               </Button>

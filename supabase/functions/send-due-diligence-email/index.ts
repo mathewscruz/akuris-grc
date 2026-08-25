@@ -21,7 +21,15 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // === AUTH: require valid Supabase JWT ===
+    /*
+      Duas origens legítimas: uma pessoa com sessão, e o processador diário de
+      lembretes (por dentro, com a chave de serviço).
+
+      Só a sessão era aceite: validava-se o token com `auth.getUser()`, e uma
+      chave de serviço NÃO é um JWT de utilizador -- devolvia 401. Era por isso
+      que o lembrete de expiração nunca chegava a sair, mesmo depois de alguém
+      agendar a função.
+    */
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -30,21 +38,32 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey);
-    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    const token = authHeader.replace('Bearer ', '').trim();
+    const chamadaInterna = token === supabaseServiceKey;
+
+    let userData: { user: { id: string } } | null = null;
+    if (!chamadaInterna) {
+      const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey);
+      const { data, error: userErr } = await verifier.auth.getUser(token);
+      if (userErr || !data?.user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      userData = data as any;
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: profile } = await supabase
-      .from('profiles').select('empresa_id, role').eq('user_id', userData.user.id).maybeSingle();
-    if (!profile?.empresa_id) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    let profile: { empresa_id: string | null; role: string | null } | null = null;
+    if (!chamadaInterna) {
+      const { data } = await supabase
+        .from('profiles').select('empresa_id, role').eq('user_id', userData!.user.id).maybeSingle();
+      profile = data as any;
+      if (!profile?.empresa_id) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     const body: EmailRequest = await req.json();
@@ -69,8 +88,10 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const isSuperAdmin = profile.role === 'super_admin';
-    if (!isSuperAdmin && assessment.empresa_id !== profile.empresa_id) {
+    // A chamada interna não tem inquilino próprio: o processador diário já
+    // percorre empresa a empresa. A verificação vale para quem tem sessão.
+    const isSuperAdmin = chamadaInterna || profile!.role === 'super_admin';
+    if (!isSuperAdmin && assessment.empresa_id !== profile!.empresa_id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });

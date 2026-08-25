@@ -12,13 +12,63 @@ interface IntegrationSuggestionsProps {
     id: string;
     fornecedor_nome: string;
     score_final: number;
+    /** Sem isto não há a quem registar a aprovação. */
+    fornecedor_id?: string | null;
   };
+  /** Chamado depois de aprovar, para a lista do lado recarregar. */
+  onAprovado?: () => void;
 }
 
-export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsProps) {
+export function IntegrationSuggestions({ assessment, onAprovado }: IntegrationSuggestionsProps) {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [isCreating, setIsCreating] = useState(false);
+  const [aAprovar, setAAprovar] = useState(false);
+
+  /*
+    Aprovar o fornecedor deixa de ser um botão sem `onClick`.
+
+    Ele existia, aparecia com score >= 80, e clicar nele não mudava nada na
+    base -- num passo de fecho de avaliação, que é onde a decisão importa.
+
+    Aprovar aqui significa registar no FORNECEDOR o risco que a avaliação
+    apurou: score alto passa a risco baixo, e o fornecedor fica activo. É o
+    campo que o resto do produto lê (tabela, relatórios, contratos).
+  */
+  const aprovarFornecedor = async () => {
+    if (!assessment.fornecedor_id) {
+      toast({
+        title: t('dueDiligence.integrationSuggestions.approveNoSupplierTitle'),
+        description: t('dueDiligence.integrationSuggestions.approveNoSupplierDescription'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    setAAprovar(true);
+    try {
+      const risco = assessment.score_final >= 80 ? 'baixo' : assessment.score_final >= 60 ? 'medio' : 'alto';
+      const { error } = await supabase
+        .from('fornecedores')
+        .update({ avaliacao_risco: risco, status: 'ativo' })
+        .eq('id', assessment.fornecedor_id);
+      if (error) throw error;
+      toast({
+        title: t('dueDiligence.integrationSuggestions.approveSuccessTitle'),
+        description: t('dueDiligence.integrationSuggestions.approveSuccessDescription', {
+          nome: assessment.fornecedor_nome,
+        }),
+      });
+      onAprovado?.();
+    } catch (erro) {
+      toast({
+        title: t('dueDiligence.integrationSuggestions.approveErrorTitle'),
+        description: erro instanceof Error ? erro.message : String(erro),
+        variant: 'destructive',
+      });
+    } finally {
+      setAAprovar(false);
+    }
+  };
   
   const createRisk = async () => {
     try {
@@ -140,6 +190,8 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
           
           {scorePorcentagem >= 80 && (
             <Button
+              onClick={aprovarFornecedor}
+              disabled={aAprovar}
               variant="outline"
               className="w-full justify-start text-success hover:text-success hover:bg-success/10"
             >

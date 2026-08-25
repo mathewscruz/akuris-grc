@@ -2376,6 +2376,68 @@ export type Database = {
           },
         ]
       }
+      contratos_templates: {
+        Row: {
+          campos_obrigatorios: string[]
+          clausulas_padrao: string
+          created_at: string
+          created_by: string | null
+          descricao: string
+          empresa_id: string
+          id: string
+          nome: string
+          objeto_padrao: string
+          penalidades_padrao: string | null
+          prazo_pagamento_padrao: number | null
+          sla_padrao: string | null
+          tipo: string
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          campos_obrigatorios?: string[]
+          clausulas_padrao?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          empresa_id: string
+          id?: string
+          nome: string
+          objeto_padrao?: string
+          penalidades_padrao?: string | null
+          prazo_pagamento_padrao?: number | null
+          sla_padrao?: string | null
+          tipo?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          campos_obrigatorios?: string[]
+          clausulas_padrao?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+          objeto_padrao?: string
+          penalidades_padrao?: string | null
+          prazo_pagamento_padrao?: number | null
+          sla_padrao?: string | null
+          tipo?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_templates_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       controles: {
         Row: {
           area: string | null
@@ -4874,6 +4936,8 @@ export type Database = {
       }
       empresa_reminder_settings: {
         Row: {
+          due_diligence_expiracao_ativo: boolean
+          due_diligence_expiracao_dias: number
           created_at: string
           empresa_id: string
           id: string

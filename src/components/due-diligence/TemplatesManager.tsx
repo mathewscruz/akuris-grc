@@ -182,6 +182,63 @@ export function TemplatesManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
+
+  /*
+    Automações: uma que existe de verdade, em vez de três que fingiam.
+
+    Havia aqui três `<Switch />` sem `checked` nem `onCheckedChange` -- puro
+    enfeite. O pior era o do lembrete de expiração, com `defaultChecked`:
+    aparecia LIGADO de origem, e a empresa acreditava receber aviso antes de
+    uma avaliação de fornecedor expirar. Nunca recebeu.
+
+    Dos três, só o lembrete tem motor por trás (`process-due-diligence-reminders`).
+    Os outros dois -- alerta de score baixo e relatório automático -- não têm
+    nada que os cumpra, por isso saem: melhor ausente do que a mentir.
+
+    A definição nasce DESLIGADA de propósito. Ligar por omissão repetiria a
+    promessa falsa para quem já tem o produto.
+  */
+  const { data: definicoesLembrete } = useQuery({
+    queryKey: ['dd-lembrete-expiracao', empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('empresa_reminder_settings')
+        .select('id, due_diligence_expiracao_ativo, due_diligence_expiracao_dias')
+        .eq('empresa_id', empresaId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [aGravarLembrete, setAGravarLembrete] = useState(false);
+
+  const alternarLembreteExpiracao = async (ativo: boolean) => {
+    if (!empresaId) return;
+    setAGravarLembrete(true);
+    try {
+      const { error } = await supabase
+        .from('empresa_reminder_settings')
+        .upsert(
+          { empresa_id: empresaId, due_diligence_expiracao_ativo: ativo },
+          { onConflict: 'empresa_id' },
+        );
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ['dd-lembrete-expiracao'] });
+      toast({ title: t('dueDiligence.templatesManager.automationSaved') });
+    } catch (erro) {
+      logger.error('Falha ao gravar automação de due diligence', {
+        erro: erro instanceof Error ? erro.message : String(erro),
+      });
+      toast({
+        title: t('dueDiligence.templatesManager.automationSaveError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setAGravarLembrete(false);
+    }
+  };
   const { t } = useLanguage();
 
   const cloneSuggestedTemplate = async (suggested: typeof SUGGESTED_TEMPLATES[0]) => {
@@ -771,35 +828,19 @@ export function TemplatesManager() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between border rounded-lg p-4">
               <div>
-                <p className="font-medium">{t('dueDiligence.templatesManager.automationLowScoreTitle')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {t('dueDiligence.templatesManager.automationLowScoreDescription')}
-                </p>
-              </div>
-              <Switch />
-            </div>
-            <div className="flex items-center justify-between border rounded-lg p-4">
-              <div>
                 <p className="font-medium">{t('dueDiligence.templatesManager.automationExpirationTitle')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {t('dueDiligence.templatesManager.automationExpirationDescription')}
+                  {t('dueDiligence.templatesManager.automationExpirationDescription', {
+                    dias: definicoesLembrete?.due_diligence_expiracao_dias ?? 7,
+                  })}
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch
+                checked={!!definicoesLembrete?.due_diligence_expiracao_ativo}
+                onCheckedChange={alternarLembreteExpiracao}
+                disabled={aGravarLembrete || !empresaId}
+              />
             </div>
-            <div className="flex items-center justify-between border rounded-lg p-4">
-              <div>
-                <p className="font-medium">{t('dueDiligence.templatesManager.automationReportTitle')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {t('dueDiligence.templatesManager.automationReportDescription')}
-                </p>
-              </div>
-              <Switch />
-            </div>
-            <Button variant="outline" className="w-full">
-              <IconAdd className="h-4 w-4 mr-2" />
-              {t('dueDiligence.templatesManager.addAutomationRule')}
-            </Button>
           </CardContent>
         </Card>
       </div>

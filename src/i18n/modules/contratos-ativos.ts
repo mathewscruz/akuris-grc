@@ -815,6 +815,7 @@ export const contratosAtivos = {
         contractsCount: '{count} contratos',
       },
       templatesContratos: {
+        nomeObrigatorio: 'Dê um nome ao template.',
         triggerButton: 'Templates',
         title: 'Templates de Contratos',
         description: 'Gerencie e utilize templates para agilizar a criação de contratos',
@@ -1683,6 +1684,7 @@ export const contratosAtivos = {
         contractsCount: '{count} contracts',
       },
       templatesContratos: {
+        nomeObrigatorio: 'Give the template a name.',
         triggerButton: 'Templates',
         title: 'Contract Templates',
         description: 'Manage and use templates to speed up contract creation',

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
 
 interface TemplateContrato {
   id?: string;
@@ -63,12 +64,14 @@ interface TemplatesContratosPropsExtended extends TemplatesContratosProps {
 
 export default function TemplatesContratos({ onTemplateSelect, open: openProp, onOpenChange, hideTrigger }: TemplatesContratosPropsExtended) {
   const { t } = useLanguage();
+  const { empresaId } = useEmpresaId();
   const [openState, setOpenState] = useState(false);
   const open = openProp !== undefined ? openProp : openState;
   const setOpen = onOpenChange ?? setOpenState;
   const [formOpen, setFormOpen] = useState(false);
   const [templates, setTemplates] = useState<TemplateContrato[]>([]);
   const [loading, setLoading] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TemplateContrato | null>(null);
   const { toast } = useToast();
 
@@ -101,7 +104,10 @@ export default function TemplatesContratos({ onTemplateSelect, open: openProp, o
     if (open) {
       carregarTemplates();
     }
-  }, [open]);
+    // `empresaId` entra nas dependências: a consulta filtra por ela e chega
+    // depois do primeiro render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, empresaId]);
 
   useEffect(() => {
     if (editingTemplate) {
@@ -111,11 +117,25 @@ export default function TemplatesContratos({ onTemplateSelect, open: openProp, o
   }, [editingTemplate]);
 
   const carregarTemplates = async () => {
+    if (!empresaId) return;
     setLoading(true);
     try {
-      // Como não temos tabela de templates ainda, vamos simular com dados locais
-      const templatesLocais = getTemplatesPadrao();
-      setTemplates(templatesLocais);
+      /*
+        Os templates vêm da base.
+
+        Antes eram três literais no código -- com cláusulas jurídicas, SLA e
+        penalidades inventados -- e o comentário dizia-o: «como não temos tabela
+        de templates ainda, vamos simular com dados locais». Quem criasse um
+        template via um toast verde e o template desaparecia ao reabrir; quem
+        apagasse um dos três via outro toast verde e ele voltava.
+      */
+      const { data, error } = await supabase
+        .from('contratos_templates')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .order('nome');
+      if (error) throw error;
+      setTemplates((data || []) as unknown as TemplateContrato[]);
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
       toast({
@@ -128,76 +148,40 @@ export default function TemplatesContratos({ onTemplateSelect, open: openProp, o
     }
   };
 
-  const getTemplatesPadrao = (): TemplateContrato[] => {
-    return [
-      {
-        id: '1',
-        nome: 'Prestação de Serviços - TI',
-        tipo: 'prestacao_servicos',
-        descricao: 'Template para contratos de prestação de serviços de TI',
-        clausulas_padrao: `CLÁUSULA 1ª - DO OBJETO
-O presente contrato tem por objeto a prestação de serviços de tecnologia da informação, conforme especificações técnicas detalhadas no Anexo I.
-
-CLÁUSULA 2ª - DA VIGÊNCIA
-O presente contrato terá vigência de [PRAZO] meses, iniciando-se em [DATA_INICIO] e encerrando-se em [DATA_FIM].
-
-CLÁUSULA 3ª - DO VALOR E FORMA DE PAGAMENTO
-Pelo objeto do presente contrato, a CONTRATANTE pagará à CONTRATADA o valor total de R$ [VALOR], conforme cronograma de pagamento estabelecido no Anexo II.
-
-CLÁUSULA 4ª - DOS NÍVEIS DE SERVIÇO
-A CONTRATADA deverá manter os seguintes níveis de serviço:
-- Disponibilidade: [SLA_DISPONIBILIDADE]%
-- Tempo de resposta: [SLA_RESPOSTA]
-- Tempo de resolução: [SLA_RESOLUCAO]`,
-        campos_obrigatorios: ['fornecedor_id', 'valor', 'data_inicio', 'data_fim', 'gestor_contrato'],
-        objeto_padrao: 'Prestação de serviços de tecnologia da informação',
-        sla_padrao: 'Disponibilidade: 99.5% | Tempo de resposta: 4 horas | Tempo de resolução: 24 horas',
-        penalidades_padrao: 'Multa de 0,1% sobre o valor mensal por descumprimento de SLA',
-        prazo_pagamento_padrao: 30
-      },
-      {
-        id: '2',
-        nome: 'Fornecimento de Materiais',
-        tipo: 'fornecimento',
-        descricao: 'Template para contratos de fornecimento de materiais e equipamentos',
-        clausulas_padrao: `CLÁUSULA 1ª - DO OBJETO
-O presente contrato tem por objeto o fornecimento de materiais e/ou equipamentos, conforme especificações técnicas e quantidades detalhadas no Anexo I.
-
-CLÁUSULA 2ª - DAS ENTREGAS
-As entregas deverão ser realizadas conforme cronograma estabelecido, respeitando prazos, locais e quantidades especificadas.
-
-CLÁUSULA 3ª - DA GARANTIA
-Todos os materiais/equipamentos fornecidos deverão ter garantia mínima de [PRAZO_GARANTIA] contra defeitos de fabricação.`,
-        campos_obrigatorios: ['fornecedor_id', 'valor', 'data_inicio', 'data_fim'],
-        objeto_padrao: 'Fornecimento de materiais e equipamentos',
-        penalidades_padrao: 'Multa de 1% sobre o valor da entrega por atraso',
-        prazo_pagamento_padrao: 45
-      },
-      {
-        id: '3',
-        nome: 'Locação de Equipamentos',
-        tipo: 'locacao',
-        descricao: 'Template para contratos de locação de equipamentos',
-        clausulas_padrao: `CLÁUSULA 1ª - DO OBJETO
-O presente contrato tem por objeto a locação de equipamentos conforme especificado no Anexo I.
-
-CLÁUSULA 2ª - DO ALUGUEL
-O valor mensal do aluguel é de R$ [VALOR_MENSAL], sendo reajustado anualmente pelo IPCA.
-
-CLÁUSULA 3ª - DA MANUTENÇÃO
-A manutenção preventiva e corretiva dos equipamentos será de responsabilidade da LOCADORA.`,
-        campos_obrigatorios: ['fornecedor_id', 'valor', 'data_inicio', 'data_fim', 'gestor_contrato'],
-        objeto_padrao: 'Locação de equipamentos',
-        sla_padrao: 'Manutenção corretiva em até 24 horas',
-        penalidades_padrao: 'Desconto proporcional no aluguel por indisponibilidade',
-        prazo_pagamento_padrao: 30
-      }
-    ];
-  };
 
   const salvarTemplate = async () => {
+    if (!empresaId) return;
+    if (!formData.nome?.trim()) {
+      toast({
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.nomeObrigatorio'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSalvando(true);
     try {
-      // Aqui implementaríamos a lógica de salvar no banco
+      const payload = {
+        empresa_id: empresaId,
+        nome: formData.nome.trim(),
+        tipo: formData.tipo || 'servicos',
+        descricao: formData.descricao || '',
+        objeto_padrao: formData.objeto_padrao || '',
+        clausulas_padrao: formData.clausulas_padrao || '',
+        sla_padrao: formData.sla_padrao || null,
+        penalidades_padrao: formData.penalidades_padrao || null,
+        prazo_pagamento_padrao: formData.prazo_pagamento_padrao ?? null,
+        valor_estimado: formData.valor_estimado ?? null,
+        campos_obrigatorios: formData.campos_obrigatorios || [],
+      };
+
+      // O erro do supabase vem no `error`, não numa excepção: sem o verificar,
+      // a gravação falhava em silêncio e o toast dizia sucesso na mesma.
+      const { error } = editingTemplate?.id
+        ? await supabase.from('contratos_templates').update(payload).eq('id', editingTemplate.id)
+        : await supabase.from('contratos_templates').insert(payload);
+      if (error) throw error;
+
       toast({
         title: t('contratosAtivos.common.success'),
         description: editingTemplate ? t('contratosAtivos.templatesContratos.toastSaveSuccessUpdate') : t('contratosAtivos.templatesContratos.toastSaveSuccessCreate'),
@@ -223,12 +207,15 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
         description: t('contratosAtivos.templatesContratos.toastSaveError'),
         variant: "destructive"
       });
+    } finally {
+      setSalvando(false);
     }
   };
 
   const excluirTemplate = async (templateId: string) => {
     try {
-      // Aqui implementaríamos a lógica de excluir do banco
+      const { error } = await supabase.from('contratos_templates').delete().eq('id', templateId);
+      if (error) throw error;
       toast({
         title: t('contratosAtivos.common.success'),
         description: t('contratosAtivos.templatesContratos.toastDeleteSuccess'),
@@ -530,7 +517,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
               <Button variant="outline" onClick={() => setFormOpen(false)}>
                 {t('contratosAtivos.common.cancel')}
               </Button>
-              <Button onClick={salvarTemplate}>
+              <Button onClick={salvarTemplate} disabled={salvando}>
                 {editingTemplate ? t('contratosAtivos.templatesContratos.submitUpdateTemplate') : t('contratosAtivos.templatesContratos.submitCreateTemplate')}
               </Button>
             </div>

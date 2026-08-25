@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { days_before_expiration = 3 } = await req.json().catch(() => ({}));
+    const { days_before_expiration = 3, empresa_id } = await req.json().catch(() => ({}));
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days_before_expiration);
 
-    const { data: assessments, error } = await supabase
+    let query = supabase
       .from('due_diligence_assessments')
       .select(`
         id,
@@ -46,6 +46,15 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('status', 'enviado')
       .lt('data_expiracao', futureDate.toISOString())
       .gt('data_expiracao', new Date().toISOString());
+
+    // O processador diário chama isto empresa a empresa, respeitando a
+    // definição de cada uma; sem o filtro, uma empresa que desligou o lembrete
+    // receberia à mesma.
+    if (empresa_id) {
+      query = query.eq('empresa_id', empresa_id);
+    }
+
+    const { data: assessments, error } = await query;
 
     if (error) throw error;
 

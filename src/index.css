@@ -1355,6 +1355,14 @@ input:-webkit-autofill:focus {
 }
 
 /* Metrics */
+.lp-metrics-nota {
+  margin-top: 1.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  opacity: 0.62;
+  max-width: 62ch;
+}
+
 .lp-metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
