@@ -105,6 +105,11 @@ verify_jwt = false
 [functions.send-due-diligence-email]
 verify_jwt = false
 
+[functions.avaliar-fornecedor-ia]
+# Chamada por dentro (submissão do questionário) e pelo produto (reavaliar).
+# A verificação de quem chama é feita no código, por `exigeInternaOuUtilizador`.
+verify_jwt = false
+
 [functions.process-due-diligence-reminders]
 verify_jwt = false
 

@@ -180,7 +180,32 @@ Deno.serve(async (req) => {
 
     const { error: scoreError } = await admin.rpc('calculate_due_diligence_score', { assessment_id_param: assessment.data.id });
     if (scoreError) console.warn('[public-assessment] score calculation deferred', scoreError.message);
-    return respond({ success: true, completedAt, scoreCalculated: !scoreError });
+
+    /*
+      Terminado o questionário, o Akuris lê-o.
+
+      Antes ficava só o número. Agora pede-se o parecer à IA aqui, no momento em
+      que o material está completo -- assim quem abre a avaliação já a encontra
+      lida, em vez de ter de mandar avaliar.
+
+      A falha NÃO derruba a submissão: o fornecedor já cumpriu a sua parte, e
+      seria absurdo devolver-lhe um erro porque a nossa análise não correu. Fica
+      registada, e o ecrã interno mostra um botão para reavaliar.
+    */
+    const { error: erroParecer } = await admin.functions.invoke('avaliar-fornecedor-ia', {
+      body: { assessment_id: assessment.data.id },
+      headers: { Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+    });
+    if (erroParecer) {
+      console.warn('[public-assessment] parecer da IA adiado', erroParecer.message ?? String(erroParecer));
+    }
+
+    return respond({
+      success: true,
+      completedAt,
+      scoreCalculated: !scoreError,
+      parecerGerado: !erroParecer,
+    });
   } catch (error) {
     console.error('[public-assessment] request failed', error instanceof Error ? error.message : String(error));
     return respond({ error: 'Não foi possível processar o questionário', code: 'INTERNAL_ERROR' }, 500);

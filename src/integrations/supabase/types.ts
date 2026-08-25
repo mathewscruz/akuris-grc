@@ -4472,6 +4472,9 @@ export type Database = {
       }
       due_diligence_assessments: {
         Row: {
+          ia_avaliado_em: string | null
+          ia_nivel_risco: string | null
+          ia_parecer: Json | null
           created_at: string
           created_by: string | null
           data_conclusao: string | null
@@ -4492,6 +4495,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ia_avaliado_em?: string | null
+          ia_nivel_risco?: string | null
+          ia_parecer?: Json | null
           created_at?: string
           created_by?: string | null
           data_conclusao?: string | null
@@ -4512,6 +4518,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ia_avaliado_em?: string | null
+          ia_nivel_risco?: string | null
+          ia_parecer?: Json | null
           created_at?: string
           created_by?: string | null
           data_conclusao?: string | null

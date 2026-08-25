@@ -1083,7 +1083,9 @@ export const pt = {
     dueDiligence: {
       title: 'Due Diligence',
       description: 'Gerencie avaliações digitais de fornecedores com questionários personalizados e scoring automático',
-      newAssessment: 'Nova Avaliação',
+      // Nome de aba é substantivo, como «Fornecedores» e «Templates» ao lado.
+      // «Nova Avaliação» era uma acção usada como rótulo de secção.
+      newAssessment: 'Avaliações',
       suppliers: 'Fornecedores',
       templates: 'Templates',
       questions: 'Perguntas',

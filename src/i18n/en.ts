@@ -1059,7 +1059,7 @@ export const en = {
     dueDiligence: {
       title: 'Due Diligence',
       description: 'Manage digital supplier assessments with custom questionnaires and automatic scoring',
-      newAssessment: 'New Assessment',
+      newAssessment: 'Assessments',
       suppliers: 'Suppliers',
       templates: 'Templates',
       questions: 'Questions',

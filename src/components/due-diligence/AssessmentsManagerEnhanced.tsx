@@ -18,6 +18,7 @@ import { ScoreVisualization } from './ScoreVisualization';
 import { AssessmentResponsesViewer } from './AssessmentResponsesViewer';
 import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
+import { ParecerIA, type ParecerDaIA } from './ParecerIA';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { startOfDay } from 'date-fns';
 import { formatStatus } from '@/lib/text-utils';
@@ -37,6 +38,9 @@ interface Assessment {
   data_expiracao: string;
   data_envio?: string;
   score_final?: number;
+  ia_parecer?: ParecerDaIA | null;
+  ia_nivel_risco?: string | null;
+  ia_avaliado_em?: string | null;
   token: string;
   link_token: string;
   template: {
@@ -196,6 +200,40 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
     open: false,
     assessment: null
   });
+  const [aReavaliar, setAReavaliar] = useState(false);
+
+  /*
+    Reavaliar a pedido.
+
+    O parecer nasce sozinho quando o fornecedor submete. Este botao existe para
+    o caso de a chamada ter falhado (o gateway estava em baixo, os creditos
+    tinham acabado) ou de o questionario ter mudado desde entao -- sem ele, a
+    unica saida era apagar a avaliacao e recomecar.
+  */
+  const reavaliarComIA = async (assessmentId: string) => {
+    setAReavaliar(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('avaliar-fornecedor-ia', {
+        body: { assessment_id: assessmentId },
+      });
+      // `invoke` devolve {data,error} e NAO lanca: sem esta verificacao, uma
+      // falha do gateway passaria por sucesso.
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: t('dueDiligence.parecerIA.titulo'), description: t('dueDiligence.parecerIA.reavaliadoOk') });
+      await fetchAssessments();
+      setScoreDialog((d) => (d.assessment ? { ...d, assessment: { ...d.assessment, ia_parecer: data?.parecer ?? null, ia_avaliado_em: new Date().toISOString() } } : d));
+    } catch (erro) {
+      toast({
+        title: t('dueDiligence.parecerIA.reavaliadoErro'),
+        description: erro instanceof Error ? erro.message : String(erro),
+        variant: 'destructive',
+      });
+    } finally {
+      setAReavaliar(false);
+    }
+  };
+
   const [scoreDialog, setScoreDialog] = useState<{ 
     open: boolean; 
     assessment: Assessment | null; 
@@ -911,7 +949,16 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                   )}
                 </div>
                 
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 space-y-4">
+                  {scoreDialog.assessment && (
+                    <ParecerIA
+                      parecer={(scoreDialog.assessment.ia_parecer as ParecerDaIA) ?? null}
+                      avaliadoEm={scoreDialog.assessment.ia_avaliado_em ?? null}
+                      aAvaliar={aReavaliar}
+                      onReavaliar={() => scoreDialog.assessment && reavaliarComIA(scoreDialog.assessment.id)}
+                    />
+                  )}
+
                   {scoreDialog.assessment && scoreDialog.assessment.score_final && (
                     <IntegrationSuggestions 
                       assessment={{

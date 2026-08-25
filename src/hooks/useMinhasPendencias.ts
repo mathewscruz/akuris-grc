@@ -22,7 +22,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { parseDataLocal } from '@/lib/date-utils';
 
-export type OrigemPendencia = 'projeto' | 'plano';
+export type OrigemPendencia =
+  | 'projeto'
+  | 'plano'
+  | 'documento'
+  | 'risco'
+  | 'aceiteRisco'
+  | 'revisaoAcessos'
+  | 'denuncia'
+  | 'titular';
 
 export interface Pendencia {
   id: string;
@@ -127,11 +135,170 @@ export function useMinhasPendencias() {
     },
   });
 
+  /*
+    As decisoes que esperam por mim.
+
+    O painel dizia «Nada atribuido a voce» enquanto a mesma tela anunciava «1
+    avaliacao vencida - 127 evidencias pendentes». Nao era mentira: este hook
+    so olhava para tarefas de projeto e planos de accao -- duas de oito fontes.
+    Um documento a minha aprovacao ha 375 dias nao aparecia em lado nenhum
+    alem de uma notificacao no sino, que passa.
+
+    Duas fontes ficaram DE FORA, e e decisao, nao esquecimento:
+    - Due diligence nao tem responsavel interno (nem `responsavel_id`, nem
+      revisor). So ha quem enviou. Por aqui «a avaliacao que mandei e nao
+      voltou» seria cobranca, nao decisao minha -- e fingir atribuicao onde
+      nao ha e o defeito que andamos a corrigir.
+    - Teste de controlo por atestar e difusao («qualquer um menos quem o
+      executou»), nao atribuicao. Entraria como "teu" algo que nao e.
+  */
+  const aprovacoesDocumento = useQuery({
+    queryKey: ['minhas-pendencias-documentos', userId],
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      // Sem `empresa_id`: a tabela nao a tem. O inquilino vem da RLS
+      // (`documento_pertence_empresa`), e filtrar por ela devolveria 400.
+      const { data, error } = await supabase
+        .from('documentos_aprovacoes')
+        .select('id, documento_id, created_at, documentos:documento_id(nome)')
+        .eq('aprovador_id', userId!)
+        .eq('status', 'pendente')
+        .eq('tipo_acao', 'solicitacao');
+      if (error) throw error;
+      return (data ?? []).map((a: any) => ({
+        id: `documento-${a.id}`,
+        titulo: a.documentos?.nome ?? '-',
+        origem: 'documento' as const,
+        origemRef: null,
+        // Nao ha prazo de decisao nesta tabela; fica sem prazo, e a ordenacao
+        // manda-o para o fim. E deliberado: nao se inventa urgencia.
+        prazo: null,
+        href: `/documentos?aprovar=${a.documento_id}`,
+      }));
+    },
+  });
+
+  const riscosPendentes = useQuery({
+    queryKey: ['minhas-pendencias-riscos', userId, empresaId],
+    enabled: ativo,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      // Duas filas na mesma tabela: aprovar o risco, e aprovar o seu aceite.
+      const [aprovacao, aceite] = await Promise.all([
+        supabase.from('riscos').select('id, nome')
+          .eq('empresa_id', empresaId!).eq('aprovador_id', userId!)
+          .eq('status_aprovacao', 'pendente_aprovacao'),
+        supabase.from('riscos').select('id, nome')
+          .eq('empresa_id', empresaId!).eq('aprovador_aceite', userId!)
+          .eq('status_aceite', 'pendente'),
+      ]);
+      if (aprovacao.error) throw aprovacao.error;
+      if (aceite.error) throw aceite.error;
+      return [
+        ...(aprovacao.data ?? []).map((r: any) => ({
+          id: `risco-${r.id}`, titulo: r.nome, origem: 'risco' as const,
+          origemRef: null, prazo: null, href: `/riscos?risco=${r.id}`,
+        })),
+        ...(aceite.data ?? []).map((r: any) => ({
+          id: `aceite-${r.id}`, titulo: r.nome, origem: 'aceiteRisco' as const,
+          origemRef: null, prazo: null, href: `/riscos?risco=${r.id}`,
+        })),
+      ];
+    },
+  });
+
+  const revisoes = useQuery({
+    queryKey: ['minhas-pendencias-revisoes', userId, empresaId],
+    enabled: ativo,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('access_reviews')
+        .select('id, nome_revisao, data_limite, total_contas, contas_revisadas')
+        .eq('empresa_id', empresaId!)
+        .eq('responsavel_revisao', userId!)
+        .eq('status', 'em_andamento');
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        id: `revisao-${r.id}`,
+        titulo: r.nome_revisao,
+        origem: 'revisaoAcessos' as const,
+        origemRef: r.total_contas ? `${r.contas_revisadas ?? 0}/${r.total_contas}` : null,
+        prazo: r.data_limite ?? null,
+        href: '/revisao-acessos',
+      }));
+    },
+  });
+
+  const denunciasMinhas = useQuery({
+    queryKey: ['minhas-pendencias-denuncias', userId, empresaId],
+    enabled: ativo,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      /*
+        So as colunas minimas: a linha carrega nome, e-mail, telefone e IP do
+        denunciante. E a RLS (`pode_ver_denuncia`) ja esconde os casos onde
+        estou impedido por conflito de interesse -- filtrar por `responsavel_id`
+        devolve um subconjunto do que ela permite, nunca mais.
+      */
+      const { data, error } = await supabase
+        .from('denuncias')
+        .select('id, titulo, protocolo, prazo_acusacao, prazo_retorno, data_acusacao_recebimento')
+        .eq('empresa_id', empresaId!)
+        .eq('responsavel_id', userId!)
+        .in('status', ['nova', 'em_analise', 'em_investigacao']);
+      if (error) throw error;
+      return (data ?? []).map((d: any) => ({
+        id: `denuncia-${d.id}`,
+        titulo: d.titulo,
+        origem: 'denuncia' as const,
+        origemRef: d.protocolo ?? null,
+        // Enquanto a acusacao nao foi recebida, o relogio e o dela; depois
+        // passa a ser o do retorno. Mesma regua do DenunciaRelogio.
+        prazo: d.data_acusacao_recebimento ? (d.prazo_retorno ?? null) : (d.prazo_acusacao ?? null),
+        href: '/denuncia',
+      }));
+    },
+  });
+
+  const titulares = useQuery({
+    queryKey: ['minhas-pendencias-titulares', userId, empresaId],
+    enabled: ativo,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dados_solicitacoes_titular')
+        .select('id, tipo_solicitacao, prazo_resposta, status')
+        .eq('empresa_id', empresaId!)
+        .eq('responsavel_analise', userId!)
+        .not('status', 'in', '(atendida,rejeitada)');
+      if (error) throw error;
+      return (data ?? []).map((s: any) => ({
+        id: `titular-${s.id}`,
+        titulo: s.tipo_solicitacao,
+        origem: 'titular' as const,
+        origemRef: null,
+        // Prazo LEGAL (LGPD/RGPD). E o unico desta lista que traz multa.
+        prazo: s.prazo_resposta ?? null,
+        href: '/privacidade',
+      }));
+    },
+  });
+
   const itens = useMemo<Pendencia[]>(() => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    const juntos = [...(tarefas.data ?? []), ...(planos.data ?? [])].map((p) => {
+    const juntos = [
+      ...(tarefas.data ?? []),
+      ...(planos.data ?? []),
+      ...(aprovacoesDocumento.data ?? []),
+      ...(riscosPendentes.data ?? []),
+      ...(revisoes.data ?? []),
+      ...(denunciasMinhas.data ?? []),
+      ...(titulares.data ?? []),
+    ].map((p) => {
       let atrasada = false;
       if (p.prazo) {
         const d = parseDataLocal(p.prazo);
@@ -149,12 +316,19 @@ export function useMinhasPendencias() {
       if (!b.prazo) return -1;
       return a.prazo.localeCompare(b.prazo);
     });
-  }, [tarefas.data, planos.data]);
+  }, [tarefas.data, planos.data, aprovacoesDocumento.data, riscosPendentes.data, revisoes.data, denunciasMinhas.data, titulares.data]);
 
   return {
     itens,
     total: itens.length,
     atrasadas: itens.filter((i) => i.atrasada).length,
-    isLoading: tarefas.isLoading || planos.isLoading,
+    isLoading:
+      tarefas.isLoading ||
+      planos.isLoading ||
+      aprovacoesDocumento.isLoading ||
+      riscosPendentes.isLoading ||
+      revisoes.isLoading ||
+      denunciasMinhas.isLoading ||
+      titulares.isLoading,
   };
 }
