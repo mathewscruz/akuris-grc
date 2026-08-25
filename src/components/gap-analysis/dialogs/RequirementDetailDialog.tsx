@@ -695,8 +695,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const handleSavePlanoAcao = async (planoData: any) => {
     setSavingPlano(true);
     try {
+      /*
+        O plano tem de saber de QUAL requisito nasceu, nao so que veio de
+        frameworks. Faltava `registro_origem_id`: gravava-se o titulo em texto
+        e o identificador perdia-se, por isso o botao «abrir no modulo» do
+        plano nao tinha para onde ir. Era o unico dos tres campos de
+        rastreabilidade que ficava por preencher -- so 1 de 18 planos na base
+        tinha o id do registo, e esse veio das Auditorias, que fazem certo.
+      */
       const { data: newPlano, error } = await supabase.from('planos_acao').insert({
         ...planoData, empresa_id: empresaId, modulo_origem: 'frameworks',
+        registro_origem_id: requirement.id,
         registro_origem_titulo: `${requirement.codigo} - ${requirement.titulo}`,
       }).select().single();
       if (error) throw error;
@@ -1354,6 +1363,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           descricao: requirement.descricao || '',
           prioridade: (requirement.peso || 0) >= 3 ? 'alta' : 'media',
           modulo_origem: 'frameworks',
+          registro_origem_id: requirement.id,
           registro_origem_titulo: `${requirement.codigo} - ${requirement.titulo}`,
         }}
       />

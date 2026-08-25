@@ -130,6 +130,15 @@ interface DrillConfig {
   description: string;
   icon: React.ElementType;
   route: string;
+  /**
+   * Parâmetro com que se abre o item. Por omissão `focus`, que leva à ficha.
+   *
+   * Nem todo o KPI quer a ficha: o de documentos «aguardam decisão para entrar
+   * em vigor» levava a pessoa ao assistente de EDIÇÃO -- nome, classificação,
+   * tags, anexo -- quando o que ela ia fazer era aprovar. O caminho mais
+   * natural levava ao sítio errado.
+   */
+  paramFoco?: string;
   fetcher: (empresaId: string) => Promise<DrillItem[]>;
 }
 
@@ -1235,6 +1244,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
         description: d('documentos_pendentes.description'),
         icon: DocumentosIcon,
         route: '/documentos',
+        // Quem clica aqui vai decidir, não editar.
+        paramFoco: 'aprovar',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('documentos')
@@ -1574,7 +1585,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
                 key={item.id}
                 onClick={() => {
                   onOpenChange(false);
-                  navigate(`${config.route}?focus=${item.id}`);
+                  navigate(`${config.route}?${config.paramFoco ?? 'focus'}=${item.id}`);
                 }}
                 className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-ui flex items-start justify-between gap-3 group"
               >
