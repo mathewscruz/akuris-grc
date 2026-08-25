@@ -252,3 +252,8 @@ verify_jwt = false
 
 [functions.translate-framework-content]
 verify_jwt = true
+
+[functions.projeto-sla-checker]
+# Trabalho agendado. Sem JWT de utilizador; a porta fecha-se no codigo, com
+# `exigeChamadaInterna` (chave de servico).
+verify_jwt = false
