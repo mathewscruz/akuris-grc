@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { orIlike } from '@/lib/busca-segura';
 import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile } from '@/components/icons';
 import { createPortal } from "react-dom";
 import { useLocation, useSearchParams } from "react-router-dom";
@@ -66,8 +67,13 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
         .eq('empresa_id', empresaId!)
         .order('created_at', { ascending: false });
 
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%`);
+      /*
+        Busca saneada: `searchTerm` vem de uma caixa de texto e ia cru para
+        dentro de `or()`, que o PostgREST separa por vírgula. Ver `orIlike`.
+      */
+      const buscaAuditorias = orIlike(['nome', 'descricao'], searchTerm);
+      if (buscaAuditorias) {
+        query = query.or(buscaAuditorias);
       }
 
       if (statusFilter !== 'todos') {
