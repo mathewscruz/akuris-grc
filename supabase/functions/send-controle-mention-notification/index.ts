@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { requireUserContext, authErrorResponse } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,10 +26,24 @@ serve(async (req) => {
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    /*
+      Quem chama tem de pertencer à empresa do destinatário.
+
+      O identificador do destinatário vinha do CORPO do pedido e era usado tal e
+      qual contra um cliente de service_role, que ignora RLS. Qualquer
+      utilizador autenticado podia notificar e mandar e-mail a qualquer pessoa
+      de QUALQUER empresa, com texto à escolha, a partir do domínio de
+      confiança da plataforma.
+    */
+    const ctx = await requireUserContext(req);
+
     const { user_id, controle_id, controle_nome, mencionado_por, comentario }: MentionNotificationRequest = await req.json();
 
     const { data: usuario, error: usuarioError } = await supabase.from("profiles").select("nome, email, empresa_id").eq("user_id", user_id).single();
     if (usuarioError || !usuario) throw new Error("Usuário não encontrado");
+    if (!ctx.empresaId || usuario.empresa_id !== ctx.empresaId) {
+      return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
 
     const { data: autorMencao } = await supabase.from("profiles").select("nome").eq("user_id", mencionado_por).single();
     const autorNome = autorMencao?.nome || "Um usuário";
@@ -88,6 +103,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Erro na função:", error);
-    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Falha de autenticação responde 401/403, não 500.
+    return authErrorResponse(error, corsHeaders);
   }
 });

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
+import { exigeChamadaInterna, respostaAcessoNegado, AcessoNegado } from "../_shared/interna.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -15,6 +16,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Função interna: só a chave de serviço entra. Estava publicada sem
+    // qualquer verificação, disparável por qualquer pessoa na internet.
+    exigeChamadaInterna(req);
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: empresas, error: empresasError } = await supabase.from('empresas').select('id, nome').eq('ativo', true);
     if (empresasError) throw empresasError;
@@ -94,6 +99,8 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, resultados }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: any) {
+    // Acesso negado responde 401, não 500 -- e sem detalhe interno.
+    if (error instanceof AcessoNegado) return respostaAcessoNegado(error, corsHeaders);
     console.error("Erro no processamento:", error);
     return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }

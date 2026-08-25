@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { requireUserContext, authErrorResponse } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,17 @@ const handler = async (req: Request): Promise<Response> => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) return new Response(JSON.stringify({ error: "Email service not configured" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
+    /*
+      Quem chama tem de pertencer à empresa do destinatário.
+
+      O identificador do destinatário vinha do CORPO do pedido e era usado tal e
+      qual contra um cliente de service_role, que ignora RLS. Qualquer
+      utilizador autenticado podia notificar e mandar e-mail a qualquer pessoa
+      de QUALQUER empresa, com texto à escolha, a partir do domínio de
+      confiança da plataforma.
+    */
+    const ctx = await requireUserContext(req);
+
     const resend = new Resend(resendApiKey);
     const { controle_id, controle_nome, controle_descricao, proxima_avaliacao, responsavel_id }: NotificationRequest = await req.json();
 
@@ -34,6 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavelData) return new Response(JSON.stringify({ error: "Responsible user not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
     if (!responsavelData.email) return new Response(JSON.stringify({ error: "Responsible user has no email" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    if (!ctx.empresaId || responsavelData.empresa_id !== ctx.empresaId) return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     let companyName = "Akuris";
 
@@ -100,7 +113,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ success: true, emailResponse }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
   } catch (error: any) {
     console.error("Error in send-controle-notification:", error);
-    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    // Falha de autenticação responde 401/403, não 500.
+    return authErrorResponse(error, corsHeaders);
   }
 };
 

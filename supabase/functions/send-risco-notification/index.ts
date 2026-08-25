@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
+import { requireUserContext, authErrorResponse } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,10 +20,29 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { risco_id, titulo, descricao, probabilidade, impacto, categoria, responsavel_id, empresa_id }: NotificationRequest = await req.json();
+    /*
+      Quem chama tem de pertencer à empresa que diz representar.
+
+      Antes, `responsavel_id` e `empresa_id` vinham do CORPO do pedido e eram
+      usados tal e qual contra um cliente de service_role, que ignora RLS. Um
+      utilizador autenticado de um inquilino podia assim mandar e-mail e
+      notificação a qualquer pessoa de QUALQUER empresa, com o assunto e o
+      texto que quisesse -- vindos do domínio de confiança da plataforma.
+      É um veículo de phishing, e uma fuga de nomes e e-mails alheios.
+    */
+    const ctx = await requireUserContext(req);
+
+    const { risco_id, titulo, descricao, probabilidade, impacto, categoria, responsavel_id }: NotificationRequest = await req.json();
+
+    // A empresa é sempre a da sessão; o corpo do pedido não a escolhe.
+    const empresa_id = ctx.empresaId;
+    if (!empresa_id) return new Response(JSON.stringify({ error: "Sem empresa associada" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavelData?.email) return new Response(JSON.stringify({ error: "Responsável não encontrado ou sem email" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    // E o destinatário tem de ser do mesmo inquilino de quem manda.
+    if (responsavelData.empresa_id !== empresa_id) return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     let companyName = "Akuris";
     const { data: empresaData } = await supabase.from("empresas").select("nome").eq("id", empresa_id).single();
@@ -90,7 +110,9 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ success: true, emailResponse }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
   } catch (error: any) {
     console.error("Error in send-risco-notification:", error);
-    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    // Falha de autenticação responde 401/403, não 500 -- e não devolve o
+    // detalhe interno a quem nem devia ter passado da porta.
+    return authErrorResponse(error, corsHeaders);
   }
 };
 

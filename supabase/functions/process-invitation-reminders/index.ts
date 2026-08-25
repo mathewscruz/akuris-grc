@@ -3,6 +3,7 @@ import { Resend } from 'npm:resend@4.0.0'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { InvitationReminderEmail } from './_templates/invitation-reminder-email.tsx'
+import { exigeInternaOuUtilizador, respostaAcessoNegado, AcessoNegado } from '../_shared/interna.ts'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -34,8 +35,27 @@ Deno.serve(async (req) => {
 
   try {
     console.log('Iniciando processamento de lembretes de convite')
-    
-    const { user_id, empresa_id }: ReminderRequest = await req.json().catch(() => ({}))
+
+    /*
+      Dois chamadores legítimos, e mais nenhum: o `daily-reminder-processor`
+      (por dentro, com a chave de serviço) e o ecrã de definições de lembretes
+      (um utilizador com sessão). Estava aberta a qualquer pessoa na internet.
+    */
+    const chamador = await exigeInternaOuUtilizador(req)
+
+    const { user_id, empresa_id: empresaPedida }: ReminderRequest = await req.json().catch(() => ({}))
+
+    /*
+      Um utilizador só processa lembretes da SUA empresa -- o `empresa_id` do
+      corpo do pedido deixa de o escolher. Vindo de dentro, o processador diário
+      já sabe de que empresa trata e continua a poder indicá-la.
+    */
+    const empresa_id = chamador.interna ? empresaPedida : chamador.empresaId
+    if (!chamador.interna && !empresa_id) {
+      return new Response(JSON.stringify({ error: 'Sem empresa associada' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     // Buscar usuários elegíveis para receber lembretes
     let query = supabase
@@ -223,6 +243,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error: any) {
+    if (error instanceof AcessoNegado) return respostaAcessoNegado(error, corsHeaders)
     console.error('Erro na função process-invitation-reminders:', error)
     return new Response(
       JSON.stringify({
