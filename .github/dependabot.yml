@@ -1,0 +1,33 @@
+# Dependabot — atualizações de dependência, revistas, não automáticas.
+#
+# Abre PRs de atualização em vez de as aplicar sozinho. É deliberado: um `npm
+# audit fix` em massa já partiu o build deste projecto (o @testing-library
+# mudou de versão e a suite deixou de arrancar). Cada atualização passa pelo
+# pipeline de CI e por um par de olhos.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # Agrupa as de segurança para não abrir cinco PRs por semana.
+    groups:
+      seguranca:
+        applies-to: security-updates
+        patterns: ["*"]
+    # As bibliotecas de framework (React, Vite) mudam de major com quebras —
+    # ignora o salto de major, deixa o patch e o minor.
+    ignore:
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # As Actions do próprio pipeline também se mantêm actualizadas.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

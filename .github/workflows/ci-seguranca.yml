@@ -1,0 +1,116 @@
+# DevSecOps — os portões que correm a cada mudança.
+#
+# ## Porque isto existe
+#
+# O Akuris acumulou dezenas de guardas de segurança (SSRF, cross-tenant,
+# injeção, cabeçalhos, cifra em repouso, paridade i18n). Cada uma é um teste.
+# Um teste que ninguém corre apodrece — e o repositório é PÚBLICO e sincroniza
+# com o Lovable, que empurra commits directamente. Já aconteceu: um commit do
+# Lovable reabriu uma fuga de sigilo no canal de denúncia, e só uma guarda a
+# apanhou depois de eu a correr à mão.
+#
+# Este pipeline transforma as guardas em PORTÕES: correm em cada push e em cada
+# PR, e o resultado fica visível. Para que um PR NÃO possa ser fundido com um
+# portão vermelho, é preciso ligar "Require status checks" nas definições do
+# repositório no GitHub — isso é um passo manual, documentado em SECURITY.md.
+#
+# ## O que cada job protege
+#
+#  · qualidade      — typecheck + lint + os 380 testes (as guardas vivem aqui)
+#  · segredos       — gitleaks: nenhuma chave real entra no repo público
+#  · dependencias   — npm audit: vulnerabilidades conhecidas ficam à vista
+
+name: CI Segurança
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Um push novo cancela a execução anterior do mesmo ramo — não se gasta CI a
+# validar commits já ultrapassados.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualidade:
+    name: Typecheck · Lint · Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # O projecto instala com --legacy-peer-deps (o Lovable usa bun; aqui é npm)
+      # e o @testing-library/dom entra à parte — é peer do react-testing-library
+      # e os testes de componente dependem dele. Sem isto, a suite não arranca.
+      - name: Instalar dependências
+        run: |
+          npm install --legacy-peer-deps
+          npm install --no-save --legacy-peer-deps @testing-library/dom@^10
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # O lint é INFORMATIVO, não bloqueante — de propósito. O projecto arrasta
+      # milhares de avisos de estilo pré-existentes; torná-lo um portão deixaria
+      # o pipeline vermelho para sempre e ninguém fundiria nada. O relatório
+      # fica à vista para a dívida encolher com o tempo, sem travar o resto.
+      # (Código NOVO deve passar limpo — ver SECURITY.md.)
+      - name: Lint (informativo)
+        run: npm run lint || true
+
+      # Os ~380 testes, incluindo TODAS as guardas de segurança:
+      # ssrf, cabecalhos-de-seguranca, credenciais-cifradas-em-repouso,
+      # busca-nao-se-injeta, deliberacao-nao-sai-do-comite, i18n-parity, etc.
+      # ESTE portão bloqueia: uma guarda vermelha é uma regressão de segurança.
+      - name: Testes (inclui guardas de segurança)
+        run: npm run test
+
+  segredos:
+    name: Varredura de segredos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks precisa do histórico para varrer o que já foi commitado,
+          # não só o último estado.
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A configuração vive em .gitleaks.toml — lá está a allowlist da chave
+          # anon (pública por desenho) para não haver falso-positivo eterno.
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  dependencias:
+    name: Vulnerabilidades em dependências
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Informativo, não bloqueante. Toda a "severidade" do npm audit é nominal:
+      # a única crítica hoje (jspdf) NÃO é alcançável — não usamos o método
+      # vulnerável — e as altas são de ferramentas de build que não chegam ao
+      # runtime. Julgar alcançabilidade é trabalho humano, não de um número; e
+      # um `audit fix` em massa parte o build (comprovado). O relatório fica à
+      # vista em cada corrida para a decisão ser deliberada, sem travar o resto.
+      # A verificação de segredos (job `segredos`) é o portão duro daqui.
+      - name: npm audit (informativo)
+        run: |
+          npm install --legacy-peer-deps --package-lock-only
+          npm audit || true

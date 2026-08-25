@@ -29,6 +29,27 @@ dist-ssr
 # Dumps de producao trazidos para teste local — nunca versionados
 .local-dumps/
 
+# ── Segredos: onde as credenciais reais vivem, e nunca entram no git ──
+#
+# O `.env` versionado só tem variáveis VITE_* (públicas, vão no bundle). Os
+# segredos de verdade — a service_role do Supabase, tokens de integração,
+# chaves de conta de serviço — vivem em ficheiros que NÃO se versionam. O
+# convention do Vite é `.env.local` para isso, e o pipeline (gitleaks) apanha
+# qualquer segredo que escape na mesma. Cinto e suspensórios.
+.env.local
+.env.*.local
+.env.development.local
+.env.production.local
+# Chaves e certificados soltos.
+*.pem
+*.key
+*.p12
+*.pfx
+# Conta de serviço do Google (a chave privada do Workspace) — nunca em ficheiro.
+**/service-account*.json
+**/gcp-*.json
+**/*-credentials.json
+
 # Metadados do CLI do Supabase: expõem o project-ref, a URL do pooler e as
 # versões exactas dos componentes. Num repositório público isso é
 # reconhecimento gratuito — e não há razão para versionar estado local.

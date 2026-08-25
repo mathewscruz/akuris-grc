@@ -1,0 +1,61 @@
+# Varredura de segredos — o que NÃO pode entrar num repositório público.
+#
+# O Akuris é público e sincroniza com o Lovable. A chave que faria estragos é a
+# `service_role` do Supabase (ignora o RLS por completo) e as credenciais das
+# integrações (token do Jira, chave privada do Google). Se qualquer uma entrar
+# num commit, esta varredura falha o pipeline.
+#
+# A base de regras do gitleaks já apanha as chaves da AWS, GCP, Stripe, tokens
+# do GitHub, chaves PEM, etc. Aqui só se acrescenta o que é específico do
+# Akuris, e se isenta o que é público POR DESENHO.
+
+[extend]
+# Herda o conjunto de regras por omissão do gitleaks (centenas de padrões).
+useDefault = true
+
+[[rules]]
+id = "supabase-service-role-jwt"
+description = "Chave service_role do Supabase (ignora o RLS — nunca no repo)"
+# JWT do Supabase cujo payload contém "role":"service_role". A anon key tem
+# "role":"anon" e é apanhada pela allowlist abaixo.
+regex = '''eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*(c2VydmljZV9yb2xl|InNlcnZpY2Vfcm9sZSI)[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+'''
+keywords = ["service_role", "eyJ"]
+
+[[rules]]
+id = "google-service-account-key"
+description = "Chave privada de conta de serviço do Google"
+regex = '''"private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----'''
+keywords = ["private_key", "BEGIN PRIVATE KEY"]
+
+[allowlist]
+description = "Falsos-positivos e valores públicos por desenho"
+regexTarget = "match"
+regexes = [
+  # 1. A chave ANON do Supabase (publishable key): vai no bundle do cliente e é
+  #    protegida por RLS. Pública por desenho.
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubGthaHR1Z3dta3puYXNhcGZk[A-Za-z0-9_.-]+''',
+  # 2. URLs ASSINADAS de imagens públicas (logo, og:image). O `kid` começa por
+  #    "storage-url-signing" e o payload só tem `{"url":"...png","iat","exp"}` —
+  #    é um token de leitura de um asset público, não uma credencial.
+  '''eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5n[A-Za-z0-9_.-]+''',
+  # 3. Placeholders e exemplos: "gai_sua_chave_aqui", chaves de i18n.
+  '''gai_sua_chave_aqui''',
+  '''gapV2\.soa\.[A-Za-z]+''',
+]
+# Ficheiros e caminhos que mencionam padrões sem conter segredo real.
+paths = [
+  # O .replace que remove o cabeçalho PEM antes de usar a chave (que vem do Vault).
+  '''supabase/functions/google-workspace/index\.ts''',
+  # Ambientes locais: build, worktrees do Claude, e o .env.local (git-ignored).
+  '''^dist/''',
+  '''\.claude/''',
+  '''\.env\.local''',
+]
+# Commits antigos com uma anon key (pública) de um projeto anterior, JÁ removida
+# do código atual. Não é vazamento activo; isentam-se para o histórico não
+# manter o pipeline eternamente vermelho. Um segredo NOVO em qualquer ficheiro
+# continua a ser apanhado.
+commits = [
+  "81da2e7b341d4fd9f38b8f606b78aaf51ee9d894",
+  "badc478d17903db76c1b6cffa19fb09f83fb6bcd",
+]
