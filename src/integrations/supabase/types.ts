@@ -4312,6 +4312,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "documentos_aprovacoes_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "documentos_aprovacoes_documento_id_fkey"
             columns: ["documento_id"]
             isOneToOne: false
@@ -4472,9 +4479,6 @@ export type Database = {
       }
       due_diligence_assessments: {
         Row: {
-          ia_avaliado_em: string | null
-          ia_nivel_risco: string | null
-          ia_parecer: Json | null
           created_at: string
           created_by: string | null
           data_conclusao: string | null
@@ -4485,6 +4489,9 @@ export type Database = {
           fornecedor_email: string
           fornecedor_id: string | null
           fornecedor_nome: string
+          ia_avaliado_em: string | null
+          ia_nivel_risco: string | null
+          ia_parecer: Json | null
           id: string
           link_token: string
           observacoes: string | null
@@ -4495,9 +4502,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          ia_avaliado_em?: string | null
-          ia_nivel_risco?: string | null
-          ia_parecer?: Json | null
           created_at?: string
           created_by?: string | null
           data_conclusao?: string | null
@@ -4508,6 +4512,9 @@ export type Database = {
           fornecedor_email: string
           fornecedor_id?: string | null
           fornecedor_nome: string
+          ia_avaliado_em?: string | null
+          ia_nivel_risco?: string | null
+          ia_parecer?: Json | null
           id?: string
           link_token: string
           observacoes?: string | null
@@ -4518,9 +4525,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          ia_avaliado_em?: string | null
-          ia_nivel_risco?: string | null
-          ia_parecer?: Json | null
           created_at?: string
           created_by?: string | null
           data_conclusao?: string | null
@@ -4531,6 +4535,9 @@ export type Database = {
           fornecedor_email?: string
           fornecedor_id?: string | null
           fornecedor_nome?: string
+          ia_avaliado_em?: string | null
+          ia_nivel_risco?: string | null
+          ia_parecer?: Json | null
           id?: string
           link_token?: string
           observacoes?: string | null
@@ -4945,9 +4952,9 @@ export type Database = {
       }
       empresa_reminder_settings: {
         Row: {
+          created_at: string
           due_diligence_expiracao_ativo: boolean
           due_diligence_expiracao_dias: number
-          created_at: string
           empresa_id: string
           id: string
           max_reminders: number
@@ -4957,6 +4964,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          due_diligence_expiracao_ativo?: boolean
+          due_diligence_expiracao_dias?: number
           empresa_id: string
           id?: string
           max_reminders?: number
@@ -4966,6 +4975,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          due_diligence_expiracao_ativo?: boolean
+          due_diligence_expiracao_dias?: number
           empresa_id?: string
           id?: string
           max_reminders?: number
@@ -5063,7 +5074,6 @@ export type Database = {
       }
       evidence_library: {
         Row: {
-          documento_id: string | null
           arquivo_hash: string | null
           arquivo_nome: string | null
           arquivo_tamanho: number | null
@@ -5073,6 +5083,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           descricao: string | null
+          documento_id: string | null
           empresa_id: string
           id: string
           link_externo: string | null
@@ -5084,7 +5095,6 @@ export type Database = {
           valido_ate: string | null
         }
         Insert: {
-          documento_id?: string | null
           arquivo_hash?: string | null
           arquivo_nome?: string | null
           arquivo_tamanho?: number | null
@@ -5094,6 +5104,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          documento_id?: string | null
           empresa_id: string
           id?: string
           link_externo?: string | null
@@ -5105,7 +5116,6 @@ export type Database = {
           valido_ate?: string | null
         }
         Update: {
-          documento_id?: string | null
           arquivo_hash?: string | null
           arquivo_nome?: string | null
           arquivo_tamanho?: number | null
@@ -5115,6 +5125,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          documento_id?: string | null
           empresa_id?: string
           id?: string
           link_externo?: string | null
@@ -5126,6 +5137,13 @@ export type Database = {
           valido_ate?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "evidence_library_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "evidence_library_origem_evaluation_id_fkey"
             columns: ["origem_evaluation_id"]
@@ -6930,8 +6948,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          notificar_na_aplicacao: boolean
-          notificar_por_email: boolean
           ativo: boolean
           created_at: string
           email: string
@@ -6941,6 +6957,8 @@ export type Database = {
           invitation_link: string | null
           invitation_sent_at: string | null
           nome: string
+          notificar_na_aplicacao: boolean
+          notificar_por_email: boolean
           permission_profile_id: string | null
           preferred_locale: string
           role: Database["public"]["Enums"]["user_role"]
@@ -6948,8 +6966,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          notificar_na_aplicacao?: boolean
-          notificar_por_email?: boolean
           ativo?: boolean
           created_at?: string
           email: string
@@ -6959,6 +6975,8 @@ export type Database = {
           invitation_link?: string | null
           invitation_sent_at?: string | null
           nome: string
+          notificar_na_aplicacao?: boolean
+          notificar_por_email?: boolean
           permission_profile_id?: string | null
           preferred_locale: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -6966,8 +6984,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          notificar_na_aplicacao?: boolean
-          notificar_por_email?: boolean
           ativo?: boolean
           created_at?: string
           email?: string
@@ -6977,6 +6993,8 @@ export type Database = {
           invitation_link?: string | null
           invitation_sent_at?: string | null
           nome?: string
+          notificar_na_aplicacao?: boolean
+          notificar_por_email?: boolean
           permission_profile_id?: string | null
           preferred_locale?: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -9579,8 +9597,10 @@ export type Database = {
         Args: { _categoria: string }
         Returns: string
       }
+      chave_credenciais_integracao: { Args: never; Returns: string }
       check_company_user_limit: { Args: { _empresa_id: string }; Returns: Json }
       check_trial_expiration: { Args: never; Returns: undefined }
+      cifrar_credenciais: { Args: { p_claro: string }; Returns: string }
       cleanup_expired_mfa_codes: { Args: never; Returns: undefined }
       confirmar_ata_reuniao: {
         Args: { p_reuniao_id: string; p_tracking_hash: string }
@@ -9779,6 +9799,10 @@ export type Database = {
         Args: { evaluation_id: string }
         Returns: boolean
       }
+      exige_empresa_da_sessao: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
       expirar_aceites_riscos: { Args: never; Returns: Json }
       expurgar_denuncias_vencidas: {
         Args: never
@@ -9812,6 +9836,10 @@ export type Database = {
           score: number
           total_requisitos: number
         }[]
+      }
+      gap_empresa_autorizada: {
+        Args: { p_empresa_id: string }
+        Returns: string
       }
       gap_propostas_de_heranca: {
         Args: { p_empresa_id: string; p_framework_alvo: string }
@@ -9956,6 +9984,10 @@ export type Database = {
           expires_at: string
           status: string
         }[]
+      }
+      ler_credenciais_integracao: {
+        Args: { p_config_id: string }
+        Returns: string
       }
       marcar_notificacoes_lidas: {
         Args: { p_chaves: string[] }
