@@ -38,10 +38,29 @@ function ultimaDefinicao(funcao: string): { ficheiro: string; corpo: string } {
 
   for (const nome of [...ficheiros].reverse()) {
     const texto = readFileSync(join(PASTA, nome), 'utf8');
-    const i = texto.lastIndexOf(`FUNCTION public.${funcao}(`);
+    /*
+      `CREATE`, e não a última ocorrência do nome.
+
+      A primeira versão desta busca usava `lastIndexOf('FUNCTION public.…(')`,
+      que casa com a linha do `GRANT EXECUTE ON FUNCTION` no fim do ficheiro —
+      e devolvia essa linha como «corpo». Depois procurava o fim em
+      `$function$;`, que não existe quando a migration delimita com `$$;`.
+
+      As duas coisas juntas fizeram esta guarda apanhar uma regressão a sério
+      pelo motivo errado: falhou em «não contém observacoes» quando o problema
+      era outro. Uma guarda que acerta por acidente é uma guarda que da próxima
+      vez erra por acidente.
+    */
+    const assinatura = new RegExp(
+      String.raw`CREATE\s+(OR\s+REPLACE\s+)?FUNCTION\s+public\.` + funcao + String.raw`\s*\(`,
+      'i',
+    );
+    const i = texto.search(assinatura);
     if (i === -1) continue;
-    // Da assinatura até ao fim do corpo em dólares.
-    const fim = texto.indexOf('$function$;', i);
+    /* O corpo acaba no delimitador em dólares que o abriu — `$$` ou `$function$`. */
+    const abre = texto.slice(i).match(/AS\s+(\$[a-z_]*\$)/i);
+    const marca = abre ? abre[1] : '$function$';
+    const fim = texto.indexOf(`${marca};`, i + (abre?.index ?? 0) + marca.length);
     return { ficheiro: nome, corpo: texto.slice(i, fim === -1 ? undefined : fim) };
   }
   throw new Error(`Nenhuma migration define public.${funcao}`);
@@ -59,6 +78,51 @@ describe('a deliberação da apuração não chega a quem denunciou', () => {
         'movimentações sem filtrar por `visibilidade`. Esse campo é a nota ' +
         "interna do comité — o retorno a quem denunciou vive em `denuncias_mensagens`.",
     ).toBe(true);
+  });
+
+  it('a acta da reunião só sai depois de partilhada', () => {
+    /*
+      A acta tem o seu proprio controlo: so e devolvida depois de
+      `ata_partilhada_em`. E o que permite a quem esteve na reuniao verificar,
+      rectificar e aceitar o registo -- artigo 18.o/2 da Diretiva.
+
+      Uma reescrita da funcao deixou-a cair inteira da resposta, e com ela o
+      passo de confirmacao ficou sem o texto a confirmar.
+    */
+    const { ficheiro, corpo } = ultimaDefinicao('consult_denuncia_publica');
+    expect(
+      /'ata',\s*CASE\s+WHEN\s+r\.ata_partilhada_em\s+IS\s+NOT\s+NULL/i.test(corpo),
+      `${ficheiro}: a acta deixou de sair condicionada a ata_partilhada_em -- ` +
+        'ou desapareceu da resposta, ou passou a sair antes de ser partilhada.',
+    ).toBe(true);
+  });
+
+  it('a consulta pública só lê colunas que existem em denuncias_reunioes', () => {
+    /*
+      `CREATE OR REPLACE FUNCTION` em plpgsql nao valida nomes de coluna. Uma
+      reescrita pediu `r.status`, `r.data_hora` e `r.link_ou_local` -- tres
+      colunas que nao existem -- e a migration aplicou-se sem se queixar. A
+      funcao passou a rebentar em TODA a chamada, e a consulta publica da
+      denuncia deixou de responder, em producao, sem um unico erro no deploy.
+    */
+    const { ficheiro, corpo } = ultimaDefinicao('consult_denuncia_publica');
+    /*
+      Sem os comentários.
+
+      A migration que repôs isto EXPLICA o erro citando os três nomes errados —
+      e a primeira versão desta guarda apanhou o próprio texto que a documenta.
+      Uma guarda que não distingue código de comentário sobre o código dá
+      alarme onde não há nada.
+    */
+    const codigo = corpo.replace(/\/\*[\s\S]*?\*\//g, '').replace(/--[^\n]*/g, '');
+    const inexistentes = ['r.status', 'r.data_hora', 'r.link_ou_local'].filter((c) =>
+      codigo.includes(c),
+    );
+    expect(
+      inexistentes,
+      `${ficheiro}: a funcao le colunas que nao existem em denuncias_reunioes. ` +
+        'A tabela tem `estado`, `agendada_para` e `local`.',
+    ).toEqual([]);
   });
 
   it('a trilha nasce assinada por quem a escreve', () => {
