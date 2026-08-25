@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useFocusRow } from '@/hooks/useFocusRow';
 import { matchesSearch } from '@/lib/search-utils';
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconShield, IconFileCheck, IconTest, IconChecklist, IconCalendarClock } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,14 @@ const tipoMap: Record<string, string> = {
 };
 
 export default function Continuidade() {
+  /*
+    O `?focus=<id>` que a busca global, o `EntidadeSelect` e o sino já
+    emitiam para aqui não tinha do lado de cá quem o lesse: a página abria a
+    lista inteira e o registo procurado ficava por encontrar à mão. O
+    `DataTable` já marca cada linha com `data-focus-id`; faltava só chamar o
+    gancho que a procura e a destaca.
+  */
+  useFocusRow();
   const { t } = useLanguage();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;

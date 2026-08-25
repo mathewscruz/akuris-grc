@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function Denuncia() {
   const { t } = useLanguage();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const [denunciaIdToOpen, setDenunciaIdToOpen] = useState<string | null>(null);
   const [relatoriosOpen, setRelatoriosOpen] = useState(false);
@@ -32,13 +32,27 @@ export default function Denuncia() {
   const ehCliente = empresas.find((e) => e.empresa_id === empresaAtiva)?.propria === false;
   const { data: stats, isLoading: statsLoading } = useDenunciasStats(empresaAtiva);
 
-  // Detectar se veio com itemId do dashboard
+  /*
+    Duas maneiras de chegar à mesma denúncia.
+
+    `location.state` só existe quando a navegação foi feita em JS na mesma
+    sessão — é o caminho do painel. O `?focus=<id>` da busca global, do
+    `EntidadeSelect` e do sino sobrevive a link colado e a recarregamento, e
+    não tinha aqui quem o lesse: `searchParams` estava declarado e nunca
+    usado, e o link caía na lista inteira. Consumido uma vez e limpo, para
+    que voltar atrás não reabra a ficha.
+  */
   useEffect(() => {
-    const itemId = location.state?.itemId;
-    if (itemId) {
-      setDenunciaIdToOpen(itemId);
+    const doEndereco = searchParams.get('focus');
+    const alvo = location.state?.itemId ?? doEndereco;
+    if (!alvo) return;
+    setDenunciaIdToOpen(alvo);
+    if (doEndereco) {
+      const proximo = new URLSearchParams(searchParams);
+      proximo.delete('focus');
+      setSearchParams(proximo, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, searchParams, setSearchParams]);
 
   const handleDenunciaCriada = () => {
     setDashboardRefreshKey((prev) => prev + 1);

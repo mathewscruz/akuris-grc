@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { IconAdd, IconDownload, IconFile, IconArrowLeft, IconSettings } from '@/components/icons';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -45,6 +45,34 @@ export default function ProjetoDetalhe() {
   const [projetoDialog, setProjetoDialog] = useState(false);
   const [suggestDialog, setSuggestDialog] = useState(false);
   const [reportDialog, setReportDialog] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  /*
+    A tarefa não tem página própria: vive na ficha, que se abre a partir de
+    qualquer uma das quatro vistas. A busca global já emitia
+    `/projetos/<projeto>?focus=<tarefa>` e a página lia `useParams` e mais
+    nada — o link abria o projeto certo e deixava a pessoa a procurar a
+    tarefa no quadro. Aqui o destaque de linha não serve: a mesma tarefa
+    aparece no Kanban, na lista, no calendário e no Gantt, e três dessas
+    vistas estão desmontadas. Abrir a ficha é o que o clique faria.
+
+    O efeito tem de ficar ACIMA dos retornos antecipados de carregamento —
+    um gancho a seguir a um `return` não corre em todas as renderizações.
+  */
+  const focoConsumido = useRef<string | null>(null);
+  useEffect(() => {
+    const alvo = searchParams.get('focus');
+    if (!alvo || alvo === focoConsumido.current) return;
+    const tarefa = tarefas.find((x) => x.id === alvo);
+    if (!tarefa) return;
+    focoConsumido.current = alvo;
+    setTarefaAtual(tarefa);
+    setDefaultColuna(null);
+    setTarefaDialog(true);
+    const proximo = new URLSearchParams(searchParams);
+    proximo.delete('focus');
+    setSearchParams(proximo, { replace: true });
+  }, [searchParams, tarefas, setSearchParams]);
 
   if (isLoading) return <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>;
   if (!projeto) return <div className="p-6">{t('projetos.detalhe.notFound')}</div>;

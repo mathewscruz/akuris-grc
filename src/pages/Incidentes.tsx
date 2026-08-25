@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useFocusRow } from '@/hooks/useFocusRow';
 import { IconFilter, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconSuccess, IconWarning, IconInfo, IconError, IconTime, IconCalendar, IconFile, IconShield, IconMessage } from '@/components/icons';
 import { logger } from '@/lib/logger';
 import { exportCSV } from '@/lib/csv-utils';
@@ -63,6 +64,14 @@ interface Incidente {
 }
 
 export default function Incidentes() {
+  /*
+    O `?focus=<id>` que a busca global, o `EntidadeSelect` e o sino já
+    emitiam para aqui não tinha do lado de cá quem o lesse: a página abria a
+    lista inteira e o registo procurado ficava por encontrar à mão. O
+    `DataTable` já marca cada linha com `data-focus-id`; faltava só chamar o
+    gancho que a procura e a destaca.
+  */
+  useFocusRow();
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(null);

@@ -16,7 +16,7 @@
  * uma linha própria no nível 1. Um registo invisível é pior do que um registo
  * mal arrumado.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAdd,
@@ -71,6 +71,8 @@ interface Props {
   novoRopaSinal?: number;
   /** Diz à página em que nível estamos, para o botão do cabeçalho concordar. */
   aoMudarNivel?: (nivel: NivelRopa) => void;
+  /** Tratamento pedido por ligação profunda (`/privacidade?focus=<id>`). */
+  focoTratamentoId?: string | null;
 }
 
 export function RopaTab({
@@ -81,6 +83,7 @@ export function RopaTab({
   aoCriarTratamento,
   novoRopaSinal,
   aoMudarNivel,
+  focoTratamentoId,
 }: Props) {
   const { t } = useLanguage();
   const jurisdicao = useJurisdicao();
@@ -120,6 +123,28 @@ export function RopaTab({
     aoMudarNivel?.(nivel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nivel]);
+
+  /*
+    O tratamento está dois níveis abaixo da aba.
+
+    A ligação profunda entrega um id de `ropa_registros`, e a aba abre sempre
+    na lista de ROPAs — a linha procurada nem sequer chega ao DOM, por isso o
+    `useFocusRow` da página ficava cinco segundos à espera de algo que nunca
+    ia aparecer. Abrir o contentor a que o tratamento pertence põe a linha no
+    ecrã; o destaque é do gancho, como em qualquer outra lista.
+
+    Uma vez só: `registos` é refeito a cada recarga, e sem a marca do que já
+    foi consumido qualquer gravação atirava a pessoa de volta para este ROPA.
+  */
+  const focoConsumido = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focoTratamentoId || focoTratamentoId === focoConsumido.current) return;
+    const registo = registos.find((r) => r.id === focoTratamentoId);
+    if (!registo) return;
+    focoConsumido.current = focoTratamentoId;
+    setDossieIndex(null);
+    setRopaAberto(registo.exercicio_id ?? SEM_ROPA);
+  }, [focoTratamentoId, registos]);
 
   const { data: contentores = [] } = useQuery({
     queryKey: ['ropa-exercicios', empresaId],

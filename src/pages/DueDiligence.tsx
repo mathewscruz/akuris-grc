@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { TemplatesManager } from '@/components/due-diligence/TemplatesManager';
 import { AssessmentsManagerEnhanced } from '@/components/due-diligence/AssessmentsManagerEnhanced';
@@ -13,6 +14,27 @@ export default function DueDiligence() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('fornecedores');
   const [assessmentFilter, setAssessmentFilter] = useState<{ fornecedorId?: string; fornecedorNome?: string } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [focoAvaliacao, setFocoAvaliacao] = useState<string | null>(null);
+
+  /*
+    A avaliação vive atrás de uma aba, e a aba de entrada é a de fornecedores.
+
+    O `?focus=<id>` que a busca global emite para aqui não tinha leitor: quem
+    clicava numa avaliação no ⌘K aterrava na lista de FORNECEDORES, que nem
+    sequer é onde a avaliação está. Trocar de aba é metade — o id segue para
+    o gestor de avaliações, que abre a ficha (as avaliações são cartões
+    paginados, e destacar um cartão da página 3 não bastava).
+  */
+  useEffect(() => {
+    const alvo = searchParams.get('focus');
+    if (!alvo) return;
+    setActiveTab('assessments');
+    setFocoAvaliacao(alvo);
+    const proximo = new URLSearchParams(searchParams);
+    proximo.delete('focus');
+    setSearchParams(proximo, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     // Vindo de um template: abre a aba de avaliações e pede a criação já com o
@@ -77,7 +99,7 @@ export default function DueDiligence() {
         </TabsContent>
 
         <TabsContent value="assessments" className="space-y-6">
-          <AssessmentsManagerEnhanced filter={assessmentFilter} />
+          <AssessmentsManagerEnhanced filter={assessmentFilter} focoId={focoAvaliacao} />
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">

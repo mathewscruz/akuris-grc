@@ -1,6 +1,6 @@
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconWarning, IconTime, IconRefresh, IconSend, IconFile, IconPerson, IconAward, IconTrendUp, IconUsers, IconSort, IconMail , IconDownload } from '@/components/icons';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,6 +164,8 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
 }
 
 interface AssessmentsManagerEnhancedProps {
+  /** Avaliação a abrir por ligação profunda (`/due-diligence?focus=<id>`). */
+  focoId?: string | null;
   filter?: {
     fornecedorId?: string;
     fornecedorNome?: string;
@@ -173,7 +175,7 @@ interface AssessmentsManagerEnhancedProps {
 // Número de itens por página
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50];
 
-export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhancedProps = {}) {
+export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManagerEnhancedProps = {}) {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -346,6 +348,22 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
       setSearchTerm(filter.fornecedorNome);
     }
   }, [filter]);
+
+  /*
+    Abre a avaliação pedida pela ligação profunda, uma vez só.
+
+    `assessments` é recarregado a cada ação da lista; sem a marca do que já
+    foi consumido, fechar a ficha e lembrar (por exemplo) fazia-a reabrir
+    sozinha por cima do que a pessoa estivesse a fazer.
+  */
+  const focoConsumido = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focoId || focoId === focoConsumido.current || assessments.length === 0) return;
+    const alvo = assessments.find((a) => a.id === focoId);
+    if (!alvo) return;
+    focoConsumido.current = focoId;
+    setAssessmentDialog({ open: true, assessment: alvo, mode: 'view' });
+  }, [focoId, assessments]);
 
   useEffect(() => {
     const handleCreateAssessment = (event: CustomEvent) => {

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useFocusRow } from '@/hooks/useFocusRow';
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,14 @@ interface ContaPrivilegiada {
 }
 
 export default function ContasPrivilegiadas() {
+  /*
+    O `?focus=<id>` que a busca global, o `EntidadeSelect` e o sino já
+    emitiam para aqui não tinha do lado de cá quem o lesse: a página abria a
+    lista inteira e o registo procurado ficava por encontrar à mão. O
+    `DataTable` já marca cada linha com `data-focus-id`; faltava só chamar o
+    gancho que a procura e a destaca.
+  */
+  useFocusRow();
   const { t } = useLanguage();
   const [showContaDialog, setShowContaDialog] = useState(false);
   const [selectedConta, setSelectedConta] = useState<ContaPrivilegiada | null>(null);

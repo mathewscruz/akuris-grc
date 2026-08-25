@@ -3,7 +3,8 @@ import { IconChevron, IconChevronLeft, IconSearch, IconAdd, IconEdit, IconDelete
 import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useFocusRow } from '@/hooks/useFocusRow';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,12 +39,19 @@ import { prazoResposta, ehDadoSensivel } from "@/lib/jurisdicao";
 import { rotuloCanalSolicitacao } from '@/lib/canal-solicitacao';
 
 export default function Privacidade() {
+  /*
+    O `?focus=<id>` chega aqui por duas entidades — dado pessoal e tratamento
+    ROPA — e a página não o lia de todo. O gancho destaca a linha; o efeito
+    mais abaixo escolhe a aba, sem a qual a linha nem existe no DOM.
+  */
+  useFocusRow();
   const { t } = useLanguage();
   const jurisdicao = useJurisdicao();
   const navigate = useNavigate();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("catalogo");
+  const [searchParams] = useSearchParams();
   const [showDadosDialog, setShowDadosDialog] = useState(false);
   const [showMapeamentoDialog, setShowMapeamentoDialog] = useState(false);
   const [showRopaWizard, setShowRopaWizard] = useState(false);
@@ -214,9 +222,43 @@ export default function Privacidade() {
     enabled: !!empresaId,
   });
 
-  const dadosPessoais = privacidadeData?.dadosPessoais || [];
-  const ropaRegistros = privacidadeData?.ropaRegistros || [];
-  const solicitacoes = privacidadeData?.solicitacoes || [];
+  /*
+    Referências estáveis, não listas novas a cada renderização.
+
+    Estas três listas alimentam efeitos e memos; escritas como `x || []`
+    davam um array NOVO em cada passagem enquanto a consulta não respondia,
+    e tudo o que dependia delas voltava a correr sem nada ter mudado.
+  */
+  const dadosPessoais = useMemo(() => privacidadeData?.dadosPessoais || [], [privacidadeData]);
+  const ropaRegistros = useMemo(() => privacidadeData?.ropaRegistros || [], [privacidadeData]);
+  const solicitacoes = useMemo(() => privacidadeData?.solicitacoes || [], [privacidadeData]);
+
+  /*
+    A aba certa para o registo certo.
+
+    O módulo recebe dois tipos de ligação profunda — dado pessoal e tratamento
+    ROPA — e todas elas caíam na aba de catálogo, a que abre por omissão. Para
+    um ROPA isso é a lista errada: o registo não existe no DOM e o destaque
+    nunca acontece. Quem decide é o próprio dado — o id ou está no catálogo ou
+    está nos tratamentos.
+
+    O id do tratamento fica guardado porque o `useFocusRow` limpa o parâmetro
+    assim que encontra a linha, e o `RopaTab` ainda precisa dele para saber
+    que contentor manter aberto.
+  */
+  const [focoRopa, setFocoRopa] = useState<string | null>(null);
+  useEffect(() => {
+    const alvo = searchParams.get('focus');
+    if (!alvo) return;
+    if (dadosPessoais.some((d) => d.id === alvo)) {
+      setActiveTab('catalogo');
+      return;
+    }
+    if (ropaRegistros.some((r) => r.id === alvo)) {
+      setActiveTab('ropa');
+      setFocoRopa(alvo);
+    }
+  }, [searchParams, dadosPessoais, ropaRegistros]);
 
   /**
    * A barra do módulo era decorativa.
@@ -762,6 +804,7 @@ export default function Privacidade() {
             aoCriarTratamento={(exercicioId) => { setRopaDoNovoTratamento(exercicioId); setShowRopaWizard(true); }}
             novoRopaSinal={novoExercicioSinal}
             aoMudarNivel={setNivelRopa}
+            focoTratamentoId={focoRopa}
           />
         </TabsContent>
 

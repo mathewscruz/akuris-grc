@@ -5,7 +5,8 @@
  *  - Busca global (Cmd+K) — pesquisa registos reais agrupados por tipo;
  *  - Seletor genérico de registo (`EntidadeSelect`) — vínculos GRC e origem
  *    de planos de ação;
- *  - Navegação profunda — cada resultado leva ao registo (`?focus=<id>`).
+ *  - Navegação profunda — cada resultado leva ao REGISTO, pelo parâmetro que
+ *    a página de destino já lê (`?focus=` na maioria; ver `deepLink`).
  *
  * Todas as consultas passam pelo cliente Supabase autenticado (RLS ativa) e,
  * quando a tabela tem `empresa_id`, o filtro de empresa é sempre aplicado.
@@ -76,8 +77,21 @@ interface EntityDef {
   route: (row: Record<string, any>) => string;
 }
 
-const focus = (base: string, id: string) =>
-  `${base}${base.includes('?') ? '&' : '?'}focus=${id}`;
+/**
+ * Liga ao registo pelo parâmetro que a página de destino JÁ lê.
+ *
+ * `?focus=` é a grafia comum — `useFocusRow` rola até à linha e destaca-a —
+ * mas duas páginas chegaram antes com nome próprio: `/riscos` abre a gaveta
+ * por `?risco=` e o detalhe de framework abre o requisito por `?req=`.
+ * Enquanto este ficheiro emitia `?focus=` para ambas, o link era engolido em
+ * silêncio: abria a lista inteira e a pessoa reencontrava o registo à mão.
+ * Emitir o parâmetro de cada destino custa menos do que ensinar um nome novo
+ * a duas páginas que já sabiam abrir o registo.
+ */
+const deepLink = (base: string, param: string, id: string) =>
+  `${base}${base.includes('?') ? '&' : '?'}${param}=${id}`;
+
+const focus = (base: string, id: string) => deepLink(base, 'focus', id);
 
 export const ENTITY_DEFS: EntityDef[] = [
   {
@@ -85,7 +99,7 @@ export const ENTITY_DEFS: EntityDef[] = [
     select: 'id, nome, status, nivel_risco_inicial, nivel_risco_residual, biblioteca_codigo, created_at',
     tituloFields: ['nome'], prefixo: 'R', subtituloField: ['nivel_risco_residual', 'nivel_risco_inicial'],
     empresaScoped: true, orderBy: 'created_at',
-    route: (r) => focus('/riscos', r.id),
+    route: (r) => deepLink('/riscos', 'risco', r.id),
   },
   {
     key: 'controle', table: 'controles', labelKey: 'entidades.controle',
@@ -99,7 +113,7 @@ export const ENTITY_DEFS: EntityDef[] = [
     select: 'id, codigo, titulo, categoria, framework_id',
     tituloFields: ['titulo'], codigoField: 'codigo', prefixo: 'REQ', subtituloField: 'categoria',
     empresaScoped: false,
-    route: (r) => focus(`/gap-analysis/framework/${r.framework_id}`, r.id),
+    route: (r) => deepLink(`/gap-analysis/framework/${r.framework_id}`, 'req', r.id),
   },
   {
     key: 'ativo', table: 'ativos', labelKey: 'entidades.ativo',

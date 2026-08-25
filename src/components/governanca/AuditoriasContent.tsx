@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { orIlike } from '@/lib/busca-segura';
 import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile } from '@/components/icons';
 import { createPortal } from "react-dom";
@@ -228,14 +228,41 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     navegação é feita em JS na mesma sessão; o parâmetro no endereço funciona
     também em link colado e em recarregamento. Mesma grafia que ControlesContent.
   */
+  const focoConsumido = useRef<string | null>(null);
   useEffect(() => {
     const alvo = searchParams.get('focus');
-    if (!alvo || !auditorias || auditorias.length === 0) return;
+    if (!alvo || alvo === focoConsumido.current) return;
+    if (!auditorias || auditorias.length === 0) return;
+    focoConsumido.current = alvo;
+
     const auditoria = auditorias.find((a) => a.id === alvo);
     if (auditoria) {
       setSelectedAuditoria(auditoria);
       setShowAuditoriaDialog(true);
+    } else {
+      /*
+        O id também pode ser de um ITEM.
+
+        A busca global lista itens de auditoria como registos próprios e
+        mandava-os para cá com o id do item — que nunca casa com uma
+        auditoria. O efeito não encontrava nada, limpava o parâmetro e a
+        pessoa ficava na lista, sem sinal de que o clique tinha feito algo.
+        O item não tem ecrã próprio: vive no checklist da sua auditoria, e é
+        esse que se abre.
+      */
+      void (async () => {
+        const { data } = await supabase
+          .from('auditoria_itens')
+          .select('auditoria_id')
+          .eq('id', alvo)
+          .maybeSingle();
+        const pai = data ? auditorias.find((a) => a.id === data.auditoria_id) : null;
+        if (!pai) return;
+        setSelectedAuditoria(pai);
+        setShowControlesDialog(true);
+      })();
     }
+
     const proximo = new URLSearchParams(searchParams);
     proximo.delete('focus');
     setSearchParams(proximo, { replace: true });
