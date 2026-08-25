@@ -24,10 +24,21 @@ Corre em cada push e cada PR para `main`:
 | **gitleaks** | Qualquer segredo real (service_role, chave privada) num commit |
 | **npm audit** | Vulnerabilidade **crítica** bloqueia; o resto informa |
 
-> **Passo manual, uma vez:** nas definições do repositório no GitHub →
+> **⚠️ Antes de tudo — desbloquear o GitHub Actions.** Na primeira execução, os
+> jobs falharam em segundos com *"your account is locked due to a billing
+> issue"*. O pipeline está correcto (o GitHub parseou-o e criou os jobs certos);
+> é a conta do GitHub que precisa de regularizar o billing para os runners
+> correrem. Enquanto isso não for feito, nenhum portão executa. Resolve-se em
+> github.com → *Settings* → *Billing*.
+>
+> **Depois, o passo que fecha o portão:** nas definições do repositório →
 > *Branches* → *Branch protection rules* para `main`, ligar **"Require status
 > checks to pass before merging"** e escolher os jobs `qualidade` e `segredos`.
-> Sem isto, o pipeline avisa mas não impede o merge. É o que fecha o portão.
+> Sem isto, o pipeline avisa mas não impede o merge.
+>
+> **Enquanto o Actions estiver bloqueado**, o portão é manual: correr
+> `npm run test` (as guardas) e `gitleaks detect` antes de cada push — sobretudo
+> depois de um rebase do Lovable.
 
 ---
 
