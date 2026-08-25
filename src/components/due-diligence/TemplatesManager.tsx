@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,7 @@ interface Template {
 }
 
 const fetchTemplates = async (): Promise<Template[]> => {
-  console.log('🔄 Iniciando busca de templates...');
+  logger.debug('Iniciando busca de templates');
   
   const { data: templatesData, error: templatesError } = await supabase
     .from('due_diligence_templates')
@@ -59,11 +60,11 @@ const fetchTemplates = async (): Promise<Template[]> => {
     throw templatesError;
   }
 
-  console.log('✅ Templates encontrados:', templatesData?.length || 0);
+  logger.debug('Templates encontrados', { total: templatesData?.length || 0 });
 
   const templatesWithCounts = await Promise.all(
     (templatesData || []).map(async (template) => {
-      console.log(`🔍 Buscando dados para template: ${template.nome} (ID: ${template.id})`);
+      logger.debug('Buscando dados do template', { id: template.id });
       
       const [questionsResult, assessmentsResult] = await Promise.all([
         supabase
@@ -79,7 +80,7 @@ const fetchTemplates = async (): Promise<Template[]> => {
       const questionsCount = questionsResult.count || 0;
       const assessmentsCount = assessmentsResult.count || 0;
       
-      console.log(`📊 Template ${template.nome}: ${questionsCount} perguntas, ${assessmentsCount} avaliações`);
+      logger.debug('Contagens do template', { perguntas: questionsCount, avaliacoes: assessmentsCount });
 
       if (questionsResult.error) {
         console.error('❌ Erro ao buscar perguntas:', questionsResult.error);
@@ -99,7 +100,7 @@ const fetchTemplates = async (): Promise<Template[]> => {
     })
   );
 
-  console.log('✅ Templates com contagens processados:', templatesWithCounts);
+  logger.debug('Templates com contagens processados', { total: templatesWithCounts.length });
   return templatesWithCounts;
 };
 

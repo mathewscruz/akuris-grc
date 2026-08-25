@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { IconDownload, IconCalendar, IconFile, IconPerson, IconMail } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -175,7 +176,7 @@ export function AssessmentResponsesViewer({
   const exportToPDF = () => {
     // Funcionalidade para exportar respostas como PDF
     // Implementar posteriormente se necessário
-    console.log('Exportar para PDF em desenvolvimento');
+    logger.debug('Exportar avaliação para PDF: por implementar');
   };
 
   if (!assessment) return null;

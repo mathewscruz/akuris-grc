@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { IconExternal, IconChecklist, IconCopy, IconMail } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DialogShell } from '@/components/ui/dialog-shell';
@@ -215,7 +216,7 @@ export function AssessmentDialog({
       // Enviar email de convite automaticamente
       const assessmentLink = `${window.location.origin}/assessment/${linkToken}`;
       
-      console.log('Enviando email de convite...', {
+      logger.debug('Enviando email de convite', {
         type: 'send',
         assessment_id: newAssessment.id,
         fornecedor_nome: formData.fornecedor_nome,
@@ -241,7 +242,7 @@ export function AssessmentDialog({
           }
         });
 
-        console.log('Resposta do email:', emailResponse);
+        logger.debug('Resposta do email de convite recebida');
 
         toast({
           title: t('dueDiligence.assessmentDialog.toastCreatedSentTitle'),
