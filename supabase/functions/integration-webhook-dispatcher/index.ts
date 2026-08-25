@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
+import { validarUrlExterno } from '../_shared/ssrf.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -379,6 +380,29 @@ serve(async (req) => {
 
       if (!integration.webhook_url) {
         console.log(`Webhook URL não configurada para ${integration.tipo_integracao}`);
+        continue;
+      }
+
+      /*
+        SSRF: o `webhook_url` é escrito pelo cliente (a instância do Jira, do
+        ServiceNow, o webhook do Slack) e todos os destinos abaixo fazem `fetch`
+        a ele. Sem esta linha, «a minha instância Jira é http://169.254.169.254»
+        faz o servidor buscar as credenciais IAM da máquina e enviá-las adiante.
+        Um só ponto de estrangulamento, porque todos os ramos usam este campo.
+      */
+      const alvo = validarUrlExterno(integration.webhook_url);
+      if (!alvo.ok) {
+        console.error(`SSRF bloqueado para ${integration.tipo_integracao}: ${alvo.error} (${integration.webhook_url})`);
+        await supabase.from('integracoes_webhook_logs').insert({
+          integracao_id: integration.id,
+          evento,
+          payload: { titulo, descricao, link, dados, gravidade },
+          status_code: 0,
+          sucesso: false,
+          resposta: { error: `destino recusado: ${alvo.error}` },
+          empresa_id,
+        });
+        results.push({ tipo: integration.tipo_integracao, success: false, error: alvo.error });
         continue;
       }
 

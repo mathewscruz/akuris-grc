@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { hostInterno } from '../_shared/ssrf.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -364,23 +365,6 @@ async function mapDomain(url: string, apiKey: string, limit: number, includeSubd
   }
 }
 
-function isPrivateOrLocalHost(hostname: string): boolean {
-  const h = hostname.toLowerCase();
-  if (h === 'localhost' || h === '0.0.0.0' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.internal') || h.endsWith('.local')) return true;
-  // IPv4 private/reserved ranges
-  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (m) {
-    const [a, b] = [parseInt(m[1]), parseInt(m[2])];
-    if (a === 10) return true;
-    if (a === 127) return true;
-    if (a === 169 && b === 254) return true; // AWS metadata, link-local
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 0) return true;
-    if (a >= 224) return true; // multicast/reserved
-  }
-  return false;
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -448,7 +432,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    if (isPrivateOrLocalHost(parsed.hostname)) {
+    if (hostInterno(parsed.hostname)) {
       return new Response(
         JSON.stringify({ success: false, error: 'URLs internas/privadas não são permitidas' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
