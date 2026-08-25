@@ -1,5 +1,5 @@
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
-import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconWarning, IconTime, IconRefresh, IconSend, IconFile, IconPerson, IconAward, IconTrendUp, IconUsers, IconSort, IconMail } from '@/components/icons';
+import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconWarning, IconTime, IconRefresh, IconSend, IconFile, IconPerson, IconAward, IconTrendUp, IconUsers, IconSort, IconMail , IconDownload } from '@/components/icons';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { AssessmentResponsesViewer } from './AssessmentResponsesViewer';
 import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
 import { ParecerIA, type ParecerDaIA } from './ParecerIA';
+import { gerarRelatorioFornecedor } from './relatorio-fornecedor';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { startOfDay } from 'date-fns';
 import { formatStatus } from '@/lib/text-utils';
@@ -201,6 +202,88 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
     assessment: null
   });
   const [aReavaliar, setAReavaliar] = useState(false);
+  const [aGerarRelatorio, setAGerarRelatorio] = useState(false);
+
+  /*
+    Relatorio gerencial da avaliacao.
+
+    Terminada a avaliacao ficava um score na tela e nada que se pudesse levar a
+    uma reuniao. Quem precisasse de apresentar a decisao -- ao comite, ao
+    juridico, ao cliente que exige due diligence dos seus fornecedores --
+    copiava numeros a mao para um documento a parte.
+
+    As respostas vao no anexo de proposito: um relatorio que so mostra o numero
+    obriga a acreditar nele. Com as respostas ao lado, o numero pode ser
+    conferido.
+  */
+  const gerarRelatorio = async (assessment: Assessment) => {
+    setAGerarRelatorio(true);
+    try {
+      const { data: respostas, error } = await supabase
+        .from('due_diligence_responses')
+        .select('resposta, pontuacao, arquivo_url, resposta_arquivo_url, due_diligence_questions!inner(titulo, peso, ordem)')
+        .eq('assessment_id', assessment.id);
+      if (error) throw error;
+
+      const ordenadas = (respostas ?? [])
+        .map((r: any) => ({
+          pergunta: r.due_diligence_questions?.titulo ?? '-',
+          resposta: r.resposta ?? null,
+          peso: r.due_diligence_questions?.peso ?? null,
+          pontuacao: r.pontuacao ?? null,
+          temAnexo: !!(r.arquivo_url || r.resposta_arquivo_url),
+          _ordem: r.due_diligence_questions?.ordem ?? 0,
+        }))
+        .sort((a, b) => a._ordem - b._ordem);
+
+      await gerarRelatorioFornecedor(
+        {
+          fornecedorNome: assessment.fornecedor_nome,
+          templateNome: (assessment as any).due_diligence_templates?.nome ?? null,
+          scoreFinal: assessment.score_final ?? null,
+          status: assessment.status ?? null,
+          dataEnvio: (assessment as any).data_envio ?? null,
+          dataConclusao: (assessment as any).data_conclusao ?? null,
+          parecer: (assessment.ia_parecer as ParecerDaIA) ?? null,
+          parecerEm: assessment.ia_avaliado_em ?? null,
+          respostas: ordenadas,
+        },
+        {
+          titulo: t('dueDiligence.relatorio.titulo'),
+          subtitulo: t('dueDiligence.relatorio.subtitulo'),
+          seccaoResumo: t('dueDiligence.relatorio.seccaoResumo'),
+          seccaoParecer: t('dueDiligence.relatorio.seccaoParecer'),
+          seccaoRespostas: t('dueDiligence.relatorio.seccaoRespostas'),
+          score: t('dueDiligence.relatorio.score'),
+          semScore: t('dueDiligence.relatorio.semScore'),
+          nivelRisco: t('dueDiligence.relatorio.nivelRisco'),
+          semParecer: t('dueDiligence.relatorio.semParecer'),
+          avisoParecer: t('dueDiligence.relatorio.avisoParecer'),
+          confianca: t('dueDiligence.relatorio.confianca'),
+          pontosFortes: t('dueDiligence.parecerIA.pontosFortes'),
+          pontosAtencao: t('dueDiligence.parecerIA.pontosAtencao'),
+          evidenciasEmFalta: t('dueDiligence.parecerIA.evidenciasEmFalta'),
+          recomendacoes: t('dueDiligence.parecerIA.recomendacoes'),
+          colPergunta: t('dueDiligence.relatorio.colPergunta'),
+          colResposta: t('dueDiligence.relatorio.colResposta'),
+          colNota: t('dueDiligence.relatorio.colNota'),
+          semAnexo: t('dueDiligence.relatorio.semAnexo'),
+          enviadoEm: t('dueDiligence.relatorio.enviadoEm'),
+          concluidoEm: t('dueDiligence.relatorio.concluidoEm'),
+          questionario: t('dueDiligence.relatorio.questionario'),
+        },
+      );
+    } catch (erro) {
+      toast({
+        title: t('dueDiligence.relatorio.erro'),
+        description: erro instanceof Error ? erro.message : String(erro),
+        variant: 'destructive',
+      });
+    } finally {
+      setAGerarRelatorio(false);
+    }
+  };
+
 
   /*
     Reavaliar a pedido.
@@ -950,6 +1033,18 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                 </div>
                 
                 <div className="lg:col-span-1 space-y-4">
+                  {scoreDialog.assessment && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      disabled={aGerarRelatorio}
+                      onClick={() => scoreDialog.assessment && gerarRelatorio(scoreDialog.assessment)}
+                    >
+                      <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                      {aGerarRelatorio ? t('dueDiligence.relatorio.aGerar') : t('dueDiligence.relatorio.botao')}
+                    </Button>
+                  )}
+
                   {scoreDialog.assessment && (
                     <ParecerIA
                       parecer={(scoreDialog.assessment.ia_parecer as ParecerDaIA) ?? null}
