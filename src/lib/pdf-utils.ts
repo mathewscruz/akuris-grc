@@ -111,7 +111,7 @@ export function addAkurisFooter(doc: jsPDF) {
     doc.text('Akuris - Plataforma GRC', 14, pageHeight - 10);
     doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
     doc.text(
-      new Date().toLocaleDateString(intlLocale()) + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      new Date().toLocaleDateString(intlLocale()) + ' às ' + new Date().toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }),
       pageWidth - 14, pageHeight - 10, { align: 'right' }
     );
   }

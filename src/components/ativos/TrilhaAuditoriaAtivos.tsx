@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { formatarDiaParaDB } from '@/lib/date-utils';
+import { formatarDiaParaDB, intlLocale } from '@/lib/date-utils';
 interface TrilhaAuditoriaProps {
   ativoId?: string;
   open: boolean;
@@ -122,7 +122,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
     const csvContent = [
       [t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderDate'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderAction'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderUser'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderChangedFields'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderIp')].join(','),
       ...auditLogs.map(log => [
-        new Date(log.created_at).toLocaleString('pt-BR'),
+        new Date(log.created_at).toLocaleString(intlLocale()),
         log.action,
         log.profiles?.nome || t('contratosAtivos.trilhaAuditoriaAtivos.systemFallback'),
         formatChangedFields(log.changed_fields),
@@ -200,7 +200,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
                           </CardTitle>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(log.created_at).toLocaleString('pt-BR')}
+                          {new Date(log.created_at).toLocaleString(intlLocale())}
                         </div>
                       </div>
                       <CardDescription>

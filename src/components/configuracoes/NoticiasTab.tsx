@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { intlLocale } from '@/lib/date-utils';
 import { IconAdd, IconEdit, IconDelete, IconSend, IconMail, IconUsers } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -134,8 +135,8 @@ export default function NoticiasTab() {
                       <Badge variant={badge.variant}>{badge.label}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {t('configPlanos.noticiasTab.criadaEm', { data: new Date(c.created_at).toLocaleString('pt-BR') })}
-                      {c.enviado_em && t('configPlanos.noticiasTab.enviadaEm', { data: new Date(c.enviado_em).toLocaleString('pt-BR') })}
+                      {t('configPlanos.noticiasTab.criadaEm', { data: new Date(c.created_at).toLocaleString(intlLocale()) })}
+                      {c.enviado_em && t('configPlanos.noticiasTab.enviadaEm', { data: new Date(c.enviado_em).toLocaleString(intlLocale()) })}
                     </p>
                     {c.status === 'enviado' && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">

@@ -270,7 +270,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
         doc.text((c.nome || '-').substring(0, 34), margin + 32, y);
         doc.text(formatLabel(c.tipo || ''), margin + 95, y);
         doc.text(formatLabel(c.status || ''), margin + 125, y);
-        doc.text(c.valor ? Number(c.valor).toLocaleString('pt-BR') : '-', margin + 150, y);
+        doc.text(c.valor ? Number(c.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-', margin + 150, y);
         y += 5.5;
       });
 

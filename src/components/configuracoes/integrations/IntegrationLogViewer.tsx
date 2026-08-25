@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 ;
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WebhookLog {
@@ -103,7 +103,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return `${formatDateOnly(dateString)} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    return `${formatDateOnly(dateString)} ${date.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
   };
 
   const getStatusIcon = (success: boolean) => {

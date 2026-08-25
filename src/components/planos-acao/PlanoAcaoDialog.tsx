@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DateField } from '@/components/ui/date-field';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale } from '@/lib/date-utils';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
@@ -387,7 +387,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
   );
 
   const draftLabel = !plano && hasDraft && savedAt
-    ? t('planosAcao.draftSavedAt', { time: new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })
+    ? t('planosAcao.draftSavedAt', { time: new Date(savedAt).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }) })
     : undefined;
 
   return (

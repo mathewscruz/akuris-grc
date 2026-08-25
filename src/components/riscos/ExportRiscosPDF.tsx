@@ -37,7 +37,7 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(AKURIS_COLORS.textLight);
-  doc.text(t.geradoEm.replace('{data}', new Date().toLocaleDateString(intlLocale())).replace('{hora}', new Date().toLocaleTimeString('pt-BR')), pageWidth / 2, y, { align: 'center' });
+  doc.text(t.geradoEm.replace('{data}', new Date().toLocaleDateString(intlLocale())).replace('{hora}', new Date().toLocaleTimeString(intlLocale())), pageWidth / 2, y, { align: 'center' });
   y += 12;
 
   // KPIs

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { intlLocale } from '@/lib/date-utils';
 import { IconExternal, IconSuccess, IconInfo, IconError, IconRefresh, IconSend, IconMonitor, IconCloud } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -132,7 +133,7 @@ export function AzureConfigDialog({
       if (data?.success) {
         setLastSyncInfo({
           count: data.devices_synced || 0,
-          date: new Date().toLocaleString('pt-BR')
+          date: new Date().toLocaleString(intlLocale())
         });
         toast.success(t('configIntegrations.azure.toastSyncOk'), {
           description: t('configIntegrations.azure.toastSyncOkDesc').replace('{count}', String(data.devices_synced || 0))

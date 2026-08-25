@@ -25,7 +25,7 @@ import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { dateFnsLocale, datePattern, parseDataLocal } from '@/lib/date-utils';
+import { dateFnsLocale, datePattern, parseDataLocal, intlLocale } from '@/lib/date-utils';
 const makeIncidenteSchema = (t: (key: string) => string) => z.object({
   titulo: z.string().min(1, t('modDialogs.incidentes.incidente.validation.tituloRequired')),
   descricao: z.string().optional(),
@@ -555,7 +555,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
 
   const draftLabel =
     !incidente && hasDraft && savedAt
-      ? t('incidentesComp.incidente.draftSavedAt', { time: new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })
+      ? t('incidentesComp.incidente.draftSavedAt', { time: new Date(savedAt).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }) })
       : undefined;
 
   return (

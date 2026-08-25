@@ -43,7 +43,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale } from '@/lib/date-utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DenunciaConversa } from './DenunciaConversa';
@@ -240,7 +240,7 @@ export function DenunciaDialog({
     if (!dateString) return '-';
     const date = new Date(dateString);
     const datePart = formatDateOnly(dateString);
-    const timePart = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const timePart = date.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' });
     return `${datePart} ${timePart}`;
   };
 

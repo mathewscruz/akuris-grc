@@ -13,7 +13,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { FornecedorSelector } from './FornecedorSelector';
 import { useToast } from '@/hooks/use-toast';
-import { parseDataLocal } from '@/lib/date-utils';
+import { parseDataLocal, intlLocale } from '@/lib/date-utils';
 
 interface Template {
   id: string;
@@ -334,12 +334,12 @@ export function AssessmentDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldSentDate')}</Label>
-                <p className="text-sm">{new Date(assessment.data_envio).toLocaleString('pt-BR')}</p>
+                <p className="text-sm">{new Date(assessment.data_envio).toLocaleString(intlLocale())}</p>
               </div>
               {assessment.data_conclusao && (
                 <div className="space-y-2">
                   <Label>{t('dueDiligence.assessmentDialog.fieldCompletionDate')}</Label>
-                  <p className="text-sm">{parseDataLocal(assessment.data_conclusao).toLocaleString('pt-BR')}</p>
+                  <p className="text-sm">{parseDataLocal(assessment.data_conclusao).toLocaleString(intlLocale())}</p>
                 </div>
               )}
             </div>
