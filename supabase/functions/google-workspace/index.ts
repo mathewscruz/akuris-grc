@@ -26,6 +26,7 @@
  * Aqui não fica.
  */
 import { requireUserContext, AuthError } from '../_shared/auth.ts';
+import { lerCredenciais } from '../_shared/credenciais.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -257,15 +258,11 @@ Deno.serve(async (req) => {
 
   if (!cfg) return json({ success: false, error: 'Configuração do Google Workspace não encontrada' });
 
-  let credenciais: { client_email?: string; private_key?: string } = {};
-  try {
-    credenciais =
-      typeof cfg.credenciais_encrypted === 'string'
-        ? JSON.parse(cfg.credenciais_encrypted)
-        : (cfg.credenciais_encrypted ?? {});
-  } catch {
-    credenciais = {};
-  }
+  /* Segredo cifrado em repouso: decifra no servidor. */
+  const credenciais = (await lerCredenciais(ctx.supabase, cfg.id)) ?? {} as {
+    client_email?: string;
+    private_key?: string;
+  };
 
   const adminEmail = (cfg.configuracoes as Record<string, string>)?.admin_email;
   const cliente = (cfg.configuracoes as Record<string, string>)?.customer || 'my_customer';

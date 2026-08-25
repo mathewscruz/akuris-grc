@@ -26,6 +26,7 @@
  *    dizer que não há sanções sem ter procurado é a pior resposta possível.
  */
 import { requireUserContext, AuthError } from '../_shared/auth.ts';
+import { lerCredenciais } from '../_shared/credenciais.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -136,18 +137,16 @@ Deno.serve(async (req) => {
     */
     const { data: cfg } = await ctx.supabase
       .from('integracoes_config')
-      .select('credenciais_encrypted, status')
+      .select('id, status')
       .eq('empresa_id', ctx.empresaId)
       .eq('tipo_integracao', 'transparencia')
       .maybeSingle();
 
     let chave: string | null = null;
-    if (cfg?.status === 'conectado' && cfg.credenciais_encrypted) {
-      try {
-        chave = JSON.parse(cfg.credenciais_encrypted)?.chave_api ?? null;
-      } catch {
-        console.error('transparencia: credenciais ilegíveis');
-      }
+    if (cfg?.status === 'conectado') {
+      /* Segredo cifrado em repouso: decifra no servidor. */
+      const cred = await lerCredenciais(ctx.supabase, cfg.id);
+      chave = (cred?.chave_api as string) ?? null;
     }
 
     return json({

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { lerCredenciais } from '../_shared/credenciais.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -395,14 +396,9 @@ serve(async (req) => {
           );
         }
 
-        let segredoU: string | undefined;
-        try {
-          segredoU = typeof cfgU.credenciais_encrypted === 'string'
-            ? JSON.parse(cfgU.credenciais_encrypted)?.client_secret
-            : (cfgU.credenciais_encrypted as any)?.client_secret;
-        } catch {
-          segredoU = undefined;
-        }
+        /* Segredo cifrado em repouso: decifra no servidor. */
+        const credU = await lerCredenciais(supabase, cfgU.id);
+        const segredoU = credU?.client_secret as string | undefined;
 
         if (!cfgU.configuracoes?.tenant_id || !cfgU.configuracoes?.client_id || !segredoU) {
           return new Response(
@@ -559,26 +555,11 @@ serve(async (req) => {
           );
         }
 
-        /*
-          `credenciais_encrypted` é uma coluna TEXT com JSON lá dentro.
-
-          Estava a ser lida como se fosse objecto — `config.credenciais_encrypted
-          ?.client_secret` sobre uma string devolve undefined, sempre. Somado a
-          que o ecrã de configuração nunca chegava a gravar a coluna, a
-          integração Azure dizia-se ligada, passava no teste de conexão e nunca
-          podia sincronizar nada. As duas metades do defeito estão corrigidas:
-          esta linha, e o `handleSave` do AzureConfigDialog.
-        */
         const storedTenantId = config.configuracoes?.tenant_id;
         const storedClientId = config.configuracoes?.client_id;
-        let storedClientSecret: string | undefined;
-        try {
-          storedClientSecret = typeof config.credenciais_encrypted === 'string'
-            ? JSON.parse(config.credenciais_encrypted)?.client_secret
-            : (config.credenciais_encrypted as any)?.client_secret;
-        } catch {
-          storedClientSecret = undefined;
-        }
+        /* Segredo cifrado em repouso: decifra no servidor, via RPC. */
+        const storedCred = await lerCredenciais(supabase, config.id);
+        const storedClientSecret = storedCred?.client_secret as string | undefined;
 
         if (!storedTenantId || !storedClientId || !storedClientSecret) {
           return new Response(

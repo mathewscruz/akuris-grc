@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 import { validarUrlExterno } from '../_shared/ssrf.ts';
+import { lerCredenciais } from '../_shared/credenciais.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -468,20 +469,9 @@ serve(async (req) => {
             const jiraProjectKey = (jiraConfig.project_key as string) || 'GRC';
             const jiraIssueType = (jiraConfig.issue_type as string) || 'Task';
 
-            const { data: fullConfig } = await supabase
-              .from('integracoes_config')
-              .select('credenciais_encrypted')
-              .eq('id', integration.id)
-              .single();
-
-            let parsedCreds: any = null;
-            try {
-              parsedCreds = typeof fullConfig?.credenciais_encrypted === 'string'
-                ? JSON.parse(fullConfig.credenciais_encrypted)
-                : fullConfig?.credenciais_encrypted;
-            } catch { parsedCreds = null; }
-
-            const jiraToken = parsedCreds?.api_token;
+            /* Segredo cifrado em repouso: decifra no servidor, via RPC. */
+            const parsedCreds = await lerCredenciais(supabase, integration.id);
+            const jiraToken = parsedCreds?.api_token as string | undefined;
 
             if (!jiraInstanceUrl || !jiraEmail || !jiraToken) {
               console.error('Jira credentials incomplete');
@@ -523,20 +513,8 @@ serve(async (req) => {
             const snTabela = (snConfig.tabela as string) || 'incident';
             const snCategoria = (snConfig.categoria as string) || 'inquiry';
 
-            const { data: snFull } = await supabase
-              .from('integracoes_config')
-              .select('credenciais_encrypted')
-              .eq('id', integration.id)
-              .single();
-
-            let snCreds: any = null;
-            try {
-              snCreds = typeof snFull?.credenciais_encrypted === 'string'
-                ? JSON.parse(snFull.credenciais_encrypted)
-                : snFull?.credenciais_encrypted;
-            } catch { snCreds = null; }
-
-            const snSenha = snCreds?.senha;
+            const snCreds = await lerCredenciais(supabase, integration.id);
+            const snSenha = snCreds?.senha as string | undefined;
 
             if (!snInstancia || !snUtilizador || !snSenha) {
               console.error('ServiceNow credentials incomplete');
