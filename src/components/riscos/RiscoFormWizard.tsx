@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import { EntidadeMultiSelect } from '@/components/common/EntidadeMultiSelect';
 import { UserSelect } from './UserSelect';
 import { RiscoAnexosUpload } from './RiscoAnexosUpload';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,17 @@ const makeRiscoSchema = (t: (k: string) => string) => z.object({
   consequencias: z.string().optional(),
   status: z.string().min(1, t('fin.validacao.statusObrigatorio')),
   controles_existentes: z.string().optional(),
+  /*
+    Controlos que mitigam este risco -- a RELACAO, nao a prosa.
+
+    `controles_existentes` e texto livre («temos firewall»). A tabela
+    `controles_riscos` ja existia, com `eficacia_estimada` e tudo, mas so
+    se conseguia preencher pelo lado do CONTROLO: quem estava a registar um
+    risco tinha de o gravar, sair, ir a Controlos e ligar ao contrario.
+    O texto fica -- serve para o que a relacao nao diz -- mas deixa de ser
+    o unico sitio onde a mitigacao existe.
+  */
+  controles_vinculados: z.array(z.string()).default([]),
   probabilidade_residual: z.string().optional(),
   impacto_residual: z.string().optional(),
   aceito: z.boolean().default(false),
@@ -153,6 +165,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       impacto_residual: '',
       status: 'identificado',
       controles_existentes: '',
+      controles_vinculados: [],
       causas: '',
       consequencias: '',
       aceito: false,
@@ -204,6 +217,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       if (risco.id) {
         fetchAnexosAceite(risco.id);
         fetchAtivosVinculados(risco.id);
+        fetchControlesVinculados(risco.id);
       }
     }
   }, [risco]);
@@ -247,6 +261,18 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     } catch (error: any) {
       logger.error('Erro ao buscar anexos:', { data: error });
     }
+  };
+
+  const fetchControlesVinculados = async (riscoId: string) => {
+    const { data, error } = await supabase
+      .from('controles_riscos')
+      .select('controle_id')
+      .eq('risco_id', riscoId);
+    if (error) {
+      logger.error('Controlos vinculados nao carregados', { data: error });
+      return;
+    }
+    if (data) form.setValue('controles_vinculados', data.map((cr) => cr.controle_id));
   };
 
   const fetchAtivosVinculados = async (riscoId: string) => {
@@ -511,6 +537,25 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         }));
 
         await exigirEscrita(supabase.from('riscos_ativos').insert(vinculos));
+      }
+
+      /*
+        Mesma regua dos ativos: apaga e reescreve. E o unico jeito honesto de
+        refletir uma remocao -- um `upsert` deixaria para tras os vinculos que
+        a pessoa tirou.
+      */
+      await exigirEscrita(supabase.from('controles_riscos').delete().eq('risco_id', riscoId));
+
+      if (data.controles_vinculados?.length) {
+        await exigirEscrita(
+          supabase.from('controles_riscos').insert(
+            data.controles_vinculados.map((controleId) => ({
+              risco_id: riscoId,
+              controle_id: controleId,
+              tipo_vinculacao: 'mitiga',
+            })),
+          ),
+        );
       }
 
       /*
@@ -1045,6 +1090,36 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 residual, que é a ordem em que se pensa: isto é o risco bruto,
                 isto é o que já fazemos, e por isso o residual é este.
               */}
+              {/*
+                A relação primeiro, a prosa depois.
+
+                Só havia o campo de texto: escrevia-se «temos firewall» e a
+                ligação ao controlo real não existia. A tabela `controles_riscos`
+                já estava lá -- com `eficacia_estimada` -- mas só se preenchia
+                pelo lado do Controlo, o que obrigava a gravar o risco, sair, e
+                ligar ao contrário. Sem esta relação não há como calcular risco
+                residual a partir da eficácia dos controlos.
+              */}
+              <FormField
+                control={form.control}
+                name="controles_vinculados"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('campos.risco.controlesVinculados')}</FormLabel>
+                    <FormControl>
+                      <EntidadeMultiSelect
+                        entidade="controle"
+                        value={field.value ?? []}
+                        onValueChange={field.onChange}
+                        placeholder={t('campos.risco.controlesVinculadosPlaceholder')}
+                      />
+                    </FormControl>
+                    <FormDescription>{t('campos.risco.controlesVinculadosHint')}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="controles_existentes"

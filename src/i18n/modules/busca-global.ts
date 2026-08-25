@@ -38,6 +38,8 @@ export const buscaGlobal = {
     },
     entidadeSelect: {
       placeholder: 'Selecionar registro…',
+      multiEscolhidos: '{n} selecionado(s)',
+      remover: 'Remover {titulo}',
       search: 'Pesquisar por título ou identificador…',
       loading: 'A carregar…',
       empty: 'Nenhum registro encontrado',
@@ -93,6 +95,8 @@ export const buscaGlobal = {
     },
     entidadeSelect: {
       placeholder: 'Select record…',
+      multiEscolhidos: '{n} selected',
+      remover: 'Remove {titulo}',
       search: 'Search by title or identifier…',
       loading: 'Loading…',
       empty: 'No records found',

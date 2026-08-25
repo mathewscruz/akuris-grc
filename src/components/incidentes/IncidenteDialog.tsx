@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconAdd, IconWarning, IconFile, IconCalendar, IconShield, IconDatabase, IconUsers, IconLayers } from '@/components/icons';
+import { EntidadeMultiSelect } from '@/components/common/EntidadeMultiSelect';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
@@ -514,6 +515,61 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                       value={field.value || ''}
                       onValueChange={field.onChange}
                       placeholder={t('incidentesComp.incidente.fieldResponsavelPlaceholder')}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/*
+              Os vinculos que a base ja esperava.
+
+              `riscos_relacionados` e `ativos_afetados` existem desde a primeira
+              migration do modulo, estao no schema deste formulario e vao no
+              payload -- e nunca houve campo que os escrevesse. Gravavam sempre
+              `[]`: zero de 18 incidentes tinham vinculo. Um incidente critico
+              nao conseguia apontar o risco que se materializou nem o servidor
+              que atingiu, e a pergunta «este risco ja aconteceu?» -- que
+              justifica o registo de riscos existir -- ficava sem resposta.
+            */}
+            <FormField
+              control={form.control}
+              name="riscos_relacionados"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    {t('incidentesComp.incidente.fieldRiscosRelacionados')}
+                    <FieldHelpTooltip content={t('incidentesComp.incidente.fieldRiscosRelacionadosHelp')} />
+                  </FormLabel>
+                  <FormControl>
+                    <EntidadeMultiSelect
+                      entidade="risco"
+                      value={field.value ?? []}
+                      onValueChange={field.onChange}
+                      placeholder={t('incidentesComp.incidente.fieldRiscosPlaceholder')}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ativos_afetados"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    {t('incidentesComp.incidente.fieldAtivosAfetados')}
+                    <FieldHelpTooltip content={t('incidentesComp.incidente.fieldAtivosAfetadosHelp')} />
+                  </FormLabel>
+                  <FormControl>
+                    <EntidadeMultiSelect
+                      entidade="ativo"
+                      value={field.value ?? []}
+                      onValueChange={field.onChange}
+                      placeholder={t('incidentesComp.incidente.fieldAtivosPlaceholder')}
                     />
                   </FormControl>
                   <FormMessage />
