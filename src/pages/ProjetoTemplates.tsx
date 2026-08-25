@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useTemplates, useUpsertTemplate, useDeleteTemplate, useAplicarTemplate, type Template } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function ProjetoTemplates() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export default function ProjetoTemplates() {
   const [editOpen, setEditOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Template | null>(null);
   const [applyOpen, setApplyOpen] = React.useState(false);
+  const [removendo, setRemovendo] = React.useState<Template | null>(null);
   const [aplicando, setAplicando] = React.useState<Template | null>(null);
   const [nomeProjeto, setNomeProjeto] = React.useState('');
 
@@ -63,7 +65,7 @@ export default function ProjetoTemplates() {
               <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => { setEditing(tpl); setEditOpen(true); }}>
                 <IconEdit className="h-3.5 w-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => { if (confirm(t('projetos.templates.removeConfirm', { nome: tpl.nome }))) del.mutate(tpl.id); }}>
+              <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setRemovendo(tpl)}>
                 <IconDelete className="h-3.5 w-3.5" />
               </Button>
             </>
@@ -110,6 +112,17 @@ export default function ProjetoTemplates() {
       )}
 
       <TemplateEditor open={editOpen} onOpenChange={setEditOpen} template={editing} isSuperAdmin={!!isSuperAdmin} />
+
+      <ConfirmDialog
+        open={!!removendo}
+        onOpenChange={(o) => !o && setRemovendo(null)}
+        title={t('projetos.templates.removeTitle')}
+        description={t('projetos.templates.removeConfirm', { nome: removendo?.nome ?? '' })}
+        variant="destructive"
+        confirmText={t('projetos.templates.removeConfirmText')}
+        loading={del.isPending}
+        onConfirm={() => { if (removendo) { del.mutate(removendo.id); setRemovendo(null); } }}
+      />
 
       <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
         <DialogContent>

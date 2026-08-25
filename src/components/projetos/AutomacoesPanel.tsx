@@ -13,6 +13,7 @@ import { useAutomacoes, useUpsertAutomacao, useDeleteAutomacao, type Automacao }
 import type { ProjetoColuna } from '@/types/projetos';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; colunas: ProjetoColuna[] }) {
   const { t } = useLanguage();
@@ -27,6 +28,7 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
   const del = useDeleteAutomacao(projetoId);
   const [open, setOpen] = React.useState(false);
   const [editando, setEditando] = React.useState<Automacao | null>(null);
+  const [removendo, setRemovendo] = React.useState<Automacao | null>(null);
 
   const toggleAtiva = (a: Automacao) => upsert.mutate({ id: a.id, nome: a.nome, gatilho: a.gatilho, ativa: !a.ativa } as any);
 
@@ -73,7 +75,7 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditando(a); setOpen(true); }}>
                   <IconEdit className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (confirm(t('projetos.automacoes.removeConfirm'))) del.mutate(a.id); }}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setRemovendo(a)}>
                   <IconDelete className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -83,6 +85,17 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
       )}
 
       <AutomacaoDialog open={open} onOpenChange={setOpen} projetoId={projetoId} colunas={colunas} automacao={editando} gatilhos={GATILHOS} />
+
+      <ConfirmDialog
+        open={!!removendo}
+        onOpenChange={(o) => !o && setRemovendo(null)}
+        title={t('projetos.automacoes.removeTitle')}
+        description={t('projetos.automacoes.removeConfirm')}
+        variant="destructive"
+        confirmText={t('projetos.automacoes.removeConfirmText')}
+        loading={del.isPending}
+        onConfirm={() => { if (removendo) { del.mutate(removendo.id); setRemovendo(null); } }}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconExternal } from '@/components/icons';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ export default function BlogManager() {
   const [editing, setEditing] = useState<Partial<Post>>(empty);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [removendo, setRemovendo] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -110,10 +112,10 @@ export default function BlogManager() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm(t('configPlanos.blog.deleteConfirm'))) return;
     const { error } = await supabase.from('blog_posts').delete().eq('id', id);
     if (error) { toast.error(t('configPlanos.blog.deleteError')); return; }
     toast.success(t('configPlanos.blog.deletedSuccess'));
+    setRemovendo(null);
     load();
   };
 
@@ -146,7 +148,7 @@ export default function BlogManager() {
                   </Button>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><IconEdit className="h-4 w-4" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(p.id)}><IconDelete className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => setRemovendo(p.id)}><IconDelete className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
@@ -215,6 +217,16 @@ export default function BlogManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!removendo}
+        onOpenChange={(o) => !o && setRemovendo(null)}
+        title={t('configPlanos.blog.deleteTitle')}
+        description={t('configPlanos.blog.deleteConfirm')}
+        variant="destructive"
+        confirmText={t('configPlanos.blog.deleteConfirmText')}
+        onConfirm={() => removendo && remove(removendo)}
+      />
     </div>
   );
 }
