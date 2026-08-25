@@ -85,3 +85,46 @@ SELECT has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_pode_executar
 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public' AND p.proname = 'get_user_empresa_id'
   AND pg_get_function_identity_arguments(p.oid) = '';
+
+\echo ''
+\echo '=== 4. Funções SECURITY DEFINER que recebem empresa_id e não a validam ==='
+\echo '(o vetor do pentest de 25/08: DEFINER salta o RLS; se filtra só pelo'
+\echo ' parâmetro, um inquilino lê/escreve no outro passando o empresa_id alheio.'
+\echo ' Vazio = todas validam a sessão, ou estão na allowlist com motivo.)'
+\echo ''
+
+WITH candidatas AS (
+  SELECT p.proname,
+         pg_get_function_identity_arguments(p.oid) AS args,
+         p.prosrc AS corpo
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.prosecdef
+    AND pg_get_function_arguments(p.oid) ~ 'p_empresa_id'
+)
+SELECT proname, args
+FROM candidatas
+WHERE corpo !~ 'get_user_empresa_id|gap_empresa_autorizada|exige_empresa_da_sessao|is_super_admin|is_admin_or_super_admin|auth\.uid'
+  -- Allowlist, com o motivo de cada uma:
+  AND proname NOT IN (
+    -- Config PÚBLICA do canal, servida ao denunciante anónimo por desenho.
+    -- Não devolve segredo nenhum — só o que a página pública mostra.
+    'get_canal_config_publica',
+    'get_denuncia_config_publica',
+    'get_denuncias_categorias_publicas',
+    -- Semeadura de dados de demonstração. Escreve na empresa passada, mas só é
+    -- chamada no provisionamento (que já exige admin) e nunca do cliente.
+    'popular_ativos_demo', 'popular_categorias_base', 'popular_controles_demo',
+    'popular_dados_demonstracao_direto', 'popular_documentos_demo',
+    'popular_incidentes_demo', 'popular_riscos_demo',
+    -- Leitura pura da matriz vigente / cálculo; sem escrita, e o que "vaza" é a
+    -- config da matriz, não dado de risco. Baixo valor, vigiado.
+    'risco_avaliar', 'risco_matriz_vigente',
+    -- Chamada só de dentro de provisionar_canal_denuncia (que valida), e já
+    -- sem EXECUTE para authenticated/anon.
+    'semear_comite_denuncias',
+    -- Trigger interno; não é chamável por sessão.
+    'sistema_do_diretorio'
+  )
+ORDER BY 1;
