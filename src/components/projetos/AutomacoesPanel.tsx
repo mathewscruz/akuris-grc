@@ -20,8 +20,19 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
   const GATILHOS = [
     { value: 'tarefa_criada', label: t('projetos.automacoes.gatilhoTarefaCriada') },
     { value: 'tarefa_movida_para_coluna', label: t('projetos.automacoes.gatilhoTarefaMovida') },
-    { value: 'prazo_vencido', label: t('projetos.automacoes.gatilhoPrazoVencido') },
-    { value: 'sla_em_risco', label: t('projetos.automacoes.gatilhoSlaRisco') },
+    { value: 'tarefa_concluida', label: t('projetos.automacoes.gatilhoTarefaConcluida') },
+    /*
+      O vocabulario da lista tem de ser o que o executor conhece.
+
+      Ofereciam-se aqui `prazo_vencido` e `sla_em_risco`; o executor so conhece
+      `tarefa_criada | tarefa_movida_para_coluna | tarefa_concluida |
+      prazo_excedido`. Metade dos gatilhos nunca casaria -- a regra ficava
+      gravada, com selo «Ativa», e nao podia disparar nem em teoria.
+
+      `prazo_excedido` fica de fora ate haver quem o emita: nao ha rotina a
+      correr que repare em prazos vencidos, e po-lo na lista seria prometer
+      outra vez o que nao acontece.
+    */
   ];
   const { data: automacoes = [], isLoading } = useAutomacoes(projetoId);
   const upsert = useUpsertAutomacao(projetoId);

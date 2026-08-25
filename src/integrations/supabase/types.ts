@@ -6927,6 +6927,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          notificar_na_aplicacao: boolean
+          notificar_por_email: boolean
           ativo: boolean
           created_at: string
           email: string
@@ -6943,6 +6945,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          notificar_na_aplicacao?: boolean
+          notificar_por_email?: boolean
           ativo?: boolean
           created_at?: string
           email: string
@@ -6959,6 +6963,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          notificar_na_aplicacao?: boolean
+          notificar_por_email?: boolean
           ativo?: boolean
           created_at?: string
           email?: string

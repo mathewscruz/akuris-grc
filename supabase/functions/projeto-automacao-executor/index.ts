@@ -36,6 +36,49 @@ Deno.serve(async (req) => {
       });
     }
 
+    /*
+      Quem chama tem de pertencer à empresa do projeto.
+
+      Esta função nunca tinha sido chamada por ninguém, por isso o buraco nunca
+      chegou a ser explorado -- mas ao ligá-la, passaria a receber `projeto_id`
+      do CORPO e a agir sobre ele com um cliente de service_role, que ignora
+      RLS. Qualquer utilizador autenticado podia disparar automações no projeto
+      de outra empresa: mover tarefas alheias de coluna, reatribuir
+      responsáveis, notificar pessoas que não conhece.
+
+      É o mesmo padrão das funções de notificação que já foram fechadas: nunca
+      confiar num identificador que veio no pedido.
+    */
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const verificador = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { data: sessao, error: erroSessao } = await verificador.auth.getUser(
+      authHeader.replace('Bearer ', ''),
+    );
+    if (erroSessao || !sessao?.user) {
+      return new Response(JSON.stringify({ error: 'Sessão inválida' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: perfil } = await supabase
+      .from('profiles').select('empresa_id').eq('user_id', sessao.user.id).maybeSingle();
+    const { data: projeto } = await supabase
+      .from('projetos').select('empresa_id').eq('id', projeto_id).maybeSingle();
+
+    if (!perfil?.empresa_id || !projeto?.empresa_id || perfil.empresa_id !== projeto.empresa_id) {
+      return new Response(JSON.stringify({ error: 'Projeto de outra empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { data: regras, error } = await supabase
       .from('projeto_automacoes')
       .select('*')

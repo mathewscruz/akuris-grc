@@ -330,6 +330,7 @@ export const pt = {
     passwordsAndCurrent: 'As senhas não coincidem ou senha atual não foi informada',
     newPasswordMin: 'A nova senha deve ter pelo menos 6 caracteres',
     notifications: 'Notificações',
+    prefsErro: 'Não foi possível gravar a preferência.',
     emailNotif: 'Email',
     emailNotifDesc: 'Alertas por email',
     inAppNotif: 'In-App',

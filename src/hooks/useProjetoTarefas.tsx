@@ -90,9 +90,13 @@ export function useUpsertTarefa() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (data: any, vars) => {
       qc.invalidateQueries({ queryKey: ['projeto-tarefas', vars.projeto_id] });
       toast.success(tGlobal('cardsKpi.sweep.projetos.tarefaSalva'));
+      // So a CRIACAO dispara `tarefa_criada`; editar nao e criar.
+      if (!vars.id && data?.id && vars.projeto_id) {
+        void dispararAutomacoes(vars.projeto_id, 'tarefa_criada', data);
+      }
     },
     onError: (err: any) => {
       logger.error(tGlobal('cardsKpi.sweep.projetos.erroSalvarTarefa'), err);
@@ -116,6 +120,41 @@ export function useDeleteTarefa(projetoId: string) {
   });
 }
 
+
+/**
+ * Avisa o executor de automacoes que algo aconteceu numa tarefa.
+ *
+ * O painel de Automacoes tem um construtor a serio -- gatilho, condicao, N
+ * accoes -- com selo verde «Ativa» e contador de execucoes. Gravava as regras
+ * em `projeto_automacoes` e mais nada: o `projeto-automacao-executor` existe,
+ * funciona, e NAO TINHA QUEM O CHAMASSE. Nem cron, nem outra funcao, nem o
+ * produto. O contador ficava em zero para sempre, e as regras eram decoracao.
+ *
+ * Faltava o emissor. E aqui, onde a tarefa muda, que se sabe que mudou.
+ *
+ * Nao lanca nem bloqueia: a tarefa ja foi gravada, e uma automacao que falha
+ * nao pode desfazer o trabalho de quem a gravou.
+ */
+async function dispararAutomacoes(
+  projetoId: string,
+  gatilho: 'tarefa_criada' | 'tarefa_movida_para_coluna' | 'tarefa_concluida' | 'prazo_excedido',
+  tarefa: { id: string; [k: string]: unknown },
+  contexto?: Record<string, unknown>,
+) {
+  try {
+    const { error } = await supabase.functions.invoke('projeto-automacao-executor', {
+      body: { projeto_id: projetoId, gatilho, tarefa, contexto: contexto ?? {} },
+    });
+    // `invoke` devolve {data,error} e nao lanca: sem esta leitura, uma falha
+    // passaria despercebida exactamente como passou ate agora.
+    if (error) logger.error('Automacoes de projeto nao correram', { data: error });
+  } catch (erro) {
+    logger.error('Automacoes de projeto falharam', {
+      data: erro instanceof Error ? erro.message : String(erro),
+    });
+  }
+}
+
 export function useMoveTarefa(projetoId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -133,6 +172,11 @@ export function useMoveTarefa(projetoId: string) {
         (old ?? []).map((t) => (t.id === tarefaId ? { ...t, coluna_id: colunaId, ordem } : t))
       );
       return { prev };
+    },
+    onSuccess: (_data, vars) => {
+      void dispararAutomacoes(projetoId, 'tarefa_movida_para_coluna', { id: vars.tarefaId }, {
+        coluna_id: vars.colunaId,
+      });
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['projeto-tarefas', projetoId], ctx.prev);

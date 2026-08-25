@@ -328,6 +328,7 @@ export const en = {
     passwordsAndCurrent: 'Passwords do not match or current password was not provided',
     newPasswordMin: 'New password must be at least 6 characters',
     notifications: 'Notifications',
+    prefsErro: 'Could not save the preference.',
     emailNotif: 'Email',
     emailNotifDesc: 'Email alerts',
     inAppNotif: 'In-App',

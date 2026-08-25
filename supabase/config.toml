@@ -105,6 +105,11 @@ verify_jwt = false
 [functions.send-due-diligence-email]
 verify_jwt = false
 
+[functions.projeto-automacao-executor]
+# Chamada do produto, com a sessao de quem move a tarefa. A verificacao de
+# inquilino esta no codigo -- o `projeto_id` vem do corpo e nao se confia nele.
+verify_jwt = true
+
 [functions.avaliar-fornecedor-ia]
 # Chamada por dentro (submissão do questionário) e pelo produto (reavaliar).
 # A verificação de quem chama é feita no código, por `exigeInternaOuUtilizador`.

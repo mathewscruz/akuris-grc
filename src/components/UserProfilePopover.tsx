@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
@@ -63,25 +64,71 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
     nova: false,
     confirmar: false,
   });
+  /*
+    As preferencias vivem no PERFIL, nao no navegador.
+
+    Estavam em `localStorage`, e nenhum outro ficheiro do produto lia essa
+    chave. Desligar «Email» nao impedia um unico envio -- o servidor nunca ve o
+    localStorage de ninguem -- e desligar «In-App» nao filtrava nada no sino.
+    Era, alem disso, por navegador: mudar de maquina apagava a escolha.
+
+    E o pior tipo de fachada: um controlo com forma de consentimento. A pessoa
+    desliga, acredita que desligou, e continua a receber.
+
+    Agora sao colunas de `profiles`, que o servidor le -- a RPC
+    `criar_notificacao` recusa criar aviso a quem desligou o sino.
+
+    A «frequencia» (Tempo real / Diario / Semanal) desapareceu: nao ha digest no
+    produto, e oferecer tres cadencias que fazem todas a mesma coisa era repetir
+    o problema com outra roupa. Volta quando houver digest.
+  */
   const [notificationPrefs, setNotificationPrefs] = useState({
     email_notifications: true,
     in_app_notifications: true,
-    digest_frequency: 'realtime' as 'realtime' | 'daily' | 'weekly',
   });
+  const [aGravarPrefs, setAGravarPrefs] = useState(false);
 
   useEffect(() => {
-    if (user?.id) {
-      const saved = localStorage.getItem(`notification_prefs_${user.id}`);
-      if (saved) {
-        try { setNotificationPrefs(JSON.parse(saved)); } catch {}
+    if (!user?.id) return;
+    let vivo = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('notificar_por_email, notificar_na_aplicacao')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) {
+        logger.error('Preferencias de notificacao nao carregadas', { data: error });
+        return;
       }
-    }
+      if (vivo && data) {
+        setNotificationPrefs({
+          email_notifications: data.notificar_por_email ?? true,
+          in_app_notifications: data.notificar_na_aplicacao ?? true,
+        });
+      }
+    })();
+    return () => { vivo = false; };
   }, [user?.id]);
 
-  const saveNotificationPrefs = (prefs: typeof notificationPrefs) => {
+  const saveNotificationPrefs = async (prefs: typeof notificationPrefs) => {
+    if (!user?.id) return;
+    const anterior = notificationPrefs;
     setNotificationPrefs(prefs);
-    if (user?.id) {
-      localStorage.setItem(`notification_prefs_${user.id}`, JSON.stringify(prefs));
+    setAGravarPrefs(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        notificar_por_email: prefs.email_notifications,
+        notificar_na_aplicacao: prefs.in_app_notifications,
+      })
+      .eq('user_id', user.id);
+    setAGravarPrefs(false);
+    if (error) {
+      // Se nao gravou, o interruptor nao pode ficar a dizer que sim.
+      setNotificationPrefs(anterior);
+      logger.error('Preferencias de notificacao nao gravadas', { data: error });
+      toast.error(t('userProfilePopover.prefsErro'));
     }
   };
 
@@ -415,6 +462,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
             </div>
             <Switch
               id="pp-email-notif"
+              disabled={aGravarPrefs}
               checked={notificationPrefs.email_notifications}
               onCheckedChange={(checked) =>
                 saveNotificationPrefs({ ...notificationPrefs, email_notifications: checked })
@@ -428,34 +476,12 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
             </div>
             <Switch
               id="pp-inapp-notif"
+              disabled={aGravarPrefs}
               checked={notificationPrefs.in_app_notifications}
               onCheckedChange={(checked) =>
                 saveNotificationPrefs({ ...notificationPrefs, in_app_notifications: checked })
               }
             />
-          </div>
-          <div className="space-y-2 rounded-lg border p-3">
-            <Label className="text-sm">{t('userProfilePopover.frequency')}</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { value: 'realtime' as const, label: t('userProfilePopover.realtime') },
-                { value: 'daily' as const, label: t('userProfilePopover.daily') },
-                { value: 'weekly' as const, label: t('userProfilePopover.weekly') },
-              ].map((opt) => (
-                <Button
-                  key={opt.value}
-                  type="button"
-                  variant={notificationPrefs.digest_frequency === opt.value ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() =>
-                    saveNotificationPrefs({ ...notificationPrefs, digest_frequency: opt.value })
-                  }
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
           </div>
         </TabsContent>
       </Tabs>
