@@ -4,20 +4,16 @@ import { useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
+import { DataTable, type Column } from '@/components/ui/data-table';
+import { useTableSort } from '@/components/ui/sortable-table-head';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { StatStrip } from '@/components/ui/stat-strip';
-import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { PageHeader } from '@/components/ui/page-header';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -124,9 +120,6 @@ export default function Contratos() {
   const { toast } = useToast();
   
   // Paginação
-  const [currentPageContratos, setCurrentPageContratos] = useState(1);
-  const [currentPageFornecedores, setCurrentPageFornecedores] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Buscar estatísticas dos contratos
   const { data: statsContratos } = useContratosStats();
@@ -382,23 +375,200 @@ export default function Contratos() {
   }), []);
   const { sorted: sortedFornecedores, sort: sortFornecedores, toggleSort: toggleSortFornecedores } = useTableSort(filteredFornecedores as any[], fornecedorAccessors);
 
-  // Paginação
-  const totalPagesContratos = Math.ceil(filteredContratos.length / itemsPerPage);
-  const totalPagesFornecedores = Math.ceil(filteredFornecedores.length / itemsPerPage);
+  /*
+    A paginacao manual saiu -- o `DataTable` traz a sua, ja traduzida.
 
-  const paginatedContratos = useMemo(() => {
-    const start = (currentPageContratos - 1) * itemsPerPage;
-    return sortedContratos.slice(start, start + itemsPerPage);
-  }, [sortedContratos, currentPageContratos, itemsPerPage]);
-
-  const paginatedFornecedores = useMemo(() => {
-    const start = (currentPageFornecedores - 1) * itemsPerPage;
-    return sortedFornecedores.slice(start, start + itemsPerPage);
-  }, [sortedFornecedores, currentPageFornecedores, itemsPerPage]);
+    A ORDENACAO fica, e e de proposito. `useTableSort` leva acessadores para
+    os campos que nao existem na linha: "fornecedor" vem de
+    `c.fornecedores.nome`, e "valor" tem de ser comparado como numero e nao
+    como texto. Deixar o `DataTable` ordenar sozinho -- ele le
+    `item[coluna.key]` -- faria a coluna Fornecedor deixar de ordenar e a
+    coluna Valor ordenar 1000 antes de 900.
+  */
 
   if (loading) {
     return <PageSkeleton />;
   }
+
+  /*
+    Contratos era a ultima tabela artesanal do produto -- Table cru, com a sua
+    propria ordenacao, a sua propria paginacao e a sua propria barra de
+    ferramentas. Custava tres coisas:
+
+     · **No telemovel era ilegivel.** O `DataTable` troca a tabela por cartoes
+       abaixo de `md`; aqui a tabela ficava, espremida em 375px, com os
+       cabecalhos a partirem-se numa coluna de letras -- "N O M E",
+       "F O R N E C E D O R" -- e o texto das celulas cortado a meio da
+       palavra: "Lice/ncia/men/to M36/5".
+     · **A paginacao estava so em portugues.** "Mostrando 1 a 10 de 3" era
+       texto cravado, fora do `t()`.
+     · Um segundo sitio para corrigir sempre que a tabela do produto muda.
+  */
+  const colunasContratos: Column<any>[] = [
+    {
+      key: 'nome',
+      label: t('fin.comum.nome'),
+      sortable: true,
+      render: (_: any, c: any) => (
+        <div>
+          <div className="font-medium">{c.nome}</div>
+          <div className="text-sm text-muted-foreground">{c.numero_contrato}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'fornecedor',
+      label: t('fin.comum.fornecedor'),
+      sortable: true,
+      render: (_: any, c: any) => c.fornecedores?.nome || '-',
+    },
+    {
+      key: 'status',
+      label: t('fin.comum.status'),
+      sortable: true,
+      render: (_: any, c: any) => getContratoStatusBadge(c),
+    },
+    {
+      key: 'tipo',
+      label: t('fin.comum.tipo'),
+      sortable: true,
+      render: (_: any, c: any) => (
+        <Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(c.tipo)}</Badge>
+      ),
+    },
+    {
+      key: 'valor',
+      label: t('fin.comum.valor'),
+      sortable: true,
+      render: (_: any, c: any) => (c.valor ? formatMoedaEmpresa(Number(c.valor)) : 'N/A'),
+    },
+    {
+      key: 'data_fim',
+      label: t('cardsKpi.sweep.contratos.vencimento'),
+      sortable: true,
+      render: (_: any, c: any) => (
+        <span className="whitespace-nowrap">{formatDateOnly(c.data_fim)}</span>
+      ),
+    },
+    {
+      key: 'acoes',
+      label: t('fin.comum.acoes'),
+      render: (_: any, contrato: any) => (
+        <div className="flex items-center justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                <IconMore className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={() => handleEdit(contrato, 'contrato')}>
+                <IconEdit className="mr-2 h-4 w-4" />
+                {t('sweepDados.contratos.editar')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setDocumentosDialogOpen(true); }}>
+                <IconFile className="mr-2 h-4 w-4" />
+                {t('sweepDados.contratos.documentos')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setMarcosDialogOpen(true); }}>
+                <IconFlag className="mr-2 h-4 w-4" />
+                {t('sweepDados.contratos.marcos')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setTrilhaDialogOpen(true); }}>
+                <IconHistory className="mr-2 h-4 w-4" />{t('fin.contratos.trilhaAuditoria')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setAditivosDialogOpen(true); }}>
+                <IconAdd className="mr-2 h-4 w-4" />
+                {t('sweepDados.contratos.aditivos')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => handleDelete(contrato.id, 'contrato')}
+                className="text-destructive"
+              >
+                <IconDelete className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ];
+
+  const colunasFornecedores: Column<any>[] = [
+    {
+      key: 'nome',
+      label: t('fin.comum.nome'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <div>
+          <div className="font-medium">{f.nome}</div>
+          <div className="text-sm text-muted-foreground">{f.cnpj}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'tipo',
+      label: t('fin.comum.tipo'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(f.tipo)}</Badge>
+      ),
+    },
+    {
+      key: 'categoria',
+      label: t('cardsKpi.sweep.contratos.categoria'),
+      sortable: true,
+      render: (_: any, f: any) => (
+        <Badge variant="secondary" className="capitalize whitespace-nowrap">{f.categoria || '-'}</Badge>
+      ),
+    },
+    {
+      key: 'contratos_count',
+      label: t('cardsKpi.sweep.contratos.contratos'),
+      sortable: true,
+      render: (_: any, f: any) => <Badge variant="outline">{f.contratos_count || 0}</Badge>,
+    },
+    {
+      key: 'avaliacao_risco',
+      label: t('cardsKpi.sweep.contratos.risco'),
+      sortable: true,
+      render: (_: any, f: any) => (f.avaliacao_risco ? getRiskBadge(f.avaliacao_risco) : '-'),
+    },
+    {
+      key: 'status',
+      label: t('fin.comum.status'),
+      sortable: true,
+      render: (_: any, f: any) => getStatusBadge(f.status),
+    },
+    {
+      key: 'acoes',
+      label: t('fin.comum.acoes'),
+      render: (_: any, fornecedor: any) => (
+        <div className="flex items-center justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                <IconMore className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={() => handleEdit(fornecedor, 'fornecedor')}>
+                <IconEdit className="h-4 w-4 mr-2" />
+                {t('sweepDados.contratos.editar')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => handleDelete(fornecedor.id, 'fornecedor')}
+              >
+                <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <TooltipProvider>
@@ -488,202 +658,62 @@ export default function Contratos() {
           <TabsContent value="contratos" className="space-y-4">
             <Card className="rounded-lg border overflow-hidden">
               <CardContent className="p-0">
-                <div className="p-6 pb-4">
-                  <ModuleToolbar
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    searchPlaceholder={t('fin.contratos.buscar')}
-                    filters={
-                      <>
-                        <ToolbarField label={t('fin.comum.status')}>
-                          <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue placeholder={t('fin.comum.status')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
-                              <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
-                              <SelectItem value="a_vencer">{t('fin.contratos.aVencer')}</SelectItem>
-                              <SelectItem value="vencido">{t('campos.opcoes.vencido')}</SelectItem>
-                              <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
-                              <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
-                              <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
-                              <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
-                              <SelectItem value="encerrado">{t('campos.opcoes.encerrado')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                        <ToolbarField label={t('fin.comum.tipo')}>
-                          <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue placeholder={t('fin.comum.tipo')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
-                              <SelectItem value="servicos">{t('campos.opcoes.servicos')}</SelectItem>
-                              <SelectItem value="licenciamento">{t('campos.opcoes.licenciamento')}</SelectItem>
-                              <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
-                              <SelectItem value="consultoria">{t('campos.opcoes.consultoria')}</SelectItem>
-                              <SelectItem value="produto">{t('campos.opcoes.produto')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                        <ToolbarField label={t('fin.comum.itensPorPagina')}>
-                          <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="10">10</SelectItem>
-                              <SelectItem value="20">20</SelectItem>
-                              <SelectItem value="50">50</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                      </>
-                    }
-                  />
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <SortableTableHead field="nome" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.nome')}</SortableTableHead>
-                      <SortableTableHead field="fornecedor" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.fornecedor')}</SortableTableHead>
-                      <SortableTableHead field="status" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.status')}</SortableTableHead>
-                      <SortableTableHead field="tipo" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.tipo')}</SortableTableHead>
-                      <SortableTableHead field="valor" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.valor')}</SortableTableHead>
-                      <SortableTableHead field="data_fim" sort={sortContratos} onSort={toggleSortContratos}>{t('cardsKpi.sweep.contratos.vencimento')}</SortableTableHead>
-                      <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedContratos.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="p-0">
-                          <EmptyState
-                            icon={<IconFile className="h-8 w-8" />}
-                            title={t('fin.contratos.nenhum')}
-                            description={t('cardsKpi.contratos.emptyContratos')}
-                            action={{
-                              label: t('fin.contratos.novo'),
-                              onClick: () => { setSelectedContrato(null); setDialogOpen(true); }
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedContratos.map((contrato) => (
-                        <TableRow key={contrato.id} data-focus-id={contrato.id} {...rowOpenProps(() => setDetalheContrato(contrato), contrato.nome)}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{contrato.nome}</div>
-                              <div className="text-sm text-muted-foreground">{contrato.numero_contrato}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{contrato.fornecedores?.nome || '-'}</TableCell>
-                          <TableCell>{getContratoStatusBadge(contrato)}</TableCell>
-                          <TableCell><Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(contrato.tipo)}</Badge></TableCell>
-                          <TableCell>
-                            {contrato.valor 
-                              ? formatMoedaEmpresa(Number(contrato.valor))
-                              : 'N/A'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <span className="whitespace-nowrap">{formatDateOnly(contrato.data_fim)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <IconMore className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(contrato, 'contrato')}>
-                                    <IconEdit className="mr-2 h-4 w-4" />
-                                    {t('sweepDados.contratos.editar')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setDocumentosDialogOpen(true); }}>
-                                    <IconFile className="mr-2 h-4 w-4" />
-                                    {t('sweepDados.contratos.documentos')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setMarcosDialogOpen(true); }}>
-                                    <IconFlag className="mr-2 h-4 w-4" />
-                                    {t('sweepDados.contratos.marcos')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setTrilhaDialogOpen(true); }}>
-                                    <IconHistory className="mr-2 h-4 w-4" />{t('fin.contratos.trilhaAuditoria')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setAditivosDialogOpen(true); }}>
-                                    <IconAdd className="mr-2 h-4 w-4" />
-                                    {t('sweepDados.contratos.aditivos')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => handleDelete(contrato.id, 'contrato')}
-                                    className="text-destructive"
-                                  >
-                                    <IconDelete className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-
-                {/* Paginação */}
-                {totalPagesContratos > 1 && (
-                  <div className="flex items-center justify-between p-4 border-t">
-                    <span className="text-sm text-muted-foreground">
-                      Mostrando {((currentPageContratos - 1) * itemsPerPage) + 1} a {Math.min(currentPageContratos * itemsPerPage, filteredContratos.length)} de {filteredContratos.length}
-                    </span>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setCurrentPageContratos(p => Math.max(1, p - 1))}
-                            className={currentPageContratos === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        {Array.from({ length: Math.min(5, totalPagesContratos) }, (_, i) => {
-                          let page = i + 1;
-                          if (totalPagesContratos > 5) {
-                            if (currentPageContratos > 3) {
-                              page = currentPageContratos - 2 + i;
-                            }
-                            if (page > totalPagesContratos) {
-                              page = totalPagesContratos - 4 + i;
-                            }
-                          }
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                onClick={() => setCurrentPageContratos(page)}
-                                isActive={currentPageContratos === page}
-                                className="cursor-pointer"
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        })}
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setCurrentPageContratos(p => Math.min(totalPagesContratos, p + 1))}
-                            className={currentPageContratos === totalPagesContratos ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
+                <DataTable
+                  data={sortedContratos}
+                  columns={colunasContratos}
+                  sortField={sortContratos?.field}
+                  sortDirection={sortContratos?.direction}
+                  onSort={toggleSortContratos}
+                  loading={loadingContratos}
+                  onRowClick={(c) => setDetalheContrato(c)}
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder={t('fin.contratos.buscar')}
+                  filters={[
+                    {
+                      key: 'status',
+                      label: t('fin.comum.status'),
+                      value: statusFilter,
+                      onChange: setStatusFilter,
+                      options: [
+                        { value: 'todos', label: t('campos.filtros.todos') },
+                        { value: 'ativo', label: t('campos.opcoes.ativo') },
+                        { value: 'a_vencer', label: t('fin.contratos.aVencer') },
+                        { value: 'vencido', label: t('campos.opcoes.vencido') },
+                        { value: 'rascunho', label: t('campos.opcoes.rascunho') },
+                        { value: 'negociacao', label: t('fin.contratos.negociacao') },
+                        { value: 'aprovacao', label: t('fin.comum.aprovacao') },
+                        { value: 'suspenso', label: t('campos.opcoes.suspenso') },
+                        { value: 'encerrado', label: t('campos.opcoes.encerrado') },
+                      ],
+                    },
+                    {
+                      key: 'tipo',
+                      label: t('fin.comum.tipo'),
+                      value: tipoFilter,
+                      onChange: setTipoFilter,
+                      options: [
+                        { value: 'todos', label: t('campos.filtros.todos') },
+                        { value: 'servicos', label: t('campos.opcoes.servicos') },
+                        { value: 'licenciamento', label: t('campos.opcoes.licenciamento') },
+                        { value: 'manutencao', label: t('fin.comum.manutencao') },
+                        { value: 'consultoria', label: t('campos.opcoes.consultoria') },
+                        { value: 'produto', label: t('campos.opcoes.produto') },
+                      ],
+                    },
+                  ]}
+                  emptyState={{
+                    icon: <IconFile className="h-8 w-8" />,
+                    title: t('fin.contratos.nenhum'),
+                    description: t('cardsKpi.contratos.emptyContratos'),
+                    action: {
+                      label: t('fin.contratos.novo'),
+                      onClick: () => { setSelectedContrato(null); setDialogOpen(true); },
+                    },
+                  }}
+                  paginated
+                  pageSize={10}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -692,186 +722,65 @@ export default function Contratos() {
           <TabsContent value="fornecedores" className="space-y-4">
             <Card className="rounded-lg border overflow-hidden">
               <CardContent className="p-0">
-                <div className="p-6 pb-4">
-                  <ModuleToolbar
-                    searchValue={searchTermFornecedor}
-                    onSearchChange={setSearchTermFornecedor}
-                    searchPlaceholder={t('fin.fornecedores.buscar')}
-                    filters={
-                      <>
-                        <ToolbarField label={t('fin.comum.status')}>
-                          <Select value={statusFornecedorFilter} onValueChange={setStatusFornecedorFilter}>
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue placeholder={t('fin.comum.status')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">{t('campos.filtros.todosStatus')}</SelectItem>
-                              <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
-                              <SelectItem value="inativo">{t('campos.opcoes.inativo')}</SelectItem>
-                              <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                        <ToolbarField label={t('campos.comum.categoria')}>
-                          <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue placeholder={t('campos.comum.categoria')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">{t('campos.filtros.todasCategorias')}</SelectItem>
-                              {categoriasFornecedor.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                        <ToolbarField label={t('campos.comum.risco')}>
-                          <Select value={riscoFornecedorFilter} onValueChange={setRiscoFornecedorFilter}>
-                            <SelectTrigger className="w-[130px]">
-                              <SelectValue placeholder={t('campos.comum.risco')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">{t('campos.filtros.todosRiscos')}</SelectItem>
-                              <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
-                              <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
-                              <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
-                              <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                        <ToolbarField label={t('fin.comum.itensPorPagina')}>
-                          <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="10">10</SelectItem>
-                              <SelectItem value="20">20</SelectItem>
-                              <SelectItem value="50">50</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </ToolbarField>
-                      </>
-                    }
-                  />
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <SortableTableHead field="nome" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('fin.comum.nome')}</SortableTableHead>
-                      <SortableTableHead field="tipo" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('fin.comum.tipo')}</SortableTableHead>
-                      <SortableTableHead field="categoria" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('cardsKpi.sweep.contratos.categoria')}</SortableTableHead>
-                      <SortableTableHead field="contratos_count" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('cardsKpi.sweep.contratos.contratos')}</SortableTableHead>
-                      <SortableTableHead field="avaliacao_risco" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('cardsKpi.sweep.contratos.risco')}</SortableTableHead>
-                      <SortableTableHead field="status" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('fin.comum.status')}</SortableTableHead>
-                      <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedFornecedores.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="p-0">
-                          <EmptyState
-                            icon={<IconUsers className="h-8 w-8" />}
-                            title={t('fin.fornecedores.nenhum')}
-                            description={t('cardsKpi.contratos.emptyFornecedores')}
-                            action={{
-                              label: t('fin.fornecedores.novo'),
-                              onClick: () => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedFornecedores.map((fornecedor) => (
-                        <TableRow key={fornecedor.id} data-focus-id={fornecedor.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{fornecedor.nome}</div>
-                              <div className="text-sm text-muted-foreground">{fornecedor.cnpj}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell><Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(fornecedor.tipo)}</Badge></TableCell>
-                          <TableCell><Badge variant="secondary" className="capitalize whitespace-nowrap">{fornecedor.categoria || '-'}</Badge></TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{fornecedor.contratos_count || 0}</Badge>
-                          </TableCell>
-                          <TableCell>{fornecedor.avaliacao_risco ? getRiskBadge(fornecedor.avaliacao_risco) : '-'}</TableCell>
-                          <TableCell>{getStatusBadge(fornecedor.status)}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <IconMore className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(fornecedor, 'fornecedor')}>
-                                  <IconEdit className="h-4 w-4 mr-2" />
-                                  {t('sweepDados.contratos.editar')}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleDelete(fornecedor.id, 'fornecedor')}
-                                >
-                                  <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-
-                {/* Paginação */}
-                {totalPagesFornecedores > 1 && (
-                  <div className="flex items-center justify-between p-4 border-t">
-                    <span className="text-sm text-muted-foreground">
-                      Mostrando {((currentPageFornecedores - 1) * itemsPerPage) + 1} a {Math.min(currentPageFornecedores * itemsPerPage, filteredFornecedores.length)} de {filteredFornecedores.length}
-                    </span>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setCurrentPageFornecedores(p => Math.max(1, p - 1))}
-                            className={currentPageFornecedores === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        {Array.from({ length: Math.min(5, totalPagesFornecedores) }, (_, i) => {
-                          let page = i + 1;
-                          if (totalPagesFornecedores > 5) {
-                            if (currentPageFornecedores > 3) {
-                              page = currentPageFornecedores - 2 + i;
-                            }
-                            if (page > totalPagesFornecedores) {
-                              page = totalPagesFornecedores - 4 + i;
-                            }
-                          }
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                onClick={() => setCurrentPageFornecedores(page)}
-                                isActive={currentPageFornecedores === page}
-                                className="cursor-pointer"
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        })}
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setCurrentPageFornecedores(p => Math.min(totalPagesFornecedores, p + 1))}
-                            className={currentPageFornecedores === totalPagesFornecedores ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
+                <DataTable
+                  data={sortedFornecedores}
+                  columns={colunasFornecedores}
+                  sortField={sortFornecedores?.field}
+                  sortDirection={sortFornecedores?.direction}
+                  onSort={toggleSortFornecedores}
+                  loading={loadingFornecedores}
+                  searchValue={searchTermFornecedor}
+                  onSearchChange={setSearchTermFornecedor}
+                  searchPlaceholder={t('fin.fornecedores.buscar')}
+                  filters={[
+                    {
+                      key: 'status',
+                      label: t('fin.comum.status'),
+                      value: statusFornecedorFilter,
+                      onChange: setStatusFornecedorFilter,
+                      options: [
+                        { value: 'todos', label: t('campos.filtros.todosStatus') },
+                        { value: 'ativo', label: t('campos.opcoes.ativo') },
+                        { value: 'inativo', label: t('campos.opcoes.inativo') },
+                        { value: 'suspenso', label: t('campos.opcoes.suspenso') },
+                      ],
+                    },
+                    {
+                      key: 'categoria',
+                      label: t('campos.comum.categoria'),
+                      value: categoriaFornecedorFilter,
+                      onChange: setCategoriaFornecedorFilter,
+                      options: [
+                        { value: 'todos', label: t('campos.filtros.todasCategorias') },
+                        ...categoriasFornecedor.map((cat) => ({ value: cat, label: cat })),
+                      ],
+                    },
+                    {
+                      key: 'risco',
+                      label: t('campos.comum.risco'),
+                      value: riscoFornecedorFilter,
+                      onChange: setRiscoFornecedorFilter,
+                      options: [
+                        { value: 'todos', label: t('campos.filtros.todosRiscos') },
+                        { value: 'baixo', label: t('campos.opcoes.baixo') },
+                        { value: 'medio', label: t('campos.opcoes.medio') },
+                        { value: 'alto', label: t('campos.opcoes.alto') },
+                        { value: 'critico', label: t('fin.comum.critico') },
+                      ],
+                    },
+                  ]}
+                  emptyState={{
+                    icon: <IconUsers className="h-8 w-8" />,
+                    title: t('fin.fornecedores.nenhum'),
+                    description: t('cardsKpi.contratos.emptyFornecedores'),
+                    action: {
+                      label: t('fin.fornecedores.novo'),
+                      onClick: () => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); },
+                    },
+                  }}
+                  paginated
+                  pageSize={10}
+                />
               </CardContent>
             </Card>
           </TabsContent>

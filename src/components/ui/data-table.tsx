@@ -261,7 +261,12 @@ export function DataTable<T extends Record<string, any>>({
                   ? column.render(item[column.key as keyof T], item)
                   : String(item[column.key as keyof T] ?? '-')
               return (
-                <div key={item.id || index} {...(abrir ?? {})} className={cn('p-4 space-y-3', abrir?.className)}>
+                <div
+                  key={item.id || index}
+                  data-focus-id={(item as any).id}
+                  {...(abrir ?? {})}
+                  className={cn('p-4 space-y-3', abrir?.className)}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 font-medium">{principal && valor(principal)}</div>
                     {acoes && <div className="shrink-0">{valor(acoes)}</div>}
@@ -336,6 +341,21 @@ export function DataTable<T extends Record<string, any>>({
               paginatedData.map((item, index) => (
                 <TableRow
                   key={item.id || index}
+                  /*
+                    O alvo do `?focus=<id>`.
+
+                    `useFocusRow` procura por `data-focus-id`, e o `DataTable`
+                    nao o emitia -- por isso o link profundo nao fazia nada em
+                    NENHUM dos onze modulos que usam esta tabela. Ficava cinco
+                    segundos em polling e desistia em silencio: a pagina abria
+                    no topo e o registo procurado nao era destacado.
+
+                    Quem gera estes links: a gaveta de KPI do painel, o feed de
+                    atividades, a busca global e o "plano de acao ligado" na
+                    ficha de um risco ou controlo. Quatro caminhos, todos
+                    mortos do lado de ca.
+                  */
+                  data-focus-id={(item as any).id}
                   {...(() => {
                     const base = onRowClick
                       ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
