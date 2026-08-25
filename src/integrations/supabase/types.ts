@@ -5063,6 +5063,7 @@ export type Database = {
       }
       evidence_library: {
         Row: {
+          documento_id: string | null
           arquivo_hash: string | null
           arquivo_nome: string | null
           arquivo_tamanho: number | null
@@ -5083,6 +5084,7 @@ export type Database = {
           valido_ate: string | null
         }
         Insert: {
+          documento_id?: string | null
           arquivo_hash?: string | null
           arquivo_nome?: string | null
           arquivo_tamanho?: number | null
@@ -5103,6 +5105,7 @@ export type Database = {
           valido_ate?: string | null
         }
         Update: {
+          documento_id?: string | null
           arquivo_hash?: string | null
           arquivo_nome?: string | null
           arquivo_tamanho?: number | null

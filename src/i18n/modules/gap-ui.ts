@@ -1,6 +1,15 @@
 export const gapUi = {
   pt: {
     gapUi: {
+      documentosRequisito: {
+        titulo: 'Documentos que provam este requisito',
+        ajuda: 'Ligue uma política já aprovada em Documentos. O mesmo documento pode provar vários requisitos, em frameworks diferentes — e quando for revisto, a prova acompanha.',
+        escolher: 'Escolher documentos…',
+        vazio: 'Nenhum documento ligado. Carregar um ficheiro aqui cria uma cópia solta; ligar um documento aprovado traz versão, validade e histórico.',
+        vencidoEm: 'Vencido em {data}',
+        abrir: 'Abrir documento',
+        erroGravar: 'Não foi possível gravar a ligação.',
+      },
       common: {
         cancel: 'Cancelar',
         add: 'Adicionar',
@@ -209,6 +218,15 @@ export const gapUi = {
   },
   en: {
     gapUi: {
+      documentosRequisito: {
+        titulo: 'Documents that prove this requirement',
+        ajuda: 'Link a policy already approved in Documents. The same document can prove several requirements, across different frameworks — and when it is revised, the proof follows.',
+        escolher: 'Choose documents…',
+        vazio: 'No document linked. Uploading a file here creates a loose copy; linking an approved document brings version, validity and history.',
+        vencidoEm: 'Expired on {data}',
+        abrir: 'Open document',
+        erroGravar: 'Could not save the link.',
+      },
       common: {
         cancel: 'Cancel',
         add: 'Add',

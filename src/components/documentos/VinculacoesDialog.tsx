@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconAdd, IconDelete, IconExternal, IconSuccess, IconWarning, IconFile, IconShield, IconOrg, IconLink } from '@/components/icons';
+import { IconChecklist, IconAdd, IconDelete, IconExternal, IconSuccess, IconWarning, IconFile, IconShield, IconOrg, IconLink } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -48,7 +48,41 @@ const getModulosDisponiveis = (t: (k: string) => string) => [
   { value: 'risco', label: t('documentosExtras.vinculacoes.moduloRiscos'), icon: IconWarning },
   { value: 'controle', label: t('documentosExtras.vinculacoes.moduloControles'), icon: IconShield },
   { value: 'ativo', label: t('documentosExtras.vinculacoes.moduloAtivos'), icon: IconOrg },
+  /*
+    Requisito de framework NAO entra aqui, e e decisao.
+
+    A ligacao documento-requisito existe -- mas pela BIBLIOTECA DE EVIDENCIAS
+    (`evidence_library_links`, que ja sabe apontar a requisito, framework,
+    avaliacao e qualquer modulo, com validade e aceitacao). Duplica-la aqui
+    daria duas verdades sobre a mesma coisa: um requisito com evidencia numa
+    tabela e nada na outra, conforme o ecra por onde se entrou.
+
+    E exactamente o defeito que se anda a corrigir -- o mesmo conceito
+    implementado duas vezes.
+  */
 ];
+
+/**
+ * Para onde leva cada vínculo — COM o identificador.
+ *
+ * Fazia-se `/${modulo}s` e abria-se a lista inteira: o `vinculo_id` estava na
+ * mão e era deitado fora. Quem clicava para ver o contrato ligado aterrava em
+ * «Contratos» e tinha de o procurar outra vez. Cada página lê o seu parâmetro;
+ * é isso que aqui se respeita.
+ */
+function rotaDoVinculo(v: { modulo: string; vinculo_id: string }): string {
+  switch (v.modulo) {
+    case 'contrato': return `/contratos?focus=${v.vinculo_id}`;
+    case 'ativo': return `/ativos?focus=${v.vinculo_id}`;
+    case 'risco': return `/riscos?risco=${v.vinculo_id}`;
+    case 'controle': return `/governanca/controles?controle=${v.vinculo_id}`;
+    case 'auditoria': return `/governanca/auditorias?focus=${v.vinculo_id}`;
+    // O requisito vive dentro do seu framework, e a lista de frameworks é a
+    // porta: sem saber qual, é onde se chega mais perto.
+    case 'requisito': return `/gap-analysis/frameworks?req=${v.vinculo_id}`;
+    default: return `/${v.modulo}s`;
+  }
+}
 
 const tiposVinculacao = [
   'relacionado',
@@ -157,6 +191,17 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_nome = ativoData.nome;
                 }
                 break;
+              case 'requisito':
+                const { data: reqData } = await supabase
+                  .from('gap_analysis_requirements')
+                  .select('codigo, titulo')
+                  .eq('id', vinculacao.vinculo_id)
+                  .maybeSingle();
+                if (reqData) {
+                  vinculo_nome = reqData.titulo;
+                  vinculo_numero = reqData.codigo;
+                }
+                break;
             }
           } catch (error) {
             logger.error('Erro ao buscar detalhes do item vinculado', { error: (error as Error)?.message, module: 'documentos' });
@@ -209,6 +254,33 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
           selectFields = 'id, nome';
           query = supabase.from('ativos').select(selectFields);
           break;
+        case 'requisito': {
+          /*
+            O requisito é a excepção da lista, em duas coisas.
+
+            Não tem `empresa_id` -- é catálogo partilhado, a mesma A.5.1 para
+            toda a gente -- por isso filtrar por empresa daria 400 e a lista
+            viria vazia. E não tem coluna `nome`: chama-se `titulo`, com um
+            `codigo` ao lado que é como as pessoas se lhe referem.
+
+            Traz o framework junto, porque «A.5.1» sozinho não diz de qual dos
+            vinte e cinco catálogos veio.
+          */
+          const { data: reqs, error: erroReqs } = await supabase
+            .from('gap_analysis_requirements')
+            .select('id, codigo, titulo, gap_analysis_frameworks:framework_id(nome)')
+            .order('codigo')
+            .limit(400);
+          if (erroReqs) throw erroReqs;
+          setItemsDisponiveis(
+            (reqs ?? []).map((r: any) => ({
+              id: r.id,
+              nome: `${r.codigo} — ${r.titulo}`,
+              numero_contrato: r.gap_analysis_frameworks?.nome ?? undefined,
+            })),
+          );
+          return;
+        }
         default:
           setItemsDisponiveis([]);
           return;
@@ -402,11 +474,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                // Navegar para o item vinculado
-                                const path = `/${vinculacao.modulo}s`;
-                                window.open(path, '_blank');
-                              }}
+                              onClick={() => window.open(rotaDoVinculo(vinculacao), '_blank')}
                             >
                               <IconExternal className="h-4 w-4" />
                             </Button>

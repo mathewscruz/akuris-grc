@@ -24,6 +24,7 @@ import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
 import { useOrientacaoRequisito } from '@/hooks/useOrientacaoRequisito';
+import { DocumentosDoRequisito } from '../DocumentosDoRequisito';
 import { logger } from '@/lib/logger';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1024,6 +1025,21 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     }
                   >
                     <div className="space-y-3">
+                      {/*
+                        Um documento aprovado vale por muitos ficheiros soltos.
+
+                        Aqui só se podia CARREGAR um ficheiro novo -- e a mesma
+                        política acabava carregada outra vez em cada requisito
+                        que a pedisse, sem versão, sem validade e sem saber que
+                        já existia aprovada no módulo de Documentos. Quando
+                        fosse revista, as cópias ficavam para trás.
+                      */}
+                      {requirement?.id && (
+                        <div className="rounded-lg border bg-muted/20 p-3">
+                          <DocumentosDoRequisito requisitoId={requirement.id} frameworkId={frameworkId} />
+                        </div>
+                      )}
+
                       {/* Hub de 3 ações */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <Button
