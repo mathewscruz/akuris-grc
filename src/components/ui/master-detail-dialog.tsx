@@ -197,7 +197,7 @@ export function MasterDetailDialog<T extends MasterDetailItem>({
         </div>
 
         {footer && (
-          <div className="flex-shrink-0 border-t bg-card px-6 py-3">
+          <div className="flex-shrink-0 border-t px-6 py-3">
             <div className="flex items-center justify-end gap-2">{footer}</div>
           </div>
         )}

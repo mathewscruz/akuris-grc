@@ -612,7 +612,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         </Tabs>
 
         {/* Footer fixo */}
-        <div className="border-t border-border px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card">
+        <div className="border-t border-border px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="text-micro text-muted-foreground min-w-0 leading-snug">
             {detail?.historico?.[0]
               ? <>{t('residuos.risco.ultimaRevisao')}<span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>

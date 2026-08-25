@@ -177,10 +177,13 @@ export function DialogShell({
             )}
           </div>
 
-          {/* A moldura do diálogo usa o recuo do sistema: `--background` é a tela
-              da aplicação e dentro de um diálogo entrava como um quarto branco. */}
+          {/* O rodapé não é uma superfície: é o mesmo casco do diálogo, separado
+              por um fio. Levava `bg-card` -- o MESMO token dos campos (input,
+              textarea, select) -- e no tema escuro ficava mais escuro que o
+              casco (`bg-popover`), lendo-se como uma faixa recuada, um campo.
+              Sem classe de fundo herda o casco, e acompanha-o nos dois temas. */}
           {!hideFooter && (
-            <div className="flex-shrink-0 border-t bg-card px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
+            <div className="flex-shrink-0 border-t px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
               {footer ?? (
                 <div className="flex items-center justify-end gap-2">
                   <Button

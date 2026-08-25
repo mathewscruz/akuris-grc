@@ -302,7 +302,7 @@ export function WizardDialog({
 
           {/* Rodapé fixo (não é sticky: é irmão flex do corpo com scroll, por
               isso não precisa de desfoque nem de transparência). */}
-          <div className="flex-shrink-0 border-t bg-card px-6 py-3">
+          <div className="flex-shrink-0 border-t px-6 py-3">
             {submitDisabled && submitBlockedReason && (
               <p className="mb-2 flex items-start gap-2 text-xs text-destructive">
                 <IconInfo className="h-3.5 w-3.5 shrink-0 mt-px" />

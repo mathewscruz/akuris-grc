@@ -1393,7 +1393,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         </Tabs>
 
         {/* Footer sticky */}
-        <div className="flex-shrink-0 border-t bg-card px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="flex-shrink-0 border-t px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="outline"

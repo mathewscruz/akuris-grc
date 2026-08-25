@@ -433,7 +433,7 @@ export function RequirementDrawer({
             </div>
 
             {/* Footer */}
-            <footer className="border-t border-border bg-card px-6 py-4 shrink-0 flex items-center justify-between gap-3">
+            <footer className="border-t border-border px-6 py-4 shrink-0 flex items-center justify-between gap-3">
               <span className="text-micro text-muted-foreground hidden sm:inline-flex items-center gap-2">
                 {t('gapUi.drawer.shortcuts')}
                 <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">1</kbd>{t('gapUi.drawer.shortcutConforme')}

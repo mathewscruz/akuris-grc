@@ -745,7 +745,7 @@ export function MatrizForm({ onSuccess }: Props) {
         )}
       </section>
 
-      <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t bg-background/95 backdrop-blur-sm flex items-center justify-end gap-2">
+      <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t bg-popover flex items-center justify-end gap-2">
         <Button type="button" variant="outline" onClick={onSuccess}>
           {t('fin.comum.cancelar')}
         </Button>
