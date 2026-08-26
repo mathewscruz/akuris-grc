@@ -295,7 +295,12 @@ const ptDict = {
     searchTitle: 'Consultar Protocolo',
     searchDescription: 'Digite o número do protocolo recebido ao fazer sua denúncia',
     protocolLabel: 'Número do protocolo',
-    protocolPlaceholder: 'Ex: DEN20250123001',
+    /* O exemplo tem de ser do formato que o sistema emite HOJE:
+       `DEN-20260826-4D6894C8B22084A2`, com traços e sufixo. O antigo
+       (`DEN202605260003`) ainda existe em denúncias velhas, mas quem
+       acabou de registar compara o seu com o exemplo e conclui que tem
+       a coisa errada. */
+    protocolPlaceholder: 'Ex: DEN-20260123-A1B2C3D4E5F60718',
     searching: 'Buscando...',
     search: 'Consultar',
     protocol: 'Protocolo:',
@@ -667,7 +672,7 @@ const enDict: typeof ptDict = {
     searchTitle: 'Look up protocol',
     searchDescription: 'Enter the protocol number you received when submitting your report',
     protocolLabel: 'Protocol number',
-    protocolPlaceholder: 'E.g.: DEN20250123001',
+    protocolPlaceholder: 'E.g.: DEN-20260123-A1B2C3D4E5F60718',
     searching: 'Searching...',
     search: 'Search',
     protocol: 'Protocol:',

@@ -120,6 +120,25 @@ const CAMPOS_POR_ETAPA: Record<number, (keyof DenunciaFormData)[]> = {
 };
 const TOTAL_ETAPAS = 4;
 
+/** Em que etapa vive cada campo — o inverso de `CAMPOS_POR_ETAPA`. */
+const ETAPA_DO_CAMPO: Record<string, number> = Object.fromEntries(
+  Object.entries(CAMPOS_POR_ETAPA).flatMap(([etapa, campos]) =>
+    campos.map((c) => [c as string, Number(etapa)]),
+  ),
+);
+
+/**
+ * A regra que o `superRefine` do esquema exprime, isolada para poder ser
+ * verificada TAMBÉM por etapa.
+ *
+ * O `superRefine` vive no objecto inteiro, e o zod não chega a executá-lo
+ * quando a análise base já falhou — e falha sempre enquanto a política de
+ * privacidade não estiver aceite, o que só acontece na etapa 4. Resultado
+ * medido: a etapa 2 deixava avançar com o «Nome *» vazio.
+ */
+const faltaONome = (nivel: unknown, nome: unknown) =>
+  nivel !== 'anonima' && String(nome ?? '').trim().length < 3;
+
 /** Os três níveis, na ordem em que a pessoa os pondera. */
 const NIVEIS = ['identificada', 'confidencial', 'anonima'] as const;
 
@@ -567,7 +586,25 @@ export default function DenunciaFormulario() {
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/*
+                A rede por baixo: se a submissão for travada por um erro
+                num campo de OUTRA etapa, salta-se para lá em vez de ficar
+                parado. Sem isto, «Registrar Denúncia» ficava activo, o
+                clique não fazia nada, e o ecrã não mostrava mensagem
+                nenhuma — o erro estava atrás, numa etapa que já não se vê.
+              */}
+              <form
+                onSubmit={form.handleSubmit(onSubmit, (erros) => {
+                  const primeiro = Object.keys(erros)[0];
+                  const destino = ETAPA_DO_CAMPO[primeiro];
+                  if (destino && destino !== etapa) setEtapa(destino);
+                  toast.error(
+                    (erros as Record<string, { message?: string }>)[primeiro]?.message ??
+                      t('publicPortal.denunciaForm.unexpectedError'),
+                  );
+                })}
+                className="space-y-6"
+              >
                 {etapa === 1 && (
                   <div className="space-y-4">
                 {/* Categoria */}
@@ -990,6 +1027,16 @@ export default function DenunciaFormulario() {
                       className="flex-1"
                       onClick={async () => {
                         const ok = await form.trigger(CAMPOS_POR_ETAPA[etapa]);
+                        /* A regra cruzada, verificada aqui porque o
+                           `superRefine` do esquema não corre nesta altura. */
+                        const v = form.getValues();
+                        if (etapa === 2 && faltaONome(v.nivel_identificacao, v.denunciante_nome)) {
+                          form.setError('denunciante_nome', {
+                            type: 'manual',
+                            message: t('publicPortal.denunciaForm.validation.nameRequired'),
+                          });
+                          return;
+                        }
                         if (ok) setEtapa((e) => e + 1);
                       }}
                     >
