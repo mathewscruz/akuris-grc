@@ -315,7 +315,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                     <Switch checked={key.ativo} onCheckedChange={v => handleToggle(key.id, v)} />
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteConfirm(key.id)}>
+                    <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleteConfirm(key.id)}>
                       <IconDelete className="h-4 w-4" />
                     </Button>
                   </TableCell>

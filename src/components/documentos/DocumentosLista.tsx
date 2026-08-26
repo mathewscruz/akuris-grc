@@ -100,7 +100,7 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
   const { t } = useLanguage();
   const trigger = (
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" className="h-8 w-8 p-0">
+      <Button variant="ghost" size="icon-sm">
         <span className="sr-only">{t('documentos.lista.acoesDocumento', { nome: documento.nome })}</span>
         <IconMore className="h-4 w-4" />
       </Button>

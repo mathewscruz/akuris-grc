@@ -217,7 +217,7 @@ export function SistemaUsuariosList() {
       render: (row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon-sm">
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -246,7 +246,15 @@ export function SistemaUsuariosList() {
   if (!usuarios?.length && !loading) {
     return (
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        {/*
+        `flex-wrap`: os tres controlos somam mais do que a largura do telemovel.
+
+        Um `Select` de 250px + «Sincronizar do Entra ID» + «Novo Usuario» dao
+        cerca de 348px contra os ~327px uteis. Sem quebrar linha, o ultimo botao
+        saia pela direita e era CORTADO pelo `overflow-x-hidden` do `<main>` --
+        nao havia como chegar a ele.
+      */}
+      <div className="flex flex-wrap gap-2 justify-between items-center">
           <Select value={filtroSistema} onValueChange={setFiltroSistema}>
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder={t("revisaoAcessosComp.usuariosList.filterPlaceholder")} />

@@ -386,7 +386,7 @@ export default function Contratos() {
         <div className="flex items-center justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon-sm" onClick={(e) => e.stopPropagation()}>
                 <IconMore className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -454,13 +454,22 @@ export default function Contratos() {
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList>
+            {/*
+              O nome da aba fica, tambem no telemovel.
+
+              Escondia-se com `hidden sm:inline` e sobrava um icone de 25px de
+              largura: pequeno demais para o polegar, e sem palavra que diga se
+              aquilo e «Contratos» ou «Fornecedores» -- duas coisas que o mesmo
+              icone nao distingue. Duas abas com nome cabem folgadas em 375px, e
+              a `TabsList` ja rola na horizontal se algum dia nao couberem.
+            */}
             <TabsTrigger value="contratos" className="flex items-center gap-2">
               <IconFile className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.contratos')}</span>
+              <span>{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>
             <TabsTrigger value="fornecedores" className="flex items-center gap-2">
               <IconOrg className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.fornecedores')}</span>
+              <span>{t('cardsKpi.sweep.contratos.fornecedores')}</span>
             </TabsTrigger>
           </TabsList>
 

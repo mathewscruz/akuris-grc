@@ -255,7 +255,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
           <li key={i.id} className="flex items-center gap-2 group">
             <Checkbox checked={i.concluido} onCheckedChange={(c) => toggle.mutate({ id: i.id, concluido: !!c })} />
             <span className={`flex-1 text-sm ${i.concluido ? 'line-through text-muted-foreground' : ''}`}>{i.texto}</span>
-            <Button type="button" variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-7 w-7" onClick={() => remove.mutate(i.id)}>
+            <Button type="button" variant="ghost" size="icon" className="md:opacity-0 md:group-hover:opacity-100 h-7 w-7" onClick={() => remove.mutate(i.id)}>
               <IconDelete className="h-3 w-3" />
             </Button>
           </li>

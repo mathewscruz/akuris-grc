@@ -140,7 +140,7 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
                   {e.descricao && <div className="text-xs text-muted-foreground truncate">{e.descricao}</div>}
                 </div>
                 {e.user_id === user?.id && (
-                  <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7" onClick={() => del.mutate(e.id)}>
+                  <Button size="icon" variant="ghost" className="md:opacity-0 md:group-hover:opacity-100 h-7 w-7" onClick={() => del.mutate(e.id)}>
                     <IconDelete className="h-3.5 w-3.5" />
                   </Button>
                 )}

@@ -128,7 +128,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
               <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Novo tratamento
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => onOpenChange(false)} aria-label={t('fin.comum.fechar')}>
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground" onClick={() => onOpenChange(false)} aria-label={t('fin.comum.fechar')}>
               <IconClose className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </div>

@@ -798,7 +798,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       </div>
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('gapUi.table.viewLegend')}>
+          <Button variant="ghost" size="icon-sm" aria-label={t('gapUi.table.viewLegend')}>
             <IconHelp className="h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>
           </Button>
         </PopoverTrigger>

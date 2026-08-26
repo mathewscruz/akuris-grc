@@ -77,7 +77,7 @@ export function AkurIASidebar({
                       e.stopPropagation();
                       onDelete(c.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    className="md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     title={t("dashWidgets.akuria.delete")}
                   >
                     <IconDelete className="h-3 w-3" />

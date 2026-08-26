@@ -278,7 +278,7 @@ export default function Incidentes() {
         <TooltipProvider>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" size="icon-sm">
                 <IconMore className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

@@ -139,7 +139,7 @@ function MessageInner({ role, content, timestamp, isStreaming, userInitials }: P
           {!isUser && cleanContent && !isStreaming && (
             <button
               onClick={copy}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-micro text-muted-foreground hover:text-foreground flex items-center gap-1"
+              className="md:opacity-0 md:group-hover:opacity-100 transition-opacity text-micro text-muted-foreground hover:text-foreground flex items-center gap-1"
               title="Copiar"
             >
               {copied ? <IconCheck className="h-3 w-3" /> : <IconCopy className="h-3 w-3" />}

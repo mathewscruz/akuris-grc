@@ -281,7 +281,19 @@ export const PermissionProfileDialog: React.FC<Props> = ({
             <AkurisPulse size={24} />
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
+          <div
+          /*
+            `overflow-x-auto`, não `overflow-hidden`.
+
+            São seis colunas -- Módulo + Acessar/Criar/Ler/Editar/Excluir -- e em
+            375px o conteúdo mede mais do que a caixa. Com `overflow-hidden` a
+            última coluna ficava CORTADA e sem forma de rolar até ela: no
+            telemóvel não havia como conceder nem revogar a permissão de
+            excluir. O `<main>` da aplicação também esconde o transbordo, por
+            isso nem o gesto de rolar a página salvava.
+          */
+            className="border rounded-lg overflow-x-auto"
+          >
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-card">

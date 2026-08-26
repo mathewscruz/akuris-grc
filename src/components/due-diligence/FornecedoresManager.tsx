@@ -535,7 +535,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
       render: (_: any, fornecedor: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon-sm" onClick={(e) => e.stopPropagation()}>
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
