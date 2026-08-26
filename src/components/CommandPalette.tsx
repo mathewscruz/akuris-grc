@@ -56,10 +56,13 @@ export function CommandPaletteButton() {
         <IconSearch className="h-3.5 w-3.5" />
         <span className="text-xs">{t('commandPalette.searchButton')}</span>
       </Button>
+      {/* O gémeo de cima tem a palavra «Pesquisar» ao lado do ícone; este,
+          que é o único que aparece no telemóvel, não tinha nome nenhum. */}
       <Button
         variant="ghost"
         size="icon-sm" className="sm:hidden"
         onClick={() => setOpen(true)}
+        aria-label={t('commandPalette.searchButton')}
       >
         <IconSearch className="h-4 w-4" />
       </Button>

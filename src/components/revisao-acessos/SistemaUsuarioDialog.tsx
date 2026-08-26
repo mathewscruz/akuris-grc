@@ -200,7 +200,9 @@ export function SistemaUsuarioDialog({
         title={usuario?.id ? t('fin.sistemaUsuario.editarTitle') : t('fin.sistemaUsuario.novoTitle')}
         icon={IconPerson}
         size="lg"
+        /* Mesmo caso: `isSubmitting` era escrito e nunca lido. */
         onSubmit={form.handleSubmit(onSubmit)}
+        isSubmitting={isSubmitting}
       >
 <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

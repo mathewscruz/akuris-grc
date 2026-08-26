@@ -122,7 +122,7 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
             <Input value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder={t('projetos.tempo.descriptionPlaceholder')} />
           </div>
           <div className="self-end">
-            <Button size="sm" onClick={addManual} disabled={add.isPending}><IconAdd className="h-4 w-4" /></Button>
+            <Button size="sm" onClick={addManual} disabled={add.isPending} aria-label={t('common.add')} title={t('common.add')}><IconAdd className="h-4 w-4" /></Button>
           </div>
         </div>
       </div>

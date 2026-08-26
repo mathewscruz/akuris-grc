@@ -29,6 +29,10 @@ export const pt = {
     add: 'Adicionar',
     remove: 'Remover',
     loading: 'Carregando...',
+    /* Um período não acaba antes de começar. Havia duas versões desta
+       frase escritas à mão, em dois módulos; os outros quatro nem
+       validavam. */
+    fimAntesDoInicio: 'A data de fim tem de ser igual ou posterior à de início.',
     noResults: 'Nenhum resultado encontrado',
     noResultsHint: 'Ajuste a busca ou os filtros para ver mais registros.',
     noData: 'Sem dados',
@@ -354,6 +358,10 @@ export const pt = {
     verifyError: 'Erro ao verificar código',
     newCodeSent: 'Novo código enviado!',
     resendError: 'Erro ao reenviar código',
+    /* O que se diz quando o envio NÃO aconteceu. A frase de cima —
+       «Enviamos um código» — era mostrada mesmo assim. */
+    envioFalhouTitulo: 'Não conseguimos enviar o código',
+    envioFalhouDescricao: 'O envio para {email} não foi concluído. Nenhum código foi gerado — use o botão abaixo para tentar de novo.',
     allRightsReserved: 'Todos os direitos reservados',
     eyebrow: 'Verificação em duas etapas',
     heading: 'Confirme que é você',
@@ -674,6 +682,18 @@ export const pt = {
     proximo: 'Próximo',
     posicao: '{atual} de {total}',
   },
+  creditosIA: {
+    esgotadosTitulo: 'Créditos de IA esgotados',
+    esgotadosAdmin: 'Os assistentes inteligentes estão indisponíveis até que mais créditos sejam liberados.',
+    esgotadosUtilizador: 'Para continuar usando os assistentes inteligentes, entre em contato com o administrador da sua conta.',
+  },
+  erroInesperado: {
+    titulo: 'Algo deu errado',
+    corpo: 'Ocorreu um erro inesperado. Tente novamente ou recarregue a página.',
+    tentarNovamente: 'Tentar novamente',
+    recarregar: 'Recarregar página',
+    detalhes: 'Detalhes do erro (desenvolvimento)',
+  },
   protectedRoute: {
     deniedTitle: 'Acesso negado',
     /* Faltar permissão e não ter comprado o módulo pedem respostas
@@ -684,6 +704,13 @@ export const pt = {
     planHint: 'Fale com quem contratou o Akuris para incluir este módulo.',
     deniedBody: 'Você não tem permissão para acessar este módulo ou realizar esta ação.',
     deniedHint: 'Entre em contato com o administrador para solicitar acesso.',
+    /* Falhar a LER a permissão não é o mesmo que não a ter. Sem estas
+       três linhas, uma rede em baixo dizia a um super admin que ele não
+       tinha permissão e o mandava abrir um pedido de acesso. */
+    indisponivelTitle: 'Não foi possível confirmar suas permissões',
+    indisponivelBody: 'A verificação de acesso não respondeu. Isso não significa que você perdeu o acesso — apenas que não conseguimos confirmá-lo agora.',
+    indisponivelHint: 'Tente novamente em instantes. Se persistir, é um problema de conexão, não de permissão.',
+    tentarNovamente: 'Tentar novamente',
     backToDashboard: 'Voltar ao início',
   },
   politicaSenha: {

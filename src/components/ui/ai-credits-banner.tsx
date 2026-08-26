@@ -4,6 +4,7 @@ import { IconWarning } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAiCredits } from '@/hooks/useAiCredits';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * Banner global de créditos de IA esgotados.
@@ -12,6 +13,7 @@ import { useAiCredits } from '@/hooks/useAiCredits';
  * Para super-admins: link direto para Configurações → Créditos de IA.
  */
 export function AiCreditsExhaustedBanner() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { esgotado, isSuperAdmin, loading, franquia } = useAiCredits();
 
@@ -31,12 +33,12 @@ export function AiCreditsExhaustedBanner() {
       </span>
       <div className="flex-1 min-w-[240px]">
         <p className="text-xs font-semibold leading-tight">
-          Créditos de IA esgotados
+          {t('creditosIA.esgotadosTitulo')}
         </p>
         <p className="text-micro opacity-90 leading-tight mt-0.5">
           {isSuperAdmin
-            ? 'Os assistentes inteligentes estão indisponíveis até que mais créditos sejam liberados.'
-            : 'Para continuar usando os assistentes inteligentes, entre em contato com o administrador da sua conta.'}
+            ? t('creditosIA.esgotadosAdmin')
+            : t('creditosIA.esgotadosUtilizador')}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">

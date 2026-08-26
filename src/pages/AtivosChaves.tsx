@@ -326,7 +326,7 @@ export default function AtivosChaves() {
       render: (_: any, chave: ChaveCriptografica) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -478,14 +478,15 @@ export default function AtivosChaves() {
             }}
             emptyState={{
               icon: <IconKey className="h-8 w-8" />,
-              title: searchTerm ? t('fin.chaves.nenhumaEncontrada') : t('fin.chaves.nenhumaCadastrada'),
-              description: searchTerm 
-                ? t('sweepDados.ativos.buscaSemResultadosDesc')
-                : t('fin.chaves.vazioDesc'),
-              action: !searchTerm ? {
+              /* Só o estado de «ainda não criou nenhum». O caso de
+                 «a busca não devolveu nada» é da DataTable, que sabe
+                 se há filtro activo e oferece limpá-lo. */
+              title: t('fin.chaves.nenhumaCadastrada'),
+              description: t('fin.chaves.vazioDesc'),
+              action: {
                 label: t('sweepDados.ativos.cadastrarPrimeiraChave'),
-                onClick: handleNew
-              } : undefined
+                onClick: handleNew,
+              },
             }}
             onRefresh={refetch}
           />

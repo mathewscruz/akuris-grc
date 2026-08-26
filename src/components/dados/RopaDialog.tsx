@@ -189,6 +189,16 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
     );
 
   const handleSave = async () => {
+    /* O período de tratamento de um registo ROPA é prova de conformidade:
+       um que acabe antes de começar entra no relatório tal e qual. */
+    if (
+      formData.data_inicio &&
+      formData.data_fim &&
+      formData.data_fim < formData.data_inicio
+    ) {
+      toast({ title: t('common.fimAntesDoInicio'), variant: 'destructive' });
+      return;
+    }
     try {
       setIsLoading(true);
 
@@ -241,7 +251,11 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
         title={ropa?.id ? t('dadosDashboard.ropaDialog.titleEdit') : t('dadosDashboard.ropaDialog.titleNew')}
         icon={IconFile}
         size="xl"
+        /* `isSubmitting`: sem isto o botao nunca se desligava e um
+           duplo-clique gravava duas linhas. O estado ja existia — so
+           nao chegava ao rodape que sabe usa-lo. */
         onSubmit={handleSave}
+        isSubmitting={isLoading}
       >
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">

@@ -896,7 +896,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
                                   <IconMore className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>

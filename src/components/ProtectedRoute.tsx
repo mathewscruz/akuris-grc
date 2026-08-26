@@ -5,6 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -23,10 +24,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   action = 'access',
   fallbackToRoleCheck = true,
 }) => {
-  const { profile } = useAuth();
-  const { permissions, modulosDoPlano, loading } = usePermissions();
+  const { user, profile, refetchProfile } = useAuth();
+  const { permissions, modulosDoPlano, loading, erroAoLer, refetchPermissions } = usePermissions();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   /* O botão de saída não pode apontar para um módulo que esta empresa não
      comprou — daria um ciclo de "acesso negado" a apontar para si próprio. */
   const { rota: rotaInicial } = useRotaInicial();
@@ -65,6 +67,65 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     modulosDoPlano !== null &&
     !SEMPRE_PERMITIDOS.has(moduleName) &&
     !modulosDoPlano.includes(chaveDePlano(moduleName));
+
+  /*
+    O terceiro caso, que faltava: NÃO SE SABE.
+
+    Com o backend fora do ar, a leitura das permissões falha e devolve
+    lista vazia; o perfil falha e fica `null`. As duas coisas juntas dão
+    exactamente o mesmo resultado de uma permissão revogada — e o ecrã
+    dizia «Você não tem permissão para acessar este módulo. Entre em
+    contato com o administrador para solicitar acesso.»
+
+    Medido: com o contentor do REST parado, um super admin em /ativos via
+    esse texto. Num produto de GRC, «acesso negado» lê-se como incidente
+    de autorização; a pessoa abre um pedido que ninguém pode atender,
+    porque não há nada para conceder.
+
+    A porta continua fechada — quem não sabe se pode, não passa. Muda o
+    que se diz, e passa a haver um botão que resolve: tentar de novo.
+  */
+  const naoSeSabe = erroAoLer || (!!user && !profile);
+
+  if (!allowed && naoSeSabe) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] p-8">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <IconWarning className="mx-auto h-8 w-8 text-warning" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{t('protectedRoute.indisponivelTitle')}</h3>
+                <p className="text-sm text-muted-foreground">{t('protectedRoute.indisponivelBody')}</p>
+              </div>
+              <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg">
+                <IconWarning className="h-4 w-4 text-warning" />
+                <p className="text-sm text-warning dark:text-warning">{t('protectedRoute.indisponivelHint')}</p>
+              </div>
+              {/* Relê as TRÊS coisas que a queda derrubou.
+
+                  Medido: com só `refetchPermissions()`, o botão devolvia
+                  a página e todos os contadores ficavam a zero — porque
+                  o perfil também tinha falhado, `empresa_id` continuava
+                  indefinido, e cada consulta do módulo filtrava por um
+                  inquilino que não existe. Recuperar meio caminho é
+                  trocar um ecrã que mente por uma página que mente. */}
+              <Button
+                onClick={async () => {
+                  await refetchProfile();
+                  await refetchPermissions();
+                  queryClient.invalidateQueries();
+                }}
+                className="w-full"
+              >
+                {t('protectedRoute.tentarNovamente')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!allowed) {
     return (

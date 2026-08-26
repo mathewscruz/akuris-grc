@@ -256,7 +256,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRecurso(); } }}
                   placeholder={t('configPlanos.planoForm.recursoPlaceholder')}
                 />
-                <Button type="button" variant="outline" onClick={addRecurso}><IconAdd className="h-4 w-4" /></Button>
+                <Button type="button" variant="outline" onClick={addRecurso} aria-label={t('common.add')} title={t('common.add')}><IconAdd className="h-4 w-4" /></Button>
               </div>
               {form.recursos_destacados.length > 0 && (
                 <div className="space-y-1 pt-1">

@@ -13,7 +13,7 @@
  *
  * Todas foram convertidas. Daqui para a frente é regressão.
  */
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { fontesTsx, linhas } from './_fontes';
 
 /**
@@ -166,5 +166,69 @@ describe('dia sem fuso', () => {
     const hoje = "const hoje = new Date().toISOString().split('T')[0];";
     expect(escritaCrua.test(hoje)).toBe(true);
     expect(escritaCrua.test('const hoje = formatarDiaParaDB(new Date());')).toBe(false);
+  });
+});
+
+/**
+ * O MESMO defeito, uma camada abaixo — onde a guarda de cima não chega.
+ *
+ * As duas guardas acima leem código-fonte e proíbem `new Date(x.data_inicio)`
+ * escrito à mão. Mas o `new Date` cru mudou de sítio: passou a viver DENTRO de
+ * `formatDate`, o formatador de uso geral. Quem escreve
+ * `formatDate(p.data_inicio, locale)` não infringe regex nenhuma — e recebe o
+ * dia anterior à mesma.
+ *
+ * Medido no navegador, em America/Sao_Paulo: um projeto guardado com
+ * `data_inicio = 2026-07-01` e `data_fim_prevista = 2026-12-31` aparecia no
+ * cartão como «30/06/2026 → 30/12/2026». As duas datas erradas, no mesmo
+ * cartão, sem ninguém ter escrito `new Date` naquele ficheiro.
+ *
+ * Esta guarda é de COMPORTAMENTO, não de texto: os dois formatadores de dia do
+ * repositório têm de concordar sobre que dia é. Era exactamente aí que
+ * divergiam — `formatDateOnly` parte a cadeia e acerta; `formatDate`
+ * construía um Date e falhava. E como compara um com o outro, vale em
+ * qualquer fuso onde os testes corram.
+ */
+describe('os dois formatadores concordam sobre o dia', () => {
+  const DIAS = ['2026-07-01', '2026-12-31', '2026-01-01', '2026-03-15'];
+
+  /*
+    O fuso é FIXADO aqui, e não herdado da máquina.
+
+    Sem isto a guarda seria um teste que passa sempre: em CI a correr em UTC,
+    `new Date('2026-07-01')` dá 1 de julho e o defeito fica invisível. Só se vê
+    a oeste de Greenwich — que é onde estão os utilizadores. Testam-se os dois
+    lados: Brasília adianta o erro para o dia anterior, Kiritimati para o
+    seguinte.
+  */
+  const fusoOriginal = process.env.TZ;
+  afterAll(() => {
+    process.env.TZ = fusoOriginal;
+  });
+
+  for (const fuso of ['America/Sao_Paulo', 'Pacific/Kiritimati', 'UTC']) {
+    it(`em ${fuso}, o dia formatado é o dia que está na cadeia`, async () => {
+      process.env.TZ = fuso;
+      const { formatDate } = await import('@/lib/i18n-format');
+      const { formatDateOnly } = await import('@/lib/date-utils');
+
+      for (const dia of DIAS) {
+        const [ano, mes, d] = dia.split('-');
+        expect(
+          formatDate(dia, 'pt-BR'),
+          `${dia} em ${fuso}: é o bug do dia a menos, agora dentro de formatDate.`,
+        ).toBe(`${d}/${mes}/${ano}`);
+        // E os dois formatadores do repositório não podem discordar entre si.
+        expect(formatDate(dia, 'pt-BR')).toBe(formatDateOnly(dia));
+      }
+    });
+  }
+
+  it('a guarda enxerga o defeito que proíbe', () => {
+    // A forma crua, que era a de `formatDate` antes desta correção.
+    process.env.TZ = 'America/Sao_Paulo';
+    expect(new Date('2026-07-01').getDate()).toBe(30); // 30 de junho
+    // A forma corrigida: meio-dia local, longe de qualquer fronteira.
+    expect(new Date('2026-07-01T12:00:00').getDate()).toBe(1);
   });
 });

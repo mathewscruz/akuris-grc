@@ -217,7 +217,7 @@ export function SistemaUsuariosList() {
       render: (row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm">
+            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

@@ -386,7 +386,7 @@ export function AkurIAChatbot() {
                     <IconStop className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={!input.trim()}>
+                  <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={!input.trim()} aria-label={t('common.submit')} title={t('common.submit')}>
                     <IconSend className="h-4 w-4" />
                   </Button>
                 )}

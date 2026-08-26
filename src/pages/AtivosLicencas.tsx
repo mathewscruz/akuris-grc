@@ -323,7 +323,7 @@ export default function AtivosLicencas() {
       render: (_: any, licenca: Licenca) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -461,14 +461,15 @@ export default function AtivosLicencas() {
             }}
             emptyState={{
               icon: <IconFileCheck className="h-8 w-8" />,
-              title: searchTerm ? t('fin.licencas.nenhumaEncontrada') : t('fin.licencas.nenhumaCadastrada'),
-              description: searchTerm 
-                ? t('sweepDados.ativos.buscaSemResultadosDesc')
-                : t('fin.licencas.vazioDesc'),
-              action: !searchTerm ? {
+              /* Só o estado de «ainda não criou nenhum». O caso de
+                 «a busca não devolveu nada» é da DataTable, que sabe
+                 se há filtro activo e oferece limpá-lo. */
+              title: t('fin.licencas.nenhumaCadastrada'),
+              description: t('fin.licencas.vazioDesc'),
+              action: {
                 label: t('sweepDados.ativos.cadastrarPrimeiraLicenca'),
-                onClick: handleNew
-              } : undefined
+                onClick: handleNew,
+              },
             }}
             onRefresh={refetch}
           />

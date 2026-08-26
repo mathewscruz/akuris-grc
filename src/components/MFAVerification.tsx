@@ -16,6 +16,15 @@ interface MFAVerificationProps {
   email: string;
   onVerified: (expiresAt?: string) => void;
   onCancel: () => void;
+  /**
+   * O envio do código falhou antes deste ecrã abrir.
+   *
+   * Sem isto, o ecrã dizia «Enviamos um código de 6 dígitos para:» mesmo
+   * quando a função de envio devolvia 500 — e a pessoa ficava à espera
+   * de um email que nunca foi gerado, num ecrã que lhe garantia o
+   * contrário. O `Auth` já sabia da falha; faltava dizê-lo aqui.
+   */
+  envioFalhou?: boolean;
 }
 
 /**
@@ -36,12 +45,18 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
   email,
   onVerified,
   onCancel,
+  envioFalhou = false,
 }) => {
   const { t } = useLanguage();
   const { markMfaVerified } = useAuth();
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  /* Espelha a prop, mas «Reenviar» pode mudá-la nos dois sentidos sem
+     voltar ao `Auth`: reenviou e correu bem, o ecrã volta a poder
+     prometer o código; correu mal, continua a dizer a verdade. */
+  const [semCodigo, setSemCodigo] = useState(envioFalhou);
+  useEffect(() => setSemCodigo(envioFalhou), [envioFalhou]);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
@@ -97,14 +112,17 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
       const data = response.data;
       if (data.success) {
         toast.success(t('mfaScreen.newCodeSent'));
+        setSemCodigo(false);
         setCountdown(60);
         setCanResend(false);
         setCode('');
       } else {
         toast.error(data.error || t('mfaScreen.resendError'));
+        setSemCodigo(true);
       }
     } catch (error: any) {
       toast.error(t('mfaScreen.resendError'));
+      setSemCodigo(true);
     } finally {
       setIsResending(false);
     }
@@ -144,15 +162,24 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
               <h2 className="text-2xl font-semibold text-white tracking-tight">
                 {t('mfaScreen.heading')}
               </h2>
-              <p className="text-sm text-white/50">{t('mfaScreen.description')}</p>
+              <p className={semCodigo ? 'text-sm text-warning' : 'text-sm text-white/50'}>
+                {semCodigo
+                  ? t('mfaScreen.envioFalhouDescricao', { email: maskedEmail })
+                  : t('mfaScreen.description')}
+              </p>
             </div>
 
-            <div className="flex justify-center pt-1">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02]">
-                <Mail className="w-3.5 h-3.5 text-primary/60" />
-                <span className="text-xs text-white/80 font-medium tracking-wide">{maskedEmail}</span>
-              </span>
-            </div>
+            {/* A pastilha do e-mail só faz sentido quando há mesmo um
+                código a caminho dele; na mensagem de falha o endereço já
+                aparece dentro da frase. */}
+            {!semCodigo && (
+              <div className="flex justify-center pt-1">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02]">
+                  <Mail className="w-3.5 h-3.5 text-primary/60" />
+                  <span className="text-xs text-white/80 font-medium tracking-wide">{maskedEmail}</span>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-center">

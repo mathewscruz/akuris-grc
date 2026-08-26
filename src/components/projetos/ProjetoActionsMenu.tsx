@@ -51,9 +51,10 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
           {variant === 'menu' ? (
             <Button
               variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              size="icon-sm"
               onClick={(e) => e.stopPropagation()}
+              aria-label={t('layout.moreActions')}
+              title={t('layout.moreActions')}
             >
               <IconMore className="h-4 w-4" />
             </Button>

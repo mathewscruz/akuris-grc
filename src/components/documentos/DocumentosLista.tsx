@@ -100,7 +100,10 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
   const { t } = useLanguage();
   const trigger = (
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="icon-sm">
+      {/* O nome acessível vive no `sr-only` abaixo e diz de QUE documento
+          são as ações — melhor do que um «Mais ações» genérico repetido
+          por todas as linhas. `title` só acrescenta a dica ao rato. */}
+      <Button variant="ghost" size="icon-sm" title={t('layout.moreActions')}>
         <span className="sr-only">{t('documentos.lista.acoesDocumento', { nome: documento.nome })}</span>
         <IconMore className="h-4 w-4" />
       </Button>

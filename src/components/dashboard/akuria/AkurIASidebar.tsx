@@ -50,7 +50,7 @@ export function AkurIASidebar({
         <div className="p-1 space-y-0.5">
           {conversations.length === 0 ? (
             <p className="text-micro text-muted-foreground text-center py-4 px-2">
-              Sem histórico ainda
+              {t('common.noData')}
             </p>
           ) : (
             conversations.map((c) => {

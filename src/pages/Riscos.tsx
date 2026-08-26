@@ -854,7 +854,7 @@ export function Riscos() {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="flex items-center gap-1 whitespace-nowrap">
               {t('riscos.page.matrixFilter')} ({idsFilter.length})
-              <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={clearIdsFilter}>
+              <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={clearIdsFilter} aria-label={t('common.clearFilters')} title={t('common.clearFilters')}>
                 <IconClose className="h-3 w-3" />
               </Button>
             </Badge>

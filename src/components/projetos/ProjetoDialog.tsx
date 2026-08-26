@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
@@ -49,6 +50,13 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim() || !form.owner_id) return;
+    /* Um projeto que acaba antes de começar desenha-se tal e qual no
+       cartão do módulo — «29/12/2026 → 29/06/2026» — e põe a barra de
+       progresso a dividir por um intervalo negativo. */
+    if (form.data_inicio && form.data_fim_prevista && form.data_fim_prevista < form.data_inicio) {
+      toast.error(t('common.fimAntesDoInicio'));
+      return;
+    }
     await upsert.mutateAsync({
       id: projeto?.id,
       nome: form.nome.trim(),

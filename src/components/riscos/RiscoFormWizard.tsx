@@ -1409,7 +1409,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     name="aceite_valido_ate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Válido até *</FormLabel>
+                        <FormLabel>{t('fin.riscos.wizard.aceiteValidoAte')} *</FormLabel>
                         <FormControl>
                           <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                         </FormControl>

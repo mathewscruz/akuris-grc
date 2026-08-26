@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cn } from "@/lib/utils"
 import { useReleaseBodyPointerEvents } from "@/lib/radix-pointer-events"
 import { IconClose } from '@/components/icons';
+import { tGlobal } from '@/lib/i18n-global';
 
 const Dialog = DialogPrimitive.Root
 
@@ -53,7 +54,10 @@ const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10">
         <IconClose className="h-5 w-5 sm:h-4 sm:w-4" />
-        <span className="sr-only">Close</span>
+        {/* `common.close`, não «Close»: o leitor de ecrã anunciava o botão
+            em inglês em TODOS os diálogos da aplicação, inclusive com a
+            interface em português. A chave já existia. */}
+        <span className="sr-only">{tGlobal('common.close')}</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>

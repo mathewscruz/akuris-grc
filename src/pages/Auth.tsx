@@ -41,6 +41,9 @@ const Auth = () => {
   const [phase, setPhase] = useState<AuthPhase>('idle');
   const [mfaUserId, setMfaUserId] = useState('');
   const [mfaEmail, setMfaEmail] = useState('');
+  /* O ecrã do MFA precisa de saber se o envio chegou a acontecer: dizia
+     «Enviamos um código» mesmo quando a função devolvia 500. */
+  const [mfaEnvioFalhou, setMfaEnvioFalhou] = useState(false);
 
   const showOverlay = phase === 'authenticating' || phase === 'finalizing';
   const isBusy = phase !== 'idle';
@@ -105,6 +108,7 @@ const Auth = () => {
             error: String(resp.error || resp.data?.error || 'desconhecido'),
           });
           toast.error(t('mfaScreen.resendError'));
+          setMfaEnvioFalhou(true);
         } else if (resp.data?.skipped && resp.data?.expires_at) {
           // MFA já é válido (24h) — libera direto sem pedir código.
           markMfaVerified(resp.data.expires_at);
@@ -196,6 +200,7 @@ const Auth = () => {
       if (mfaResponse.error) {
         logger.error('Erro ao invocar send-mfa-code', { module: 'Auth', error: String(mfaResponse.error) });
         toast.error(t('mfaScreen.resendError'));
+        setMfaEnvioFalhou(true);
         setMfaUserId(userId);
         setMfaEmail(email.trim());
         setPhase('mfa_required');
@@ -218,6 +223,9 @@ const Auth = () => {
           error: String(payload.error || 'desconhecido'),
         });
         toast.error(String(payload.error || t('mfaScreen.resendError')));
+        setMfaEnvioFalhou(true);
+      } else {
+        setMfaEnvioFalhou(false);
       }
 
       setMfaUserId(userId);
@@ -255,6 +263,7 @@ const Auth = () => {
         email={mfaEmail}
         onVerified={handleMFAVerified}
         onCancel={handleMFACancel}
+        envioFalhou={mfaEnvioFalhou}
       />
     );
   }

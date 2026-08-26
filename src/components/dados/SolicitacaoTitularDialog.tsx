@@ -215,7 +215,11 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
         title={solicitacao?.id ? t('dadosDashboard.solicitacaoTitularDialog.titleEdit') : t('dadosDashboard.solicitacaoTitularDialog.titleNew')}
         icon={IconUserCheck}
         size="lg"
+        /* `isSubmitting`: sem isto o botao nunca se desligava e um
+           duplo-clique gravava duas linhas. O estado ja existia — so
+           nao chegava ao rodape que sabe usa-lo. */
         onSubmit={handleSave}
+        isSubmitting={isLoading}
       >
 <div className="grid gap-4 py-4">
           {/* Dados do Titular - Campos separados */}

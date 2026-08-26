@@ -85,7 +85,30 @@ const setCachedMfaUntil = (timestampMs: number) => {
  * Retorna `true` somente quando o backend confirma sessão MFA válida.
  * Em caso de falha de rede, devolve `false` (fail-closed) para não liberar acesso.
  */
-const checkMfaSessionRemote = async (): Promise<{ verified: boolean; expiresAt?: string }> => {
+/**
+ * A MESMA pergunta feita três vezes no mesmo milissegundo.
+ *
+ * Medido na aba de rede ao entrar: três POST para `check-mfa-session` com o
+ * mesmo carimbo temporal. Vêm de três caminhos que disparam juntos —
+ * `getSession()` inicial, e os eventos `SIGNED_IN` e `INITIAL_SESSION` do
+ * `onAuthStateChange`. O `evalSeqRef` já descartava as RESPOSTAS velhas, mas
+ * os três pedidos saíam à mesma.
+ *
+ * Numa Edge Function a arrancar do frio isso é o triplo da espera e o triplo
+ * da superfície de falha, para uma resposta que é forçosamente igual nas três.
+ * Enquanto uma pergunta está no ar, quem chegar recebe a mesma promessa.
+ */
+let perguntaNoAr: Promise<{ verified: boolean; expiresAt?: string }> | null = null;
+
+const checkMfaSessionRemote = (): Promise<{ verified: boolean; expiresAt?: string }> => {
+  if (perguntaNoAr) return perguntaNoAr;
+  perguntaNoAr = perguntarAoBackend().finally(() => {
+    perguntaNoAr = null;
+  });
+  return perguntaNoAr;
+};
+
+const perguntarAoBackend = async (): Promise<{ verified: boolean; expiresAt?: string }> => {
   try {
     const { data, error } = await supabase.functions.invoke('check-mfa-session', { body: {} });
     if (error) {

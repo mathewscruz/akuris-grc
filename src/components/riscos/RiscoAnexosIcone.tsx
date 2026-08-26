@@ -3,6 +3,7 @@ import { IconDownload, IconView, IconAttach } from '@/components/icons';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { openStorageFile } from '@/lib/storage';
 import {
@@ -27,6 +28,7 @@ interface Anexo {
 }
 
 export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
+  const { t } = useLanguage();
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -76,17 +78,21 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
         <div>
           <Tooltip>
             <TooltipTrigger asChild>
+              {/* A dica do rato descrevia o botão, mas não lhe dava NOME —
+                  e estava escrita em português dentro do JSX. A chave já
+                  existia no dicionário, nas duas línguas. */}
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0 text-primary hover:text-primary"
+                size="icon-sm"
+                className="text-primary hover:text-primary"
                 disabled={loading}
+                aria-label={t('riscosDialogs.anexosIcone.anexosDeAceite', { count: anexos.length })}
               >
                 <IconAttach className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{anexos.length} anexo(s) de aceite</p>
+              <p>{t('riscosDialogs.anexosIcone.anexosDeAceite', { count: anexos.length })}</p>
             </TooltipContent>
           </Tooltip>
         </div>

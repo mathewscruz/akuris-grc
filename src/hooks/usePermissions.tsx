@@ -24,6 +24,20 @@ interface UsePermissionsReturn {
    */
   modulosDoPlano: string[] | null;
   loading: boolean;
+  /**
+   * A leitura das permissões FALHOU — coisa diferente de «não tem nenhuma».
+   *
+   * Sem esta distinção, uma rede em baixo dava exactamente o mesmo resultado
+   * que uma permissão revogada: lista vazia. E quem lê a lista vazia — o
+   * `ProtectedRoute` — dizia à pessoa «Você não tem permissão para acessar
+   * este módulo. Entre em contato com o administrador». Um super admin, num
+   * soluço de rede, era mandado abrir um pedido de acesso que não resolve
+   * nada, num produto onde «acesso negado» tem cheiro a incidente.
+   *
+   * Continua a fechar a porta — quem não sabe se pode, não passa. Muda só o
+   * que se diz a quem está do outro lado dela.
+   */
+  erroAoLer: boolean;
   canAccess: (moduleName: string) => boolean;
   canCreate: (moduleName: string) => boolean;
   canRead: (moduleName: string) => boolean;
@@ -37,10 +51,12 @@ export const usePermissions = (): UsePermissionsReturn => {
   const [permissions, setPermissions] = useState<ModulePermission[]>([]);
   const [modulosDoPlano, setModulosDoPlano] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [erroAoLer, setErroAoLer] = useState(false);
 
   const fetchPermissions = useCallback(async () => {
     if (!user) {
       setPermissions([]);
+      setErroAoLer(false);
       setLoading(false);
       return;
     }
@@ -85,6 +101,7 @@ export const usePermissions = (): UsePermissionsReturn => {
         permissionsCount: formattedPermissions.length,
         module: 'permissions'
       });
+      setErroAoLer(false);
     } catch (error) {
       logger.error('Error fetching permissions', { 
         error: error instanceof Error ? error.message : String(error),
@@ -92,6 +109,13 @@ export const usePermissions = (): UsePermissionsReturn => {
         module: 'permissions'
       });
       setPermissions([]);
+      /* Sinaliza a FALHA em vez de a deixar passar por «lista vazia».
+         Repare-se no contraste com a leitura do plano, logo abaixo, que
+         falha ABERTO de propósito: aqui não se pode fazer o mesmo —
+         falhar aberto numa permissão é dar acesso a quem talvez não o
+         tenha. Fecha-se na mesma; passa-se é a saber porquê, para o
+         poder dizer a quem está do outro lado da porta. */
+      setErroAoLer(true);
     } finally {
       setLoading(false);
     }
@@ -197,6 +221,7 @@ export const usePermissions = (): UsePermissionsReturn => {
   return {
     permissions,
     loading,
+    erroAoLer,
     modulosDoPlano,
     canAccess,
     canCreate,

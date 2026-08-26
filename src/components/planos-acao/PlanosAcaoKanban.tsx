@@ -251,7 +251,7 @@ function PlanoCard({
           {!overlay && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                <Button variant="ghost" className="h-6 w-6 shrink-0" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
                   <IconMore className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>

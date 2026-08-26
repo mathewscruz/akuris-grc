@@ -123,7 +123,11 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
         title={mapeamento?.id ? t('dadosDashboard.mapeamentoDialog.titleEdit') : t('dadosDashboard.mapeamentoDialog.titleNew')}
         icon={IconPin}
         size="lg"
+        /* `isSubmitting`: sem isto o botao nunca se desligava e um
+           duplo-clique gravava duas linhas. O estado ja existia — so
+           nao chegava ao rodape que sabe usa-lo. */
         onSubmit={handleSave}
+        isSubmitting={isLoading}
       >
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">

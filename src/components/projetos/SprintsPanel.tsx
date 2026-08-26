@@ -2,6 +2,7 @@ import React from 'react';
 import { IconAdd, IconEdit, IconDelete, IconSuccess, IconPlay, IconFlag } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
+import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -201,6 +202,12 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
 
   const submit = async () => {
     if (!form.nome.trim()) return;
+    /* O burndown faz `Math.max(1, fim - início)`: com o intervalo ao
+       contrário, a linha ideal é desenhada sobre um único dia. */
+    if (form.data_inicio && form.data_fim && form.data_fim < form.data_inicio) {
+      toast.error(t('common.fimAntesDoInicio'));
+      return;
+    }
     await upsert.mutateAsync({ id: sprint?.id, ...form });
     onOpenChange(false);
   };

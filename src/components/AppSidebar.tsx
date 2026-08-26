@@ -220,7 +220,10 @@ export function AppSidebar() {
       navigate('/auth', { replace: true });
     } catch (error) {
       logger.error('Erro ao encerrar sessão', error);
-      toast.error(t('sidebar.signOutFailed') || 'Não foi possível encerrar a sessão. Tente novamente.');
+      /* A reserva em português era código morto: a chave existe nas duas
+         línguas, e se não existisse mostraria a frase em PT a quem tem a
+         aplicação em EN. */
+      toast.error(t('sidebar.signOutFailed'));
       setShowLogoutOverlay(false);
     } finally {
       setIsSigningOut(false);

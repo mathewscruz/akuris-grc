@@ -109,7 +109,7 @@ export function AuditoriaCardAccordion({
           <div className="flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <Button variant="ghost" className="h-7 w-7" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
                   <IconMore className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

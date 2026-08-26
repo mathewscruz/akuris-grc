@@ -155,7 +155,11 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
         title={dados?.id ? t('dadosDashboard.dadosPessoaisDialog.titleEdit') : t('dadosDashboard.dadosPessoaisDialog.titleNew')}
         icon={IconDatabase}
         size="lg"
+        /* `isSubmitting`: sem isto o botao nunca se desligava e um
+           duplo-clique gravava duas linhas. O estado ja existia — so
+           nao chegava ao rodape que sabe usa-lo. */
         onSubmit={handleSave}
+        isSubmitting={isLoading}
       >
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">

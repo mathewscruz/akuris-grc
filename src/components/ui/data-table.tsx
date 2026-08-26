@@ -64,6 +64,15 @@ interface DataTableProps<T> {
   filters?: Filter[]
   onExport?: () => void
   onRefresh?: () => void
+  /**
+   * Para a página que tem a SUA barra de busca e filtros, fora da tabela.
+   *
+   * Planos de Ação é o caso: passa `searchable={false}` porque a busca
+   * vive no `ModuleToolbar` da página. A tabela não via nem o texto nem
+   * os filtros, e continuava a dizer «Você não possui itens pendentes no
+   * momento» a quem tinha cinco e estava só a filtrar.
+   */
+  filtering?: { active: boolean; onClear: () => void }
   emptyState?: {
     icon?: React.ReactNode
     title: string
@@ -95,6 +104,7 @@ export function DataTable<T extends Record<string, any>>({
   filters = [],
   onExport,
   onRefresh,
+  filtering,
   emptyState,
   sortField,
   sortDirection,
@@ -110,6 +120,44 @@ export function DataTable<T extends Record<string, any>>({
   const [showFilters, setShowFilters] = React.useState(false)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(initialPageSize)
+
+  /**
+   * Filtrar e não ter são coisas diferentes, e a tabela sabe distingui-las.
+   *
+   * Medido no navegador: procurar "zzqxwv999" em Contratos — que tem três
+   * contratos — devolvia «Comece criando contratos para gerenciar suas
+   * parcerias», com um botão «Novo Contrato». Em Incidentes, com cinco
+   * incidentes: «Registre o primeiro incidente para começar o monitoramento».
+   * Em Sistemas, com três: «Cadastre um novo sistema para começar». O produto
+   * dizia a quem tinha dados que não tinha nenhum, e oferecia a acção errada:
+   * criar, quando o que resolve é limpar o filtro.
+   *
+   * Quatro dos dez módulos erravam; os outros seis resolviam-no cada um à sua
+   * maneira, e um deles com a frase escrita à mão em português — que ficava em
+   * português com a aplicação em inglês. Passa a ser a tabela a decidir, uma
+   * vez só: se há busca ou filtro activo e o resultado é zero, o ecrã vazio é
+   * o de «nenhum resultado», com o botão que limpa.
+   */
+  const filtrosActivos = (filters ?? []).filter(
+    (f) => f.value !== (f.options[0]?.value ?? ''),
+  )
+  const aFiltrar =
+    filtering?.active || Boolean(searchValue?.trim()) || filtrosActivos.length > 0
+
+  const limparTudo = () => {
+    filtering?.onClear()
+    onSearchChange?.('')
+    filtrosActivos.forEach((f) => f.onChange(f.options[0]?.value ?? ''))
+  }
+
+  const ecraVazio = aFiltrar
+    ? {
+        icon: emptyState?.icon,
+        title: t('common.noResults'),
+        description: t('common.noResultsHint'),
+        action: { label: t('common.clearFilters'), onClick: limparTudo },
+      }
+    : emptyState
 
   // Ordenação interna (A-Z / Z-A) quando a página não controla a ordenação.
   const [internalSort, setInternalSort] = React.useState<{ field: string; direction: 'asc' | 'desc' } | null>(null)
@@ -226,14 +274,18 @@ export function DataTable<T extends Record<string, any>>({
             </ToolbarField>
           ))}
         >
+          {/* `aria-label`: abaixo de `sm` o rótulo destes dois botões está
+              escondido e sobra um ícone sozinho — no telemóvel o leitor de
+              ecrã anunciava «botão», sem dizer qual. O nome fica sempre, a
+              palavra continua a aparecer só quando há largura para ela. */}
           {onRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh}>
+            <Button variant="outline" size="sm" onClick={onRefresh} aria-label={t('common.refresh')}>
               <IconRefresh className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('common.refresh')}</span>
             </Button>
           )}
           {onExport && (
-            <Button variant="outline" size="sm" onClick={onExport}>
+            <Button variant="outline" size="sm" onClick={onExport} aria-label={t('common.export')}>
               <IconDownload className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('common.export')}</span>
             </Button>
@@ -247,12 +299,12 @@ export function DataTable<T extends Record<string, any>>({
           empilha rótulo e valor e mantém as ações no canto. */}
       <div className="md:hidden">
         {!loading && data.length === 0 ? (
-          emptyState && (
+          ecraVazio && (
             <EmptyState
-              icon={emptyState.icon}
-              title={emptyState.title}
-              description={emptyState.description}
-              action={emptyState.action}
+              icon={ecraVazio.icon}
+              title={ecraVazio.title}
+              description={ecraVazio.description}
+              action={ecraVazio.action}
             />
           )
         ) : (
@@ -339,12 +391,12 @@ export function DataTable<T extends Record<string, any>>({
             {!loading && data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="p-0">
-                  {emptyState && (
+                  {ecraVazio && (
                     <EmptyState
-                      icon={emptyState.icon}
-                      title={emptyState.title}
-                      description={emptyState.description}
-                      action={emptyState.action}
+                      icon={ecraVazio.icon}
+                      title={ecraVazio.title}
+                      description={ecraVazio.description}
+                      action={ecraVazio.action}
                     />
                   )}
                 </TableCell>

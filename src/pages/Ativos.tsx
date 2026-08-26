@@ -469,7 +469,7 @@ const Ativos = () => {
       render: (_: any, ativo: Ativo) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -600,14 +600,15 @@ const Ativos = () => {
             onExport={exportData}
             emptyState={{
               icon: <IconServer className="h-8 w-8" />,
-              title: searchTerm ? t('fin.ativos.nenhumEncontrado') : t('fin.ativos.nenhumCadastrado'),
-              description: searchTerm 
-                ? "Tente ajustar os termos de busca ou limpe os filtros."
-                : t('fin.ativos.vazioDesc'),
-              action: !searchTerm ? {
-                label: "Cadastrar Primeiro Ativo",
-                onClick: () => setIsDialogOpen(true)
-              } : undefined
+              /* Só o estado de «ainda não criou nenhum». O caso de
+                 «a busca não devolveu nada» é da DataTable, que sabe
+                 se há filtro activo e oferece limpá-lo. */
+              title: t('fin.ativos.nenhumCadastrado'),
+              description: t('fin.ativos.vazioDesc'),
+              action: {
+                label: t('sweepCore.assets.newAsset'),
+                onClick: () => setIsDialogOpen(true),
+              },
             }}
           />
         </CardContent>

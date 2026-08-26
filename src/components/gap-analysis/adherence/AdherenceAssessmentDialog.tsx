@@ -551,6 +551,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                     variant="ghost"
                     size="sm"
                     onClick={removeFile}
+                    aria-label={t('common.remove')}
+                    title={t('common.remove')}
                   >
                     <IconClose className="h-4 w-4" />
                   </Button>

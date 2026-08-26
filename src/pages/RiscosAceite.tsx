@@ -270,7 +270,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       render: (_: any, risco: RiscoAceito) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><IconMore className="h-4 w-4" strokeWidth={1.5} /></Button>
+            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}><IconMore className="h-4 w-4" strokeWidth={1.5} /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedRisco(risco); setDetalheOpen(true); }}>

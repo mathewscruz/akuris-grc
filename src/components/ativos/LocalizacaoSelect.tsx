@@ -115,7 +115,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" aria-label={t('common.add')} title={t('common.add')}>
             <IconAdd className="h-4 w-4" />
           </Button>
         </DialogTrigger>

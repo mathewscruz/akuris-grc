@@ -2,7 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { IconWarning, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-;
+import { tGlobal } from '@/lib/i18n-global';
 import { logger } from '@/lib/logger';
 
 interface Props {
@@ -69,26 +69,31 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full space-y-4">
             <Alert variant="destructive">
               <IconWarning className="h-4 w-4" />
-              <AlertTitle>Algo deu errado</AlertTitle>
+              {/* `tGlobal`, não hooks: isto é um componente de classe, e é
+                  o ecrã que aparece quando tudo o resto falhou. Estava
+                  escrito em português dentro do JSX — com a aplicação em
+                  inglês, quem batia num erro não conseguia ler nem os
+                  botões. */}
+              <AlertTitle>{tGlobal('erroInesperado.titulo')}</AlertTitle>
               <AlertDescription>
-                Ocorreu um erro inesperado. Tente novamente ou recarregue a página.
+                {tGlobal('erroInesperado.corpo')}
               </AlertDescription>
             </Alert>
 
             <div className="flex space-x-2">
               <Button onClick={this.handleRetry} className="flex-1">
                 <IconRefresh className="h-4 w-4 mr-2" />
-                Tentar Novamente
+                {tGlobal('erroInesperado.tentarNovamente')}
               </Button>
               <Button onClick={this.handleReload} variant="outline" className="flex-1">
-                Recarregar Página
+                {tGlobal('erroInesperado.recarregar')}
               </Button>
             </div>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-4 p-4 bg-muted rounded border text-xs">
                 <summary className="cursor-pointer font-medium">
-                  Detalhes do erro (desenvolvimento)
+                  {tGlobal('erroInesperado.detalhes')}
                 </summary>
                 <pre className="mt-2 overflow-x-auto">
                   {this.state.error.toString()}

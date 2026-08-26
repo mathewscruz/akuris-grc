@@ -361,8 +361,10 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
       render: (_: any, denuncia: Denuncia) => (
         <Button
           variant="ghost"
-          size="sm"
+          size="icon-sm"
           onClick={() => handleVisualizarDenuncia(denuncia)}
+          aria-label={t('common.view')}
+          title={t('common.view')}
         >
           <IconView className="h-4 w-4" />
         </Button>

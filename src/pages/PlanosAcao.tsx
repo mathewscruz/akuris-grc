@@ -513,7 +513,7 @@ export default function PlanosAcao() {
       render: (_: any, item: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm">
+            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -666,6 +666,14 @@ export default function PlanosAcao() {
                 // traz uma por omissão e o ecrã ficava com dois campos
                 // empilhados, o de baixo sem rótulo nenhum.
                 searchable={false}
+                // A busca e os filtros vivem no `ModuleToolbar` acima; sem
+                // isto a tabela não sabia que estavam activos e o ecrã
+                // vazio dizia «Você não possui itens pendentes» a quem
+                // tinha cinco e só estava a filtrar.
+                filtering={{
+                  active: Boolean(search.trim()) || statusFilter !== 'todos' || prioridadeFilter !== 'todos',
+                  onClear: () => { setSearch(''); setStatusFilter('todos'); setPrioridadeFilter('todos'); },
+                }}
                 onRowClick={(item) => setDetailPlano(item)}
                 loading={isLoading}
                 sortField={sortField}

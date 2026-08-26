@@ -198,6 +198,16 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
 
   const onSubmit = async (data: AditivoFormData) => {
     if (!contrato) return;
+    /* Os dois pares — o anterior e o novo. Na base de desenvolvimento já
+       existe um aditivo de PRAZO com início 20/08 e fim 10/08: uma
+       prorrogação que termina dez dias antes de começar. */
+    const invertido =
+      (data.data_inicio_nova && data.data_fim_nova && data.data_fim_nova < data.data_inicio_nova) ||
+      (data.data_inicio_anterior && data.data_fim_anterior && data.data_fim_anterior < data.data_inicio_anterior);
+    if (invertido) {
+      toast({ title: t('common.fimAntesDoInicio'), variant: 'destructive' });
+      return;
+    }
     try {
       setLoading(true);
       const aditivoData = {

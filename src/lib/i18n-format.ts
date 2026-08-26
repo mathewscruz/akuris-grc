@@ -28,6 +28,23 @@ export function formatMonthYear(date: Date, locale: Locale): string {
   }
 }
 
+/**
+ * Uma coluna `date` não tem hora, e `new Date('2026-07-01')` inventa uma:
+ * meia-noite UTC. Em São Paulo isso é dia 30 de junho às 21h — e o cartão do
+ * projecto mostrava a data de início um dia antes da que estava guardada.
+ *
+ * A regra já existia em `parseDataLocal`, mas só protegia quem se lembrava de
+ * a chamar. Aqui protege quem chamar `formatDate`, que é o formatador de uso
+ * geral: uma cadeia `YYYY-MM-DD` passa a ser lida ao meio-dia LOCAL, longe de
+ * qualquer fronteira de fuso, e tudo o resto (ISO com hora, timestamp,
+ * número) segue intocado.
+ */
+function paraLocal(valor: string | number): string | number {
+  return typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valor)
+    ? `${valor}T12:00:00`
+    : valor;
+}
+
 export function getIntlLocale(locale: Locale): string {
   return localeMap[locale] || 'pt-BR';
 }
@@ -39,7 +56,7 @@ export function formatDate(
 ): string {
   if (!date) return '';
   try {
-    const d = date instanceof Date ? date : new Date(date);
+    const d = date instanceof Date ? date : new Date(paraLocal(date));
     if (isNaN(d.getTime())) return '';
     return new Intl.DateTimeFormat(getIntlLocale(locale), options || { dateStyle: 'short' }).format(d);
   } catch {
