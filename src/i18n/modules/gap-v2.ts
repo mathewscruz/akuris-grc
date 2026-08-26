@@ -154,6 +154,12 @@ export const gapV2 = {
         summaryConsolidatedPlans: { one: '{count} plano consolidado', other: '{count} planos consolidados' },
         summaryCovering: 'cobrindo',
         summaryRequirements: { one: '{count} requisito', other: '{count} requisitos' },
+        /* O que fica FORA dos três grupos mostrados. Sem esta frase, o
+           corte no top-3 era invisível e a soma não fechava. */
+        summaryOutside: {
+          one: 'Fica 1 gap fora destes grupos, em categorias com poucos requisitos — está na tabela abaixo.',
+          other: 'Ficam {count} gaps fora destes grupos, em categorias com poucos requisitos — estão na tabela abaixo.',
+        },
         footActivePlans: 'planos ativos',
         footCovers: { one: 'cobre {count} requisito', other: 'cobrem {count} requisitos' },
         footNonCompliantReqs: 'requisitos não conformes',
@@ -365,6 +371,10 @@ export const gapV2 = {
         summaryConsolidatedPlans: { one: '{count} consolidated plan', other: '{count} consolidated plans' },
         summaryCovering: 'covering',
         summaryRequirements: { one: '{count} requirement', other: '{count} requirements' },
+        summaryOutside: {
+          one: '1 gap falls outside these groups, in categories with few requirements — it is in the table below.',
+          other: '{count} gaps fall outside these groups, in categories with few requirements — they are in the table below.',
+        },
         footActivePlans: 'active plans',
         footCovers: { one: 'covers {count} requirement', other: 'cover {count} requirements' },
         footNonCompliantReqs: 'non-compliant requirements',

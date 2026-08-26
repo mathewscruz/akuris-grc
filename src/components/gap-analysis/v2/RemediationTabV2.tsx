@@ -252,6 +252,12 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
       }));
   }, [naoConformes, grouping, todosRequisitos]);
 
+  /** Gaps que não entram em nenhum dos grupos mostrados. */
+  const foraDosGrupos = useMemo(
+    () => Math.max(0, naoConformes.length - aiClusters.reduce((s, c) => s + c.items.length, 0)),
+    [naoConformes, aiClusters],
+  );
+
   /**
    * Abre o plano de ação já preenchido com o grupo.
    *
@@ -398,6 +404,23 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             <strong className="text-foreground">{t('gapV2.remediation.summaryConsolidatedPlans', { count: aiClusters.length })}</strong>{' '}
             {t('gapV2.remediation.summaryCovering')} <strong className="text-foreground">{t('gapV2.remediation.summaryRequirements', { count: aiClusters.reduce((s, c) => s + c.items.length, 0) })}</strong>.
           </p>
+
+          {/*
+            O que ficou FORA dos grupos mostrados.
+
+            Os grupos são `filter(length >= 2).slice(0, 3)`: só os três
+            maiores, e só os que têm dois ou mais requisitos. Na ISO da
+            Nexure isso deixava 11 dos 44 gaps invisíveis nesta aba, em seis
+            categorias — incluindo «Liderança», com um gap só, que numa ISO
+            27001 é dos que mais pesam. A frase acima dizia «44 gaps
+            agrupados em 3 planos cobrindo 33 requisitos», que se lê como se
+            os 44 tivessem ficado arrumados.
+          */}
+          {foraDosGrupos > 0 && (
+            <p className="text-xs text-warning">
+              {t('gapV2.remediation.summaryOutside', { count: foraDosGrupos })}
+            </p>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {aiClusters.map(c => (

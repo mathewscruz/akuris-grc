@@ -21,6 +21,16 @@ interface MaturityHeroProps {
   openGaps?: number;
   /** Subconjunto crítico dos gaps (peso alto ou prazo vencido). */
   criticalCount: number;
+  /**
+   * Pontos de ÍNDICE que se ganham fechando os gaps críticos.
+   *
+   * Era `Math.min(15, criticalCount)` — a CONTAGEM de gaps, com um teto de
+   * 15, apresentada como pontos. Com 30 gaps críticos dizia «15 pontos»;
+   * a aba Remediação do mesmo framework, que usa `ganhoPotencial`, dizia
+   * «+37pts». Duas contas da mesma pergunta, no mesmo produto, e a que
+   * ficava no cartão do topo era a que não é conta nenhuma.
+   */
+  ganhoSeFecharCriticos?: number;
   /** Subconjunto de gaps com prazo vencido. */
   overdueCount?: number;
   activeFrameworksCount: number;
@@ -70,6 +80,7 @@ export function MaturityHero({
   totalEvaluated,
   openGaps,
   criticalCount,
+  ganhoSeFecharCriticos,
   overdueCount = 0,
   activeFrameworksCount,
   delta30d = null,
@@ -112,7 +123,7 @@ export function MaturityHero({
     }
     if (criticalCount > 0) {
       return {
-        body: <>{t('gapV2.maturityHero.insightCriticalPrefix')} <strong className="text-foreground">{criticalCount}</strong> {t('gapV2.maturityHero.insightCriticalSuffix', { pts: Math.min(15, criticalCount) })}</>,
+        body: <>{t('gapV2.maturityHero.insightCriticalPrefix')} <strong className="text-foreground">{criticalCount}</strong> {t('gapV2.maturityHero.insightCriticalSuffix', { pts: ganhoSeFecharCriticos ?? 0 })}</>,
         cta: t('gapV2.maturityHero.insightSeePlanCta'),
       };
     }

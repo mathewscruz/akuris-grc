@@ -29,7 +29,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { fwDescricao } from "@/lib/gap-i18n";
 import { useJurisdicao } from '@/hooks/useJurisdicao';
 import type { JurisdicaoCodigo } from '@/lib/jurisdicao';
-import { summarizeGaps, EMPTY_GAP_SUMMARY, type GapSummary } from '@/lib/gap-criticality';
+import { summarizeGaps, isGapCritico, EMPTY_GAP_SUMMARY, type GapSummary } from '@/lib/gap-criticality';
 import { IconShield, IconChevronDown } from '@/components/icons';
 
 interface Framework {
@@ -45,6 +45,13 @@ interface FrameworkProgress {
   evaluatedRequirements: number;
   conformeCount: number;
   averageScore: number;
+  /**
+   * O score que este framework teria com todos os gaps CRÍTICOS fechados.
+   *
+   * Serve para dizer quantos pontos se ganham em vez de quantos gaps há —
+   * eram coisas diferentes apresentadas com a mesma palavra.
+   */
+  scoreSeFechadosCriticos: number;
 }
 
 interface StatusCounts {
@@ -207,6 +214,11 @@ export default function GapAnalysisFrameworks() {
             );
 
             if (!evalError && allEvaluations) {
+            /* O prazo entra no critério de «crítico» (peso alto OU prazo
+               vencido), por isso é preciso ao simular o fecho. */
+            const prazoPorRequisito = new Map<string, string | null>(
+              (allEvaluations || []).map(e => [e.requirement_id, e.prazo_implementacao ?? null]),
+            );
               const evalsByFramework = new Map<string, typeof allEvaluations>();
               allEvaluations.forEach(ev => {
                 const existing = evalsByFramework.get(ev.framework_id) || [];
@@ -257,11 +269,35 @@ export default function GapAnalysisFrameworks() {
                   })),
                 );
 
+                /*
+                  O MESMO cálculo do score, com os gaps críticos já fechados.
+                  É a única forma honesta de responder «quantos pontos ganho
+                  se tratar isto»: o score é ponderado pelo peso e restrito
+                  ao escopo, por isso o ganho não se deduz da contagem.
+                */
+                const resumoSeFechados = calcularScoreFramework(
+                  (reqsPorFramework.get(fwId) || []).map(r => {
+                    const st = statusPorRequisito.get(r.id);
+                    const critico = isGapCritico({
+                      conformity_status: st,
+                      peso: r.peso,
+                      prazo_implementacao: prazoPorRequisito.get(r.id),
+                    });
+                    return {
+                      id: r.id,
+                      peso: r.peso,
+                      conformityStatus: critico ? 'conforme' : st,
+                      aplicavel: !foraDoEscopo.has(r.id),
+                    };
+                  }),
+                );
+
                 progress[fwId] = {
                   totalRequirements: totalReqs,
                   evaluatedRequirements: resumo.avaliados,
                   conformeCount: resumo.conforme,
                   averageScore: resumo.score,
+                  scoreSeFechadosCriticos: resumoSeFechados.score,
                 };
               });
             }
@@ -324,6 +360,7 @@ export default function GapAnalysisFrameworks() {
     if (!hasActiveFrameworks) return null;
 
     let totalWeightedScore = 0;
+    let totalWeightedSeFechados = 0;
     let totalWeight = 0;
     let totalReqs = 0;
     let totalEvaluated = 0;
@@ -337,6 +374,7 @@ export default function GapAnalysisFrameworks() {
       const sc = frameworkStatusCounts[fw.id];
       if (p && p.evaluatedRequirements > 0) {
         totalWeightedScore += p.averageScore * p.evaluatedRequirements;
+        totalWeightedSeFechados += p.scoreSeFechadosCriticos * p.evaluatedRequirements;
         totalWeight += p.evaluatedRequirements;
         totalReqs += p.totalRequirements;
         totalEvaluated += p.evaluatedRequirements;
@@ -356,8 +394,13 @@ export default function GapAnalysisFrameworks() {
       }
     });
 
+    const indiceAgora = totalWeight > 0 ? totalWeightedScore / totalWeight : 0;
+    const indiceSeFechados = totalWeight > 0 ? totalWeightedSeFechados / totalWeight : 0;
+
     return {
-      overallScore: totalWeight > 0 ? Math.round(totalWeightedScore / totalWeight) : 0,
+      overallScore: Math.round(indiceAgora),
+      /* Pontos de ÍNDICE, não número de gaps. Ver `scoreSeFechadosCriticos`. */
+      ganhoSeFecharCriticos: Math.max(0, Math.round(indiceSeFechados - indiceAgora)),
       segments: buildSegments(global),
       totalRequirements: totalReqs,
       totalEvaluated,
@@ -494,6 +537,7 @@ export default function GapAnalysisFrameworks() {
                 totalEvaluated={heroData.totalEvaluated}
                 openGaps={heroData.openGaps}
                 criticalCount={heroData.criticalCount}
+                ganhoSeFecharCriticos={heroData.ganhoSeFecharCriticos}
                 overdueCount={heroData.overdueCount}
                 activeFrameworksCount={activeFrameworks.length}
                 delta30d={tendencia?.delta ?? null}
