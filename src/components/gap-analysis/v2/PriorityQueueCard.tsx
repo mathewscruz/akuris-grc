@@ -200,7 +200,7 @@ export function PriorityQueueCard({
                 <button
                   type="button"
                   onClick={onSeeAll}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors max-lg:min-h-[36px]"
                 >
                   {t('gapV2.priorityQueue.seeAll')}
                   <IconArrowRight className="h-3 w-3" strokeWidth={1.5} />

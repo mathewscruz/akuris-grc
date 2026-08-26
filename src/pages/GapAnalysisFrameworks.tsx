@@ -634,7 +634,10 @@ export default function GapAnalysisFrameworks() {
           hasActiveFrameworks ? (
             <Collapsible open={catalogOpen} onOpenChange={setCatalogOpen}>
               <CollapsibleTrigger asChild>
-                <button type="button" className="flex items-center gap-2 group w-full text-left">
+                {/* Linha inteira, mas com 15 px de altura: era a única forma
+                    de ver os outros 22 frameworks, e no telemóvel quase não
+                    se acertava nela. */}
+                <button type="button" className="flex items-center gap-2 group w-full text-left max-lg:min-h-[44px]">
                   <IconChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform ${catalogOpen ? 'rotate-0' : '-rotate-90'}`}
                   />

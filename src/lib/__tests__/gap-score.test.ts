@@ -76,3 +76,36 @@ describe('score de aderência', () => {
     expect(ganhoPotencial(base, [base[0]])).toBe(25);
   });
 });
+
+/**
+ * Uma regra, uma constante.
+ *
+ * O `gap-score.ts` existe porque o mesmo framework aparecia com 50% na lista e
+ * 53% no detalhe — duas contas paralelas do mesmo número. A conta ficou numa
+ * só, mas a TABELA DE PONTOS ficou em duas: `PONTOS_POR_STATUS` aqui, e
+ * `PERCENTAGE_STATUS_SCORES` em `framework-configs.ts`, que é a que o
+ * `useFrameworkScore` usa no detalhe do framework.
+ *
+ * Hoje são iguais e por isso os dois ecrãs concordam — conferido no navegador:
+ * excluir 20 requisitos pelo SoA levou lista e detalhe de 49% a 60% ao mesmo
+ * tempo. Basta alguém mexer numa para voltarem a divergir, e é o número que a
+ * direcção lê.
+ */
+describe('a tabela de pontos é uma só', () => {
+  it('gap-score e framework-configs atribuem os mesmos pontos a cada estado', async () => {
+    const { PONTOS_POR_STATUS } = await import('../gap-score');
+    const { FRAMEWORK_CONFIGS } = await import('../framework-configs');
+
+    const configs = Object.values(FRAMEWORK_CONFIGS);
+    expect(configs.length, 'nenhum framework configurado?').toBeGreaterThan(0);
+
+    for (const cfg of configs) {
+      for (const [estado, pontos] of Object.entries(PONTOS_POR_STATUS)) {
+        expect(
+          (cfg.statusScores as Record<string, number>)[estado],
+          `${cfg.id}: «${estado}» vale ${(cfg.statusScores as Record<string, number>)[estado]} aqui e ${pontos} em gap-score`,
+        ).toBe(pontos);
+      }
+    }
+  });
+});

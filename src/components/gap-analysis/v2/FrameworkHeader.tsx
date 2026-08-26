@@ -298,7 +298,9 @@ export function FrameworkHeader({
                 type="button"
                 onClick={() => onFiltrarPorEstado?.(e.chave)}
                 disabled={!onFiltrarPorEstado || e.valor === 0}
-                className="inline-flex items-center gap-1.5 text-sm rounded-md -mx-1 px-1 py-0.5 transition-colors enabled:hover:bg-accent disabled:cursor-default disabled:opacity-60"
+                /* `max-lg:min-h-[36px]`: mediam 19 px de altura no telemóvel,
+                   e são a forma principal de filtrar 121 requisitos. */
+                className="inline-flex items-center gap-1.5 text-sm rounded-md -mx-1 px-1 py-0.5 max-lg:min-h-[36px] max-lg:px-2 transition-colors enabled:hover:bg-accent disabled:cursor-default disabled:opacity-60"
               >
                 <span className={cn('h-2 w-2 rounded-full shrink-0', e.ponto)} />
                 <span className="text-muted-foreground">{e.rotulo}</span>
@@ -374,7 +376,7 @@ export function FrameworkHeader({
               {onAbrirMarco && (
                 <button
                   type="button"
-                  className="mt-3 text-sm font-medium text-primary hover:underline"
+                  className="mt-3 inline-flex items-center text-sm font-medium text-primary hover:underline max-lg:min-h-[36px]"
                   onClick={onAbrirMarco}
                 >
                   {t('gapV2.marco.editar')}
@@ -389,7 +391,7 @@ export function FrameworkHeader({
               {onAbrirMarco && (
                 <button
                   type="button"
-                  className="mt-3 text-sm font-medium text-primary hover:underline"
+                  className="mt-3 inline-flex items-center text-sm font-medium text-primary hover:underline max-lg:min-h-[36px]"
                   onClick={onAbrirMarco}
                 >
                   {t('gapV2.marco.definir')}

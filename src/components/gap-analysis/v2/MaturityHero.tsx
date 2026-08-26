@@ -227,7 +227,7 @@ export function MaturityHero({
               {onOpenMilestone && (
                 <button
                   type="button"
-                  className="mt-3 text-xs font-medium text-primary hover:underline"
+                  className="mt-3 inline-flex items-center text-xs font-medium text-primary hover:underline max-lg:min-h-[36px]"
                   onClick={onOpenMilestone}
                 >
                   {t('gapV2.marco.abrirFramework')}
@@ -242,7 +242,7 @@ export function MaturityHero({
               {onOpenMilestone && (
                 <button
                   type="button"
-                  className="mt-3 text-xs font-medium text-primary hover:underline"
+                  className="mt-3 inline-flex items-center text-xs font-medium text-primary hover:underline max-lg:min-h-[36px]"
                   onClick={onOpenMilestone}
                 >
                   {t('gapV2.marco.escolherFramework')}
@@ -292,7 +292,7 @@ export function MaturityHero({
             <button
               type="button"
               onClick={onSeePlan}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:gap-1.5 transition-ui"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:gap-1.5 transition-ui max-lg:min-h-[36px]"
             >
               {insightCopy.cta} →
             </button>
