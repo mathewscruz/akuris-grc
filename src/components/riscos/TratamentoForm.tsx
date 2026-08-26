@@ -331,7 +331,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
             placeholder="0,00"
             type="number"
             step="0.01"
-          />
+          min="0" />
         </div>
       </div>
 

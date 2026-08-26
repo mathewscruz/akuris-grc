@@ -12,6 +12,16 @@ interface ContratosStats {
   valorTotal: number;
   /** Valor preso em contratos já vencidos — mostrado à parte. */
   valorVencido: number;
+  /**
+   * Os mesmos dois valores separados por moeda.
+   *
+   * Os escalares acima somam contratos em moedas diferentes num número
+   * só, e o ecrã carimbava-lhe a moeda da empresa: três contratos
+   * gravados em BRL apareciam como «276 mil €». Quem mostra valor deve
+   * usar estes.
+   */
+  valorTotalPorMoeda: Record<string, number>;
+  valorVencidoPorMoeda: Record<string, number>;
   renovacaoAutomatica: number;
   fornecedoresAtivos: number;
 }
@@ -27,7 +37,7 @@ export const useContratosStats = () => {
     queryFn: async (): Promise<ContratosStats> => {
       const { data: contratos, error } = await supabase
         .from('contratos')
-        .select('status, valor, data_fim, renovacao_automatica, fornecedor_id')
+        .select('status, valor, moeda, data_fim, renovacao_automatica, fornecedor_id')
         .eq('empresa_id', empresaId!);
 
       if (error) throw error;
@@ -47,6 +57,8 @@ export const useContratosStats = () => {
         vencendo30Dias: base.aVencer30,
         valorTotal: base.valorVigente,
         valorVencido: base.valorVencido,
+        valorTotalPorMoeda: base.valorVigentePorMoeda,
+        valorVencidoPorMoeda: base.valorVencidoPorMoeda,
         renovacaoAutomatica: base.renovacaoAutomatica,
         fornecedoresAtivos: fornecedores?.length || 0,
       };

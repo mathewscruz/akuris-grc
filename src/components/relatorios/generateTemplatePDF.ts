@@ -3,9 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getAppLocale } from '@/lib/i18n-locale';
 import { contarRiscosPorSeveridade, severidadeRisco } from '@/lib/metrics';
-import { intlLocale } from '@/lib/date-utils';
+import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { somaPorMoeda } from '@/lib/metrics/contratos';
+import { formatMoedasSomadas, getMoedaAtual } from '@/hooks/useEmpresaMoeda';
 const PDF_LABELS: Record<string, string> = {
   "Altos": "High",
   "Anonimas": "Anonymous",
@@ -91,7 +93,7 @@ const PDF_LABELS: Record<string, string> = {
   "Total de Riscos": "Total Risks",
   "Total de Tarefas": "Total Tasks",
   "Tratamentos Concluidos": "Completed Treatments",
-  "Valor Total (BRL)": "Total Value (BRL)",
+  "Valor Total": "Total Value",
   "Vencendo (30d)": "Expiring (30d)",
   "Vencendo (90 dias)": "Expiring (90 days)",
   "Vencidos": "Expired",
@@ -396,7 +398,7 @@ async function fetchContinuidadeData(empresaId: string) {
   ]);
   const p = planos || []; const t = tarefas || []; const te = testes || [];
   const hoje = new Date();
-  const planosVencendo = p.filter((x: any) => x.proxima_revisao && new Date(x.proxima_revisao) < new Date(hoje.getTime() + 30 * 86400000)).length;
+  const planosVencendo = p.filter((x: any) => x.proxima_revisao && parseDataLocal(x.proxima_revisao) < new Date(hoje.getTime() + 30 * 86400000)).length;
   const tarefasPendentes = t.filter((x: any) => x.status !== 'concluida').length;
   const testesSucesso = te.filter((x: any) => x.resultado === 'sucesso').length;
   return {
@@ -415,7 +417,7 @@ async function fetchContinuidadeData(empresaId: string) {
         tableRows: p.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', `${x.rto_horas || '-'}h / ${x.rpo_horas || '-'}h`]),
         colWidths: [70, 30, 35, 35] },
       ...(te.length > 0 ? [{ title: tr('Historico de Testes'), tableHeaders: [tr('Tipo'), tr('Data'), tr('Resultado')],
-        tableRows: te.map((x: any) => [x.tipo_teste || '-', x.data_teste ? new Date(x.data_teste).toLocaleDateString(intlLocale()) : '-', x.resultado || '-']),
+        tableRows: te.map((x: any) => [x.tipo_teste || '-', x.data_teste ? parseDataLocal(x.data_teste).toLocaleDateString(intlLocale()) : '-', x.resultado || '-']),
         colWidths: [60, 50, 60] }] : []),
     ] as Section[]
   };
@@ -426,9 +428,12 @@ async function fetchContratosData(empresaId: string) {
   const c = contratos || [];
   const hoje = new Date();
   const ativos = c.filter((x: any) => x.status === 'ativo').length;
-  const vencendo = c.filter((x: any) => x.data_fim && new Date(x.data_fim) > hoje && new Date(x.data_fim) < new Date(hoje.getTime() + 90 * 86400000)).length;
-  const vencidos = c.filter((x: any) => x.data_fim && new Date(x.data_fim) < hoje).length;
-  const valorTotal = c.reduce((sum: number, x: any) => sum + (Number(x.valor) || 0), 0);
+  const vencendo = c.filter((x: any) => x.data_fim && parseDataLocal(x.data_fim) > hoje && parseDataLocal(x.data_fim) < new Date(hoje.getTime() + 90 * 86400000)).length;
+  const vencidos = c.filter((x: any) => x.data_fim && parseDataLocal(x.data_fim) < hoje).length;
+  /* Somado POR MOEDA, e não num monte só rotulado «(BRL)».
+     O relatório é o que se imprime e se manda ao auditor: dizia «Valor
+     Total (BRL)» a qualquer carteira, mesmo à que estava toda em euros. */
+  const porMoeda = somaPorMoeda(c as any, () => true);
   return {
     sections: [
       { title: tr('Resumo de Contratos'), metrics: [
@@ -436,10 +441,10 @@ async function fetchContratosData(empresaId: string) {
         { label: tr('Contratos Ativos'), value: ativos },
         { label: tr('Vencendo (90 dias)'), value: vencendo },
         { label: tr('Vencidos'), value: vencidos },
-        { label: tr('Valor Total (BRL)'), value: valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
+        { label: tr('Valor Total'), value: formatMoedasSomadas(porMoeda, getMoedaAtual()) },
       ]},
       { title: tr('Lista de Contratos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
-        tableRows: c.map((x: any) => [x.nome || x.numero_contrato || '-', x.tipo || '-', x.status || '-', x.data_fim ? new Date(x.data_fim).toLocaleDateString(intlLocale()) : '-']),
+        tableRows: c.map((x: any) => [x.nome || x.numero_contrato || '-', x.tipo || '-', x.status || '-', x.data_fim ? parseDataLocal(x.data_fim).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
   };
@@ -456,7 +461,7 @@ async function fetchAtivosData(empresaId: string) {
   a.forEach((x: any) => { tipos[x.tipo] = (tipos[x.tipo] || 0) + 1; });
   const criticos = a.filter((x: any) => ['critico', 'alto'].includes(severidadeDeFaixas(x.criticidade))).length;
   const hoje = new Date();
-  const licencasVencendo = l.filter((x: any) => x.data_vencimento && new Date(x.data_vencimento) > hoje && new Date(x.data_vencimento) < new Date(hoje.getTime() + 90 * 86400000)).length;
+  const licencasVencendo = l.filter((x: any) => x.data_vencimento && parseDataLocal(x.data_vencimento) > hoje && parseDataLocal(x.data_vencimento) < new Date(hoje.getTime() + 90 * 86400000)).length;
   return {
     sections: [
       { title: tr('Inventario de Ativos'), metrics: [
@@ -497,7 +502,7 @@ async function fetchAuditoriaInternaData(empresaId: string) {
         { label: tr('Itens em Aberto'), value: itensAbertos },
       ]},
       { title: tr('Auditorias'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Inicio')],
-        tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', x.data_inicio ? new Date(x.data_inicio).toLocaleDateString(intlLocale()) : '-']),
+        tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', x.data_inicio ? parseDataLocal(x.data_inicio).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
       ...(i.length > 0 ? [{ title: tr('Itens de Auditoria'), tableHeaders: [tr('Codigo'), tr('Titulo'), tr('Prioridade'), tr('Status')],
         tableRows: i.slice(0, 30).map((x: any) => [x.codigo || '-', (x.titulo || '').substring(0, 40), x.prioridade || '-', x.status || '-']),
@@ -528,7 +533,7 @@ async function fetchDueDiligenceData(empresaId: string) {
           x.fornecedor_nome || '-',
           x.status || '-',
           x.score_final != null ? String(x.score_final) : '-',
-          x.data_conclusao ? new Date(x.data_conclusao).toLocaleDateString(intlLocale()) : '-'
+          x.data_conclusao ? parseDataLocal(x.data_conclusao).toLocaleDateString(intlLocale()) : '-'
         ]),
         colWidths: [70, 35, 25, 40] },
     ] as Section[]
@@ -541,8 +546,8 @@ async function fetchDocumentosData(empresaId: string) {
   const hoje = new Date();
   const ativos = d.filter((x: any) => x.status === 'ativo').length;
   const aprovados = d.filter((x: any) => x.status === 'aprovado').length;
-  const vencidos = d.filter((x: any) => x.data_vencimento && new Date(x.data_vencimento) < hoje).length;
-  const vencendo = d.filter((x: any) => x.data_vencimento && new Date(x.data_vencimento) >= hoje && new Date(x.data_vencimento) < new Date(hoje.getTime() + 30 * 86400000)).length;
+  const vencidos = d.filter((x: any) => x.data_vencimento && parseDataLocal(x.data_vencimento) < hoje).length;
+  const vencendo = d.filter((x: any) => x.data_vencimento && parseDataLocal(x.data_vencimento) >= hoje && parseDataLocal(x.data_vencimento) < new Date(hoje.getTime() + 30 * 86400000)).length;
   const tipos: Record<string, number> = {};
   d.forEach((x: any) => { tipos[x.tipo] = (tipos[x.tipo] || 0) + 1; });
   return {
@@ -558,7 +563,7 @@ async function fetchDocumentosData(empresaId: string) {
         tableRows: Object.entries(tipos).map(([t, q]) => [t, String(q)]),
         colWidths: [120, 50] },
       { title: tr('Documentos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
-        tableRows: d.slice(0, 50).map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? new Date(x.data_vencimento).toLocaleDateString(intlLocale()) : '-']),
+        tableRows: d.slice(0, 50).map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? parseDataLocal(x.data_vencimento).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
   };

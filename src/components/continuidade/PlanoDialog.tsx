@@ -161,11 +161,11 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
             </div>
             <div className="space-y-2">
               <Label>{t('continuidadeComp.planoDialog.fieldRto')}</Label>
-              <Input type="number" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
+              <Input type="number" min="0" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
             </div>
             <div className="space-y-2">
               <Label>{t('continuidadeComp.planoDialog.fieldRpo')}</Label>
-              <Input type="number" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
+              <Input type="number" min="0" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
             </div>
           </div>
 

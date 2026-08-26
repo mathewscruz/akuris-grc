@@ -19,6 +19,8 @@ export interface ContratoLike {
   status?: string | null;
   data_fim?: string | null;
   valor?: number | null;
+  /** A moeda DESTE contrato. Existe na coluna desde sempre; ninguém a lia. */
+  moeda?: string | null;
   renovacao_automatica?: boolean | null;
 }
 
@@ -59,6 +61,36 @@ export const isContratoVencido = (c: ContratoLike, ref: Date = new Date()) =>
 export const isContratoAVencer = (c: ContratoLike, ref: Date = new Date(), dias = 30) =>
   estadoContrato(c, ref, dias) === 'a_vencer';
 
+/**
+ * Soma separada por moeda — porque somar moedas diferentes não dá número
+ * nenhum.
+ *
+ * Medido na base de desenvolvimento: os três contratos da empresa estão
+ * gravados em `moeda = 'BRL'`, e o cartão do módulo mostrava «276 mil €» e
+ * «420 mil €». O número estava certo; o símbolo não. `formatMoedaEmpresa`
+ * carimba a moeda da EMPRESA por cima de qualquer valor, e a soma ignorava a
+ * coluna `moeda` de cada linha.
+ *
+ * Sem taxas de câmbio — que o produto não tem e não se inventam aqui — a
+ * única soma honesta é uma por moeda. Com uma só moeda o resultado é
+ * idêntico ao de hoje; com duas, deixa de haver um número que finge ser os
+ * dois.
+ */
+export const somaPorMoeda = (
+  contratos: ContratoLike[] | null | undefined,
+  incluir: (c: ContratoLike) => boolean,
+): Record<string, number> => {
+  const total: Record<string, number> = {};
+  for (const c of contratos ?? []) {
+    if (!incluir(c)) continue;
+    const valor = Number(c.valor) || 0;
+    if (!valor) continue;
+    const moeda = (c.moeda || 'EUR').toUpperCase();
+    total[moeda] = (total[moeda] ?? 0) + valor;
+  }
+  return total;
+};
+
 /** Valor apenas de contratos vigentes (nunca soma vencidos). */
 export const valorContratosVigentes = (
   contratos: ContratoLike[] | null | undefined,
@@ -82,4 +114,7 @@ export const contarContratos = (
   renovacaoAutomatica: countBy(contratos, (c) => !!c.renovacao_automatica),
   valorVigente: valorContratosVigentes(contratos, ref),
   valorVencido: valorContratosVencidos(contratos, ref),
+  /* Os mesmos dois valores, mas sem misturar moedas. */
+  valorVigentePorMoeda: somaPorMoeda(contratos, (c) => isContratoVigente(c, ref)),
+  valorVencidoPorMoeda: somaPorMoeda(contratos, (c) => isContratoVencido(c, ref)),
 });

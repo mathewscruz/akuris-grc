@@ -14,7 +14,7 @@
  * Todas foram convertidas. Daqui para a frente é regressão.
  */
 import { afterAll, describe, expect, it } from 'vitest';
-import { fontesTsx, linhas } from './_fontes';
+import { fontesTodas, linhas } from './_fontes';
 
 /**
  * Colunas `date` (sem hora) do schema, conferidas em
@@ -81,7 +81,7 @@ describe('dia sem fuso', () => {
   it('ninguém lê uma coluna date com new Date cru', () => {
     const infratores: string[] = [];
 
-    for (const arquivo of fontesTsx()) {
+    for (const arquivo of fontesTodas()) {
       linhas(arquivo).forEach((linha, i) => {
         const t = linha.trimStart();
         if (t.startsWith('*') || t.startsWith('//')) return;
@@ -140,7 +140,7 @@ describe('dia sem fuso', () => {
   it('nenhuma data de calendário é gravada via toISOString', () => {
     const infratores: string[] = [];
 
-    for (const arquivo of fontesTsx()) {
+    for (const arquivo of fontesTodas()) {
       linhas(arquivo).forEach((linha, i) => {
         const t = linha.trimStart();
         if (t.startsWith('*') || t.startsWith('//')) return;

@@ -265,7 +265,7 @@ export function BuscaAvancadaDocumentos({
                 <Label htmlFor="tamanhoMin">{t('documentos.dialogs.tamanhoMinimo')}</Label>
                 <Input
                   id="tamanhoMin"
-                  type="number"
+                  type="number" min="0"
                   value={filters.tamanhoMin || ''}
                   onChange={(e) => updateFilter('tamanhoMin', e.target.value ? Number(e.target.value) : undefined)}
                   placeholder="0"
@@ -275,7 +275,7 @@ export function BuscaAvancadaDocumentos({
                 <Label htmlFor="tamanhoMax">{t('documentos.dialogs.tamanhoMaximo')}</Label>
                 <Input
                   id="tamanhoMax"
-                  type="number"
+                  type="number" min="0"
                   value={filters.tamanhoMax || ''}
                   onChange={(e) => updateFilter('tamanhoMax', e.target.value ? Number(e.target.value) : undefined)}
                   placeholder="100"

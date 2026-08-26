@@ -668,7 +668,7 @@ export function MatrizForm({ onSuccess }: Props) {
                   >
                     <div className="flex items-center gap-1 shrink-0">
                       <Input
-                        type="number"
+                        type="number" min="0"
                         value={nivel.min}
                         onChange={(e) => atualizarNivel(index, 'min', parseInt(e.target.value) || 0)}
                         className="w-16 text-center"
@@ -676,7 +676,7 @@ export function MatrizForm({ onSuccess }: Props) {
                       />
                       <span className="text-muted-foreground text-sm">–</span>
                       <Input
-                        type="number"
+                        type="number" min="0"
                         value={nivel.max}
                         onChange={(e) => atualizarNivel(index, 'max', parseInt(e.target.value) || 0)}
                         className="w-16 text-center"

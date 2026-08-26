@@ -226,7 +226,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.licencaDialog.labelQuantity')}</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                      <Input type="number" min="0" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -293,7 +293,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.licencaDialog.labelAcquisitionValue', { moeda: simboloMoeda })}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.01" {...field} min="0" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -307,7 +307,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.licencaDialog.labelRenewalValue', { moeda: simboloMoeda })}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.01" {...field} min="0" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

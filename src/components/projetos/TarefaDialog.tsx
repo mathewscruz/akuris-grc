@@ -166,7 +166,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                 </div>
                 <div className="space-y-2">
                   <Label>{t('projetos.tarefaDialog.fieldEstimativa')}</Label>
-                  <Input type="number" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
+                  <Input type="number" min="0" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-2">

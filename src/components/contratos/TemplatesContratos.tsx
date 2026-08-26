@@ -469,7 +469,7 @@ export default function TemplatesContratos({ onTemplateSelect, open: openProp, o
               <div>
                 <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDefaultPaymentTerm')}</label>
                 <Input
-                  type="number"
+                  type="number" min="0"
                   value={formData.prazo_pagamento_padrao || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, prazo_pagamento_padrao: Number(e.target.value) }))}
                   placeholder="30"

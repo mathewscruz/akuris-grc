@@ -497,7 +497,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                       <Label htmlFor="custo">{t('contratosAtivos.manutencaoDialog.labelCost', { moeda: simboloMoeda })}</Label>
                       <Input
                         id="custo"
-                        type="number"
+                        type="number" min="0"
                         step="0.01"
                         value={formData.custo}
                         onChange={(e) => setFormData(prev => ({...prev, custo: e.target.value}))}

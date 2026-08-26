@@ -363,7 +363,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                       <Label htmlFor="valor">{t('contratosAtivos.marcosDialog.labelValue')}</Label>
                       <Input
                         id="valor"
-                        type="number"
+                        type="number" min="0"
                         step="0.01"
                         value={formData.valor}
                         onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
@@ -375,7 +375,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                       <Label htmlFor="alerta_antecedencia">{t('contratosAtivos.marcosDialog.labelAlertDays')}</Label>
                       <Input
                         id="alerta_antecedencia"
-                        type="number"
+                        type="number" min="0"
                         value={formData.alerta_antecedencia}
                         onChange={(e) => setFormData({ ...formData, alerta_antecedencia: e.target.value })}
                         placeholder="30"

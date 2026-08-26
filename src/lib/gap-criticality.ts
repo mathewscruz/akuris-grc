@@ -9,6 +9,7 @@
  *  - Gap crítico    = gap em aberto com peso alto (>= 4) OU com prazo vencido.
  *  - Gap atrasado   = gap em aberto com prazo de implementação no passado.
  */
+import { parseDataLocal } from '@/lib/date-utils';
 
 /**
  * Peso mínimo a partir do qual um requisito não conforme é crítico.
@@ -35,7 +36,10 @@ export function isGapAberto(status: string | null | undefined): boolean {
 
 export function isGapAtrasado(prazo: string | null | undefined): boolean {
   if (!prazo) return false;
-  const ts = new Date(prazo).getTime();
+  /* `parseDataLocal`, não `new Date`: `prazo` é coluna `date` e o
+     construtor cru lê-a como meia-noite UTC — a oeste de Greenwich, um
+     prazo que termina hoje contava como atrasado desde as 21h de ontem. */
+  const ts = parseDataLocal(prazo).getTime();
   if (Number.isNaN(ts)) return false;
   return ts < Date.now();
 }

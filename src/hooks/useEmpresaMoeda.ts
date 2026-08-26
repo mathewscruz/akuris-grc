@@ -39,6 +39,31 @@ export function formatMoeda(
 }
 
 /**
+ * Um total que não mistura moedas.
+ *
+ * Recebe o mapa `{ BRL: 696000, EUR: 12000 }` e devolve «R$ 696 mil + €12 mil».
+ * Com uma moeda só, o resultado é exactamente o de sempre — é o caso normal.
+ * Com duas, o cartão passa a dizer as duas em vez de somar peras com maçãs e
+ * carimbar-lhes a moeda da empresa por cima.
+ *
+ * O mapa vazio devolve zero na moeda da empresa: um cartão sem valor nenhum
+ * mostra «€0», não um travessão que se confunde com «não sei».
+ */
+export function formatMoedasSomadas(
+  porMoeda: Record<string, number> | null | undefined,
+  moedaDaEmpresa: MoedaCodigo = 'EUR',
+  compact = false,
+): string {
+  const entradas = Object.entries(porMoeda ?? {}).filter(([, v]) => v !== 0);
+  if (entradas.length === 0) return formatMoeda(0, moedaDaEmpresa, compact);
+  return entradas
+    // A maior primeiro: é a que interessa a quem olha de relance.
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .map(([m, v]) => formatMoeda(v, (MOEDAS.includes(m as MoedaCodigo) ? m : 'EUR') as MoedaCodigo, compact))
+    .join(' + ');
+}
+
+/**
  * Última moeda conhecida da empresa. Permite formatar em helpers puros
  * (ex.: exportações/PDF) que não podem chamar hooks.
  */
@@ -75,5 +100,13 @@ export function useEmpresaMoeda() {
     moeda,
     simbolo: SIMBOLO_MOEDA[moeda],
     format: (value?: number | null, compact = false) => formatMoeda(value, moeda, compact),
+    /** Formata na moeda DO REGISTO, com a da empresa como reserva. */
+    formatNaMoedaDo: (value?: number | null, moedaDoRegisto?: string | null, compact = false) => {
+      const m = (moedaDoRegisto || moeda).toUpperCase() as MoedaCodigo;
+      return formatMoeda(value, MOEDAS.includes(m) ? m : moeda, compact);
+    },
+    /** Total sem misturar moedas — ver `formatMoedasSomadas`. */
+    formatSoma: (porMoeda?: Record<string, number> | null, compact = false) =>
+      formatMoedasSomadas(porMoeda, moeda, compact),
   };
 }

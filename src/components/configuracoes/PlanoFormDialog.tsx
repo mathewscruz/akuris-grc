@@ -225,7 +225,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
               </div>
               <div className="space-y-1.5">
                 <Label>{t('configPlanos.planoForm.fieldOrdem')}</Label>
-                <Input type="number" value={form.ordem} onChange={e => setForm(f => ({ ...f, ordem: Number(e.target.value) }))} />
+                <Input type="number" min="0" value={form.ordem} onChange={e => setForm(f => ({ ...f, ordem: Number(e.target.value) }))} />
               </div>
             </div>
 

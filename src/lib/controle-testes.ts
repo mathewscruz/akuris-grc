@@ -4,6 +4,8 @@
  * antecipar a próxima data prevista sem esperar pelo trigger da base de dados.
  * Agnóstico de framework: a frequência é a do controlo, seja de que norma for.
  */
+import { formatarDiaParaDB } from '@/lib/date-utils';
+
 const MESES: Record<string, number> = {
   mensal: 1,
   bimestral: 2,
@@ -21,7 +23,19 @@ const DIAS: Record<string, number> = {
   quinzenal: 15,
 };
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+/*
+  `formatarDiaParaDB`, não `toISOString().slice(0,10)`.
+
+  A base é construída em meia-noite LOCAL — e estava certa. O corte é que
+  a convertia para UTC antes de a fatiar: em Lisboa no verão (UTC+1),
+  meia-noite local é 23:00 do dia ANTERIOR em UTC, e a próxima data de
+  teste saía sempre um dia mais cedo. Um controlo com teste mensal
+  perdia um dia por cada renovação.
+
+  Este ficheiro é `.ts`, e por isso nunca foi lido pela guarda do fuso —
+  que só via `.tsx`. Foi corrigido ao alargá-la.
+*/
+const iso = (d: Date) => formatarDiaParaDB(d);
 
 export function proximaDataPorFrequencia(
   dataTeste: string | null | undefined,

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { parseDataLocal } from '@/lib/date-utils';
+import { useEmpresaMoeda, MOEDAS, SIMBOLO_MOEDA, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
 
 interface Contrato {
   id: string;
@@ -62,6 +63,10 @@ const buildSteps = (t: (key: string) => string) => [
 ];
 
 export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, fornecedores }: ContratoDialogWizardProps) {
+  /* A moeda da empresa, não «BRL». Uma empresa configurada em euros via
+     todo o contrato novo nascer em reais, e só reparava se olhasse para
+     o seletor ao lado do valor. */
+  const { moeda: moedaDaEmpresa } = useEmpresaMoeda();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     numero_contrato: '',
@@ -69,7 +74,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
     tipo: 'servicos',
     status: 'rascunho',
     valor: '',
-    moeda: 'BRL',
+    moeda: moedaDaEmpresa,
     data_inicio: '',
     data_fim: '',
     data_assinatura: '',
@@ -102,7 +107,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           tipo: contrato.tipo || 'servicos',
           status: contrato.status || 'rascunho',
           valor: contrato.valor?.toString() || '',
-          moeda: contrato.moeda || 'BRL',
+          moeda: (contrato.moeda as MoedaCodigo) || moedaDaEmpresa,
           data_inicio: contrato.data_inicio || '',
           data_fim: contrato.data_fim || '',
           data_assinatura: contrato.data_assinatura || '',
@@ -125,7 +130,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           tipo: 'servicos',
           status: 'rascunho',
           valor: '',
-          moeda: 'BRL',
+          moeda: moedaDaEmpresa,
           data_inicio: '',
           data_fim: '',
           data_assinatura: '',
@@ -407,6 +412,9 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                 <Input
                   id="valor"
                   type="number"
+                  /* `min="0"`: um contrato de valor negativo entrava e
+                     entrava também na soma da carteira. */
+                  min="0"
                   step="0.01"
                   value={formData.valor}
                   onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
@@ -416,14 +424,17 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
 
               <div className="space-y-2">
                 <Label htmlFor="moeda">{t('contratosAtivos.contratoDialogWizard.labelCurrency')}</Label>
-                <Select value={formData.moeda} onValueChange={(value) => setFormData({ ...formData, moeda: value })}>
+                <Select value={formData.moeda} onValueChange={(value) => setFormData({ ...formData, moeda: value as MoedaCodigo })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BRL">{t('contratosAtivos.contratoDialogWizard.currencyBrl')}</SelectItem>
-                    <SelectItem value="USD">{t('contratosAtivos.contratoDialogWizard.currencyUsd')}</SelectItem>
-                    <SelectItem value="EUR">{t('contratosAtivos.contratoDialogWizard.currencyEur')}</SelectItem>
+                    {/* GBP faltava: o formatador suporta-a, o seletor não
+                        a oferecia — um contrato em libras não se podia
+                        registar como tal. */}
+                    {MOEDAS.map((m) => (
+                      <SelectItem key={m} value={m}>{m} ({SIMBOLO_MOEDA[m]})</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -476,7 +487,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                   <Label htmlFor="prazo_renovacao">{t('contratosAtivos.contratoDialogWizard.labelRenewalTerm')}</Label>
                   <Input
                     id="prazo_renovacao"
-                    type="number"
+                    type="number" min="0"
                     value={formData.prazo_renovacao}
                     onChange={(e) => setFormData({ ...formData, prazo_renovacao: e.target.value })}
                     placeholder={t('contratosAtivos.contratoDialogWizard.renewalTermPlaceholder')}

@@ -70,7 +70,7 @@ interface Contrato {
 
 export default function Contratos() {
   const { t } = useLanguage();
-  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
+  const { formatNaMoedaDo, formatSoma } = useEmpresaMoeda();
   useFocusRow();
   const [searchParams, setSearchParams] = useSearchParams();
   const { empresaId } = useEmpresaId();
@@ -369,7 +369,9 @@ export default function Contratos() {
       key: 'valor',
       label: t('fin.comum.valor'),
       sortable: true,
-      render: (_: any, c: any) => (c.valor ? formatMoedaEmpresa(Number(c.valor)) : 'N/A'),
+      /* A moeda DO CONTRATO, não a da empresa: os três contratos desta
+         base estão gravados em BRL e a coluna mostrava-os com «€». */
+      render: (_: any, c: any) => (c.valor ? formatNaMoedaDo(Number(c.valor), c.moeda) : 'N/A'),
     },
     {
       key: 'data_fim',
@@ -485,14 +487,16 @@ export default function Contratos() {
             {
               key: 'valor',
               label: t('cardsKpi.contratos.valorVigente'),
-              value: formatMoedaEmpresa(statsContratos?.valorTotal || 0, true),
+              /* Uma soma por moeda. Somar BRL com EUR e carimbar «€» dá
+                 um número que não é nenhum dos dois. */
+              value: formatSoma(statsContratos?.valorTotalPorMoeda, true),
               hint: t('cardsKpi.contratos.valorVigenteHint'),
               drillDown: 'contratos_vigentes',
             },
             {
               key: 'valorVencido',
               label: t('cardsKpi.contratos.valorVencido'),
-              value: formatMoedaEmpresa(statsContratos?.valorVencido || 0, true),
+              value: formatSoma(statsContratos?.valorVencidoPorMoeda, true),
               tone: (statsContratos?.valorVencido || 0) > 0 ? 'destructive' : undefined,
               hint: t('cardsKpi.contratos.valorVencidoHint'),
               drillDown: 'contratos_vencidos',
@@ -675,7 +679,7 @@ export default function Contratos() {
           fields={detalheContrato ? [
             { label: t('fin.comum.fornecedor'), value: detalheContrato.fornecedores?.nome },
             { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
-            { label: t('fin.comum.valor'), value: detalheContrato.valor != null ? formatMoedaEmpresa(detalheContrato.valor) : null },
+            { label: t('fin.comum.valor'), value: detalheContrato.valor != null ? formatNaMoedaDo(detalheContrato.valor, (detalheContrato as any).moeda) : null },
             { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
             { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
             { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato ? (nomePorUsuario.get(detalheContrato.gestor_contrato) || detalheContrato.gestor_contrato) : null },

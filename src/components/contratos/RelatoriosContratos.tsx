@@ -9,7 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useEmpresaMoeda, formatMoeda, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
+import { useEmpresaMoeda, formatMoeda, formatMoedasSomadas, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
+import { somaPorMoeda } from '@/lib/metrics/contratos';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -19,7 +20,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries, CHART_FONT } from '@/lib/chart-tokens';
 import { dateFnsLocale, datePattern, formatarDiaParaDB, formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { isContratoVigente, valorContratosVigentes } from '@/lib/metrics/contratos';
+import { isContratoVigente } from '@/lib/metrics/contratos';
 interface RelatorioData {
   contratos: any[];
   fornecedores: any[];
@@ -336,29 +337,19 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
     com uma só moeda lê-se como antes; com várias, aparecem lado a lado em vez
     de se fundirem num número que não existe.
   */
+  /* Isto vivia aqui, escrito à mão, e só aqui: o cartão do módulo e o
+     gerador de PDF continuavam a somar moedas diferentes num número só.
+     Passou para `lib/metrics/contratos` e `useEmpresaMoeda`, partilhado. */
   const moedaDoContrato = (c: any): MoedaCodigo => (c?.moeda as MoedaCodigo) || moedaEmpresa;
 
-  const totaisPorMoeda = (contratos: any[]): Array<[MoedaCodigo, number]> => {
-    const acc = new Map<MoedaCodigo, number>();
-    for (const c of contratos) {
-      const m = moedaDoContrato(c);
-      acc.set(m, (acc.get(m) || 0) + Number(c.valor || 0));
-    }
-    return [...acc.entries()].sort((a, b) => b[1] - a[1]);
-  };
-
-  const textoTotalPorMoeda = (contratos: any[]) => {
-    const totais = totaisPorMoeda(contratos);
-    if (!totais.length) return formatMoeda(0, moedaEmpresa);
-    return totais.map(([m, v]) => formatMoeda(v, m)).join(' + ');
-  };
+  const textoTotalPorMoeda = (contratos: any[]) =>
+    formatMoedasSomadas(somaPorMoeda(contratos, () => true), moedaEmpresa);
 
   const estatisticasGerais = {
     totalContratos: dados.contratos.length,
     // `status` é o que alguém escreveu; `estadoContrato` é o que a data diz.
     // Somar tudo e chamar-lhe activo anunciava R$ 696.000 na Nexure incluindo
     // um contrato AWS de R$ 420.000 vencido há 20 dias — 60% do total.
-    valorTotal: valorContratosVigentes(dados.contratos),
     contratosAtivos: dados.contratos.filter((c) => isContratoVigente(c)).length,
     marcosVencendo: dados.marcos.filter(m => {
       const diasRestantes = Math.ceil((parseDataLocal(m.data_prevista).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));

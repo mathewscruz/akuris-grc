@@ -499,7 +499,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.aditivosDialog.labelPreviousValue')}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} min="0" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -513,7 +513,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.aditivosDialog.labelNewValue')}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} min="0" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

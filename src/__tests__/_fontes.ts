@@ -54,6 +54,25 @@ export function fontes(): string[] {
  */
 export const FORA_DO_TEMA = ['pages/Assessment.tsx', 'MFAVerification'];
 
+/**
+ * TODAS as fontes de `src` — `.ts` incluídos, sem excepções de tema.
+ *
+ * `fontesTsx()` faz duas exclusões que são certas para as regras VISUAIS e
+ * erradas para as de CORRECÇÃO: deixa de fora os `.ts` e as superfícies com
+ * identidade própria. Medido ao descobri-lo: dezasseis leituras cruas de
+ * coluna `date` viviam exactamente nesse ponto cego — doze delas em
+ * `generateTemplatePDF.ts`, que é o relatório que se imprime e se manda ao
+ * auditor, e uma no caminho de ESCRITA de `controle-testes.ts`.
+ *
+ * A guarda do fuso dizia «daqui para a frente é regressão». Estava a ler
+ * pouco mais de metade do repositório.
+ *
+ * Regra: guarda de aparência usa `fontesTsx()`; guarda de correcção usa esta.
+ */
+export function fontesTodas(): string[] {
+  return fontes();
+}
+
 /** Só os `.tsx`, e só os que seguem o tema da aplicação. */
 export function fontesTsx(): string[] {
   return fontes()

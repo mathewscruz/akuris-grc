@@ -22,6 +22,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { parseDataLocal } from '@/lib/date-utils';
 const assessmentLogger = {
   info: (message: string, data?: any) => {
     logger.info(`[Assessment] ${message}`, { module: 'Assessment', details: data });
@@ -216,7 +217,7 @@ const WelcomeScreen = ({
 }) => {
   const { t } = useLanguage();
   const estimatedMinutes = Math.max(5, Math.round(totalQuestions * 0.75));
-  const deadlineRaw = assessment.data_limite ? new Date(assessment.data_limite) : null;
+  const deadlineRaw = assessment.data_limite ? parseDataLocal(assessment.data_limite) : null;
   const deadline = deadlineRaw && !isNaN(deadlineRaw.getTime()) ? deadlineRaw : null;
   const now = new Date();
   const daysLeft = deadline ? Math.max(0, Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
@@ -666,7 +667,7 @@ export default function Assessment() {
                 {assessment.data_conclusao && (
                   <p className="text-sm text-slate-500">
                     <strong className="text-slate-700">{t('publicPortal.assessment.completedAt')}</strong>{' '}
-                    {new Date(assessment.data_conclusao).toLocaleString(localeTag())}
+                    {parseDataLocal(assessment.data_conclusao).toLocaleString(localeTag())}
                   </p>
                 )}
               </div>
@@ -754,7 +755,7 @@ export default function Assessment() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-2.5">
                   {(() => {
-                    const deadlineRaw = assessment.data_limite ? new Date(assessment.data_limite) : null;
+                    const deadlineRaw = assessment.data_limite ? parseDataLocal(assessment.data_limite) : null;
                     const validDeadline = deadlineRaw && !isNaN(deadlineRaw.getTime()) ? deadlineRaw : null;
                     const now = new Date();
                     const daysLeft = validDeadline
@@ -1042,6 +1043,7 @@ export default function Assessment() {
                         {tipoDeCampo(question.tipo) === 'numerico' && (
                           <Input
                             type="number"
+                            min="0"
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             placeholder={t('publicPortal.assessment.numberPlaceholder')}
