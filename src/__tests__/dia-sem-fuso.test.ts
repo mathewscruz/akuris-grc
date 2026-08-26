@@ -14,6 +14,9 @@
  * Todas foram convertidas. Daqui para a frente é regressão.
  */
 import { afterAll, describe, expect, it } from 'vitest';
+import { formatDate } from '@/lib/i18n-format';
+import { formatDateOnly } from '@/lib/date-utils';
+import { setAppLocale } from '@/lib/i18n-locale';
 import { fontesTodas, linhas } from './_fontes';
 
 /**
@@ -207,10 +210,17 @@ describe('os dois formatadores concordam sobre o dia', () => {
   });
 
   for (const fuso of ['America/Sao_Paulo', 'Pacific/Kiritimati', 'UTC']) {
-    it(`em ${fuso}, o dia formatado é o dia que está na cadeia`, async () => {
+    it(`em ${fuso}, o dia formatado é o dia que está na cadeia`, () => {
+      /* O TZ vale por chamada: os dois formatadores constroem o seu
+         `Intl.DateTimeFormat` na hora, por isso basta trocar a variável.
+         (Os `import()` dinâmicos que aqui estavam custavam mais de 5s sob
+         a suíte inteira e faziam o teste falhar por tempo, não por regra.) */
       process.env.TZ = fuso;
-      const { formatDate } = await import('@/lib/i18n-format');
-      const { formatDateOnly } = await import('@/lib/date-utils');
+      /* `formatDateOnly` lê o idioma de um global do módulo
+         (`setAppLocale`), e outro ficheiro de teste do mesmo worker
+         deixava-o em `en` — a guarda passava sozinha e falhava na suíte
+         inteira, com `07/01` contra `01/07`. Fixa-se aqui. */
+      setAppLocale('pt-BR');
 
       for (const dia of DIAS) {
         const [ano, mes, d] = dia.split('-');

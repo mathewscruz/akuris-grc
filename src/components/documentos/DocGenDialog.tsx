@@ -57,6 +57,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
 import { formatarDiaParaDB } from '@/lib/date-utils';
+import { nomeDeFicheiroSeguro } from '@/lib/nome-de-ficheiro';
 /**
  * Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat.
  * Tem de ser MAIOR do que o orçamento do servidor (115s) para que a resposta
@@ -106,7 +107,15 @@ async function callDocGen(
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(body),
+      /*
+        `data_local`: o DIA de quem está a gerar, em todas as chamadas.
+
+        O runtime da borda corre em UTC. Sem isto, uma política gerada às
+        21:07 de São Paulo nascia datada do dia seguinte — medido em três
+        documentos reais — e a `proxima_revisao` herdava o desvio. Vai no
+        wrapper, e não em cada chamada, para que nenhuma futura o esqueça.
+      */
+      body: JSON.stringify({ data_local: formatarDiaParaDB(new Date()), ...body }),
       signal: aborter.signal,
     });
 
@@ -253,6 +262,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // Onda 2: contexto da empresa carregado via edge function
   const [companyContext, setCompanyContext] = useState<import('./DocGenContextPanel').CompanyContext | null>(null);
   const [companyContextLoading, setCompanyContextLoading] = useState(false);
+  /* A leitura do contexto falhou — ver `DocGenContextPanel.erro`. */
+  const [companyContextErro, setCompanyContextErro] = useState(false);
+  const [contextoRecarga, setContextoRecarga] = useState(0);
 
   // Onda 3: refino por seção + aderência inline
   const [refiningSectionIndex, setRefiningSectionIndex] = useState<number | null>(null);
@@ -321,6 +333,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     let cancelled = false;
     (async () => {
       setCompanyContextLoading(true);
+      setCompanyContextErro(false);
       try {
         const { data, error } = await supabase.functions.invoke('docgen-chat', {
           body: {
@@ -331,15 +344,21 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         });
         if (!cancelled && !error && data?.company_context) {
           setCompanyContext(data.company_context);
+        } else if (!cancelled) {
+          /* Falhou a leitura. Sem isto o painel dizia «Sem contexto
+             disponível» — uma afirmação — e a geração seguia sem os dados
+             reais da empresa, em silêncio. */
+          setCompanyContextErro(true);
         }
       } catch (e) {
         console.error('Erro ao carregar contexto da empresa:', e);
+        if (!cancelled) setCompanyContextErro(true);
       } finally {
         if (!cancelled) setCompanyContextLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [open, userInfo?.empresa_id]);
+  }, [open, userInfo?.empresa_id, contextoRecarga]);
 
   // Auto scroll para última mensagem (rola só o container do chat).
   // Só rola automaticamente se o usuário já estava perto do fim — assim
@@ -814,7 +833,13 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         empresaId: userInfo.empresa_id,
         error: error instanceof Error ? error.message : String(error),
       });
-      setGenerationError((error as Error)?.message || t('docgen.dialog.generateDocumentError'));
+      /* A mensagem do servidor fica no log, não no ecrã. Reproduzido: o
+         utilizador via «A geração não foi concluída · Missing required
+         environment variables» — texto interno, sem nada que ele possa
+         fazer com ele. Os erros COM código conhecido (créditos, timeout,
+         documento inválido, IA indisponível) continuam a ter cada um a sua
+         frase, acima. */
+      setGenerationError(t('docgen.dialog.generateDocumentError'));
       toast({
         title: t('docgen.dialog.errorTitle'),
         description: t('docgen.dialog.generateDocumentError'),
@@ -899,7 +924,11 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${generatedDocument.titulo}.${format === 'pdf' ? 'pdf' : 'docx'}`;
+      /* O título vem do modelo e nem sempre serve como nome de ficheiro:
+         nos documentos já gerados há três com mais de 100 caracteres (o
+         maior com 208) e três com a barra de «RTO/RPO» ou o `**` de
+         markdown lá dentro. Ver `lib/nome-de-ficheiro`. */
+      a.download = `${nomeDeFicheiroSeguro(generatedDocument.titulo)}.${format === 'pdf' ? 'pdf' : 'docx'}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1449,7 +1478,13 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
             {/* Onda 2: contexto da empresa */}
             <div className="mb-3">
-              <DocGenContextPanel context={companyContext} loading={companyContextLoading} defaultOpen={false} />
+              <DocGenContextPanel
+                context={companyContext}
+                loading={companyContextLoading}
+                defaultOpen={false}
+                erro={companyContextErro}
+                onRetry={() => setContextoRecarga((n) => n + 1)}
+              />
             </div>
             <div
               ref={messagesScrollRef}

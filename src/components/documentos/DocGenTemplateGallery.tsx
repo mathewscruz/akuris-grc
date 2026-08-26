@@ -11,6 +11,7 @@ import {
   type DocGenTemplate,
 } from '@/lib/docgen-templates';
 import { cn } from '@/lib/utils';
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocGenTemplateGalleryProps {
@@ -120,11 +121,25 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map((tpl) => {
               const Icon = tpl.icon;
+              const abrir = rowOpenProps(() => onPickTemplate(tpl), tpl.label, CARD_HOVER);
               return (
+                /*
+                  `rowOpenProps`: o cartão abre com clique, Enter e barra de
+                  espaço, e mostra o foco a quem navega por teclado.
+
+                  Era uma `<div>` com `onClick` e mais nada: sem `tabIndex`,
+                  sem `onKeyDown`, sem papel. Quem não usa rato não conseguia
+                  escolher modelo nenhum — e esta é a porta de entrada do
+                  DocGen. A regra do clique em cartão já existia no repositório,
+                  em `lib/row-interaction`; faltava aqui.
+                */
                 <Card
                   key={tpl.id}
-                  className="group cursor-pointer transition-ui hover:border-primary/40 hover:shadow-elegant"
-                  onClick={() => onPickTemplate(tpl)}
+                  {...abrir}
+                  className={cn(
+                    'group transition-ui hover:border-primary/40 hover:shadow-elegant',
+                    abrir.className,
+                  )}
                 >
                   <CardContent className="p-4 flex flex-col h-full gap-3">
                     <div className="flex items-start gap-3">
@@ -149,7 +164,9 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
                         ))}
                       </div>
                     )}
-                    <div className="flex items-center justify-end text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* `md:opacity-0`: no toque não há hover, e esta era a
+                        única pista de que o cartão faz alguma coisa. */}
+                    <div className="flex items-center justify-end text-xs text-primary md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       {t('docgen.templateGallery.useTemplate')}
                       <IconArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
                     </div>

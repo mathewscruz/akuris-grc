@@ -22,15 +22,39 @@ interface Props {
   context: CompanyContext | null;
   loading?: boolean;
   defaultOpen?: boolean;
+  /**
+   * A leitura do contexto FALHOU — diferente de a empresa não ter contexto.
+   *
+   * Sem esta distinção o painel dizia «Sem contexto disponível — a IA usará
+   * apenas o briefing» nos dois casos, e a geração seguia em frente sem os
+   * riscos, controlos e frameworks reais. O documento sai plausível e
+   * genérico, e ninguém fica a saber que faltou o que importava.
+   */
+  erro?: boolean;
+  onRetry?: () => void;
 }
 
-export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultOpen = true }) => {
+export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultOpen = true, erro, onRetry }) => {
   const { t } = useLanguage();
   if (loading) {
     return (
       <div className="rounded-lg border border-border bg-card/50 p-4 flex items-center gap-3">
         <AkurisPulse size={24} />
         <span className="text-sm text-muted-foreground">{t('docgen.contextPanel.loading')}</span>
+      </div>
+    );
+  }
+
+  if (erro && !context) {
+    return (
+      <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning flex flex-wrap items-center gap-2">
+        <IconShieldAlert className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+        <span className="flex-1 min-w-[12rem]">{t('docgen.contextPanel.contextFailed')}</span>
+        {onRetry && (
+          <button type="button" onClick={onRetry} className="underline underline-offset-2 font-medium">
+            {t('docgen.contextPanel.contextRetry')}
+          </button>
+        )}
       </div>
     );
   }

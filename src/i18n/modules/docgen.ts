@@ -14,6 +14,11 @@ export const docgen = {
       contextPanel: {
         loading: 'Carregando contexto da empresa…',
         noContext: 'Sem contexto disponível — a IA usará apenas o briefing.',
+        /* Falhar a LER o contexto não é o mesmo que não o ter: no primeiro
+           caso o documento sai sem os riscos, controlos e frameworks reais
+           da empresa, e antes ninguém era avisado. */
+        contextFailed: 'Não foi possível carregar o contexto da empresa. Se gerar agora, o documento sairá sem os seus riscos, controlos e frameworks.',
+        contextRetry: 'Tentar carregar de novo',
         title: 'Contexto enviado à IA',
         companyChip: 'Empresa',
         frameworksChip: '{count} frameworks',
@@ -279,6 +284,8 @@ export const docgen = {
       contextPanel: {
         loading: 'Loading company context…',
         noContext: 'No context available — the AI will use only the briefing.',
+        contextFailed: 'Could not load your company context. Generating now produces a document without your risks, controls and frameworks.',
+        contextRetry: 'Try loading again',
         title: 'Context sent to the AI',
         companyChip: 'Company',
         frameworksChip: '{count} frameworks',

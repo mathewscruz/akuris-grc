@@ -79,6 +79,27 @@ function extractFrameworks(messageText: string): string[] {
 // Modelo padrão (chat/quick_adherence): rápido e barato.
 // Modelo de qualidade editorial (generate_document / refine_document / retry).
 // Fallback de resiliência: outro fornecedor, para o caso de degradação do Google.
+/**
+ * Título curto para o campo `nome`, que é o que aparece na lista.
+ *
+ * A IA devolve às vezes o briefing inteiro como título: medidos 208, 159 e
+ * 110 caracteres em documentos reais da base de desenvolvimento, e um deles
+ * com o `**` do negrito de markdown lá dentro. Nesse tamanho não cabe em
+ * lista, cabeçalho ou nome de ficheiro.
+ *
+ * Gémeo de `tituloCurto` em `src/lib/nome-de-ficheiro.ts` — vive aqui
+ * porque o runtime da borda não importa de `src/`.
+ */
+const MAX_TITULO = 80;
+function tituloCurto(titulo: unknown): string {
+  const limpo = String(titulo ?? '').replace(/\*\*|__|`/g, '').replace(/\s+/g, ' ').trim();
+  if (limpo.length <= MAX_TITULO) return limpo;
+  const cortado = limpo.slice(0, MAX_TITULO);
+  const espaco = cortado.lastIndexOf(' ');
+  const base = espaco > MAX_TITULO * 0.6 ? cortado.slice(0, espaco) : cortado;
+  return base.replace(/[-\s,.;:]+$/, '') + '…';
+}
+
 const MODEL_FAST = 'google/gemini-3.1-flash-lite';
 const MODEL_QUALITY = 'google/gemini-3.6-flash';
 const MODEL_FALLBACK = 'openai/gpt-5.4-mini';
@@ -466,11 +487,34 @@ serve(async (req) => {
       conversation_title,  // título legível (modelo + data) definido pelo cliente
       briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
       doc_control,         // controlo documental (ISO 27001 7.5) + papéis reais informados no briefing
+      data_local,          // dia do UTILIZADOR (YYYY-MM-DD) — ver `hojeLocal` abaixo
       idempotency_key,     // P0: chave gerada pelo cliente — impede débito duplo em retries
       json_retry,          // P1: esta invocação é a re-tentativa dedicada de JSON
       run_quality_gate,    // P1: quality gate roda em invocação própria
 
     } = await req.json();
+
+    /**
+     * O DIA de quem pediu — não o do servidor.
+     *
+     * O runtime da borda corre em UTC (`TZ` vazio), e
+     * `new Date().toISOString().slice(0,10)` devolve o dia do SERVIDOR.
+     * Entre as 21:00 e a meia-noite em São Paulo isso é amanhã: medidos
+     * três documentos gerados a 16/08 às 21:07, 21:42 e 22:34 e datados
+     * de 2026-08-17 — e a `proxima_revisao` herdava o mesmo desvio.
+     *
+     * Não há coluna de fuso em `empresas` nem em `profiles`, por isso o
+     * servidor não tem como adivinhá-lo. Quem sabe é o browser, e passa a
+     * mandá-lo em `data_local`. Sem ele — chamada de outro sistema, ou
+     * cliente antigo — cai no dia do servidor, como antes.
+     */
+    const hojeLocal = (): string =>
+      (typeof data_local === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data_local))
+        ? data_local
+        : new Date().toISOString().slice(0, 10);
+
+    /** O mesmo dia, como `Date` ao meio-dia local — longe de qualquer fronteira. */
+    const hojeLocalDate = (): Date => new Date(`${hojeLocal()}T12:00:00`);
 
     // ===== P0: orçamento de tempo alinhado com abort real =====
     // A plataforma corta a invocação por volta dos 150s. Trabalhamos com um
@@ -746,7 +790,10 @@ serve(async (req) => {
           titulo: conversation_title
             || [
                  doc_type_hint || framework_context?.framework_name || 'Documento',
-                 new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                 /* O dia do utilizador. Com a hora do servidor aqui, a lista
+                    de conversas mostrava «17/08/2026, 00:42» ao lado de
+                    «16/08/2026, 21:40» para a mesma noite. */
+                 hojeLocal().split('-').reverse().join('/'),
                ].join(' — '),
           mensagens: [],
           contexto: {
@@ -1136,7 +1183,7 @@ REFERÊNCIAS_INLINE: não (é PROIBIDO escrever códigos ou numerações de requ
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
 EMPRESA: ${context.empresa_nome}
-DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)${docControlSection}
+DATA_ATUAL: ${hojeLocal()} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)${docControlSection}
 ${frameworkRequirementsSection || frameworkGapsSection}${transcriptSection}
 
 Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) framework(s) citado(s) quando aplicável.
@@ -1244,14 +1291,14 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
       // com a data do servidor para a capa/versão do documento ficar correta.
       if (documentContent && typeof documentContent === 'object') {
-        documentContent.data_criacao = new Date().toISOString().slice(0, 10);
+        documentContent.data_criacao = hojeLocal();
         // Controlo documental determinístico: o que o usuário informou vence o
         // que a IA escreveu, e o que ninguém informou fica "A definir" (nunca
         // um nome inventado).
         const meses: Record<string, number> = { mensal: 1, trimestral: 3, semestral: 6, anual: 12, bienal: 24 };
         const freqKey = dcFrequency.toLowerCase();
         const addMonths = meses[freqKey] ?? 12;
-        const next = new Date();
+        const next = hojeLocalDate();
         next.setMonth(next.getMonth() + addMonths);
         documentContent.metadados = {
           ...(documentContent.metadados || {}),
@@ -1260,7 +1307,13 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
           responsavel_aprovacao: dcApprover || documentContent.metadados?.responsavel_aprovacao || 'A definir',
           responsavel_elaboracao: documentContent.metadados?.responsavel_elaboracao || context.user_name || '',
           frequencia_revisao: dcFrequency,
-          proxima_revisao: next.toISOString().slice(0, 10),
+          /* Do dia LOCAL, e formatado a partir das partes locais: um
+             `toISOString()` aqui voltaria a converter para UTC. */
+          proxima_revisao: [
+            next.getFullYear(),
+            String(next.getMonth() + 1).padStart(2, '0'),
+            String(next.getDate()).padStart(2, '0'),
+          ].join('-'),
           referencias_inline: dcInlineRefs,
         };
       }
@@ -1362,7 +1415,11 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
           empresa_id,
           conversation_id: conversation.id,
           template_id: template.id,
-          nome: documentContent.titulo || tipoDocumentoFinal,
+          /* O `nome` é o que aparece na lista e no cabeçalho. O título que
+             a IA devolve chega a ser o briefing inteiro — medidos 208
+             caracteres num documento real — e nesse tamanho não cabe em
+             lista nenhuma. Corta-se aqui, uma vez, na fronteira da palavra. */
+          nome: tituloCurto(documentContent.titulo) || tipoDocumentoFinal,
           tipo_documento: tipoDocumentoFinal,
           conteudo: documentContent,
           created_by: user_id
