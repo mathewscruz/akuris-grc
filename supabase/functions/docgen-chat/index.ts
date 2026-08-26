@@ -80,6 +80,73 @@ function extractFrameworks(messageText: string): string[] {
 // Modelo de qualidade editorial (generate_document / refine_document / retry).
 // Fallback de resiliência: outro fornecedor, para o caso de degradação do Google.
 /**
+ * Contexto real da empresa, lido NO SERVIDOR.
+ *
+ * Vive aqui, e não no corpo do pedido, porque é isso que o torna real — o
+ * mesmo princípio que o guard de autenticação já aplica ao `empresa_id`:
+ * «Trust only the JWT — never the empresa_id/user_id from the request body».
+ *
+ * Antes, o bloco «CONTEXTO REAL DA EMPRESA» do prompt era montado a partir de
+ * `body.company_context`, que o cliente carregava uma vez e reenviava a cada
+ * geração, e que ninguém verificava. Duas consequências: texto arbitrário a
+ * entrar no prompt do sistema logo a seguir a uma frase de instrução, e um
+ * rótulo — «REAL» — que o servidor não tinha como garantir. Um documento podia
+ * sair a citar um CNPJ ou uma lista de riscos que não eram os da empresa, com
+ * ar de artefacto oficial.
+ */
+async function lerContextoDaEmpresa(supabase: any, empresaId: string) {
+  const [empresaRes, ativosRes, riscosRes, frameworksRes] = await Promise.all([
+    supabase
+      .from('empresas')
+      .select('nome, cnpj, setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao')
+      .eq('id', empresaId)
+      .maybeSingle(),
+    supabase
+      .from('ativos')
+      .select('nome, tipo, criticidade, proprietario')
+      .eq('empresa_id', empresaId)
+      .in('criticidade', ['critica', 'alta', 'crítica'])
+      .limit(8),
+    /*
+      Filtrava `nivel_risco_residual` por uma lista de rótulos, o que deixava
+      de fora duas populações inteiras: quem renomeou as faixas ("Extremo",
+      "Elevado") e quem ainda não avaliou o residual — que é a maioria da
+      carteira. O documento gerado dizia "sem riscos altos".
+    */
+    supabase
+      .from('riscos')
+      .select('nome, nivel_risco_residual, nivel_risco_inicial, severidade_efetiva, score_efetivo, status, categoria_id')
+      .eq('empresa_id', empresaId)
+      .in('severidade_efetiva', ['critico', 'alto'])
+      .order('score_efetivo', { ascending: false })
+      .limit(8),
+    supabase
+      .from('gap_analysis_assessments')
+      .select('framework_id, percentual_conclusao, status, gap_analysis_frameworks(nome, versao)')
+      .eq('empresa_id', empresaId)
+      .order('updated_at', { ascending: false })
+      .limit(10),
+  ]);
+
+  return {
+    empresa: empresaRes.data || null,
+    ativos_criticos: (ativosRes.data || []).map((a: any) => ({
+      nome: a.nome, tipo: a.tipo, criticidade: a.criticidade, proprietario: a.proprietario,
+    })),
+    riscos_altos: (riscosRes.data || []).map((r: any) => ({
+      nome: r.nome, nivel: r.nivel_risco_residual || r.nivel_risco_inicial, status: r.status,
+    })),
+    frameworks: (frameworksRes.data || []).map((f: any) => ({
+      framework_id: f.framework_id,
+      nome: f.gap_analysis_frameworks?.nome,
+      versao: f.gap_analysis_frameworks?.versao,
+      score: f.percentual_conclusao,
+      status: f.status,
+    })).filter((f: any) => f.nome),
+  };
+}
+
+/**
  * Título curto para o campo `nome`, que é o que aparece na lista.
  *
  * A IA devolve às vezes o briefing inteiro como título: medidos 208, 159 e
@@ -478,7 +545,8 @@ serve(async (req) => {
       action = 'chat',
       doc_type_hint,
       framework_context,
-      company_context: company_context_input,
+      /* `company_context` NÃO se aceita do corpo: é lido no servidor.
+         Ver `lerContextoDaEmpresa` e `contextoDaEmpresa`. */
       // Onda 3
       document,            // documento gerado completo (para refine_section / quick_adherence)
       section_index,       // índice da seção a refinar
@@ -605,55 +673,7 @@ serve(async (req) => {
       // eslint-disable-next-line no-var
       var empresa_id_resolved = effectiveEmpresaId;
 
-      const [empresaRes, ativosRes, riscosRes, frameworksRes] = await Promise.all([
-        supabase
-          .from('empresas')
-          .select('nome, cnpj, setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao')
-          .eq('id', empresa_id_resolved)
-          .maybeSingle(),
-        supabase
-          .from('ativos')
-          .select('nome, tipo, criticidade, proprietario')
-          .eq('empresa_id', empresa_id_resolved)
-          .in('criticidade', ['critica', 'alta', 'crítica'])
-          .limit(8),
-        /*
-          Filtrava `nivel_risco_residual` por uma lista de rótulos, o que
-          deixava de fora duas populações inteiras: quem renomeou as faixas
-          ("Extremo", "Elevado") e quem ainda não avaliou o residual — que é a
-          maioria da carteira. O documento gerado dizia "sem riscos altos".
-        */
-        supabase
-          .from('riscos')
-          .select('nome, nivel_risco_residual, nivel_risco_inicial, severidade_efetiva, score_efetivo, status, categoria_id')
-          .eq('empresa_id', empresa_id_resolved)
-          .in('severidade_efetiva', ['critico', 'alto'])
-          .order('score_efetivo', { ascending: false })
-          .limit(8),
-        supabase
-          .from('gap_analysis_assessments')
-          .select('framework_id, percentual_conclusao, status, gap_analysis_frameworks(nome, versao)')
-          .eq('empresa_id', empresa_id_resolved)
-          .order('updated_at', { ascending: false })
-          .limit(10),
-      ]);
-
-      const company_context = {
-        empresa: empresaRes.data || null,
-        ativos_criticos: (ativosRes.data || []).map((a: any) => ({
-          nome: a.nome, tipo: a.tipo, criticidade: a.criticidade, proprietario: a.proprietario,
-        })),
-        riscos_altos: (riscosRes.data || []).map((r: any) => ({
-          nome: r.nome, nivel: r.nivel_risco_residual || r.nivel_risco_inicial, status: r.status,
-        })),
-        frameworks: (frameworksRes.data || []).map((f: any) => ({
-          framework_id: f.framework_id,
-          nome: f.gap_analysis_frameworks?.nome,
-          versao: f.gap_analysis_frameworks?.versao,
-          score: f.percentual_conclusao,
-          status: f.status,
-        })).filter((f: any) => f.nome),
-      };
+      const company_context = await lerContextoDaEmpresa(supabase, empresa_id_resolved);
 
       return new Response(JSON.stringify({ company_context }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -689,6 +709,20 @@ serve(async (req) => {
     // Override body-supplied values with authenticated values (nunca confiar no body)
     user_id = authedUserId;
     empresa_id = authedEmpresaId;
+
+    /**
+     * O contexto da empresa, lido uma vez por invocação e SEMPRE no servidor.
+     *
+     * A regra do `empresa_id` — nunca confiar no corpo do pedido — vale
+     * igualmente para o que vai dentro do prompt sob o rótulo «CONTEXTO REAL
+     * DA EMPRESA». O `company_context` que o cliente enviava era usado tal e
+     * qual, e num dos sítios em bruto (`JSON.stringify(...).slice(0, 6000)`).
+     */
+    let _contextoLido: Awaited<ReturnType<typeof lerContextoDaEmpresa>> | null = null;
+    const contextoDaEmpresa = async () => {
+      if (!_contextoLido) _contextoLido = await lerContextoDaEmpresa(supabase, empresa_id);
+      return _contextoLido;
+    };
 
     // Validação de payload ANTES de consumir crédito (evita cobrança em chamadas malformadas).
     if (action === 'refine_section' && (!document || typeof section_index !== 'number' || !instruction)) {
@@ -863,7 +897,9 @@ serve(async (req) => {
         : '';
 
       // ========== Contexto automático da empresa (Onda 2) ==========
-      const cc: any = company_context_input || (context as any).company_context || null;
+      /* Lido no servidor — ver `contextoDaEmpresa`. O que vinha no corpo do
+         pedido chegava ao prompt sem ninguém verificar que era real. */
+      const cc: any = await contextoDaEmpresa();
       let companyContextSection = '';
       if (cc) {
         const emp = cc.empresa || {};
@@ -1912,7 +1948,7 @@ Responda EXATAMENTE neste JSON:
       });
 
       // Injeta contexto real da empresa (mesmo padrão do generate_document/chat).
-      const ccRefine: any = company_context_input || (context as any).company_context || null;
+      const ccRefine: any = await contextoDaEmpresa();
       const companyBlock = ccRefine ? `\nCONTEXTO REAL DA EMPRESA (use estes dados; não invente):\n${JSON.stringify(ccRefine).slice(0, 6000)}\n` : '';
 
       // === Onda 2: refino ciente de compliance ===

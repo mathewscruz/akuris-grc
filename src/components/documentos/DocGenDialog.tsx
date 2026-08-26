@@ -406,7 +406,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         ...(conversationId ? {} : { conversation_title: `${selectedTemplate?.label || currentDocName || 'DocGen'} — ${new Date().toLocaleString()}` }),
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
         ...(requirementContext && { requirement_context: requirementContext }),
-        ...(companyContext && { company_context: companyContext }),
+        /* O contexto da empresa NÃO segue no corpo: o servidor lê-o de
+           `empresas`, `riscos`, `ativos` e `gap_analysis_assessments`
+           a partir do `empresa_id` do JWT. O painel acima continua a
+           mostrá-lo, para que se veja o que a IA vai receber. */
       });
 
       if (res.credits) { setShowCreditsDialog(true); return; }
@@ -454,7 +457,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         document: generatedDocument,
         instruction,
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
-        ...(companyContext && { company_context: companyContext }),
+        /* O contexto da empresa NÃO segue no corpo: o servidor lê-o de
+           `empresas`, `riscos`, `ativos` e `gap_analysis_assessments`
+           a partir do `empresa_id` do JWT. O painel acima continua a
+           mostrá-lo, para que se veja o que a IA vai receber. */
       });
       if (res.credits) { setShowCreditsDialog(true); return; }
       if (res.timeout) {

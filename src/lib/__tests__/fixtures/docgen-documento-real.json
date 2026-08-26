@@ -1,0 +1,670 @@
+{
+ "secoes": [
+  {
+   "nome": "Controle Documental",
+   "conteudo": "## 1. Controle Documental\n\n| Atributo | Detalhe |\n| --- | --- |\n| **Código/Identificação** | POL-SEC-001 |\n| **Versão** | 1.0 |\n| **Data de Emissão** | 2026-08-17 |\n| **Proprietário do Documento** | Head de Seguranca da Informacao |\n| **Aprovador** | Diretor Executivo |\n| **Periodicidade de Revisão** | Anual |\n| **Próxima Revisão** | 2027-08-17 |\n| **Classificação da Informação** | Interna |\n| **Meio de Distribuição** | Intranet Corporativa e Portal de Políticas |"
+  },
+  {
+   "nome": "Objetivo",
+   "conteudo": "## 2. Objetivo\n\nEsta Política de Controle de Acesso estabelece as diretrizes formais e obrigatórias para a concessão, manutenção, revisão e revogação de acessos lógicos aos sistemas e recursos tecnológicos da Nexure. O documento visa garantir que todos os acessos sejam concedidos com base nos princípios do menor privilégio e da necessidade de conhecer, minimizando os riscos de exposição indevida, alteração não autorizada ou vazamento de informações corporativas e dados de clientes. [A.5.1]\n\nA aplicação destas regras é fundamental para assegurar a confidencialidade, integridade e disponibilidade dos ativos de informação, alinhando as práticas operacionais aos requisitos da norma ISO/IEC 27001 e aos critérios do framework SOC 2. A estruturação de um processo formal de provisionamento e desprovisionamento protege a infraestrutura contra ameaças, estabelecendo um padrão auditável para todas as interações com os sistemas corporativos.\n\nAs diretrizes aqui descritas aplicam-se integralmente aos acessos concedidos a prestadores de serviço pessoa jurídica (PJ) e consultores temporários. Para estes perfis, a concessão de acesso deve, obrigatoriamente, possuir um prazo de validade definido e vinculado à vigência contratual ou à necessidade específica do projeto, sendo revogada automaticamente ao término do período estipulado.\n\nAlém de regulamentar o ciclo de vida das identidades, este documento define as exigências para o acesso remoto seguro e para o gerenciamento de contas com privilégios elevados. A conformidade é mandatória para todos os usuários, garantindo que a Nexure mantenha um ambiente tecnológico controlado, rastreável e resiliente contra incidentes de segurança."
+  },
+  {
+   "nome": "Escopo",
+   "conteudo": "## 3. Escopo\n\nAs diretrizes estabelecidas nesta política aplicam-se obrigatoriamente a todos os colaboradores contratados sob o regime CLT, prestadores de serviço pessoa jurídica (PJ), estagiários, consultores externos e quaisquer terceiros que necessitem de acesso lógico aos recursos tecnológicos da Nexure Consulting. O cumprimento destas regras é condição indispensável para a manutenção do vínculo profissional ou contratual com a organização, abrangendo todas as áreas de negócio e operações técnicas. [A.8.3]\n\nO escopo tecnológico deste documento engloba todos os sistemas de informação, infraestruturas de rede, aplicações em nuvem e repositórios de dados gerenciados pela Nexure Consulting. Isto inclui, de forma específica e não limitativa, o diretório de identidades corporativo (Entra ID), as soluções de acesso remoto seguro (VPN), os sistemas de gestão empresarial (ERP), as plataformas de correio eletrônico e os ambientes de desenvolvimento, teste e produção.\n\nFicam explicitamente excluídos do escopo deste documento os controles de acesso físico às instalações da empresa, que são tratados em uma política de segurança física separada, bem como as regras de acesso a sistemas de clientes que não estejam sob a administração direta da Nexure Consulting. Para sistemas de terceiros, os colaboradores devem seguir as políticas específicas definidas pelos respectivos proprietários da informação, mantendo sempre o padrão de conduta ética e segura exigido por esta política. Apesar desta separação, o provisionamento lógico deve estar alinhado aos controles de entrada física [A.7.2], assegurando que apenas pessoal autorizado acesse áreas seguras. As instalações da Nexure Consulting devem possuir monitoramento de segurança física para detectar e registrar acessos não autorizados [A.7.4], atuando em conjunto com os controles lógicos."
+  },
+  {
+   "nome": "Definições",
+   "conteudo": "## 4. Definições\n\nPara garantir a correta interpretação e aplicação das diretrizes estabelecidas neste documento, os seguintes termos técnicos e conceitos de segurança da informação devem ser compreendidos conforme as definições abaixo:\n\n1. **Princípio do Menor Privilégio (Least Privilege):** Prática de segurança que determina que um usuário, programa ou processo deve possuir apenas os direitos de acesso estritamente necessários para executar suas funções legítimas, e nada além disso.\n2. **Segregação de Funções (SoD - Segregation of Duties):** Princípio de controle interno que exige a divisão de responsabilidades em processos críticos, garantindo que nenhuma pessoa tenha controle exclusivo sobre todas as fases de uma transação, prevenindo fraudes e erros.\n3. **Provisionamento e Desprovisionamento:** Processo formal de criação, modificação, suspensão ou exclusão de identidades digitais e seus respectivos direitos de acesso em sistemas corporativos, baseado em aprovações documentadas.\n4. **Autenticação Multifator (MFA):** Mecanismo de controle de acesso que exige a apresentação de duas ou mais evidências de autenticação independentes (algo que o usuário sabe, algo que possui ou algo que é) para validar uma identidade.\n5. **Acesso Privilegiado:** Direitos de acesso lógico que permitem a um usuário contornar controles de segurança padrão, alterar configurações de sistemas, gerenciar outras contas de usuário ou acessar dados sensíveis em massa (ex.: administradores de rede, root, sysadmin)."
+  },
+  {
+   "nome": "Responsabilidades",
+   "conteudo": "## 5. Papéis e Responsabilidades\n\nA eficácia do controle de acesso depende da atribuição clara de responsabilidades entre as diferentes funções da organização. A matriz RACI (Responsible, Accountable, Consulted, Informed) abaixo detalha as obrigações específicas dos cargos reais da Nexure Consulting em relação ao ciclo de vida das identidades e aos controles de segurança lógica. [A.5.2]\n\n| Atividade | Diretor Executivo | Head de Seguranca da Informacao | Analista de TI | Colaborador (CLT/PJ) |\n| --- | --- | --- | --- | --- |\n| Aprovar a Política de Controle de Acesso | A | R | C | I |\n| Definir a arquitetura de controle de acesso e regras do Entra ID | I | A/R | C | I |\n| Solicitar acesso a sistemas para execução de atividades laborais | I | I | I | R |\n| Executar o provisionamento e desprovisionamento técnico de contas | I | A | R | I |\n| Conduzir a revisão periódica de acessos privilegiados | I | A/R | C | I |\n| Utilizar os acessos concedidos estritamente para fins profissionais | I | I | I | A/R |\n\nO Diretor Executivo atua como o principal patrocinador das iniciativas de segurança da informação, sendo o responsável final (Accountable) pela aprovação formal desta política e pela garantia de que os recursos necessários para sua implementação sejam disponibilizados. O Head de Segurança da Informação detém a responsibility pela definição técnica, monitoramento contínuo e auditoria dos controles de acesso, assegurando que as práticas operacionais estejam alinhadas aos frameworks ISO 27001 e SOC 2. O Head de Segurança da Informação também deve assegurar que todos os colaboradores possuam a competência adequada [7.2] e recebam treinamentos de conscientização sobre esta política e as implicações de violações de segurança [7.3].\n\nO Analista de TI é o executor técnico (Responsible) das rotinas de administração de sistemas, encarregado de configurar o Entra ID, gerenciar a VPN, aplicar as regras de MFA e processar os chamados de provisionamento e revogação dentro dos SLAs estabelecidos. Por fim, todos os Colaboradores (CLT e PJ) são responsáveis por proteger suas credenciais, não compartilhar senhas sob nenhuma circunstância e comunicar imediatamente qualquer suspeita de comprometimento de suas contas à equipe de suporte técnico."
+  },
+  {
+   "nome": "Diretrizes",
+   "conteudo": "## 6. Diretrizes\n\n### 6.1. Princípios de Controle de Acesso e Segregação de Funções\nO controle de acesso lógico na Nexure Consulting deve ser fundamentado no princípio do menor privilégio, garantindo que os colaboradores recebam apenas os acessos estritamente necessários para a execução de suas atividades contratuais. A equipe de TI deve configurar os sistemas para negar o acesso por padrão (default deny), exigindo justificativa de negócio documentada e aprovação formal para qualquer concessão de privilégios. [A.5.15]\n\nA organização deve implementar a segregação de funções (SoD) em todos os processos críticos de negócio e de tecnologia da informação. O Head de Segurança da Informação deve mapear e documentar as combinações de acessos conflitantes, garantindo que nenhum colaborador possua permissões simultâneas para iniciar, aprovar e auditar uma mesma transação sensível. O Analista de TI está proibido de aprovar suas próprias solicitações de acesso a ambientes de produção. [A.5.3] Adicionalmente, técnicas de mascaramento de dados (data masking) devem ser utilizadas para proteger informações sensíveis contra exposição indevida, especialmente em ambientes de teste ou relatórios gerenciais, conforme requisitos legais e de negócio [A.8.11].\n\n### 6.2. Gerenciamento de Identidades e Provisionamento\nO ciclo de vida completo das identidades digitais deve ser gerenciado de forma centralizada através do Microsoft Entra ID. A criação de novas contas de usuário deve ser precedida por uma solicitação formal via sistema de chamados (ticket), contendo a identificação do colaborador, o cargo, a data de início e a aprovação do gestor direto ou do Diretor Executivo. Contas genéricas ou compartilhadas são estritamente proibidas para o acesso a sistemas que processem dados confidenciais. [A.5.16]\n\nO processo de desprovisionamento deve ser executado com rigor e celeridade para mitigar riscos de acessos residuais. O Analista de TI deve bloquear o acesso lógico de colaboradores desligados (CLT ou PJ) no Entra ID e revogar certificados de VPN em um prazo máximo de 24 horas (valor sugerido — validar) após a notificação oficial de término de contrato. Para desligamentos involuntários ou de alto risco, o bloqueio deve ocorrer de forma imediata e simultânea à comunicação do desligamento. [A.5.18]\n\n### 6.3. Autenticação Segura e Gestão de Senhas\nA autenticação em todos os sistemas corporativos, aplicações em nuvem e serviços de acesso remoto deve exigir, obrigatoriamente, o uso de Autenticação Multifator (MFA) baseada em aplicativo autenticador ou token de hardware. A Nexure Consulting proíbe o uso de SMS ou chamadas de voz como segundo fator de autenticação devido à sua vulnerabilidade a ataques de interceptação (SIM swap). O Analista de TI deve configurar o Entra ID para aplicar políticas de acesso condicional que reforcem o MFA. [A.8.5]\n\nAs senhas ou frases-passe devem possuir um comprimento mínimo de 14 caracteres (valor sugerido — validar) e ser verificadas contra listas conhecidas de senhas comprometidas no momento da criação. Em conformidade com as diretrizes modernas de segurança (ex.: NIST SP 800-63B), a expiração forçada e periódica de senhas não deve ser exigida, a menos que haja suspeita ou evidência de comprometimento da credencial. O sistema deve implementar bloqueio progressivo após 5 tentativas falhas de login. [A.5.17]\n\n### 6.4. Gerenciamento de Acessos Privilegiados\nA alocação e o uso de direitos de acesso privilegiados (contas de administrador) devem ser restritos, controlados e monitorados de forma contínua. O Analista de TI e o Head de Segurança da Informação devem utilizar contas nominais distintas para atividades administrativas e para atividades cotidianas (como leitura de e-mails e navegação web). O uso de contas privilegiadas deve ser restrito exclusivamente a estações de trabalho corporativas seguras e homologadas. [A.8.2]\n\nO Head de Segurança da Informação deve conduzir uma revisão formal e documentada de todos os acessos privilegiados em intervalos não superiores a 90 dias (valor sugerido — validar). Qualquer acesso privilegiado que não seja mais justificado pelas funções atuais do colaborador deve ser revogado imediatamente. Os logs de auditoria das atividades realizadas por contas administrativas e demais registros críticos devem ser retidos por no mínimo 12 meses e rigorosamente protegidos contra perda, destruição, falsificação e acesso não autorizado [A.5.33].\n\n### 6.5. Acesso Remoto e VPN\nO acesso remoto à rede interna da Nexure Consulting deve ser realizado exclusivamente através da solução de Virtual Private Network (VPN) homologada pela empresa. O Analista de TI deve configurar a VPN para exigir autenticação MFA e verificar a postura de segurança do dispositivo (presença de antivírus atualizado, firewall ativo e sistema operacional suportado) antes de estabelecer o túnel de comunicação. [A.6.7]\n\nOs colaboradores (CLT e PJ) que executam trabalho remoto devem garantir que as informações corporativas não sejam expostas a pessoas não autorizadas em seus ambientes de trabalho. É terminantemente proibido o uso de dispositivos pessoais (BYOD) não gerenciados pela empresa para acessar sistemas internos ou armazenar dados corporativos, salvo exceções formalmente aprovadas pelo Head de Segurança da Informação e mitigadas por soluções de Mobile Device Management (MDM). Para proteger os usuários e a infraestrutura, o acesso a sites externos deve ser gerenciado através de soluções de filtragem web (web filtering), reduzindo a exposição a malwares, phishing e conteúdos maliciosos [A.8.23].\n\n### 6.6. Acesso a Código-Fonte\nO acesso de leitura e escrita ao código-fonte, ferramentas de desenvolvimento e bibliotecas de software da Nexure Consulting deve ser rigorosamente gerenciado. Apenas desenvolvedores formalmente autorizados podem acessar esses repositórios, devendo utilizar autenticação forte e controle de versão para prevenir alterações não autorizadas ou vazamento de propriedade intelectual [A.8.4]."
+  },
+  {
+   "nome": "Disposições Finais",
+   "conteudo": "## 7. Disposições Finais\n\nO descumprimento das diretrizes estabelecidas nesta Política de Controle de Acesso constitui uma violação grave das normas de segurança da Nexure Consulting. Colaboradores CLT, prestadores de serviço PJ e terceiros que tentarem burlar os controles lógicos, compartilharem credenciais ou acessarem informações para as quais não possuem autorização estarão sujeitos a medidas disciplinares, que podem incluir advertências formais, suspensão, rescisão contratual por justa causa e responsabilização civil ou criminal aplicável.\n\nQuaisquer solicitações de exceção às regras definidas neste documento devem ser formalizadas por escrito, contendo uma justificativa técnica ou de negócio detalhada e a avaliação dos riscos residuais. As exceções só terão validade após a aprovação formal e conjunta do Head de Segurança da Informação e do Diretor Executivo, devendo ser registradas em um controle centralizado, com prazo de validade pré-determinado e medidas compensatórias implementadas.\n\nEsta política entra em vigor na data de sua publicação e deve ser analisada criticamente pelo Head de Segurança da Informação em periodicidade anual, ou sempre que ocorrerem mudanças significativas na infraestrutura tecnológica, nos processos de negócio ou nos requisitos regulatórios. As atualizações devem ser aprovadas pelo Diretor Executivo e comunicadas a todos os colaboradores através dos canais oficiais da organização."
+  },
+  {
+   "nome": "Premissas a Validar",
+   "conteudo": "## 8. Premissas a Validar\n\n| Premissa | Porquê é premissa | Quem valida |\n| --- | --- | --- |\n| Prazo de 24 horas para revogação de acessos após desligamento | Valor sugerido por boas práticas de mercado, não informado no briefing. | Diretor Executivo |\n| Comprimento mínimo de senha de 14 caracteres e ausência de expiração periódica | Alinhamento com NIST SP 800-63B, não detalhado no briefing. | Head de Seguranca da Informacao |\n| Revisão de acessos privilegiados a cada 90 dias | Valor sugerido para conformidade SOC 2 / ISO 27001, não informado no briefing. | Head de Seguranca da Informacao |\n| Uso exclusivo de dispositivos corporativos (proibição de BYOD sem MDM) | Assumido para garantir a segurança do acesso remoto via VPN. | Diretor Executivo |\n| Retenção de logs de contas administrativas por 12 meses | Métrica padrão de auditoria, não informada no briefing. | Head de Seguranca da Informacao |"
+  },
+  {
+   "nome": "Referências Normativas",
+   "conteudo": "## 9. Referências Normativas\n\nEste documento foi elaborado para atender aos requisitos dos seguintes frameworks de segurança da informação e conformidade:\n\n1. **ISO/IEC 27001:2022**\n   - [7.2] Competência\n   - [7.3] Conscientização\n   - [A.5.1] Políticas para segurança da informação\n   - [A.5.2] Papéis e responsabilidades para segurança da informação\n   - [A.5.3] Segregação de funções\n   - [A.5.15] Controle de acesso\n   - [A.5.16] Gerenciamento de identidade\n   - [A.5.17] Informações de autenticação\n   - [A.5.18] Direitos de acesso\n   - [A.5.33] Proteção de registros\n   - [A.6.7] Trabalho remoto\n   - [A.7.2] Controles de entrada física\n   - [A.7.4] Monitoramento de segurança física\n   - [A.8.2] Direitos de acesso privilegiados\n   - [A.8.3] Restrição de acesso a informação\n   - [A.8.4] Acesso a código-fonte\n   - [A.8.5] Autenticação segura\n   - [A.8.11] Mascaramento de dados\n   - [A.8.23] Filtragem web\n\n2. **SOC 2 (AICPA Trust Services Criteria)**\n   - CC6.1: A entidade implementa controles de acesso lógico para prevenir acessos não autorizados.\n   - CC6.2: A entidade gerencia credenciais e autenticação de usuários.\n   - CC6.3: A entidade autoriza, modifica e remove acessos a dados e sistemas."
+  }
+ ],
+ "titulo": "Política de Controle de Acesso",
+ "versao": "1.0",
+ "glossario": [
+  {
+   "termo": "Entra ID",
+   "definicao": "Serviço de gerenciamento de identidade e acesso baseado em nuvem da Microsoft, utilizado como diretório corporativo na Nexure Consulting."
+  },
+  {
+   "termo": "VPN",
+   "definicao": "Virtual Private Network — tecnologia que cria uma conexão criptografada e segura sobre uma rede menos segura, como a internet."
+  },
+  {
+   "termo": "MFA",
+   "definicao": "Multi-Factor Authentication — método de controle de acesso que exige dois ou mais fatores de verificação para conceder acesso a um recurso."
+  },
+  {
+   "termo": "SoD",
+   "definicao": "Segregation of Duties — princípio de segurança que divide tarefas críticas entre múltiplas pessoas para prevenir fraudes e erros."
+  },
+  {
+   "termo": "SLA",
+   "definicao": "Service Level Agreement — acordo de nível de serviço que define os prazos e métricas esperados para a execução de uma atividade."
+  }
+ ],
+ "metadados": {
+  "proprietario": "Head de Seguranca da Informacao",
+  "publico_alvo": "Todos os colaboradores CLT e PJ, gestores e administradores de sistemas",
+  "classificacao": "interna",
+  "proxima_revisao": "2027-08-17",
+  "frequencia_revisao": "anual",
+  "referencias_inline": true,
+  "responsavel_aprovacao": "Diretor Executivo",
+  "responsavel_elaboracao": "Consultor Sênior de GRC"
+ },
+ "coverage_map": [
+  {
+   "evidencia": "Esta Política de Controle de Acesso estabelece as diretrizes formais e obrigatórias para a concessão, manutenção, revisão e revogação de acessos lógicos aos sistemas e recursos tecnológicos da Nexure.",
+   "section_indexes": [
+    1
+   ],
+   "requirement_codigo": "A.5.1",
+   "requirement_titulo": "Políticas para segurança da informação"
+  },
+  {
+   "evidencia": "A matriz RACI (Responsible, Accountable, Consulted, Informed) abaixo detalha as obrigações específicas dos cargos reais da Nexure Consulting em relação ao ciclo",
+   "section_indexes": [
+    4
+   ],
+   "requirement_codigo": "A.5.2",
+   "requirement_titulo": "Papéis e responsabilidades para segurança da informação"
+  },
+  {
+   "evidencia": "A organização deve implementar a segregação de funções (SoD) em todos os processos críticos... garantindo que nenhum colaborador possua permissões simultâneas p",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.5.3",
+   "requirement_titulo": "Segregação de funções"
+  },
+  {
+   "evidencia": "O controle de acesso lógico na Nexure Consulting deve ser fundamentado no princípio do menor privilégio... A equipe de TI deve configurar os sistemas para negar",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.5.15",
+   "requirement_titulo": "Controle de acesso"
+  },
+  {
+   "evidencia": "O ciclo de vida completo das identidades digitais deve ser gerenciado de forma centralizada através do Microsoft Entra ID. A criação de novas contas de usuário ",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.5.16",
+   "requirement_titulo": "Gerenciamento de identidade"
+  },
+  {
+   "evidencia": "As senhas ou frases-passe devem possuir um comprimento mínimo de 14 caracteres... a expiração forçada e periódica de senhas não deve ser exigida, a menos que ha",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.5.17",
+   "requirement_titulo": "Informações de autenticação"
+  },
+  {
+   "evidencia": "O Analista de TI deve bloquear o acesso lógico de colaboradores desligados... O Head de Segurança da Informação deve conduzir uma revisão formal e documentada d",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.5.18",
+   "requirement_titulo": "Direitos de acesso"
+  },
+  {
+   "evidencia": "O acesso remoto à rede interna da Nexure Consulting deve ser realizado exclusivamente através da solução de Virtual Private Network (VPN) homologada pela empres",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.6.7",
+   "requirement_titulo": "Trabalho remoto"
+  },
+  {
+   "evidencia": "A alocação e o uso de direitos de acesso privilegiados (contas de administrador) devem ser restritos, controlados e monitorados... utilizar contas nominais dist",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.8.2",
+   "requirement_titulo": "Direitos de acesso privilegiados"
+  },
+  {
+   "evidencia": "As diretrizes estabelecidas nesta política aplicam-se obrigatoriamente a todos os colaboradores... que necessitem de acesso lógico aos recursos tecnológicos da ",
+   "section_indexes": [
+    2
+   ],
+   "requirement_codigo": "A.8.3",
+   "requirement_titulo": "Restrição de acesso a informação"
+  },
+  {
+   "evidencia": "A autenticação em todos os sistemas corporativos, aplicações em nuvem e serviços de acesso remoto deve exigir, obrigatoriamente, o uso de Autenticação Multifato",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.8.5",
+   "requirement_titulo": "Autenticação segura"
+  },
+  {
+   "evidencia": "O Head de Segurança da Informação também deve assegurar que todos os colaboradores possuam a competência adequada",
+   "section_indexes": [
+    4
+   ],
+   "requirement_codigo": "7.2",
+   "requirement_titulo": "Competência"
+  },
+  {
+   "evidencia": "recebam treinamentos de conscientização sobre esta política e as implicações de violações de segurança",
+   "section_indexes": [
+    4
+   ],
+   "requirement_codigo": "7.3",
+   "requirement_titulo": "Conscientização"
+  },
+  {
+   "evidencia": "o provisionamento lógico deve estar alinhado aos controles de entrada física [A.7.2], assegurando que apenas pessoal autorizado acesse áreas seguras.",
+   "section_indexes": [
+    2
+   ],
+   "requirement_codigo": "A.7.2",
+   "requirement_titulo": "Controles de entrada física"
+  },
+  {
+   "evidencia": "As instalações da Nexure Consulting devem possuir monitoramento de segurança física para detectar e registrar acessos não autorizados",
+   "section_indexes": [
+    2
+   ],
+   "requirement_codigo": "A.7.4",
+   "requirement_titulo": "Monitoramento de segurança física"
+  },
+  {
+   "evidencia": "O acesso de leitura e escrita ao código-fonte, ferramentas de desenvolvimento e bibliotecas de software da Nexure Consulting deve ser rigorosamente gerenciado.",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.8.4",
+   "requirement_titulo": "Acesso a código-fonte"
+  },
+  {
+   "evidencia": "registros críticos devem ser retidos por no mínimo 12 meses e rigorosamente protegidos contra perda, destruição, falsificação e acesso não autorizado",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.5.33",
+   "requirement_titulo": "Proteção de registros"
+  },
+  {
+   "evidencia": "técnicas de mascaramento de dados (data masking) devem ser utilizadas para proteger informações sensíveis contra exposição indevida",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.8.11",
+   "requirement_titulo": "Mascaramento de dados"
+  },
+  {
+   "evidencia": "o acesso a sites externos deve ser gerenciado através de soluções de filtragem web (web filtering), reduzindo a exposição a malwares",
+   "section_indexes": [
+    5
+   ],
+   "requirement_codigo": "A.8.23",
+   "requirement_titulo": "Filtragem web"
+  }
+ ],
+ "data_criacao": "2026-08-17",
+ "historico_versoes": [
+  {
+   "data": "2026-08-17",
+   "autor": "Consultor Sênior de GRC",
+   "versao": "1.0",
+   "descricao": "Emissão inicial da Política de Controle de Acesso"
+  }
+ ],
+ "premissas_a_validar": [
+  {
+   "motivo": "Valor sugerido por boas práticas de mercado, não informado no briefing.",
+   "premissa": "Prazo de 24 horas para revogação de acessos após desligamento",
+   "validar_com": "Diretor Executivo"
+  },
+  {
+   "motivo": "Alinhamento com NIST SP 800-63B, não detalhado no briefing.",
+   "premissa": "Comprimento mínimo de senha de 14 caracteres e ausência de expiração periódica",
+   "validar_com": "Head de Seguranca da Informacao"
+  },
+  {
+   "motivo": "Valor sugerido para conformidade SOC 2 / ISO 27001, não informado no briefing.",
+   "premissa": "Revisão de acessos privilegiados a cada 90 dias",
+   "validar_com": "Head de Seguranca da Informacao"
+  },
+  {
+   "motivo": "Assumido para garantir a segurança do acesso remoto via VPN.",
+   "premissa": "Uso exclusivo de dispositivos corporativos (proibição de BYOD sem MDM)",
+   "validar_com": "Diretor Executivo"
+  },
+  {
+   "motivo": "Métrica padrão de auditoria, não informada no briefing.",
+   "premissa": "Retenção de logs de contas administrativas por 12 meses",
+   "validar_com": "Head de Seguranca da Informacao"
+  }
+ ],
+ "requisitos_nao_cobertos_justificativa": [
+  {
+   "codigo": "4.1",
+   "motivo": "Requisito de contexto organizacional, fora do escopo de uma política técnica de controle de acesso."
+  },
+  {
+   "codigo": "4.2",
+   "motivo": "Requisito de partes interessadas, tratado no manual do SGSI, não nesta política."
+  },
+  {
+   "codigo": "4.3",
+   "motivo": "Definição de escopo do SGSI, tratado no documento de escopo geral."
+  },
+  {
+   "codigo": "4.4",
+   "motivo": "Requisito macro de estabelecimento do SGSI, não aplicável a uma política específica."
+  },
+  {
+   "codigo": "5.1",
+   "motivo": "Requisito de liderança geral, evidenciado por atas de reunião e orçamento, não por esta política."
+  },
+  {
+   "codigo": "5.3",
+   "motivo": "Atribuição de papéis do SGSI como um todo, enquanto esta política trata apenas de papéis de controle de acesso."
+  },
+  {
+   "codigo": "6.1.1",
+   "motivo": "Processo de gestão de riscos, tratado na Política de Gestão de Riscos."
+  },
+  {
+   "codigo": "6.1.2",
+   "motivo": "Metodologia de avaliação de riscos, fora do escopo de controle de acesso."
+  },
+  {
+   "codigo": "6.1.3",
+   "motivo": "Tratamento de riscos, fora do escopo de controle de acesso."
+  },
+  {
+   "codigo": "6.2",
+   "motivo": "Objetivos de segurança da informação, definidos em documento próprio."
+  },
+  {
+   "codigo": "6.3",
+   "motivo": "Planejamento de mudanças do SGSI, fora do escopo."
+  },
+  {
+   "codigo": "7.1",
+   "motivo": "Provisão de recursos, responsabilidade da direção não documentada nesta política."
+  },
+  {
+   "codigo": "7.4",
+   "motivo": "Plano de comunicação, fora do escopo."
+  },
+  {
+   "codigo": "7.5",
+   "motivo": "Controle de informação documentada, tratado em procedimento específico de controle de documentos."
+  },
+  {
+   "codigo": "8.1",
+   "motivo": "Planejamento operacional geral do SGSI, fora do escopo."
+  },
+  {
+   "codigo": "8.2",
+   "motivo": "Execução de avaliação de riscos, fora do escopo."
+  },
+  {
+   "codigo": "8.3",
+   "motivo": "Execução do tratamento de riscos, fora do escopo."
+  },
+  {
+   "codigo": "9.1",
+   "motivo": "Monitoramento e medição do SGSI, tratado em painel de indicadores."
+  },
+  {
+   "codigo": "9.2.1",
+   "motivo": "Auditoria interna, tratado em procedimento de auditoria."
+  },
+  {
+   "codigo": "9.2.2",
+   "motivo": "Programa de auditoria, fora do escopo."
+  },
+  {
+   "codigo": "9.3.1",
+   "motivo": "Análise crítica pela direção, evidenciada em atas."
+  },
+  {
+   "codigo": "9.3.2",
+   "motivo": "Entradas da análise crítica, fora do escopo."
+  },
+  {
+   "codigo": "9.3.3",
+   "motivo": "Resultados da análise crítica, fora do escopo."
+  },
+  {
+   "codigo": "10.1",
+   "motivo": "Gestão de não conformidades, tratado em procedimento de melhoria contínua."
+  },
+  {
+   "codigo": "10.2",
+   "motivo": "Melhoria contínua, fora do escopo direto desta política."
+  },
+  {
+   "codigo": "A.5.4",
+   "motivo": "Responsabilidades da direção, tratado na Política de Segurança da Informação corporativa."
+  },
+  {
+   "codigo": "A.5.5",
+   "motivo": "Contato com autoridades, tratado no Plano de Resposta a Incidentes."
+  },
+  {
+   "codigo": "A.5.6",
+   "motivo": "Contato com grupos de interesse, fora do escopo."
+  },
+  {
+   "codigo": "A.5.7",
+   "motivo": "Inteligência de ameaças, tratado em procedimento de SecOps."
+  },
+  {
+   "codigo": "A.5.8",
+   "motivo": "Segurança em projetos, tratado na metodologia de gestão de projetos."
+  },
+  {
+   "codigo": "A.5.9",
+   "motivo": "Inventário de ativos, tratado na Política de Gestão de Ativos."
+  },
+  {
+   "codigo": "A.5.10",
+   "motivo": "Uso aceitável, tratado na Política de Uso Aceitável (AUP)."
+  },
+  {
+   "codigo": "A.5.11",
+   "motivo": "Devolução de ativos, tratado no processo de offboarding de RH e TI."
+  },
+  {
+   "codigo": "A.5.12",
+   "motivo": "Classificação da informação, tratado na Política de Classificação da Informação."
+  },
+  {
+   "codigo": "A.5.13",
+   "motivo": "Rotulagem da informação, tratado na Política de Classificação da Informação."
+  },
+  {
+   "codigo": "A.5.14",
+   "motivo": "Transferência de informação, tratado em procedimento de troca segura de dados."
+  },
+  {
+   "codigo": "A.5.19",
+   "motivo": "Segurança em fornecedores, tratado na Política de Gestão de Terceiros."
+  },
+  {
+   "codigo": "A.5.20",
+   "motivo": "Contratos com fornecedores, tratado na Política de Gestão de Terceiros."
+  },
+  {
+   "codigo": "A.5.21",
+   "motivo": "Cadeia de suprimentos TIC, fora do escopo."
+  },
+  {
+   "codigo": "A.5.22",
+   "motivo": "Monitoramento de fornecedores, fora do escopo."
+  },
+  {
+   "codigo": "A.5.23",
+   "motivo": "Segurança em nuvem, tratado na Política de Cloud Security."
+  },
+  {
+   "codigo": "A.5.24",
+   "motivo": "Preparação para incidentes, tratado no Plano de Resposta a Incidentes."
+  },
+  {
+   "codigo": "A.5.25",
+   "motivo": "Avaliação de eventos, tratado em procedimento de SOC/SIEM."
+  },
+  {
+   "codigo": "A.5.26",
+   "motivo": "Resposta a incidentes, tratado no Plano de Resposta a Incidentes."
+  },
+  {
+   "codigo": "A.5.27",
+   "motivo": "Aprendizado com incidentes, tratado no processo de post-mortem de incidentes."
+  },
+  {
+   "codigo": "A.5.28",
+   "motivo": "Coleta de evidências, tratado em procedimento de forense digital."
+  },
+  {
+   "codigo": "A.5.29",
+   "motivo": "Segurança durante interrupção, tratado no Plano de Continuidade de Negócios (PCN)."
+  },
+  {
+   "codigo": "A.5.30",
+   "motivo": "Prontidão de TIC para continuidade, tratado no Plano de Recuperação de Desastres (DRP)."
+  },
+  {
+   "codigo": "A.5.31",
+   "motivo": "Requisitos legais e regulamentares, tratado em matriz de conformidade legal."
+  },
+  {
+   "codigo": "A.5.32",
+   "motivo": "Propriedade intelectual, tratado em política jurídica específica."
+  },
+  {
+   "codigo": "A.5.34",
+   "motivo": "Privacidade e PII, tratado na Política de Privacidade e Proteção de Dados."
+  },
+  {
+   "codigo": "A.5.35",
+   "motivo": "Análise crítica independente, tratado no programa de auditoria externa."
+  },
+  {
+   "codigo": "A.5.36",
+   "motivo": "Conformidade com políticas, tratado em rotinas de compliance."
+  },
+  {
+   "codigo": "A.5.37",
+   "motivo": "Procedimentos operacionais documentados, tratado em POPs técnicos da TI."
+  },
+  {
+   "codigo": "A.6.1",
+   "motivo": "Seleção e background check, tratado na Política de Recursos Humanos."
+  },
+  {
+   "codigo": "A.6.2",
+   "motivo": "Termos de contratação, tratado em contratos de trabalho."
+  },
+  {
+   "codigo": "A.6.3",
+   "motivo": "Treinamento em segurança, tratado no Programa de Conscientização."
+  },
+  {
+   "codigo": "A.6.4",
+   "motivo": "Processo disciplinar, tratado no Código de Conduta e RH."
+  },
+  {
+   "codigo": "A.6.5",
+   "motivo": "Responsabilidades após término, tratado em termos de rescisão."
+  },
+  {
+   "codigo": "A.6.6",
+   "motivo": "Acordos de confidencialidade (NDA), tratado em processos jurídicos e de RH."
+  },
+  {
+   "codigo": "A.6.8",
+   "motivo": "Relato de eventos, tratado na Política de Gestão de Incidentes."
+  },
+  {
+   "codigo": "A.7.1",
+   "motivo": "Perímetros de segurança física, tratado na Política de Segurança Física."
+  },
+  {
+   "codigo": "A.7.3",
+   "motivo": "Segurança de escritórios, tratado na Política de Segurança Física."
+  },
+  {
+   "codigo": "A.7.5",
+   "motivo": "Ameaças físicas e ambientais, tratado na Política de Segurança Física."
+  },
+  {
+   "codigo": "A.7.6",
+   "motivo": "Trabalho em áreas seguras, tratado na Política de Segurança Física."
+  },
+  {
+   "codigo": "A.7.7",
+   "motivo": "Mesa limpa e tela limpa, tratado na Política de Uso Aceitável."
+  },
+  {
+   "codigo": "A.7.8",
+   "motivo": "Localização de equipamento, tratado na Política de Segurança Física."
+  },
+  {
+   "codigo": "A.7.9",
+   "motivo": "Segurança de ativos fora das instalações, tratado na Política de Uso de Dispositivos Móveis."
+  },
+  {
+   "codigo": "A.7.10",
+   "motivo": "Mídias de armazenamento, tratado na Política de Gestão de Mídias."
+  },
+  {
+   "codigo": "A.7.11",
+   "motivo": "Serviços de suporte (energia, etc.), tratado em gestão de facilities."
+  },
+  {
+   "codigo": "A.7.12",
+   "motivo": "Segurança de cabeamento, tratado em normas de infraestrutura de TI."
+  },
+  {
+   "codigo": "A.7.13",
+   "motivo": "Manutenção de equipamento, tratado em procedimentos de gestão de ativos."
+  },
+  {
+   "codigo": "A.7.14",
+   "motivo": "Descarte seguro, tratado na Política de Descarte de Ativos."
+  },
+  {
+   "codigo": "A.8.1",
+   "motivo": "Dispositivos de usuário final, tratado na Política de Endpoint Security."
+  },
+  {
+   "codigo": "A.8.6",
+   "motivo": "Gerenciamento de capacidade, tratado em procedimentos de infraestrutura."
+  },
+  {
+   "codigo": "A.8.7",
+   "motivo": "Proteção contra malware, tratado na Política de Endpoint Security."
+  },
+  {
+   "codigo": "A.8.8",
+   "motivo": "Gerenciamento de vulnerabilidades, tratado na Política de Gestão de Vulnerabilidades."
+  },
+  {
+   "codigo": "A.8.9",
+   "motivo": "Gerenciamento de configuração, tratado em procedimentos de hardening."
+  },
+  {
+   "codigo": "A.8.10",
+   "motivo": "Exclusão de informação, tratado na Política de Retenção e Descarte de Dados."
+  },
+  {
+   "codigo": "A.8.12",
+   "motivo": "Prevenção de vazamento (DLP), tratado em procedimentos de segurança de dados."
+  },
+  {
+   "codigo": "A.8.13",
+   "motivo": "Backup, tratado na Política de Backup e Restauração."
+  },
+  {
+   "codigo": "A.8.14",
+   "motivo": "Redundância, tratado no Plano de Continuidade e DRP."
+  },
+  {
+   "codigo": "A.8.15",
+   "motivo": "Registro de log, tratado na Política de Gestão de Logs e Monitoramento."
+  },
+  {
+   "codigo": "A.8.16",
+   "motivo": "Atividades de monitoramento, tratado em procedimentos de SOC."
+  },
+  {
+   "codigo": "A.8.17",
+   "motivo": "Sincronização de relógio (NTP), tratado em padrões de arquitetura de TI."
+  },
+  {
+   "codigo": "A.8.18",
+   "motivo": "Programas utilitários, tratado em procedimentos de administração de sistemas."
+  },
+  {
+   "codigo": "A.8.19",
+   "motivo": "Instalação de software, tratado na Política de Uso Aceitável e Gestão de Endpoints."
+  },
+  {
+   "codigo": "A.8.20",
+   "motivo": "Segurança de redes, tratado na Política de Segurança de Redes."
+  },
+  {
+   "codigo": "A.8.21",
+   "motivo": "Serviços de rede, tratado na Política de Segurança de Redes."
+  },
+  {
+   "codigo": "A.8.22",
+   "motivo": "Segregação de redes, tratado na Política de Segurança de Redes."
+  },
+  {
+   "codigo": "A.8.24",
+   "motivo": "Criptografia, tratado na Política de Criptografia e Gestão de Chaves."
+  },
+  {
+   "codigo": "A.8.25",
+   "motivo": "Desenvolvimento seguro, tratado na Política de Desenvolvimento Seguro (SSDLC)."
+  },
+  {
+   "codigo": "A.8.26",
+   "motivo": "Requisitos de segurança de aplicação, tratado na Política de Desenvolvimento Seguro."
+  },
+  {
+   "codigo": "A.8.27",
+   "motivo": "Arquitetura segura, tratado em padrões de arquitetura corporativa."
+  },
+  {
+   "codigo": "A.8.28",
+   "motivo": "Codificação segura, tratado na Política de Desenvolvimento Seguro."
+  },
+  {
+   "codigo": "A.8.29",
+   "motivo": "Teste de segurança, tratado na Política de Desenvolvimento Seguro."
+  },
+  {
+   "codigo": "A.8.30",
+   "motivo": "Desenvolvimento terceirizado, tratado na Política de Gestão de Terceiros."
+  },
+  {
+   "codigo": "A.8.31",
+   "motivo": "Separação de ambientes, tratado na Política de Gestão de Mudanças e SSDLC."
+  },
+  {
+   "codigo": "A.8.32",
+   "motivo": "Gerenciamento de mudanças, tratado na Política de Gestão de Mudanças."
+  },
+  {
+   "codigo": "A.8.33",
+   "motivo": "Informação de teste, tratado na Política de Desenvolvimento Seguro."
+  },
+  {
+   "codigo": "A.8.34",
+   "motivo": "Proteção durante testes de auditoria, tratado em procedimentos de auditoria de TI."
+  }
+ ]
+}
