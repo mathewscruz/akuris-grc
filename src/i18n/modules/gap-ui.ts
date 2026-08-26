@@ -30,6 +30,9 @@ export const gapUi = {
         indeterminado: 'Indeterminado',
       },
       detail: {
+        /* Nome do grupo dos quatro estados. Sem ele, o leitor de ecrã
+           anuncia quatro botões soltos sem dizer do que se trata. */
+        statusLabel: 'Estado de conformidade',
         loadingGuidance: 'Carregando orientação...',
         aiCreditsExhausted: 'Créditos de IA esgotados. Entre em contato com a Akuris para adquirir mais créditos.',
         aiCreditsExhaustedShort: 'Créditos de IA esgotados. Entre em contato com a Akuris.',
@@ -247,6 +250,7 @@ export const gapUi = {
         indeterminado: 'Indeterminate',
       },
       detail: {
+        statusLabel: 'Conformity status',
         loadingGuidance: 'Loading guidance...',
         aiCreditsExhausted: 'AI credits exhausted. Contact Akuris to purchase more credits.',
         aiCreditsExhaustedShort: 'AI credits exhausted. Contact Akuris.',

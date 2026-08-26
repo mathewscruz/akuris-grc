@@ -93,13 +93,24 @@ const StatusSegmentedControl: React.FC<{
   const { t } = useLanguage();
   const STATUS_OPTIONS = getStatusOptions(t);
   return (
-  <div className="inline-flex flex-wrap gap-1.5 rounded-lg bg-card p-1 border">
+  /*
+    `role="radiogroup"` e `aria-checked`: quatro estados, um só escolhido.
+
+    Medido na árvore de acessibilidade: os quatro botões não tinham
+    `aria-pressed` nem `aria-checked` nenhum. A escolha era comunicada só
+    pela COR de fundo — quem usa leitor de ecrã ouvia «Conforme, Parcial,
+    Não Conforme, N/A» sem saber qual estava marcado, e é esta a decisão
+    central de todo o módulo.
+  */
+  <div role="radiogroup" aria-label={t('gapUi.detail.statusLabel')} className="inline-flex flex-wrap gap-1.5 rounded-lg bg-card p-1 border">
     {STATUS_OPTIONS.map(opt => {
       const isActive = value === opt.value;
       return (
         <button
           key={opt.value}
           type="button"
+          role="radio"
+          aria-checked={isActive}
           disabled={disabled}
           onClick={() => onChange(opt.value)}
           className={cn(
@@ -959,10 +970,15 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             const answer = diagnosticAnswers[idx] || null;
                             return (
                               <div key={idx} className="p-3 rounded-md bg-card border space-y-2">
-                                <p className="text-sm text-foreground leading-relaxed">
+                                {/* `div`, não `p`: o `Badge` é uma `div`, e uma
+                                    `div` dentro de `p` é HTML inválido — o React
+                                    avisava-o em consola a cada abertura do
+                                    diálogo («validateDOMNesting»). O browser
+                                    fecha o `p` sozinho, o que parte o espaçamento. */}
+                                <div className="text-sm text-foreground leading-relaxed">
                                   {q.peso >= 2 && <Badge variant="outline" className="text-micro mr-1.5">{t('gapUi.detail.weight', { peso: q.peso })}</Badge>}
                                   {q.pergunta}
-                                </p>
+                                </div>
                                 <div className="flex gap-1.5">
                                   {(['sim', 'parcial', 'nao'] as const).map(opt => (
                                     <Button
