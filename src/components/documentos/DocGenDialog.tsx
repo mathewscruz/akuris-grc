@@ -953,9 +953,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     try {
       const blob = await generateDocxBlob();
       if (!blob) return;
+      /* O MESMO tratamento do `a.download`: este ficheiro é o que fica
+         guardado no módulo Documentos, e o título cru chega a ter 208
+         caracteres e a barra de «RTO/RPO» lá dentro. */
       const file = new File(
         [blob],
-        `${generatedDocument.titulo}.docx`,
+        `${nomeDeFicheiroSeguro(generatedDocument.titulo)}.docx`,
         { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
       );
       setInitialGeneratedFile(file);
