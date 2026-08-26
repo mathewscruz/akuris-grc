@@ -124,6 +124,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Setado durante o render para valer já na primeira pintura após a troca.
   setAppLocale(locale);
 
+  /*
+    O `<html lang>` segue o idioma escolhido — em TODAS as páginas.
+
+    O `SEO.tsx` já o fazia, mas só nas páginas que o renderizam. O canal de
+    denúncias não é uma delas: medido no navegador, ficava com o `pt-BR`
+    cravado no `index.html` enquanto mostrava «Registar» e «registos» em
+    português de Portugal — e continuava `pt-BR` com a página inteira em
+    inglês. Um leitor de ecrã lê texto inglês com voz portuguesa, e o
+    browser oferece traduzir de uma língua que não é aquela.
+
+    Fica aqui e não no `SEO` porque o idioma é do PROVIDER: qualquer
+    página que troque de idioma passa a declará-lo, tenha ou não `<SEO>`.
+  */
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang =
+      locale === 'en' ? 'en-US' : locale === 'pt' ? 'pt-PT' : 'pt-BR';
+  }, [locale]);
+
   // Sync with profile.preferred_locale on auth changes
   useEffect(() => {
     let mounted = true;

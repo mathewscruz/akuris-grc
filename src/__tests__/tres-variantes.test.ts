@@ -14,7 +14,7 @@
  * A forma correta trata os três, e está em `dateFnsLocale()` / `intlLocale()`.
  */
 import { describe, expect, it } from 'vitest';
-import { fontesTsx, linhas } from './_fontes';
+import { fontesTsx, ler, linhas } from './_fontes';
 
 /** `locale === 'pt' ? algo : outro` — o binário que esquece o pt-BR. */
 const binarioDoLocale = /locale\s*===\s*'pt'\s*\?/;
@@ -77,5 +77,35 @@ describe('três variantes de idioma', () => {
     expect(binarioDoLocale.test(ternarioTriplo) && !trataOsTres(ternarioTriplo)).toBe(false);
     const delegada = 'toLocaleDateString(intlLocale())';
     expect(binarioDoLocale.test(delegada) && !trataOsTres(delegada)).toBe(false);
+  });
+});
+
+/**
+ * A página DECLARA o idioma que mostra — em todas as páginas, não só nas que
+ * têm `<SEO>`.
+ *
+ * Medido no navegador, no canal de denúncias: a página mostrava «Registar» e
+ * «registos» (português de Portugal) com `<html lang="pt-BR">`, o valor
+ * cravado no `index.html`. Trocada para inglês, o título mudou para
+ * «Whistleblowing Channel» e o `lang` continuou `pt-BR`. Um leitor de ecrã lê
+ * texto inglês com voz portuguesa, e o browser oferece traduzir de uma língua
+ * que não é aquela.
+ *
+ * O `SEO.tsx` já fazia isto — mas o canal de denúncias não renderiza `<SEO>`,
+ * e é a superfície PÚBLICA do produto. Passou para o `LanguageProvider`, que
+ * é quem sabe o idioma.
+ */
+describe('a página declara o idioma que mostra', () => {
+  it('o LanguageProvider acerta o <html lang> a cada troca', () => {
+    const fonte = ler('src/contexts/LanguageContext.tsx');
+    expect(
+      /document\.documentElement\.lang\s*=/.test(fonte),
+      'O provider tem de acertar `document.documentElement.lang`: o `<SEO>` só cobre as páginas que o renderizam, e a pública do canal não é uma delas.',
+    ).toBe(true);
+    // E tem de tratar os três, não dois.
+    const bloco = fonte.slice(fonte.indexOf('document.documentElement.lang'));
+    for (const tag of ['en-US', 'pt-PT', 'pt-BR']) {
+      expect(bloco.slice(0, 300)).toContain(tag);
+    }
   });
 });
