@@ -160,8 +160,8 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
       isSubmitting={upsert.isPending}
     >
         <div className="space-y-3">
-          <div><Label>{t('projetos.automacoes.fieldNome')}</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-          <div><Label>{t('projetos.automacoes.fieldDescricao')}</Label><Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
+          <div><Label htmlFor="nome">{t('projetos.automacoes.fieldNome')}</Label><Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+          <div><Label htmlFor="descricao">{t('projetos.automacoes.fieldDescricao')}</Label><Textarea id="descricao" rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
 
           <div className="space-y-2">
             <Label>{t('projetos.automacoes.fieldGatilho')}</Label>

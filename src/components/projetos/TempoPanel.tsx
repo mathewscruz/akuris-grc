@@ -114,12 +114,12 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
         <div className="text-sm font-semibold">{t('projetos.tempo.manualLogTitle')}</div>
         <div className="flex gap-2">
           <div className="w-24 space-y-2">
-            <Label className="text-xs">{t('projetos.tempo.hours')}</Label>
-            <Input type="number" step="0.25" min="0.01" value={novoH} onChange={(e) => setNovoH(e.target.value)} />
+            <Label htmlFor="novoH" className="text-xs">{t('projetos.tempo.hours')}</Label>
+            <Input id="novoH" type="number" step="0.25" min="0.01" value={novoH} onChange={(e) => setNovoH(e.target.value)} />
           </div>
           <div className="flex-1">
-            <Label className="text-xs">{t('projetos.tempo.description')}</Label>
-            <Input value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder={t('projetos.tempo.descriptionPlaceholder')} />
+            <Label htmlFor="novoDesc" className="text-xs">{t('projetos.tempo.description')}</Label>
+            <Input id="novoDesc" value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder={t('projetos.tempo.descriptionPlaceholder')} />
           </div>
           <div className="self-end">
             <Button size="sm" onClick={addManual} disabled={add.isPending} aria-label={t('common.add')} title={t('common.add')}><IconAdd className="h-4 w-4" /></Button>

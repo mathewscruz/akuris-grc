@@ -359,8 +359,8 @@ export default function ControlesVinculacaoDialog({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
-                      <Textarea
+                      <Label htmlFor="find">{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
+                      <Textarea id="find"
                         value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.observacoes || ''}
                         onChange={(e) => handleUpdateRiscoVinculacao(risco.id, 'observacoes', e.target.value)}
                         placeholder={t('controlesAuditorias.cvdObservacoesPlaceholderVinc')}
@@ -428,8 +428,8 @@ export default function ControlesVinculacaoDialog({
                       <div></div>
                     </div>
                     <div className="space-y-2">
-                      <Label>{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
-                      <Textarea
+                      <Label htmlFor="find2">{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
+                      <Textarea id="find2"
                         value={vinculacoesAtivos.find(v => v.ativo_id === ativo.id)?.observacoes || ''}
                         onChange={(e) => handleUpdateAtivoVinculacao(ativo.id, 'observacoes', e.target.value)}
                         placeholder={t('controlesAuditorias.cvdObservacoesPlaceholderProt')}

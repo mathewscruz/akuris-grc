@@ -377,8 +377,8 @@ export function FinanceiroIATab() {
             </div>
             {overrideEnabled && (
               <div className="flex items-center gap-2">
-                <Label className="text-xs">R$</Label>
-                <Input
+                <Label htmlFor="overrideCost" className="text-xs">R$</Label>
+                <Input id="overrideCost"
                   type="number"
                   step="0.01"
                   min="0.001"

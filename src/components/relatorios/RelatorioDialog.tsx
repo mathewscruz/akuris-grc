@@ -54,12 +54,12 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
     >
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label>{t('relatoriosComp.dialog.fieldNome')}</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder={t('relatoriosComp.dialog.fieldNomePlaceholder')} />
+            <Label htmlFor="nome">{t('relatoriosComp.dialog.fieldNome')}</Label>
+            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder={t('relatoriosComp.dialog.fieldNomePlaceholder')} />
           </div>
           <div className="space-y-2">
-            <Label>{t('relatoriosComp.dialog.fieldDescricao')}</Label>
-            <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={t('relatoriosComp.dialog.fieldDescricaoPlaceholder')} rows={2} />
+            <Label htmlFor="descricao">{t('relatoriosComp.dialog.fieldDescricao')}</Label>
+            <Textarea id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={t('relatoriosComp.dialog.fieldDescricaoPlaceholder')} rows={2} />
           </div>
           <div className="space-y-2">
             <Label>{t('relatoriosComp.dialog.fieldTemplate')}</Label>

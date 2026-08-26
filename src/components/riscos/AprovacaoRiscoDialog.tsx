@@ -332,8 +332,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
 
             {statusAprovacao === 'pendente_aprovacao' && isAprovador && (
               <div className="space-y-3 border rounded-lg p-4">
-                <Label>{t('riscosDialogs.aprovacao.suaDecisao')}</Label>
-                <Textarea
+                <Label htmlFor="comentario">{t('riscosDialogs.aprovacao.suaDecisao')}</Label>
+                <Textarea id="comentario"
                   value={comentario}
                   onChange={(e) => setComentario(e.target.value)}
                   placeholder={t('riscosDialogs.aprovacao.comentarioDecisao')}

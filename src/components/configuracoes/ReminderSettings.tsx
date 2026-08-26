@@ -246,12 +246,12 @@ export function ReminderSettings() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {settings.reminder_intervals.map((interval, index) => (
                 <div key={index} className="space-y-2">
-                  <Label className="text-sm">
+                  <Label htmlFor="interval" className="text-sm">
                     {index === 0 ? t('configPerms.reminderSettings.reminder1') : 
                      index === 1 ? t('configPerms.reminderSettings.reminder2') : 
                      t('configPerms.reminderSettings.reminder3')}
                   </Label>
-                  <Input
+                  <Input id="interval"
                     type="number"
                     value={interval}
                     onChange={(e) => updateInterval(index, e.target.value)}

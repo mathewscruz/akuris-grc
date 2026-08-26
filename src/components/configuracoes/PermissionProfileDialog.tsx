@@ -243,8 +243,8 @@ export const PermissionProfileDialog: React.FC<Props> = ({
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>{t('configPerms.profileDialog.fieldName')}</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('configPerms.profileDialog.fieldNamePlaceholder')} />
+            <Label htmlFor="name">{t('configPerms.profileDialog.fieldName')}</Label>
+            <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={t('configPerms.profileDialog.fieldNamePlaceholder')} />
           </div>
           <div className="flex items-end gap-2">
             <div className="flex items-center gap-2">
@@ -255,8 +255,8 @@ export const PermissionProfileDialog: React.FC<Props> = ({
         </div>
 
         <div className="space-y-2">
-          <Label>{t('configPerms.profileDialog.fieldDescription')}</Label>
-          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('configPerms.profileDialog.fieldDescriptionPlaceholder')} rows={2} />
+          <Label htmlFor="description">{t('configPerms.profileDialog.fieldDescription')}</Label>
+          <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('configPerms.profileDialog.fieldDescriptionPlaceholder')} rows={2} />
         </div>
 
         <Separator />

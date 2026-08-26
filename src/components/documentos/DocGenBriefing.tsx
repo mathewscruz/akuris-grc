@@ -356,16 +356,16 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.ownerLabel')}</Label>
-                  <Input
+                  <Label htmlFor="owner" className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.ownerLabel')}</Label>
+                  <Input id="owner"
                     value={briefing.owner || ''}
                     onChange={(e) => update('owner', e.target.value)}
                     placeholder={t('docgen.briefing.ownerPlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.approverLabel')}</Label>
-                  <Input
+                  <Label htmlFor="approver" className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.approverLabel')}</Label>
+                  <Input id="approver"
                     value={briefing.approver || ''}
                     onChange={(e) => update('approver', e.target.value)}
                     placeholder={t('docgen.briefing.approverPlaceholder')}

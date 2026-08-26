@@ -424,8 +424,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
-              <Label>{t('t4.gates.auditoriaRazao')}</Label>
-              <Textarea rows={3} value={razaoConclusao} onChange={(e) => setRazaoConclusao(e.target.value)} />
+              <Label htmlFor="razaoConclusao">{t('t4.gates.auditoriaRazao')}</Label>
+              <Textarea id="razaoConclusao" rows={3} value={razaoConclusao} onChange={(e) => setRazaoConclusao(e.target.value)} />
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel>{t('t4.gates.cancelar')}</AlertDialogCancel>

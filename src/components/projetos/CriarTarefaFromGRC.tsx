@@ -125,13 +125,13 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label>{t('projetos.criarTarefaGRC.fieldTitulo')}</Label>
-              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+              <Label htmlFor="titulo">{t('projetos.criarTarefaGRC.fieldTitulo')}</Label>
+              <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label>{t('projetos.criarTarefaGRC.fieldDescricao')}</Label>
-              <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
+              <Label htmlFor="descricao">{t('projetos.criarTarefaGRC.fieldDescricao')}</Label>
+              <Textarea id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

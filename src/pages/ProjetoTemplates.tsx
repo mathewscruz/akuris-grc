@@ -130,8 +130,8 @@ export default function ProjetoTemplates() {
             <DialogTitle>{t('projetos.templates.applyDialogTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>{t('projetos.templates.newProjectName')}</Label>
-            <Input value={nomeProjeto} onChange={(e) => setNomeProjeto(e.target.value)} placeholder={t('projetos.templates.newProjectPlaceholder')} />
+            <Label htmlFor="nomeProjeto">{t('projetos.templates.newProjectName')}</Label>
+            <Input id="nomeProjeto" value={nomeProjeto} onChange={(e) => setNomeProjeto(e.target.value)} placeholder={t('projetos.templates.newProjectPlaceholder')} />
             <p className="text-xs text-muted-foreground">{t('projetos.templates.applyHint', { colunas: (aplicando?.dados?.colunas ?? []).length, tarefas: (aplicando?.dados?.tarefas ?? []).length })}</p>
           </div>
           <DialogFooter>
@@ -205,10 +205,10 @@ function TemplateEditor({ open, onOpenChange, template, isSuperAdmin }: { open: 
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>{t('projetos.templates.fieldNome')}</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-            <div><Label>{t('projetos.templates.fieldCategoria')}</Label><Input value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder={t('projetos.templates.fieldCategoriaPlaceholder')} /></div>
+            <div><Label htmlFor="nome">{t('projetos.templates.fieldNome')}</Label><Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+            <div><Label htmlFor="categoria">{t('projetos.templates.fieldCategoria')}</Label><Input id="categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder={t('projetos.templates.fieldCategoriaPlaceholder')} /></div>
           </div>
-          <div><Label>{t('projetos.templates.fieldDescricao')}</Label><Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
+          <div><Label htmlFor="descricao">{t('projetos.templates.fieldDescricao')}</Label><Textarea id="descricao" rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
           {isSuperAdmin && (
             <div className="space-y-2">
               <Label>{t('projetos.templates.fieldVisibilidade')}</Label>
@@ -222,12 +222,12 @@ function TemplateEditor({ open, onOpenChange, template, isSuperAdmin }: { open: 
             </div>
           )}
           <div className="space-y-2">
-            <Label>{t('projetos.templates.fieldColunas')}</Label>
-            <Textarea rows={4} value={form.colunas} onChange={(e) => setForm({ ...form, colunas: e.target.value })} />
+            <Label htmlFor="colunas">{t('projetos.templates.fieldColunas')}</Label>
+            <Textarea id="colunas" rows={4} value={form.colunas} onChange={(e) => setForm({ ...form, colunas: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label>{t('projetos.templates.fieldTarefas')}</Label>
-            <Textarea rows={6} value={form.tarefas} onChange={(e) => setForm({ ...form, tarefas: e.target.value })} placeholder={t('projetos.templates.tarefasPlaceholder')} />
+            <Label htmlFor="tarefas">{t('projetos.templates.fieldTarefas')}</Label>
+            <Textarea id="tarefas" rows={6} value={form.tarefas} onChange={(e) => setForm({ ...form, tarefas: e.target.value })} placeholder={t('projetos.templates.tarefasPlaceholder')} />
           </div>
         </div>
         <DialogFooter>

@@ -370,11 +370,11 @@ export function DocumentoDialog({ open, onOpenChange, documento, categorias = []
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-1">
+              <Label htmlFor="nome" className="flex items-center gap-1">
                 {t('documentos.dialogs.nomeCampo')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content="Nome descritivo do documento." />
               </Label>
-              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder={t('documentos.dialogs.placeholderNome')} />
+              <Input id="nome" value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder={t('documentos.dialogs.placeholderNome')} />
             </div>
             <div className="space-y-2">
               <Label>{t('documentos.dialogs.tipoObrigatorio')}</Label>
@@ -394,8 +394,8 @@ export function DocumentoDialog({ open, onOpenChange, documento, categorias = []
             </div>
           </div>
           <div className="space-y-2">
-            <Label>{t('documentos.dialogs.descricao')}</Label>
-            <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
+            <Label htmlFor="descricao">{t('documentos.dialogs.descricao')}</Label>
+            <Textarea id="descricao" value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

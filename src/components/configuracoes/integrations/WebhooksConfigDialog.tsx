@@ -333,8 +333,9 @@ export function WebhooksConfigDialog({
 
           {/* Exemplo de payload */}
           <div className="space-y-2">
-            <Label>{t('configIntegrations.webhooks.payloadLabel')}</Label>
+            <Label htmlFor="webhook-payload">{t('configIntegrations.webhooks.payloadLabel')}</Label>
             <Textarea
+              id="webhook-payload"
               value={getPayloadExemplo(t('sweepConfig.integracoes.webhooks.payloadExampleTitle'))}
               readOnly
               className="font-mono text-xs h-36"

@@ -97,12 +97,12 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
     >
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label>{t('modDialogs.continuidade.tarefa.fieldTitulo')}</Label>
-            <Input value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} placeholder={t('modDialogs.continuidade.tarefa.fieldTituloPlaceholder')} />
+            <Label htmlFor="titulo">{t('modDialogs.continuidade.tarefa.fieldTitulo')}</Label>
+            <Input id="titulo" value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} placeholder={t('modDialogs.continuidade.tarefa.fieldTituloPlaceholder')} />
           </div>
           <div className="space-y-2">
-            <Label>{t('modDialogs.continuidade.tarefa.fieldDescricao')}</Label>
-            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} />
+            <Label htmlFor="descricao">{t('modDialogs.continuidade.tarefa.fieldDescricao')}</Label>
+            <Textarea id="descricao" value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">

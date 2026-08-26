@@ -221,11 +221,11 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
         content: (
           <div className="space-y-5 max-w-2xl">
             <div className="space-y-2">
-              <Label className="flex items-center gap-1">
+              <Label htmlFor="titulo" className="flex items-center gap-1">
                 {t('planosAcao.fieldTitle')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content={t('planosAcao.fieldTitleHelp')} />
               </Label>
-              <Input
+              <Input id="titulo"
                 value={titulo}
                 onChange={(e) => { setTitulo(e.target.value); if (e.target.value.trim()) setShowTitleError(false); }}
                 placeholder={t('planosAcao.fieldTitlePlaceholder')}
@@ -237,12 +237,12 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
               )}
             </div>
             <div className="space-y-2">
-              <Label>{t('planosAcao.fieldDescription')}</Label>
-              <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={t('planosAcao.fieldDescriptionPlaceholder')} rows={5} />
+              <Label htmlFor="descricao">{t('planosAcao.fieldDescription')}</Label>
+              <Textarea id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={t('planosAcao.fieldDescriptionPlaceholder')} rows={5} />
             </div>
             <div className="space-y-2">
-              <Label>{t('planosAcao.fieldObservations')}</Label>
-              <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder={t('planosAcao.fieldObservationsPlaceholder')} rows={3} />
+              <Label htmlFor="observacoes">{t('planosAcao.fieldObservations')}</Label>
+              <Textarea id="observacoes" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder={t('planosAcao.fieldObservationsPlaceholder')} rows={3} />
             </div>
           </div>
         ),

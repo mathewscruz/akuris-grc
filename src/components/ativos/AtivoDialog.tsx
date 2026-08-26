@@ -164,11 +164,11 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1">
+                <Label htmlFor="nome" className="flex items-center gap-1">
                   {t('contratosAtivos.ativoDialog.labelName')} <span className="text-destructive">*</span>
                   <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.nameHelp')} />
                 </Label>
-                <Input
+                <Input id="nome"
                   value={formData.nome}
                   onChange={(e) => update({ nome: e.target.value })}
                   required
@@ -206,22 +206,22 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
             </div>
 
             <div className="space-y-2">
-              <Label>{t('contratosAtivos.ativoDialog.labelDescription')}</Label>
-              <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
+              <Label htmlFor="descricao">{t('contratosAtivos.ativoDialog.labelDescription')}</Label>
+              <Textarea id="descricao" value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('contratosAtivos.ativoDialog.labelTags')}</Label>
-                <Input
+                <Label htmlFor="tags">{t('contratosAtivos.ativoDialog.labelTags')}</Label>
+                <Input id="tags"
                   value={formData.tags}
                   onChange={(e) => update({ tags: e.target.value })}
                   placeholder={t('contratosAtivos.ativoDialog.tagsPlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('contratosAtivos.ativoDialog.labelQuantity')}</Label>
-                <Input
+                <Label htmlFor="quantidade">{t('contratosAtivos.ativoDialog.labelQuantity')}</Label>
+                <Input id="quantidade"
                   type="number"
                   min="1"
                   value={formData.quantidade}
@@ -259,12 +259,12 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('contratosAtivos.ativoDialog.labelClient')}</Label>
-                <Input value={formData.cliente} onChange={(e) => update({ cliente: e.target.value })} />
+                <Label htmlFor="cliente">{t('contratosAtivos.ativoDialog.labelClient')}</Label>
+                <Input id="cliente" value={formData.cliente} onChange={(e) => update({ cliente: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>{t('contratosAtivos.ativoDialog.labelImei')}</Label>
-                <Input value={formData.imei} onChange={(e) => update({ imei: e.target.value })} />
+                <Label htmlFor="imei">{t('contratosAtivos.ativoDialog.labelImei')}</Label>
+                <Input id="imei" value={formData.imei} onChange={(e) => update({ imei: e.target.value })} />
               </div>
             </div>
           </div>
@@ -344,23 +344,23 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1">
+                <Label htmlFor="data_aquisicao" className="flex items-center gap-1">
                   <IconCalendar className="h-3.5 w-3.5" />
                   {t('contratosAtivos.ativoDialog.labelAcquisitionDate')}
                 </Label>
-                <Input
+                <Input id="data_aquisicao"
                   type="date"
                   value={formData.data_aquisicao}
                   onChange={(e) => update({ data_aquisicao: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('contratosAtivos.ativoDialog.labelSupplier')}</Label>
-                <Input value={formData.fornecedor} onChange={(e) => update({ fornecedor: e.target.value })} />
+                <Label htmlFor="fornecedor">{t('contratosAtivos.ativoDialog.labelSupplier')}</Label>
+                <Input id="fornecedor" value={formData.fornecedor} onChange={(e) => update({ fornecedor: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>{t('contratosAtivos.ativoDialog.labelVersion')}</Label>
-                <Input value={formData.versao} onChange={(e) => update({ versao: e.target.value })} />
+                <Label htmlFor="versao">{t('contratosAtivos.ativoDialog.labelVersion')}</Label>
+                <Input id="versao" value={formData.versao} onChange={(e) => update({ versao: e.target.value })} />
               </div>
             </div>
           </div>

@@ -163,25 +163,25 @@ export default function BlogManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t('configPlanos.blog.fieldTitulo')}</Label>
-              <Input value={editing.titulo || ''} onChange={e => setEditing({ ...editing, titulo: e.target.value, slug: editing.slug || slugify(e.target.value) })} />
+              <Label htmlFor="titulo">{t('configPlanos.blog.fieldTitulo')}</Label>
+              <Input id="titulo" value={editing.titulo || ''} onChange={e => setEditing({ ...editing, titulo: e.target.value, slug: editing.slug || slugify(e.target.value) })} />
             </div>
             <div className="space-y-2">
-              <Label>{t('configPlanos.blog.fieldSlug')}</Label>
-              <Input value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: slugify(e.target.value) })} />
+              <Label htmlFor="slug">{t('configPlanos.blog.fieldSlug')}</Label>
+              <Input id="slug" value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: slugify(e.target.value) })} />
             </div>
             <div className="space-y-2">
-              <Label>{t('configPlanos.blog.fieldResumo')}</Label>
-              <Textarea rows={2} value={editing.resumo || ''} onChange={e => setEditing({ ...editing, resumo: e.target.value })} />
+              <Label htmlFor="resumo">{t('configPlanos.blog.fieldResumo')}</Label>
+              <Textarea id="resumo" rows={2} value={editing.resumo || ''} onChange={e => setEditing({ ...editing, resumo: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>{t('configPlanos.blog.fieldConteudo')}</Label>
-              <Textarea rows={14} className="font-mono text-sm" value={editing.conteudo_md || ''} onChange={e => setEditing({ ...editing, conteudo_md: e.target.value })} />
+              <Label htmlFor="conteudo_md">{t('configPlanos.blog.fieldConteudo')}</Label>
+              <Textarea id="conteudo_md" rows={14} className="font-mono text-sm" value={editing.conteudo_md || ''} onChange={e => setEditing({ ...editing, conteudo_md: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{t('configPlanos.blog.fieldAutor')}</Label>
-                <Input value={editing.autor || ''} onChange={e => setEditing({ ...editing, autor: e.target.value })} />
+                <Label htmlFor="autor">{t('configPlanos.blog.fieldAutor')}</Label>
+                <Input id="autor" value={editing.autor || ''} onChange={e => setEditing({ ...editing, autor: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t('configPlanos.blog.fieldFrameworkSlug')}</Label>
@@ -189,21 +189,21 @@ export default function BlogManager() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>{t('configPlanos.blog.fieldTags')}</Label>
-              <Input value={tagInput} onChange={e => setTagInput(e.target.value)} />
+              <Label htmlFor="tagInput">{t('configPlanos.blog.fieldTags')}</Label>
+              <Input id="tagInput" value={tagInput} onChange={e => setTagInput(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>{t('configPlanos.blog.fieldCapaUrl')}</Label>
-              <Input value={editing.capa_url || ''} onChange={e => setEditing({ ...editing, capa_url: e.target.value || null })} />
+              <Label htmlFor="capa_url">{t('configPlanos.blog.fieldCapaUrl')}</Label>
+              <Input id="capa_url" value={editing.capa_url || ''} onChange={e => setEditing({ ...editing, capa_url: e.target.value || null })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{t('configPlanos.blog.fieldSeoTitle')}</Label>
-                <Input value={editing.seo_title || ''} onChange={e => setEditing({ ...editing, seo_title: e.target.value || null })} />
+                <Label htmlFor="seo_title">{t('configPlanos.blog.fieldSeoTitle')}</Label>
+                <Input id="seo_title" value={editing.seo_title || ''} onChange={e => setEditing({ ...editing, seo_title: e.target.value || null })} />
               </div>
               <div className="space-y-2">
-                <Label>{t('configPlanos.blog.fieldSeoDescription')}</Label>
-                <Input value={editing.seo_description || ''} onChange={e => setEditing({ ...editing, seo_description: e.target.value || null })} />
+                <Label htmlFor="seo_description">{t('configPlanos.blog.fieldSeoDescription')}</Label>
+                <Input id="seo_description" value={editing.seo_description || ''} onChange={e => setEditing({ ...editing, seo_description: e.target.value || null })} />
               </div>
             </div>
             <div className="flex items-center gap-3 pt-2">

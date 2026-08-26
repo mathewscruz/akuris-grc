@@ -149,12 +149,12 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             {/* Identificação */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldNome')}</Label>
-                <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder={t('configPlanos.planoForm.fieldNomePlaceholder')} />
+                <Label htmlFor="nome">{t('configPlanos.planoForm.fieldNome')}</Label>
+                <Input id="nome" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder={t('configPlanos.planoForm.fieldNomePlaceholder')} />
               </div>
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldCodigo')}</Label>
-                <Input
+                <Label htmlFor="codigo">{t('configPlanos.planoForm.fieldCodigo')}</Label>
+                <Input id="codigo"
                   value={form.codigo}
                   onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
                   placeholder={t('configPlanos.planoForm.fieldCodigoPlaceholder')}
@@ -166,13 +166,13 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t('configPlanos.planoForm.fieldDescricao')}</Label>
-              <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} placeholder={t('configPlanos.planoForm.fieldDescricaoPlaceholder')} />
+              <Label htmlFor="descricao">{t('configPlanos.planoForm.fieldDescricao')}</Label>
+              <Textarea id="descricao" value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} placeholder={t('configPlanos.planoForm.fieldDescricaoPlaceholder')} />
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t('configPlanos.planoForm.fieldPublicoAlvo')}</Label>
-              <Input
+              <Label htmlFor="publico_alvo">{t('configPlanos.planoForm.fieldPublicoAlvo')}</Label>
+              <Input id="publico_alvo"
                 value={form.publico_alvo}
                 onChange={e => setForm(f => ({ ...f, publico_alvo: e.target.value }))}
                 placeholder={t('configPlanos.planoForm.fieldPublicoAlvoPlaceholder')}
@@ -182,24 +182,24 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             {/* Preços */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldPrecoMensal')}</Label>
-                <Input type="number" min={0} step={0.01} value={form.preco_mensal} onChange={e => setForm(f => ({ ...f, preco_mensal: Number(e.target.value) }))} />
+                <Label htmlFor="preco_mensal">{t('configPlanos.planoForm.fieldPrecoMensal')}</Label>
+                <Input id="preco_mensal" type="number" min={0} step={0.01} value={form.preco_mensal} onChange={e => setForm(f => ({ ...f, preco_mensal: Number(e.target.value) }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldPrecoAnual')}</Label>
-                <Input type="number" min={0} step={0.01} value={form.preco_anual} onChange={e => setForm(f => ({ ...f, preco_anual: Number(e.target.value) }))} />
+                <Label htmlFor="preco_anual">{t('configPlanos.planoForm.fieldPrecoAnual')}</Label>
+                <Input id="preco_anual" type="number" min={0} step={0.01} value={form.preco_anual} onChange={e => setForm(f => ({ ...f, preco_anual: Number(e.target.value) }))} />
               </div>
             </div>
 
             {/* Setup */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldPrecoSetup')}</Label>
-                <Input type="number" min={0} step={0.01} value={form.preco_setup} onChange={e => setForm(f => ({ ...f, preco_setup: Number(e.target.value) }))} />
+                <Label htmlFor="preco_setup">{t('configPlanos.planoForm.fieldPrecoSetup')}</Label>
+                <Input id="preco_setup" type="number" min={0} step={0.01} value={form.preco_setup} onChange={e => setForm(f => ({ ...f, preco_setup: Number(e.target.value) }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldSetupObs')}</Label>
-                <Input
+                <Label htmlFor="setup_observacao">{t('configPlanos.planoForm.fieldSetupObs')}</Label>
+                <Input id="setup_observacao"
                   value={form.setup_observacao}
                   onChange={e => setForm(f => ({ ...f, setup_observacao: e.target.value }))}
                   placeholder={t('configPlanos.planoForm.fieldSetupObsPlaceholder')}
@@ -210,12 +210,12 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             {/* Limites */}
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldCreditosIA')}</Label>
-                <Input type="number" min={0} value={form.creditos_franquia} onChange={e => setForm(f => ({ ...f, creditos_franquia: Number(e.target.value) }))} />
+                <Label htmlFor="creditos_franquia">{t('configPlanos.planoForm.fieldCreditosIA')}</Label>
+                <Input id="creditos_franquia" type="number" min={0} value={form.creditos_franquia} onChange={e => setForm(f => ({ ...f, creditos_franquia: Number(e.target.value) }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldLimiteUsuarios')}</Label>
-                <Input
+                <Label htmlFor="limite_usuarios">{t('configPlanos.planoForm.fieldLimiteUsuarios')}</Label>
+                <Input id="limite_usuarios"
                   type="number"
                   min={0}
                   value={form.limite_usuarios}
@@ -224,8 +224,8 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>{t('configPlanos.planoForm.fieldOrdem')}</Label>
-                <Input type="number" min="0" value={form.ordem} onChange={e => setForm(f => ({ ...f, ordem: Number(e.target.value) }))} />
+                <Label htmlFor="ordem">{t('configPlanos.planoForm.fieldOrdem')}</Label>
+                <Input id="ordem" type="number" min="0" value={form.ordem} onChange={e => setForm(f => ({ ...f, ordem: Number(e.target.value) }))} />
               </div>
             </div>
 

@@ -18,48 +18,15 @@
  * passa é ninguém ter pensado no assunto.
  */
 import { describe, expect, it } from 'vitest';
-import { fontesTodas, ler } from './_fontes';
+import { fontesTodas, ler, tagsJsx } from './_fontes';
 
-/**
- * A tag `<Input ...>` inteira — e nenhuma regex serve para isto.
- *
- * O `>` aparece dentro da tag em dois sítios: na seta de
- * `onChange={(e) => ...}` e dentro de expressões com chavetas aninhadas, como
- * `setSettings({ ...s, x: 1 })`. Uma regex fecha a tag no primeiro `>` que vê,
- * e foi exactamente isso que, ao corrigir estes campos à primeira tentativa,
- * partiu dezasseis ficheiros de uma vez: o `min` foi parar ao meio de uma
- * seta, `(e) = min="0"> handler`.
- *
- * Por isso é um varrimento que conta chavetas e aspas: a tag só fecha no `>`
- * que está fora de tudo isso.
+/*
+ * A tag é lida por `tagsJsx`, em `_fontes`: um varrimento que conta
+ * chavetas e aspas, porque o `>` da seta de `onChange` fecha qualquer
+ * regex a meio. Foi por isso que a primeira tentativa de corrigir estes
+ * campos partiu dezasseis ficheiros de uma vez.
  */
-function tagsDeInput(fonte: string): Array<{ texto: string; posicao: number }> {
-  const achados: Array<{ texto: string; posicao: number }> = [];
-  let i = 0;
-  while ((i = fonte.indexOf('<Input', i)) !== -1) {
-    let j = i + 6;
-    let chavetas = 0;
-    let aspas: string | null = null;
-    while (j < fonte.length) {
-      const c = fonte[j];
-      if (aspas) {
-        if (c === aspas) aspas = null;
-      } else if (c === '"' || c === "'" || c === '`') {
-        aspas = c;
-      } else if (c === '{') {
-        chavetas += 1;
-      } else if (c === '}') {
-        chavetas -= 1;
-      } else if (c === '>' && chavetas === 0) {
-        break;
-      }
-      j += 1;
-    }
-    achados.push({ texto: fonte.slice(i, j + 1), posicao: i });
-    i = j + 1;
-  }
-  return achados;
-}
+const tagsDeInput = (fonte: string) => tagsJsx(fonte, 'Input');
 
 describe('número declara o seu limite', () => {
   it('todo campo numérico diz qual é o mínimo que aceita', () => {

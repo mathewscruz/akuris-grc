@@ -83,12 +83,12 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
     >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('projetos.dialog.fieldNome')}</Label>
-            <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
+            <Label htmlFor="nome">{t('projetos.dialog.fieldNome')}</Label>
+            <Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
           </div>
           <div className="space-y-2">
-            <Label>{t('projetos.dialog.fieldDescricao')}</Label>
-            <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
+            <Label htmlFor="descricao">{t('projetos.dialog.fieldDescricao')}</Label>
+            <Textarea id="descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -104,8 +104,8 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t('projetos.dialog.fieldCor')}</Label>
-              <Input type="color" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} className="h-10" />
+              <Label htmlFor="cor">{t('projetos.dialog.fieldCor')}</Label>
+              <Input id="cor" type="color" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} className="h-10" />
             </div>
           </div>
           <div className="space-y-2">

@@ -114,8 +114,8 @@ export function ConstatacaoDialog({ open, onOpenChange, auditoriaId, itemId, ach
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>{t('t4.constatacoes.campoTitulo')}</Label>
-          <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          <Label htmlFor="titulo">{t('t4.constatacoes.campoTitulo')}</Label>
+          <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -151,13 +151,13 @@ export function ConstatacaoDialog({ open, onOpenChange, auditoriaId, itemId, ach
         </div>
 
         <div className="space-y-2">
-          <Label>{t('t4.constatacoes.campoDescricao')}</Label>
-          <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
+          <Label htmlFor="descricao">{t('t4.constatacoes.campoDescricao')}</Label>
+          <Textarea id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
         </div>
 
         <div className="space-y-2">
-          <Label>{t('t4.constatacoes.campoEvidencia')}</Label>
-          <Textarea
+          <Label htmlFor="evidencia">{t('t4.constatacoes.campoEvidencia')}</Label>
+          <Textarea id="evidencia"
             value={evidencia}
             onChange={(e) => setEvidencia(e.target.value)}
             rows={2}

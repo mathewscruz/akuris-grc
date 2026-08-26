@@ -341,8 +341,8 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('configPlanos.apiKeys.fieldNome')}</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configPlanos.apiKeys.fieldNomePlaceholder')} />
+            <Label htmlFor="nome">{t('configPlanos.apiKeys.fieldNome')}</Label>
+            <Input id="nome" value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configPlanos.apiKeys.fieldNomePlaceholder')} />
           </div>
           <div className="space-y-2">
             <Label>{t('configPlanos.apiKeys.fieldRateLimit')}</Label>

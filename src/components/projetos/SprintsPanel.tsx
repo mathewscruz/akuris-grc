@@ -233,8 +233,8 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
       }
     >
         <div className="space-y-3">
-          <div><Label>{t('projetos.sprints.fieldNome')}</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-          <div><Label>{t('projetos.sprints.fieldObjetivo')}</Label><Textarea rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
+          <div><Label htmlFor="nome">{t('projetos.sprints.fieldNome')}</Label><Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+          <div><Label htmlFor="objetivo">{t('projetos.sprints.fieldObjetivo')}</Label><Textarea id="objetivo" rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>{t('projetos.sprints.fieldInicio')}</Label><DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} /></div>
             <div><Label>{t('projetos.sprints.fieldFim')}</Label><DateField value={form.data_fim || null} onChange={(v) => setForm({ ...form, data_fim: v ?? '' })} /></div>

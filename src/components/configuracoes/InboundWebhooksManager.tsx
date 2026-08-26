@@ -342,12 +342,12 @@ export function InboundWebhooksManager() {
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('configGeral.inboundWebhooks.labelName')}</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderName')} />
+            <Label htmlFor="nome">{t('configGeral.inboundWebhooks.labelName')}</Label>
+            <Input id="nome" value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderName')} />
           </div>
           <div className="space-y-2">
-            <Label>{t('configGeral.inboundWebhooks.labelDescription')}</Label>
-            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderDescription')} rows={2} />
+            <Label htmlFor="descricao">{t('configGeral.inboundWebhooks.labelDescription')}</Label>
+            <Textarea id="descricao" value={descricao} onChange={e => setDescricao(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderDescription')} rows={2} />
           </div>
           <div className="space-y-2">
             <Label>{t('configGeral.inboundWebhooks.labelEventType')}</Label>

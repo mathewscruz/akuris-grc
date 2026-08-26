@@ -128,8 +128,8 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
           </div>
 
           <div className="space-y-2">
-            <Label>{t('modDialogs.continuidade.teste.fieldDescricao')}</Label>
-            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} placeholder={t('modDialogs.continuidade.teste.fieldDescricaoPlaceholder')} />
+            <Label htmlFor="descricao">{t('modDialogs.continuidade.teste.fieldDescricao')}</Label>
+            <Textarea id="descricao" value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} placeholder={t('modDialogs.continuidade.teste.fieldDescricaoPlaceholder')} />
           </div>
 
           <div className="space-y-2">
@@ -145,8 +145,8 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
           </div>
 
           <div className="space-y-2">
-            <Label>{t('t4.continuidade.participantes')}</Label>
-            <Input
+            <Label htmlFor="participantes">{t('t4.continuidade.participantes')}</Label>
+            <Input id="participantes"
               value={form.participantes}
               onChange={e => setForm(p => ({ ...p, participantes: e.target.value }))}
               placeholder={t('t4.continuidade.participantesPlaceholder')}
@@ -154,13 +154,13 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
           </div>
 
           <div className="space-y-2">
-            <Label>{t('modDialogs.continuidade.teste.fieldObservacoes')}</Label>
-            <Textarea value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} rows={2} />
+            <Label htmlFor="observacoes">{t('modDialogs.continuidade.teste.fieldObservacoes')}</Label>
+            <Textarea id="observacoes" value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} rows={2} />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('modDialogs.continuidade.teste.fieldLicoes')}</Label>
-            <Textarea value={form.licoes_aprendidas} onChange={e => setForm(p => ({ ...p, licoes_aprendidas: e.target.value }))} rows={2} />
+            <Label htmlFor="licoes_aprendidas">{t('modDialogs.continuidade.teste.fieldLicoes')}</Label>
+            <Textarea id="licoes_aprendidas" value={form.licoes_aprendidas} onChange={e => setForm(p => ({ ...p, licoes_aprendidas: e.target.value }))} rows={2} />
           </div>
         </div>
     </DialogShell>

@@ -122,3 +122,54 @@ export function ocorrencias(lista: string[], re: RegExp): string[] {
   }
   return achados;
 }
+
+/**
+ * A tag JSX inteira — e nenhuma regex serve para isto.
+ *
+ * Dentro de uma tag há `>` em dois sítios que não a fecham: a seta de
+ * `onChange={(e) => …}` e as chavetas aninhadas de `set({ ...s, x: 1 })`. Uma
+ * regex fecha a tag no primeiro `>` que vê, e isso já custou duas vezes:
+ * partiu dezasseis ficheiros ao inserir `min="0"` no meio de uma seta, e fez
+ * uma guarda dar falso positivo por não chegar ao `placeholder` que vinha
+ * depois do `onChange`.
+ *
+ * Este varrimento conta chavetas e aspas: a tag só fecha no `>` que está fora
+ * de ambas.
+ */
+export function tagsJsx(
+  fonte: string,
+  nome: string,
+): Array<{ texto: string; posicao: number }> {
+  const achados: Array<{ texto: string; posicao: number }> = [];
+  const abertura = `<${nome}`;
+  let i = 0;
+  while ((i = fonte.indexOf(abertura, i)) !== -1) {
+    // `<Input` não pode casar com `<InputOTP`.
+    const seguinte = fonte[i + abertura.length];
+    if (seguinte && /[A-Za-z0-9]/.test(seguinte)) {
+      i += abertura.length;
+      continue;
+    }
+    let j = i + abertura.length;
+    let chavetas = 0;
+    let aspas: string | null = null;
+    while (j < fonte.length) {
+      const c = fonte[j];
+      if (aspas) {
+        if (c === aspas) aspas = null;
+      } else if (c === '"' || c === "'" || c === '`') {
+        aspas = c;
+      } else if (c === '{') {
+        chavetas += 1;
+      } else if (c === '}') {
+        chavetas -= 1;
+      } else if (c === '>' && chavetas === 0) {
+        break;
+      }
+      j += 1;
+    }
+    achados.push({ texto: fonte.slice(i, j + 1), posicao: i });
+    i = j + 1;
+  }
+  return achados;
+}

@@ -114,8 +114,8 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t('continuidadeComp.planoDialog.fieldNome')}</Label>
-              <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldNomePlaceholder')} />
+              <Label htmlFor="nome">{t('continuidadeComp.planoDialog.fieldNome')}</Label>
+              <Input id="nome" value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldNomePlaceholder')} />
             </div>
             <div className="space-y-2">
               <Label>{t('continuidadeComp.planoDialog.fieldTipo')}</Label>
@@ -131,18 +131,18 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
           </div>
 
           <div className="space-y-2">
-            <Label>{t('continuidadeComp.planoDialog.fieldDescricao')}</Label>
-            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldDescricaoPlaceholder')} rows={3} />
+            <Label htmlFor="descricao">{t('continuidadeComp.planoDialog.fieldDescricao')}</Label>
+            <Textarea id="descricao" value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldDescricaoPlaceholder')} rows={3} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t('continuidadeComp.planoDialog.fieldEscopo')}</Label>
-              <Textarea value={form.escopo} onChange={e => setForm(p => ({ ...p, escopo: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldEscopoPlaceholder')} rows={2} />
+              <Label htmlFor="escopo">{t('continuidadeComp.planoDialog.fieldEscopo')}</Label>
+              <Textarea id="escopo" value={form.escopo} onChange={e => setForm(p => ({ ...p, escopo: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldEscopoPlaceholder')} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>{t('continuidadeComp.planoDialog.fieldObjetivos')}</Label>
-              <Textarea value={form.objetivos} onChange={e => setForm(p => ({ ...p, objetivos: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldObjetivosPlaceholder')} rows={2} />
+              <Label htmlFor="objetivos">{t('continuidadeComp.planoDialog.fieldObjetivos')}</Label>
+              <Textarea id="objetivos" value={form.objetivos} onChange={e => setForm(p => ({ ...p, objetivos: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldObjetivosPlaceholder')} rows={2} />
             </div>
           </div>
 
@@ -160,12 +160,12 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t('continuidadeComp.planoDialog.fieldRto')}</Label>
-              <Input type="number" min="0" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
+              <Label htmlFor="rto_horas">{t('continuidadeComp.planoDialog.fieldRto')}</Label>
+              <Input id="rto_horas" type="number" min="0" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>{t('continuidadeComp.planoDialog.fieldRpo')}</Label>
-              <Input type="number" min="0" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
+              <Label htmlFor="rpo_horas">{t('continuidadeComp.planoDialog.fieldRpo')}</Label>
+              <Input id="rpo_horas" type="number" min="0" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
             </div>
           </div>
 
@@ -175,8 +175,8 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
               <DateField value={form.proxima_revisao || null} onChange={(v) => setForm(p => ({ ...p, proxima_revisao: v || '' }))} />
             </div>
             <div className="space-y-2">
-              <Label>{t('continuidadeComp.planoDialog.fieldVersao')}</Label>
-              <Input value={form.versao} onChange={e => setForm(p => ({ ...p, versao: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldVersao')} />
+              <Label htmlFor="versao">{t('continuidadeComp.planoDialog.fieldVersao')}</Label>
+              <Input id="versao" value={form.versao} onChange={e => setForm(p => ({ ...p, versao: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldVersao')} />
             </div>
           </div>
         </div>

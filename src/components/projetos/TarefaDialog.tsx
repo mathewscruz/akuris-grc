@@ -125,12 +125,12 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           <TabsContent value="detalhes" className="space-y-4 pt-3">
             <form onSubmit={handleSubmit} className="space-y-4" id="tarefa-form">
               <div className="space-y-2">
-                <Label>{t('projetos.tarefaDialog.fieldTitulo')}</Label>
-                <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
+                <Label htmlFor="titulo">{t('projetos.tarefaDialog.fieldTitulo')}</Label>
+                <Input id="titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label>{t('projetos.tarefaDialog.fieldDescricao')}</Label>
-                <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={4} />
+                <Label htmlFor="descricao">{t('projetos.tarefaDialog.fieldDescricao')}</Label>
+                <Textarea id="descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={4} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -165,8 +165,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                   <DateField value={form.prazo || null} onChange={(v) => setForm({ ...form, prazo: v ?? '' })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('projetos.tarefaDialog.fieldEstimativa')}</Label>
-                  <Input type="number" min="0" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
+                  <Label htmlFor="estimativa_horas">{t('projetos.tarefaDialog.fieldEstimativa')}</Label>
+                  <Input id="estimativa_horas" type="number" min="0" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-2">

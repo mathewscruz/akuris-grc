@@ -94,12 +94,12 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
     >
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('projetos.suggestTasks.objective')}</Label>
-            <Textarea value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder={t('projetos.suggestTasks.objectivePlaceholder')} rows={2} />
+            <Label htmlFor="objetivo">{t('projetos.suggestTasks.objective')}</Label>
+            <Textarea id="objetivo" value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder={t('projetos.suggestTasks.objectivePlaceholder')} rows={2} />
           </div>
           <div className="space-y-2">
-            <Label>{t('projetos.suggestTasks.extraContext')}</Label>
-            <Textarea value={contextoExtra} onChange={(e) => setContextoExtra(e.target.value)} placeholder={t('projetos.suggestTasks.extraContextPlaceholder')} rows={2} />
+            <Label htmlFor="contextoExtra">{t('projetos.suggestTasks.extraContext')}</Label>
+            <Textarea id="contextoExtra" value={contextoExtra} onChange={(e) => setContextoExtra(e.target.value)} placeholder={t('projetos.suggestTasks.extraContextPlaceholder')} rows={2} />
           </div>
 
           {sugestoes.length === 0 ? (

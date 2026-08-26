@@ -427,10 +427,12 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 )}
               />
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">
+                <Label htmlFor="perfil-email" className="text-xs font-medium text-muted-foreground">
                   {t('userProfilePopover.emailLabel')}
                 </Label>
-                <Input value={user?.email ?? ''} disabled readOnly />
+                {/* Só de leitura também precisa de nome: sem ele o leitor
+                    de ecrã anuncia o endereço sem dizer o que ele é. */}
+                <Input id="perfil-email" value={user?.email ?? ''} disabled readOnly />
                 <p className="text-xs text-muted-foreground">{t('userProfilePopover.emailHint')}</p>
               </div>
             </TabsContent>

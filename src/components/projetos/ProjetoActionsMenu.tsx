@@ -95,8 +95,8 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <Label className="text-xs">{t('projetos.actionsMenu.confirmNameLabel')} <strong>{projeto.nome}</strong></Label>
-            <Input
+            <Label htmlFor="confirmName" className="text-xs">{t('projetos.actionsMenu.confirmNameLabel')} <strong>{projeto.nome}</strong></Label>
+            <Input id="confirmName"
               value={confirmName}
               onChange={(e) => setConfirmName(e.target.value)}
               placeholder={projeto.nome}
