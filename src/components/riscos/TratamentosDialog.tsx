@@ -15,7 +15,7 @@ export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: Trat
   const { t } = useLanguage();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-5xl max-h-[100dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-full sm:max-w-5xl max-h-[100dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-0 sm:p-0 gap-0">
         <DialogHeader className="relative flex-shrink-0 px-8 pt-7 pb-5 border-b">
           <CornerAccent position="top-left" />
           <DialogTitle className="flex items-center gap-3 text-xl">

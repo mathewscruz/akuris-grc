@@ -362,7 +362,7 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-6xl h-[92vh] p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-full sm:max-w-6xl h-[92vh] p-0 sm:p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">

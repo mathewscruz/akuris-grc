@@ -11,6 +11,7 @@
  * onde se chega aqui; quem quer MUDAR a matriz vê a pré-visualização ao vivo
  * dentro do próprio formulário, que reage a cada alteração.
  */
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { MatrizForm } from './MatrizForm';
@@ -25,6 +26,10 @@ interface MatrizDialogProps {
 
 export function MatrizDialog({ open, onOpenChange, onSuccess }: MatrizDialogProps) {
   const { t } = useLanguage();
+  /* `useState` e nao `useRef`: o portal precisa de um RE-RENDER quando o no
+     existe; com uma ref o formulario desenhava-se antes de haver destino e a
+     barra ficava por desenhar. */
+  const [rodape, setRodape] = useState<HTMLDivElement | null>(null);
 
   const handleSuccess = () => {
     onSuccess();
@@ -33,7 +38,7 @@ export function MatrizDialog({ open, onOpenChange, onSuccess }: MatrizDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-3xl max-h-[100dvh] sm:max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-full sm:max-w-3xl max-h-[100dvh] sm:max-h-[92vh] flex flex-col p-0 sm:p-0 gap-0 overflow-hidden">
         <CornerAccent position="top-left" />
         <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b relative">
           <DialogTitle asChild>
@@ -57,8 +62,24 @@ export function MatrizDialog({ open, onOpenChange, onSuccess }: MatrizDialogProp
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
-          <MatrizForm onSuccess={handleSuccess} />
+          <MatrizForm onSuccess={handleSuccess} footerSlot={rodape} />
         </div>
+
+        {/*
+          A barra de ações é o casco do diálogo, não conteúdo que rola.
+
+          Estava dentro da área de rolagem, presa por `sticky bottom-0`, e
+          parava 19px acima do fim dela — o `py-5` do contentor, porque
+          `sticky` mede-se pela caixa de preenchimento. Por essa folga passava
+          o conteúdo, por baixo dos botões. Fora da rolagem não há folga a
+          calcular nem camada a acertar: a barra ocupa a sua linha e o corpo
+          fica com o resto.
+
+          É o que os outros seis diálogos do produto já fazem — `dialog-shell`,
+          `wizard-dialog`, `master-detail-dialog`, `RiscoFormWizard`,
+          `BibliotecaRiscosDialog`. Este era o único de fora.
+        */}
+        <div ref={setRodape} className="flex-shrink-0 border-t px-6 py-3" />
       </DialogContent>
     </Dialog>
   );

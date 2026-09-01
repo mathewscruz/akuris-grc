@@ -98,7 +98,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="!w-[95vw] !max-w-[1120px] h-[90vh] p-0 gap-0 flex flex-col overflow-hidden [&>button.absolute]:hidden"
+        className="!w-[95vw] !max-w-[1120px] h-[90vh] p-0 sm:p-0 gap-0 flex flex-col overflow-hidden [&>button.absolute]:hidden"
         style={{ background: `linear-gradient(0deg, hsl(var(${SEV_TINT[sevAtual]}) / 0.03), hsl(var(${SEV_TINT[sevAtual]}) / 0.03)), hsl(var(--background))` }}
       >
         {/* Top bar — o nome do risco JÁ é o título visível do modal, então ele

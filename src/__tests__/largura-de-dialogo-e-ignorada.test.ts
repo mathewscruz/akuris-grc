@@ -16,6 +16,14 @@
  * A regra é só uma: quem passa uma largura ao `DialogContent` escreve-a com o
  * prefixo `sm:`. O `max-w-full` sozinho continua certo — é o telemóvel, onde a
  * base já põe o diálogo a ocupar o ecrã todo.
+ *
+ * ## O PREENCHIMENTO tem a mesma armadilha
+ *
+ * A base também traz `p-4` e **`sm:p-6`**. Sete diálogos de sangria completa
+ * passavam `p-0` para colar o cabeçalho e o rodapé ao casco, e a partir de
+ * `sm` recebiam 24px de volta. Media-se: o `MatrizDialog` pedia `p-0` e tinha
+ * 22,3px em cima e em baixo, o que deixava uma faixa morta por baixo da barra
+ * de «Cancelar / Atualizar matriz».
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -60,11 +68,42 @@ describe('a largura declarada no diálogo é a largura que ele tem', () => {
     ).toEqual([]);
   });
 
+  it('nenhum DialogContent passa um preenchimento sem o prefixo sm:', () => {
+    /*
+       Mesma armadilha, outra propriedade: a base tem `p-4 sm:p-6`, e o `p-0`
+       de quem chama só vence o primeiro. Um diálogo de sangria completa
+       precisa de `p-0 sm:p-0`.
+    */
+    const falhas: string[] = [];
+    const PREENCHIMENTO = /(?:^|\s)(p-\d+(?:\.\d+)?)(?=\s|$)/;
+
+    for (const ficheiro of fontesTodas()) {
+      if (!ficheiro.endsWith('.tsx')) continue;
+      const fonte = readFileSync(ficheiro, 'utf8');
+      if (!fonte.includes('<DialogContent')) continue;
+
+      for (const cls of classesDoDialogContent(fonte)) {
+        if (/sm:p-\d/.test(cls)) continue;
+        const semPrefixo = PREENCHIMENTO.exec(cls);
+        if (semPrefixo) {
+          falhas.push(`${ficheiro.split('\\').join('/')} → ${semPrefixo[1]}`);
+        }
+      }
+    }
+
+    expect(
+      falhas,
+      'Este preenchimento não chega ao ecrã: a base do DialogContent tem `sm:p-6` e ganha a partir de `sm`. ' +
+        'Escreva-o também como `sm:p-…`.',
+    ).toEqual([]);
+  });
+
   it('a base continua a ser a razão da regra', () => {
     const dialog = readFileSync('src/components/ui/dialog.tsx', 'utf8');
     expect(
       /sm:max-w-lg/.test(dialog),
       'Se a base deixar de impor uma largura em `sm`, esta guarda deixa de fazer sentido — apague-a em vez de a contornar.',
     ).toBe(true);
+    expect(/sm:p-6/.test(dialog), 'O mesmo para o preenchimento.').toBe(true);
   });
 });

@@ -42,6 +42,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { createPortal } from 'react-dom';
 import { MatrizPreviewGrid } from './MatrizPreviewGrid';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import {
@@ -121,9 +122,23 @@ interface RiscoReclassificado {
 
 interface Props {
   onSuccess: () => void;
+  /**
+   * Onde desenhar a barra de accoes, quando ela pertence ao casco do dialogo.
+   *
+   * A barra vivia DENTRO da area que rola, presa por `sticky bottom-0`.
+   * Medido: a area de rolagem acaba em 970px e a barra parava em 951 -- os
+   * 19px sao o `py-5` do contentor, porque `sticky` mede-se pela caixa de
+   * preenchimento. Por essa folga passava o conteudo, por baixo dos botoes.
+   * E com `z-index: auto` qualquer bloco com camada propria passava-lhe por
+   * cima -- a pre-visualizacao da matriz e `sticky top-0 z-20`.
+   *
+   * Os outros seis dialogos do produto poem o rodape como IRMAO da area que
+   * rola, `flex-shrink-0 border-t`. Este era o unico que nao o fazia.
+   */
+  footerSlot?: HTMLElement | null;
 }
 
-export function MatrizForm({ onSuccess }: Props) {
+export function MatrizForm({ onSuccess, footerSlot }: Props) {
   const { t } = useLanguage();
   const { profile } = useAuth();
 
@@ -375,6 +390,19 @@ export function MatrizForm({ onSuccess }: Props) {
       </div>
     );
   }
+
+  /* Elemento, nao componente: um componente declarado dentro do render tem
+     identidade nova a cada passagem e o React desmonta e remonta os botoes. */
+  const accoes = (
+    <div className="flex items-center justify-end gap-2">
+      <Button type="button" variant="outline" onClick={onSuccess}>
+        {t('fin.comum.cancelar')}
+      </Button>
+      <Button type="button" onClick={gravar} disabled={gravando || !!problema}>
+        {gravando ? t('fin.comum.salvando') : t('fin.riscos.matrizForm.atualizarMatriz')}
+      </Button>
+    </div>
+  );
 
   const faixasOrdenadas = [...niveisRisco].sort((a, b) => a.min - b.min);
 
@@ -745,14 +773,16 @@ export function MatrizForm({ onSuccess }: Props) {
         )}
       </section>
 
-      <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t bg-popover flex items-center justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onSuccess}>
-          {t('fin.comum.cancelar')}
-        </Button>
-        <Button type="button" onClick={gravar} disabled={gravando || !!problema}>
-          {gravando ? t('fin.comum.salvando') : t('fin.riscos.matrizForm.atualizarMatriz')}
-        </Button>
-      </div>
+      {/*
+        A barra de acções pertence ao casco do diálogo, não ao conteúdo.
+
+        Presa aqui dentro por `sticky bottom-0`, parava 19px acima do fim da
+        área que rola — o `py-5` do contentor, porque `sticky` mede-se pela
+        caixa de preenchimento — e por essa folga passava o conteúdo. Sem
+        `footerSlot` continua a desenhar-se aqui, para o formulário não
+        depender de quem o mostra.
+      */}
+      {footerSlot ? createPortal(accoes, footerSlot) : accoes}
     </div>
   );
 }
