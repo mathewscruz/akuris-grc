@@ -1533,7 +1533,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             disabled={isFirstTab}
             size="sm"
           >
-            <IconChevronLeft className="h-4 w-4 mr-1" /> Anterior
+            <IconChevronLeft className="h-4 w-4 mr-1" /> {t('cardsKpi.sweep.riscos.anterior')}
           </Button>
 
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
