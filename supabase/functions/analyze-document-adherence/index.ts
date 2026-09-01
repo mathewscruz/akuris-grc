@@ -266,6 +266,10 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
     //    demais funções. Antes chamava a API da Anthropic direto com um modelo
     //    que retornava 404 nesta conta.
     console.log('Calling AI gateway...');
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -293,11 +297,14 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
 
     // Consumir crédito apenas após sucesso da IA
     try {
-      await supabase.rpc('consume_ai_credit', {
+      const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresaId, p_user_id: userId,
         p_funcionalidade: 'analyze_document_adherence',
         p_descricao: `Análise de aderência do documento para framework`,
       });
+      /* Franquia esgotada entre a pergunta e o débito: quem chega
+         a seguir não leva a resposta. */
+      if (creditoOk === false) return semCreditoIA(corsHeaders);
     } catch (e) { console.warn('consume_ai_credit falhou:', e); }
 
     const aiResponse = await response.json();

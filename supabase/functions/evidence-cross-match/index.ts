@@ -214,6 +214,10 @@ Retorne APENAS JSON válido (sem markdown), no formato:
 Score: 1.00 = atende plenamente, 0.80 = atende com alta probabilidade, 0.60 = atende parcialmente, abaixo de 0.60 NÃO incluir na resposta.`;
 
     // 8) Chama Lovable AI
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabase, empresa_id))) return semCreditoIA(corsHeaders);
+
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -253,12 +257,15 @@ Score: 1.00 = atende plenamente, 0.80 = atende com alta probabilidade, 0.60 = at
 
     // Consumir crédito apenas após sucesso da IA
     try {
-      await supabase.rpc('consume_ai_credit', {
+      const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresa_id,
         p_user_id: userId,
         p_funcionalidade: 'evidence_cross_match',
         p_descricao: `Cross-match IA para evidência ${evidence.nome}`,
       });
+      /* Franquia esgotada entre a pergunta e o débito: quem chega
+         a seguir não leva a resposta. */
+      if (creditoOk === false) return semCreditoIA(corsHeaders);
     } catch (e) { console.warn('consume_ai_credit falhou (não bloqueante):', e); }
 
     const raw: string = aiData?.choices?.[0]?.message?.content ?? '';

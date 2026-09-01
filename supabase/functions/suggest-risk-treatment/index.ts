@@ -72,6 +72,10 @@ Para cada sugestão, inclua:
 
 Seja específico e prático, focando em ações implementáveis no contexto empresarial brasileiro.`;
 
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabase, empresa_id))) return semCreditoIA(corsHeaders);
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -114,12 +118,15 @@ Seja específico e prático, focando em ações implementáveis no contexto empr
     // Consumir crédito apenas após sucesso comprovado da IA.
     if (empresa_id && user_id) {
       try {
-        await supabase.rpc('consume_ai_credit', {
+        const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
           p_empresa_id: empresa_id,
           p_user_id: user_id,
           p_funcionalidade: 'suggest_risk_treatment',
           p_descricao: `Sugestão de tratamento para risco: ${nome}`,
         });
+        /* Franquia esgotada entre a pergunta e o débito: quem chega
+           a seguir não leva a resposta. */
+        if (creditoOk === false) return semCreditoIA(corsHeaders);
       } catch (e) { console.warn('consume_ai_credit falhou (não bloqueante):', e); }
     }
 

@@ -110,6 +110,10 @@ Retorne APENAS JSON válido (sem markdown):
   "recomendacao_gestor": "1-2 frases dirigidas ao gestor"
 }`;
 
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
@@ -129,11 +133,14 @@ Retorne APENAS JSON válido (sem markdown):
     }
     const aiJson = await aiResp.json();
     try {
-      await supabase.rpc('consume_ai_credit', {
+      const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresaId, p_user_id: userId,
         p_funcionalidade: 'projeto_status_report',
         p_descricao: `Status report IA — ${proj.nome}`,
       });
+      /* Franquia esgotada entre a pergunta e o débito: quem chega
+         a seguir não leva a resposta. */
+      if (creditoOk === false) return semCreditoIA(corsHeaders);
     } catch (e) { console.warn('consume_ai_credit falhou:', e); }
     let content: string = aiJson?.choices?.[0]?.message?.content ?? '{}';
     content = content.replace(/```json|```/g, '').trim();

@@ -135,6 +135,10 @@ Deno.serve(async (req: Request) => {
       '- Escreve em português europeu, dirigido a quem tem de decidir se contrata.',
     ].filter(Boolean).join('\n');
 
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(admin, avaliacao.empresa_id))) return semCreditoIA(corsHeaders);
+
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -164,12 +168,15 @@ Deno.serve(async (req: Request) => {
 
     // Só se debita depois do gateway aceitar — não se cobra o que não veio.
     if (avaliacao.empresa_id) {
-      await admin.rpc('consume_ai_credit', {
+      const { data: creditoOk } = await admin.rpc('consume_ai_credit', {
         p_empresa_id: avaliacao.empresa_id,
         p_user_id: chamador.userId,
         p_funcionalidade: 'avaliar_fornecedor_ia',
         p_descricao: `Parecer de due diligence · ${avaliacao.fornecedor_nome}`,
       });
+      /* Franquia esgotada entre a pergunta e o débito: quem chega
+         a seguir não leva a resposta. */
+      if (creditoOk === false) return semCreditoIA(corsHeaders);
     }
 
     const dados = await aiResp.json();

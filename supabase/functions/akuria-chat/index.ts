@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
+import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -379,6 +380,15 @@ Regras das ações:
 
 ${contextSummary}
 ${specificDetails}`;
+
+    /*
+       Aqui a trava só pode ser ANTES.
+
+       A resposta vai em fluxo e o débito nem é esperado (`.then`), por isso
+       não há como recusar depois de a conversa começar a sair. Sem franquia,
+       não se chama o modelo — que é também onde o dinheiro se gasta.
+    */
+    if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

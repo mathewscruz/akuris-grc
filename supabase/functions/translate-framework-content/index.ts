@@ -123,6 +123,10 @@ Return ONLY a valid JSON array (no markdown fences) with the translated items.
 ITEMS:
 ${JSON.stringify(payload)}`;
 
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
@@ -146,11 +150,14 @@ ${JSON.stringify(payload)}`;
       return json({ error: 'Erro no gateway de IA', detail: t.slice(0, 500) }, 500);
     }
 
-    await supabase.rpc('consume_ai_credit', {
+    const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
       p_empresa_id: empresaId,
       p_user_id: userId,
       p_funcionalidade: 'translate_framework_content',
-      p_descricao: `Tradução EN de ${rows.length} requisitos (${framework.nome})`,
+      p_descricao: `Tradução EN de ${rows.length} requisitos (${framework.nome});
+    /* Franquia esgotada entre a pergunta e o débito: quem chega
+       a seguir não leva a resposta. */
+    if (creditoOk === false) return semCreditoIA(corsHeaders)`,
     });
 
     const aiData = await aiResp.json();

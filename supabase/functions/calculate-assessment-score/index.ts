@@ -107,11 +107,14 @@ serve(async (req) => {
     // Consumir crédito apenas após sucesso da IA
     if (empresaId && userId) {
       try {
-        await supabase.rpc('consume_ai_credit', {
+        const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
           p_empresa_id: empresaId, p_user_id: userId,
           p_funcionalidade: 'calculate-assessment-score',
           p_descricao: 'Cálculo de score Due Diligence com IA',
         });
+        /* Franquia esgotada entre a pergunta e o débito: quem chega
+           a seguir não leva a resposta. */
+        if (creditoOk === false) return semCreditoIA(corsHeaders);
       } catch (e) { console.warn('consume_ai_credit falhou:', e); }
     }
 
@@ -209,6 +212,10 @@ Responda APENAS em formato JSON válido (sem markdown) com esta estrutura:
 
 IMPORTANTE: O breakdown deve ser agrupado pelo campo "section" de cada pergunta.
 `;
+
+  // Sem franquia, nem se chama o modelo: a chamada custa no instante
+  // em que sai. Ver `_shared/creditos.ts`.
+  if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',

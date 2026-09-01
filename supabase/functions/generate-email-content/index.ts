@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
+import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -131,6 +132,10 @@ serve(async (req) => {
     // Consome 1 crédito de IA (somente quando há empresa associada — chamadas internas do super-admin sem empresa pulam o débito)
     if (empresaId && auth.userId) {
       const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+      // Sem franquia, nem se chama o modelo: a chamada custa no instante
+      // em que sai. Ver `_shared/creditos.ts`.
+      if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+
       const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresaId,
         p_user_id: auth.userId,

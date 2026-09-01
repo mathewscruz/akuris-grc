@@ -190,6 +190,30 @@ export const AI_FEATURES: AiFeature[] = [
     edgeFunction: 'suggest-risk-treatment',
   },
   {
+    /* Debitada desde sempre pela `avaliar-fornecedor-ia` e ausente daqui: o
+       consumo entrava no livro e o custo caía no balde «modelo
+       desconhecido», com o preço por omissão em vez do real. */
+    key: 'avaliar_fornecedor_ia',
+    labelPt: 'Parecer de IA sobre fornecedor',
+    labelEn: 'AI opinion on supplier',
+    modulePt: 'Due Diligence',
+    moduleEn: 'Due diligence',
+    model: 'google/gemini-3-flash-preview',
+    edgeFunction: 'avaliar-fornecedor-ia',
+  },
+  {
+    /* Função que vive SÓ em produção, sem código no repositório — já tem
+       consumo registado. Fica aqui para o custo dela ser contado; o
+       modelo é o que a passagem usa por omissão. */
+    key: 'dashboard_ai_summary',
+    labelPt: 'Resumo do painel (IA)',
+    labelEn: 'Dashboard summary (AI)',
+    modulePt: 'Painel',
+    moduleEn: 'Dashboard',
+    model: 'google/gemini-3-flash-preview',
+    edgeFunction: 'dashboard-ai-summary',
+  },
+  {
     key: 'akuria_chat',
     labelPt: 'Assistente Akuria (chat)',
     labelEn: 'Akuria assistant (chat)',

@@ -207,6 +207,10 @@ Retorne JSON: {
         });
     }
 
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabaseAdmin, empresaId))) return semCreditoIA(corsHeaders);
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -240,12 +244,15 @@ Retorne JSON: {
     }
 
     // Debita crédito apenas após gateway ter aceitado.
-    await supabaseAdmin.rpc('consume_ai_credit', {
+    const { data: creditoOk } = await supabaseAdmin.rpc('consume_ai_credit', {
       p_empresa_id: empresaId,
       p_user_id: userId,
       p_funcionalidade: `ai-assistant:${action}`,
       p_descricao: `Assistente IA - ${action}`,
     });
+    /* Franquia esgotada entre a pergunta e o débito: quem chega
+       a seguir não leva a resposta. */
+    if (creditoOk === false) return semCreditoIA(corsHeaders);
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "";

@@ -145,6 +145,10 @@ Retorne APENAS JSON válido (sem markdown), neste formato:
   "next_steps": ["ações sugeridas, se aplicável"]
 }`;
 
+    // Sem franquia, nem se chama o modelo: a chamada custa no instante
+    // em que sai. Ver `_shared/creditos.ts`.
+    if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -181,12 +185,15 @@ Retorne APENAS JSON válido (sem markdown), neste formato:
     }
 
     // Debita crédito só após o gateway ter aceitado.
-    await supabase.rpc('consume_ai_credit', {
+    const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
       p_empresa_id: empresaId,
       p_user_id: userId,
       p_funcionalidade: 'analyze_evidence_against_requirement',
       p_descricao: `Validação IA de evidência para requisito ${requirementId}`,
     });
+    /* Franquia esgotada entre a pergunta e o débito: quem chega
+       a seguir não leva a resposta. */
+    if (creditoOk === false) return semCreditoIA(corsHeaders);
 
     const aiData = await aiResp.json();
     const raw: string = aiData?.choices?.[0]?.message?.content ?? '';
