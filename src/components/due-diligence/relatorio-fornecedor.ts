@@ -44,6 +44,15 @@ export interface DadosDoRelatorio {
   dataConclusao?: string | null;
   parecer?: ParecerDaIA | null;
   parecerEm?: string | null;
+  /**
+   * A nota de cada secção, como o cálculo a devolve.
+   *
+   * O ecrã mostra-a desde que o cálculo passou a produzi-la; o PDF -- que é o
+   * que vai anexo ao processo e é assinado -- levava só o número global. Quem
+   * o lê fica a saber QUANTO e não ONDE, e é o ONDE que se cobra ao
+   * fornecedor.
+   */
+  porSecao?: Array<{ secao: string; score: number; perguntas?: number }>;
   /** Respostas, para o anexo. Sem elas o relatório é só a capa. */
   respostas?: Array<{
     pergunta: string;
@@ -63,6 +72,7 @@ export interface RotulosDoRelatorio {
   seccaoRespostas: string;
   score: string;
   semScore: string;
+  porSecao: string;
   nivelRisco: string;
   semParecer: string;
   avisoParecer: string;
@@ -155,6 +165,27 @@ export async function gerarRelatorioFornecedor(
     y += 20;
   } else {
     y = escreverParagrafo(doc, r.semScore, y + 4);
+  }
+
+  // ── Por secção: onde dói, não só quanto ────────────────────────────────
+  if (dados.porSecao && dados.porSecao.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    doc.text(r.porSecao, MARGEM, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    // Da pior para a melhor: num relatório de risco, o que dói vem primeiro.
+    for (const s of [...dados.porSecao].sort((a, b) => a.score - b.score)) {
+      doc.setFontSize(8.5);
+      doc.setTextColor(40, 40, 40);
+      doc.text(s.secao, MARGEM, y);
+      doc.setTextColor(110, 110, 110);
+      doc.text(`${Number(s.score).toFixed(0)}%`, MARGEM + LARGURA_UTIL - 12, y);
+      drawProgressBar(doc, MARGEM, y + 1.5, LARGURA_UTIL - 16, 2.5, Number(s.score), AKURIS_COLORS.primary);
+      y += 8;
+    }
+    y += 2;
   }
 
   const meta: string[] = [];

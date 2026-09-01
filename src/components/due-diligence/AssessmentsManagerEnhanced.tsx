@@ -227,6 +227,21 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
         .eq('assessment_id', assessment.id);
       if (error) throw error;
 
+      /* A nota por secção vem do mesmo sítio que o ecrã lê. Sem ela, o PDF
+         que vai anexo ao processo dizia QUANTO e não ONDE. */
+      const { data: notas } = await supabase
+        .from('due_diligence_scores')
+        .select('score_breakdown')
+        .eq('assessment_id', assessment.id)
+        .maybeSingle();
+      const porSecao = Object.entries((notas?.score_breakdown ?? {}) as Record<string, unknown>).map(
+        ([secao, valor]) => ({
+          secao,
+          score: typeof valor === 'number' ? valor : Number((valor as { score?: number })?.score ?? 0),
+          perguntas: typeof valor === 'number' ? undefined : (valor as { perguntas?: number })?.perguntas,
+        }),
+      );
+
       const ordenadas = (respostas ?? [])
         .map((r: any) => ({
           pergunta: r.due_diligence_questions?.titulo ?? '-',
@@ -249,6 +264,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
           parecer: (assessment.ia_parecer as ParecerDaIA) ?? null,
           parecerEm: assessment.ia_avaliado_em ?? null,
           respostas: ordenadas,
+          porSecao,
         },
         {
           titulo: t('dueDiligence.relatorio.titulo'),
@@ -258,6 +274,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
           seccaoRespostas: t('dueDiligence.relatorio.seccaoRespostas'),
           score: t('dueDiligence.relatorio.score'),
           semScore: t('dueDiligence.relatorio.semScore'),
+          porSecao: t('dueDiligence.relatorio.porSecao'),
           nivelRisco: t('dueDiligence.relatorio.nivelRisco'),
           semParecer: t('dueDiligence.relatorio.semParecer'),
           avisoParecer: t('dueDiligence.relatorio.avisoParecer'),

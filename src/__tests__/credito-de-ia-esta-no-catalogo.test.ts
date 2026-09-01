@@ -55,6 +55,66 @@ describe('crédito de IA', () => {
     ).toEqual([]);
   });
 
+  it('toda a entrada do catálogo tem quem a chame', () => {
+    /*
+       A regra ao contrário, e custou uma fachada: `calculate-assessment-score`
+       estava publicada, configurada, listada aqui como cobrável -- e não era
+       chamada por ninguém. O painel Financeiro IA anunciava ao administrador
+       uma funcionalidade que não corre, e o utilizador nunca a via gastar
+       nada porque ela nunca gastou.
+
+       Uma entrada no catálogo é uma promessa de que aquilo existe e cobra.
+    */
+    const fontes: string[] = [];
+    /*
+       O catálogo e os testes ficam de FORA do corpus.
+
+       Sem isto a guarda satisfazia-se a si própria: a entrada
+       `edgeFunction: 'nome',` do catálogo tem a forma de um argumento, e
+       contava como se alguém a chamasse. Verificado -- com a órfã reposta, a
+       guarda passava na mesma.
+    */
+    const andar = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const caminho = `${dir}/${e.name}`;
+        if (e.isDirectory()) {
+          if (e.name !== '__tests__') andar(caminho);
+        } else if (/\.(ts|tsx)$/.test(e.name) && !caminho.endsWith('ai-usage-catalog.ts')) {
+          fontes.push(readFileSync(caminho, 'utf8'));
+        }
+      }
+    };
+    andar('src');
+    andar(RAIZ);
+    const tudo = fontes.join('\n');
+
+    /*
+       `dashboard-ai-summary` corre em produção e NÃO tem código neste
+       repositório -- foi publicada por fora. Fica no catálogo de propósito:
+       enquanto cobrar, o painel tem de saber o modelo dela, senão o custo vira
+       palpite. Sai daqui quando for removida da implantação.
+    */
+    const SEM_CODIGO_NO_REPO = new Set(['dashboard-ai-summary']);
+
+    const orfas = AI_FEATURES.filter((f) => {
+      if (SEM_CODIGO_NO_REPO.has(f.edgeFunction)) return false;
+      /* O nome pode vir na linha do `invoke(`, na linha seguinte (é o que o
+         `invokeEdgeFunction` faz com três das funções), ou dentro de um URL
+         `/functions/v1/...` -- a `akuria-chat` responde em fluxo e é chamada
+         assim. Uma leitura por linha dava três falsos positivos. */
+      const aspas = String.raw`['"` + '`' + ']';
+      const porInvoke = new RegExp(String.raw`invoke\w*\(\s*` + aspas + f.edgeFunction + aspas);
+      const porUrl = new RegExp(String.raw`functions/v1/` + f.edgeFunction + '(?![\\w-])');
+      const porArgumento = new RegExp(aspas + f.edgeFunction + aspas + String.raw`\s*,`);
+      return !porInvoke.test(tudo) && !porUrl.test(tudo) && !porArgumento.test(tudo);
+    }).map((f) => f.edgeFunction);
+
+    expect(
+      orfas,
+      'Entrada no catálogo sem quem a chame: ou se liga a função, ou sai daqui.',
+    ).toEqual([]);
+  });
+
   it('ninguém chama o modelo sem perguntar pela franquia', () => {
     const falhas: string[] = [];
     for (const { nome, fonte } of funcoesComIA()) {

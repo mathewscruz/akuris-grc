@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconAdd, IconEdit, IconDelete, IconArrowUp, IconArrowDown } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconArrowUp, IconArrowDown, IconWarning } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,20 @@ interface Question {
   configuracoes?: any;
 }
 
+/**
+ * A pergunta parece daquelas em que «Sim» é a MÁ resposta?
+ *
+ * Não decide nada — acende um aviso ao lado do campo. Um padrão destes achou
+ * DUAS das sete perguntas invertidas dos modelos de fábrica; as outras cinco
+ * só apareceram lendo-as uma a uma. Serve para lembrar quem escreve, não para
+ * substituir a escolha.
+ */
+export function pareceNegativa(titulo: string): boolean {
+  return /(houve|foram|foi)\s+.*(condenad|autuad|acidente|interrup|viola|vazamento|san[çc])|consta de listas|politicamente exposta|depend[êe]ncia cr[íi]tica|incidente[s]?\s+(de|com|nos)/i.test(
+    titulo,
+  );
+}
+
 interface QuestionsManagerProps {
   templateId: string;
   templateName: string;
@@ -56,7 +70,20 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
     opcoes: [''],
     obrigatoria: true,
     peso: 1,
-    secao: 'Geral'
+    secao: 'Geral',
+    /*
+       Qual das opções é a BOA.
+
+       O cálculo dá 10 à primeira opção e 0 à última. Numa pergunta como
+       «Existe política anticorrupção?» com `["Sim","Não"]`, isso está certo.
+       Numa como «Houve vazamento de dados nos últimos 12 meses?» está ao
+       contrário -- e ninguém dava por isso, porque o número aparece na mesma.
+
+       Sete das perguntas dos modelos de fábrica são assim. Um padrão de texto
+       achava duas; as outras cinco só apareceram a lê-las uma a uma. Por isso
+       é campo do formulário e não adivinhação.
+    */
+    polaridade: 'positiva' as 'positiva' | 'negativa',
   });
 
   useEffect(() => {
@@ -93,7 +120,8 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       opcoes: [''],
       obrigatoria: true,
       peso: 1,
-      secao: 'Geral'
+      secao: 'Geral',
+      polaridade: 'positiva',
     });
     setEditingQuestion(null);
   };
@@ -112,7 +140,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
         obrigatoria: formData.obrigatoria,
         peso: formData.peso,
         ordem: editingQuestion ? editingQuestion.ordem : questions.length + 1,
-        secao: formData.secao || 'Geral'
+        secao: formData.secao || 'Geral',
+        /* Espalha-se o que já lá estava: `configuracoes` guarda também os
+           rótulos de evidência e justificação, e um `{}` apagava-os. */
+        configuracoes: {
+          ...(editingQuestion?.configuracoes ?? {}),
+          polaridade: formData.polaridade,
+        },
       };
 
       let error;
@@ -155,7 +189,8 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       opcoes: question.opcoes || [''],
       obrigatoria: question.obrigatoria,
       peso: question.peso,
-      secao: (question as any).secao || 'Geral'
+      secao: (question as any).secao || 'Geral',
+      polaridade: (question.configuracoes?.polaridade === 'negativa' ? 'negativa' : 'positiva'),
     });
     setShowDialog(true);
   };
@@ -371,6 +406,47 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                     <IconAdd className="mr-2 h-4 w-4" />
                     {t('dueDiligence.questionsManager.addOption')}
                   </Button>
+                </div>
+              )}
+
+              {/*
+                Qual das opcoes vale 10.
+
+                O calculo da 10 a primeira opcao e 0 a ultima. Em "Existe
+                politica anticorrupcao?" com ["Sim","Nao"] isso esta certo. Em
+                "Houve vazamento de dados nos ultimos 12 meses?" esta ao
+                contrario -- e ninguem dava por isso, porque o numero aparece na
+                mesma e parece bom.
+
+                Sete perguntas dos modelos de fabrica eram assim. Um padrao de
+                texto achava duas; as outras cinco so apareceram a le-las uma a
+                uma. Por isso e campo do formulario, e nao adivinhacao.
+              */}
+              {['select', 'radio', 'checkbox'].includes(formData.tipo) && (
+                <div className="space-y-2">
+                  <Label htmlFor="polaridade">{t('dueDiligence.questionsManager.fieldPolarity')}</Label>
+                  <Select
+                    value={formData.polaridade}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, polaridade: v as 'positiva' | 'negativa' }))}
+                  >
+                    <SelectTrigger id="polaridade">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="positiva">
+                        {t('dueDiligence.questionsManager.polarityPositive', { opcao: formData.opcoes[0]?.trim() || '—' })}
+                      </SelectItem>
+                      <SelectItem value="negativa">
+                        {t('dueDiligence.questionsManager.polarityNegative', { opcao: formData.opcoes[0]?.trim() || '—' })}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {pareceNegativa(formData.titulo) && formData.polaridade === 'positiva' && (
+                    <p className="flex items-start gap-1.5 text-micro text-warning">
+                      <IconWarning className="h-3.5 w-3.5 shrink-0 mt-px" strokeWidth={1.5} />
+                      {t('dueDiligence.questionsManager.polarityWarning')}
+                    </p>
+                  )}
                 </div>
               )}
 

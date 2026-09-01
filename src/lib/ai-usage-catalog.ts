@@ -171,15 +171,19 @@ export const AI_FEATURES: AiFeature[] = [
     model: 'google/gemini-3.1-flash-lite',
     edgeFunction: 'translate-framework-content',
   },
-  {
-    key: 'calculate-assessment-score',
-    labelPt: 'Pontuação de due diligence',
-    labelEn: 'Due diligence scoring',
-    modulePt: 'Due Diligence',
-    moduleEn: 'Due Diligence',
-    model: 'google/gemini-3.6-flash',
-    edgeFunction: 'calculate-assessment-score',
-  },
+  /*
+     `calculate-assessment-score` saiu daqui.
+
+     Está publicada, configurada e nunca é chamada por ninguém: só existem
+     comentários a referi-la. Enquanto esteve no catálogo, o painel Financeiro
+     IA anunciava ao administrador uma funcionalidade cobrável que não corre.
+
+     A pontuação do questionário é feita pela RPC `calculate_due_diligence_score`
+     -- aritmética, repetível e conferível --, e é isso que se quer num número
+     que decide contratações. A leitura fica para a `avaliar_fornecedor_ia`,
+     que está aqui em baixo. A função de borda continua publicada; removê-la
+     do projeto é passo de implantação, não de código.
+  */
   {
     key: 'suggest_risk_treatment',
     labelPt: 'Sugestão de tratamento de risco',
