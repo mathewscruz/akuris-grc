@@ -92,7 +92,11 @@ export function StatusSeg({
               className={cn(
                 'inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm border px-1 font-mono text-micro leading-none',
                 isActive
-                  ? 'border-current/40 text-current/90 bg-transparent'
+                  /* `border-current`, sem opacidade: o Tailwind não gera regra
+                     para `current/40` nem `current/90`, e a etiqueta ficava com
+                     a cor genérica da borda em vez da cor do estado activo. O
+                     texto já herda `currentColor`. */
+                  ? 'border-current bg-transparent'
                   : 'border-border bg-background text-muted-foreground'
               )}
             >

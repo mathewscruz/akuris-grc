@@ -210,6 +210,13 @@ export default {
 				'3xl': 'var(--radius)'
 			},
 			keyframes: {
+				/* O `input-otp` pede `animate-caret-blink` e o fotograma nunca foi
+				   declarado: a classe nao gerava regra e o cursor ficava parado,
+				   sem indicar onde se estava a escrever. */
+				'caret-blink': {
+					'0%,70%,100%': { opacity: '1' },
+					'20%,50%': { opacity: '0' }
+				},
 				'accordion-down': {
 					from: {
 						height: '0'
@@ -300,6 +307,7 @@ export default {
 				}
 			},
 			animation: {
+				'caret-blink': 'caret-blink 1.25s ease-out infinite',
 				'accordion-down': 'accordion-down 0.25s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1)',

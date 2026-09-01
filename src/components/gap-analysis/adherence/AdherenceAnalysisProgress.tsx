@@ -195,7 +195,7 @@ export function AdherenceAnalysisProgress({
 
       {/* Mensagem de conclusão */}
       {currentProgress >= 100 && !isError && (
-        <div className="text-center p-4 bg-success/10 dark:bg-success/10/20 rounded-lg border border-success/30 dark:border-success/30">
+        <div className="text-center p-4 bg-success/10 dark:bg-success/20 rounded-lg border border-success/30 dark:border-success/30">
           <IconSuccess className="h-8 w-8 text-success mx-auto mb-2" strokeWidth={1.5}/>
           <p className="text-sm font-medium text-success dark:text-success">
             {t('gapAnalysis.adherenceUi.progress.successTitle')}

@@ -176,7 +176,7 @@ export function ReportsSidebar() {
               <CardContent>
                 <div className="space-y-2">
                   {reports.lowPerformingSuppliers.map((supplier, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 border border-warning/30 rounded bg-warning/10/50">
+                    <div key={index} className="flex items-center justify-between p-2 border border-warning/30 rounded bg-warning/10">
                       <span className="text-sm">{supplier.nome}</span>
                       <Badge variant="destructive">
                         {supplier.score.toFixed(1)}%
