@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { IconChevronDown, IconChevronUp, IconGrid } from '@/components/icons';
+import { SEVERITY_LETTER, severidadePrevista } from '@/components/riscos/risk-utils';
+import { pinturaDoNivel } from './matrix/pintura-da-matriz';
+import { LegendaDaMatriz } from './matrix/LegendaDaMatriz';
 
 export interface PreviewEscalaItem {
   valor: string;
@@ -128,18 +131,38 @@ export function MatrizPreviewGrid({
                       const score = scoreOf(l.num, c.num, metodoCalculo);
                       const faixa = faixaDoScore(score, niveisRisco);
                       const acimaApetite = apetiteMax != null && score > apetiteMax;
+                      /*
+                        A mesma célula do mapa de calor, em ponto pequeno.
+
+                        Era um bloco SÓLIDO com o número a branco; o mapa de
+                        calor da aba Matriz é um fundo tenue com o score num
+                        canto e a letra da severidade no outro. A mesma matriz,
+                        dois desenhos — e este é o que se chama
+                        «pré-visualização». Agora previsualiza mesmo.
+                      */
+                      const sev = severidadePrevista(score, niveisRisco as never) ?? 'baixo';
+                      const pintura = pinturaDoNivel(faixa, sev);
                       return (
                         <td key={`c-${l.num}-${c.num}`} className="p-0">
                           <div
                             className={cn(
-                              'h-9 rounded-md flex items-center justify-center font-semibold tabular-nums text-white/95 transition-colors',
-                              !faixa && 'border border-dashed border-border text-muted-foreground',
+                              'h-9 rounded-md border px-1.5 flex items-center justify-between gap-1 transition-colors',
+                              !faixa && 'border-dashed border-border text-muted-foreground',
                               acimaApetite && 'ring-1 ring-foreground/50',
                             )}
-                            style={faixa ? { backgroundColor: faixa.cor } : undefined}
+                            style={faixa ? pintura.celula : undefined}
                             title={`${score} · ${faixa?.nivel ?? '—'}`}
                           >
-                            {score}
+                            <span className="font-semibold tabular-nums text-foreground">{score}</span>
+                            {faixa && (
+                              <span
+                                aria-hidden="true"
+                                className="h-4 w-4 shrink-0 rounded-sm inline-flex items-center justify-center text-micro font-bold leading-none"
+                                style={pintura.marca}
+                              >
+                                {SEVERITY_LETTER[sev]}
+                              </span>
+                            )}
                           </div>
                         </td>
                       );
@@ -149,29 +172,16 @@ export function MatrizPreviewGrid({
               </tbody>
             </table>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {[...niveisRisco]
-                .sort((a, b) => a.min - b.min)
-                .map((n, idx) => (
-                  <span
-                    key={`${n.nivel}-${idx}`}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-micro text-muted-foreground"
-                  >
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: n.cor }} />
-                    {n.nivel || `Nível ${idx + 1}`}
-                    <span className="tabular-nums opacity-70">
-                      {n.min}–{n.max}
-                    </span>
-                  </span>
-                ))}
-              {apetiteMax != null && (
-                <span className="inline-flex items-center gap-1.5 rounded-md border border-foreground/40 px-2 py-0.5 text-micro text-foreground">
-                  <span className="h-2.5 w-2.5 rounded-sm ring-1 ring-foreground/60" />
-                  {legendaApetite} ≤ {apetiteMax}
-                </span>
-              )}
-              <span className="text-micro text-muted-foreground">{eixoImpacto} →</span>
-            </div>
+            {/* A mesma legenda do mapa de calor. Eram duas: aqui uma pilula
+                com ponto redondo e a faixa em opacidade reduzida, ordenada do
+                menos grave para o mais; la um quadrado com a letra, ordenado ao
+                contrario. Mesma escala, duas leituras. */}
+            <LegendaDaMatriz
+              niveis={niveisRisco}
+              apetite={apetiteMax != null ? { rotulo: legendaApetite, max: apetiteMax } : null}
+              sufixo={`${eixoImpacto} →`}
+              className="mt-3"
+            />
           </div>
         )}
       </div>

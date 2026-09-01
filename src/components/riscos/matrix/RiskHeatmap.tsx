@@ -23,6 +23,8 @@ import {
 import type { MatrizConfiguracao, EscalaItem } from '@/components/riscos/matriz-config';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconClose } from '@/components/icons';
+import { pinturaDoNivel } from './pintura-da-matriz';
+import { LegendaDaMatriz } from './LegendaDaMatriz';
 
 export type HeatmapMode = 'inerente' | 'residual' | 'movimento';
 
@@ -51,32 +53,20 @@ interface Props {
   config?: MatrizConfiguracao | null;
 }
 
-const SEV_BG: Record<Severity, string> = {
-  critico: 'bg-destructive/15',
-  alto: 'bg-orange/15',
-  medio: 'bg-warning/8',
-  baixo: 'bg-success/12',
-};
+/*
+   `SEV_BG`, `SEV_BORDER` e `SEV_DOT` sairam daqui.
 
-const SEV_BORDER: Record<Severity, string> = {
-  critico: 'border-destructive/30',
-  alto: 'border-orange/30',
-  medio: 'border-warning/20',
-  baixo: 'border-success/25',
-};
-
+   Pintavam a celula e o ponto da legenda com tokens fixos de
+   severidade, ignorando a cor que a empresa configurou em
+   `niveis_risco[].cor`. A pintura vive agora em `pintura-da-matriz`, e
+   serve tambem a pre-visualizacao do dialogo -- que ate aqui desenhava
+   a MESMA matriz de outra maneira.
+*/
 const SEV_BADGE: Record<Severity, string> = {
   critico: 'bg-destructive text-destructive-foreground',
   alto: 'bg-orange text-orange-foreground',
   medio: 'bg-warning/70 text-warning-foreground',
   baixo: 'bg-success text-success-foreground',
-};
-
-const SEV_DOT: Record<Severity, string> = {
-  critico: 'bg-destructive',
-  alto: 'bg-orange',
-  medio: 'bg-warning/60',
-  baixo: 'bg-success',
 };
 
 /** Cor de traço (SVG) por severidade — tokens semânticos, nunca hex cru. */
@@ -190,23 +180,6 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
   const probs = Array.from({ length: nProb }, (_, ix) => nProb - ix);
   const imps = Array.from({ length: nImp }, (_, ix) => ix + 1);
 
-  // Legenda derivada das faixas configuradas (ordem decrescente de severidade).
-  const legend = useMemo(() => {
-    if (niveis && niveis.length > 0) {
-      return [...niveis]
-        .sort((a, b) => b.max - a.max)
-        .map((n) => {
-          const sev = severidadePrevista(n.max, niveis) ?? 'baixo';
-          return { key: `${n.nivel}-${n.min}`, label: `${n.nivel} (${n.min}–${n.max})`, cls: SEV_DOT[sev], letter: SEVERITY_LETTER[sev] };
-        });
-    }
-    return (['critico', 'alto', 'medio', 'baixo'] as Severity[]).map((sev) => ({
-      key: sev,
-      label: t(`riscosVisoes.matrix.riskHeatmap.legenda.${sev}`),
-      cls: SEV_DOT[sev],
-      letter: SEVERITY_LETTER[sev],
-    }));
-  }, [niveis, t]);
 
   const modes: HeatmapMode[] = onModeChange ? ['inerente', 'residual', 'movimento'] : [];
 
@@ -272,19 +245,16 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-micro text-muted-foreground">
-            {legend.map((l) => (
-              <div key={l.key} className="inline-flex items-center gap-1.5">
-                <span
-                  aria-hidden="true"
-                  className={cn('h-3.5 w-3.5 rounded-sm inline-flex items-center justify-center text-micro font-bold', l.cls)}
-                >
-                  {l.letter}
-                </span>
-                {l.label}
-              </div>
-            ))}
-          </div>
+          <LegendaDaMatriz
+            niveis={niveis}
+            rotulosPadrao={{
+              critico: t('riscosVisoes.matrix.riskHeatmap.legenda.critico'),
+              alto: t('riscosVisoes.matrix.riskHeatmap.legenda.alto'),
+              medio: t('riscosVisoes.matrix.riskHeatmap.legenda.medio'),
+              baixo: t('riscosVisoes.matrix.riskHeatmap.legenda.baixo'),
+            }}
+            className="justify-end"
+          />
         </div>
       </div>
 
@@ -364,10 +334,13 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                         count: cellRisks.length,
                         label: riskWord,
                       })}
+                      /* A cor vem de quem a escolheu: `niveis_risco[].cor`.
+                         Ignorava-se aqui, e a empresa que pos roxo no nivel
+                         mais grave via roxo no dialogo da matriz e vermelho na
+                         aba onde trabalha. Ver `pintura-da-matriz`. */
+                      style={pinturaDoNivel(faixa, sev).celula}
                       className={cn(
                         'rounded-lg border p-2 flex flex-col justify-between transition-transform text-left',
-                        SEV_BG[sev],
-                        SEV_BORDER[sev],
                         isSel && 'ring-2 ring-foreground ring-offset-2 ring-offset-card',
                         'hover:scale-[1.02]',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card',
@@ -377,7 +350,8 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                         <span className="text-micro font-semibold tracking-wide text-muted-foreground tabular-nums">{score}</span>
                         <span
                           aria-hidden="true"
-                          className="text-micro font-bold text-muted-foreground leading-none"
+                          className="h-4 w-4 rounded-sm inline-flex items-center justify-center text-micro font-bold leading-none"
+                          style={pinturaDoNivel(faixa, sev).marca}
                           title={nivelLabel}
                         >
                           {SEVERITY_LETTER[sev]}
