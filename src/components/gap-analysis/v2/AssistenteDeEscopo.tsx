@@ -156,7 +156,17 @@ export function AssistenteDeEscopo({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
+      {/*
+          `sm:max-w-5xl`, com o prefixo.
+
+          O `DialogContent` traz `sm:max-w-lg` na base. Um `max-w-3xl` sem
+          prefixo não entra em conflito com ele para o `tailwind-merge` —
+          são variantes diferentes — e os dois sobrevivem; a partir de `sm`
+          manda o da base. Medido a 1366×768: o diálogo tinha 482 px de
+          largura e 2258 px de conteúdo numa caixa de 737, com 880 px de
+          ecrã vazio de cada lado. Nove perguntas em fila indiana.
+      */}
+      <DialogContent className="sm:max-w-5xl max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('gapEscopo.titulo')}</DialogTitle>
           <DialogDescription className="leading-6">{assistente.intro}</DialogDescription>
@@ -164,7 +174,9 @@ export function AssistenteDeEscopo({
 
         {etapa === 'perguntas' ? (
           <>
-            <div className="space-y-3">
+            {/* Duas colunas a partir de `lg`: cada pergunta é um cartão
+                fechado, e em fila indiana somavam mais de 2000 px. */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
               {assistente.perguntas.map((p, i) => {
                 const r = respostas[p.id];
                 const sai = porPergunta.get(p.id)?.length ?? 0;
