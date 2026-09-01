@@ -73,8 +73,8 @@ export const HistoricoVersoesDialog = ({
         .from('documentos_historico')
         .select(`
           *,
-          created_by_profile:profiles!documentos_historico_created_by_fkey(nome),
-          aprovador_profile:profiles!documentos_historico_aprovado_por_fkey(nome)
+          created_by_profile:profiles!documentos_historico_created_by_profiles_fkey(nome),
+          aprovador_profile:profiles!documentos_historico_aprovado_por_profiles_fkey(nome)
         `)
         .eq('documento_id', documento.id)
         .order('versao', { ascending: false });

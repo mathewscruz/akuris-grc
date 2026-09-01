@@ -4,7 +4,49 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { cn } from "@/lib/utils"
 import { IconCheck, IconChevronDown, IconChevronUp } from '@/components/icons';
 
-const Select = SelectPrimitive.Root
+/**
+ * O Select nao apaga o valor que ainda nao sabe desenhar.
+ *
+ * O Radix mantem um `<select>` nativo escondido para os formularios e,
+ * sempre que o valor MUDA, le de volta o que o navegador aceitou. Se ainda
+ * nao existir nenhuma `<option>` correspondente, o navegador devolve cadeia
+ * vazia -- e o Radix entrega essa vazia ao `onValueChange` como se fosse
+ * escolha de alguem.
+ *
+ * Acontece em todo o formulario cujas opcoes venham de consulta: ao editar,
+ * o valor guardado chega no primeiro efeito e a lista so responde depois.
+ * Medido no risco R-0011, tres pinturas seguidas: vazio, categoria
+ * Operacional, vazio outra vez. Gravar a seguir escrevia `null` -- a
+ * categoria perdia-se sem ninguem lhe tocar. O mesmo padrao existe em 21
+ * formularios deste produto.
+ *
+ * A vazia nunca pode vir de uma escolha: o proprio Radix recusa um
+ * `SelectItem` com `value=""`. Entao `onValueChange("")` sobre um valor que
+ * existia e, sem excepcao, o navegador a recusar um valor que a lista ainda
+ * nao tem. Guarda-se aqui, uma vez, em vez de em cada formulario.
+ *
+ * Quem quiser mesmo limpar o campo muda o `value` de fora -- esse caminho
+ * fica intacto.
+ */
+const Select = ({
+  value,
+  onValueChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) => {
+  const tinhaValor = React.useRef(false)
+  if (value) tinhaValor.current = true
+
+  const aoMudar = React.useCallback(
+    (novo: string) => {
+      if (novo === '' && tinhaValor.current) return
+      onValueChange?.(novo)
+    },
+    [onValueChange],
+  )
+
+  return <SelectPrimitive.Root value={value} onValueChange={aoMudar} {...props} />
+}
+Select.displayName = SelectPrimitive.Root.displayName
 
 const SelectGroup = SelectPrimitive.Group
 
