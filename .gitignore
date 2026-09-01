@@ -54,3 +54,9 @@ dist-ssr
 # versões exactas dos componentes. Num repositório público isso é
 # reconhecimento gratuito — e não há razão para versionar estado local.
 supabase/.temp/
+
+# Ferramentas de agente, nao do produto. Entraram por um `git add -A` sem
+# escopo e sairam a seguir; o repositorio e publico e so leva codigo do Akuris.
+.agents/
+.claude/skills/
+skills-lock.json
