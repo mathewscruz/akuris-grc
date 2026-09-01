@@ -15,6 +15,8 @@ import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { AssessmentDialog } from './AssessmentDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { RelatorioDoFornecedor, type RespostaPontuada } from './RelatorioDoFornecedor';
+import { DataTable, type Column } from '@/components/ui/data-table';
+import { cn } from '@/lib/utils';
 import { AssessmentResponsesViewer } from './AssessmentResponsesViewer';
 import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
@@ -526,6 +528,142 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
   }, [assessments, searchTerm, statusFilter, categoriaFilter, sortField, sortDirection]);
 
   // Paginação
+
+  /**
+   * As colunas da tabela de avaliacoes.
+   *
+   * Era um cartao por avaliacao, com os campos em rotulo-e-valor dentro dele.
+   * Em cartao nao se comparam duas avaliacoes de relance -- cada valor esta
+   * noutro sitio -- nem se ordena por score ou por prazo. Sao as duas
+   * perguntas que se fazem a uma lista destas: quem esta pior, e quem vence
+   * primeiro.
+   */
+  const colunasDeAvaliacao: Column<Assessment>[] = [
+    {
+      key: 'fornecedor_nome',
+      label: t('dueDiligence.assessmentsManagerEnhanced.colSupplier'),
+      render: (_v, a) => (
+        <div className="min-w-0">
+          <div className="font-medium text-foreground truncate">{a.fornecedor_nome}</div>
+          {a.fornecedor_email && (
+            <div className="text-micro text-muted-foreground truncate">{a.fornecedor_email}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'template',
+      label: t('dueDiligence.assessmentsManagerEnhanced.colTemplate'),
+      sortAccessor: (a) => a.template?.nome ?? '',
+      render: (_v, a) => <span className="text-xs text-foreground/85">{a.template?.nome ?? '—'}</span>,
+    },
+    {
+      key: 'categoria',
+      label: t('dueDiligence.assessmentsManagerEnhanced.colCategory'),
+      sortAccessor: (a) => a.template?.categoria ?? '',
+      render: (_v, a) => <span className="text-xs text-muted-foreground">{a.template?.categoria ?? '—'}</span>,
+    },
+    {
+      key: 'data_expiracao',
+      label: t('dueDiligence.assessmentsManagerEnhanced.colDeadline'),
+      render: (_v, a) => {
+        const expirou = a.status !== 'concluido' && isExpired(a.data_expiracao);
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className={cn('text-xs tabular-nums', expirou ? 'text-destructive font-medium' : 'text-foreground/85')}>
+              {formatDateOnly(a.data_expiracao)}
+            </span>
+            {expirou && (
+              <StatusBadge tone="destructive" variant="soft">
+                {t('dueDiligence.assessmentsManagerEnhanced.expired')}
+              </StatusBadge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'score_final',
+      /* `score` era o rotulo do cartao -- "Score:", com dois pontos, porque
+         vinha seguido do valor. Num cabecalho de tabela isso le-se mal. */
+      label: t('dueDiligence.assessmentsManagerEnhanced.colScore'),
+      /* Ordena pelo numero, nao pelo rotulo: por alfabeto "Bom" vinha antes de
+         "Excelente" e de "Ruim", que e a ordem de nada. */
+      sortAccessor: (a) => (a.score_final == null ? -1 : a.score_final),
+      render: (_v, a) =>
+        a.score_final != null ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleScoreClick(a); }}
+            className="hover:underline"
+          >
+            <StatusBadge tone={getScoreBadge(a.score_final).tone} icon={<IconAward className="h-3 w-3" />}>
+              {getScoreBadge(a.score_final).text}
+              <span className="ml-1 tabular-nums">{a.score_final.toFixed(1)}%</span>
+            </StatusBadge>
+          </button>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {a.status === 'concluido'
+              ? t('dueDiligence.assessmentsManagerEnhanced.calculating')
+              : t('dueDiligence.assessmentsManagerEnhanced.pending')}
+          </span>
+        ),
+    },
+    {
+      key: 'status',
+      label: t('dueDiligence.assessmentsManagerEnhanced.colStatus'),
+      render: (_v, a) => getStatusBadge(a.status),
+    },
+    {
+      key: 'acoes',
+      label: t('dueDiligence.assessmentsManagerEnhanced.colActions'),
+      render: (_v, a) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label={t('layout.moreActions')} onClick={(e) => e.stopPropagation()}>
+              <IconMore className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            {a.status === 'concluido' && (
+              <>
+                <DropdownMenuItem onClick={() => setScoreDialog({ open: true, assessment: a, scoreData: null })}>
+                  <IconAward className="h-4 w-4 mr-2" />
+                  {t('dueDiligence.assessmentsManagerEnhanced.viewScore')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setResponsesDialog({ open: true, assessment: a })}>
+                  <IconView className="h-4 w-4 mr-2" />
+                  {t('dueDiligence.assessmentsManagerEnhanced.viewResponses')}
+                </DropdownMenuItem>
+              </>
+            )}
+            <DropdownMenuItem onClick={() => setAssessmentDialog({ open: true, assessment: a, mode: 'view' })}>
+              <IconFile className="h-4 w-4 mr-2" />
+              {t('dueDiligence.assessmentsManagerEnhanced.details')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => resendAssessment(a)} disabled={a.status === 'concluido'}>
+              <IconRefresh className="h-4 w-4 mr-2" />
+              {t('dueDiligence.assessmentsManagerEnhanced.resend')}
+            </DropdownMenuItem>
+            {canSendReminder(a) && (
+              <DropdownMenuItem onClick={() => setReminderDialog({ open: true, assessment: a })}>
+                <IconSend className="h-4 w-4 mr-2" />
+                {t('dueDiligence.assessmentsManagerEnhanced.reminder')}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, assessment: a })} className="text-destructive">
+              <IconDelete className="h-4 w-4 mr-2" />
+              {t('dueDiligence.assessmentsManagerEnhanced.delete')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
   const paginatedAssessments = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredAndSortedAssessments.slice(startIndex, startIndex + itemsPerPage);
@@ -814,214 +952,39 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
               )}
             </div>
 
-            {/* Lista de assessments */}
-            <div className="grid gap-4 p-6 pt-0">
-              {paginatedAssessments.map((assessment) => (
-                <Card
-                  key={assessment.id}
-                  {...(() => {
-                    const props = rowOpenProps(() => viewAssessment(assessment), assessment.fornecedor_nome, CARD_HOVER);
-                    return { ...props, className: `${props.className} ${getExpirationBorderClass(assessment)}` };
-                  })()}
-                >
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{assessment.fornecedor_nome}</CardTitle>
-                        <CardDescription>{assessment.fornecedor_email}</CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(assessment.status)}
-                        {isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
-                          <StatusBadge tone="destructive" intensity="high">
-                            {t('dueDiligence.assessmentsManagerEnhanced.expired')}
-                          </StatusBadge>
-                        )}
-                        {/* «Vence em Nd» saiu: a data de expiração está no
-                            próprio cartão, e o selo só a repetia. «Expirado»
-                            fica — esse não é contagem, é um estado que muda o
-                            que a pessoa faz a seguir. */}
-                      </div>
-                    </div>
-                  </CardHeader>
+            {/*
+              A lista das avaliacoes e uma TABELA, como as outras do produto.
 
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.template')}</span>
-                        <p className="font-medium">{assessment.template.nome}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.category')}</span>
-                        <p className="font-medium">{assessment.template.categoria}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.expiresOn')}</span>
-                        <p className="font-medium">
-                          {formatDateOnly(assessment.data_expiracao)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.score')}</span>
-                        <div className="flex items-center gap-2">
-                          {assessment.score_final != null ? (
-                            <button
-                              onClick={() => handleScoreClick(assessment)}
-                              className="hover:underline cursor-pointer flex items-center gap-2"
-                            >
-                              <StatusBadge
-                                tone={getScoreBadge(assessment.score_final).tone}
-                                icon={<IconAward className="h-3 w-3" />}
-                                className="transition-ui hover:scale-105"
-                              >
-                                {getScoreBadge(assessment.score_final).text}
-                                <span className="ml-1 font-mono">
-                                  {assessment.score_final.toFixed(1)}%
-                                </span>
-                              </StatusBadge>
-                            </button>
-                          ) : assessment.status === 'concluido' ? (
-                            <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.calculating')}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.pending')}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+              Era um cartao por avaliacao, com os campos em rotulo-e-valor
+              dentro dele e uma paginacao escrita a mao por baixo. Custava tres
+              coisas: nao dava para comparar duas avaliacoes de relance (cada
+              valor esta noutro sitio da coluna), nao dava para ordenar por
+              score nem por prazo, e a paginacao repetia o que a `DataTable` ja
+              faz -- incluindo o "Mostrando X a Y de Z" e o seletor de tamanho.
 
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <IconTime className="h-4 w-4" />
-                        {/*
-                          A data mais forte que se souber. Só se olhava para
-                          `data_inicio`, e uma avaliação concluída sem data de
-                          início registada — o fluxo nem sempre a grava —
-                          exibia "Ainda não iniciado" ao lado do próprio chip
-                          "Concluído".
-                        */}
-                        {assessment.data_conclusao ? (
-                          <span>{t('dueDiligence.assessmentsManagerEnhanced.completedOn', { data: formatDateOnly(assessment.data_conclusao) })}</span>
-                        ) : assessment.data_inicio ? (
-                          <span>{t('dueDiligence.assessmentsManagerEnhanced.startedOn', { data: formatDateOnly(assessment.data_inicio) })}</span>
-                        ) : (
-                          <span>{t('dueDiligence.assessmentsManagerEnhanced.notStarted')}</span>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => viewAssessment(assessment)}
-                            >
-                              <IconView className="h-4 w-4 mr-1" />
-                              {t('dueDiligence.assessmentsManagerEnhanced.view')}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{t('dueDiligence.assessmentsManagerEnhanced.viewTooltip')}</TooltipContent>
-                        </Tooltip>
-
-                        <DropdownMenu>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
-                                  <IconMore className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>{t('dueDiligence.assessmentsManagerEnhanced.moreActions')}</TooltipContent>
-                          </Tooltip>
-                          <DropdownMenuContent align="end">
-                            {assessment.score_final != null && (
-                              <DropdownMenuItem onClick={() => setScoreDialog({ open: true, assessment, scoreData: null })}>
-                                <IconAward className="h-4 w-4 mr-2" />
-                                {t('dueDiligence.assessmentsManagerEnhanced.viewScore')}
-                              </DropdownMenuItem>
-                            )}
-                            {assessment.status === 'concluido' && (
-                              <DropdownMenuItem onClick={() => setResponsesDialog({ open: true, assessment })}>
-                                <IconFile className="h-4 w-4 mr-2" />
-                                {t('dueDiligence.assessmentsManagerEnhanced.viewResponses')}
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => setAssessmentDialog({ open: true, assessment, mode: 'view' })}>
-                              <IconEdit className="h-4 w-4 mr-2" />
-                              {t('dueDiligence.assessmentsManagerEnhanced.details')}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => resendAssessment(assessment)}
-                              disabled={assessment.status === 'concluido'}
-                            >
-                              <IconRefresh className="h-4 w-4 mr-2" />
-                              {t('dueDiligence.assessmentsManagerEnhanced.resend')}
-                            </DropdownMenuItem>
-                            {canSendReminder(assessment) && (
-                              <DropdownMenuItem onClick={() => setReminderDialog({ open: true, assessment })}>
-                                <IconSend className="h-4 w-4 mr-2" />
-                                {t('dueDiligence.assessmentsManagerEnhanced.reminder')}
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setDeleteDialog({ open: true, assessment })}
-                              className="text-destructive"
-                            >
-                              <IconDelete className="h-4 w-4 mr-2" />
-                              {t('dueDiligence.assessmentsManagerEnhanced.delete')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              A busca e os filtros ficam onde estavam, no cabecalho desta
+              secao; por isso a tabela leva `searchable={false}` e recebe
+              `filtering`, que e o que a faz distinguir "nao ha nada" de "o
+              filtro nao achou nada".
+            */}
+            <div className="p-6 pt-0">
+              <DataTable
+                data={filteredAndSortedAssessments}
+                columns={colunasDeAvaliacao}
+                loading={loading}
+                searchable={false}
+                paginated
+                pageSize={itemsPerPage}
+                pageSizeOptions={ITEMS_PER_PAGE_OPTIONS}
+                onRowClick={viewAssessment}
+                filtering={{ active: Boolean(hasActiveFilters), onClear: clearFilters }}
+                emptyState={{
+                  icon: <IconFile className="h-12 w-12 text-muted-foreground" />,
+                  title: t('dueDiligence.assessmentsManagerEnhanced.emptyTitle'),
+                  description: t('dueDiligence.assessmentsManagerEnhanced.emptyDescription'),
+                }}
+              />
             </div>
-
-            {/* Paginação */}
-            {filteredAndSortedAssessments.length > 0 && (
-              <div className="flex items-center justify-between p-6 pt-0 border-t">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{t('dueDiligence.assessmentsManagerEnhanced.showing', { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, filteredAndSortedAssessments.length), total: filteredAndSortedAssessments.length })}</span>
-                  <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
-                    <SelectTrigger className="w-20 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ITEMS_PER_PAGE_OPTIONS.map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span>{t('dueDiligence.assessmentsManagerEnhanced.perPage')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    {t('dueDiligence.assessmentsManagerEnhanced.previous')}
-                  </Button>
-                  <span className="text-sm">
-                    {t('dueDiligence.assessmentsManagerEnhanced.pageOf', { current: currentPage, total: totalPages || 1 })}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages}
-                  >
-                    {t('dueDiligence.assessmentsManagerEnhanced.next')}
-                  </Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
