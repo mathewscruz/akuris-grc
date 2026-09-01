@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { orIlike } from '@/lib/busca-segura';
-import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile } from '@/components/icons';
+import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile, IconEdit, IconDelete, IconChecklist } from '@/components/icons';
 import { createPortal } from "react-dom";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatStrip } from "@/components/ui/stat-strip";
-import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar";
 import {
   DropdownMenu as ActionsMenu,
   DropdownMenuContent as ActionsMenuContent,
@@ -18,24 +17,17 @@ import {
   DropdownMenuTrigger as ActionsMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 ;
-import { EmptyState } from "@/components/ui/empty-state";
+import { DataTable, Column } from "@/components/ui/data-table";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Progress } from "@/components/ui/progress";
+import { resolveAuditoriaStatusTone, resolveAuditoriaPrioridadeTone } from "@/lib/status-tone";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from '@/hooks/use-toast';
 import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
 import AuditoriaDialog from "@/components/auditorias/AuditoriaDialog";
 import { ItensAuditoriaDialog } from "@/components/auditorias/ItensAuditoriaDialog";
-import { AuditoriaCardAccordion } from "@/components/auditorias/AuditoriaCardAccordion";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { formatDateOnly, formatarDiaParaDB} from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -53,8 +45,6 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
   const [showAuditoriaDialog, setShowAuditoriaDialog] = useState(false);
   const [showControlesDialog, setShowControlesDialog] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const { data: usuarios } = useUsuariosEmpresa();
 
@@ -281,11 +271,6 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     }
   }, [location.state, auditorias]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, tipoFilter, searchTerm]);
-
   // Exportar para CSV
   const handleExportCSV = () => {
     if (!auditorias || auditorias.length === 0) return;
@@ -332,15 +317,143 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
   const totalItens = Object.values(auditoriasCounts || {}).reduce((acc, c) => acc + c.itens, 0);
   const totalConcluidos = Object.values(auditoriasCounts || {}).reduce((acc, c) => acc + c.itensConcluidos, 0);
 
-  // Pagination
-  const paginatedAuditorias = useMemo(() => {
-    if (!auditorias) return [];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return auditorias.slice(startIndex, startIndex + itemsPerPage);
-  }, [auditorias, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil((auditorias?.length || 0) / itemsPerPage);
+  /*
+     A mesma tabela do resto do produto.
 
+     Isto era uma pilha de cartoes com o nome a 220 px fixos e o resto
+     empurrado para uma fila de pilulas: nao havia cabecalho, nao se
+     ordenava por nada, e as colunas nao alinhavam de linha para linha.
+     Ao lado, na aba dos Controles, estava a `DataTable` de sempre.
+
+     A `DataTable` traz o cabecalho, a ordenacao, o estado vazio e a
+     paginacao — tudo o que aqui estava escrito a mao, e que ja estava a
+     paginar duas vezes desde que a tabela passou a paginar sozinha.
+  */
+  const auditoriaColumns: Column<any>[] = [
+    {
+      key: 'nome',
+      label: t("governancaComp.auditorias.columnNome"),
+      sortable: true,
+      render: (_v: any, a: any) => (
+        <div className="min-w-0">
+          <button
+            type="button"
+            className="font-medium text-left hover:text-primary hover:underline transition-colors"
+            onClick={(e) => { e.stopPropagation(); handleOpenControles(a); }}
+          >
+            {a.nome}
+          </button>
+          {a.descricao && (
+            <p className="text-micro text-muted-foreground line-clamp-1">{a.descricao}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'tipo',
+      label: t("governancaComp.auditorias.columnTipo"),
+      sortable: true,
+      render: (_v: any, a: any) => (
+        <StatusBadge tone="neutral" variant="outline">{formatStatus(a.tipo)}</StatusBadge>
+      ),
+    },
+    {
+      key: 'status',
+      label: t("governancaComp.auditorias.columnStatus"),
+      sortable: true,
+      render: (_v: any, a: any) => (
+        <div className="flex items-center gap-1.5">
+          <StatusBadge {...resolveAuditoriaStatusTone(a.status)}>{formatStatus(a.status)}</StatusBadge>
+          {a.conclusao_forcada && (
+            <span title={a.conclusao_justificativa || undefined}>
+              <StatusBadge tone="warning">{t('t4.gates.forcadaCurta')}</StatusBadge>
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'prioridade',
+      label: t("governancaComp.auditorias.columnPrioridade"),
+      sortable: true,
+      render: (_v: any, a: any) => (
+        <StatusBadge {...resolveAuditoriaPrioridadeTone(a.prioridade)}>{formatStatus(a.prioridade)}</StatusBadge>
+      ),
+    },
+    {
+      key: 'itens',
+      label: t("governancaComp.auditorias.columnItens"),
+      /* Sem itens nao ha barra: uma barra a zero le-se como «nao comecou»,
+         quando o que se passa e que nao ha nada para fazer. */
+      render: (_v: any, a: any) => {
+        const c = auditoriasCounts?.[a.id] || { itens: 0, itensConcluidos: 0 };
+        if (c.itens === 0) return <span className="text-muted-foreground">-</span>;
+        const pct = Math.round((c.itensConcluidos / c.itens) * 100);
+        return (
+          <div className="flex items-center gap-2 min-w-[110px]">
+            <span className="text-xs tabular-nums whitespace-nowrap">{c.itensConcluidos}/{c.itens}</span>
+            <Progress value={pct} className="h-1.5 flex-1" />
+            <span className="text-micro text-muted-foreground tabular-nums">{pct}%</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'auditor_responsavel',
+      label: t("governancaComp.auditorias.columnAuditor"),
+      sortable: true,
+      render: (_v: any, a: any) => {
+        const u = usuarios?.find((x: any) => x.user_id === a.auditor_responsavel);
+        return u?.nome
+          ? <span className="text-xs">{u.nome}</span>
+          : <span className="text-muted-foreground">-</span>;
+      },
+    },
+    {
+      key: 'data_inicio',
+      label: t("governancaComp.auditorias.columnInicio"),
+      sortable: true,
+      render: (_v: any, a: any) => (
+        a.data_inicio
+          ? <span className="text-xs tabular-nums">{formatDateOnly(a.data_inicio)}</span>
+          : <span className="text-muted-foreground">-</span>
+      ),
+    },
+    {
+      key: 'acoes',
+      label: t("governancaComp.auditorias.columnAcoes"),
+      render: (_v: any, a: any) => (
+        <ActionsMenu>
+          <ActionsMenuTrigger asChild>
+            {/* O nome da auditoria distingue as linhas na arvore de acessibilidade. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              aria-label={`${t('layout.moreActions')}: ${a.nome}`}
+            >
+              <IconMore className="h-4 w-4" />
+            </Button>
+          </ActionsMenuTrigger>
+          <ActionsMenuContent align="end">
+            <ActionsMenuItem onClick={() => handleEdit(a)}>
+              <IconEdit className="h-4 w-4 mr-2" />
+              {t("controlesAuditorias.acaEditar")}
+            </ActionsMenuItem>
+            <ActionsMenuItem onClick={() => handleOpenControles(a)}>
+              <IconChecklist className="h-4 w-4 mr-2" />
+              {t("controlesAuditorias.acaGerenciarItens")}
+            </ActionsMenuItem>
+            <ActionsMenuItem onClick={() => handleDelete(a.id, a.nome)} className="text-destructive focus:text-destructive">
+              <IconDelete className="h-4 w-4 mr-2" />
+              {t("controlesAuditorias.acaExcluir")}
+            </ActionsMenuItem>
+          </ActionsMenuContent>
+        </ActionsMenu>
+      ),
+    },
+  ];
   return (
     <div className="space-y-6">
       {/* KPIs */}
@@ -379,149 +492,56 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <div className="p-4 sm:p-6 pb-4">
-            <ModuleToolbar
-              searchValue={searchTerm}
-              onSearchChange={setSearchTerm}
-              searchPlaceholder={t("governancaComp.auditorias.searchPlaceholder")}
-              filters={
-                <>
-                  <ToolbarField label={t("governancaComp.auditorias.filterStatus")}>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full min-w-[160px]">
-                        <SelectValue placeholder={t("governancaComp.auditorias.filterStatus")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t("governancaComp.auditorias.filterStatusAll")}</SelectItem>
-                        <SelectItem value="planejamento">{t("governancaComp.auditorias.statusPlanejamento")}</SelectItem>
-                        <SelectItem value="em_andamento">{t("governancaComp.auditorias.statusEmAndamento")}</SelectItem>
-                        <SelectItem value="concluida">{t("governancaComp.auditorias.statusConcluida")}</SelectItem>
-                        <SelectItem value="cancelada">{t("governancaComp.auditorias.statusCancelada")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </ToolbarField>
-                  <ToolbarField label={t("governancaComp.auditorias.filterTipo")}>
-                    <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                      <SelectTrigger className="w-full min-w-[160px]">
-                        <SelectValue placeholder={t("governancaComp.auditorias.filterTipo")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t("governancaComp.auditorias.filterTipoAll")}</SelectItem>
-                        <SelectItem value="interna">{t("governancaComp.auditorias.tipoInterna")}</SelectItem>
-                        <SelectItem value="externa">{t("governancaComp.auditorias.tipoExterna")}</SelectItem>
-                        <SelectItem value="compliance">{t("governancaComp.auditorias.tipoCompliance")}</SelectItem>
-                        <SelectItem value="operacional">{t("governancaComp.auditorias.tipoOperacional")}</SelectItem>
-                        <SelectItem value="ti">{t("governancaComp.auditorias.tipoTi")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </ToolbarField>
-                </>
-              }
-            />
-          </div>
-          
-          {isLoading ? (
-            <div className="space-y-1 px-4 pb-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted rounded-lg animate-pulse"></div>
-              ))}
-            </div>
-          ) : !auditorias || auditorias.length === 0 ? (
-            /* Filtrar até zero dizia "ainda não há auditorias cadastradas" —
-               convidando a criar uma numa base com três. É o mesmo padrão de
-               `filtrosAtivos` que `ControlesContent` já usa. */
-            <EmptyState
-              icon={<IconFile className="h-8 w-8" />}
-              title={filtrosAtivos ? t('common.noResults') : t("governancaComp.auditorias.emptyTitle")}
-              description={filtrosAtivos ? t('common.noResultsHint') : t("governancaComp.auditorias.emptyDescription")}
-              action={filtrosAtivos ? undefined : {
+          <DataTable
+            paginated
+            pageSize={20}
+            data={auditorias || []}
+            columns={auditoriaColumns}
+            onRowClick={(a: any) => handleOpenControles(a)}
+            loading={isLoading}
+            searchable
+            searchPlaceholder={t("governancaComp.auditorias.searchPlaceholder")}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            filters={[
+              {
+                key: 'status',
+                label: t("governancaComp.auditorias.filterStatus"),
+                options: [
+                  { value: 'todos', label: t("governancaComp.auditorias.filterStatusAll") },
+                  { value: 'planejamento', label: t("governancaComp.auditorias.statusPlanejamento") },
+                  { value: 'em_andamento', label: t("governancaComp.auditorias.statusEmAndamento") },
+                  { value: 'concluida', label: t("governancaComp.auditorias.statusConcluida") },
+                  { value: 'cancelada', label: t("governancaComp.auditorias.statusCancelada") },
+                ],
+                value: statusFilter,
+                onChange: setStatusFilter,
+              },
+              {
+                key: 'tipo',
+                label: t("governancaComp.auditorias.filterTipo"),
+                options: [
+                  { value: 'todos', label: t("governancaComp.auditorias.filterTipoAll") },
+                  { value: 'interna', label: t("governancaComp.auditorias.tipoInterna") },
+                  { value: 'externa', label: t("governancaComp.auditorias.tipoExterna") },
+                  { value: 'compliance', label: t("governancaComp.auditorias.tipoCompliance") },
+                  { value: 'operacional', label: t("governancaComp.auditorias.tipoOperacional") },
+                  { value: 'ti', label: t("governancaComp.auditorias.tipoTi") },
+                ],
+                value: tipoFilter,
+                onChange: setTipoFilter,
+              },
+            ]}
+            emptyState={{
+              icon: <IconFile className="h-8 w-8" />,
+              title: t("governancaComp.auditorias.emptyTitle"),
+              description: t("governancaComp.auditorias.emptyDescription"),
+              action: {
                 label: t("governancaComp.auditorias.emptyAction"),
-                onClick: () => {
-                  setSelectedAuditoria(null);
-                  setShowAuditoriaDialog(true);
-                }
-              }}
-            />
-          ) : (
-            <>
-              <div className="space-y-1 px-4 pb-4">
-                {paginatedAuditorias.map((auditoria) => {
-                  const counts = auditoriasCounts?.[auditoria.id] || { itens: 0, itensConcluidos: 0 };
-                  const auditorResponsavel = usuarios?.find((u: any) => u.user_id === auditoria.auditor_responsavel);
-                  
-                  return (
-                    <AuditoriaCardAccordion
-                      key={auditoria.id}
-                      auditoria={auditoria}
-                      counts={counts}
-                      onEdit={() => handleEdit(auditoria)}
-                      onDelete={() => handleDelete(auditoria.id, auditoria.nome)}
-                      onOpenControles={() => handleOpenControles(auditoria)}
-                      auditorNome={auditorResponsavel?.nome}
-                    />
-                  );
-                })}
-              </div>
-              
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    {t("governancaComp.auditorias.showingRange", { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, auditorias.length), total: auditorias.length })}
-                  </div>
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                      
-                      {[...Array(totalPages)].map((_, index) => {
-                        const pageNumber = index + 1;
-                        
-                        if (
-                          pageNumber === 1 ||
-                          pageNumber === totalPages ||
-                          (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                        ) {
-                          return (
-                            <PaginationItem key={pageNumber}>
-                              <PaginationLink
-                                onClick={() => setCurrentPage(pageNumber)}
-                                isActive={currentPage === pageNumber}
-                                className="cursor-pointer"
-                              >
-                                {pageNumber}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        } else if (
-                          pageNumber === currentPage - 2 ||
-                          pageNumber === currentPage + 2
-                        ) {
-                          return (
-                            <PaginationItem key={pageNumber}>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          );
-                        }
-                        return null;
-                      })}
-                      
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
-            </>
-          )}
+                onClick: () => { setSelectedAuditoria(null); setShowAuditoriaDialog(true); },
+              },
+            }}
+          />
         </CardContent>
       </Card>
       

@@ -37,15 +37,6 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataTable } from "@/components/ui/data-table";
 import ConfirmDialog from '@/components/ConfirmDialog';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from '@/lib/status-tone';
@@ -112,17 +103,10 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   const [searchValue, setSearchValue] = useState<string>("");
   const [sortField, setSortField] = useState<string>("nome");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
   
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, tipoFilter, criticidadeFilter, auditoriaFilter, searchValue]);
-
   // Handle sorting
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -700,7 +684,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           <DataTable
             paginated
             pageSize={20}
-            data={sortedControles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+            data={sortedControles}
             columns={controlesColumns}
             onRowClick={(controle) => handleOpenDetail(controle)}
             loading={isLoading}
@@ -780,64 +764,6 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {sortedControles.length > itemsPerPage && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <div className="text-sm text-muted-foreground">
-            {t("governancaComp.controles.showingRange", { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, sortedControles.length), total: sortedControles.length })}
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-              
-              {[...Array(Math.ceil(sortedControles.length / itemsPerPage))].map((_, index) => {
-                const pageNumber = index + 1;
-                const totalPages = Math.ceil(sortedControles.length / itemsPerPage);
-                
-                if (
-                  pageNumber === 1 ||
-                  pageNumber === totalPages ||
-                  (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                ) {
-                  return (
-                    <PaginationItem key={pageNumber}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(pageNumber)}
-                        isActive={currentPage === pageNumber}
-                        className="cursor-pointer"
-                      >
-                        {pageNumber}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                } else if (
-                  pageNumber === currentPage - 2 ||
-                  pageNumber === currentPage + 2
-                ) {
-                  return (
-                    <PaginationItem key={pageNumber}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  );
-                }
-                return null;
-              })}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(sortedControles.length / itemsPerPage)))}
-                  className={currentPage === Math.ceil(sortedControles.length / itemsPerPage) ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
 
       <ControleDialog
         open={controleDialogOpen}

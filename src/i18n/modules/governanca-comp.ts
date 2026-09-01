@@ -3,6 +3,14 @@ export const governancaComp = {
     governancaComp: {
       auditorias: {
         searchPlaceholder: 'Buscar auditorias...',
+        columnNome: 'Auditoria',
+        columnTipo: 'Tipo',
+        columnStatus: 'Status',
+        columnPrioridade: 'Prioridade',
+        columnItens: 'Itens',
+        columnAuditor: 'Auditor',
+        columnInicio: 'Início',
+        columnAcoes: 'Ações',
         buttonExportar: 'Exportar CSV',
         buttonFiltros: 'Filtros',
         buttonNova: 'Nova Auditoria',
@@ -169,6 +177,14 @@ export const governancaComp = {
     governancaComp: {
       auditorias: {
         searchPlaceholder: 'Search audits...',
+        columnNome: 'Audit',
+        columnTipo: 'Type',
+        columnStatus: 'Status',
+        columnPrioridade: 'Priority',
+        columnItens: 'Items',
+        columnAuditor: 'Auditor',
+        columnInicio: 'Start',
+        columnAcoes: 'Actions',
         buttonExportar: 'Export CSV',
         buttonFiltros: 'Filters',
         buttonNova: 'New Audit',
