@@ -128,3 +128,42 @@ WHERE corpo !~ 'get_user_empresa_id|gap_empresa_autorizada|exige_empresa_da_sess
     'sistema_do_diretorio'
   )
 ORDER BY 1;
+
+\echo ''
+\echo '=== 5. Gatilhos de auditoria que RECUSAM escritas de integração ==='
+\echo '(esperado: vazio. Ver 20260901040000_trilha_que_recusa_e_trilha_que_esquece.)'
+\echo ''
+
+-- `create_audit_log` gravava `get_user_empresa_id()` numa coluna NOT NULL. Sem
+-- sessão de utilizador isso é NULL, o INSERT na trilha falha, e como o gatilho
+-- corre dentro da transacção a ESCRITA ORIGINAL aborta com ele. Duas funções de
+-- borda com `service_role` -- `api-inbound-webhook` e `azure-integration` --
+-- nunca conseguiram gravar um activo nem um controlo.
+--
+-- A resposta certa é o `empresa_id` do próprio registo, que o gatilho tem em
+-- `NEW`/`OLD`. Esta consulta procura quem voltou a depender só da sessão.
+SELECT p.proname AS gatilho,
+       'chama create_audit_log sem passar o empresa_id do registo' AS problema
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.prosrc ILIKE '%create_audit_log%'
+  AND p.prosrc !~ '(NEW|OLD)\.empresa_id'
+ORDER BY 1;
+
+\echo ''
+\echo '=== 6. Gatilhos de auditoria que ESQUECEM alterações ==='
+\echo '(esperado: vazio. `!=` com NULL dá NULL, e a alteração não entra na trilha.)'
+\echo ''
+
+-- Comparar `OLD.x != NEW.x` numa coluna que aceita NULL faz desaparecer da
+-- trilha toda a entrada e saída de NULL. Medido: uma trilha com 7 registos
+-- ficou em 7 depois de pôr o estado do activo a NULL, e em 7 outra vez depois
+-- de lhe dar estado. Numa ferramenta de GRC a trilha é o produto.
+SELECT p.proname AS gatilho,
+       (regexp_matches(p.prosrc, '(OLD\.[a-z_]+\s*!=\s*NEW\.[a-z_]+)', 'g'))[1] AS comparacao
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname ILIKE 'audit%changes'
+ORDER BY 1;
