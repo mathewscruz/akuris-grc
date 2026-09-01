@@ -5,6 +5,19 @@ export type Severidade = 'critico' | 'alto' | 'medio' | 'baixo' | 'indefinido';
 
 export const SEVERIDADES: Severidade[] = ['critico', 'alto', 'medio', 'baixo'];
 
+/**
+ * Posto da severidade numa escala, para ORDENAR.
+ *
+ * Ordenar estas palavras por alfabeto dá Alto, Baixo, Crítico, Médio — que é
+ * quase o contrário do que se quer ver. Quem pergunta «mostra-me os piores
+ * primeiro» precisa de um número.
+ *
+ * Crítico é 4 e não 0: assim a ordem descendente da tabela — a que se pede
+ * primeiro — põe o pior no topo sem inverter nada.
+ */
+export const postoDaSeveridade = (s: Severidade): number =>
+  ({ critico: 4, alto: 3, medio: 2, baixo: 1, indefinido: 0 })[s] ?? 0;
+
 /** Faixa da matriz de risco activa (riscos_matriz_configuracao.niveis_risco). */
 export interface FaixaMatriz {
   nivel: string;

@@ -35,6 +35,7 @@ import {
   isAcimaDoApetite,
   contarRiscosPorSeveridade,
   type Severidade,
+  postoDaSeveridade,
 } from '@/lib/metrics/riscos';
 import { useMatrizConfigEmpresa, MATRIZ_QUERY_KEY } from '@/hooks/useMatrizConfigEmpresa';
 import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
@@ -490,6 +491,19 @@ export function Riscos() {
     if (sortField === 'categoria') {
       aValue = a.categoria?.nome || '';
       bValue = b.categoria?.nome || '';
+    }
+
+    /*
+       A coluna da severidade tem `key = nivel_risco_inicial` e desenha o
+       nível EFECTIVO (residual quando existe). Sem isto ordenava pelo campo
+       que não está à vista, e ainda por alfabeto: descendente devolvia
+       «Baixo, Médio, Crítico, Médio». Num registo de riscos, «mostra-me os
+       piores primeiro» é das perguntas mais feitas — e era a que não dava
+       resposta nenhuma.
+    */
+    if (sortField === 'nivel_risco_inicial') {
+      aValue = postoDaSeveridade(severidadeRisco(a));
+      bValue = postoDaSeveridade(severidadeRisco(b));
     }
 
     if (sortField === 'exposicao') {

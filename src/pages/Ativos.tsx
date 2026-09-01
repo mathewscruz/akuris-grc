@@ -34,6 +34,7 @@ import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { compararEscala } from '@/lib/ordem-de-escala';
 interface Ativo {
   id: string;
   nome: string;
@@ -382,6 +383,11 @@ const Ativos = () => {
     filtered.sort((a, b) => {
       const aValue = a[sortField as keyof Ativo];
       const bValue = b[sortField as keyof Ativo];
+      /* Critíco > Alto > Médio > Baixo. O alfabeto põe Alto antes de Baixo
+         antes de Crítico — ao contrário do que a coluna promete. */
+      const escala = compararEscala(aValue, bValue);
+      if (escala !== null) return sortDirection === 'asc' ? escala : -escala;
+
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }

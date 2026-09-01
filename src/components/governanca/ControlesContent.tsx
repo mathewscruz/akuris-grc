@@ -45,6 +45,7 @@ import { criticidadeControle } from '@/lib/metrics/controles';
 import { shortControleId } from '@/lib/controle-id';
 import { formatDateOnly, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { compararEscala } from '@/lib/ordem-de-escala';
 
 interface Controle {
   id: string;
@@ -344,10 +345,15 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         bVal = b.responsavel_nome || '';
       }
       
+      /* Crítico > Alto > Médio > Baixo. Por alfabeto, «do mais crítico para o
+         menos» devolvia «Médio, Crítico, Crítico, Alto» — M > C > A > B. */
+      const escala = compararEscala(aVal, bVal);
+      if (escala !== null) return sortDirection === 'asc' ? escala : -escala;
+
       // Comparação
       if (aVal == null) return 1;
       if (bVal == null) return -1;
-      
+
       const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return sortDirection === 'asc' ? comparison : -comparison;
     });

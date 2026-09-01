@@ -12,6 +12,7 @@ import { countActiveFilters } from "@/lib/filter-active"
 import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
 import { rowOpenProps } from "@/lib/row-interaction"
 import { IconSearch, IconFilter, IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
+import { compararEscala } from '@/lib/ordem-de-escala'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
 const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
@@ -28,6 +29,10 @@ function compareValues(a: unknown, b: unknown): number {
   if (emptyB) return -1
   if (typeof a === 'number' && typeof b === 'number') return a - b
   if (typeof a === 'boolean' || typeof b === 'boolean') return Number(a) - Number(b)
+  /* Crítico > Alto > Médio > Baixo, e não C < A < M por alfabeto. Aqui e não
+     em cada tabela: quem escrever a próxima coluna de criticidade herda-o. */
+  const escala = compararEscala(a, b)
+  if (escala !== null) return escala
   const sa = String(a)
   const sb = String(b)
   const da = Date.parse(sa)
@@ -42,6 +47,20 @@ export interface Column<T> {
   label: string
   sortable?: boolean
   render?: (value: any, item: T) => React.ReactNode
+  /**
+   * Por que valor esta coluna ORDENA, quando não é o do `key`.
+   *
+   * Uma coluna que desenha uma coisa e guarda outra ordena pela outra, e o
+   * resultado não se explica a ninguém. A severidade dos riscos mostrava o
+   * nível efectivo e ordenava pelo INERENTE, e ainda por cima como texto:
+   * descendente devolvia «Baixo, Médio, Crítico, Médio». Num registo de
+   * riscos, «mostra-me os piores primeiro» é das perguntas mais feitas.
+   *
+   * Devolva um número quando a ordem é uma escala (severidade,
+   * criticidade, prioridade) — alfabético põe Alto antes de Baixo antes de
+   * Crítico, que é exactamente ao contrário do que interessa.
+   */
+  sortAccessor?: (item: T) => string | number | null | undefined
   className?: string
 }
 
@@ -188,8 +207,11 @@ export function DataTable<T extends Record<string, any>>({
     if (externalSort || !internalSort) return data
     const { field, direction } = internalSort
     const factor = direction === 'asc' ? 1 : -1
-    return [...data].sort((a, b) => factor * compareValues(a?.[field], b?.[field]))
-  }, [data, internalSort, externalSort])
+    const coluna = columns.find((c) => String(c.key) === field)
+    const valor = (item: T) =>
+      coluna?.sortAccessor ? coluna.sortAccessor(item) : (item as any)?.[field]
+    return [...data].sort((a, b) => factor * compareValues(valor(a), valor(b)))
+  }, [data, internalSort, externalSort, columns])
 
   // Reset page when data changes
   React.useEffect(() => {

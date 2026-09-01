@@ -27,6 +27,7 @@ import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { compararEscala } from '@/lib/ordem-de-escala';
 interface ChaveCriptografica {
   id: string;
   nome: string;
@@ -219,6 +220,11 @@ export default function AtivosChaves() {
     filtered.sort((a, b) => {
       const aValue = a[sortField as keyof ChaveCriptografica];
       const bValue = b[sortField as keyof ChaveCriptografica];
+
+      /* Critíco > Alto > Médio > Baixo. O alfabeto põe Alto antes de Baixo
+         antes de Crítico — ao contrário do que a coluna promete. */
+      const escala = compararEscala(aValue, bValue);
+      if (escala !== null) return sortDirection === 'asc' ? escala : -escala;
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 

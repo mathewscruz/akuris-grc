@@ -30,6 +30,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { compararEscala } from '@/lib/ordem-de-escala';
 
 /**
  * Severidade (escala de risco) → prioridade (escala de execução).
@@ -338,6 +339,11 @@ export default function PlanosAcao() {
     result.sort((a: any, b: any) => {
       const aVal = a[sortField] || '';
       const bVal = b[sortField] || '';
+      /* Critíco > Alto > Médio > Baixo. O alfabeto põe Alto antes de Baixo
+         antes de Crítico — ao contrário do que a coluna promete. */
+      const escala = compararEscala(aVal, bVal);
+      if (escala !== null) return sortDirection === 'asc' ? escala : -escala;
+
       const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return sortDirection === 'asc' ? cmp : -cmp;
     });

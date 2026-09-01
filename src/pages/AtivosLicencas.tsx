@@ -28,6 +28,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { compararEscala } from '@/lib/ordem-de-escala';
 interface Licenca {
   id: string;
   nome: string;
@@ -216,6 +217,11 @@ export default function AtivosLicencas() {
     filtered.sort((a, b) => {
       const aValue = a[sortField as keyof Licenca];
       const bValue = b[sortField as keyof Licenca];
+
+      /* Critíco > Alto > Médio > Baixo. O alfabeto põe Alto antes de Baixo
+         antes de Crítico — ao contrário do que a coluna promete. */
+      const escala = compararEscala(aValue, bValue);
+      if (escala !== null) return sortDirection === 'asc' ? escala : -escala;
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 

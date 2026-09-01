@@ -35,7 +35,19 @@ import {
  * `||`, mas o que vem a seguir é o traço, não o residual.
  */
 const CITA_INERENTE = /nivel_risco_inicial/;
-const CITA_RESIDUAL = /nivel_risco_residual/;
+/**
+ * Prova de que o residual entra na conta.
+ *
+ * Duas formas valem: nomear o campo, ou chamar o ajudante que o resolve. A
+ * segunda faltava, e a guarda reprovava exactamente o código que a sua própria
+ * mensagem manda escrever — a ordenação da tabela de riscos, que compara
+ * `sortField` com a chave da coluna (`nivel_risco_inicial`) e depois ordena por
+ * `severidadeRisco(risco)`.
+ *
+ * `severidadeRiscoInerente` não conta, e de propósito: essa lê o inerente, que
+ * é o que esta regra existe para vigiar.
+ */
+const CITA_RESIDUAL = /nivel_risco_residual|severidadeRisco(?:Efetiva)?\(/;
 
 /** Isentos, cada um com o seu motivo. */
 const ISENTOS = [
@@ -67,8 +79,25 @@ describe('uma severidade de risco', () => {
       if (ISENTOS_POR_PREFIXO.some((p) => arquivo.startsWith(p))) continue;
 
       const linhas = ler(arquivo).split('\n');
+      /*
+         Dentro de um bloco `/* ... *\/` é prosa, não código.
+
+         Só se saltava a PRIMEIRA linha de um bloco, e as seguintes voltavam a
+         ser lidas como se fossem código. Um comentário a explicar o defeito —
+         que é o que se pede a quem o corrige — passava a ser denunciado como o
+         defeito. Aconteceu com a própria correcção da ordenação por
+         severidade, e resolvê-lo a reescrever a frase seria calar a guarda em
+         vez de a arranjar.
+      */
+      let dentroDeBloco = false;
       linhas.forEach((linha, i) => {
         const t = linha.trimStart();
+        const abre = linha.lastIndexOf('/*');
+        const fecha = linha.lastIndexOf('*/');
+        const eraBloco = dentroDeBloco;
+        if (!dentroDeBloco && abre > fecha) dentroDeBloco = true;
+        else if (dentroDeBloco && fecha > abre) dentroDeBloco = false;
+        if (eraBloco || dentroDeBloco) return;
         if (t.startsWith('*') || t.startsWith('//') || t.startsWith('/*')) return;
         // Declaração de tipo e chave de coluna da tabela são nome de campo, não
         // decisão de severidade — quem decide é o `render` ao lado.
