@@ -110,6 +110,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const { notify } = useIntegrationNotify();
   const [loading, setLoading] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [dadosCarregados, setDadosCarregados] = useState(false);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [anexosAceite, setAnexosAceite] = useState<any[]>([]);
   const [invalidarAceiteOpen, setInvalidarAceiteOpen] = useState(false);
@@ -183,9 +184,14 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const watchImpactoResidual = form.watch('impacto_residual');
   const watchAceito = form.watch('aceito');
 
+  /*
+     `fetchData` desiste quando ainda não há `profile.empresa_id`. Com a lista
+     de dependências vazia nunca voltava a tentar: se o perfil chegasse depois
+     de o formulário montar, a lista de categorias ficava vazia para sempre.
+  */
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [profile?.empresa_id]);
 
   useEffect(() => {
     if (risco) {
@@ -234,6 +240,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       if (ativosRes.data) setAtivos(ativosRes.data);
     } catch (error: any) {
       toast.error(t('fin.comum.erroCarregarDados', { mensagem: error.message }));
+    } finally {
+      setDadosCarregados(true);
     }
   };
 
@@ -851,13 +859,55 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 <FormField
                   control={form.control}
                   name="categoria_id"
-                  render={({ field }) => (
+                  render={({ field }) => {
+                    const categoriaEscolhida = categorias.find((c) => c.id === field.value);
+                    return (
                     <FormItem>
                       <FormLabel>{t('campos.risco.categoria')}</FormLabel>
+                      {/*
+                          O Select só monta depois de as categorias chegarem.
+
+                          O Radix mantém um `<select>` nativo escondido e, sempre
+                          que o valor MUDA, lê de volta o que o navegador aceitou.
+                          Sem nenhuma `<option>` correspondente o navegador devolve
+                          cadeia vazia, e o Radix escreve essa vazia no formulário.
+
+                          Ao editar um risco isso acontecia sempre: o `form.reset`
+                          corre no primeiro efeito e a consulta das categorias só
+                          responde depois. Medido no R-0011, três pinturas
+                          seguidas: vazio, categoria Operacional, vazio outra vez
+                          — com a lista ainda por chegar. O ecrã dizia «Selecione
+                          uma categoria» e gravar assim escrevia `null`: a
+                          categoria perdia-se mesmo, sem ninguém lhe tocar.
+
+                          Não chega adiantar-lhe um item com o valor actual: o
+                          Radix só passa a conhecer a opção na pintura seguinte,
+                          e o estrago já aconteceu. O que resolve é não haver
+                          mudança nenhuma — montando o Select já com o valor final
+                          e com as opções todas.
+                      */}
+                      {!dadosCarregados ? (
+                        <div className="flex h-10 max-md:h-11 w-full items-center rounded-md border border-input bg-card px-3 py-2 text-base md:text-sm text-muted-foreground opacity-50">
+                          {t('common.loading')}
+                        </div>
+                      ) : (
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={t('fin.comum.selecioneCategoria')} />
+                            {/* O rótulo é resolvido aqui: ver a nota do item-sombra. */}
+                            <SelectValue placeholder={t('fin.comum.selecioneCategoria')}>
+                              {categoriaEscolhida ? (
+                                <span className="flex items-center gap-2">
+                                  {categoriaEscolhida.cor && (
+                                    <span
+                                      className="w-3 h-3 rounded-full shrink-0"
+                                      style={{ backgroundColor: categoriaEscolhida.cor }}
+                                    />
+                                  )}
+                                  {categoriaEscolhida.nome}
+                                </span>
+                              ) : undefined}
+                            </SelectValue>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -876,9 +926,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                           ))}
                         </SelectContent>
                       </Select>
+                      )}
                       <FormMessage />
                     </FormItem>
-                  )}
+                    );
+                  }}
                 />
 
                 <FormField
