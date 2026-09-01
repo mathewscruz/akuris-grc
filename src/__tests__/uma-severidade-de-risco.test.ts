@@ -86,6 +86,14 @@ describe('uma severidade de risco', () => {
           curva do painel nunca poder descer (ver tendencia-le-o-historico).
         */
         if (/vigente\?\.nivel_risco\s*\?\?/.test(linha)) return;
+        /*
+          O bloco rotulado «Inerente» mostra o inerente — é a razão de ele
+          existir, e está dito no próprio rótulo. Foi por passar aqui com
+          `residual || inicial` que ele andou a anunciar Baixo onde a base
+          guardava Médio. A guarda seguinte é a metade que falta: nesta
+          linha o residual é que não entra.
+        */
+        if (/detail\.inerente/.test(linha)) return;
         if (!CITA_INERENTE.test(linha)) return;
         // Janela de três linhas: numa lista de colunas partida por linhas o
         // residual aparece na linha seguinte, e a leitura por linha não o via.
@@ -137,5 +145,40 @@ describe('uma severidade de risco', () => {
       medios: 4,
       baixos: 1,
     });
+  });
+});
+
+/**
+ * O bloco que se chama «Inerente» mostra o inerente.
+ *
+ * `residual || inicial` é o nível efectivo, e está certo onde o rótulo não
+ * promete outra coisa. No painel do risco prometia: a etiqueta dizia
+ * «Inerente», o número ao lado era o score inerente e o P×I por baixo era o
+ * inerente — só a severidade vinha do residual. Medido no R-0011: «Inerente
+ * B Baixo 5 P1×I5», quando 5 é Médio na matriz. Dezasseis dos vinte e cinco
+ * riscos daquela empresa liam-se assim, e a seta ao lado anunciava «−2» de
+ * Baixo para Baixo.
+ */
+describe('o bloco do inerente', () => {
+  it('não vai buscar o nível ao residual', () => {
+    const falhas: string[] = [];
+
+    for (const ficheiro of fontes()) {
+      if (!ficheiro.endsWith('.tsx')) continue;
+      const fonte = ler(ficheiro);
+      if (!fonte.includes('detail.inerente')) continue;
+
+      for (const linha of fonte.split('\n')) {
+        if (!linha.includes('detail.inerente')) continue;
+        if (/nivel=\{[^}]*nivel_risco_residual/.test(linha)) {
+          falhas.push(ficheiro.replace(/\\/g, '/'));
+        }
+      }
+    }
+
+    expect(
+      falhas,
+      'Um bloco rotulado «Inerente» com o nível residual diz o contrário do número que tem ao lado.',
+    ).toEqual([]);
   });
 });

@@ -356,7 +356,20 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <section>
                 <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
                 <div className="flex items-stretch gap-2 mt-0.5">
-                  <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_residual || risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                  {/*
+                      O bloco chama-se «Inerente» e mostrava o nível RESIDUAL.
+
+                      `nivel_risco_residual || nivel_risco_inicial` é o nível
+                      efectivo, e está certo onde o rótulo não promete outra
+                      coisa. Aqui prometia: a etiqueta dizia «Inerente», o
+                      número ao lado era o score inerente e o P×I por baixo
+                      era o inerente — só a severidade vinha do residual.
+                      Medido no R-0011: «Inerente B Baixo 5 P1×5», quando 5
+                      é Médio na matriz e a base guarda `medio`. E a seta ao
+                      lado anunciava «−2» de Baixo para Baixo. Dezasseis dos
+                      vinte e cinco riscos desta empresa liam-se assim.
+                  */}
+                  <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                   <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
                     <IconArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground'} strokeWidth={2} />
                     {reduziu && <span className="text-micro text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
