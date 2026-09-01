@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { MODELOS } from '../_shared/modelos.ts';
 import {
   computeAnalyzedScore,
   reconcileReportedScore,
@@ -278,7 +279,7 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
       },
       body: JSON.stringify({
         // Mesmo modelo/qualidade que o docgen-chat usa em generate_document — juiz único.
-        model: 'google/gemini-3.1-pro-preview',
+        model: MODELOS.LEITURA_LONGA,
         max_tokens: 48000,
         messages: [
           { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
@@ -394,7 +395,7 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         recomendacoes: analysisResult.recomendacoes || [],
         analise_detalhada: analysisResult.analise_detalhada,
         metadados_analise: {
-          modelo_usado: 'google/gemini-3.1-pro-preview',
+          modelo_usado: MODELOS.LEITURA_LONGA,
           provider: 'lovable-ai-gateway',
           tempo_processamento: Date.now(),
           total_requisitos: requirementsInScope?.length || 0,

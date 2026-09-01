@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
+import { MODELOS } from '../_shared/modelos.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -397,7 +398,7 @@ ${specificDetails}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: MODELOS.EXTRACAO,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,

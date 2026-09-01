@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { MODELOS } from '../_shared/modelos.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -224,7 +225,7 @@ IMPORTANTE: O breakdown deve ser agrupado pelo campo "section" de cada pergunta.
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3-flash-preview',
+      model: MODELOS.EXTRACAO,
       messages: [
         {
           role: 'system',

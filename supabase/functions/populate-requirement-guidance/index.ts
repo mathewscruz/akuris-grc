@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
+import { MODELOS } from '../_shared/modelos.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -299,7 +300,7 @@ async function generateGuidance(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: MODELOS.EXTRACAO,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
         max_tokens: 4000,

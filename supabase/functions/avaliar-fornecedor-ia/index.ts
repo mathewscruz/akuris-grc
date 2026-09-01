@@ -24,6 +24,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { exigeInternaOuUtilizador, respostaAcessoNegado, AcessoNegado } from '../_shared/interna.ts';
+import { MODELOS } from '../_shared/modelos.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -143,7 +144,7 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: MODELOS.EXTRACAO,
         temperature: 0.2,
         messages: [
           {
@@ -196,7 +197,7 @@ Deno.serve(async (req: Request) => {
     const documento = {
       ...parecer,
       nivelRisco: nivel,
-      modelo: 'google/gemini-3-flash-preview',
+      modelo: MODELOS.EXTRACAO,
       respostasAnalisadas: respostas.length,
     };
 
