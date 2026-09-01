@@ -72,7 +72,17 @@ export default function SistemasContent() {
   });
 
   const sistemasAtivos = sistemas.filter(s => s.ativo).length;
-  const sistemasCriticos = sistemas.filter(s => ['critica', 'critico', 'alta'].includes(s.criticidade)).length;
+  /*
+     A lista escrita à mão tinha «critica», «critico» e «alta» — e não
+     «alto», que é a forma que esta base usa (`sistemas_privilegiados`
+     guarda `critico`/`medio`). Hoje acerta por sorte, porque nenhum
+     sistema está em «alto»; no dia em que estiver, sai da conta sem
+     ninguém dar por isso. `severidadeDeFaixas` é quem normaliza isto no
+     resto do produto.
+  */
+  const sistemasCriticos = sistemas.filter(
+    s => ['critico', 'alto'].includes(severidadeDeFaixas(s.criticidade)),
+  ).length;
 
   const handleEditSistema = (sistema: SistemaPrivilegiado) => {
     setSelectedSistema(sistema);

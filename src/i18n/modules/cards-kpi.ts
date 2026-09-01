@@ -82,7 +82,7 @@ export const cardsKpi = {
         inativosDescontinuados: '{inativos} inativos · {descontinuados} descontinuados',
         doTotal: '{pct}% do total',
         altoValor: 'Alto Valor',
-        criticidadeAlta: 'Criticidade Alta',
+        criticidadeAlta: 'Alta ou crítica',
         altaPrioridade: 'Alta prioridade',
       },
       continuidade: {
@@ -258,7 +258,7 @@ export const cardsKpi = {
         inativosDescontinuados: '{inativos} inactive · {descontinuados} discontinued',
         doTotal: '{pct}% of total',
         altoValor: 'High value',
-        criticidadeAlta: 'High criticality',
+        criticidadeAlta: 'High or critical',
         altaPrioridade: 'High priority',
       },
       continuidade: {
