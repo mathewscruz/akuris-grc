@@ -658,11 +658,29 @@ const NotificationCenter: React.FC = () => {
                 <p className="text-xs font-semibold text-primary/70 leading-none">
                   {tab === 'news' ? t('changelog.title') : t('notifications.eyebrow')}
                 </p>
+                {/*
+                   O resumo descreve a LISTA, não o que já foi visto.
+
+                   Dizia «Tudo em dia» sempre que `unreadCount` era zero — e
+                   estas notificações são calculadas e marcam-se ao abrir o
+                   sino, por isso zero é o estado normal a partir da segunda
+                   vez. Medido: «Tudo em dia» em cima de nove avisos, entre
+                   eles um risco com revisão atrasada há 43 dias e um contrato
+                   vencido há 33. Lida não é resolvida, e o cabeçalho do painel
+                   é o sítio mais visto para dizer o contrário do que está por
+                   baixo.
+                */}
                 <p className="mt-1.5 text-sm font-semibold text-foreground tracking-tight tabular-nums">
                   {tab === 'news'
                     ? t('changelog.subtitle')
                     : unreadCount > 0
                     ? `${unreadCount} ${unreadCount === 1 ? t('notifications.unreadOne') : t('notifications.unread')}`
+                    : groups.urgent.length > 0
+                    ? groups.urgent.length === 1
+                      ? t('notifications.summaryUrgentOne')
+                      : t('notifications.summaryUrgent', { n: String(groups.urgent.length) })
+                    : allNotifications.length > 0
+                    ? t('notifications.summaryOpen', { n: String(allNotifications.length) })
                     : t('notifications.allCaughtUp')}
                 </p>
               </div>
