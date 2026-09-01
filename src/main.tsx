@@ -1,3 +1,7 @@
+// PRIMEIRA de todas: troca o `fetch` antes de o cliente do Supabase nascer.
+// O `supabase-js` guarda o `fetch` que encontrar na criação; trocado depois,
+// não intercepta nada.
+import './lib/atualizar-apos-escrita'
 import { createRoot } from 'react-dom/client'
 import { HelmetProvider } from 'react-helmet-async'
 import App from './App.tsx'

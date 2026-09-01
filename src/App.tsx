@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteFallback } from '@/components/ui/route-fallback';
 import { DocGenProvider } from '@/contexts/DocGenContext';
 import { installStatsInvalidation } from '@/lib/stats-invalidation';
+import { seguirEscritas } from '@/lib/atualizar-apos-escrita';
 
 
 
@@ -111,6 +112,11 @@ const queryClient = new QueryClient({
 
 // Faixas de estatística acompanham qualquer criação/edição/eliminação (Envio 14 · 3).
 installStatsInvalidation(queryClient);
+
+// E qualquer escrita na base manda o ecrã reler-se: 114 dos 172 ficheiros que
+// escrevem nunca invalidavam nada, e quem gravava tinha de sair e voltar para
+// ver o que fez. Ver `lib/atualizar-apos-escrita.ts`.
+seguirEscritas(() => { queryClient.invalidateQueries(); });
 
 
 function AssessmentLinkRedirect() {
