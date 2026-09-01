@@ -43,6 +43,12 @@ const DESLIGADO_PARA_SEMPRE = [
  * um item de lista a explicar o estado, não uma funcionalidade prometida —
  * é justamente o contrário do defeito que esta guarda persegue.
  */
+/*
+   O `\b` desta expressao chegou a estar gravado como o BYTE de recuo, e
+   nao como as duas letras: a guarda deixou de casar com o que quer que
+   fosse e passou a estar verde por nao ver nada. Um teste que nao pode
+   falhar nao esta a guardar coisa nenhuma.
+*/
 const ACIONAVEL = /<(button|Button|ViewBtn|IconButton)/;
 
 /**

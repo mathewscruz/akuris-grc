@@ -216,7 +216,9 @@ export function WizardDialog({
                 cor final dependia do que estivesse por trás. */}
             <aside className="hidden lg:flex flex-col w-72 border-r bg-card shrink-0">
               <ScrollArea className="flex-1">
-                <TabsList className="flex flex-col h-auto w-full bg-transparent border-0 gap-1 p-3">
+                {/* `flex-nowrap`: a barra é vertical, e quebrar aqui punha um passo
+                    numa segunda COLUNA em vez de numa segunda linha. */}
+                <TabsList className="flex flex-col flex-nowrap h-auto w-full bg-transparent border-0 gap-1 p-3">
                   {tabs.map((tab, idx) => {
                     const TabIcon = tab.icon;
                     return (

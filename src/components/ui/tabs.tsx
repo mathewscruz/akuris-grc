@@ -120,6 +120,27 @@ const TabsList = React.forwardRef<
     style={{ maskImage: mascara, WebkitMaskImage: mascara, ...style }}
     className={cn(
       "flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
+      /*
+         A barra passa para a linha de baixo em vez de esconder uma aba.
+
+         Antes rolava na horizontal, e a última aba ficava cortada a meio
+         da palavra. Medido no detalhe de um controlo, numa janela de 1275
+         px: as seis abas somam 675 px, os cinco intervalos 112, e a barra
+         tem 744 — faltam 43. Encolher o intervalo comprava 37 px, ou seja
+         resolvia aquele caso e voltava a partir com uma aba a mais.
+
+         Com `flex-wrap` nada fica escondido, a qualquer largura e com
+         qualquer número de abas. Onde já cabia, não muda nada: só quebra
+         quando quebraria de qualquer forma. O esbatimento das margens
+         fica para o único caso que sobra — uma aba mais larga do que a
+         barra inteira.
+
+         No telemóvel mantém-se a rolagem: seis abas empilhadas comiam
+         três linhas do ecrã, e arrastar a barra de lado é um gesto que
+         ali se conhece — no rato não há gesto nenhum, e era esse o
+         problema.
+      */
+      "max-sm:flex-nowrap flex-wrap gap-y-0",
       "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       /* A folga por baixo da barra de abas vive AQUI, e não em cada painel.
          Estava no `TabsContent`, o que só dava espaço a quem fosse um painel:

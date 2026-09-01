@@ -63,3 +63,54 @@ describe('folga por baixo das abas', () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * Nenhuma aba fica escondida onde há rato.
+ *
+ * A barra rolava na horizontal e escondia a barra de rolagem, de propósito.
+ * O preço era a última aba aparecer cortada a meio da palavra — «Planos de»
+ * — e no rato não há gesto nenhum para chegar ao resto. Medido no detalhe
+ * de um controlo, numa janela de 1275 px: seis abas somam 675 px, cinco
+ * intervalos 112, e a barra tem 744. Faltavam 43.
+ *
+ * Encolher o intervalo comprava 37 px: resolvia aquele caso e voltava a
+ * partir com uma aba a mais. Com `flex-wrap` nada fica escondido, a qualquer
+ * largura e com qualquer número de abas; onde já cabia não muda nada.
+ *
+ * No telemóvel mantém-se a rolagem (`max-sm:flex-nowrap`): seis abas
+ * empilhadas comiam três linhas do ecrã, e ali arrastar de lado é gesto
+ * conhecido.
+ */
+describe('a barra de abas nunca esconde uma aba', () => {
+  const lista = TABS.slice(TABS.indexOf('const TabsList'), TABS.indexOf('const TabsTrigger'));
+
+  it('quebra para a linha de baixo em vez de cortar', () => {
+    expect(
+      /flex-wrap/.test(lista),
+      'Sem `flex-wrap` a última aba volta a ficar cortada, e no rato não há forma de lá chegar.',
+    ).toBe(true);
+  });
+
+  it('no telemóvel continua a rolar', () => {
+    expect(
+      /max-sm:flex-nowrap/.test(lista),
+      'Empilhar seis abas num telemóvel come três linhas de ecrã; ali o gesto de arrastar existe.',
+    ).toBe(true);
+  });
+
+  it('a barra vertical do assistente não quebra', () => {
+    const falhas: string[] = [];
+    for (const ficheiro of arquivos) {
+      const fonte = readFileSync(ficheiro, 'utf8');
+      for (const linha of fonte.split('\n')) {
+        if (!/<TabsList/.test(linha)) continue;
+        if (!/flex-col/.test(linha)) continue;
+        if (!/flex-nowrap/.test(linha)) falhas.push(ficheiro.replace(/\\/g, '/'));
+      }
+    }
+    expect(
+      falhas,
+      'Numa barra vertical, quebrar põe um passo numa segunda COLUNA em vez de numa segunda linha.',
+    ).toEqual([]);
+  });
+});

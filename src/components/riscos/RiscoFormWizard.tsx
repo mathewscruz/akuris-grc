@@ -713,7 +713,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           <aside className="hidden lg:flex flex-col w-80 border-r bg-card flex-shrink-0">
             <div className="p-4 border-b">
               <h3 className="text-xs font-semibold text-muted-foreground mb-3">{t('riscosDetalhe.form.etapas')}</h3>
-              <TabsList className="flex flex-col h-auto w-full bg-transparent border-0 gap-1 p-0">
+              {/* `flex-nowrap`: a barra é vertical, e quebrar aqui punha um passo
+                    numa segunda COLUNA em vez de numa segunda linha. */}
+              <TabsList className="flex flex-col flex-nowrap h-auto w-full bg-transparent border-0 gap-1 p-0">
                 {tabsMeta.map((t) => {
                   const state = tabState(t.key);
                   return (
