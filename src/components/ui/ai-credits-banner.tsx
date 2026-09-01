@@ -7,23 +7,34 @@ import { useAiCredits } from '@/hooks/useAiCredits';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
- * Faixa global do saldo de créditos de IA.
+ * Faixa do saldo de créditos de IA.
  *
- * Tinha um estado só — esgotado — e por isso a primeira notícia que alguém
- * recebia era a de que já não podia trabalhar. Passa a avisar ANTES, que é
- * quando ainda dá para pedir mais ou poupar: é o que fazem as ferramentas que
- * cobram por uso.
+ * ## Quando aparece
  *
- * Três estados, e nunca mais do que um:
+ * **Esgotado** é permanente: enquanto não houver franquia, os assistentes não
+ * funcionam, e a faixa é a resposta à pergunta «porque é que isto não faz
+ * nada». Fechá-la seria esconder a causa.
  *
- *  · **A acabar** (≤20% e ≤10 restantes) — tom de aviso, dispensável. Quem
- *    dispensa não volta a ver esta soleira nesta sessão; a soleira seguinte,
- *    mais grave, volta a aparecer.
- *  · **Últimos** (≤3 restantes) — tom de aviso forte, não se dispensa.
- *  · **Esgotado** — tom destrutivo, não se dispensa.
+ * **A acabar** e **últimos** aparecem só DEPOIS de alguém usar a IA. Uma
+ * faixa permanente em todas as páginas, para quem talvez nem use IA hoje, é
+ * ruído — e ruído constante deixa de se ler. O aviso chega no momento em que
+ * significa alguma coisa: acabou de gastar um crédito, e restam poucos. Fica
+ * até ser dispensado, e volta na utilização seguinte.
  *
- * O «≤10» evita gritar por nada em planos grandes: 20% de 200 são 40 créditos,
- * e ainda dá para muito trabalho.
+ * ## Cor
+ *
+ * A cor fica na BORDA e no ÍCONE; o texto é de leitura. É o que as barras de
+ * aviso das ferramentas boas fazem, e por uma razão medida:
+ *
+ *  · `text-warning-foreground` sobre `bg-warning/10` é branco puro sobre
+ *    quase-branco — contraste ~1:1, literalmente ilegível. Aquela ficha
+ *    existe para assentar sobre `bg-warning` SÓLIDO.
+ *  · `text-warning` sobre o mesmo véu dá 3,1:1 — melhor, e ainda abaixo dos
+ *    4,5:1 que o texto normal exige. Num aviso de dois tamanhos de letra,
+ *    com a descrição em `text-micro`, isso não serve.
+ *
+ * Com `text-foreground` o contraste passa de 3,1 para mais de 12:1, e o
+ * aviso continua a ler-se como aviso pela borda, pelo fundo e pelo ícone.
  */
 
 /** Abaixo disto começa a haver o que dizer. */
@@ -44,53 +55,68 @@ export function estadoDosCreditos(franquia: number, restantes: number): Estado {
 export function AiCreditsExhaustedBanner() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { esgotado, isSuperAdmin, loading, franquia, restantes } = useAiCredits();
+  const { isSuperAdmin, loading, franquia, restantes } = useAiCredits();
   const [dispensado, setDispensado] = React.useState(false);
+  const [usouIA, setUsouIA] = React.useState(false);
+
+  /* O mesmo evento que faz aparecer o aviso de «gastou 1 crédito». */
+  React.useEffect(() => {
+    const aoUsar = () => {
+      setUsouIA(true);
+      setDispensado(false);
+    };
+    window.addEventListener('ai-credit-consumed', aoUsar);
+    window.addEventListener('ai-credits-exhausted', aoUsar);
+    return () => {
+      window.removeEventListener('ai-credit-consumed', aoUsar);
+      window.removeEventListener('ai-credits-exhausted', aoUsar);
+    };
+  }, []);
 
   const estado = loading ? 'nenhum' : estadoDosCreditos(franquia, restantes);
-  const grave = estado === 'esgotado' || estado === 'ultimos';
+  const esgotado = estado === 'esgotado';
 
-  // Voltar a subir de soleira faz o aviso reaparecer, mesmo dispensado antes.
-  React.useEffect(() => {
-    if (grave) setDispensado(false);
-  }, [grave]);
+  if (estado === 'nenhum') return null;
+  // Só o esgotado se mostra sozinho; os outros esperam por uma utilização.
+  if (!esgotado && (!usouIA || dispensado)) return null;
 
-  if (estado === 'nenhum' || (estado === 'aCabar' && dispensado)) return null;
+  const titulo = esgotado
+    ? t('creditosIA.esgotadosTitulo')
+    : t('creditosIA.aCabarTitulo', { n: String(restantes) });
 
-  const titulo =
-    estado === 'esgotado'
-      ? t('creditosIA.esgotadosTitulo')
-      : t('creditosIA.aCabarTitulo', { n: String(restantes) });
-
-  const descricao =
-    estado === 'esgotado'
-      ? isSuperAdmin
-        ? t('creditosIA.esgotadosAdmin')
-        : t('creditosIA.esgotadosUtilizador')
-      : t('creditosIA.aCabarDescricao', { n: String(restantes), total: String(franquia) });
+  const descricao = esgotado
+    ? isSuperAdmin
+      ? t('creditosIA.esgotadosAdmin')
+      : t('creditosIA.esgotadosUtilizador')
+    : t('creditosIA.aCabarDescricao', { n: String(restantes), total: String(franquia) });
 
   return (
     <div
       role="alert"
       aria-live="polite"
       className={cn(
-        'relative border-b px-4 py-2.5 flex items-center gap-3 flex-wrap',
+        'relative border-b px-4 py-2.5 flex items-center gap-3 flex-wrap text-foreground',
         esgotado
-          ? 'border-destructive/30 bg-destructive/10 text-destructive'
-          : 'border-warning/30 bg-warning/10 text-warning-foreground',
+          ? 'border-destructive/40 bg-destructive/10'
+          : 'border-warning/50 bg-warning/10',
       )}
     >
+      {/* A cor vive aqui e na borda: o ícone aguenta-a sem custo de leitura. */}
       <span
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-md shrink-0',
-          esgotado ? 'bg-destructive/15' : 'bg-warning/20',
+          esgotado ? 'bg-destructive/15 text-destructive' : 'bg-warning/25 text-warning',
         )}
       >
         <IconWarning className="h-4 w-4" strokeWidth={1.5} />
       </span>
       <div className="flex-1 min-w-[240px]">
         <p className="text-xs font-semibold leading-tight">{titulo}</p>
-        <p className="text-micro opacity-90 leading-tight mt-0.5">{descricao}</p>
+        {/* `foreground/75` e não `muted-foreground`: o cinzento de apoio sobre o
+            véu de aviso dava 4,0:1, e esta linha é a mais pequena das duas. A
+            hierarquia fica no peso e no tamanho, não em desbotar até deixar de
+            se ler. */}
+        <p className="text-micro text-foreground/75 leading-tight mt-0.5">{descricao}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <Button
@@ -99,8 +125,8 @@ export function AiCreditsExhaustedBanner() {
           className={cn(
             'h-7 px-2.5 text-micro',
             esgotado
-              ? 'border-destructive/40 text-destructive hover:bg-destructive/15'
-              : 'border-warning/40 hover:bg-warning/15',
+              ? 'border-destructive/50 text-destructive hover:bg-destructive/15'
+              : 'border-warning/60 hover:bg-warning/15',
           )}
           onClick={() =>
             navigate(isSuperAdmin ? '/configuracoes?tab=creditos-ia' : '/configuracoes?tab=assinatura')
@@ -108,11 +134,11 @@ export function AiCreditsExhaustedBanner() {
         >
           {isSuperAdmin ? t('creditosIA.gerirCreditos') : t('creditosIA.verPlano')}
         </Button>
-        {estado === 'aCabar' && (
+        {!esgotado && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-micro"
+            className="h-7 px-2.5 text-micro text-foreground/75 hover:bg-warning/15"
             onClick={() => setDispensado(true)}
           >
             {t('creditosIA.dispensar')}
