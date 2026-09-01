@@ -1005,6 +1005,8 @@ export function Riscos() {
                     <RiscosViewChips active={savedView} onChange={setSavedView} items={viewItems} />
                   </div>
                   <DataTable
+                    paginated
+                    pageSize={20}
                     data={viewedRiscos}
                     columns={riscoColumns as Column<Risco>[]}
                     onRowClick={(risco) => setDrawerRiscoId(risco.id)}

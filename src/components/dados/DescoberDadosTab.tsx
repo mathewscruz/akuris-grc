@@ -326,6 +326,8 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
         </div>
 
         <DataTable
+          paginated
+          pageSize={20}
           data={descobertas}
           columns={columns}
           searchPlaceholder={t('dadosDashboard.descobertaDadosTab.searchPlaceholder')}

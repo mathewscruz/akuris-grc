@@ -332,6 +332,8 @@ export default function SistemasContent() {
           </div>
           
           <DataTable
+            paginated
+            pageSize={20}
             data={filteredAndSortedSistemas}
             columns={sistemasColumns}
             onRowClick={(sistema) => setDetalheSistema(sistema)}

@@ -698,6 +698,8 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            paginated
+            pageSize={20}
             data={sortedControles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
             columns={controlesColumns}
             onRowClick={(controle) => handleOpenDetail(controle)}

@@ -330,6 +330,8 @@ export default function RevisaoAcessos() {
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
+                paginated
+                pageSize={20}
                 data={filteredAndSortedReviews || []}
                 columns={columns}
                 onRowClick={(review) => handleViewItems(review)}
@@ -376,6 +378,8 @@ export default function RevisaoAcessos() {
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
+                paginated
+                pageSize={20}
                 data={historico || []}
                 columns={historicoColumns}
                 loading={historicoLoading}

@@ -646,6 +646,8 @@ export function RopaTab({
         <Card className="overflow-hidden rounded-lg border">
           <CardContent className="p-0">
             <DataTable
+              paginated
+              pageSize={20}
               data={tratamentos}
               columns={colunasDeTratamento}
               onRowClick={(linha: any) =>
@@ -712,6 +714,8 @@ export function RopaTab({
       <Card className="overflow-hidden rounded-lg border">
         <CardContent className="p-0">
           <DataTable
+            paginated
+            pageSize={20}
             data={linhasDeRopa}
             columns={colunasDeRopa}
             onRowClick={(linha: any) => setRopaAberto(linha.chave)}

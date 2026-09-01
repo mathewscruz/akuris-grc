@@ -406,6 +406,8 @@ export default function ContasPrivilegiadas() {
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            paginated
+            pageSize={20}
             data={filteredAndSortedContas}
             columns={contasColumns}
             onRowClick={(conta) => setDetalheConta(conta)}

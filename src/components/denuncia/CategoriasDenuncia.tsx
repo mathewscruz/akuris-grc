@@ -469,6 +469,8 @@ export function CategoriasDenuncia() {
         </CardHeader>
         <CardContent>
           <DataTable
+            paginated
+            pageSize={20}
             data={filteredAndSortedCategorias}
             columns={columns}
             loading={loading}

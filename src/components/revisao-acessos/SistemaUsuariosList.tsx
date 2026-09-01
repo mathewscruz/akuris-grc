@@ -324,6 +324,7 @@ export function SistemaUsuariosList() {
       </div>
 
       <DataTable
+        paginated
         columns={columns}
         data={usuarios || []}
         /* Sem isto, durante a leitura ficavam cabeçalhos de coluna sobre um
