@@ -579,13 +579,31 @@ export default function PlanosAcao() {
           {
             label: t('planosAcao.csv'),
             icon: <IconDownload className="h-4 w-4" />,
+            /*
+               Exportar o que está no ecrã, escrito como está no ecrã.
+
+               Medido: com o filtro em «Crítica» a tabela mostrava 1 linha e o
+               ficheiro trazia 6, de todas as prioridades. Quem filtra e exporta
+               age sobre a lista que exportou — e recebia outra.
+
+               E o conteúdo era o da base, não o da tabela: «em_andamento»,
+               «media», «frameworks», onde o ecrã escreve «Em Andamento»,
+               «Média», «Frameworks». As duas datas vinham em formatos
+               diferentes na mesma linha: `prazo` cru da base (2026-06-25) ao
+               lado de `created_at` já formatado (26/05/2026). Os rótulos já
+               existiam na página; o CSV era o único sítio que não os usava.
+            */
             onClick: () => {
-              if (planos.length === 0) return;
+              if (filteredPlanos.length === 0) return;
               exportCSV(
                 [t('planosAcao.csvHeaderTitle'), t('planosAcao.csvHeaderStatus'), t('planosAcao.csvHeaderPriority'), t('planosAcao.csvHeaderModule'), t('planosAcao.csvHeaderDeadline'), t('planosAcao.csvHeaderCreatedAt')],
-                planos.map((p: any) => [
-                  p.titulo || p.nome || '', p.status || '', p.prioridade || '',
-                  p.modulo_origem || 'manual', p.prazo || '', p.created_at ? new Date(p.created_at).toLocaleDateString(intlLocale()) : ''
+                filteredPlanos.map((p: any) => [
+                  p.titulo || p.nome || '',
+                  statusConfig[p._displayStatus ?? p.status]?.label || p.status || '',
+                  prioridadeConfig[p.prioridade]?.label || p.prioridade || '',
+                  moduloLabels[p.modulo_origem] || p.modulo_origem || moduloLabels.manual || 'manual',
+                  p.prazo ? formatDateOnly(p.prazo) : '',
+                  p.created_at ? formatDateOnly(p.created_at) : '',
                 ]),
                 'planos_acao'
               );

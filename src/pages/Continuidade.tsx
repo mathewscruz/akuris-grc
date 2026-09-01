@@ -188,11 +188,14 @@ export default function Continuidade() {
           {
             label: t('sweepDenuncias.contas.exportCsv'),
             icon: <IconDownload className="h-4 w-4" />,
-            disabled: planos.length === 0,
+            // Exportar o que está no ecrã: iterava `planos` (tudo) enquanto a
+            // tabela mostra `planosFiltrados`. Quem filtra e exporta age sobre
+            // a lista que exportou.
+            disabled: planosFiltrados.length === 0,
             onClick: () => {
               exportCSV(
                 [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
-                planos.map((p: any) => [
+                planosFiltrados.map((p: any) => [
                   p.nome || '', tipoMap[p.tipo] || p.tipo || '',
                   statusMap[p.status]?.label || p.status || '',
                   p.rto_horas != null ? String(p.rto_horas) : '',

@@ -174,22 +174,26 @@ export default function ContasPrivilegiadas() {
     setDeleteConfirm({ open: false, id: '', nome: '' });
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativo': { icon: IconSuccess, label: t('sweepDenuncias.contas.statusAtivo') },
-      'expirado': { icon: IconWarning, label: t('sweepDenuncias.contas.statusExpirado') },
-      'pendente_aprovacao': { icon: IconTime, label: t('fin.contas.pendenteAprovacao') },
-      'revogado': { icon: IconShield, label: t('sweepDenuncias.contas.statusRevogado') },
-    };
+  /**
+   * O rótulo do estado, separado de quem o desenha.
+   *
+   * Estava dentro do `getStatusBadge`, e só o ecrã lhe chegava: a exportação
+   * escrevia o valor cru da base. Como a coluna mostra «Expirado» para uma
+   * conta que a base guarda como `ativo` (é `isExpirada` que decide), o
+   * ficheiro contradizia a tabela justamente no campo que manda revogar
+   * acesso.
+   */
+  const rotuloDeStatus = (status: string) =>
+    ({
+      ativo: t('sweepDenuncias.contas.statusAtivo'),
+      expirado: t('sweepDenuncias.contas.statusExpirado'),
+      pendente_aprovacao: t('fin.contas.pendenteAprovacao'),
+      revogado: t('sweepDenuncias.contas.statusRevogado'),
+    } as Record<string, string>)[status] ?? t('fin.contas.pendenteAprovacao');
 
-    const config = statusConfig[status] || statusConfig.pendente_aprovacao;
-
-    return (
-      <StatusBadge {...resolveItemStatusTone(status)}>
-        {config.label}
-      </StatusBadge>
-    );
-  };
+  const getStatusBadge = (status: string) => (
+    <StatusBadge {...resolveItemStatusTone(status)}>{rotuloDeStatus(status)}</StatusBadge>
+  );
 
   // Filtrar e ordenar contas
   const filteredAndSortedContas = useMemo(() => {
@@ -376,14 +380,23 @@ export default function ContasPrivilegiadas() {
           {
             label: t('sweepDenuncias.contas.exportCsv'),
             icon: <IconDownload className="h-4 w-4" />,
-            disabled: contas.length === 0,
+            /*
+               Exportar o que está no ecrã, escrito como está no ecrã: iterava
+               `contas` (tudo) enquanto a tabela mostra `filteredAndSortedContas`,
+               e escrevia os valores crus da base. Aqui isso não era só feio —
+               a coluna de estado mostra «Expirado» a quem já passou da data,
+               e o ficheiro dizia «ativo» das mesmas linhas.
+            */
+            disabled: filteredAndSortedContas.length === 0,
             onClick: () => {
               exportCSV(
                 [t('sweepDenuncias.contas.csvUsuario'), t('sweepDenuncias.contas.csvEmail'), t('sweepDenuncias.contas.csvTipoAcesso'), t('sweepDenuncias.contas.csvNivel'), t('sweepDenuncias.contas.csvStatus'), t('sweepDenuncias.contas.csvDataConcessao'), t('sweepDenuncias.contas.csvDataExpiracao'), t('sweepDenuncias.contas.csvSistema')],
-                contas.map((c: any) => [
+                filteredAndSortedContas.map((c: any) => [
                   c.usuario_beneficiario || '', c.email_beneficiario || '',
-                  c.tipo_acesso || '', c.nivel_privilegio || '', c.status || '',
-                  c.data_concessao || '', c.data_expiracao || '',
+                  capitalizeText(c.tipo_acesso || ''), capitalizeText(c.nivel_privilegio || ''),
+                  rotuloDeStatus(isExpirada(c) ? 'expirado' : c.status),
+                  c.data_concessao ? formatDateOnly(c.data_concessao) : '',
+                  c.data_expiracao ? formatDateOnly(c.data_expiracao) : '',
                   c.sistemas_privilegiados?.nome_sistema || ''
                 ]),
                 'contas_privilegiadas'
