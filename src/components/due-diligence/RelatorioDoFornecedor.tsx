@@ -7,27 +7,37 @@
  * umas barras de progresso; à direita, numa faixa estreita, o parecer da IA. E
  * um cartão de «Recomendações» com QUATRO frases fixas — uma por classificação
  * — que não recomendam nada: dizem outra vez o que a classificação já disse.
- * As recomendações a sério vinham no parecer e ficavam na coluna de lado.
  *
- * Faltava, sobretudo, o passo do meio: o número dizia QUANTO, o parecer dizia
- * O QUÊ em prosa, e nada dizia QUAIS respostas custaram pontos. Quem lê um
- * relatório de due diligence quer exactamente isso para poder cobrar o
- * fornecedor.
+ * Faltava o passo do meio: o número dizia QUANTO, o parecer dizia O QUÊ em
+ * prosa, e nada dizia QUAIS respostas custaram pontos nem o que pedir por
+ * causa delas.
  *
- * ## O que fica
+ * ## A forma
  *
- * Um relatório com corredor de navegação à esquerda — nota global,
- * classificação e cada secção com a sua — e, à direita, a leitura: o que está
- * bem, o que precisa de atenção, o que falta em evidência, o que fazer a
- * seguir, e depois **secção a secção, as respostas que tiraram pontos**, com a
- * pergunta, o que o fornecedor respondeu, a nota e o peso.
+ * Corredor à esquerda: mostrador com a nota, a classificação, cada secção com
+ * a sua nota — e um plano de acção com os achados, as evidências em falta e os
+ * próximos passos. À direita, secção a secção, três blocos rotulados:
+ *
+ *   O QUE ESTÁ BEM · O QUE PRECISA DE ATENÇÃO · O QUE PEDIR AO FORNECEDOR
+ *
+ * O terceiro é uma tabela RESPONDEU → PEDIR. É o par que torna o relatório
+ * accionável: sem a segunda coluna, a análise descreve o problema a quem já o
+ * tem.
  *
  * ## Duas coisas que não se misturam
  *
- * O NÚMERO é aritmética: nota por resposta × peso da pergunta, e está tudo à
- * vista para ser conferido. O PARECER é leitura da IA sobre o mesmo material,
+ * O NÚMERO é aritmética: nota por resposta × peso da pergunta, tudo à vista
+ * para ser conferido. O PARECER é leitura da IA sobre o mesmo material,
  * incluindo o texto livre que o número não pontua. Ficam lado a lado e
  * rotulados, nunca fundidos num só valor.
+ *
+ * ## Sobre o desenho
+ *
+ * O modelo que inspirou isto tinha o corredor em painel escuro. Aqui as
+ * superfícies são claras e separadas por fio, com um só realce no hover — é a
+ * linguagem do produto, defendida por teste. Copia-se a ESTRUTURA (mostrador,
+ * secções com nota, plano de acção, blocos rotulados, tabela de duas colunas),
+ * não a pele de outro produto.
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
@@ -35,7 +45,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateShort } from '@/lib/date-utils';
-import type { ParecerDaIA } from './ParecerIA';
+import type { ParecerDaIA, SecaoDoParecer } from './ParecerIA';
 
 /** Uma secção como o cálculo a devolve. */
 export interface SecaoDoScore {
@@ -69,25 +79,34 @@ interface Props {
 /** Abaixo disto uma resposta entra na lista do que custou pontos. */
 const NOTA_QUE_PREOCUPA = 6;
 
-function tomDoScore(score: number) {
-  if (score >= 80) return 'success' as const;
-  if (score >= 60) return 'info' as const;
-  if (score >= 40) return 'warning' as const;
-  return 'destructive' as const;
+type Tom = 'success' | 'info' | 'warning' | 'destructive';
+
+function tomDoScore(score: number): Tom {
+  if (score >= 80) return 'success';
+  if (score >= 60) return 'info';
+  if (score >= 40) return 'warning';
+  return 'destructive';
 }
 
-const CLASSE_DO_TOM: Record<ReturnType<typeof tomDoScore>, string> = {
+const TEXTO: Record<Tom, string> = {
   success: 'text-success',
   info: 'text-info',
   warning: 'text-warning',
   destructive: 'text-destructive',
 };
 
-const BARRA_DO_TOM: Record<ReturnType<typeof tomDoScore>, string> = {
+const BARRA: Record<Tom, string> = {
   success: 'bg-success',
   info: 'bg-info',
   warning: 'bg-warning',
   destructive: 'bg-destructive',
+};
+
+const TRACO: Record<Tom, string> = {
+  success: 'stroke-success',
+  info: 'stroke-info',
+  warning: 'stroke-warning',
+  destructive: 'stroke-destructive',
 };
 
 /** O formato antigo do `score_breakdown` era um número solto por secção. */
@@ -97,6 +116,37 @@ function lerSecao(valor: SecaoDoScore | number): SecaoDoScore {
 
 function idDaSecao(nome: string) {
   return `secao-${nome.toLowerCase().replace(/[^a-z0-9]+/gi, '-')}`;
+}
+
+/**
+ * O mostrador da nota global.
+ *
+ * Um número solto lê-se como texto; num anel lê-se como posição numa escala —
+ * vê-se de relance quanto falta para o topo, que é a pergunta que se faz a um
+ * relatório destes.
+ */
+function Mostrador({ score, tom }: { score: number; tom: Tom }) {
+  const r = 34;
+  const perimetro = 2 * Math.PI * r;
+  const preenchido = (Math.max(0, Math.min(100, score)) / 100) * perimetro;
+  return (
+    <div className="relative mx-auto h-[88px] w-[88px]">
+      <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90" aria-hidden="true">
+        <circle cx="40" cy="40" r={r} fill="none" strokeWidth="6" className="stroke-border" />
+        <circle
+          cx="40" cy="40" r={r} fill="none" strokeWidth="6" strokeLinecap="round"
+          className={TRACO[tom]}
+          strokeDasharray={`${preenchido} ${perimetro}`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={cn('text-2xl font-semibold tabular-nums leading-none', TEXTO[tom])}>
+          {score.toFixed(0)}
+        </span>
+        <span className="text-micro text-muted-foreground leading-none mt-0.5">/100</span>
+      </div>
+    </div>
+  );
 }
 
 export function RelatorioDoFornecedor({
@@ -121,6 +171,13 @@ export function RelatorioDoFornecedor({
     [breakdown],
   );
 
+  /** A leitura da IA para cada secção, por nome. */
+  const parecerPorSecao = React.useMemo(() => {
+    const mapa = new Map<string, SecaoDoParecer>();
+    for (const s of parecer?.secoes ?? []) mapa.set(s.secao.trim().toLowerCase(), s);
+    return mapa;
+  }, [parecer]);
+
   /* As respostas que custaram pontos, agrupadas pela secção a que pertencem. */
   const custaramPontos = React.useMemo(() => {
     const porSecao = new Map<string, RespostaPontuada[]>();
@@ -138,20 +195,25 @@ export function RelatorioDoFornecedor({
 
   const tom = tomDoScore(scoreTotal);
 
-  const irPara = (nome: string) => {
-    document.getElementById(idDaSecao(nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const irPara = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  /* O plano de acção: os achados, o que falta em prova, o que fazer a seguir.
+     São os três que quem lê o relatório leva consigo. */
+  const plano = [
+    { id: 'plano-achados', rotulo: t('dueDiligence.relatorioFornecedor.achados'), itens: parecer?.pontosAtencao },
+    { id: 'plano-evidencias', rotulo: t('dueDiligence.parecerIA.evidenciasEmFalta'), itens: parecer?.evidenciasEmFalta },
+    { id: 'plano-passos', rotulo: t('dueDiligence.relatorioFornecedor.proximosPassos'), itens: parecer?.recomendacoes },
+  ].filter((p) => p.itens && p.itens.length > 0);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[236px_1fr] gap-6 items-start">
-      {/* ── corredor: a nota, a classificação e por onde entrar ───────────── */}
-      <aside className="lg:sticky lg:top-0 rounded-lg border border-border bg-card p-4 space-y-4">
-        <div className="text-center">
-          <div className={cn('text-4xl font-semibold tabular-nums leading-none', CLASSE_DO_TOM[tom])}>
-            {scoreTotal.toFixed(0)}
-            <span className="text-base text-muted-foreground font-normal">/100</span>
-          </div>
-          <div className="mt-2 flex justify-center">
+    <div className="grid grid-cols-1 lg:grid-cols-[248px_1fr] gap-6 items-start">
+      {/* ── corredor ────────────────────────────────────────────────────── */}
+      <aside className="lg:sticky lg:top-0 rounded-lg border border-border bg-card divide-y divide-border/60">
+        <div className="p-4 text-center">
+          <Mostrador score={scoreTotal} tom={tom} />
+          <div className="mt-2.5 flex justify-center">
             <StatusBadge tone={tom} variant="soft">
               {t(`dueDiligence.scoreVisualization.classification${
                 classificacao === 'excelente' ? 'Excellent'
@@ -168,34 +230,54 @@ export function RelatorioDoFornecedor({
         </div>
 
         {secoes.length > 0 && (
-          <div className="border-t border-border/60 pt-3">
-            <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+          <nav className="p-3">
+            <p className="px-2 text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
               {t('dueDiligence.relatorioFornecedor.porSecao')}
             </p>
-            <ul className="space-y-0.5">
+            <ul>
               {secoes.map((s) => (
                 <li key={s.nome}>
                   <button
                     type="button"
-                    onClick={() => irPara(s.nome)}
+                    onClick={() => irPara(idDaSecao(s.nome))}
                     className="w-full flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent transition-colors"
                   >
                     <span className="truncate text-foreground">{s.nome}</span>
-                    <span className={cn('shrink-0 tabular-nums font-semibold', CLASSE_DO_TOM[tomDoScore(s.score)])}>
+                    <span className={cn('shrink-0 tabular-nums font-semibold', TEXTO[tomDoScore(s.score)])}>
                       {s.score.toFixed(0)}
                     </span>
                   </button>
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
+        )}
+
+        {plano.length > 0 && (
+          <nav className="p-3">
+            <p className="px-2 text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+              {t('dueDiligence.relatorioFornecedor.planoDeAccao')}
+            </p>
+            <ul>
+              {plano.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => irPara(p.id)}
+                    className="w-full flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent transition-colors"
+                  >
+                    <span className="truncate text-foreground">{p.rotulo}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{p.itens!.length}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
         )}
 
         {/* Sobre o que a conta se fez. Sem isto, o número parece cobrir tudo. */}
         {cobertura && (
-          <p className="border-t border-border/60 pt-3 text-micro text-muted-foreground leading-relaxed">
-            {cobertura}
-          </p>
+          <p className="p-4 text-micro text-muted-foreground leading-relaxed">{cobertura}</p>
         )}
       </aside>
 
@@ -205,27 +287,20 @@ export function RelatorioDoFornecedor({
           {template && <p className="text-xs text-muted-foreground">{template}</p>}
         </header>
 
-        {/* ── a leitura da IA, separada do cálculo e dita como tal ────────── */}
-        {parecer && (
-          <div className="space-y-4">
-            {parecer.resumo && (
-              <div className="rounded-lg border border-border bg-muted/30 p-4">
-                <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                  {t('dueDiligence.relatorioFornecedor.leituraDaIa')}
-                </p>
-                <p className="text-sm leading-relaxed text-foreground">{parecer.resumo}</p>
-              </div>
-            )}
-            <Faixa titulo={t('dueDiligence.parecerIA.pontosFortes')} itens={parecer.pontosFortes} tom="success" />
-            <Faixa titulo={t('dueDiligence.parecerIA.pontosAtencao')} itens={parecer.pontosAtencao} tom="warning" />
-            <Faixa titulo={t('dueDiligence.parecerIA.evidenciasEmFalta')} itens={parecer.evidenciasEmFalta} tom="info" />
-            <Faixa titulo={t('dueDiligence.parecerIA.recomendacoes')} itens={parecer.recomendacoes} tom="info" />
+        {parecer?.resumo && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+              {t('dueDiligence.relatorioFornecedor.leituraDaIa')}
+            </p>
+            <p className="text-sm leading-relaxed text-foreground">{parecer.resumo}</p>
           </div>
         )}
 
-        {/* ── secção a secção: QUAIS respostas custaram pontos ────────────── */}
+        {/* ── secção a secção ─────────────────────────────────────────────── */}
         {secoes.map((s) => {
-          const problemas = custaramPontos.get(s.nome) ?? [];
+          const custaram = custaramPontos.get(s.nome) ?? [];
+          const leitura = parecerPorSecao.get(s.nome.trim().toLowerCase());
+          const tomS = tomDoScore(s.score);
           return (
             <section
               key={s.nome}
@@ -241,24 +316,52 @@ export function RelatorioDoFornecedor({
                     </p>
                   )}
                 </div>
-                <span className={cn('shrink-0 text-lg font-semibold tabular-nums', CLASSE_DO_TOM[tomDoScore(s.score)])}>
-                  {s.score.toFixed(0)}<span className="text-xs text-muted-foreground font-normal">/100</span>
-                </span>
+                <StatusBadge tone={tomS} variant="soft">
+                  <span className="tabular-nums">{s.score.toFixed(0)}/100</span>
+                </StatusBadge>
               </div>
-              <div className="px-4 py-2">
-                <Progress value={s.score} indicatorClassName={BARRA_DO_TOM[tomDoScore(s.score)]} className="h-1.5" />
+              <div className="px-4 pt-3">
+                <Progress value={s.score} indicatorClassName={BARRA[tomS]} className="h-1.5" />
               </div>
 
-              {problemas.length === 0 ? (
-                <p className="px-4 pb-4 pt-2 text-xs text-muted-foreground">
-                  {t('dueDiligence.relatorioFornecedor.nadaACobrar')}
-                </p>
-              ) : (
-                <div className="px-4 pb-4 pt-2">
-                  <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                    {t('dueDiligence.relatorioFornecedor.custaramPontos')}
-                  </p>
-                  <div className="overflow-x-auto">
+              <Bloco titulo={t('dueDiligence.relatorioFornecedor.oQueEstaBem')} itens={leitura?.pontosFortes} tom="success" />
+              <Bloco titulo={t('dueDiligence.relatorioFornecedor.oQuePrecisaAtencao')} itens={leitura?.pontosAtencao} tom="warning" />
+
+              {/* RESPONDEU → PEDIR: as duas colunas que tornam isto accionável. */}
+              {leitura?.oQuePedir && leitura.oQuePedir.length > 0 && (
+                <div className="px-4 py-3 border-t border-border/60">
+                  <Rotulo tom="info">{t('dueDiligence.relatorioFornecedor.oQuePedir')}</Rotulo>
+                  <div className="mt-2 space-y-3">
+                    {leitura.oQuePedir.map((p, i) => (
+                      <div key={i} className="rounded-md border border-border overflow-hidden">
+                        <p className="px-3 py-1.5 text-xs font-medium text-foreground bg-muted/40 border-b border-border/60">
+                          {p.pergunta}
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border/60">
+                          <div className="p-3">
+                            <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                              {t('dueDiligence.relatorioFornecedor.colRespondeu')}
+                            </p>
+                            <p className="text-xs leading-relaxed text-muted-foreground">{p.respondeu}</p>
+                          </div>
+                          <div className="p-3">
+                            <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                              {t('dueDiligence.relatorioFornecedor.colPedir')}
+                            </p>
+                            <p className="text-xs leading-relaxed text-foreground">{p.pedir}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* A aritmética, sempre à vista: é o que sustenta a nota da secção. */}
+              {custaram.length > 0 && (
+                <div className="px-4 py-3 border-t border-border/60">
+                  <Rotulo tom="destructive">{t('dueDiligence.relatorioFornecedor.custaramPontos')}</Rotulo>
+                  <div className="mt-2 overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="text-micro uppercase tracking-wide text-muted-foreground">
@@ -269,11 +372,11 @@ export function RelatorioDoFornecedor({
                         </tr>
                       </thead>
                       <tbody>
-                        {problemas.map((r) => (
+                        {custaram.map((r) => (
                           <tr key={r.question_id} className="border-t border-border/50">
                             <td className="py-1.5 pr-3 text-foreground">{r.titulo}</td>
                             <td className="py-1.5 pr-3 text-muted-foreground">{r.resposta || '—'}</td>
-                            <td className={cn('py-1.5 text-right tabular-nums font-semibold', CLASSE_DO_TOM[tomDoScore((r.pontuacao ?? 0) * 10)])}>
+                            <td className={cn('py-1.5 text-right tabular-nums font-semibold', TEXTO[tomDoScore((r.pontuacao ?? 0) * 10)])}>
                               {(r.pontuacao ?? 0).toFixed(0)}/10
                             </td>
                             <td className="py-1.5 text-right tabular-nums text-muted-foreground">×{r.peso}</td>
@@ -284,30 +387,55 @@ export function RelatorioDoFornecedor({
                   </div>
                 </div>
               )}
+
+              {custaram.length === 0 && !leitura && (
+                <p className="px-4 py-3 text-xs text-muted-foreground border-t border-border/60">
+                  {t('dueDiligence.relatorioFornecedor.nadaACobrar')}
+                </p>
+              )}
             </section>
           );
         })}
+
+        {/* ── plano de acção ─────────────────────────────────────────────── */}
+        {plano.map((p) => (
+          <section key={p.id} id={p.id} className="rounded-lg border border-border bg-card scroll-mt-4">
+            <div className="px-4 py-3 border-b border-border/60">
+              <h4 className="text-sm font-semibold text-foreground">{p.rotulo}</h4>
+            </div>
+            <ul className="p-4 space-y-1.5">
+              {p.itens!.map((item, i) => (
+                <li key={i} className="text-sm leading-relaxed text-foreground flex gap-2">
+                  <span aria-hidden className="text-muted-foreground shrink-0">·</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </div>
   );
 }
 
-/** Uma lista do parecer, com o seu rótulo e o seu tom. */
-function Faixa({
-  titulo,
-  itens,
-  tom,
-}: {
-  titulo: string;
-  itens?: string[];
-  tom: 'success' | 'warning' | 'info';
-}) {
-  if (!itens || itens.length === 0) return null;
-  const borda = tom === 'success' ? 'border-l-success' : tom === 'warning' ? 'border-l-warning' : 'border-l-info';
+/** O rótulo de um bloco, com o fio de cor à esquerda. */
+function Rotulo({ tom, children }: { tom: Tom; children: React.ReactNode }) {
+  const fio = tom === 'success' ? 'bg-success' : tom === 'warning' ? 'bg-warning' : tom === 'info' ? 'bg-info' : 'bg-destructive';
   return (
-    <div className={cn('rounded-lg border border-border border-l-2 bg-card p-4', borda)}>
-      <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-2">{titulo}</p>
-      <ul className="space-y-1.5">
+    <p className="flex items-center gap-2 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+      <span aria-hidden className={cn('h-3 w-0.5 rounded-full', fio)} />
+      {children}
+    </p>
+  );
+}
+
+/** Uma lista rotulada dentro do cartão da secção. */
+function Bloco({ titulo, itens, tom }: { titulo: string; itens?: string[]; tom: Tom }) {
+  if (!itens || itens.length === 0) return null;
+  return (
+    <div className="px-4 py-3 border-t border-border/60">
+      <Rotulo tom={tom}>{titulo}</Rotulo>
+      <ul className="mt-2 space-y-1.5">
         {itens.map((item, i) => (
           <li key={i} className="text-sm leading-relaxed text-foreground flex gap-2">
             <span aria-hidden className="text-muted-foreground shrink-0">·</span>

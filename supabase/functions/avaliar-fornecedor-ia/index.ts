@@ -42,7 +42,7 @@ const ESQUEMA_DO_PARECER = {
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['nivelRisco', 'resumo', 'pontosFortes', 'pontosAtencao', 'recomendacoes', 'evidenciasEmFalta', 'confianca'],
+      required: ['nivelRisco', 'resumo', 'pontosFortes', 'pontosAtencao', 'recomendacoes', 'evidenciasEmFalta', 'confianca', 'secoes'],
       properties: {
         nivelRisco: { type: 'string', enum: NIVEIS },
         resumo: { type: 'string', description: 'Dois a quatro períodos, em português, dirigidos a quem decide.' },
@@ -51,6 +51,46 @@ const ESQUEMA_DO_PARECER = {
         recomendacoes: { type: 'array', items: { type: 'string' }, description: 'O que pedir ou fazer a seguir.' },
         evidenciasEmFalta: { type: 'array', items: { type: 'string' }, description: 'Perguntas que pediam comprovativo e vieram sem.' },
         confianca: { type: 'string', enum: ['alta', 'media', 'baixa'], description: 'Quanto o material permite concluir.' },
+        /*
+          A leitura secção a secção.
+
+          O parecer global diz se o fornecedor serve; não diz ONDE apertar. Um
+          questionário de due diligence vem dividido em secções -- Governança,
+          Continuidade, Integridade -- e é por secção que se cobra: quem trata
+          de continuidade não é quem trata de anticorrupção.
+
+          `oQuePedir` é o par que torna o relatório accionável: o que o
+          fornecedor respondeu, e o que se lhe pede a seguir. Sem o segundo, a
+          análise fica a descrever o problema a quem já o tem.
+        */
+        secoes: {
+          type: 'array',
+          description: 'Uma entrada por secção do questionário, na ordem em que aparecem.',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['secao', 'pontosFortes', 'pontosAtencao', 'oQuePedir'],
+            properties: {
+              secao: { type: 'string' },
+              pontosFortes: { type: 'array', items: { type: 'string' }, description: 'O que esta secção demonstrou bem. Vazio se nada.' },
+              pontosAtencao: { type: 'array', items: { type: 'string' }, description: 'Lacunas desta secção, com a resposta que as sustenta.' },
+              oQuePedir: {
+                type: 'array',
+                description: 'Por cada resposta fraca: o que pedir ao fornecedor. Vazio se não houver.',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['pergunta', 'respondeu', 'pedir'],
+                  properties: {
+                    pergunta: { type: 'string', description: 'O título da pergunta, tal como está no questionário.' },
+                    respondeu: { type: 'string', description: 'O que o fornecedor respondeu, resumido.' },
+                    pedir: { type: 'string', description: 'O documento, evidência ou compromisso concreto a exigir.' },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
   },
@@ -134,6 +174,9 @@ Deno.serve(async (req: Request) => {
       '- Pesa as respostas pelo peso da pergunta.',
       '- Se o material não chegar para concluir, diz confiança "baixa" em vez de inventar certeza.',
       '- Escreve em português europeu, dirigido a quem tem de decidir se contrata.',
+      '- Em `secoes`, uma entrada por secção do questionário, com a MESMA grafia da secção.',
+      '- Em `oQuePedir`, só respostas fracas, e o que se pede tem de ser concreto: um documento,',
+      '  um certificado, um prazo. "Melhorar a governação" não é um pedido.',
     ].filter(Boolean).join('\n');
 
     // Sem franquia, nem se chama o modelo: a chamada custa no instante

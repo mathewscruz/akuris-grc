@@ -8,7 +8,13 @@ import { intlLocale } from '@/lib/date-utils';
 interface ScoreData {
   score_total: number;
   classificacao: string;
-  score_breakdown: Record<string, number>;
+  /**
+   * `{ secao: { score, perguntas } }`, e nas linhas antigas `{ secao: number }`.
+   *
+   * O cálculo passou a gravar tambem quantas perguntas entraram em cada secção.
+   * As duas formas convivem porque as linhas gravadas antes nao se reescrevem.
+   */
+  score_breakdown: Record<string, number | { score: number; perguntas?: number }>;
   observacoes_ia?: string;
   created_at: string;
 }
@@ -62,7 +68,9 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
   const classificationBadge = getClassificationBadge(scoreData.classificacao);
   const ClassificationIcon = classificationBadge.icon;
 
-  const breakdownEntries = Object.entries(scoreData.score_breakdown || {});
+  const breakdownEntries = Object.entries(scoreData.score_breakdown || {}).map(
+    ([categoria, valor]) => [categoria, typeof valor === 'number' ? valor : Number(valor?.score ?? 0)] as const,
+  );
 
   return (
     <div className="space-y-6">

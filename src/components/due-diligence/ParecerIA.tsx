@@ -24,6 +24,27 @@ import { resolveCriticidadeTone } from '@/lib/status-tone';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly } from '@/lib/date-utils';
 
+/**
+ * O que pedir ao fornecedor por causa de UMA resposta fraca.
+ *
+ * É o par que torna o relatório accionável: o que ele respondeu, e o que se
+ * lhe exige a seguir. Sem o segundo, a análise descreve o problema a quem já
+ * o tem.
+ */
+export interface PedidoAoFornecedor {
+  pergunta: string;
+  respondeu: string;
+  pedir: string;
+}
+
+/** A leitura de UMA secção do questionário. */
+export interface SecaoDoParecer {
+  secao: string;
+  pontosFortes?: string[];
+  pontosAtencao?: string[];
+  oQuePedir?: PedidoAoFornecedor[];
+}
+
 export interface ParecerDaIA {
   nivelRisco?: string;
   resumo?: string;
@@ -34,6 +55,15 @@ export interface ParecerDaIA {
   confianca?: string;
   modelo?: string;
   respostasAnalisadas?: number;
+  /**
+   * A análise secção a secção.
+   *
+   * O parecer global diz se o fornecedor serve; não diz ONDE apertar. Um
+   * questionário vem dividido em secções — Governança, Continuidade,
+   * Integridade — e é por secção que se cobra, porque quem trata de uma não é
+   * quem trata da outra. Ausente nos pareceres gerados antes desta divisão.
+   */
+  secoes?: SecaoDoParecer[];
 }
 
 interface Props {

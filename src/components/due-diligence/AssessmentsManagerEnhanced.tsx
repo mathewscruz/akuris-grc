@@ -419,6 +419,20 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
           data_expiracao: assessment.data_expiracao,
           data_envio: assessment.data_envio,
           score_final: assessment.score_final,
+          /*
+            O parecer da IA vinha na consulta e morria aqui.
+
+            A consulta faz `select('*')`, por isso `ia_parecer`,
+            `ia_avaliado_em` e `ia_nivel_risco` chegavam do servidor; este mapa
+            montava o objecto do ecrã campo a campo e não os copiava. O tipo
+            `Assessment` declara-os, o painel do parecer recebia-os como
+            argumento — e recebia sempre `null`. O botão «Reavaliar» estava lá,
+            gastava crédito, gravava o parecer na base, e o ecrã continuava
+            vazio: não havia por onde o ver.
+          */
+          ia_parecer: (assessment.ia_parecer as ParecerDaIA | null) ?? null,
+          ia_avaliado_em: assessment.ia_avaliado_em ?? null,
+          ia_nivel_risco: assessment.ia_nivel_risco ?? null,
           token: assessment.link_token,
           link_token: assessment.link_token,
           template: {
