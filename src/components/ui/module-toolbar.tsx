@@ -3,7 +3,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/contexts/LanguageContext"
-import { IconSearch } from '@/components/icons';
+import { Button } from "@/components/ui/button"
+import { IconSearch, IconFilter, IconChevronDown, IconChevronUp } from '@/components/icons';
 
 /**
  * Toolbar partilhada dos módulos de lista (Envio 8).
@@ -17,6 +18,13 @@ interface ModuleToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
   searchPlaceholder?: string
   /** Controlos de filtro já rotulados (ex.: <ToolbarField label=...>). */
   filters?: React.ReactNode
+  /**
+   * Quantos filtros estão aplicados, para o botão de telemóvel.
+   *
+   * Sem isto o botão dobrado esconderia filtros activos sem dizer que existem,
+   * que é o defeito ao contrário: em vez de ocupar o ecrã, mentir sobre ele.
+   */
+  activeFilterCount?: number
   /** Alternador de vista (tabela/kanban/calendário) quando existir. */
   viewSwitcher?: React.ReactNode
 }
@@ -26,6 +34,7 @@ export function ModuleToolbar({
   onSearchChange,
   searchPlaceholder,
   filters,
+  activeFilterCount = 0,
   viewSwitcher,
   className,
   children,
@@ -35,6 +44,9 @@ export function ModuleToolbar({
   const showSearch = typeof onSearchChange === "function"
 
   const hasFilters = Boolean(filters)
+  /* Abre já aberto quando há filtro aplicado: esconder o que está a mexer no
+     resultado seria a mesma mentira, com outra roupa. */
+  const [filtrosAbertos, setFiltrosAbertos] = React.useState(activeFilterCount > 0)
 
   return (
     <div
@@ -66,10 +78,63 @@ export function ModuleToolbar({
         <div />
       )}
 
-      <div className="flex flex-wrap items-end gap-3 md:justify-end">
-        {filters}
-        {children}
-        {viewSwitcher}
+      {/*
+        Em telemóvel os filtros ficam atrás de um botão.
+
+        Medido em 375px: Activos tem quatro filtros, cada um com rótulo por cima
+        e o controlo por baixo, empilhados — cerca de 450px antes do primeiro
+        registo, num ecrã de 812px. Somando cabeçalho, acções e a faixa de KPIs,
+        a primeira linha de dados chegava ao fundo do ecrã. Numa lista, os dados
+        vêm primeiro e o filtro é a excepção.
+
+        Havia um interruptor destes: a `DataTable` ainda declara `showFilters`,
+        importa `countActiveFilters` e `IconFilter` — e não usa nenhum dos três.
+        Desapareceu e deixou os restos.
+
+        A partir de `md` nada muda: os filtros estão sempre à vista, que é onde
+        há largura para eles.
+      */}
+      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-end">
+        {hasFilters && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="md:hidden w-full justify-between"
+            aria-expanded={filtrosAbertos}
+            onClick={() => setFiltrosAbertos((v) => !v)}
+          >
+            <span className="flex items-center gap-2">
+              <IconFilter className="h-4 w-4" strokeWidth={1.5} />
+              {t("common.filters")}
+              {/* `rounded-md` e não `rounded-full`: é uma caixa de texto, e o
+                  raio redondo fica para avatar, ponto e barra de progresso —
+                  é a mesma forma que o contador da barra lateral usa. */}
+              {activeFilterCount > 0 && (
+                <span className="rounded-md bg-primary/15 px-1.5 text-micro tabular-nums text-primary">
+                  {activeFilterCount}
+                </span>
+              )}
+            </span>
+            {filtrosAbertos ? (
+              <IconChevronUp className="h-4 w-4" strokeWidth={1.5} />
+            ) : (
+              <IconChevronDown className="h-4 w-4" strokeWidth={1.5} />
+            )}
+          </Button>
+        )}
+        <div
+          className={cn(
+            "flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-end md:justify-end",
+            filtrosAbertos ? "flex" : "hidden",
+          )}
+        >
+          {filters}
+        </div>
+        <div className="flex flex-wrap items-end gap-3 md:justify-end">
+          {children}
+          {viewSwitcher}
+        </div>
       </div>
     </div>
   )

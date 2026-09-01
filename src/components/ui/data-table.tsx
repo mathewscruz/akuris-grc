@@ -137,7 +137,6 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const { t } = useLanguage()
   const _searchPlaceholder = searchPlaceholder ?? t('common.searchPlaceholder')
-  const [showFilters, setShowFilters] = React.useState(false)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(initialPageSize)
 
@@ -310,6 +309,7 @@ export function DataTable<T extends Record<string, any>>({
           */
           onSearchChange={searchable ? onSearchChange : undefined}
           searchPlaceholder={_searchPlaceholder}
+          activeFilterCount={countActiveFilters(filters)}
           filters={filters.map((filter) => (
             <ToolbarField key={filter.key} label={filter.label}>
               <Select
