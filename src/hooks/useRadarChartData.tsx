@@ -254,7 +254,20 @@ export const useRadarChartData = () => {
           rodapé, uma vez. (`open` fica em terceiro: o cartão mostra dois.)
         */
         details: { total: incidentesData.total, status: getStatus(scoreIncidentes), metrics: [m('critical', incidentesData.criticos), m('inMonth', incidentesData.mes), m('open', incidentesData.abertos)] },
-        acao: acao('incidentesAbertos', incidentesData.abertos + incidentesData.investigacao),
+        /*
+           `emCurso`, e não a soma à mão.
+
+           A conta era `abertos + investigacao` e deixava de fora os
+           CONTIDOS. Um incidente contido não está resolvido — ainda há
+           trabalho e ainda há decisão a tomar. Medido nesta base: 3
+           resolvidos, 1 contido e 1 em investigação, e o painel anunciava
+           «1 incidente em aberto» quando eram dois por fechar.
+
+           `isIncidenteEmCurso` já diz exactamente isto — aberto,
+           investigação ou contido — e `contarIncidentes` já devolve a
+           contagem pronta.
+        */
+        acao: acao('incidentesAbertos', incidentesData.emCurso),
         link: '/incidentes'
       },
       {

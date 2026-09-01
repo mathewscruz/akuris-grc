@@ -104,8 +104,16 @@ export default function Dashboard() {
     );
   }
 
-  const activeIncidents =
-    (incidentesStats.data?.abertos || 0) + (incidentesStats.data?.investigacao || 0);
+  /*
+     `emCurso`, e não a soma à mão.
+
+     Era `abertos + investigacao` e deixava de fora os CONTIDOS. Um
+     incidente contido não está resolvido — ainda há trabalho por fazer.
+     Medido nesta base: 3 resolvidos, 1 contido e 1 em investigação, e a
+     primeira linha do painel anunciava «1 incidente aberto» quando eram
+     dois por fechar. `isIncidenteEmCurso` já diz exactamente isto.
+  */
+  const activeIncidents = incidentesStats.data?.emCurso || 0;
   const criticalAlerts = dashboardData?.criticalAlerts || 0;
 
   return (

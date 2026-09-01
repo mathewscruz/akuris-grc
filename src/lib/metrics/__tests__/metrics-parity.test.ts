@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { fontesTodas } from '@/__tests__/_fontes';
 import {
   contarRiscosPorSeveridade, isRiscoCritico, isRiscoAlto, isRiscoMedio, isRiscoBaixo,
   contarIncidentes, isIncidenteEmInvestigacao, isIncidenteAberto, isIncidenteResolvido,
@@ -218,5 +219,47 @@ describe('o gerador de PDF nao conta por fora', () => {
     expect(bloco.length, 'Nao encontrei o bloco dos documentos — o teste ficaria a olhar para o vazio.').toBeGreaterThan(200);
     const maos = bloco.match(/x\.status === '[a-z_]+'/g) || [];
     expect(maos, 'Estado de documento e vocabulario: «ativo», «publicado» e «vigente» sao o mesmo estado.').toEqual([]);
+  });
+});
+
+/**
+ * «Incidentes em curso» soma-se num sítio só.
+ *
+ * O painel fazia `abertos + investigacao` à mão e deixava de fora os
+ * CONTIDOS. Um incidente contido não está resolvido — ainda há trabalho e
+ * ainda há decisão a tomar. Medido: 3 resolvidos, 1 contido e 1 em
+ * investigação, e a primeira linha do produto anunciava «1 incidente aberto»
+ * quando eram dois por fechar. Estava em dois sítios, com a mesma conta.
+ *
+ * `isIncidenteEmCurso` diz exactamente isto — aberto, investigação ou contido
+ * — e `contarIncidentes` devolve `emCurso` pronto.
+ */
+describe('os incidentes em curso vêm do contador', () => {
+  /** A barra do Windows, sem a escrever à mão numa expressão. */
+  const SEPARADOR = String.fromCharCode(92);
+
+  it('ninguém soma os estados à mão', () => {
+    const falhas: string[] = [];
+
+    for (const ficheiro of fontesTodas()) {
+      if (!/\.tsx?$/.test(ficheiro)) continue;
+      // A camada canónica é onde a soma PODE viver.
+      if (ficheiro.includes('lib') && ficheiro.includes('metrics')) continue;
+      const fonte = readFileSync(ficheiro, 'utf8');
+
+      fonte.split('\n').forEach((linha, i) => {
+        const t = linha.trim();
+        // Um comentário a EXPLICAR o defeito não é o defeito.
+        if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
+        if (/\.abertos\b[^\n]{0,60}\+[^\n]{0,60}\binvestigacao\b/.test(linha)) {
+          falhas.push(`${ficheiro.split(SEPARADOR).join('/')}:${i + 1}`);
+        }
+      });
+    }
+
+    expect(
+      falhas,
+      'Use `emCurso`: a soma à mão esquece os contidos, que ainda não estão resolvidos.',
+    ).toEqual([]);
   });
 });
