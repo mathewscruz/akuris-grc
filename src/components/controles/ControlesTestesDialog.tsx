@@ -218,7 +218,12 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
       icon={IconChecklist}
       title={teste ? t('controlesAuditorias.ctdTitleEdit') : t('controlesAuditorias.ctdTitleNew')}
       description={controle?.nome}
-      size="md"
+      /*
+         `lg` e não `md`: são dez campos, e em `md` o corpo media 717 px
+         dentro de 508 — uma coluna estreita e comprida a rolar, com meia
+         janela vazia ao lado. Medido a 1366×768.
+      */
+      size="lg"
       onSubmit={handleSubmit}
       submitLabel={teste ? t('controlesAuditorias.ctdSubmitUpdate') : t('controlesAuditorias.ctdSubmitCreate')}
       isSubmitting={saveTesteMutation.isPending}
@@ -250,6 +255,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
               </SelectContent>
             </Select>
           </div>
+        </div>
 
         {/*
           Desenho e operação, e a amostra.
@@ -314,7 +320,6 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
             <p className="text-micro text-muted-foreground">{t('t4.testes.ajudaExcecoes')}</p>
           </div>
         </div>
-        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -340,6 +345,9 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
           </div>
         </div>
 
+        {/* As duas caixas de texto do mesmo teste, lado a lado: sozinhas
+            empilhadas somavam perto de 200 px de altura. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="observacoes">{t('t4.testes.campoObservacoes')}</Label>
           <Textarea
@@ -385,6 +393,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
               }}
             />
           )}
+        </div>
         </div>
       </div>
     </DialogShell>

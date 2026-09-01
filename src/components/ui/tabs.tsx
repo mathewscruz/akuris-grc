@@ -47,12 +47,77 @@ Tabs.displayName = TabsPrimitive.Root.displayName
  * TabsList — padrão único de abas do Akuris: régua com linha de base e
  * indicador (underline) roxo na aba ativa. Funciona em light e dark.
  */
+/**
+ * Diz que há mais abas do lado que não cabe.
+ *
+ * A barra rola na horizontal mas esconde a barra de rolagem, de propósito
+ * — fica limpa. O preço era a última aba aparecer cortada a meio da
+ * palavra, sem nada a dizer que havia mais: medido no detalhe de um
+ * controlo, «Planos de ação» tem 119 px e só 77 se viam. Quem lê isso
+ * conclui que o rótulo está partido, não que a barra continua.
+ *
+ * Um esbatimento do lado que transborda resolve sem mexer no desenho: a
+ * última aba deixa de acabar a direito e passa a desvanecer, que é como
+ * uma lista diz «continua». Aparece só quando há mesmo mais para ver.
+ */
+function useTransbordo(alvo: React.RefObject<HTMLElement>) {
+  const [lado, setLado] = React.useState<'nenhum' | 'inicio' | 'fim' | 'ambos'>('nenhum')
+
+  React.useEffect(() => {
+    const el = alvo.current
+    if (!el) return
+
+    const medir = () => {
+      // 1 px de folga: larguras fracionárias davam falsos positivos.
+      const antes = el.scrollLeft > 1
+      const depois = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+      setLado(antes && depois ? 'ambos' : antes ? 'inicio' : depois ? 'fim' : 'nenhum')
+    }
+
+    medir()
+    el.addEventListener('scroll', medir, { passive: true })
+
+    // O tamanho muda com a janela; o CONTEÚDO muda quando uma contagem
+    // passa de (9) a (10) ou uma aba aparece. As duas contam.
+    const ro = new ResizeObserver(medir)
+    ro.observe(el)
+    const mo = new MutationObserver(medir)
+    mo.observe(el, { childList: true, subtree: true, characterData: true })
+
+    return () => {
+      el.removeEventListener('scroll', medir)
+      ro.disconnect()
+      mo.disconnect()
+    }
+  }, [alvo])
+
+  return lado
+}
+
+const ESBATIMENTO: Record<string, string | undefined> = {
+  nenhum: undefined,
+  inicio: 'linear-gradient(to right, transparent, #000 2rem)',
+  fim: 'linear-gradient(to right, #000 calc(100% - 2rem), transparent)',
+  ambos: 'linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2rem), transparent)',
+}
+
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => {
+  const interna = React.useRef<HTMLDivElement>(null)
+  const lado = useTransbordo(interna)
+  const mascara = ESBATIMENTO[lado]
+
+  return (
   <TabsPrimitive.List
-    ref={ref}
+    ref={(no) => {
+      ;(interna as React.MutableRefObject<HTMLDivElement | null>).current = no as HTMLDivElement | null
+      if (typeof ref === 'function') ref(no)
+      else if (ref) (ref as React.MutableRefObject<unknown>).current = no
+    }}
+    data-transbordo={lado}
+    style={{ maskImage: mascara, WebkitMaskImage: mascara, ...style }}
     className={cn(
       "flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
       "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
@@ -67,7 +132,8 @@ const TabsList = React.forwardRef<
     )}
     {...props}
   />
-))
+  )
+})
 TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = React.forwardRef<
