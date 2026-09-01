@@ -707,9 +707,12 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0"
         >
           {/* Sidebar — Navegação + Resumo Vivo (desktop) */}
-          <aside className="hidden lg:flex flex-col w-72 border-r bg-card flex-shrink-0">
+          {/* `w-80` e não `w-72`: o subtítulo do passo «… categoria e
+              responsável» precisava de 166 px e tinha 156, e acabava cortado
+              a dez píxeis do fim. */}
+          <aside className="hidden lg:flex flex-col w-80 border-r bg-card flex-shrink-0">
             <div className="p-4 border-b">
-              <h3 className="text-xs font-semibold text-muted-foreground mb-3">Etapas</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3">{t('riscosDetalhe.form.etapas')}</h3>
               <TabsList className="flex flex-col h-auto w-full bg-transparent border-0 gap-1 p-0">
                 {tabsMeta.map((t) => {
                   const state = tabState(t.key);

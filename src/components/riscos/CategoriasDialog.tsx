@@ -65,9 +65,30 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
     }
   }, [open, profile]);
 
+  /*
+     Duas categorias com o mesmo nome ficam indistinguíveis.
+
+     Na lista de um risco aparecem duas linhas iguais e não há forma de
+     saber qual escolher — e os riscos ficam repartidos entre as duas, o
+     que estraga qualquer contagem por categoria. Compara-se sem acentos
+     nem maiúsculas: «Tecnológico» e «tecnologico» são a mesma coisa para
+     quem lê a lista.
+  */
+  const mesmoNome = (a: string, b: string) =>
+    a.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() ===
+    b.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.empresa_id) return;
+
+    const repetida = categorias.find(
+      (c) => c.id !== editingCategoria?.id && mesmoNome(c.nome, formData.nome),
+    );
+    if (repetida) {
+      toast.error(t('riscosDialogs.categorias.nomeRepetido', { nome: repetida.nome }));
+      return;
+    }
 
     try {
       setLoading(true);
@@ -171,9 +192,26 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
       { nome: t('riscosDialogs.categorias.catReputacional'), descricao: t('riscosDialogs.categorias.catReputacionalDesc'), cor: '#EC4899' }
     ];
 
+    /*
+       Só as que faltam.
+
+       Isto inseria as seis sem olhar ao que já lá estava: uma segunda
+       passagem duplicava-as todas. É a origem das duas categorias
+       «Tecnológico» que a base tem, criadas com um dia de diferença — uma
+       com onze riscos e a outra sem nenhum.
+    */
+    const emFalta = defaultCategories.filter(
+      (d) => !categorias.some((c) => mesmoNome(c.nome, d.nome)),
+    );
+
+    if (emFalta.length === 0) {
+      toast.info(t('riscosDialogs.categorias.padraoJaExistem'));
+      return;
+    }
+
     try {
       setLoading(true);
-      for (const categoria of defaultCategories) {
+      for (const categoria of emFalta) {
         await exigirEscrita(supabase
           .from('riscos_categorias')
           .insert({
