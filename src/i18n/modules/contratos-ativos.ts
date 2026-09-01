@@ -321,6 +321,9 @@ export const contratosAtivos = {
         toastNoEmpresa: 'Usuário deve estar vinculado a uma empresa',
       },
       trilhaAuditoriaAtivos: {
+        erroTitulo: 'Não foi possível ler a trilha',
+        erroDesc: 'A leitura falhou. Podem existir alterações registadas que ainda não se veem aqui.',
+        tentarNovamente: 'Tentar novamente',
         title: 'Trilha de Auditoria - Ativos',
         description: 'Visualize o histórico completo de alterações nos ativos',
         filterLabel: 'Filtrar por Ação',
@@ -1190,6 +1193,9 @@ export const contratosAtivos = {
         toastNoEmpresa: 'User must be linked to a company',
       },
       trilhaAuditoriaAtivos: {
+        erroTitulo: 'Could not read the trail',
+        erroDesc: 'The read failed. There may be recorded changes that are not shown here.',
+        tentarNovamente: 'Try again',
         title: 'Audit Trail - Assets',
         description: 'View the complete history of asset changes',
         filterLabel: 'Filter by Action',

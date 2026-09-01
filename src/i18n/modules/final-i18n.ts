@@ -522,6 +522,9 @@ export const finalI18n = {
         },
         trilha: {
           vazio: 'Nenhum histórico de alterações encontrado.',
+          erroTitulo: 'Não foi possível ler a trilha',
+          erroDesc: 'A leitura falhou. Podem existir alterações registadas que ainda não se veem aqui.',
+          tentarNovamente: 'Tentar novamente',
         },
         vincular: {
           buscar: 'Buscar controle por código ou nome…',
@@ -1121,6 +1124,9 @@ export const finalI18n = {
         },
         trilha: {
           vazio: 'No change history found.',
+          erroTitulo: 'Could not read the trail',
+          erroDesc: 'The read failed. There may be recorded changes that are not shown here.',
+          tentarNovamente: 'Try again',
         },
         vincular: {
           buscar: 'Search control by code or name…',

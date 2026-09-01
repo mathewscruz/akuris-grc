@@ -240,7 +240,7 @@ export function TrilhaAuditoria({
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh]">
           <div className="flex items-center justify-center h-64">
             <AkurisPulse size={48} />
           </div>
@@ -251,7 +251,7 @@ export function TrilhaAuditoria({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconHistory className="h-5 w-5" />

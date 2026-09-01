@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconAdd, IconEdit, IconDelete, IconView, IconCalendar, IconHistory, IconPerson } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconView, IconCalendar, IconHistory, IconPerson, IconWarning } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { dateFnsLocale, datePattern } from '@/lib/date-utils';
 interface TrilhaAuditoriaRiscosProps {
   open: boolean;
@@ -33,7 +34,7 @@ const AUDIT_FIELDS = ["nome", "descricao", "status", "categoria_id", "matriz_id"
 
 export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }: TrilhaAuditoriaRiscosProps) {
   const { t } = useLanguage();
-  const { data: auditLogs, isLoading } = useQuery({
+  const { data: auditLogs, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['risco-audit-logs', riscoId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -112,6 +113,27 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <AkurisPulse size={48} />
+            </div>
+          ) : isError ? (
+            /*
+                Falhar a ler não é o mesmo que não haver histórico.
+
+                Este ecrã afirmava «Nenhum histórico de alterações
+                encontrado» sempre que a consulta falhava — e falhava
+                sempre, porque `audit_logs.user_id` não tinha chave para
+                `profiles` e o `embed` devolvia 400. Medido no R-0011: 7
+                registos na base, zero no ecrã. Numa trilha de auditoria,
+                dizer que não houve alterações é a pior mentira possível.
+            */
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <IconWarning className="h-10 w-10 text-muted-foreground opacity-50" strokeWidth={1.5} />
+              <div>
+                <p className="text-sm font-medium">{t('fin.riscos.trilha.erroTitulo')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('fin.riscos.trilha.erroDesc')}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                {t('fin.riscos.trilha.tentarNovamente')}
+              </Button>
             </div>
           ) : !auditLogs || auditLogs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">

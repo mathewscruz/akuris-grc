@@ -23,7 +23,7 @@ export const IosInstallDialog: React.FC<{
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconShare className="h-5 w-5" strokeWidth={1.5} />

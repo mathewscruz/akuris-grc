@@ -38,7 +38,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
   const { t } = useLanguage();
   const [filtroAcao, setFiltroAcao] = useState<string>('');
 
-  const { data: auditLogs = [], isLoading } = useQuery({
+  const { data: auditLogs = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['audit-logs-ativos', ativoId, filtroAcao],
     queryFn: async () => {
       let query = supabase
@@ -143,7 +143,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('contratosAtivos.trilhaAuditoriaAtivos.title')}</DialogTitle>
           <DialogDescription>
@@ -180,6 +180,24 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <AkurisPulse size={32} />
+              </div>
+            ) : isError ? (
+            /*
+                Falhar a ler não é o mesmo que não haver histórico.
+
+                Este ecrã afirmava «Nenhum histórico de alterações
+                encontrado» sempre que a consulta falhava — e falhava
+                sempre, porque `audit_logs.user_id` não tinha chave para
+                `profiles` e o `embed` devolvia 400. Medido no R-0011: 7
+                registos na base, zero no ecrã. Numa trilha de auditoria,
+                dizer que não houve alterações é a pior mentira possível.
+            */
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <p className="text-sm font-medium">{t('contratosAtivos.trilhaAuditoriaAtivos.erroTitulo')}</p>
+                <p className="text-xs text-muted-foreground">{t('contratosAtivos.trilhaAuditoriaAtivos.erroDesc')}</p>
+                <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                  {t('contratosAtivos.trilhaAuditoriaAtivos.tentarNovamente')}
+                </Button>
               </div>
             ) : auditLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

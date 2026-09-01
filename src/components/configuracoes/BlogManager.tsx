@@ -157,7 +157,7 @@ export default function BlogManager() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing.id ? t('configPlanos.blog.dialogEditTitle') : t('configPlanos.blog.dialogNewTitle')}</DialogTitle>
           </DialogHeader>

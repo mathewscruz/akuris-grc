@@ -121,7 +121,7 @@ export default function Denuncia() {
 
       {/* Relatórios Dialog */}
       <Dialog open={relatoriosOpen} onOpenChange={setRelatoriosOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('cardsKpi.denuncias.relatorios')}</DialogTitle>
           </DialogHeader>

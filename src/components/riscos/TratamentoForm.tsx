@@ -445,7 +445,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
       {/* Modal de Sugestões da IA */}
       <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {t('sweepRiscos.riscos.tratForm2.sugestoesTitulo')}

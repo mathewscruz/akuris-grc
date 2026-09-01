@@ -281,7 +281,7 @@ export default function TemplatesContratos({ onTemplateSelect, open: openProp, o
             </Button>
           </DialogTrigger>
         )}
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -400,7 +400,7 @@ export default function TemplatesContratos({ onTemplateSelect, open: openProp, o
 
       {/* Dialog de Formulário */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingTemplate ? t('contratosAtivos.templatesContratos.dialogTitleEdit') : t('contratosAtivos.templatesContratos.dialogTitleNew')}

@@ -367,7 +367,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('contratosAtivos.relatoriosContratos.title')}</DialogTitle>
           <DialogDescription>
