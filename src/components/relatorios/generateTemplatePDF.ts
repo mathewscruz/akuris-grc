@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getAppLocale } from '@/lib/i18n-locale';
 import { contarRiscosPorSeveridade, severidadeRisco } from '@/lib/metrics';
+import { contarDocumentos } from '@/lib/metrics/documentos';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
@@ -14,7 +15,7 @@ const PDF_LABELS: Record<string, string> = {
   "Aprovados": "Approved",
   "Assessments": "Assessments",
   "Ativos": "Active",
-  "Ativos Criticos": "Critical Assets",
+  "Ativos de Criticidade Alta ou Critica": "High or Critical Assets",
   "Auditorias": "Audits",
   "Baixos": "Low",
   "Canal de Etica": "Ethics Channel",
@@ -494,7 +495,7 @@ async function fetchAtivosData(empresaId: string) {
     sections: [
       { title: tr('Inventario de Ativos'), metrics: [
         { label: tr('Total de Ativos'), value: a.length },
-        { label: tr('Ativos Criticos'), value: criticos },
+        { label: tr('Ativos de Criticidade Alta ou Critica'), value: criticos },
         { label: tr('Licencas Cadastradas'), value: l.length },
         { label: tr('Licencas Vencendo (90d)'), value: licencasVencendo },
         { label: tr('Chaves Criptograficas'), value: k.length },
@@ -571,11 +572,25 @@ async function fetchDueDiligenceData(empresaId: string) {
 async function fetchDocumentosData(empresaId: string) {
   const { data: docs } = await supabase.from('documentos').select('*').eq('empresa_id', empresaId);
   const d = docs || [];
-  const hoje = new Date();
-  const ativos = d.filter((x: any) => x.status === 'ativo').length;
-  const aprovados = d.filter((x: any) => x.status === 'aprovado').length;
-  const vencidos = d.filter((x: any) => x.data_vencimento && parseDataLocal(x.data_vencimento) < hoje).length;
-  const vencendo = d.filter((x: any) => x.data_vencimento && parseDataLocal(x.data_vencimento) >= hoje && parseDataLocal(x.data_vencimento) < new Date(hoje.getTime() + 30 * 86400000)).length;
+  /*
+     As mesmas contas do ecrã, e não as suas.
+
+     Estavam escritas à mão e divergiam em três pontos: «Ativos» só via
+     `status = 'ativo'` e perdia «publicado» e «vigente»; «Aprovados»
+     procurava um estado «aprovado» que o produto não grava, em vez de
+     olhar para `data_aprovacao`; e «Vencidos» contava qualquer documento
+     fora do prazo, RASCUNHOS incluídos.
+
+     Medido nesta base: o ecrã dizia «Vencidos: 0» e o PDF dizia 1 — o
+     documento em causa é um rascunho, e um rascunho nunca teve vigência
+     para expirar. Num relatório que vai para a direcção, dois números
+     diferentes para a mesma pergunta é pior do que qualquer um deles.
+  */
+  const contagem = contarDocumentos(d);
+  const ativos = contagem.ativos;
+  const aprovados = contagem.aprovados;
+  const vencidos = contagem.vencidos;
+  const vencendo = contagem.vencendo30Dias;
   const tipos: Record<string, number> = {};
   d.forEach((x: any) => { tipos[x.tipo] = (tipos[x.tipo] || 0) + 1; });
   return {

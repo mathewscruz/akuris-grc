@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   contarRiscosPorSeveridade, isRiscoCritico, isRiscoAlto, isRiscoMedio, isRiscoBaixo,
   contarIncidentes, isIncidenteEmInvestigacao, isIncidenteAberto, isIncidenteResolvido,
@@ -182,5 +183,40 @@ describe('paridade cartão × tabela — Gap Analysis', () => {
 
   it('não aplicável fica fora do denominador', () => {
     expect(c.total - c.naoAplicaveis).toBe(3);
+  });
+});
+
+/**
+ * O PDF conta com os mesmos ajudantes que o ecra.
+ *
+ * O gerador de relatorios contava documentos por conta propria e divergia em
+ * tres pontos: «Ativos» so via `status = 'ativo'` e perdia «publicado» e
+ * «vigente»; «Aprovados» procurava um estado que o produto nao grava, em vez
+ * de olhar para `data_aprovacao`; e «Vencidos» contava qualquer documento fora
+ * do prazo, RASCUNHOS incluidos. Medido: o ecra dizia «Vencidos: 0» e o PDF
+ * dizia 1 — o documento em causa e um rascunho, e um rascunho nunca teve
+ * vigencia para expirar.
+ *
+ * Num documento que vai para a direccao, dois numeros diferentes para a mesma
+ * pergunta e pior do que qualquer um deles.
+ */
+describe('o gerador de PDF nao conta por fora', () => {
+  const GERADOR = readFileSync('src/components/relatorios/generateTemplatePDF.ts', 'utf8');
+
+  it('os documentos sao contados por contarDocumentos', () => {
+    expect(
+      /contarDocumentos\(/.test(GERADOR),
+      'Se o PDF voltar a contar documentos a mao, volta a divergir do ecra.',
+    ).toBe(true);
+  });
+
+  it('nao ha filtro de estado escrito a mao para documentos', () => {
+    const bloco = GERADOR.slice(
+      GERADOR.indexOf('async function fetchDocumentosData'),
+      GERADOR.indexOf('async function fetchDenunciasData'),
+    );
+    expect(bloco.length, 'Nao encontrei o bloco dos documentos — o teste ficaria a olhar para o vazio.').toBeGreaterThan(200);
+    const maos = bloco.match(/x\.status === '[a-z_]+'/g) || [];
+    expect(maos, 'Estado de documento e vocabulario: «ativo», «publicado» e «vigente» sao o mesmo estado.').toEqual([]);
   });
 });
