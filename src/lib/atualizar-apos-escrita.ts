@@ -35,8 +35,42 @@
  * Está medido — foi assim que uma tentativa anterior falhou em silêncio.
  */
 
+import { AI_FEATURES } from './ai-usage-catalog';
+
 /** Quem quer saber. Fica pendurado até o `App` ligar o React Query. */
 let avisar: (() => void) | null = null;
+
+/*
+   As funções de IA, pelo nome com que são chamadas.
+
+   O produto já tinha o aviso de crédito todo montado — o banner, o saldo
+   em tempo real, os eventos — pendurado num `invokeEdgeFunction` que SEIS
+   ficheiros usam e QUARENTA E CINCO ignoram, chamando `functions.invoke`
+   direto. E mesmo entre os seis era preciso lembrar de passar
+   `isAiCall: true`. Por isso ninguém via aviso nenhum.
+
+   Aqui não há nada para lembrar: quem passa pelo `fetch` passa por isto.
+   A lista vem do mesmo catálogo que o painel Financeiro IA usa — uma
+   funcionalidade nova entra lá uma vez e fica avisada aqui também.
+*/
+const FUNCOES_DE_IA: ReadonlySet<string> = new Set(AI_FEATURES.map((f) => f.edgeFunction));
+
+function chamadaDeFuncao(url: string): string | null {
+  const m = /\/functions\/v1\/([a-z0-9-]+)/i.exec(url);
+  return m ? m[1] : null;
+}
+
+/** Diz ao ecrã que um crédito saiu, ou que a franquia acabou. */
+function anunciarIA(nome: string, ok: boolean, status: number) {
+  if (typeof window === 'undefined') return;
+  if (status === 402) {
+    window.dispatchEvent(new CustomEvent('ai-credits-exhausted', { detail: { functionName: nome } }));
+    return;
+  }
+  if (ok) {
+    window.dispatchEvent(new CustomEvent('ai-credit-consumed', { detail: { functionName: nome } }));
+  }
+}
 
 /** Uma escrita em lote são muitas escritas: chega um aviso no fim. */
 const COALESCER_MS = 250;
@@ -93,6 +127,12 @@ if (original) {
     const resposta = await original(entrada, inicio);
     // Só depois de a base confirmar. Uma escrita recusada não muda nada.
     if (resposta.ok && escreveNaBase(entrada, inicio)) agendar();
+
+    const funcao = chamadaDeFuncao(urlDe(entrada));
+    if (funcao && FUNCOES_DE_IA.has(funcao)) {
+      anunciarIA(funcao, resposta.ok, resposta.status);
+    }
+
     return resposta;
   };
 }

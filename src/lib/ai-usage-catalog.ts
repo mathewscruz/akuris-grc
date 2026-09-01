@@ -277,6 +277,25 @@ export function aiFeatureAction(funcionalidade: string): string | null {
   return idx >= 0 ? funcionalidade.slice(idx + 1) : null;
 }
 
+const FEATURE_BY_EDGE = new Map(AI_FEATURES.map((f) => [f.edgeFunction, f]));
+
+/**
+ * Resolve pelo NOME DA FUNÇÃO (o que a rede vê), e não pela chave gravada.
+ *
+ * O aviso de crédito nasce no `fetch`, onde só existe `/functions/v1/<nome>`;
+ * a `funcionalidade` (com o sufixo da acção) só aparece do lado do servidor.
+ */
+export function aiFeatureByEdgeFunction(edgeFunction: string): AiFeature | null {
+  return FEATURE_BY_EDGE.get(edgeFunction) ?? null;
+}
+
+/** Rótulo a partir do nome da função, para o aviso de «gastou 1 crédito». */
+export function aiEdgeFunctionLabel(edgeFunction: string, locale: string): string | null {
+  const f = aiFeatureByEdgeFunction(edgeFunction);
+  if (!f) return null;
+  return locale.startsWith('en') ? f.labelEn : f.labelPt;
+}
+
 export function aiFeatureLabel(funcionalidade: string, locale: string): string {
   const feature = resolveAiFeature(funcionalidade);
   const en = locale.startsWith('en');
