@@ -167,3 +167,48 @@ JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
   AND p.proname ILIKE 'audit%changes'
 ORDER BY 1;
+
+\echo ''
+\echo '=== 7. Perguntas de due diligence que o score NAO consegue distinguir ==='
+\echo '(esperado: vazio. Ver 20260901060000_o_score_do_fornecedor_era_uma_constante.)'
+\echo ''
+
+-- O score era 50 para toda a gente: as 139 perguntas sao `radio` com opcoes
+-- ["Sim","Nao"] e a funcao so reconhecia "excelente/bom/regular/ruim", caindo
+-- sempre no ELSE 5. Medido: tudo "Sim" -> 50,00; tudo "Nao" -> 50,00.
+--
+-- Esta consulta pontua a PRIMEIRA e a ULTIMA opcao de cada pergunta fechada.
+-- Se derem a mesma nota, aquela pergunta nao pesa no score -- responder bem ou
+-- mal da no mesmo.
+SELECT t.nome AS modelo,
+       q.secao,
+       left(q.titulo, 60) AS pergunta,
+       public.dd_nota_da_resposta(q.tipo, q.opcoes, q.configuracoes, q.opcoes->>0, NULL) AS nota_primeira
+FROM public.due_diligence_questions q
+JOIN public.due_diligence_templates t ON t.id = q.template_id
+WHERE q.tipo IN ('radio', 'select')
+  AND jsonb_array_length(q.opcoes) >= 2
+  AND public.dd_nota_da_resposta(q.tipo, q.opcoes, q.configuracoes, q.opcoes->>0, NULL)
+      IS NOT DISTINCT FROM
+      public.dd_nota_da_resposta(q.tipo, q.opcoes, q.configuracoes, q.opcoes->>(jsonb_array_length(q.opcoes)-1), NULL)
+ORDER BY 1, 2;
+
+\echo ''
+\echo '=== 8. Perguntas onde "Sim" e a MA resposta e ninguem o declarou ==='
+\echo '(esperado: vazio. `configuracoes.polaridade = negativa` inverte a nota.)'
+\echo ''
+
+-- Sete perguntas tem o sinal trocado: sancoes, autuacao laboral, condenacao por
+-- corrupcao, dependencia de subfornecedor unico, PEP no quadro societario,
+-- acidente grave, interrupcao nao planeada. Um padrao de texto achava DUAS; as
+-- outras cinco so aparecem a ler as perguntas uma a uma. Esta consulta e a
+-- rede: apanha formulacoes novas com o mesmo feitio que ninguem marcou.
+SELECT t.nome AS modelo, left(q.titulo, 70) AS pergunta
+FROM public.due_diligence_questions q
+JOIN public.due_diligence_templates t ON t.id = q.template_id
+WHERE (
+        q.titulo ~* '(houve|foram|foi) .*(condenad|autuad|acidente|interrup|viola|vazamento|sanc)'
+     OR q.titulo ~* 'consta de listas|politicamente exposta|depend[êe]ncia cr[íi]tica'
+   )
+   AND COALESCE(q.configuracoes->>'polaridade', 'positiva') <> 'negativa'
+ORDER BY 1, 2;

@@ -14,11 +14,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { AssessmentDialog } from './AssessmentDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { ScoreVisualization } from './ScoreVisualization';
+import { RelatorioDoFornecedor, type RespostaPontuada } from './RelatorioDoFornecedor';
 import { AssessmentResponsesViewer } from './AssessmentResponsesViewer';
 import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
-import { ParecerIA, type ParecerDaIA } from './ParecerIA';
+import type { ParecerDaIA } from './ParecerIA';
 import { gerarRelatorioFornecedor } from './relatorio-fornecedor';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { startOfDay } from 'date-fns';
@@ -1043,18 +1043,21 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
             size="xl"
             hideFooter
           >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  {scoreDialog.assessment && (
-                    <ScoreVisualizationWrapper assessment={scoreDialog.assessment} />
-                  )}
-                </div>
-                
-                <div className="lg:col-span-1 space-y-4">
+              <div className="space-y-4">
+                {/*
+                  O relatorio ocupa a largura toda.
+
+                  Estava em duas colunas desiguais: o numero e as barras em 2/3,
+                  e o parecer da IA espremido no 1/3 de lado. O parecer passou
+                  para dentro do relatorio, ao lado do que o numero diz, porque e
+                  a mesma leitura do mesmo material -- so que uma e aritmetica e
+                  a outra e interpretacao, e ficam rotuladas como tal.
+                */}
+                <div className="flex flex-wrap items-center gap-2">
                   {scoreDialog.assessment && (
                     <Button
                       variant="outline"
-                      className="w-full justify-start"
+                      size="sm"
                       disabled={aGerarRelatorio}
                       onClick={() => scoreDialog.assessment && gerarRelatorio(scoreDialog.assessment)}
                     >
@@ -1062,28 +1065,31 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
                       {aGerarRelatorio ? t('dueDiligence.relatorio.aGerar') : t('dueDiligence.relatorio.botao')}
                     </Button>
                   )}
-
                   {scoreDialog.assessment && (
-                    <ParecerIA
-                      parecer={(scoreDialog.assessment.ia_parecer as ParecerDaIA) ?? null}
-                      avaliadoEm={scoreDialog.assessment.ia_avaliado_em ?? null}
-                      aAvaliar={aReavaliar}
-                      onReavaliar={() => scoreDialog.assessment && reavaliarComIA(scoreDialog.assessment.id)}
-                    />
-                  )}
-
-                  {scoreDialog.assessment && scoreDialog.assessment.score_final && (
-                    <IntegrationSuggestions 
-                      assessment={{
-                        id: scoreDialog.assessment.id,
-                        fornecedor_nome: scoreDialog.assessment.fornecedor_nome,
-                        score_final: scoreDialog.assessment.score_final,
-                        fornecedor_id: (scoreDialog.assessment as any).fornecedor_id ?? null,
-                      }}
-                      onAprovado={fetchAssessments}
-                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={aReavaliar}
+                      onClick={() => scoreDialog.assessment && reavaliarComIA(scoreDialog.assessment.id)}
+                    >
+                      {aReavaliar ? t('dueDiligence.parecerIA.aAvaliar') : t('dueDiligence.parecerIA.reavaliar')}
+                    </Button>
                   )}
                 </div>
+
+                {scoreDialog.assessment && (
+                  <ScoreVisualizationWrapper assessment={scoreDialog.assessment} />
+                )}
+
+                {scoreDialog.assessment && scoreDialog.assessment.score_final != null && (
+                  <IntegrationSuggestions
+                    assessment={{
+                      id: scoreDialog.assessment.id,
+                      fornecedor_nome: scoreDialog.assessment.fornecedor_nome,
+                      score_final: scoreDialog.assessment.score_final,
+                    }}
+                  />
+                )}
               </div>
           </DialogShell>
 
@@ -1102,8 +1108,31 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
 // Wrapper component para buscar dados do score
 function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
   const [scoreData, setScoreData] = useState<any>(null);
+  const [respostas, setRespostas] = useState<RespostaPontuada[]>([]);
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
+
+  /* As respostas com a nota que cada uma levou. E o passo que faltava entre o
+     numero e o parecer: quais respostas custaram pontos, para se poder cobrar
+     o fornecedor por elas. */
+  useEffect(() => {
+    supabase
+      .from('due_diligence_responses')
+      .select('question_id, resposta, pontuacao, due_diligence_questions!inner(titulo, peso, secao)')
+      .eq('assessment_id', assessment.id)
+      .then(({ data }) => {
+        setRespostas(
+          (data ?? []).map((r: any) => ({
+            question_id: r.question_id,
+            titulo: r.due_diligence_questions?.titulo ?? '',
+            secao: r.due_diligence_questions?.secao ?? '',
+            peso: Number(r.due_diligence_questions?.peso ?? 1),
+            resposta: r.resposta,
+            pontuacao: r.pontuacao === null || r.pontuacao === undefined ? null : Number(r.pontuacao),
+          })),
+        );
+      });
+  }, [assessment.id]);
 
   useEffect(() => {
     const fetchScoreData = async () => {
@@ -1146,12 +1175,16 @@ function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
   }
 
   return (
-    <ScoreVisualization 
-      scoreData={scoreData}
-      assessmentData={{
-        fornecedor_nome: assessment.fornecedor_nome,
-        template: assessment.template
-      }}
+    <RelatorioDoFornecedor
+      fornecedor={assessment.fornecedor_nome}
+      template={assessment.template?.nome}
+      concluidoEm={assessment.data_conclusao ?? null}
+      scoreTotal={Number(scoreData.score_total ?? 0)}
+      classificacao={scoreData.classificacao ?? 'ruim'}
+      breakdown={scoreData.score_breakdown ?? null}
+      cobertura={scoreData.observacoes_ia ?? null}
+      respostas={respostas}
+      parecer={(assessment.ia_parecer as ParecerDaIA) ?? null}
     />
   );
 }
