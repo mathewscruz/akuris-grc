@@ -123,10 +123,10 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
               <IconShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Aceitar
             </Button>
             <Button variant="outline" size="sm" onClick={() => onEdit(risco)}>
-              <IconEdit className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Editar
+              <IconEdit className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />{t('riscosDetalhe.perfil.editar')}
             </Button>
             <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
-              <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Novo tratamento
+              <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />{t('riscosDetalhe.perfil.novoTratamento')}
             </Button>
             <Button variant="ghost" size="icon-sm" className="text-muted-foreground" onClick={() => onOpenChange(false)} aria-label={t('fin.comum.fechar')}>
               <IconClose className="h-4 w-4" strokeWidth={1.5} />
@@ -234,19 +234,19 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
                   : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : t('fin.riscos.erroTratamentos')}</div>
                   : trat.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">{t('fin.riscos.semTratamentos')}</div>
-                  : trat.map((t) => {
-                    const pct = treatmentPct(t.status);
+                  : trat.map((tr) => {
+                    const pct = treatmentPct(tr.status);
                     return (
-                      <div key={t.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
+                      <div key={tr.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="text-sm font-medium leading-snug">{t.descricao}</div>
-                          <StatusBadge {...resolveRiscoStatusTone(t.status)}>{formatStatus(t.status)}</StatusBadge>
+                          <div className="text-sm font-medium leading-snug">{tr.descricao}</div>
+                          <StatusBadge {...resolveRiscoStatusTone(tr.status)}>{formatStatus(tr.status)}</StatusBadge>
                         </div>
                         <div className="h-1 bg-card rounded-full overflow-hidden border border-border"><div className={pct === 100 ? 'h-full bg-success' : pct > 0 ? 'h-full bg-primary' : 'h-full bg-muted-foreground/30'} style={{ width: `${pct}%` }} /></div>
                         <div className="text-micro text-muted-foreground flex flex-wrap gap-x-3">
-                          <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
-                          {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
-                          {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
+                          <span>{t('riscosDetalhe.shared.tipo')}: {formatStatus(tr.tipo_tratamento)}</span>
+                          {tr.prazo && <span>{t('riscosDetalhe.shared.prazo')}: {formatDateOnly(tr.prazo)}</span>}
+                          {tr.eficacia && <span>{t('riscosDetalhe.shared.eficacia')}: {tr.eficacia}</span>}
                         </div>
                       </div>
                     );

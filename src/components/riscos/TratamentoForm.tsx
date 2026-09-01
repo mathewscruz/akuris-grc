@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +20,6 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { UserSelect } from './UserSelect';
-import { Checkbox } from '@/components/ui/checkbox';
 import { severidadeRisco } from '@/lib/metrics/riscos';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -68,13 +68,13 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
   const { t } = useLanguage();
   const { simbolo: simboloMoeda } = useEmpresaMoeda();
   const { profile, company } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [iaSuggestionLoading, setIaSuggestionLoading] = useState(false);
   const [suggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
   const [iaSuggestions, setIaSuggestions] = useState<any>(null);
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
   // Gerar plano de ação vinculado ao criar tratamento (só faz sentido em novos)
-  const [gerarPlano, setGerarPlano] = useState(true);
 
   const tratamentoSchema = makeTratamentoSchema(t);
   const form = useForm<TratamentoFormData>({
@@ -139,8 +139,17 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         if (error) throw error;
         toast.success(t('cardsKpi.sweep.riscos.tratamentoCriado'));
 
-        // Gera plano de ação vinculado (rastreabilidade risco → tratamento → ação)
-        if (gerarPlano && profile.empresa_id) {
+        /*
+           O plano nasce com o tratamento, sem opção de o dispensar.
+
+           Era uma caixa ligada por omissão, e o painel do risco tinha ao
+           lado um botão próprio para criar planos. Quem desligasse a caixa
+           ficava com um tratamento sem forma de o acompanhar; quem a
+           deixasse ligada e usasse também o botão do lado ficava com dois
+           planos para o mesmo trabalho. Agora há um caminho só: tratar o
+           risco cria a ação que o acompanha.
+        */
+        if (profile.empresa_id) {
           try {
             const sev = severidadeRisco(riscoData ?? {});
             const prioridade = sev === 'critico' ? 'alta' : sev === 'alto' ? 'alta' : sev === 'medio' ? 'media' : 'baixa';
@@ -159,6 +168,14 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               created_by: profile.user_id,
             });
             if (planoError) throw planoError;
+            /*
+               O painel dos planos fica logo por baixo deste formulário.
+               Sem esta invalidação continuava a dizer que não havia
+               nenhum plano até alguém recarregar a página — medido no
+               R-0005: o plano estava na base e o painel dizia que não.
+            */
+            queryClient.invalidateQueries({ queryKey: ['planos-acao-vinculados'] });
+            queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
             toast.success(t('fin.riscos.tratForm.planoCriado'));
           } catch (planoErr: any) {
             // Não bloqueia o tratamento se o plano falhar
@@ -409,24 +426,19 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </Select>
       </div>
 
-      {/* Gerar plano de ação vinculado — só ao criar um tratamento novo */}
+      {/* O que vai acontecer ao gravar — só ao criar um tratamento novo. */}
       {!tratamento && (
-        <label className="flex items-start gap-3 rounded-lg border border-border/60 bg-card p-4 cursor-pointer">
-          <Checkbox
-            checked={gerarPlano}
-            onCheckedChange={(c) => setGerarPlano(!!c)}
-            className="mt-0.5"
-          />
+        <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-card p-4">
+          <IconChecklist className="h-4 w-4 text-primary mt-0.5 shrink-0" strokeWidth={1.5} />
           <div className="space-y-0.5">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <IconChecklist className="h-4 w-4 text-primary" strokeWidth={1.5} />
-              {t('sweepRiscos.riscos.tratForm2.gerarPlanoLabel')}
+            <div className="text-sm font-medium">
+              {t('sweepRiscos.riscos.tratForm2.planoNasceLabel')}
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('sweepRiscos.riscos.tratForm2.gerarPlanoDesc')}
+              {t('sweepRiscos.riscos.tratForm2.planoNasceDesc')}
             </p>
           </div>
-        </label>
+        </div>
       )}
 
       <p className="text-xs text-muted-foreground">{t('fin.comum.camposObrigatorios')}</p>

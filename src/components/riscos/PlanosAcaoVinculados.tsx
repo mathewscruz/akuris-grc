@@ -28,9 +28,24 @@ interface Props {
   registroTitulo: string;
   /** Título legado para casar ações antigas sem chave estrangeira. */
   tituloLegado?: string;
+  /*
+     Quem cria o plano.
+
+     No risco havia duas portas para o mesmo destino: o botão «Novo
+     tratamento», que já criava o plano por si, e o «Criar plano de
+     ação» aqui ao lado. Ficaram os dois na mesma aba, e quem chegava
+     tinha de adivinhar por qual começar. No risco o plano passa a
+     nascer do tratamento, e este painel mostra o que de lá veio.
+
+     Nos controlos não há tratamento nenhum: lá esta continua a ser a
+     única porta, e por isso o valor por omissão é poder criar.
+  */
+  permitirCriar?: boolean;
+  /** Explica de onde vêm os planos quando não se criam aqui. */
+  vazioTexto?: string;
 }
 
-export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, tituloLegado }: Props) {
+export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, tituloLegado, permitirCriar = true, vazioTexto }: Props) {
   const { t } = useLanguage();
   const { profile, user } = useAuth();
   const empresaId = profile?.empresa_id;
@@ -87,15 +102,17 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
           {t('planosVinculados.title')}
           {planos.length > 0 && <span className="ml-1.5 text-foreground">({planos.length})</span>}
         </h4>
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setDialogOpen(true)}>
-          <IconAdd className="h-3 w-3" /> {t('planosVinculados.create')}
-        </Button>
+        {permitirCriar && (
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setDialogOpen(true)}>
+            <IconAdd className="h-3 w-3" /> {t('planosVinculados.create')}
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-4"><AkurisPulse size={20} /></div>
       ) : planos.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t('planosVinculados.empty')}</p>
+        <p className="text-xs text-muted-foreground">{vazioTexto ?? t('planosVinculados.empty')}</p>
       ) : (
         <ul className="space-y-1.5">
           {planos.map((p: any) => (

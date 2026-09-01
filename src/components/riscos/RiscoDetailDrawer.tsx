@@ -467,25 +467,26 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                       {tratStats.pendentes > 0 && <div className="bg-muted-foreground/40" style={{ flex: tratStats.pendentes }} />}
                     </div>
                   </div>
-                  {detail!.tratamentos.map((t) => {
-                    const pct = treatmentPct(t.status);
+                  {/* `trat` e não `t`: o nome curto tapava a função de tradução. */}
+                  {detail!.tratamentos.map((trat) => {
+                    const pct = treatmentPct(trat.status);
                     const barCls =
                       pct === 100 ? 'bg-success' : pct > 0 ? 'bg-primary' : 'bg-muted-foreground/30';
                     return (
-                      <div key={t.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
+                      <div key={trat.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="text-sm font-medium leading-snug">{t.descricao}</div>
-                          <StatusBadge {...resolveRiscoStatusTone(t.status)}>
-                            {formatStatus(t.status)}
+                          <div className="text-sm font-medium leading-snug">{trat.descricao}</div>
+                          <StatusBadge {...resolveRiscoStatusTone(trat.status)}>
+                            {formatStatus(trat.status)}
                           </StatusBadge>
                         </div>
                         <div className="h-1 bg-card rounded-full overflow-hidden border border-border">
                           <div className={`h-full ${barCls}`} style={{ width: `${pct}%` }} />
                         </div>
                         <div className="text-micro text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
-                          <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
-                          {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
-                          {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
+                          <span>{t('riscosDetalhe.shared.tipo')}: {formatStatus(trat.tipo_tratamento)}</span>
+                          {trat.prazo && <span>{t('riscosDetalhe.shared.prazo')}: {formatDateOnly(trat.prazo)}</span>}
+                          {trat.eficacia && <span>{t('riscosDetalhe.shared.eficacia')}: {trat.eficacia}</span>}
                         </div>
                       </div>
                     );
@@ -493,12 +494,21 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </>
               )}
 
-              {/* Planos de ação ligados por chave estrangeira a este risco */}
+              {/*
+                  Aqui só se mostram os planos; quem os cria é o tratamento.
+
+                  Esta aba tinha dois botões de criar a poucos centímetros um
+                  do outro — «Criar plano de ação» aqui e «Novo tratamento»
+                  no rodapé — e o segundo já criava o plano por si. Dava dois
+                  caminhos para o mesmo fim e nenhuma pista de qual seguir.
+              */}
               <PlanosAcaoVinculados
                 modulo="riscos"
                 registroId={risco.id}
                 registroTitulo={risco.nome}
                 tituloLegado={risco.nome}
+                permitirCriar={false}
+                vazioTexto={t('riscosDetalhe.drawer.planosVemDoTratamento')}
               />
             </TabsContent>
 
@@ -627,7 +637,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </Button>
             <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
               <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-              Novo tratamento
+              {t('riscosDetalhe.drawer.novoTratamento')}
             </Button>
           </div>
         </div>
