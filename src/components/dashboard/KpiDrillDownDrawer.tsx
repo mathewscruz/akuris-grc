@@ -25,6 +25,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { MAX_IDS_NO_ENDERECO } from '@/hooks/useRecorteDaUrl';
 
 /**
  * Alto ou crítico — o par que merece destaque visual.
@@ -140,7 +141,38 @@ interface DrillConfig {
    */
   paramFoco?: string;
   fetcher: (empresaId: string) => Promise<DrillItem[]>;
+  /**
+   * Este KPI é o MÓDULO INTEIRO, não um recorte dele.
+   *
+   * A gaveta mostra cinco linhas — é o que lá cabe — e o «Ver todos» era a
+   * única saída para as restantes. Ia para a rota nua do módulo: medido, «10
+   * Alta ou crítica» levava a `/ativos` com as doze linhas e o filtro de
+   * criticidade em «Todas». A lista aparecia, parecia a resposta, e não era.
+   *
+   * Agora o botão leva o recorte que a gaveta já leu. Quem é o módulo inteiro
+   * marca-se aqui e continua a ir à rota nua, que nesse caso é a certa — e
+   * evita pôr no endereço uma lista de ids que é a tabela toda.
+   */
+  moduloInteiro?: boolean;
 }
+
+/**
+ * Quantas linhas do recorte se leem.
+ *
+ * A gaveta mostra CINCO — é o que lá cabe — mas lê o recorte todo, porque o
+ * «Ver todos» precisa de saber quais são as outras. Ler duas vezes, com o
+ * predicado escrito outra vez para o botão, era o caminho para a gaveta dizer
+ * uma coisa e o botão levar a outra.
+ *
+ * O tecto é o do endereço: acima dele o «Ver todos» desiste do recorte e vai à
+ * rota nua, como sempre foi.
+ */
+const LIMITE_DO_RECORTE = MAX_IDS_NO_ENDERECO + 1;
+
+/**
+ * Quantas linhas se DESENHAM na gaveta. A gaveta é uma amostra, não a lista.
+ */
+const LINHAS_NA_GAVETA = 5;
 
 const fmtDate = (iso?: string | null) => {
   if (!iso) return undefined;
@@ -503,7 +535,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           .eq('empresa_id', empresaId);
         if (recorte.onde) q = recorte.onde(q);
         if (recorte.ordem) q = q.order(recorte.ordem[0], { ascending: recorte.ordem[1], nullsFirst: false });
-        const { data, error } = await q.limit(5);
+        const { data, error } = await q.limit(LIMITE_DO_RECORTE);
         if (error) throw error;
         return (data || []).map((r: any) => ({
           id: r.id,
@@ -519,6 +551,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
   switch (key) {
     case 'riscos':
       return {
+        moduloInteiro: true,
         title: d('riscos.title'),
         description: d('riscos.description'),
         icon: RiscosIcon,
@@ -530,7 +563,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .eq('aceito', false)
             .order('updated_at', { ascending: false })
-            .limit(20);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const rank = (n?: string) => {
             const v = (n || '').toLowerCase();
@@ -543,7 +576,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           return (data || [])
             .map((r: any) => ({ ...r, _nivel: r.nivel_risco_residual || r.nivel_risco_inicial }))
             .sort((a: any, b: any) => rank(b._nivel) - rank(a._nivel))
-            .slice(0, 5)
+            
             .map((r: any) => {
               const nivel = (r._nivel || '').toLowerCase();
               return {
@@ -559,6 +592,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'incidentes':
       return {
+        moduloInteiro: true,
         title: d('incidentes.title'),
         description: d('incidentes.description'),
         icon: IncidentesIcon,
@@ -573,7 +607,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             // vazia com dois incidentes em curso no banco.
             .in('status', ['aberto', 'em_investigacao', 'contido'])
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((i: any) => {
             const c = (i.criticidade || '').toLowerCase();
@@ -590,6 +624,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'planos':
       return {
+        moduloInteiro: true,
         title: d('planos.title'),
         description: d('planos.description'),
         icon: IconChecklist,
@@ -601,7 +636,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .neq('status', 'concluido')
             .order('prazo', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((p: any) => {
@@ -619,6 +654,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'ativos':
       return {
+        moduloInteiro: true,
         title: d('ativos.title'),
         description: d('ativos.description'),
         icon: AtivosIcon,
@@ -629,7 +665,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, tipo, criticidade, updated_at')
             .eq('empresa_id', empresaId)
             .order('updated_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((a: any) => ({
             id: a.id,
@@ -651,6 +687,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
     case 'contratos_vencendo': {
       const escopo = key;
       return {
+        // Os tres partilham o config; so o primeiro e o modulo inteiro.
+        moduloInteiro: escopo === 'contratos',
         title: d(`${escopo}.title`),
         description: d(`${escopo}.description`),
         icon: IconScale,
@@ -677,7 +715,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             }
             return true;
           });
-          return filtrado.slice(0, 5).map((c: any) => {
+          return filtrado.map((c: any) => {
             const expired = c.data_fim && c.data_fim < today;
             return {
               id: c.id,
@@ -693,6 +731,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
     }
     case 'documentos':
       return {
+        moduloInteiro: true,
         title: d('documentos.title'),
         description: d('documentos.description'),
         icon: DocumentosIcon,
@@ -711,7 +750,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             // O estado gravado é `pendente`; `pendente_aprovacao` não existe
             // numa única linha — três linhas abaixo o mesmo bloco já o tratava.
             .order('updated_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((d: any) => ({
             id: d.id,
@@ -725,6 +764,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'due_diligence':
       return {
+        moduloInteiro: true,
         title: d('due_diligence.title'),
         description: d('due_diligence.description'),
         icon: DueDiligenceIcon,
@@ -736,7 +776,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .neq('status', 'concluido')
             .order('updated_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((d: any) => {
             const score = d.score_final;
@@ -753,6 +793,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'denuncias':
       return {
+        moduloInteiro: true,
         title: d('denuncias.title'),
         description: d('denuncias.description'),
         icon: DenunciasIcon,
@@ -763,7 +804,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, protocolo, titulo, gravidade, status, created_at')
             .eq('empresa_id', empresaId)
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((d: any) => {
             const g = (d.gravidade || '').toLowerCase();
@@ -780,6 +821,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'controles':
       return {
+        moduloInteiro: true,
         title: d('controles.title'),
         description: d('controles.description'),
         icon: ControlesIcon,
@@ -790,7 +832,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, codigo, status, criticidade, proxima_avaliacao')
             .eq('empresa_id', empresaId)
             .order('criticidade', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((c: any) => {
             const cr = (c.criticidade || '').toLowerCase();
@@ -809,6 +851,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
     // ── Novos módulos ──────────────────────────────────────────────────────
     case 'ativos_chaves':
       return {
+        moduloInteiro: true,
         title: d('ativos_chaves.title'),
         description: d('ativos_chaves.description'),
         icon: IconKey,
@@ -819,7 +862,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, tipo_chave, criticidade, data_proxima_rotacao')
             .eq('empresa_id', empresaId)
             .order('data_proxima_rotacao', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((c: any) => {
@@ -837,6 +880,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'ativos_licencas':
       return {
+        moduloInteiro: true,
         title: d('ativos_licencas.title'),
         description: d('ativos_licencas.description'),
         icon: IconKey,
@@ -847,7 +891,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, tipo_licenca, criticidade, data_vencimento')
             .eq('empresa_id', empresaId)
             .order('data_vencimento', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((l: any) => {
@@ -865,6 +909,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'auditorias':
       return {
+        moduloInteiro: true,
         title: d('auditorias.title'),
         description: d('auditorias.description'),
         icon: IconChecklist,
@@ -878,7 +923,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, tipo, status, data_inicio')
             .eq('empresa_id', empresaId)
             .order('data_inicio', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((a: any) => ({
             id: a.id,
@@ -892,6 +937,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'continuidade':
       return {
+        moduloInteiro: true,
         title: d('continuidade.title'),
         description: d('continuidade.description'),
         icon: IconShieldCheck,
@@ -902,7 +948,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, tipo, status, proxima_revisao')
             .eq('empresa_id', empresaId)
             .order('proxima_revisao', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((p: any) => {
@@ -920,6 +966,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'gap_analysis':
       return {
+        moduloInteiro: true,
         title: d('gap_analysis.title'),
         description: d('gap_analysis.description'),
         icon: IconChart,
@@ -930,7 +977,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('gap_analysis_evaluations')
             .select('framework_id, gap_analysis_frameworks!inner(id, nome, versao, tipo_framework)')
             .eq('empresa_id', empresaId)
-            .limit(50);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const counts = new Map<string, { fw: any; n: number }>();
           (data || []).forEach((row: any) => {
@@ -942,7 +989,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           });
           return Array.from(counts.values())
             .sort((a, b) => b.n - a.n)
-            .slice(0, 5)
+            
             .map(({ fw, n }) => ({
               id: fw.id,
               title: `${fw.nome} ${fw.versao || ''}`.trim(),
@@ -954,6 +1001,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'revisao_acessos':
       return {
+        moduloInteiro: true,
         title: d('revisao_acessos.title'),
         description: d('revisao_acessos.description'),
         icon: IconUserCheck,
@@ -965,7 +1013,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .eq('status', 'em_andamento')
             .order('data_limite', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((r: any) => {
@@ -983,6 +1031,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'privacidade':
       return {
+        moduloInteiro: true,
         title: d('privacidade.title'),
         description: d('privacidade.description'),
         icon: IconView,
@@ -997,7 +1046,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             // esta tabela não tem esse estado.
             .eq('status', 'pendente')
             .order('prazo_resposta', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((s: any) => {
@@ -1036,7 +1085,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .not('status', 'in', '(atendida,rejeitada)')
             .lt('prazo_resposta', todayIso())
             .order('prazo_resposta', { ascending: true })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((s: any) => ({
             id: s.id,
@@ -1063,7 +1112,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .gte('data_vencimento', todayIso())
             .lte('data_vencimento', emJanela(30))
             .order('data_vencimento', { ascending: true })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((x: any) => ({
             id: x.id,
@@ -1087,7 +1136,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .eq('status', 'ativo')
             .order('updated_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((a: any) => ({
             id: a.id,
@@ -1114,7 +1163,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             // `em_investigacao`: o cartão conta as duas e a gaveta só via uma.
             .in('status', ['em_investigacao', 'investigacao', 'em_analise', 'analise'])
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((i: any) => ({
             id: i.id,
@@ -1138,7 +1187,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome, categoria_dados, sensibilidade')
             .eq('empresa_id', empresaId)
             .order('nome')
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((x: any) => ({
             id: x.id,
@@ -1165,7 +1214,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             // uma e perdia esses registos.
             .or('tipo_dados.eq.sensivel,sensibilidade.in.(sensivel,muito_sensivel)')
             .order('sensibilidade', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((x: any) => {
             // O nível efectivo, como em Privacidade.tsx: `tipo_dados` sensível
@@ -1203,7 +1252,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('dados_mapeamento')
             .select('id, dados_pessoais_id')
             .in('dados_pessoais_id', ids)
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((m: any) => ({
             id: m.id,
@@ -1227,7 +1276,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('status', 'ativo')
             .lt('data_vencimento', todayIso())
             .order('data_vencimento', { ascending: true })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((x: any) => ({
             id: x.id,
@@ -1253,7 +1302,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .eq('status', 'pendente')
             .order('updated_at', { ascending: true })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((x: any) => ({
             id: x.id,
@@ -1280,7 +1329,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           const corte = corteAltoValor(data || []);
           return (data || [])
             .filter((a: any) => isAtivoAltoValor(a, corte))
-            .slice(0, 5)
+            
             .map((a: any) => ({
               id: a.id,
               title: a.nome,
@@ -1304,7 +1353,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           if (error) throw error;
           return (data || [])
             .filter((a: any) => ['critico', 'alto'].includes(criticidadeAtivo(a)))
-            .slice(0, 5)
+            
             .map((a: any) => ({
               id: a.id,
               title: a.nome,
@@ -1328,7 +1377,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .in('criticidade', ['critica', 'alta'])
             .in('status', ['aberto', 'em_investigacao', 'contido'])
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((i: any) => ({
             id: i.id,
@@ -1353,7 +1402,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             .eq('aceito', true)
             .order('data_proxima_revisao', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((r: any) => {
@@ -1389,7 +1438,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, controle_id, resultado, data_teste')
             .in('controle_id', ids)
             .order('data_teste', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((tst: any) => {
             const c: any = porId.get(tst.controle_id) || {};
@@ -1427,7 +1476,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .in('auditoria_id', ids)
             .neq('status', 'concluido')
             .order('prazo', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((i: any) => ({
             id: i.id,
@@ -1441,6 +1490,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'sistemas':
       return {
+        moduloInteiro: true,
         title: d('sistemas.title'),
         description: d('sistemas.description'),
         icon: IconServer,
@@ -1451,7 +1501,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, nome_sistema, tipo_sistema, criticidade, ativo, updated_at') as any)
             .eq('empresa_id', empresaId)
             .order('criticidade', { ascending: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((s: any) => ({
             id: s.id,
@@ -1465,6 +1515,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       };
     case 'contas_privilegiadas':
       return {
+        moduloInteiro: true,
         title: d('contas_privilegiadas.title'),
         description: d('contas_privilegiadas.description'),
         icon: IconLock,
@@ -1480,7 +1531,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             // do que o cartão ao lado.
             .or(`data_expiracao.is.null,data_expiracao.gte.${todayIso()}`)
             .order('data_expiracao', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           const today = todayIso();
           return (data || []).map((c: any) => {
@@ -1520,6 +1571,9 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
   const empresaId = profile?.empresa_id;
 
   const config = React.useMemo(() => (kpiKey ? buildConfig(kpiKey, t) : null), [kpiKey, t]);
+  /* O «Ver todos» vai buscar o recorte inteiro antes de navegar. É uma leitura
+     curta, mas é uma ida à rede: sem isto o botão fica calado durante ela. */
+  const [aLevarRecorte, setALevarRecorte] = React.useState(false);
 
   const { data: items, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['drill-down', kpiKey, empresaId],
@@ -1580,7 +1634,9 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
           )}
           {!isLoading &&
             !isError &&
-            items?.map((item) => (
+            /* A gaveta é uma amostra; a lista inteira vive na tabela do módulo,
+               e é para lá que o «Ver todos» leva — agora com o recorte. */
+            items?.slice(0, LINHAS_NA_GAVETA).map((item) => (
               <button
                 key={item.id}
                 onClick={() => {
@@ -1616,8 +1672,28 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
             variant="default"
             className="w-full"
             onClick={() => {
+              /*
+                 Levar o recorte, não só a rota.
+
+                 Este botão era a única saída para além das cinco linhas da
+                 gaveta, e ia para o módulo sem filtro nenhum: pedia-se «os dez
+                 activos críticos» e chegavam doze activos, todos. Agora vai com
+                 a lista que a gaveta JÁ leu — sem segunda ida à rede, e sem o
+                 predicado escrito outra vez, que era o caminho para a gaveta
+                 dizer uma coisa e o botão levar a outra.
+
+                 Módulo inteiro, recorte vazio ou grande de mais para o endereço:
+                 rota nua, como sempre foi. Ficar sem navegação por causa de um
+                 recorte é pior do que navegar largo.
+              */
               onOpenChange(false);
-              navigate(config.route);
+              const ids = (items ?? []).map((i) => i.id);
+              if (config.moduloInteiro || ids.length === 0 || ids.length > MAX_IDS_NO_ENDERECO) {
+                navigate(config.route);
+                return;
+              }
+              const sep = config.route.includes('?') ? '&' : '?';
+              navigate(`${config.route}${sep}ids=${ids.join(',')}&de=${kpiKey}`);
             }}
           >
             {t('dashWidgets.drill.viewAll')}

@@ -13,6 +13,7 @@ import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
 import { rowOpenProps } from "@/lib/row-interaction"
 import { IconSearch, IconFilter, IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
 import { compararEscala } from '@/lib/ordem-de-escala'
+import { useRecorteDaUrl } from '@/hooks/useRecorteDaUrl'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
 const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
@@ -160,13 +161,45 @@ export function DataTable<T extends Record<string, any>>({
   const filtrosActivos = (filters ?? []).filter(
     (f) => f.value !== (f.options[0]?.value ?? ''),
   )
+  /*
+     O recorte que veio do painel.
+
+     Os cartões de KPI abrem uma gaveta com cinco linhas do recorte pedido e um
+     botão «Ver todos» — que ia para a rota nua do módulo. Medido: «10 Alta ou
+     crítica» levava a `/ativos` com as 12 linhas e o filtro em «Todas». Agora a
+     gaveta manda a lista, e a tabela mostra-a com um chip que diz o que é e que
+     se tira. Aqui, e não em doze páginas.
+  */
+  const recorte = useRecorteDaUrl()
+
+  /*
+     Se o recorte não conhece nenhuma destas linhas, não é desta tabela.
+
+     Alguns KPIs contam uma coisa e navegam para a lista de outra — «tarefas de
+     continuidade» conta tarefas e vai para a página dos PLANOS. Aplicar ali o
+     recorte dava uma tabela vazia com um chip a explicá-la: pior do que a lista
+     larga que havia antes, porque parece uma resposta. Zero correspondências =
+     o recorte não é para aqui, e a tabela mostra o que mostrava.
+  */
+  const dadosRecortados = React.useMemo(() => {
+    if (!recorte.ids) return data
+    const recortados = data.filter((item) => recorte.ids!.has(String((item as any)?.id)))
+    return recortados.length > 0 ? recortados : data
+  }, [data, recorte.ids])
+
+  const recorteAplicado = Boolean(recorte.ids) && dadosRecortados.length < data.length
+
   const aFiltrar =
-    filtering?.active || Boolean(searchValue?.trim()) || filtrosActivos.length > 0
+    filtering?.active ||
+    Boolean(searchValue?.trim()) ||
+    filtrosActivos.length > 0 ||
+    recorteAplicado
 
   const limparTudo = () => {
     filtering?.onClear()
     onSearchChange?.('')
     filtrosActivos.forEach((f) => f.onChange(f.options[0]?.value ?? ''))
+    recorte.limpar()
   }
 
   const ecraVazio = aFiltrar
@@ -203,20 +236,21 @@ export function DataTable<T extends Record<string, any>>({
   const colunaPrincipal =
     colunasSemAcoes.find((c) => TITLE_KEYS.has(String(c.key).toLowerCase())) ?? colunasSemAcoes[0]
 
+
   const sortedData = React.useMemo(() => {
-    if (externalSort || !internalSort) return data
+    if (externalSort || !internalSort) return dadosRecortados
     const { field, direction } = internalSort
     const factor = direction === 'asc' ? 1 : -1
     const coluna = columns.find((c) => String(c.key) === field)
     const valor = (item: T) =>
       coluna?.sortAccessor ? coluna.sortAccessor(item) : (item as any)?.[field]
-    return [...data].sort((a, b) => factor * compareValues(valor(a), valor(b)))
-  }, [data, internalSort, externalSort, columns])
+    return [...dadosRecortados].sort((a, b) => factor * compareValues(valor(a), valor(b)))
+  }, [dadosRecortados, internalSort, externalSort, columns])
 
   // Reset page when data changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [data.length, pageSize])
+  }, [data.length, pageSize, recorte.ids])
 
   // Calculate pagination
   const totalPages = Math.ceil(sortedData.length / pageSize)
@@ -314,6 +348,28 @@ export function DataTable<T extends Record<string, any>>({
           )}
         </ModuleToolbar>
       </div>
+
+      {/* O recorte que veio do painel, dito por extenso e com saída.
+          Sem isto a lista encolhia sem explicação — que é a outra maneira de
+          mentir sobre o que está no ecrã. */}
+      {recorteAplicado && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs text-foreground">
+            {t(`dashWidgets.drill.${recorte.de}.title`)}
+            <span className="tabular-nums text-muted-foreground">({dadosRecortados.length})</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-4 w-4 p-0 hover:bg-transparent"
+              onClick={recorte.limpar}
+              aria-label={t('common.clearFilters')}
+              title={t('common.clearFilters')}
+            >
+              <span aria-hidden>×</span>
+            </Button>
+          </span>
+        </div>
+      )}
 
       {/* Telemóvel: cartão por registo.
           A tabela tem até dez colunas e ~1190px; espremida em 375px, os
