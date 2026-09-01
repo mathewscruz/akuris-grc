@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (solicitanteError || !solicitante) throw new Error("Solicitante não encontrado");
 
     const { data: aprovador, error: aprovadorError } = await supabase
-      .from('profiles').select('nome, email').eq('user_id', aprovador_id).single();
+      .from('profiles').select('nome, email').eq('notificar_por_email', true).eq('user_id', aprovador_id).single();
     if (aprovadorError || !aprovador) throw new Error("Aprovador não encontrado");
 
     const { data: document, error: docError } = await supabase

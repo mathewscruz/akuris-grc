@@ -47,12 +47,12 @@ const handler = async (req: Request): Promise<Response> => {
     if (empresaData) { companyName = empresaData.nome || companyName; }
 
     const emailList = new Set<string>();
-    const { data: admins } = await supabase.from("profiles").select("email, nome").eq("empresa_id", empresa_id).in("role", ["admin", "super_admin"]);
+    const { data: admins } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true).eq("empresa_id", empresa_id).in("role", ["admin", "super_admin"]);
     admins?.forEach(admin => { if (admin.email) emailList.add(admin.email); });
 
     let responsavelNome = "";
     if (responsavel_id) {
-      const { data: responsavel } = await supabase.from("profiles").select("email, nome").eq("user_id", responsavel_id).single();
+      const { data: responsavel } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
       if (responsavel?.email) { emailList.add(responsavel.email); responsavelNome = responsavel.nome || ""; }
     }
 

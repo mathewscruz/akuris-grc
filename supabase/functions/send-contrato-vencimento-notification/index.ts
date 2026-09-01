@@ -97,10 +97,10 @@ const handler = async (req: Request): Promise<Response> => {
     const emailList = new Set<string>();
     let gestorNome = "";
     if (gestor_id) {
-      const { data: gestor } = await supabase.from("profiles").select("email, nome").eq("user_id", gestor_id).single();
+      const { data: gestor } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true).eq("user_id", gestor_id).single();
       if (gestor?.email) { emailList.add(gestor.email); gestorNome = gestor.nome || ""; }
     }
-    const { data: admins } = await supabase.from("profiles").select("email").eq("empresa_id", empresa_id).in("role", ["admin", "super_admin"]);
+    const { data: admins } = await supabase.from("profiles").select("email").eq('notificar_por_email', true).eq("empresa_id", empresa_id).in("role", ["admin", "super_admin"]);
     admins?.forEach(admin => { if (admin.email) emailList.add(admin.email); });
 
     if (emailList.size === 0) return new Response(JSON.stringify({ success: true, message: "Nenhum destinatário" }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });

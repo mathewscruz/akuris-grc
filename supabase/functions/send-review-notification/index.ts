@@ -36,9 +36,18 @@ Deno.serve(async (req) => {
 
     const { reviewId }: SendNotificationRequest = await req.json();
 
-    const { data: review, error: reviewError } = await supabaseClient.from('access_reviews').select(`*, sistema:sistemas_privilegiados(nome_sistema), responsavel:profiles!access_reviews_responsavel_revisao_fkey(nome, email, empresa_id)`).eq('id', reviewId).single();
+    const { data: review, error: reviewError } = await supabaseClient.from('access_reviews').select(`*, sistema:sistemas_privilegiados(nome_sistema), responsavel:profiles!access_reviews_responsavel_revisao_fkey(nome, email, empresa_id, notificar_por_email)`).eq('id', reviewId).single();
     if (reviewError) throw reviewError;
     if (!review.responsavel?.email) return new Response(JSON.stringify({ error: 'Responsável não possui e-mail cadastrado' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    /*
+       Quem dispensou o aviso por e-mail nao o recebe.
+
+       Aqui o destinatario vem por `embed` e nao por consulta propria, por
+       isso a preferencia le-se do objecto em vez de filtrar na consulta. O
+       aviso dentro do produto continua a ser gravado: dispensar o e-mail
+       nao e dispensar a informacao.
+    */
+    const aceitaEmail = review.responsavel?.notificar_por_email !== false;
 
     // Isolamento por tenant: caller e responsável devem estar na mesma empresa
     if (review.responsavel.empresa_id !== callerEmpresaId) {
@@ -85,8 +94,8 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    const emailResponse = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [review.responsavel.email], subject: `[Akuris] Nova Revisão de Acesso: ${review.nome_revisao}`, html: htmlContent });
-    console.log('E-mail enviado com sucesso:', emailResponse);
+    const emailResponse = aceitaEmail ? await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [review.responsavel.email], subject: `[Akuris] Nova Revisão de Acesso: ${review.nome_revisao}`, html: htmlContent }) : { skipped: 'destinatario dispensou o aviso por e-mail' };
+    console.log('E-mail:', emailResponse);
 
     await supabaseClient.from('notifications').insert({ user_id: review.responsavel_revisao, title: 'Nova Revisão de Acesso Atribuída', message: `Você foi atribuído como responsável pela revisão "${review.nome_revisao}" do sistema ${review.sistema?.nome_sistema || 'N/A'}.`, type: 'info', link_to: '/revisao-acessos', metadata: { review_id: reviewId, tipo: 'revisao_atribuida' } });
 

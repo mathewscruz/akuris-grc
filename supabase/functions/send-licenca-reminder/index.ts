@@ -45,7 +45,7 @@ serve(async (req) => {
         const { data: jaEnviado } = await supabase.from('ativos_notificacoes_enviadas').select('id').eq('empresa_id', empresa.id).eq('modulo', 'licencas').eq('registro_id', licenca.id).eq('tipo_notificacao', tipoNotificacao).gte('enviado_em', new Date(hoje.getTime() - 24 * 60 * 60 * 1000).toISOString()).single();
         if (jaEnviado) continue;
 
-        const { data: admins } = await supabase.from('profiles').select('email, nome').eq('empresa_id', empresa.id).in('role', ['admin', 'super_admin']);
+        const { data: admins } = await supabase.from('profiles').select('email, nome').eq('notificar_por_email', true).eq('empresa_id', empresa.id).in('role', ['admin', 'super_admin']);
 
         if (admins && admins.length > 0) {
           for (const admin of admins) {

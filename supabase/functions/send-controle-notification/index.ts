@@ -43,7 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq("user_id", responsavel_id).single();
+    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavelData) return new Response(JSON.stringify({ error: "Responsible user not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
     if (!responsavelData.email) return new Response(JSON.stringify({ error: "Responsible user has no email" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
     if (!ctx.empresaId || responsavelData.empresa_id !== ctx.empresaId) return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });

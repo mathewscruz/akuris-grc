@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Buscar dados do aprovador
     const { data: aprovador } = await supabase
-      .from("profiles").select("nome, email").eq("user_id", aprovador_id).single();
+      .from("profiles").select("nome, email").eq('notificar_por_email', true).eq("user_id", aprovador_id).single();
     if (!aprovador?.email) {
       return new Response(JSON.stringify({ error: "Aprovador não encontrado" }), {
         status: 400, headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Buscar dados do solicitante
     const { data: solicitante } = await supabase
-      .from("profiles").select("nome, email").eq("user_id", solicitante_id).single();
+      .from("profiles").select("nome, email").eq('notificar_por_email', true).eq("user_id", solicitante_id).single();
 
     // Buscar empresa
     const { data: empresa } = await supabase

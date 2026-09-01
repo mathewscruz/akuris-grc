@@ -38,7 +38,7 @@ const handler = async (req: Request): Promise<Response> => {
     const empresa_id = ctx.empresaId;
     if (!empresa_id) return new Response(JSON.stringify({ error: "Sem empresa associada" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
-    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq("user_id", responsavel_id).single();
+    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavelData?.email) return new Response(JSON.stringify({ error: "Responsável não encontrado ou sem email" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     // E o destinatário tem de ser do mesmo inquilino de quem manda.

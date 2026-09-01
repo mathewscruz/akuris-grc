@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     const { data: responsavel, error: responsavelError } = await supabase
-      .from("profiles").select("nome, email, empresa_id").eq("user_id", responsavel_id).single();
+      .from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavel) throw new Error("Responsável não encontrado");
 
     // Responsável precisa estar na mesma empresa

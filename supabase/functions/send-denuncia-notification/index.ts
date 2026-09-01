@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const comiteIds = (membros ?? []).map((m: { user_id: string }) => m.user_id);
     const { data: perfisComite } = comiteIds.length
-      ? await supabaseClient.from('profiles').select('user_id, email, nome').in('user_id', comiteIds)
+      ? await supabaseClient.from('profiles').select('user_id, email, nome').eq('notificar_por_email', true).in('user_id', comiteIds)
       : { data: [] as { user_id: string; email: string | null; nome: string | null }[] };
 
     const emailList = new Set<string>();

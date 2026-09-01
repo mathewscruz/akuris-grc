@@ -39,7 +39,7 @@ serve(async (req) => {
 
     const { user_id, controle_id, controle_nome, mencionado_por, comentario }: MentionNotificationRequest = await req.json();
 
-    const { data: usuario, error: usuarioError } = await supabase.from("profiles").select("nome, email, empresa_id").eq("user_id", user_id).single();
+    const { data: usuario, error: usuarioError } = await supabase.from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", user_id).single();
     if (usuarioError || !usuario) throw new Error("Usuário não encontrado");
     if (!ctx.empresaId || usuario.empresa_id !== ctx.empresaId) {
       return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
