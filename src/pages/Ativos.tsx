@@ -209,15 +209,24 @@ const Ativos = () => {
     queryKey: ['azure-integration', profile?.empresa_id],
     queryFn: async () => {
       if (!profile?.empresa_id) return null;
-      // @ts-ignore
-      const result = await supabase
+      /*
+         `status`, e não `ativo`: a tabela nunca teve coluna `ativo`.
+
+         O PostgREST devolvia 400 (42703) em todas as visitas a esta
+         página, o `@ts-ignore` calava o tipo e ninguém lia o erro: a
+         integração do Azure ficava sempre por encontrar, mesmo depois de
+         configurada, e o botão de sincronizar nunca aparecia. É `status =
+         'conectado'` que o diálogo de configuração grava.
+      */
+      const { data, error } = await supabase
         .from('integracoes_config')
         .select('id, configuracoes')
         .eq('empresa_id', profile.empresa_id)
         .eq('tipo_integracao', 'azure')
-        .eq('ativo', true)
+        .eq('status', 'conectado')
         .limit(1);
-      return result.data?.[0] || null;
+      if (error) throw error;
+      return data?.[0] || null;
     },
     enabled: !!profile?.empresa_id,
   });

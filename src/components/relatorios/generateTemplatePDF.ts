@@ -342,13 +342,42 @@ async function fetchISO27001Data(empresaId: string) {
   };
 }
 
+/**
+ * Os frameworks que ESTA empresa acompanha.
+ *
+ * Os dois relatorios filtravam `gap_analysis_frameworks` por `ativo = true`, e
+ * essa coluna nao existe: o PostgREST devolvia 400 (42703, «column
+ * gap_analysis_frameworks.ativo does not exist»), o erro era engolido e a
+ * lista ficava vazia. O «Frameworks Monitorados» do relatorio executivo dizia
+ * SEMPRE zero, e a tabela de Frameworks do relatorio de compliance saia em
+ * branco -- ambos em PDFs que vao para a direccao. Medido nesta base: a
+ * empresa tem 117 avaliacoes de ISO/IEC 27001 e 10 de SOC 2 Type II.
+ *
+ * O catalogo e global (24 modelos, todos com `empresa_id` nulo): contar as 24
+ * linhas seria trocar um zero por um numero igualmente falso. Uma empresa
+ * acompanha um framework quando o avalia, e e isso que se conta aqui.
+ */
+async function frameworksDaEmpresa(empresaId: string) {
+  const { data, error } = await (supabase as any)
+    .from('gap_analysis_evaluations')
+    .select('framework_id, gap_analysis_frameworks!inner(id, nome, versao, tipo_framework)')
+    .eq('empresa_id', empresaId);
+  if (error) throw error;
+
+  const porId = new Map<string, any>();
+  for (const linha of data ?? []) {
+    const f = linha.gap_analysis_frameworks;
+    if (f?.id && !porId.has(f.id)) porId.set(f.id, f);
+  }
+  return [...porId.values()];
+}
+
 async function fetchExecutivoData(empresaId: string) {
   const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   const { data: riscos } = await supabase.from('riscos').select('*').eq('empresa_id', empresaId);
   const { data: incidentes } = await (supabase.from('incidentes').select('*').eq('empresa_id', empresaId).gte('data_deteccao', ninetyDaysAgo.toISOString()) as any);
   const { data: controles } = await supabase.from('controles').select('*').eq('empresa_id', empresaId);
-  const frameworksResult = await (supabase as any).from('gap_analysis_frameworks').select('id, nome').eq('ativo', true);
-  const frameworks = frameworksResult?.data || [];
+  const frameworks = await frameworksDaEmpresa(empresaId);
   const r = riscos || []; const i = incidentes || []; const c = controles || []; const f = frameworks || [];
   return {
     sections: [
@@ -367,8 +396,7 @@ async function fetchExecutivoData(empresaId: string) {
 }
 
 async function fetchComplianceData(empresaId: string) {
-  const fwResult = await (supabase as any).from('gap_analysis_frameworks').select('id, nome, versao, tipo_framework').eq('ativo', true);
-  const frameworks = fwResult?.data || [];
+  const frameworks = await frameworksDaEmpresa(empresaId);
   const { data: controles } = await supabase.from('controles').select('*').eq('empresa_id', empresaId);
   const { data: auditorias } = await supabase.from('auditorias').select('*').eq('empresa_id', empresaId);
   const f = (frameworks || []) as any[]; const c = controles || []; const a = auditorias || [];
