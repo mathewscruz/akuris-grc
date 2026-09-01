@@ -10,6 +10,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconSort, IconPerson, IconCheck } from '@/components/icons';
+import { splitResponsavel } from '@/lib/uuid';
 
 interface Usuario {
   user_id: string;
@@ -60,7 +61,51 @@ export function UserSelect({ value, onValueChange, placeholder, id }: UserSelect
     }
   };
 
-  const selectedUser = usuarios.find(user => user.user_id === value);
+  /**
+   * O que está guardado, mesmo quando não é um utilizador da lista.
+   *
+   * A coluna é TEXT e guarda as duas coisas — `uuid.ts` di-lo há muito: «o
+   * rótulo textual continua disponível para exibição». Este componente
+   * deitava-o fora: comparava `user_id === value` e, sem correspondência,
+   * desenhava o `placeholder`.
+   *
+   * Medido em Activos: a Impressora HP tem `proprietario = 'Facilities'` e o
+   * diálogo de edição dizia «Selecionar proprietário...». Nove dos valores
+   * guardados na base são assim — `TI`, `Comercial`, `João - CEO` — e todos
+   * apareciam como campo por preencher. Quem acredita nisso escolhe um dono
+   * novo para um activo que já tinha dono; a leitura falhada passa a facto.
+   *
+   * Um UUID que não está na lista é outro caso: pode ser alguém inactivo ou de
+   * outra empresa. Vai-se buscar o nome, porque o número não diz nada a
+   * ninguém — e se nem isso existir, diz-se que não foi encontrado, que é a
+   * verdade, em vez de «por preencher», que não é.
+   */
+  const { userId, label } = splitResponsavel(value);
+  const selectedUser = usuarios.find(user => user.user_id === userId);
+  const [nomeForaDaLista, setNomeForaDaLista] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNomeForaDaLista(null);
+    if (!userId || selectedUser || loading) return;
+    let vivo = true;
+    supabase
+      .from('profiles')
+      .select('nome')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (vivo && data?.nome) setNomeForaDaLista(data.nome);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [userId, selectedUser, loading]);
+
+  const nomeVisivel =
+    selectedUser?.nome ??
+    label ??
+    nomeForaDaLista ??
+    (userId ? t('riscosDetalhe.userSelect.naoEncontrado') : null);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -72,10 +117,14 @@ export function UserSelect({ value, onValueChange, placeholder, id }: UserSelect
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selectedUser ? (
+          {nomeVisivel ? (
             <div className="flex items-center gap-2 truncate">
               <IconPerson className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{selectedUser.nome}</span>
+              {/* Sem correspondência na lista o valor continua a ler-se, mas em
+                  tom de apoio: está preenchido, e não está ligado a ninguém. */}
+              <span className={cn('truncate', !selectedUser && 'text-muted-foreground')}>
+                {nomeVisivel}
+              </span>
             </div>
           ) : (
             <span className="text-muted-foreground">{resolvedPlaceholder}</span>

@@ -105,6 +105,20 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
           <SelectValue placeholder={t('contratosAtivos.localizacaoSelect.placeholderSelect')} />
         </SelectTrigger>
         <SelectContent>
+          {/*
+            A localização guardada aparece mesmo quando não está no cadastro.
+
+            O Radix desenha o item que corresponde ao valor; sem item, desenha
+            NADA — nem o valor, nem o placeholder. Medido na base local: os
+            activos guardam `Cloud`, `Datacenter`, `Datacenter SP` e
+            `Escritório`, e o cadastro só tem `Datacenter SP` e
+            `Almoxarifado - BH`. Três em cada quatro activos abriam a edição
+            com o campo de localização em branco, como se não tivessem
+            nenhuma — e vieram de importação, onde a localização é texto livre.
+          */}
+          {value && !localizacoes.some((l) => l.nome === value) && (
+            <SelectItem value={value}>{value}</SelectItem>
+          )}
           {localizacoes.map((localizacao) => (
             <SelectItem key={localizacao.id} value={localizacao.nome}>
               {localizacao.nome}

@@ -28,6 +28,7 @@ export const riscosDetalhe = {
         loading: 'Carregando usuários...',
         empty: 'Nenhum usuário encontrado.',
         errorFetch: 'Erro ao carregar lista de usuários',
+        naoEncontrado: 'Usuário não encontrado',
       },
       // TratamentoDialog
       tratamentoDialog: {
@@ -405,6 +406,7 @@ export const riscosDetalhe = {
         loading: 'Loading users...',
         empty: 'No users found.',
         errorFetch: 'Error loading user list',
+        naoEncontrado: 'User not found',
       },
       tratamentoDialog: {
         titleEdit: 'Edit Treatment',
