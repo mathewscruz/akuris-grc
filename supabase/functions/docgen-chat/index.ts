@@ -14,6 +14,7 @@ import {
   MAX_REFINE_ATTEMPTS,
 } from '../_shared/compliance-score.ts';
 import { createAttemptSignal, withTransientFallback } from '../_shared/ai-resilience.ts';
+import { MODELOS } from '../_shared/modelos.ts';
 
 
 const corsHeaders = {
@@ -167,9 +168,11 @@ function tituloCurto(titulo: unknown): string {
   return base.replace(/[-\s,.;:]+$/, '') + '…';
 }
 
-const MODEL_FAST = 'google/gemini-3.1-flash-lite';
-const MODEL_QUALITY = 'google/gemini-3.6-flash';
-const MODEL_FALLBACK = 'openai/gpt-5.4-mini';
+/* Os mesmos níveis do resto do produto — aqui com nomes próprios porque a
+   escolha entre rápido e bom é feita a cada pedido, e isso é desta função. */
+const MODEL_FAST = MODELOS.MECANICO;
+const MODEL_QUALITY = MODELOS.PADRAO;
+const MODEL_FALLBACK = MODELOS.RESERVA;
 
 async function callClaudeRaw(
   messages: { role: string; content: string }[],

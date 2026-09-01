@@ -119,7 +119,7 @@ Retorne APENAS JSON válido (sem markdown):
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODELOS.EXTRACAO,
+        model: MODELOS.PADRAO,
         messages: [
           { role: 'system', content: 'Você é um PMO sênior. Responda APENAS JSON válido em PT-BR.' },
           { role: 'user', content: prompt },

@@ -123,7 +123,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Evidence vs. requirement validation',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'analyze-evidence-against-requirement',
   },
   {
@@ -132,7 +132,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Evidence cross-match',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'evidence-cross-match',
   },
   {
@@ -141,7 +141,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Gap Analysis AI diagnostic',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'gap-analysis-ai-diagnostic',
   },
   {
@@ -150,7 +150,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Requirement guidance (single)',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'populate-requirement-guidance',
   },
   {
@@ -159,7 +159,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Requirement guidance (batch)',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'populate-requirement-guidance',
   },
   {
@@ -168,7 +168,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Framework translation',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.1-flash-lite',
     edgeFunction: 'translate-framework-content',
   },
   {
@@ -177,7 +177,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Due diligence scoring',
     modulePt: 'Due Diligence',
     moduleEn: 'Due Diligence',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'calculate-assessment-score',
   },
   {
@@ -186,7 +186,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Risk treatment suggestion',
     modulePt: 'Riscos',
     moduleEn: 'Risks',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'suggest-risk-treatment',
   },
   {
@@ -198,7 +198,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'AI opinion on supplier',
     modulePt: 'Due Diligence',
     moduleEn: 'Due diligence',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'avaliar-fornecedor-ia',
   },
   {
@@ -210,7 +210,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Dashboard summary (AI)',
     modulePt: 'Painel',
     moduleEn: 'Dashboard',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'dashboard-ai-summary',
   },
   {
@@ -219,7 +219,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Akuria assistant (chat)',
     modulePt: 'Assistente',
     moduleEn: 'Assistant',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'akuria-chat',
   },
   {
@@ -228,7 +228,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Module assistant (insights)',
     modulePt: 'Transversal',
     moduleEn: 'Cross-module',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'ai-module-assistant',
   },
   {
@@ -237,7 +237,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Project status report',
     modulePt: 'Projetos',
     moduleEn: 'Projects',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'projeto-status-report',
   },
   {
@@ -246,7 +246,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Project task suggestions',
     modulePt: 'Projetos',
     moduleEn: 'Projects',
-    model: 'google/gemini-3-flash-preview',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'projeto-suggest-tasks',
   },
   {
@@ -255,7 +255,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Email content generation',
     modulePt: 'Campanhas',
     moduleEn: 'Campaigns',
-    model: 'google/gemini-2.5-flash',
+    model: 'google/gemini-3.6-flash',
     edgeFunction: 'generate-email-content',
   },
 ];

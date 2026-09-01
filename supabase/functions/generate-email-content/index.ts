@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
+import { MODELOS } from "../_shared/modelos.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,7 +57,7 @@ async function generateText(prompt: string): Promise<string> {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: MODELOS.PADRAO,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: prompt },
@@ -78,7 +79,7 @@ async function generateImage(theme: string): Promise<string | null> {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash-image",
+      model: MODELOS.IMAGEM,
       messages: [{ role: "user", content: imagePrompt }],
       modalities: ["image", "text"],
     }),
@@ -159,7 +160,7 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
+            model: MODELOS.MECANICO,
             messages: [
               { role: "system", content: "Você cria assuntos curtos (até 70 caracteres) e atrativos para e-mails corporativos da Akuris (plataforma GRC). Retorne APENAS o assunto, sem aspas, sem prefixos." },
               { role: "user", content: `Tema: ${prompt}` },

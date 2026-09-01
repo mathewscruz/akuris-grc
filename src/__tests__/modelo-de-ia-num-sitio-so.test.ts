@@ -8,11 +8,11 @@
  * custo entre funcionalidades exigia ler quinze ficheiros.
  *
  * Agora vem de `_shared/modelos.ts`, escolhido por **feitio do trabalho** —
- * extração, redação, leitura longa — e não por função. Trocar é uma linha.
+ * mecânico, padrão, leitura longa — e não por função. Trocar é uma linha.
  *
- * A `docgen-chat` fica de fora: escolhe entre rápido, bom e reserva conforme o
- * pedido, e essa lógica é dela. A `generate-email-content` também, por agora:
- * usa três modelos, um deles de imagem, e a migração dela é decisão à parte.
+ * Nenhuma fica de fora: a `docgen-chat` e a `generate-email-content` escolhem
+ * entre vários níveis a cada pedido, e essa lógica é delas — mas os níveis
+ * vem daqui na mesma.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -20,10 +20,16 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 const RAIZ = 'supabase/functions';
 
 /** Escolhem o modelo por conta própria, com razão declarada. */
-const ISENTAS = new Set(['docgen-chat', 'generate-email-content']);
+const ISENTAS = new Set<string>();
 
-/** Qualquer nome de modelo de um fornecedor conhecido. */
-const NOME_DE_MODELO = /['"`](google|openai|anthropic)\/[a-z0-9.\-]+['"`]/i;
+/*
+   Onde o modelo é ESCOLHIDO: um `model:` num corpo de pedido, ou uma constante
+   guardada para depois. Comparar prefixos não é escolher — a `docgen-chat`
+   pergunta `model.startsWith('openai/gpt-5')` porque essa família recusa
+   `max_tokens`, e isso tem de continuar a poder ser escrito.
+*/
+const ESCOLHA_DE_MODELO =
+  /(?:\bmodel\s*:|\bMODEL[A-Z_]*\s*=)\s*['"`](google|openai|anthropic)\/[a-z0-9.\-]+['"`]/i;
 
 function funcoesComIA() {
   return readdirSync(RAIZ)
@@ -41,19 +47,19 @@ describe('escolha de modelo', () => {
         const t = linha.trim();
         // Um comentário a EXPLICAR o defeito não é o defeito.
         if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
-        const m = NOME_DE_MODELO.exec(linha);
+        const m = ESCOLHA_DE_MODELO.exec(linha);
         if (m) falhas.push(`${nome}:${i + 1} → ${m[0]}`);
       });
     }
     expect(
       falhas,
-      'Use `MODELOS.EXTRACAO` / `REDACAO` / `LEITURA_LONGA` de `_shared/modelos.ts`.',
+      'Use `MODELOS.MECANICO` / `PADRAO` / `LEITURA_LONGA` de `_shared/modelos.ts`.',
     ).toEqual([]);
   });
 
   it('o ficheiro das escolhas continua a ser o único a nomear modelos', () => {
     const fonte = readFileSync(`${RAIZ}/_shared/modelos.ts`, 'utf8');
-    for (const escolha of ['EXTRACAO', 'REDACAO', 'LEITURA_LONGA', 'RESERVA']) {
+    for (const escolha of ['MECANICO', 'PADRAO', 'LEITURA_LONGA', 'IMAGEM', 'RESERVA']) {
       expect(fonte.includes(escolha), `Falta a escolha ${escolha}.`).toBe(true);
     }
   });
@@ -63,10 +69,10 @@ describe('escolha de modelo', () => {
        ÚNICO ponto onde entra um segundo, de propósito. */
     const fonte = readFileSync(`${RAIZ}/_shared/modelos.ts`, 'utf8');
     const reserva = /RESERVA:\s*'([^']+)'/.exec(fonte)?.[1] ?? '';
-    const extracao = /EXTRACAO:\s*'([^']+)'/.exec(fonte)?.[1] ?? '';
+    const padrao = /PADRAO:\s*'([^']+)'/.exec(fonte)?.[1] ?? '';
     expect(
       reserva.split('/')[0],
       'A reserva no mesmo fornecedor não é reserva nenhuma.',
-    ).not.toBe(extracao.split('/')[0]);
+    ).not.toBe(padrao.split('/')[0]);
   });
 });

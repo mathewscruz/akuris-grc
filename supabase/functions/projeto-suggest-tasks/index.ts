@@ -96,7 +96,7 @@ Sem saudações. Retorne APENAS JSON válido (sem markdown):
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODELOS.EXTRACAO,
+        model: MODELOS.PADRAO,
         messages: [
           { role: 'system', content: 'Você é um gerente de projetos sênior. Responda APENAS JSON válido.' },
           { role: 'user', content: prompt },

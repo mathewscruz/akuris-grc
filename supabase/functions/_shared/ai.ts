@@ -1,10 +1,14 @@
 // Shared helpers for AI Gateway calls: timeout, model catalog, credit safety.
+import { MODELOS } from './modelos.ts';
 
 export const AI_GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
 // Modelos suportados centralizados. Usar SEMPRE via DEFAULT_CHAT_MODEL.
-export const DEFAULT_CHAT_MODEL = 'google/gemini-3-flash-preview';
-export const DEFAULT_CHAT_MODEL_LITE = 'google/gemini-3-flash-preview';
+/* Os níveis vivem em `modelos.ts`. Estes dois nomes ficam por compatibilidade
+   — e apontavam AMBOS para o mesmo `-preview`, ou seja o «lite» nunca foi
+   mais leve do que o outro. */
+export const DEFAULT_CHAT_MODEL = MODELOS.PADRAO;
+export const DEFAULT_CHAT_MODEL_LITE = MODELOS.MECANICO;
 
 /**
  * fetch com AbortController + timeout. Retorna Response ou lança Error("timeout").

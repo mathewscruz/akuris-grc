@@ -132,7 +132,7 @@ ${JSON.stringify(payload)}`;
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODELOS.EXTRACAO,
+        model: MODELOS.MECANICO,
         messages: [
           { role: 'system', content: 'You are a compliance standards translator. Reply with valid JSON only.' },
           { role: 'user', content: prompt },

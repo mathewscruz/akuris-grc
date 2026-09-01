@@ -225,7 +225,7 @@ IMPORTANTE: O breakdown deve ser agrupado pelo campo "section" de cada pergunta.
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: MODELOS.EXTRACAO,
+      model: MODELOS.PADRAO,
       messages: [
         {
           role: 'system',

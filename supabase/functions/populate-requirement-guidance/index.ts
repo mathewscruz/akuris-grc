@@ -300,7 +300,7 @@ async function generateGuidance(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: MODELOS.EXTRACAO,
+        model: MODELOS.PADRAO,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
         max_tokens: 4000,

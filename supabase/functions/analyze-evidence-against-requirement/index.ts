@@ -157,7 +157,7 @@ Retorne APENAS JSON válido (sem markdown), neste formato:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODELOS.EXTRACAO,
+        model: MODELOS.PADRAO,
         messages: [
           { role: 'system', content: 'Você é um auditor de conformidade rigoroso. Responda APENAS com JSON válido.' },
           { role: 'user', content: prompt },

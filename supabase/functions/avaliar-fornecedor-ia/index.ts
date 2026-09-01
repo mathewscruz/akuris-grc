@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: MODELOS.EXTRACAO,
+        model: MODELOS.PADRAO,
         temperature: 0.2,
         messages: [
           {
@@ -197,7 +197,7 @@ Deno.serve(async (req: Request) => {
     const documento = {
       ...parecer,
       nivelRisco: nivel,
-      modelo: MODELOS.EXTRACAO,
+      modelo: MODELOS.PADRAO,
       respostasAnalisadas: respostas.length,
     };
 
