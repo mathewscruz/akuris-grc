@@ -10,7 +10,9 @@ import { resolveNivelRiscoTone } from '@/lib/status-tone';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconTime, IconTrendDown, IconTrendUp, IconMinus, IconPerson } from '@/components/icons';
+import { IconTime, IconTrendDown, IconTrendUp, IconMinus, IconPerson, IconInfo } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { dateFnsLocale } from '@/lib/date-utils';
 interface Props {
   open: boolean;
@@ -33,7 +35,7 @@ interface HistoricoAvaliacao {
 
 export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNome }: Props) {
   const { t } = useLanguage();
-  const { data: historico, isLoading } = useQuery({
+  const { data: historico, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['risco-historico-avaliacoes', riscoId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -76,6 +78,26 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
           <div className="flex items-center justify-center h-32">
             <AkurisPulse size={32} />
           </div>
+        ) : isError ? (
+          /*
+              Falhar a ler não é o mesmo que não haver nada.
+
+              Este ecrã mostrava «Nenhum histórico de reavaliação
+              encontrado» sempre que a consulta falhava. E falhava sempre:
+              faltava a chave estrangeira de `avaliado_por`, o PostgREST
+              devolvia 400 e o utilizador lia que não tinha avaliado nada
+              — com a avaliação residual gravada na base.
+          */
+          <div className="flex flex-col items-center gap-3 py-8">
+            <EmptyState
+              title={t('fin.riscos.historicoAval.erroTitulo')}
+              description={t('fin.riscos.historicoAval.erroDesc')}
+              icon={<IconInfo className="h-8 w-8" strokeWidth={1.5} />}
+            />
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+              {t('fin.riscos.historicoAval.tentarNovamente')}
+            </Button>
+          </div>
         ) : !historico || historico.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <IconTime className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.historicoAval.vazio')}</div>
@@ -96,7 +118,9 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">
-                              {item.tipo === 'inicial' ? 'Inicial' : 'Residual'}
+                              {item.tipo === 'inicial'
+                                ? t('fin.riscos.historicoAval.tipoInicial')
+                                : t('fin.riscos.historicoAval.tipoResidual')}
                             </Badge>
                             <StatusBadge {...resolveNivelRiscoTone(item.nivel_risco)}>
                               {item.nivel_risco}

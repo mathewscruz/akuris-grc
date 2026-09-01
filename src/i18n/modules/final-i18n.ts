@@ -456,6 +456,11 @@ export const finalI18n = {
         historicoAval: {
           title: 'Histórico de avaliações',
           vazio: 'Nenhum histórico de reavaliação encontrado.',
+          erroTitulo: 'Não foi possível ler o histórico',
+          erroDesc: 'A leitura falhou. Pode haver avaliações gravadas que ainda não se veem aqui.',
+          tentarNovamente: 'Tentar novamente',
+          tipoInicial: 'Inicial',
+          tipoResidual: 'Residual',
         },
         matrizDialog: {
           desc: 'Escolha a escala, o método de cálculo e o limite de apetite da sua organização.',
@@ -1050,6 +1055,11 @@ export const finalI18n = {
         historicoAval: {
           title: 'Assessment history',
           vazio: 'No reassessment history found.',
+          erroTitulo: 'Could not read the history',
+          erroDesc: 'The read failed. There may be saved assessments that are not shown here.',
+          tentarNovamente: 'Try again',
+          tipoInicial: 'Inherent',
+          tipoResidual: 'Residual',
         },
         matrizDialog: {
           desc: 'Choose your organisation scale, calculation method and appetite limit.',
