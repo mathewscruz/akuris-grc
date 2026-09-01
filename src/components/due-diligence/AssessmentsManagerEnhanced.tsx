@@ -26,7 +26,7 @@ import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { startOfDay } from 'date-fns';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
-import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
+import { resolveDueDiligenceStatusTone, resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -597,7 +597,9 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
             onClick={(e) => { e.stopPropagation(); handleScoreClick(a); }}
             className="hover:underline"
           >
-            <StatusBadge tone={getScoreBadge(a.score_final).tone} icon={<IconAward className="h-3 w-3" />}>
+            {/* A marca (A-D) e a cor vem do resolvedor unico; o icone saiu
+                porque a marca ja faz o mesmo trabalho e melhor. */}
+            <StatusBadge {...resolveScoreDueDiligenceTone(a.score_final)}>
               {getScoreBadge(a.score_final).text}
               <span className="ml-1 tabular-nums">{a.score_final.toFixed(1)}%</span>
             </StatusBadge>
@@ -680,31 +682,23 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     return <StatusBadge {...resolveDueDiligenceStatusTone(status)}>{formatStatus(status)}</StatusBadge>;
   };
 
-  const getScoreColor = (score?: number | null) => {
-    // Zero É um score — e é o pior deles. Tratá-lo como "sem score" fazia um
-    // fornecedor reprovado aparecer como "Aguardando", em cinzento, e sair da
-    // média: o pior resultado possível era o mais discreto do ecrã.
-    if (score == null) return 'text-muted-foreground';
-    // Escala de percentagem, como o valor gravado.
-    if (score >= 80) return 'text-success font-semibold';
-    if (score >= 60) return 'text-info font-semibold';
-    if (score >= 40) return 'text-warning font-semibold';
-    return 'text-destructive font-semibold';
-  };
 
   /**
-   * Limiares na escala em que o score é gravado: percentagem.
+   * O ROTULO da faixa. A cor vem de `resolveScoreDueDiligenceTone`.
    *
-   * Estavam em 8 / 6 / 4 — a escala de 0 a 10 das notas por pergunta — a
-   * comparar com um `score_final` de 0 a 100. Qualquer avaliação acima de 8%
-   * era classificada "Excelente", inclusive um fornecedor com 12.
+   * Devolvia tambem um `tone`, e era o quarto sitio a decidir a cor do score.
+   * Pior: para 60-79 devolvia `info`, que sem `mark` se desenha CINZENTO --
+   * um score de 62,5% chegava ao ecra com a cor de um campo vazio.
+   *
+   * Os limiares ficam aqui porque sao os mesmos do resolvedor, e mudam juntos;
+   * a guarda `uma-escala-para-o-score` reprova se se separarem.
    */
-  const getScoreBadge = (score?: number | null): { text: string; tone: StatusTone } => {
-    if (score == null) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreAwaiting'), tone: "neutral" };
-    if (score >= 80) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreExcellent'), tone: "success" };
-    if (score >= 60) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreGood'), tone: "info" };
-    if (score >= 40) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreRegular'), tone: "warning" };
-    return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreBad'), tone: "destructive" };
+  const getScoreBadge = (score?: number | null): { text: string } => {
+    if (score == null) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreAwaiting') };
+    if (score >= 80) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreExcellent') };
+    if (score >= 60) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreGood') };
+    if (score >= 40) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreRegular') };
+    return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreBad') };
   };
 
   const isExpired = (dateString: string) => {

@@ -45,6 +45,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateShort } from '@/lib/date-utils';
+import { resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import type { ParecerDaIA, SecaoDoParecer } from './ParecerIA';
 
 /** Uma secção como o cálculo a devolve. */
@@ -79,34 +80,47 @@ interface Props {
 /** Abaixo disto uma resposta entra na lista do que custou pontos. */
 const NOTA_QUE_PREOCUPA = 6;
 
-type Tom = 'success' | 'info' | 'warning' | 'destructive';
+/*
+   A escala do score vem de `resolveScoreDueDiligenceTone`, e não daqui.
 
-function tomDoScore(score: number): Tom {
-  if (score >= 80) return 'success';
-  if (score >= 60) return 'info';
-  if (score >= 40) return 'warning';
-  return 'destructive';
-}
+   Este ficheiro tinha a SUA -- success/info/warning/destructive -- e havia mais
+   duas: quatro faixas na lista de avaliações e três na de fornecedores. O
+   mesmo fornecedor mudava de cor conforme o ecrã. Pior, `info` desenha-se
+   cinzento nos crachás (é o tom de «nada a fazer»), por isso a faixa mais
+   comum saía sem cor nenhuma.
+*/
+type Tom = 'success' | 'warning' | 'orange' | 'destructive' | 'info' | 'neutral' | 'primary';
+
+const tomDoScore = (score: number): Tom => resolveScoreDueDiligenceTone(score).tone;
 
 const TEXTO: Record<Tom, string> = {
   success: 'text-success',
-  info: 'text-info',
   warning: 'text-warning',
+  orange: 'text-orange',
   destructive: 'text-destructive',
+  info: 'text-info',
+  neutral: 'text-muted-foreground',
+  primary: 'text-primary',
 };
 
 const BARRA: Record<Tom, string> = {
   success: 'bg-success',
-  info: 'bg-info',
   warning: 'bg-warning',
+  orange: 'bg-orange',
   destructive: 'bg-destructive',
+  info: 'bg-info',
+  neutral: 'bg-muted-foreground',
+  primary: 'bg-primary',
 };
 
 const TRACO: Record<Tom, string> = {
   success: 'stroke-success',
-  info: 'stroke-info',
   warning: 'stroke-warning',
+  orange: 'stroke-orange',
   destructive: 'stroke-destructive',
+  info: 'stroke-info',
+  neutral: 'stroke-muted-foreground',
+  primary: 'stroke-primary',
 };
 
 /** O formato antigo do `score_breakdown` era um número solto por secção. */
@@ -214,7 +228,7 @@ export function RelatorioDoFornecedor({
         <div className="p-4 text-center">
           <Mostrador score={scoreTotal} tom={tom} />
           <div className="mt-2.5 flex justify-center">
-            <StatusBadge tone={tom} variant="soft">
+            <StatusBadge {...resolveScoreDueDiligenceTone(scoreTotal)}>
               {t(`dueDiligence.scoreVisualization.classification${
                 classificacao === 'excelente' ? 'Excellent'
                 : classificacao === 'bom' ? 'Good'

@@ -4,6 +4,16 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale } from '@/lib/date-utils';
+import { resolveScoreDueDiligenceTone } from '@/lib/status-tone';
+import type { StatusTone } from '@/components/ui/status-badge';
+
+/** As classes por tom, para a barra e para o número. A escala é do resolvedor. */
+const BARRA_DO_TOM: Partial<Record<StatusTone, string>> = {
+  success: 'bg-success', warning: 'bg-warning', orange: 'bg-orange', destructive: 'bg-destructive',
+};
+const TEXTO_DO_TOM: Partial<Record<StatusTone, string>> = {
+  success: 'text-success', warning: 'text-warning', orange: 'text-orange', destructive: 'text-destructive',
+};
 
 interface ScoreData {
   score_total: number;
@@ -58,11 +68,9 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
   };
 
   const getScoreColor = (score: number) => {
-    // Escala de percentagem, como o valor gravado.
-    if (score >= 80) return 'bg-success';
-    if (score >= 60) return 'bg-info';
-    if (score >= 40) return 'bg-warning';
-    return 'bg-destructive';
+    /* A escala vem do resolvedor unico. Aqui era a quarta copia, e a de
+       60-79 usava `bg-info` -- azul na barra, cinzento no cracha ao lado. */
+    return BARRA_DO_TOM[resolveScoreDueDiligenceTone(score).tone] ?? 'bg-muted-foreground';
   };
 
   const classificationBadge = getClassificationBadge(scoreData.classificacao);
@@ -147,9 +155,7 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
                 <div key={categoria} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="font-medium capitalize">{categoria}</span>
-                    <span className={`font-semibold ${getClassificationColor(
-                      score >= 80 ? 'excelente' : score >= 60 ? 'bom' : score >= 40 ? 'regular' : 'ruim'
-                    )}`}>
+                    <span className={`font-semibold ${TEXTO_DO_TOM[resolveScoreDueDiligenceTone(score).tone] ?? 'text-muted-foreground'}`}>
                       {score.toFixed(1)}%
                     </span>
                   </div>

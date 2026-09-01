@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
-import { resolveCriticidadeTone } from '@/lib/status-tone';
+import { resolveCriticidadeTone, resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor } from '@/lib/fornecedor-status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
@@ -432,9 +432,10 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
       chip verde de "750%" — verde porque 750 passa o limiar de 80.
     */
     const score = stats.lastScore;
-    if (score >= 80) return <StatusBadge tone="success">{score.toFixed(0)}%</StatusBadge>;
-    if (score >= 60) return <StatusBadge tone="warning">{score.toFixed(0)}%</StatusBadge>;
-    return <StatusBadge tone="destructive" intensity="high">{score.toFixed(0)}%</StatusBadge>;
+    /* Eram TRES faixas aqui (80/60) e QUATRO na lista de avaliacoes
+       (80/60/40): o mesmo fornecedor mudava de cor conforme o ecra em que era
+       visto. Uma escala so, com a marca A-D ao lado da cor. */
+    return <StatusBadge {...resolveScoreDueDiligenceTone(score)}>{score.toFixed(0)}%</StatusBadge>;
   };
 
   /*

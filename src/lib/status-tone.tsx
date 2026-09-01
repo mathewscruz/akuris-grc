@@ -280,6 +280,43 @@ export const resolveSeverityTone = (raw?: string | null): ToneResult => {
   return { tone: 'neutral' };
 };
 
+/**
+ * A cor de um score de due diligence — um sítio, para os três que o mostram.
+ *
+ * ## O que estava
+ *
+ * O crachá saía CINZENTO na faixa mais comum. `StatusBadge` tem duas famílias:
+ * `state` (repouso/atenção/bloqueado/feito) e `severity` (crítico/alto/médio/
+ * baixo). Sem `mark`, desenha-se como ESTADO — e ali `info` mapeia para
+ * `rest`, que é cinzento de propósito, porque num estado «info» quer dizer
+ * «nada a fazer». Um score de 62,5% saía com a mesma cor de um campo vazio.
+ *
+ * E não era só a cor: a lista de FORNECEDORES usava três faixas (80/60) e a de
+ * AVALIAÇÕES usava quatro (80/60/40). O mesmo fornecedor mudava de cor
+ * conforme o ecrã em que era visto.
+ *
+ * ## O que fica
+ *
+ * A família de severidade, que tem as quatro cores e leva uma MARCA — a letra
+ * que impede a cor de ser o único sinal (WCAG 1.4.1), como já acontece no
+ * mapa de risco com C/A/M/B.
+ *
+ * A marca é uma nota de A a D, e não a inicial do rótulo: «Regular» e «Ruim»
+ * começam ambas por R, e a letra tem de distinguir. A–D lê-se em qualquer
+ * língua e já traz a ordem consigo.
+ *
+ * A escala é a INVERSA da severidade, e é de propósito: aqui o número alto é o
+ * bom. 80+ verde, 60+ amarelo, 40+ laranja, abaixo disso vermelho — a rampa
+ * que se lê de relance, com o número ao lado para quem quiser o detalhe.
+ */
+export const resolveScoreDueDiligenceTone = (score?: number | null): ToneResult => {
+  if (score === null || score === undefined || Number.isNaN(score)) return { tone: 'neutral' };
+  if (score >= 80) return { tone: 'success', mark: 'A' };
+  if (score >= 60) return { tone: 'warning', mark: 'B' };
+  if (score >= 40) return { tone: 'orange', mark: 'C' };
+  return { tone: 'destructive', intensity: 'high', mark: 'D' };
+};
+
 export const resolveAuditoriaPrioridadeTone = resolveSeverityTone;
 
 export const resolveAuditoriaStatusTone = (raw?: string | null): ToneResult => {
