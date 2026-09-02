@@ -234,9 +234,14 @@ SELECT e.nome AS empresa,
        (SELECT count(*) FROM public.denuncias_categorias k WHERE k.empresa_id = e.id AND k.ativo) AS categorias,
        (SELECT count(*) FROM public.denuncias_comite m WHERE m.empresa_id = e.id) AS comite,
        (SELECT count(*) FROM public.profiles p WHERE p.empresa_id = e.id AND p.role IN ('admin','super_admin')) AS admins,
+       CASE WHEN nullif(btrim(COALESCE(c.politica_privacidade,'')),'') IS NULL THEN 'SEM POLITICA' ELSE 'ok' END AS politica,
        CASE
          WHEN NOT c.ativo THEN 'desligado por opcao'
          WHEN c.token_publico IS NULL THEN 'NAO: sem endereco publico'
+         -- Sem politica o formulario nao pede consentimento e a RPC recusa a
+         -- denuncia no fim das quatro etapas. Ver 20260902030000.
+         WHEN nullif(btrim(COALESCE(c.politica_privacidade,'')),'') IS NULL
+           THEN 'NAO: sem politica -- o registo falha no fim do formulario'
          WHEN NOT EXISTS (SELECT 1 FROM public.denuncias_categorias k WHERE k.empresa_id = e.id AND k.ativo)
            THEN 'NAO: sem categoria ativa'
          WHEN NOT EXISTS (SELECT 1 FROM public.denuncias_comite m WHERE m.empresa_id = e.id)
