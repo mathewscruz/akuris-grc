@@ -21,6 +21,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { avisarDenunciante } from '@/lib/avisar-denunciante';
 import { encerrada as jaEncerrada } from '@/lib/prazo-da-denuncia';
 
 interface Props {
@@ -84,6 +85,9 @@ export function DenunciaRelogio({ denuncia, onAtualizado }: Props) {
          a acusação existe no banco e não existe no registo — falha alto. */
       if (erroTrilha) throw erroTrilha;
 
+      /* A acusacao e uma obrigacao PARA COM quem denunciou: cumpri-la sem lhe
+         dizer cumpre o registo e nao cumpre a pessoa. */
+      void avisarDenunciante(denuncia.id, 'recebimento');
       onAtualizado();
       toast.success(t('denunciasAdmin.relogio.acusada'));
     } catch (e) {

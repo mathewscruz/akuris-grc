@@ -135,6 +135,10 @@ const ptDict = {
     */
     successDescription:
       'Não enviamos avisos: para saber como está a apuração, volte aqui e consulte com o protocolo e o código. Sem eles, ninguém consegue recuperar o acesso a esta denúncia, nem nós.',
+    /* Quem deixou contacto lê o contrário: dizer «não enviamos avisos» a
+       quem vai ser avisado é a mesma falha, ao contrário. */
+    successDescriptionComAviso:
+      'Avisamos por e-mail sempre que houver novidade — sem qualquer detalhe do caso. Guarde na mesma o protocolo e o código: são eles que abrem a denúncia, e ninguém os consegue recuperar, nem nós.',
     copiar: 'Copiar',
     copiado: 'Copiado',
     copiarTudo: 'Copiar protocolo e código',
@@ -162,6 +166,12 @@ const ptDict = {
     evidencePlaceholder: 'Descreva as evidências que você possui (documentos, fotos, etc.)',
     attach: 'Anexar Arquivos',
     attachHint: 'Máximo 5 arquivos de 10MB cada',
+    /* Quem escolheu não se identificar é convidado a anexar ficheiros — e um
+       ficheiro leva por dentro o que a pessoa não escreveu: autor do
+       documento, modelo do telemóvel, coordenadas da foto. Um canal que
+       promete anonimato tem de o dizer ANTES do upload. */
+    anexoMetadados:
+      'Um arquivo pode conter dados que não se veem: o nome de quem o criou, o modelo do aparelho, e fotos costumam guardar o local onde foram tiradas. Se quer se manter anônimo, verifique antes de anexar — ou descreva a prova em texto, e o comitê pede depois pela conversa.',
     attachCta: 'Clique para selecionar arquivos',
     cancel: 'Cancelar',
     submitting: 'Enviando...',
@@ -332,8 +342,15 @@ const ptDict = {
     by: 'Por:',
     noHistory: 'Nenhuma movimentação registrada ainda.',
     importantLabel: 'Importante:',
+    /*
+       Mandava a pessoa «entrar em contato pelos canais oficiais da empresa» —
+       um beco sem saída para quem escolheu não se identificar, e uma
+       contradição com a conversa que está mesmo por cima, que é o canal certo
+       e o único que preserva o anonimato. Contactar a empresa por fora é
+       exactamente o que se pede a quem denuncia que não faça.
+    */
     importantText:
-      'Esta consulta mostra apenas informações básicas sobre o andamento da sua denúncia. Dados sensíveis são mantidos em sigilo conforme nossa política de privacidade. Para mais informações, entre em contato através dos canais oficiais da empresa.',
+      'Aqui vê o andamento da sua denúncia. O que o comité delibera fica reservado, conforme a política de privacidade. Se quiser acrescentar ou perguntar alguma coisa, use a conversa acima: ela chega ao comité e não o identifica.',
     /* A gravidade saía crua da base — «Medio», sem acento e sem tradução. */
     gravidade: {
       baixo: 'Baixa',
@@ -522,6 +539,8 @@ const enDict: typeof ptDict = {
     anexosFalharamAjuda: 'Keep those files. You can send them later from the protocol lookup, using the code above.',
     successDescription:
       'We do not send notifications: to see how the investigation is going, come back here and look it up with the protocol number and the code. Without them nobody can recover access to this report, not even us.',
+    successDescriptionComAviso:
+      'We will email you whenever there is news — with no detail of the case. Keep the protocol number and the code anyway: they are what opens the report, and nobody can recover them, not even us.',
     copiar: 'Copy',
     copiado: 'Copied',
     copiarTudo: 'Copy protocol and code',
@@ -549,6 +568,8 @@ const enDict: typeof ptDict = {
     evidencePlaceholder: 'Describe the evidence you have (documents, photos, etc.)',
     attach: 'Attach Files',
     attachHint: 'Up to 5 files of 10MB each',
+    anexoMetadados:
+      'A file can carry data you cannot see: the name of whoever created it, the device model, and photos usually record where they were taken. If you want to stay anonymous, check before attaching — or describe the evidence in writing and the committee can ask you for it later through the conversation.',
     attachCta: 'Click to select files',
     cancel: 'Cancel',
     submitting: 'Submitting...',
@@ -714,7 +735,7 @@ const enDict: typeof ptDict = {
     noHistory: 'No activity recorded yet.',
     importantLabel: 'Important:',
     importantText:
-      'This lookup shows only basic information about the progress of your report. Sensitive data is kept confidential according to our privacy policy. For more information, contact the company through its official channels.',
+      'Here you can see how your report is progressing. What the committee deliberates stays confidential, in line with the privacy policy. If you want to add or ask something, use the conversation above: it reaches the committee and does not identify you.',
     gravidade: {
       baixo: 'Low',
       medio: 'Medium',

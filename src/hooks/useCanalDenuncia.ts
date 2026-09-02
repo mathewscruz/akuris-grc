@@ -34,6 +34,8 @@ export interface ConfigCanal {
   permitir_reuniao: boolean | null;
   prazo_acusacao_dias: number | null;
   prazo_retorno_dias: number | null;
+  /* Para o ecrã de sucesso poder dizer a verdade sobre avisos. */
+  avisar_denunciante_por_email: boolean | null;
 }
 
 /** #RRGGBB válido — o resto é ignorado em silêncio, nunca aplicado. */

@@ -409,6 +409,9 @@ export const denunciasAdmin = {
         labelNotificarAdmins: 'Avisar o comitê',
         descNotificarAdmins:
           'E-mail e aviso na aplicação para quem está no comitê, assim que uma denúncia entra.',
+        labelAvisarDenunciante: 'Avisar quem denunciou',
+        descAvisarDenunciante:
+          'E-mail a quem deixou contato, sempre que houver novidade — sem nenhum detalhe do caso. Nunca vale para denúncias anônimas: não há para onde enviar.',
         labelEmailsNotificacao: 'E-mails para Notificação',
         placeholderEmails: 'email1@empresa.com, email2@empresa.com',
         hintEmails: 'Separe múltiplos e-mails com vírgula',
@@ -901,6 +904,9 @@ export const denunciasAdmin = {
         labelNotificarAdmins: 'Notify the committee',
         descNotificarAdmins:
           'Email and in-app alert for committee members as soon as a report comes in.',
+        labelAvisarDenunciante: 'Notify the reporter',
+        descAvisarDenunciante:
+          'Email whoever left contact details whenever there is news — with no detail of the case. Never applies to anonymous reports: there is nowhere to send it.',
         labelEmailsNotificacao: 'Notification Emails',
         placeholderEmails: 'email1@company.com, email2@company.com',
         hintEmails: 'Separate multiple emails with a comma',

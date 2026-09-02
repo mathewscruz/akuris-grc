@@ -34,6 +34,7 @@ interface ConfiguracaoDenuncia {
   texto_apresentacao: string;
   politica_privacidade: string;
   notificar_administradores: boolean;
+  avisar_denunciante_por_email: boolean;
   emails_notificacao: string[];
 }
 
@@ -86,6 +87,7 @@ export function ConfiguracoesDenuncia() {
     texto_apresentacao: '',
     politica_privacidade: '',
     notificar_administradores: true,
+    avisar_denunciante_por_email: true,
     emails_notificacao: ''
   });
 
@@ -114,6 +116,7 @@ export function ConfiguracoesDenuncia() {
           texto_apresentacao: data.texto_apresentacao || '',
           politica_privacidade: data.politica_privacidade || '',
           notificar_administradores: data.notificar_administradores,
+          avisar_denunciante_por_email: data.avisar_denunciante_por_email ?? true,
           emails_notificacao: data.emails_notificacao?.join(', ') || ''
         });
       } else {
@@ -185,6 +188,7 @@ export function ConfiguracoesDenuncia() {
         texto_apresentacao: formData.texto_apresentacao,
         politica_privacidade: formData.politica_privacidade,
         notificar_administradores: formData.notificar_administradores,
+        avisar_denunciante_por_email: formData.avisar_denunciante_por_email,
         emails_notificacao: emailsList
       };
 
@@ -517,6 +521,30 @@ export function ConfiguracoesDenuncia() {
                   checked={formData.notificar_administradores}
                   onCheckedChange={(checked) => 
                     setFormData(prev => ({ ...prev, notificar_administradores: checked }))
+                  }
+                />
+              </div>
+
+              {/*
+                O aviso para FORA.
+
+                O de cima avisa quem trata; este avisa quem denunciou, e e o
+                que faltava por completo. Fica ligado por omissao porque o
+                silencio era o defeito -- mas e desligavel, porque o e-mail sai
+                do perimetro e a caixa de correio pode ser da empresa que esta
+                a ser denunciada.
+              */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('denunciasAdmin.config.labelAvisarDenunciante')}</Label>
+                  <div className="text-sm text-muted-foreground">
+                    {t('denunciasAdmin.config.descAvisarDenunciante')}
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.avisar_denunciante_por_email}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, avisar_denunciante_por_email: checked }))
                   }
                 />
               </div>

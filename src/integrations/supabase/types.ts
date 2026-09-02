@@ -3552,6 +3552,7 @@ export type Database = {
       denuncias_configuracoes: {
         Row: {
           ativo: boolean | null
+          avisar_denunciante_por_email: boolean
           cor_destaque: string | null
           created_at: string | null
           emails_notificacao: string[] | null
@@ -3577,6 +3578,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          avisar_denunciante_por_email?: boolean
           cor_destaque?: string | null
           created_at?: string | null
           emails_notificacao?: string[] | null
@@ -3602,6 +3604,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          avisar_denunciante_por_email?: boolean
           cor_destaque?: string | null
           created_at?: string | null
           emails_notificacao?: string[] | null

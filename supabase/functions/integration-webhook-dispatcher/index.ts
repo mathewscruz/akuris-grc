@@ -311,28 +311,49 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey);
-    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (userErr || !userData?.user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: callerProfile } = await supabase
-      .from('profiles')
-      .select('empresa_id, role')
-      .eq('user_id', userData.user.id)
-      .maybeSingle();
+    /*
+      Segunda porta: chamada interna com a chave de serviço.
 
-    if (!callerProfile?.empresa_id) {
-      return new Response(
-        JSON.stringify({ error: 'Forbidden' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      Exigir sempre um JWT de utilizador deixava de fora o evento que mais
+      interessa neste produto — `denuncia_recebida`. Uma denúncia entra pelo
+      portal público, sem sessão nenhuma, e por isso NUNCA houve forma de a
+      recepção chegar às integrações: quem ligasse «Denúncia recebida» ao Slack
+      não era avisado ao receber uma denúncia.
+
+      A chave de serviço só existe do lado do servidor, e é o mesmo padrão que
+      `send-denuncia-notification` já usa. Com ela, o `empresa_id` vem do corpo
+      — não há chamador com quem o confrontar — e por isso a porta fica limitada
+      a chamadas internas.
+    */
+    const token = authHeader.replace('Bearer ', '');
+    const chamadaInterna = token === supabaseServiceKey;
+
+    let callerProfile: { empresa_id: string; role: string } | null = null;
+    if (!chamadaInterna) {
+      const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey);
+      const { data: userData, error: userErr } = await verifier.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: perfil } = await supabase
+        .from('profiles')
+        .select('empresa_id, role')
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+
+      if (!perfil?.empresa_id) {
+        return new Response(
+          JSON.stringify({ error: 'Forbidden' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      callerProfile = perfil as { empresa_id: string; role: string };
     }
 
     const { empresa_id: bodyEmpresaId, evento, titulo, descricao, link, dados, gravidade, triggered_by, timestamp } = await req.json();
@@ -345,8 +366,17 @@ serve(async (req) => {
     }
 
     // Force empresa_id to caller's own empresa (super_admin may target any tenant).
-    const isSuperAdmin = callerProfile.role === 'super_admin';
-    const empresa_id = isSuperAdmin && bodyEmpresaId ? bodyEmpresaId : callerProfile.empresa_id;
+    const isSuperAdmin = callerProfile?.role === 'super_admin';
+    const empresa_id = chamadaInterna
+      ? bodyEmpresaId
+      : (isSuperAdmin && bodyEmpresaId ? bodyEmpresaId : callerProfile!.empresa_id);
+
+    if (!empresa_id) {
+      return new Response(
+        JSON.stringify({ error: 'empresa_id é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log(`Dispatching event: ${evento} for empresa: ${empresa_id}`);
 

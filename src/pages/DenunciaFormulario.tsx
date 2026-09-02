@@ -211,6 +211,18 @@ export default function DenunciaFormulario() {
   const [submitting, setSubmitting] = useState(false);
   const [codigoAcompanhamento, setCodigoAcompanhamento] = useState('');
   const [protocolo, setProtocolo] = useState<string>('');
+  /**
+   * Esta pessoa vai ser avisada por e-mail?
+   *
+   * Fica gravado no envio, e não lido do formulário: o `form.reset()` corre a
+   * seguir e o ecrã de sucesso passaria a ler os valores por omissão. Medido —
+   * quem deixou e-mail lia «não enviamos avisos», que é exactamente a frase
+   * falsa que esta correcção veio tirar do outro caso.
+   *
+   * As três condições têm de valer: não ser anónima (não há para onde enviar),
+   * ter deixado e-mail, e o canal ter o aviso ligado.
+   */
+  const [avisaPorEmail, setAvisaPorEmail] = useState(false);
   const [anexos, setAnexos] = useState<File[]>([]);
   /** Ficheiros que NÃO chegaram. A tela final tem de os nomear. */
   const [anexosFalhados, setAnexosFalhados] = useState<string[]>([]);
@@ -396,6 +408,11 @@ export default function DenunciaFormulario() {
       }
 
       const codigo = denunciaData.codigo_acompanhamento ?? '';
+      setAvisaPorEmail(
+        data.nivel_identificacao !== 'anonima' &&
+          !!(data.denunciante_email ?? '').trim() &&
+          canal.config?.avisar_denunciante_por_email !== false,
+      );
       setProtocolo(denunciaData.protocolo);
       setCodigoAcompanhamento(codigo);
 
@@ -560,7 +577,17 @@ export default function DenunciaFormulario() {
 
               <p className="mb-6 mt-3 text-left text-xs leading-relaxed text-muted-foreground">
                 {t('publicPortal.denunciaForm.trackingCodeHint')}{' '}
-                {t('publicPortal.denunciaForm.successDescription')}
+                {/*
+                  Duas verdades diferentes, e a frase segue quem está a ler.
+
+                  Quem não deixou contacto não vai ser avisado por nada — e
+                  dizer-lhe que vai é a promessa falsa que esta tela fazia. Mas
+                  quem deixou passa a ser avisado, e repetir-lhe «não enviamos
+                  avisos» seria a mesma falha do avesso.
+                */}
+                {avisaPorEmail
+                  ? t('publicPortal.denunciaForm.successDescriptionComAviso')
+                  : t('publicPortal.denunciaForm.successDescription')}
               </p>
 
               {/*
@@ -925,7 +952,24 @@ export default function DenunciaFormulario() {
                       <label className="text-sm font-medium">{t('publicPortal.denunciaForm.attach')}</label>
                       <span className="text-xs text-muted-foreground">{t('publicPortal.denunciaForm.attachHint')}</span>
                     </div>
-                    
+
+                    {/*
+                      O aviso só aparece a quem escolheu não se identificar.
+
+                      Um ficheiro leva por dentro o que a pessoa não escreveu —
+                      autor do documento, modelo do aparelho, coordenadas da
+                      fotografia. O canal convidava ao upload logo a seguir a
+                      prometer anonimato, e nada dizia. Para quem se
+                      identificou, o aviso é ruído: a empresa já sabe quem é.
+                    */}
+                    {form.watch('nivel_identificacao') === 'anonima' && (
+                      <Alert>
+                        <AlertDescription className="text-xs leading-relaxed">
+                          {t('publicPortal.denunciaForm.anexoMetadados')}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     <div className="flex items-center justify-center w-full">
                       <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-accent">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">

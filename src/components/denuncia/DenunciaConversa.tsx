@@ -24,6 +24,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { avisarDenunciante } from '@/lib/avisar-denunciante';
 
 interface Mensagem {
   id: string;
@@ -94,6 +95,9 @@ export function DenunciaConversa({ denunciaId, empresaId }: Props) {
       if (error) throw error;
       setTexto('');
       queryClient.invalidateQueries({ queryKey: ['denuncia-mensagens', denunciaId] });
+      /* A conversa era a unica via de retorno e nao avisava do outro lado: a
+         resposta ficava aqui a espera de que a pessoa se lembrasse de voltar. */
+      void avisarDenunciante(denunciaId, 'mensagem');
       toast.success(t('denunciasAdmin.conversa.enviada'));
     } catch (e) {
       toast.error(t('denunciasAdmin.conversa.erroEnviar'));

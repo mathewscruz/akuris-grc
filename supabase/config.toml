@@ -137,6 +137,11 @@ verify_jwt = false
 [functions.create-denuncia]
 verify_jwt = false
 
+# Verifica a autorizacao por dentro: membro do comite com sessao, OU chamada
+# interna com a chave de servico. `verify_jwt = true` recusaria a segunda.
+[functions.avisar-denunciante]
+verify_jwt = false
+
 [functions.apply-default-permissions-all-users]
 verify_jwt = true
 

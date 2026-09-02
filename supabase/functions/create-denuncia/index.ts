@@ -289,6 +289,43 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error('Aviso da denúncia falhou:', e instanceof Error ? e.message : String(e));
       }
+
+      /*
+        E avisar as integrações que a empresa ligou.
+
+        `denuncia_recebida` era o único evento do canal no catálogo e nunca
+        disparava numa recepção: a única chamada estava na ficha, na mudança de
+        estado. Quem ligasse «Denúncia recebida» ao Slack era avisado ao
+        ARQUIVAR e ficava sem saber quando entrava uma.
+
+        Vai o protocolo e mais nada. O título do relato não sai do perímetro
+        por um webhook que a empresa configura livremente — num canal em que o
+        sigilo é a promessa, quem tem de ler o caso abre o Akuris.
+      */
+      try {
+        const evento = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/integration-webhook-dispatcher`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
+          body: JSON.stringify({
+            empresa_id: empresaId,
+            evento: 'denuncia_recebida',
+            titulo: `Nova denúncia: ${result.protocolo ?? ''}`,
+            descricao: 'Entrou uma denúncia no canal. Abra o Akuris para a ver.',
+            link: `${Deno.env.get('SITE_URL') ?? 'https://akuris.com.br'}/denuncia`,
+            dados: { protocolo: result.protocolo ?? null, id: denunciaId },
+            gravidade: 'alta',
+            timestamp: new Date().toISOString(),
+          }),
+        });
+        if (!evento.ok) {
+          console.error('Evento de integração falhou:', evento.status, await evento.text());
+        }
+      } catch (e) {
+        console.error('Evento de integração falhou:', e instanceof Error ? e.message : String(e));
+      }
     }
 
     return json({

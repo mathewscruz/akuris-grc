@@ -28,6 +28,7 @@ import { IconCalendarClock, IconCheck, IconLock } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
 import { toast } from 'sonner';
+import { avisarDenunciante } from '@/lib/avisar-denunciante';
 
 interface Reuniao {
   id: string;
@@ -119,6 +120,9 @@ export function DenunciaReunioes({ denunciaId, empresaId, status, onAtualizado }
         .eq('id', r.id);
       if (error) throw error;
       await trilha(acao);
+      /* Marcar, recusar ou partilhar a acta e novidade para quem pediu a
+         reuniao -- e ate agora so aparecia se ela voltasse ao portal. */
+      void avisarDenunciante(denunciaId, 'reuniao');
       setRascunho((atual) => ({ ...atual, [r.id]: {} }));
       queryClient.invalidateQueries({ queryKey: chave });
       onAtualizado();

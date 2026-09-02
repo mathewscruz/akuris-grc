@@ -52,6 +52,7 @@ import { DenunciaApuracao } from './DenunciaApuracao';
 import { DenunciaReunioes } from './DenunciaReunioes';
 import { DenunciaAnexos } from './DenunciaAnexos';
 import { DenunciaConverter } from './DenunciaConverter';
+import { avisarDenunciante } from '@/lib/avisar-denunciante';
 
 interface DenunciaDialogProps {
   denuncia: any;
@@ -202,6 +203,10 @@ export function DenunciaDialog({
           });
 
         if (movError) throw movError;
+
+        /* Só quando o estado mudou mesmo: gravar o parecer sem mexer no
+           andamento não é novidade para quem espera notícias. */
+        void avisarDenunciante(denuncia.id, 'estado');
       }
 
       /*
