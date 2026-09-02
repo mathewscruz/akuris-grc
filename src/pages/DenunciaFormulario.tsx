@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconClose, IconUpload, IconExternal, IconShield, IconArrowLeft } from '@/components/icons';
+import { IconClose, IconUpload, IconExternal, IconShield, IconArrowLeft, IconCopy, IconSuccess } from '@/components/icons';
 import { useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -141,6 +141,64 @@ const faltaONome = (nivel: unknown, nome: unknown) =>
 
 /** Os três níveis, na ordem em que a pessoa os pondera. */
 const NIVEIS = ['identificada', 'confidencial', 'anonima'] as const;
+
+/**
+ * Copiar sem sair da página.
+ *
+ * `navigator.clipboard` não existe em contexto inseguro — e um portal de
+ * denúncia é acedido por gente em redes e navegadores que não escolhemos. Sem
+ * ele, o botão não aparece de todo: um botão de copiar que não copia, no ecrã
+ * onde se entrega a única credencial da pessoa, é pior do que não haver botão.
+ */
+function BotaoCopiar({ texto, rotulo, rotuloFeito }: { texto: string; rotulo: string; rotuloFeito: string }) {
+  const [feito, setFeito] = useState(false);
+  const podeCopiar = typeof navigator !== 'undefined' && !!navigator.clipboard?.writeText;
+  if (!podeCopiar) return null;
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(texto);
+          setFeito(true);
+          window.setTimeout(() => setFeito(false), 2000);
+        } catch {
+          /* Recusado pelo navegador: o valor continua na tela para copiar à
+             mão, e dizer «falhou» aqui só assustaria. */
+        }
+      }}
+    >
+      {feito ? (
+        <IconSuccess className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
+      ) : (
+        <IconCopy className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
+      )}
+      {feito ? rotuloFeito : rotulo}
+    </Button>
+  );
+}
+
+/** Protocolo ou código: o valor, e a forma de o levar daqui. */
+function Credencial({ rotulo, valor }: { rotulo: string; valor: string }) {
+  const { t } = useLanguage();
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+          {rotulo}
+        </p>
+        <BotaoCopiar
+          texto={valor}
+          rotulo={t('publicPortal.denunciaForm.copiar')}
+          rotuloFeito={t('publicPortal.denunciaForm.copiado')}
+        />
+      </div>
+      <p className="mt-1 break-all font-mono text-lg font-semibold text-foreground">{valor}</p>
+    </div>
+  );
+}
 
 export default function DenunciaFormulario() {
   const { empresa: empresaSlug } = useParams();
@@ -470,26 +528,35 @@ export default function DenunciaFormulario() {
                 credenciais, não de parecer uma mensagem de parabéns.
               */}
               <div className="grid gap-3 text-left sm:grid-cols-2">
-                <div className="rounded-lg border border-border bg-muted/20 p-4">
-                  <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t('publicPortal.denunciaForm.yourProtocol')}
-                  </p>
-                  <p className="mt-1 break-all font-mono text-lg font-semibold text-foreground">
-                    {protocolo}
-                  </p>
-                </div>
-
+                <Credencial
+                  rotulo={t('publicPortal.denunciaForm.yourProtocol')}
+                  valor={protocolo}
+                />
                 {codigoAcompanhamento && (
-                  <div className="rounded-lg border border-border bg-muted/20 p-4">
-                    <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t('publicPortal.denunciaForm.yourTrackingCode')}
-                    </p>
-                    <p className="mt-1 break-all font-mono text-lg font-semibold text-foreground">
-                      {codigoAcompanhamento}
-                    </p>
-                  </div>
+                  <Credencial
+                    rotulo={t('publicPortal.denunciaForm.yourTrackingCode')}
+                    valor={codigoAcompanhamento}
+                  />
                 )}
               </div>
+
+              {/*
+                Copiar as duas de uma vez.
+
+                O código tem 32 caracteres hexadecimais e não havia forma de o
+                copiar: quem denunciava tinha de o transcrever à mão. Errar um
+                caractere é perder o acesso à própria denúncia para sempre —
+                não há recuperação, e é isso que o texto abaixo agora diz.
+              */}
+              {codigoAcompanhamento && (
+                <div className="mt-3 flex justify-start">
+                  <BotaoCopiar
+                    texto={`${t('publicPortal.denunciaForm.yourProtocol')} ${protocolo}\n${t('publicPortal.denunciaForm.yourTrackingCode')} ${codigoAcompanhamento}`}
+                    rotulo={t('publicPortal.denunciaForm.copiarTudo')}
+                    rotuloFeito={t('publicPortal.denunciaForm.copiado')}
+                  />
+                </div>
+              )}
 
               <p className="mb-6 mt-3 text-left text-xs leading-relaxed text-muted-foreground">
                 {t('publicPortal.denunciaForm.trackingCodeHint')}{' '}
@@ -928,6 +995,19 @@ export default function DenunciaFormulario() {
                         valor: form.watch('titulo'),
                       },
                       {
+                        /*
+                          A descrição faltava aqui.
+
+                          O passo diz «confira antes de enviar» e mostrava
+                          categoria, título, local e identificação — tudo menos
+                          o relato, que é o campo longo, o que a pessoa
+                          escreveu com cuidado e o único que não pode corrigir
+                          depois de enviar. Conferir sem o ver não é conferir.
+                        */
+                        rotulo: t('publicPortal.denunciaForm.revisaoDescricao'),
+                        valor: form.watch('descricao'),
+                      },
+                      {
                         rotulo: t('publicPortal.denunciaForm.revisaoLocal'),
                         valor: form.watch('local_ocorrencia'),
                       },
@@ -957,7 +1037,7 @@ export default function DenunciaFormulario() {
                           <dt className="w-32 shrink-0 text-xs text-muted-foreground">
                             {linha.rotulo}
                           </dt>
-                          <dd className="min-w-0 flex-1 break-words text-sm text-foreground">
+                          <dd className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-foreground">
                             {linha.valor}
                           </dd>
                         </div>

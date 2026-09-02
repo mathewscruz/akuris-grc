@@ -39,6 +39,10 @@ export const INTEGRATION_EVENTS: IntegrationEvent[] = [
 
   // Denúncias
   { id: 'denuncia_recebida', label: 'Denúncia recebida', modulo: 'Denúncias' },
+  /* `denuncia_recebida` era o ÚNICO evento do canal, e disparava da ficha, na
+     mudança de estado: quem ligasse «Denúncia recebida» ao Slack era avisado
+     ao ARQUIVAR e não era avisado ao receber. */
+  { id: 'denuncia_atualizada', label: 'Denúncia mudou de estado', modulo: 'Denúncias' },
 
   // Contratos
   { id: 'contrato_criado', label: 'Contrato criado', modulo: 'Contratos' },

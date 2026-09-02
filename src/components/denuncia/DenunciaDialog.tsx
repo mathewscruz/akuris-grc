@@ -204,11 +204,21 @@ export function DenunciaDialog({
         if (movError) throw movError;
       }
 
-      // Notificar integrações externas sobre atualização da denúncia
+      /*
+        Integrações externas: o evento certo, e sem o relato lá dentro.
+
+        Duas coisas estavam mal. Disparava `denuncia_recebida` numa MUDANÇA DE
+        ESTADO — quem ligasse «Denúncia recebida» ao Slack era avisado ao
+        arquivar e não era avisado ao receber. E levava o TÍTULO da denúncia
+        para um webhook que a empresa configura livremente: num canal em que o
+        sigilo é a promessa, o assunto do relato não sai do perímetro por um
+        aviso de mudança de estado. O protocolo identifica o caso a quem tem
+        acesso, sem dizer nada a quem não tem.
+      */
       try {
-        await notify('denuncia_recebida', {
-          titulo: `Denúncia ${denuncia.protocolo} atualizada para ${statusNovo}`,
-          descricao: `A denúncia "${denuncia.titulo}" teve seu status alterado de ${statusAnterior} para ${statusNovo}.`,
+        await notify('denuncia_atualizada', {
+          titulo: `Denúncia ${denuncia.protocolo}: ${statusAnterior} → ${statusNovo}`,
+          descricao: `A denúncia ${denuncia.protocolo} mudou de estado. Abra o canal para ver o caso.`,
           link: `${window.location.origin}/denuncia`,
           gravidade: denuncia.gravidade === 'critico' ? 'critica' : denuncia.gravidade === 'alto' ? 'alta' : 'media',
           dados: { protocolo: denuncia.protocolo, status_anterior: statusAnterior, status_novo: statusNovo }

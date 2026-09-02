@@ -96,6 +96,7 @@ const ptDict = {
     revisaoTitulo: 'Confira antes de enviar',
     revisaoCategoria: 'Categoria',
     revisaoTitulo2: 'Título',
+    revisaoDescricao: 'Descrição',
     revisaoLocal: 'Local',
     revisaoIdentificacao: 'Identificação',
     revisaoAnexos: { one: '1 arquivo', other: '{count} arquivos' },
@@ -124,8 +125,19 @@ const ptDict = {
       other: '{count} arquivos não puderam ser anexados',
     },
     anexosFalharamAjuda: 'Guarde esses arquivos. Você pode enviá-los depois pela consulta do protocolo, usando o código acima.',
+    /*
+       A frase anterior prometia o que o canal nao faz: «Voce recebera
+       atualizacoes sobre o andamento do caso». Quem denuncia sem se identificar
+       nao deixa contacto nenhum -- nao ha para onde enviar --, e mesmo quem
+       deixa nunca e avisado por nada. Prometer aviso a quem vai ter de voltar
+       por iniciativa propria e a maneira mais certa de a pessoa nunca mais
+       voltar.
+    */
     successDescription:
-      'Guarde este número para acompanhar o status da sua denúncia. Você receberá atualizações sobre o andamento do caso.',
+      'Não enviamos avisos: para saber como está a apuração, volte aqui e consulte com o protocolo e o código. Sem eles, ninguém consegue recuperar o acesso a esta denúncia, nem nós.',
+    copiar: 'Copiar',
+    copiado: 'Copiado',
+    copiarTudo: 'Copiar protocolo e código',
     checkStatus: 'Consultar Status da Denúncia',
     backHome: 'Voltar ao Início',
     category: 'Categoria da Denúncia *',
@@ -304,6 +316,11 @@ const ptDict = {
     searching: 'Buscando...',
     search: 'Consultar',
     protocol: 'Protocolo:',
+    prazoAcusacao: 'Confirmação do recebimento',
+    prazoRetorno: 'Retorno sobre a apuração',
+    prazoAte: 'Até {data}',
+    prazoCumpridoEm: 'Feito a {data}',
+    prazoVencidoEm: 'Prazo passou a {data}',
     reportDate: 'Data da Denúncia',
     category: 'Categoria',
     assignmentDate: 'Data de Atribuição',
@@ -476,6 +493,7 @@ const enDict: typeof ptDict = {
     revisaoTitulo: 'Check before sending',
     revisaoCategoria: 'Category',
     revisaoTitulo2: 'Title',
+    revisaoDescricao: 'Description',
     revisaoLocal: 'Place',
     revisaoIdentificacao: 'Identification',
     revisaoAnexos: { one: '1 file', other: '{count} files' },
@@ -503,7 +521,10 @@ const enDict: typeof ptDict = {
     },
     anexosFalharamAjuda: 'Keep those files. You can send them later from the protocol lookup, using the code above.',
     successDescription:
-      'Save this number to track the status of your report. You will receive updates on the progress of the case.',
+      'We do not send notifications: to see how the investigation is going, come back here and look it up with the protocol number and the code. Without them nobody can recover access to this report, not even us.',
+    copiar: 'Copy',
+    copiado: 'Copied',
+    copiarTudo: 'Copy protocol and code',
     checkStatus: 'Check Report Status',
     backHome: 'Back to Home',
     category: 'Report Category *',
@@ -676,6 +697,11 @@ const enDict: typeof ptDict = {
     searching: 'Searching...',
     search: 'Search',
     protocol: 'Protocol:',
+    prazoAcusacao: 'Acknowledgement of receipt',
+    prazoRetorno: 'Feedback on the investigation',
+    prazoAte: 'By {data}',
+    prazoCumpridoEm: 'Done on {data}',
+    prazoVencidoEm: 'Deadline passed on {data}',
     reportDate: 'Report date',
     category: 'Category',
     assignmentDate: 'Assignment date',

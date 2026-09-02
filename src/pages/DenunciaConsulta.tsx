@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatDateTime } from '@/lib/date-utils';
+import { formatDateTime, formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveDenunciaStatusTone, resolveGravidadeTone } from '@/lib/status-tone';
-import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { resolveDenunciaStatusTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyLogo } from '@/lib/brand-logo';
 import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
@@ -34,7 +33,12 @@ interface Denuncia {
   protocolo: string;
   titulo: string;
   status: string;
-  gravidade: string;
+  /* `gravidade` saiu da resposta publica: era o default da coluna a
+     fazer-se passar por avaliacao do comite. Ver a migration
+     20260902050000. */
+  prazo_acusacao: string | null;
+  prazo_retorno: string | null;
+  data_acusacao_recebimento: string | null;
   created_at: string;
   data_atribuicao: string | null;
   data_inicio_investigacao: string | null;
@@ -62,6 +66,82 @@ interface Movimentacao {
   usuario: {
     nome: string;
   } | null;
+}
+
+/**
+ * As duas datas que a lei dá a quem denunciou.
+ *
+ * Não é enfeite: quem denuncia não tem conta, não recebe aviso nenhum e só
+ * volta aqui por iniciativa própria. Se o ecrã não disser até quando a empresa
+ * tem de acusar o recebimento e de dar retorno, a pessoa não tem como saber se
+ * o silêncio é normal ou se já passou do prazo — e é justamente aí que a
+ * Diretiva (UE) 2019/1937 lhe dá o direito de ir para fora, à autoridade.
+ *
+ * Cumprido pinta-se de feito; vencido pinta-se de vencido. Não se esconde o
+ * atraso da empresa a quem ele prejudica.
+ */
+function PrazosDoCaso({ denuncia }: { denuncia: { prazo_acusacao: string | null; prazo_retorno: string | null; data_acusacao_recebimento: string | null; status: string } }) {
+  const { t } = useLanguage();
+  const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
+  if (!denuncia.prazo_acusacao && !denuncia.prazo_retorno) return null;
+
+  const atrasado = (data: string | null, cumprido: boolean) => {
+    if (cumprido || !data) return false;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const alvo = parseDataLocal(data);
+    alvo.setHours(0, 0, 0, 0);
+    return alvo.getTime() < hoje.getTime();
+  };
+
+  const linhas = [
+    {
+      chave: 'acusacao',
+      rotulo: t('publicPortal.denunciaConsulta.prazoAcusacao'),
+      data: denuncia.prazo_acusacao,
+      cumprido: !!denuncia.data_acusacao_recebimento,
+      feitoEm: denuncia.data_acusacao_recebimento,
+    },
+    {
+      chave: 'retorno',
+      rotulo: t('publicPortal.denunciaConsulta.prazoRetorno'),
+      data: denuncia.prazo_retorno,
+      cumprido: encerrada,
+      feitoEm: null,
+    },
+  ].filter((l) => !!l.data);
+
+  return (
+    <div className="grid gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:grid-cols-2">
+      {linhas.map((l) => {
+        const vencido = atrasado(l.data, l.cumprido);
+        return (
+          <div key={l.chave}>
+            <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+              {l.rotulo}
+            </p>
+            <p
+              className={
+                l.cumprido
+                  ? 'mt-0.5 text-sm font-medium text-state-done'
+                  : vencido
+                    ? 'mt-0.5 text-sm font-medium text-severity-critical'
+                    : 'mt-0.5 text-sm font-medium text-foreground'
+              }
+            >
+              {l.cumprido
+                ? t('publicPortal.denunciaConsulta.prazoCumpridoEm', {
+                    data: formatDateOnly(l.feitoEm ?? l.data!),
+                  })
+                : vencido
+                  ? t('publicPortal.denunciaConsulta.prazoVencidoEm', { data: formatDateOnly(l.data!) })
+                  : t('publicPortal.denunciaConsulta.prazoAte', { data: formatDateOnly(l.data!) })}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function DenunciaConsulta() {
@@ -278,15 +358,6 @@ export default function DenunciaConsulta() {
     return label.startsWith('publicPortal.') ? status : label;
   };
 
-  /* Saía o valor cru da base, com a inicial em maiúscula: «Medio». Passa pelo
-     vocabulário canónico e só depois pelo dicionário. */
-  const getGravidadeLabel = (gravidade: string) => {
-    if (!gravidade) return '-';
-    const canonica = severidadeDeFaixas(gravidade);
-    const rotulo = t(`publicPortal.denunciaConsulta.gravidade.${canonica}`);
-    return rotulo.startsWith('publicPortal.') ? gravidade : rotulo;
-  };
-
   const formatDate = (dateString: string) => formatDateTime(dateString);
 
   if (loading) {
@@ -376,13 +447,21 @@ export default function DenunciaConsulta() {
                     <StatusBadge {...resolveDenunciaStatusTone(denuncia.status)}>
                       {getStatusText(denuncia.status)}
                     </StatusBadge>
-                    <StatusBadge {...resolveGravidadeTone(denuncia.gravidade)}>
-                      {getGravidadeLabel(denuncia.gravidade)}
-                    </StatusBadge>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/*
+                  Os prazos de quem denunciou.
+
+                  A página dos direitos, ao lado, promete «recebimento em 7
+                  dias e retorno em 90». Isso é a promessa; isto são as datas
+                  deste caso. Sem elas, acompanhar a denúncia é ver um estado
+                  que não muda e não saber se é normal ou se a empresa está
+                  atrasada — e quem denuncia não tem outra forma de o descobrir.
+                */}
+                <PrazosDoCaso denuncia={denuncia} />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">
@@ -543,7 +622,19 @@ export default function DenunciaConsulta() {
                               {formatDate(movimentacao.created_at)}
                             </span>
                           </div>
-                          {movimentacao.status_anterior && movimentacao.status_novo && (
+                          {/*
+                            Só quando o estado MUDOU mesmo.
+
+                            A trilha guarda `status_anterior` e `status_novo`
+                            em toda a linha, mudem eles ou não — um pedido de
+                            reunião grava `nova → nova`. O ecrã imprimia a
+                            transição na mesma, e quem denunciou lia «Status
+                            alterado de "Nova" para "Nova"» por baixo do seu
+                            próprio pedido de reunião. Medido no portal.
+                          */}
+                          {movimentacao.status_anterior &&
+                            movimentacao.status_novo &&
+                            movimentacao.status_anterior !== movimentacao.status_novo && (
                             <p className="text-xs text-muted-foreground">
                               {t('publicPortal.denunciaConsulta.statusChanged', { from: getStatusText(movimentacao.status_anterior), to: getStatusText(movimentacao.status_novo) })}
                             </p>
