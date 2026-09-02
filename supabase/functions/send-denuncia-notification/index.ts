@@ -16,7 +16,22 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+    /*
+      O cliente de e-mail so nasce quando ha e-mail para enviar.
+
+      Estava aqui, na primeira linha do handler: `new Resend(undefined)` lanca
+      quando `RESEND_API_KEY` falta, e o handler inteiro morria com 500 --
+      levando com ele o AVISO NO SINO, que esta mais abaixo e cujo proprio
+      comentario diz que existe porque "e-mail cai em spam, e uma denuncia com
+      prazo de 7 dias nao pode depender disso".
+
+      Medido, com a chave ausente: denuncia criada, protocolo emitido,
+      `notifications` com ZERO linhas. A denuncia entrava e ninguem sabia.
+      Tambem se perdia o `console.error` que assinala empresa sem comite.
+
+      Agora a falta da chave custa o e-mail, e so o e-mail.
+    */
+    const chaveResend = Deno.env.get('RESEND_API_KEY');
 
     // Auth: this function is triggered post-submission. Accept either:
     //   (a) a valid JWT from an admin/user of the same empresa, OR
@@ -45,7 +60,20 @@ const handler = async (req: Request): Promise<Response> => {
     const { denuncia_id, empresa_id }: NotificationRequest = await req.json();
 
     const { data: denuncia, error: denunciaError } = await supabaseClient.from('denuncias').select(`*, categoria:denuncias_categorias(nome), empresa:empresas(nome, logo_url)`).eq('id', denuncia_id).single();
-    if (denunciaError || !denuncia) throw new Error('Denúncia não encontrada');
+    /*
+      Falhar a LER nao e a denuncia nao existir.
+
+      Esta linha dizia 'Denuncia nao encontrada' para os dois casos, e por isso
+      escondeu durante todo este tempo o defeito real: `denuncias` nao tinha
+      chave estrangeira para `empresas`, o embed devolvia PGRST200, e o aviso
+      ao comite nunca saia. Quem lesse o log via uma denuncia que nao existe --
+      e ela existia, com protocolo emitido.
+    */
+    if (denunciaError) {
+      console.error('[send-denuncia-notification] leitura falhou:', denunciaError.message, denunciaError.code ?? '');
+      throw new Error(`Nao foi possivel ler a denuncia: ${denunciaError.message}`);
+    }
+    if (!denuncia) throw new Error('Denúncia não encontrada');
 
     const { data: config } = await supabaseClient.from('denuncias_configuracoes').select('*').eq('empresa_id', empresa_id).single();
     if (!config || !config.notificar_administradores) return new Response(JSON.stringify({ success: true, message: 'Notificações desabilitadas' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -97,6 +125,14 @@ const handler = async (req: Request): Promise<Response> => {
       console.error(`Empresa ${empresa_id} recebeu denuncia e nao tem comite: ninguem sera avisado nem conseguira abrir o caso.`);
     }
     if (config.emails_notificacao?.length > 0) config.emails_notificacao.forEach((email: string) => { if (email?.includes('@')) emailList.add(email.trim()); });
+    /* Sem chave nao ha e-mail -- mas o aviso no sino ja foi criado acima, que e
+       o que nao pode faltar. Devolve-se sucesso com a contagem, para quem
+       chamou saber o que aconteceu de facto. */
+    if (!chaveResend) {
+      console.warn('[send-denuncia-notification] RESEND_API_KEY ausente: avisos no sino criados, e-mail nao enviado');
+      return new Response(JSON.stringify({ success: true, avisos_app: comiteIds.length, emails: 0, message: 'RESEND_API_KEY ausente' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const resend = new Resend(chaveResend);
     if (emailList.size === 0) return new Response(JSON.stringify({ success: true, avisos_app: comiteIds.length, message: 'Nenhum e-mail válido' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     // O mapa de rótulos tem de aceitar o vocabulário gravado hoje (masculino)
