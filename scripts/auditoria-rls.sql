@@ -212,3 +212,54 @@ WHERE (
    )
    AND COALESCE(q.configuracoes->>'polaridade', 'positiva') <> 'negativa'
 ORDER BY 1, 2;
+
+\echo ''
+\echo '=== 9. Canal de denuncia: saude por empresa ==='
+\echo '(uma linha por empresa. `pronto` = recebe denuncia E ha quem a leia.)'
+\echo ''
+
+-- "Esta 100% operacional para cada empresa?" nao se responde uma vez: responde-se
+-- sempre que entra um cliente novo. Esta consulta e a resposta.
+--
+-- As tres condicoes que fazem um canal funcionar, e o que falha em cada uma:
+--   · config + token  -> sem isto o endereco publico nao resolve;
+--   · categoria ativa -> o formulario nao tem o que oferecer;
+--   · comite          -> a denuncia chega e NINGUEM a pode abrir. O gatilho
+--     `trg_profile_semeia_comite` semeia-o quando aparece o primeiro admin, por
+--     isso um comite vazio numa empresa COM admins e defeito, e numa empresa
+--     sem perfis nenhuns e apenas uma empresa por povoar.
+SELECT e.nome AS empresa,
+       CASE WHEN c.ativo THEN 'ligado' ELSE 'DESLIGADO' END AS canal,
+       CASE WHEN c.token_publico IS NULL THEN 'SEM TOKEN' ELSE 'ok' END AS endereco,
+       (SELECT count(*) FROM public.denuncias_categorias k WHERE k.empresa_id = e.id AND k.ativo) AS categorias,
+       (SELECT count(*) FROM public.denuncias_comite m WHERE m.empresa_id = e.id) AS comite,
+       (SELECT count(*) FROM public.profiles p WHERE p.empresa_id = e.id AND p.role IN ('admin','super_admin')) AS admins,
+       CASE
+         WHEN NOT c.ativo THEN 'desligado por opcao'
+         WHEN c.token_publico IS NULL THEN 'NAO: sem endereco publico'
+         WHEN NOT EXISTS (SELECT 1 FROM public.denuncias_categorias k WHERE k.empresa_id = e.id AND k.ativo)
+           THEN 'NAO: sem categoria ativa'
+         WHEN NOT EXISTS (SELECT 1 FROM public.denuncias_comite m WHERE m.empresa_id = e.id)
+           THEN 'NAO: sem comite -- a denuncia chega e ninguem a le'
+         ELSE 'pronto'
+       END AS estado
+FROM public.empresas e
+LEFT JOIN public.denuncias_configuracoes c ON c.empresa_id = e.id
+ORDER BY 1;
+
+\echo ''
+\echo '=== 10. Canal ligado sem quem leia a denuncia ==='
+\echo '(esperado: vazio. E o unico estado em que o canal MENTE ao denunciante.)'
+\echo ''
+
+-- Um canal ligado promete, ao denunciante, que alguem vai ler. Sem comite essa
+-- promessa e falsa: a denuncia entra, o protocolo e emitido, e a RLS nao deixa
+-- ninguem abri-la. `send-denuncia-notification` ja escreve um erro no log
+-- ("nao tem comite: ninguem sera avisado"), mas log nao e alarme.
+SELECT e.nome AS empresa,
+       (SELECT count(*) FROM public.denuncias d WHERE d.empresa_id = e.id) AS denuncias_presas
+FROM public.empresas e
+JOIN public.denuncias_configuracoes c ON c.empresa_id = e.id
+WHERE c.ativo
+  AND NOT EXISTS (SELECT 1 FROM public.denuncias_comite m WHERE m.empresa_id = e.id)
+ORDER BY 1;
