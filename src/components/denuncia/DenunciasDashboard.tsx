@@ -15,6 +15,7 @@ import { resolveDenunciaStatusTone, resolveCriticidadeTone } from '@/lib/status-
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { prazoActivo, encerrada as jaEncerrada } from '@/lib/prazo-da-denuncia';
 interface Denuncia {
   id: string;
   protocolo: string;
@@ -47,6 +48,7 @@ function diasAte(data?: string | null): number | null {
   return Math.round((alvo.getTime() - hoje.getTime()) / 86400000);
 }
 
+
 interface DenunciasDashboardProps {
   itemIdToOpen?: string | null;
   refreshKey?: number | string;
@@ -73,8 +75,10 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
   const [prazoFilter, setPrazoFilter] = useState('todos');
   const [nomes, setNomes] = useState<Record<string, string>>({});
   const [comReuniao, setComReuniao] = useState<Set<string>>(new Set());
-  const [sortField, setSortField] = useState('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  /* Quem escreveu e ainda não foi lido. `lida_em` era escrito pela conversa e
+     nunca lido por ninguém — o comentário lá prometia «o painel conta quantas
+     estão à espera de resposta» e não havia painel nenhum a contar. */
+  const [porResponder, setPorResponder] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { empresaId: empresaPropria } = useEmpresaId();
   const empresaId = empresaSelecionada || empresaPropria;
@@ -155,6 +159,22 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         .eq('empresa_id', empresaId)
         .eq('estado', 'solicitada');
       setComReuniao(new Set((pedidos ?? []).map((r) => r.denuncia_id)));
+
+      /*
+        Quem respondeu e continua à espera.
+
+        A conversa é a única via de retorno de quem denunciou, e uma mensagem
+        dela só se via abrindo a denúncia e indo à aba certa. Agora o gatilho
+        `trg_mensagem_avisa_o_comite` toca o sino; isto põe a mesma coisa na
+        lista, para quem chega ao ecrã sem ter visto o aviso.
+      */
+      const { data: porLer } = await supabase
+        .from('denuncias_mensagens')
+        .select('denuncia_id')
+        .eq('empresa_id', empresaId)
+        .eq('autor_tipo', 'denunciante')
+        .is('lida_em', null);
+      setPorResponder(new Set((porLer ?? []).map((m) => m.denuncia_id)));
     } catch (error) {
       console.error('Erro ao carregar denúncias:', error);
       toast({
@@ -193,35 +213,36 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
 
       /* Só interessa o prazo do que ainda está aberto: uma denúncia resolvida
          com prazo passado não é uma pendência, é história. */
-      const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
-      const dias = diasAte(denuncia.prazo_retorno);
+      const encerrada = jaEncerrada(denuncia);
+      const prazo = prazoActivo(denuncia);
+      const dias = diasAte(prazo.data);
       const matchesPrazo =
         prazoFilter === 'todos' ||
         (prazoFilter === 'vencidas' && !encerrada && dias !== null && dias < 0) ||
-        (prazoFilter === 'a_vencer' && !encerrada && dias !== null && dias >= 0 && dias <= 15) ||
+        (prazoFilter === 'a_vencer' && !encerrada && dias !== null && dias >= 0 && dias <= prazo.janela) ||
+        (prazoFilter === 'por_responder' && !encerrada && porResponder.has(denuncia.id)) ||
         (prazoFilter === 'sem_responsavel' && !encerrada && !denuncia.responsavel_id);
 
       return matchesSearch && matchesStatus && matchesGravidade && matchesPrazo;
     });
 
-    // Ordenar
-    filtered.sort((a, b) => {
-      const aValue = a[sortField as keyof Denuncia];
-      const bValue = b[sortField as keyof Denuncia];
+    /*
+       A ordenação é do `DataTable`, não daqui.
 
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
-          : bValue.localeCompare(aValue);
-      }
+       Havia aqui um `sort` com `localeCompare`, e a tabela recebia
+       `sortField`/`onSort` — o que a faz devolver os dados SEM ordenar e
+       confiar nesta função. Resultado: a gravidade ordenava por alfabeto —
+       «alto, baixo, critico, medio» — e o comparador de escala que existe para
+       isto (`compararEscala`) nunca era chamado. A coluna «Denunciante»
+       ordenava por um campo inexistente (`denunciante`, quando o campo é
+       `nome_denunciante`): clicar no cabeçalho não fazia rigorosamente nada. E
+       «Responsável» ordenava por UUID, o que na tela parece ordem aleatória.
 
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
+       Sem `onSort`, o `DataTable` ordena internamente, com o comparador certo
+       e com os `sortAccessor` de cada coluna.
+    */
     return filtered;
-  }, [denuncias, searchTerm, statusFilter, gravidadeFilter, prazoFilter, sortField, sortDirection]);
+  }, [denuncias, searchTerm, statusFilter, gravidadeFilter, prazoFilter, porResponder]);
 
   // Configuração das colunas
   const columns = [
@@ -256,7 +277,13 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
           <span className="truncate text-sm">{denuncia.titulo}</span>
           <span className="truncate text-micro text-muted-foreground">
             {denuncia.categoria?.nome}
-            {denuncia.categoria && comReuniao.has(denuncia.id) ? ' · ' : ''}
+            {denuncia.categoria && (comReuniao.has(denuncia.id) || porResponder.has(denuncia.id)) ? ' · ' : ''}
+            {porResponder.has(denuncia.id) && (
+              <span className="font-medium text-primary">
+                {t('denunciasAdmin.dashboard.porResponder')}
+              </span>
+            )}
+            {comReuniao.has(denuncia.id) && porResponder.has(denuncia.id) ? ' · ' : ''}
             {comReuniao.has(denuncia.id) && (
               <span className="font-medium text-warning">
                 {t('denunciasAdmin.dashboard.reuniaoPorMarcar')}
@@ -280,6 +307,9 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
       key: 'gravidade',
       label: t('denunciasAdmin.dashboard.colGravidade'),
       sortable: true,
+      /* Normaliza antes de comparar — a base tem grafias antigas — e deixa o
+         `compararEscala` pôr Crítico à frente de Alto à frente de Médio. */
+      sortAccessor: (d: Denuncia) => severidadeDeFaixas(d.gravidade),
       render: (_: any, denuncia: Denuncia) => (
         <StatusBadge {...resolveCriticidadeTone(denuncia.gravidade)}>
           {formatStatus(denuncia.gravidade)}
@@ -290,6 +320,12 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
       key: 'denunciante',
       label: t('denunciasAdmin.dashboard.colDenunciante'),
       sortable: true,
+      /* Não existe campo `denunciante`: ordenar por `key` comparava
+         `undefined` com `undefined` e o cabeçalho era um botão morto. */
+      sortAccessor: (d: Denuncia) =>
+        (d.nivel_identificacao ?? (d.anonima ? 'anonima' : 'identificada')) === 'anonima'
+          ? ''
+          : (d.nome_denunciante ?? ''),
       render: (_: any, denuncia: Denuncia) => {
         const nivel = denuncia.nivel_identificacao ?? (denuncia.anonima ? 'anonima' : 'identificada');
         if (nivel === 'anonima') {
@@ -315,6 +351,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
       key: 'responsavel_id',
       label: t('denunciasAdmin.dashboard.colResponsavel'),
       sortable: true,
+      /* Pelo nome que está no ecrã, não pelo UUID que está por baixo. */
+      sortAccessor: (d: Denuncia) => (d.responsavel_id ? (nomes[d.responsavel_id] ?? '') : ''),
       render: (_: any, denuncia: Denuncia) =>
         denuncia.responsavel_id ? (
           <span className="flex items-center gap-1.5 text-sm">
@@ -337,20 +375,34 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
       key: 'prazo_retorno',
       label: t('denunciasAdmin.dashboard.colPrazo'),
       sortable: true,
+      /* Ordena pelo prazo que corre, que é o mesmo que se desenha. */
+      sortAccessor: (d: Denuncia) =>
+        jaEncerrada(d) ? null : prazoActivo(d).data,
       render: (_: any, denuncia: Denuncia) => {
-        const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
-        const dias = diasAte(denuncia.prazo_retorno);
+        const encerrada = jaEncerrada(denuncia);
         if (encerrada) {
           return <span className="text-sm text-muted-foreground">{t('denunciasAdmin.dashboard.prazoCumprido')}</span>;
         }
+        const prazo = prazoActivo(denuncia);
+        const dias = diasAte(prazo.data);
         if (dias === null) return <span className="text-sm text-muted-foreground">—</span>;
         const tom =
-          dias < 0 ? 'text-severity-critical' : dias <= 15 ? 'text-warning' : 'text-muted-foreground';
+          dias < 0 ? 'text-severity-critical' : dias <= prazo.janela ? 'text-warning' : 'text-muted-foreground';
         return (
-          <span className={`text-sm tabular-nums ${tom}`}>
-            {dias < 0
-              ? t('denunciasAdmin.dashboard.prazoVencido', { count: Math.abs(dias) })
-              : t('denunciasAdmin.dashboard.prazoFaltam', { count: dias })}
+          <span className="flex flex-col">
+            <span className={`text-sm tabular-nums ${tom}`}>
+              {dias < 0
+                ? t('denunciasAdmin.dashboard.prazoVencido', { count: Math.abs(dias) })
+                : t('denunciasAdmin.dashboard.prazoFaltam', { count: dias })}
+            </span>
+            {/* Qual dos dois relógios está a contar. Sem isto, «faltam 5 dias»
+                não diz se é para acusar o recebimento ou para dar o retorno —
+                e as duas coisas exigem trabalho muito diferente. */}
+            <span className="text-micro text-muted-foreground">
+              {prazo.acusacao
+                ? t('denunciasAdmin.dashboard.prazoDeAcusacao')
+                : t('denunciasAdmin.dashboard.prazoDeRetorno')}
+            </span>
           </span>
         );
       }
@@ -410,6 +462,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         { value: 'todos', label: t('denunciasAdmin.dashboard.filterPrazoAll') },
         { value: 'vencidas', label: t('denunciasAdmin.dashboard.filterPrazoVencidas') },
         { value: 'a_vencer', label: t('denunciasAdmin.dashboard.filterPrazoAVencer') },
+        { value: 'por_responder', label: t('denunciasAdmin.dashboard.filterPrazoPorResponder') },
         { value: 'sem_responsavel', label: t('denunciasAdmin.dashboard.filterPrazoSemResponsavel') },
       ]
     }
@@ -431,16 +484,6 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={filters}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={(field) => {
-              if (sortField === field) {
-                setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-              } else {
-                setSortField(field);
-                setSortDirection('asc');
-              }
-            }}
             emptyState={{
               icon: <IconShield className="h-8 w-8" />,
               title: searchTerm ? t('denunciasAdmin.dashboard.emptyTitleSearch') : t('denunciasAdmin.dashboard.emptyTitle'),

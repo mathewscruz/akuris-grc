@@ -21,6 +21,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { parseDataLocal } from '@/lib/date-utils';
+import { prazoActivo } from '@/lib/prazo-da-denuncia';
 
 export type OrigemPendencia =
   | 'projeto'
@@ -254,9 +255,9 @@ export function useMinhasPendencias() {
         titulo: d.titulo,
         origem: 'denuncia' as const,
         origemRef: d.protocolo ?? null,
-        // Enquanto a acusacao nao foi recebida, o relogio e o dela; depois
-        // passa a ser o do retorno. Mesma regua do DenunciaRelogio.
-        prazo: d.data_acusacao_recebimento ? (d.prazo_retorno ?? null) : (d.prazo_acusacao ?? null),
+        // Regra unica, em `lib/prazo-da-denuncia`: enquanto a acusacao nao foi
+        // recebida o relogio e o dela; depois passa a ser o do retorno.
+        prazo: prazoActivo(d).data,
         href: '/denuncia',
       }));
     },

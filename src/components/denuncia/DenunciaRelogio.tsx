@@ -21,6 +21,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { encerrada as jaEncerrada } from '@/lib/prazo-da-denuncia';
 
 interface Props {
   denuncia: {
@@ -49,7 +50,7 @@ export function DenunciaRelogio({ denuncia, onAtualizado }: Props) {
   const [salvando, setSalvando] = useState(false);
 
   const acusada = !!denuncia.data_acusacao_recebimento;
-  const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
+  const encerrada = jaEncerrada(denuncia);
   const diasAcusacao = diasAte(denuncia.prazo_acusacao);
   const diasRetorno = diasAte(denuncia.prazo_retorno);
 
