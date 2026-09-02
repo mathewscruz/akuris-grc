@@ -28,6 +28,7 @@
  * código inventado não daria erro nenhum, apenas deixaria de excluir em
  * silêncio. Uma guarda impede que voltem a entrar.
  */
+import { ESCOPO_EN, type EscopoEmIngles } from './gap-escopo-en';
 
 export interface PerguntaDeEscopo {
   id: string;
@@ -63,14 +64,25 @@ export interface TravaDeEscopo {
 }
 
 export interface AssistenteDeEscopo {
+  /**
+   * `{n}` é substituído pelo número real de perguntas em `escopoDe`.
+   *
+   * Estava escrito por extenso e as três intros mentiam: a da LGPD dizia «nove
+   * perguntas» para oito, a do SOC 2 dizia «as seis seguintes» para duas e
+   * prometia tirar «até 42 dos 63 requisitos» quando as suas perguntas cobrem
+   * 22 códigos. Um número em prosa não acompanha o array que descreve.
+   */
   intro: string;
   perguntas: PerguntaDeEscopo[];
   travas?: TravaDeEscopo[];
 }
 
+/** Português é a fonte; o inglês vive em `gap-escopo-en.ts`. */
+export type IdiomaDoEscopo = 'pt' | 'en';
+
 export const ESCOPO_POR_FRAMEWORK: Record<string, AssistenteDeEscopo> = {
   iso27001: {
-    intro: 'Estas nove perguntas descrevem como a sua empresa funciona de verdade (onde as pessoas trabalham, que equipamentos existem e quem escreve os sistemas), e cada resposta "não" tira da sua lista os controles do Anexo A que não têm objeto na sua realidade, já com a justificativa escrita para o auditor ler; as exigências de gestão das cláusulas 4 a 10 nunca saem, porque a norma não permite excluir nenhuma delas.',
+    intro: 'Estas {n} perguntas descrevem como a sua empresa funciona de verdade (onde as pessoas trabalham, que equipamentos existem e quem escreve os sistemas), e cada resposta "não" tira da sua lista os controles do Anexo A que não têm objeto na sua realidade, já com a justificativa escrita para o auditor ler; as exigências de gestão das cláusulas 4 a 10 nunca saem, porque a norma não permite excluir nenhuma delas.',
     perguntas: [
       {
         id: 'instalacoes_proprias',
@@ -152,7 +164,7 @@ export const ESCOPO_POR_FRAMEWORK: Record<string, AssistenteDeEscopo> = {
     ],
   },
   lgpd: {
-    intro: 'A LGPD é lei brasileira e quase tudo nela vale para a sua empresa: estas nove perguntas separam apenas os artigos que existem para quem faz um tipo específico de tratamento, e cada resposta NÃO já sai com a justificativa escrita que o auditor vai ler no seu documento de aplicabilidade.',
+    intro: 'A LGPD é lei brasileira e quase tudo nela vale para a sua empresa: estas {n} perguntas separam apenas os artigos que existem para quem faz um tipo específico de tratamento, e cada resposta NÃO já sai com a justificativa escrita que o auditor vai ler no seu documento de aplicabilidade.',
     perguntas: [
       {
         id: 'dados_de_menores_de_18',
@@ -222,7 +234,7 @@ export const ESCOPO_POR_FRAMEWORK: Record<string, AssistenteDeEscopo> = {
     ],
   },
   soc2: {
-    intro: 'As quatro primeiras perguntas decidem categorias inteiras do SOC 2 e podem tirar até 42 dos 63 requisitos de uma vez; as seis seguintes limpam pontos específicos do que sobrou. Os 21 requisitos de Segurança (CC1.1 a CC8.1) nunca saem, responda o que responder.',
+    intro: 'As quatro primeiras destas {n} perguntas decidem categorias inteiras do SOC 2 de uma vez — Disponibilidade, Integridade de Processamento, Confidencialidade e Privacidade — e as seguintes limpam critérios específicos do que sobrou. Os critérios comuns de Segurança (CC1.1 a CC8.1) nunca saem, responda o que responder.',
     perguntas: [
       {
         id: 'compromisso_de_disponibilidade',
@@ -277,8 +289,36 @@ export const ESCOPO_POR_FRAMEWORK: Record<string, AssistenteDeEscopo> = {
 };
 
 /** O assistente deste framework, ou `null` se ainda não foi desenhado. */
-export function escopoDe(chaveDoFramework: string | null): AssistenteDeEscopo | null {
-  return chaveDoFramework ? (ESCOPO_POR_FRAMEWORK[chaveDoFramework] ?? null) : null;
+export function escopoDe(
+  chaveDoFramework: string | null,
+  idioma: IdiomaDoEscopo = 'pt',
+): AssistenteDeEscopo | null {
+  if (!chaveDoFramework) return null;
+  const base = ESCOPO_POR_FRAMEWORK[chaveDoFramework];
+  if (!base) return null;
+  const traduzido = idioma === 'en' ? emIngles(base, ESCOPO_EN[chaveDoFramework]) : base;
+  return { ...traduzido, intro: traduzido.intro.replace('{n}', String(base.perguntas.length)) };
+}
+
+/**
+ * O texto em inglês por cima do português, pergunta a pergunta.
+ *
+ * Sem tradução para uma pergunta, fica o português: uma pergunta em português
+ * numa aplicação inglesa lê-se mal, mas ainda diz a verdade — enquanto uma
+ * chave humanizada por `t()` no meio de uma Declaração de Aplicabilidade
+ * pareceria uma frase e não seria nenhuma. O caso não deve existir, e é o
+ * `escopo-fala-ingles.test.ts` que garante que não chega ao ecrã.
+ */
+function emIngles(base: AssistenteDeEscopo, en: EscopoEmIngles | undefined): AssistenteDeEscopo {
+  if (!en) return base;
+  return {
+    intro: en.intro,
+    perguntas: base.perguntas.map((p) => ({ ...p, ...(en.perguntas[p.id] ?? {}) })),
+    travas: base.travas?.map((tr) => {
+      const porque = en.travas?.[`${tr.se[0]}>${tr.entao[0]}`];
+      return porque ? { ...tr, porque } : tr;
+    }),
+  };
 }
 
 /**
@@ -302,6 +342,46 @@ export function aplicarTravas(
     }
   }
   return { respostas: saida, forcadas };
+}
+
+export type RespostaDeEscopo = 'sim' | 'nao' | 'nao_sei';
+
+/**
+ * "Não sei" entra como ausência de resposta.
+ *
+ * As travas e a exclusão raciocinam em sim/não. "Não sei" não é nenhum dos
+ * dois — e a regra da casa é que a dúvida NÃO exclui: um requisito a mais é
+ * chatice, um requisito excluído sem base é reprovação na auditoria.
+ */
+export function semNaoSei(
+  respostas: Record<string, RespostaDeEscopo | undefined>,
+): Record<string, 'sim' | 'nao' | undefined> {
+  return Object.fromEntries(
+    Object.entries(respostas).map(([k, v]) => [k, v === 'nao_sei' ? undefined : v]),
+  ) as Record<string, 'sim' | 'nao' | undefined>;
+}
+
+/**
+ * Regista uma resposta e aplica as travas por cima dela.
+ *
+ * Vive aqui, e não no ecrã, porque o ecrã já errou: espalhava o mapa inteiro
+ * devolvido por `aplicarTravas` sobre as respostas. Esse mapa é o que ENTROU,
+ * onde `nao_sei` já tinha virado `undefined` para as travas o poderem ler — o
+ * espalhamento apagava a resposta acabada de escolher, o botão nunca ficava
+ * marcado e o contador não subia. Clicar em "Não sei" não fazia nada.
+ *
+ * Só os alvos que uma trava forçou voltam por cima. O resto é do utilizador.
+ */
+export function responderComTravas(
+  assistente: AssistenteDeEscopo,
+  respostas: Record<string, RespostaDeEscopo | undefined>,
+  id: string,
+  valor: RespostaDeEscopo,
+): { respostas: Record<string, RespostaDeEscopo | undefined>; forcadas: TravaDeEscopo[] } {
+  const cru = { ...respostas, [id]: valor };
+  const { forcadas } = aplicarTravas(assistente, semNaoSei(cru));
+  const forcado = Object.fromEntries(forcadas.map((t) => [t.entao[0], t.entao[1]]));
+  return { respostas: { ...cru, ...forcado }, forcadas };
 }
 
 /** Os códigos que saem do escopo, dadas as respostas. */

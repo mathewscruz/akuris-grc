@@ -33,9 +33,12 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconSuccess, IconIdea, IconWarning, IconArrowRight } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { chaveDoFramework } from '@/lib/gap-fases';
-import { escopoDe, aplicarTravas, codigosExcluidos, type TravaDeEscopo } from '@/lib/gap-escopo';
+import {
+  escopoDe, codigosExcluidos, responderComTravas, semNaoSei,
+  type TravaDeEscopo, type RespostaDeEscopo,
+} from '@/lib/gap-escopo';
 
-type Resposta = 'sim' | 'nao' | 'nao_sei';
+type Resposta = RespostaDeEscopo;
 
 interface Props {
   open: boolean;
@@ -51,8 +54,11 @@ interface Props {
 export function AssistenteDeEscopo({
   open, onOpenChange, frameworkId, frameworkName, empresaId, totalRequisitos, onAplicado,
 }: Props) {
-  const { t } = useLanguage();
-  const assistente = escopoDe(chaveDoFramework(frameworkName));
+  const { t, locale } = useLanguage();
+  /* As perguntas e as justificativas seguem o idioma do ecrã. Ficavam em
+     português com a aplicação em inglês — e a justificativa é o que a empresa
+     assina na Declaração de Aplicabilidade, não um rótulo. */
+  const assistente = escopoDe(chaveDoFramework(frameworkName), locale === 'en' ? 'en' : 'pt');
 
   const [respostas, setRespostas] = useState<Record<string, Resposta | undefined>>({});
   const [etapa, setEtapa] = useState<'perguntas' | 'confirmar'>('perguntas');
@@ -87,22 +93,17 @@ export function AssistenteDeEscopo({
   */
   const responder = (id: string, valor: Resposta) => {
     if (!assistente) return;
-    const cru = { ...respostas, [id]: valor };
-    const paraTravas = Object.fromEntries(
-      Object.entries(cru).map(([k, v]) => [k, v === 'nao_sei' ? undefined : v]),
-    ) as Record<string, 'sim' | 'nao' | undefined>;
-    const { respostas: ajustadas, forcadas: novas } = aplicarTravas(assistente, paraTravas);
-    setRespostas({ ...cru, ...ajustadas } as Record<string, Resposta | undefined>);
-    setForcadas(novas);
+    const { respostas: novas, forcadas: travadas } = responderComTravas(
+      assistente, respostas, id, valor,
+    );
+    setRespostas(novas);
+    setForcadas(travadas);
   };
 
-  const excluidos = useMemo(() => {
-    if (!assistente) return [];
-    const so = Object.fromEntries(
-      Object.entries(respostas).map(([k, v]) => [k, v === 'nao_sei' ? undefined : v]),
-    ) as Record<string, 'sim' | 'nao' | undefined>;
-    return codigosExcluidos(assistente, so);
-  }, [assistente, respostas]);
+  const excluidos = useMemo(
+    () => (assistente ? codigosExcluidos(assistente, semNaoSei(respostas)) : []),
+    [assistente, respostas],
+  );
 
   const porPergunta = useMemo(() => {
     const m = new Map<string, string[]>();
