@@ -263,3 +263,29 @@ JOIN public.denuncias_configuracoes c ON c.empresa_id = e.id
 WHERE c.ativo
   AND NOT EXISTS (SELECT 1 FROM public.denuncias_comite m WHERE m.empresa_id = e.id)
 ORDER BY 1;
+
+\echo ''
+\echo '=== 11. Trabalhos agendados em falta ==='
+\echo '(esperado: vazio. Cada linha e um automatismo que o produto promete e nao corre.)'
+\echo ''
+
+-- Um cron que nao existe nao avisa que nao existe. Estes tres sao os que o
+-- produto vende como automaticos:
+--
+--   · vigiar-prazos-denuncias -- os 7 e os 90 dias da Diretiva (UE) 2019/1937.
+--     Nao depende de segredo nenhum: e SQL puro, chamado pelo pg_cron.
+--   · lembretes-diarios ------- lembretes de convite e de expiracao de due
+--     diligence. Precisa de `projeto_url` e `lembretes_diarios_token` no cofre;
+--     ate la, `agendar_lembretes_diarios()` recusa agendar e diz porque.
+--   · expurgar-denuncias ------ retencao (`retencao_meses`). Precisa de
+--     `projeto_url` e `expurgo_denuncias_token`. Sem ele o canal promete apagar
+--     e guarda para sempre, que e problema de LGPD e nao falta de funcionalidade.
+SELECT esperado.jobname AS trabalho,
+       esperado.porque AS o_que_deixa_de_correr
+FROM (VALUES
+  ('vigiar-prazos-denuncias', 'prazos da denuncia: ninguem e avisado dos 7 nem dos 90 dias'),
+  ('lembretes-diarios',       'lembretes de convite e de expiracao de due diligence'),
+  ('expurgar-denuncias',      'retencao: denuncias e ficheiros nunca sao expurgados')
+) AS esperado(jobname, porque)
+WHERE NOT EXISTS (SELECT 1 FROM cron.job j WHERE j.jobname = esperado.jobname)
+ORDER BY 1;
