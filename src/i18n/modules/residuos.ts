@@ -6,6 +6,10 @@
 export const residuos = {
   pt: {
     residuos: {
+      consultaFalhou: {
+        titulo: 'Não foi possível carregar estes dados',
+        descricao: 'O que aparece na tela pode estar incompleto. Tente recarregar.',
+      },
       evidencias: {
         biblioteca: 'Biblioteca de Evidências',
         iaComparando: 'A IA está comparando esta evidência com os requisitos da empresa...',
@@ -81,6 +85,10 @@ export const residuos = {
   },
   en: {
     residuos: {
+      consultaFalhou: {
+        titulo: 'Could not load this data',
+        descricao: 'What appears on screen may be incomplete. Try reloading.',
+      },
       evidencias: {
         biblioteca: 'Evidence library',
         iaComparando: 'AI is comparing this evidence against the company requirements...',

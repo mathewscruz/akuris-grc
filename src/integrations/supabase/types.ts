@@ -936,7 +936,15 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       auditoria_achados: {
         Row: {
@@ -3398,6 +3406,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "denuncias_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "denuncias_incidente_id_fkey"
             columns: ["incidente_id"]
             isOneToOne: false
@@ -3515,7 +3530,15 @@ export type Database = {
           nome?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "denuncias_categorias_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       denuncias_comite: {
         Row: {
@@ -3628,7 +3651,15 @@ export type Database = {
           token_publico?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "denuncias_configuracoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       denuncias_consultoria: {
         Row: {
@@ -4441,6 +4472,20 @@ export type Database = {
           versao?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "documentos_historico_aprovado_por_profiles_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "documentos_historico_created_by_profiles_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "documentos_historico_documento_id_fkey"
             columns: ["documento_id"]
@@ -5694,6 +5739,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gap_analysis_evaluations_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gap_analysis_evaluations_plano_acao_id_fkey"
             columns: ["plano_acao_id"]
@@ -8611,10 +8663,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "riscos_historico_avaliacoes_avaliado_por_fkey"
+            columns: ["avaliado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "riscos_historico_avaliacoes_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_historico_avaliacoes_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
             referencedColumns: ["id"]
           },
         ]
@@ -9448,7 +9514,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_invitation_reminders_user_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_module_permissions: {
         Row: {
@@ -9557,7 +9631,15 @@ export type Database = {
           texto_apresentacao?: string | null
           token_publico?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "denuncias_configuracoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -9566,6 +9648,7 @@ export type Database = {
         Returns: boolean
       }
       agendar_expurgo_denuncias: { Args: never; Returns: string }
+      agendar_lembretes_diarios: { Args: never; Returns: string }
       apply_default_permissions_for_user: {
         Args: { user_id_param: string }
         Returns: undefined
@@ -9585,6 +9668,16 @@ export type Database = {
       auditoria_pertence_empresa: {
         Args: { auditoria_id: string }
         Returns: boolean
+      }
+      avisar_o_comite: {
+        Args: {
+          p_denuncia_id: string
+          p_marco: string
+          p_mensagem: string
+          p_tipo: string
+          p_titulo: string
+        }
+        Returns: number
       }
       calculate_due_diligence_score: {
         Args: { assessment_id_param: string }
@@ -9664,17 +9757,30 @@ export type Database = {
         Args: { controle_id: string }
         Returns: boolean
       }
-      create_audit_log: {
-        Args: {
-          p_action: string
-          p_changed_fields?: string[]
-          p_new_values?: Json
-          p_old_values?: Json
-          p_record_id: string
-          p_table_name: string
-        }
-        Returns: undefined
-      }
+      create_audit_log:
+        | {
+            Args: {
+              p_action: string
+              p_changed_fields?: string[]
+              p_new_values?: Json
+              p_old_values?: Json
+              p_record_id: string
+              p_table_name: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_action: string
+              p_changed_fields: string[]
+              p_empresa_id: string
+              p_new_values: Json
+              p_old_values: Json
+              p_record_id: string
+              p_table_name: string
+            }
+            Returns: undefined
+          }
       create_denuncia_publica: {
         Args: {
           p_anonima: boolean
@@ -9753,6 +9859,16 @@ export type Database = {
         Args: { dados_id: string }
         Returns: boolean
       }
+      dd_nota_da_resposta: {
+        Args: {
+          p_arquivo: string
+          p_config: Json
+          p_opcoes: Json
+          p_resposta: string
+          p_tipo: string
+        }
+        Returns: number
+      }
       debug_user_context: { Args: never; Returns: Json }
       denuncia_pertence_empresa: {
         Args: { denuncia_id: string }
@@ -9764,6 +9880,10 @@ export type Database = {
           caminhos: string[]
           denuncia_id: string
         }[]
+      }
+      destinatario_do_aviso_ao_denunciante: {
+        Args: { p_denuncia_id: string }
+        Returns: Json
       }
       documento_pertence_empresa: {
         Args: { documento_id: string }
@@ -9885,6 +10005,7 @@ export type Database = {
       get_canal_config_publica: {
         Args: { p_empresa_id: string }
         Returns: {
+          avisar_denunciante_por_email: boolean
           cor_destaque: string
           id: string
           idioma_padrao: string
@@ -9998,8 +10119,20 @@ export type Database = {
       }
       matriz_pertence_empresa: { Args: { matriz_id: string }; Returns: boolean }
       modulos_da_empresa: { Args: never; Returns: string[] }
+      notificar_do_sistema: {
+        Args: {
+          p_link_to?: string
+          p_message: string
+          p_metadata?: Json
+          p_title: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       podar_notificacoes_lidas: { Args: never; Returns: number }
       pode_ver_denuncia: { Args: { p_denuncia_id: string }; Returns: boolean }
+      politica_privacidade_padrao: { Args: never; Returns: string }
       popular_ativos_demo: {
         Args: { p_empresa_id: string; p_user_id: string }
         Returns: number
@@ -10127,6 +10260,7 @@ export type Database = {
           status: string
         }[]
       }
+      vigiar_prazos_denuncias: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "user" | "admin" | "super_admin"
@@ -10168,12 +10302,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10197,11 +10331,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10222,11 +10356,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10247,11 +10381,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10264,11 +10398,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
