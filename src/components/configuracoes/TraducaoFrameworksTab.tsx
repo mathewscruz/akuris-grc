@@ -15,7 +15,16 @@ interface FrameworkRow {
   nome: string;
   total: number;
   traduzidos: number;
-  /** Requisitos com orientação (guidance) já salva em inglês. */
+  /**
+   * Requisitos com orientação já escrita, por idioma.
+   *
+   * Só existia `guidanceEn`, e o botão gerava só inglês. A orientação é a peça
+   * que substitui a consultoria — «o que é este requisito e o que faço» — e o
+   * mercado deste produto lê português. Resultado medido: das 1.573
+   * orientações, 36 estão semeadas no repositório (2,3%) e a única ferramenta
+   * de produção em massa aquecia a língua que o cliente brasileiro não lê.
+   */
+  guidancePt: number;
   guidanceEn: number;
 }
 
@@ -41,7 +50,7 @@ export function TraducaoFrameworksTab() {
 
       const result: FrameworkRow[] = [];
       for (const fw of frameworks || []) {
-        const [{ count: total }, { count: pendentes }, { count: guidancePendente }] = await Promise.all([
+        const [{ count: total }, { count: pendentes }, { count: pendentePt }, { count: pendenteEn }] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
             .select('id', { count: 'exact', head: true })
@@ -55,6 +64,11 @@ export function TraducaoFrameworksTab() {
             .from('gap_analysis_requirements')
             .select('id', { count: 'exact', head: true })
             .eq('framework_id', fw.id)
+            .is('orientacao_implementacao', null),
+          supabase
+            .from('gap_analysis_requirements')
+            .select('id', { count: 'exact', head: true })
+            .eq('framework_id', fw.id)
             .is('orientacao_implementacao_en', null),
         ]);
         result.push({
@@ -62,7 +76,8 @@ export function TraducaoFrameworksTab() {
           nome: fw.nome,
           total: total ?? 0,
           traduzidos: Math.max((total ?? 0) - (pendentes ?? 0), 0),
-          guidanceEn: Math.max((total ?? 0) - (guidancePendente ?? 0), 0),
+          guidancePt: Math.max((total ?? 0) - (pendentePt ?? 0), 0),
+          guidanceEn: Math.max((total ?? 0) - (pendenteEn ?? 0), 0),
         });
       }
       setRows(result);
@@ -106,26 +121,40 @@ export function TraducaoFrameworksTab() {
   };
 
   /**
-   * Gera em lote as orientações (guidance) em inglês. O conteúdo fica salvo nas
-   * colunas globais *_en e é reaproveitado por todas as empresas.
+   * Gera em lote as orientações de um framework, **nas duas línguas**.
+   *
+   * Passava `locale: 'en'` cravado. A orientação é o que o produto vende — quem
+   * nunca viu a norma abre o requisito e lê o que fazer — e ela nasce vazia:
+   * o catálogo traz 36 de 1.573 escritas. As restantes só existem quando
+   * alguém abre aquele requisito, espera pelo modelo e gasta um crédito DA
+   * EMPRESA. Este painel era o único sítio onde isso se podia pagar de uma vez,
+   * centralmente, e aquecia só o inglês.
+   *
+   * Português primeiro: é a língua do mercado, e é também a base a partir da
+   * qual o inglês é escrito (`basePt` na função de borda).
    */
   const traduzirOrientacoes = async (fw: FrameworkRow) => {
     setRunningId(`guidance-${fw.id}`);
-    let guard = 0;
     try {
-      while (guard < 80) {
-        guard++;
-        const res = await invokeEdgeFunction<{ processed: number; remaining: number }>(
-          'populate-requirement-guidance',
-          { body: { framework_id: fw.id, locale: 'en', batch_size: 5 }, isAiCall: true },
-        );
-        if (res.error || !res.data) break;
-        setRows((prev) =>
-          prev.map((r) =>
-            r.id === fw.id ? { ...r, guidanceEn: Math.max(r.total - (res.data!.remaining ?? 0), 0) } : r,
-          ),
-        );
-        if ((res.data.remaining ?? 0) === 0 || res.data.processed === 0) break;
+      for (const locale of ['pt', 'en'] as const) {
+        let guard = 0;
+        while (guard < 80) {
+          guard++;
+          const res = await invokeEdgeFunction<{ processed: number; remaining: number }>(
+            'populate-requirement-guidance',
+            { body: { framework_id: fw.id, locale, batch_size: 5 }, isAiCall: true },
+          );
+          if (res.error || !res.data) break;
+          const feitos = Math.max(fw.total - (res.data.remaining ?? 0), 0);
+          setRows((prev) =>
+            prev.map((r) =>
+              r.id === fw.id
+                ? { ...r, ...(locale === 'pt' ? { guidancePt: feitos } : { guidanceEn: feitos }) }
+                : r,
+            ),
+          );
+          if ((res.data.remaining ?? 0) === 0 || res.data.processed === 0) break;
+        }
       }
       toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceDone', { nome: fw.nome }));
     } finally {
@@ -151,7 +180,12 @@ export function TraducaoFrameworksTab() {
       <div className="space-y-3">
         {rows.map((fw) => {
           const pct = fw.total ? Math.round((fw.traduzidos / fw.total) * 100) : 0;
-          const pctGuidance = fw.total ? Math.round((fw.guidanceEn / fw.total) * 100) : 0;
+          /* O botão só está «pronto» quando as DUAS línguas estão escritas:
+             com o português a zero, o cliente continua a pagar requisito a
+             requisito, que era exactamente o problema. */
+          const pctGuidance = fw.total
+            ? Math.round((Math.min(fw.guidancePt, fw.guidanceEn) / fw.total) * 100)
+            : 0;
           const running = runningId === fw.id;
           const runningGuidance = runningId === `guidance-${fw.id}`;
           return (
@@ -166,7 +200,7 @@ export function TraducaoFrameworksTab() {
                   </div>
                   <Progress value={pct} className="h-1.5" />
                   <span className="text-xs text-muted-foreground">
-                    {t('sweepConfig.traducaoFrameworks.progressLine', { traduzidos: String(fw.traduzidos), total: String(fw.total), guidanceEn: String(fw.guidanceEn) })}
+                    {t('sweepConfig.traducaoFrameworks.progressLine', { traduzidos: String(fw.traduzidos), total: String(fw.total), guidancePt: String(fw.guidancePt), guidanceEn: String(fw.guidanceEn) })}
                   </span>
                 </div>
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
