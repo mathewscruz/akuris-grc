@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { EmailCampanhaEditor, type CampanhaRow } from './EmailCampanhaEditor';
 import { useLanguage } from '@/contexts/LanguageContext';

@@ -1,6 +1,6 @@
 /**
  * CommandPalette — Cmd/Ctrl+K para busca rápida de requisitos no framework atual.
- * Selecionar abre o RequirementDrawer.
+ * O consumidor pode abrir diretamente o workspace completo do requisito.
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -24,9 +24,10 @@ interface CommandPaletteProps {
   frameworkId: string;
   empresaId: string;
   onSaved?: () => void;
+  onRequirementSelect?: (requirementId: string) => void;
 }
 
-export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPaletteProps) {
+export function CommandPalette({ frameworkId, empresaId, onSaved, onRequirementSelect }: CommandPaletteProps) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [requirements, setRequirements] = useState<RequirementRow[]>([]);
@@ -113,6 +114,10 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
                 value={`${r.codigo || ''} ${reqTitulo(r as any)} ${cat}`}
                 onSelect={() => {
                   setOpen(false);
+                  if (onRequirementSelect) {
+                    onRequirementSelect(r.id);
+                    return;
+                  }
                   openRequirement({
                     requirementId: r.id,
                     empresaId,

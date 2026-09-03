@@ -167,7 +167,9 @@ export function WizardDialog({
 
   useWizardShortcuts({
     enabled: open,
-    onSave: onSubmit,
+    // Ctrl/Cmd+S não pode concluir o cadastro enquanto o utilizador ainda
+    // está nas etapas intermediárias.
+    onSave: isLast ? onSubmit : undefined,
     onNext: goNext,
     onPrev: goPrev,
   });
@@ -333,24 +335,25 @@ export function WizardDialog({
                 >
                   {_cancelLabel}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={goPrev}
-                  disabled={isFirst}
-                  className="gap-1"
-                >
-                  <IconChevronLeft className="h-4 w-4" />
-                  {t('common.previous')}
-                </Button>
+                {!isFirst && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={goPrev}
+                    className="gap-1"
+                  >
+                    <IconChevronLeft className="h-4 w-4" />
+                    {t('common.previous')}
+                  </Button>
+                )}
                 {!isLast ? (
                   <Button type="button" size="sm" onClick={goNext} className="gap-1">
                     {t('common.next')}
                     <IconChevron className="h-4 w-4" />
                   </Button>
                 ) : null}
-                {onSubmit && (
+                {isLast && onSubmit && (
                   submitDisabled && submitBlockedReason ? (
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>

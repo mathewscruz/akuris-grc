@@ -13,8 +13,10 @@ import {
   DueDiligenceIcon,
   DocumentosIcon,
   DenunciasIcon,
+  IconBell,
+  IconHandshake,
+  IconShieldCheck,
 } from '@/components/icons';
-import { Bell, FileSignature, ShieldCheck } from 'lucide-react';
 
 export type NotificationModuleKey =
   | 'riscos'
@@ -34,7 +36,7 @@ type AnyIconComponent = ComponentType<any>;
 
 export interface NotificationModuleMeta {
   key: NotificationModuleKey;
-  /** Componente de ícone (proprietário Akuris ou Lucide stroke 1.5 fallback). */
+  /** Componente de ícone do catálogo Akuris. */
   Icon: AnyIconComponent;
   /** Chave i18n: notifications.modules[key]. */
   i18nKey: string;
@@ -43,15 +45,15 @@ export interface NotificationModuleMeta {
 const MODULE_META: Record<NotificationModuleKey, NotificationModuleMeta> = {
   riscos:       { key: 'riscos',       Icon: RiscosIcon,        i18nKey: 'notifications.modules.riscos' },
   documentos:   { key: 'documentos',   Icon: DocumentosIcon,    i18nKey: 'notifications.modules.documentos' },
-  contratos:    { key: 'contratos',    Icon: FileSignature,     i18nKey: 'notifications.modules.contratos' },
+  contratos:    { key: 'contratos',    Icon: IconHandshake,     i18nKey: 'notifications.modules.contratos' },
   controles:    { key: 'controles',    Icon: ControlesIcon,     i18nKey: 'notifications.modules.controles' },
   incidentes:   { key: 'incidentes',   Icon: IncidentesIcon,    i18nKey: 'notifications.modules.incidentes' },
   ativos:       { key: 'ativos',       Icon: AtivosIcon,        i18nKey: 'notifications.modules.ativos' },
-  aprovacoes:   { key: 'aprovacoes',   Icon: ShieldCheck,       i18nKey: 'notifications.modules.aprovacoes' },
+  aprovacoes:   { key: 'aprovacoes',   Icon: IconShieldCheck,   i18nKey: 'notifications.modules.aprovacoes' },
   gap:          { key: 'gap',          Icon: GapAnalysisIcon,   i18nKey: 'notifications.modules.gap' },
   duediligence: { key: 'duediligence', Icon: DueDiligenceIcon,  i18nKey: 'notifications.modules.duediligence' },
   denuncias:    { key: 'denuncias',    Icon: DenunciasIcon,     i18nKey: 'notifications.modules.denuncias' },
-  sistema:      { key: 'sistema',      Icon: Bell,              i18nKey: 'notifications.modules.sistema' },
+  sistema:      { key: 'sistema',      Icon: IconBell,          i18nKey: 'notifications.modules.sistema' },
 };
 
 /**

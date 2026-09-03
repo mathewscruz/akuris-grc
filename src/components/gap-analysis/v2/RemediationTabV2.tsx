@@ -14,8 +14,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { Button } from '@/components/ui/button';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -252,11 +253,11 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
       }));
   }, [naoConformes, grouping, todosRequisitos]);
 
-  /** Gaps que não entram em nenhum dos grupos mostrados. */
-  const foraDosGrupos = useMemo(
-    () => Math.max(0, naoConformes.length - aiClusters.reduce((s, c) => s + c.items.length, 0)),
-    [naoConformes, aiClusters],
-  );
+  /** Gaps que não entram nos agrupamentos também precisam de uma saída. */
+  const gapsSemGrupo = useMemo(() => {
+    const agrupados = new Set(aiClusters.flatMap((cluster) => cluster.items.map((item) => item.id)));
+    return naoConformes.filter((item) => !agrupados.has(item.id));
+  }, [naoConformes, aiClusters]);
 
   /**
    * Abre o plano de ação já preenchido com o grupo.
@@ -416,12 +417,6 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             agrupados em 3 planos cobrindo 33 requisitos», que se lê como se
             os 44 tivessem ficado arrumados.
           */}
-          {foraDosGrupos > 0 && (
-            <p className="text-xs text-warning">
-              {t('gapV2.remediation.summaryOutside', { count: foraDosGrupos })}
-            </p>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {aiClusters.map(c => (
               <article
@@ -493,6 +488,43 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         </section>
       )}
 
+      {/*
+          Um gap isolado nunca forma cluster, mas continua a precisar de plano.
+          Antes, a aba dizia “Crie um plano” e não oferecia botão nenhum — o
+          primeiro gap de uma empresa era justamente o único impossível de
+          remediar a partir daqui.
+      */}
+      {gapsSemGrupo.length > 0 && (
+        <section className="space-y-3">
+          <SectionHead
+            title={t('gapV2.remediation.individualGapsTitle')}
+            count={gapsSemGrupo.length}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('gapV2.remediation.individualGapsDescription')}
+          </p>
+          <div className="divide-y divide-border rounded-lg border border-border bg-card">
+            {gapsSemGrupo.map((gap) => (
+              <div key={gap.id} className="flex items-center gap-3 p-3">
+                <span className="shrink-0 font-mono text-xs text-destructive">{gap.codigo || '—'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{gap.titulo}</p>
+                  <p className="text-xs text-muted-foreground">{gap.categoria}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => abrirPlanoPara({ categoria: gap.categoria, items: [gap] })}
+                >
+                  {t('gapV2.remediation.createPlan')}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Kanban */}
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -514,7 +546,9 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             <IconChecklist className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" strokeWidth={1.5} />
             <p className="text-sm font-medium">{t('gapV2.remediation.emptyCreatePlan')}</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              {t('gapV2.remediation.emptyCreatePlanDesc')}
+              {t(kpis.gapsAbertos > 0
+                ? 'gapV2.remediation.emptyCreatePlanDescWithGaps'
+                : 'gapV2.remediation.emptyCreatePlanDescNoGaps')}
             </p>
           </div>
         ) : (
@@ -651,4 +685,3 @@ function SegmentToggle<T extends string>({
     </div>
   );
 }
-

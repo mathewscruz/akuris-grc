@@ -13,7 +13,7 @@ import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import type { ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { PRIORIDADE_LABEL } from '@/types/projetos';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatStatus } from '@/lib/text-utils';
 
@@ -114,7 +114,8 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
                     checked={selecionadas.has(i)}
                     onCheckedChange={(c) => {
                       const next = new Set(selecionadas);
-                      c ? next.add(i) : next.delete(i);
+                      if (c) next.add(i);
+                      else next.delete(i);
                       setSelecionadas(next);
                     }}
                   />

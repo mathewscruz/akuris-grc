@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { UserSelect } from './UserSelect';
 import { severidadeRisco } from '@/lib/metrics/riscos';

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from "@/contexts/LanguageContext";
 

@@ -112,6 +112,7 @@ export {
   IconPackage,
   IconLayers,
   IconMail,
+  IconCookie,
   IconMessage,
   IconBell,
   IconPhone,
@@ -148,6 +149,9 @@ export {
   IconCard,
   IconBug,
   IconHandshake,
+  IconBriefcase,
+  IconUserAdd,
+  IconHome,
   IconDot,
   IconDashboard,
   IconBoard,
@@ -158,6 +162,7 @@ export {
   IconTrophy,
   IconMegaphone,
   IconFramework,
+  IconCompliance,
   IconCode,
   IconPower,
   IconBranch,
@@ -169,4 +174,3 @@ export {
   IconChip,
   IconMonitor,
 } from './objects';
-

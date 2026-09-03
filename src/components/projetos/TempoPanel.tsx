@@ -33,7 +33,9 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
         const { startedAt: s } = JSON.parse(raw);
         if (typeof s === 'number') setStartedAt(s);
       }
-    } catch {}
+    } catch {
+      // Um valor local inválido apenas reinicia o cronómetro.
+    }
   }, [tarefaId]);
 
   React.useEffect(() => {

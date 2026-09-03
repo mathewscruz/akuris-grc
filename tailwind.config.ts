@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 export default {
 	darkMode: ["class"],
@@ -46,7 +48,7 @@ export default {
          * resolução (ver o `html { font-size: clamp(...) }` em `index.css`).
          * Os números abaixo são o que se vê num ecrã de 1440:
          *
-         *   micro 10,5 · xs 11,4 · sm 12,4 · base 13,3 · lg 15,2 · xl 17,1
+         *   micro 11,4 · xs 11,4 · sm 12,4 · base 13,3 · lg 15,2 · xl 17,1
          *   · 2xl 19 · 3xl 22,8 · 4xl 26,6 · 5xl 32,3
          *
          * Num monitor de 2560 o mesmo texto sai ~12% maior, e num portátil
@@ -56,7 +58,7 @@ export default {
          * O que continua proibido é o tamanho escrito à mão: eram 399, em
          * quatorze degraus, e voltam sozinhos se ninguém contar.
          */
-        micro: ['0.6875rem', { lineHeight: '0.9375rem' }],
+        micro: ['0.75rem', { lineHeight: '1rem' }],
         xs: ['0.75rem', { lineHeight: '1.0625rem' }],
         sm: ['0.8125rem', { lineHeight: '1.125rem' }],
         base: ['0.875rem', { lineHeight: '1.25rem' }],
@@ -333,5 +335,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+	plugins: [animate, typography],
 } satisfies Config;

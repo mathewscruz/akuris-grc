@@ -1,5 +1,6 @@
 import { useAuth } from '@/components/AuthProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconMoney, IconPackage, IconBook, IconGlobe, IconFileText, IconMegaphone, IconBolt } from '@/components/icons';
@@ -23,14 +24,28 @@ import BlogManager from '@/components/configuracoes/BlogManager';
 import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useEffect, useState } from 'react';
 const Configuracoes = () => {
   const { t } = useLanguage();
   const { profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'usuarios';
+  const requestedTab = searchParams.get('tab') || 'usuarios';
   const selectedUserId = searchParams.get('userId') || undefined;
 
   const userRole = profile?.role || 'user';
+  const isSuperAdmin = userRole === 'super_admin';
+  const isAdmin = userRole === 'admin' || isSuperAdmin;
+  const customerTabs = ['usuarios', 'organizacao', 'integracoes', 'denuncia', 'assinatura'];
+  const platformTabs = ['empresas', 'planos', 'financeiro-ia', 'novidades', 'noticias', 'traducoes', 'blog'];
+  const allowedTabs = isSuperAdmin
+    ? [...customerTabs, ...platformTabs]
+    : isAdmin
+      ? customerTabs
+      : ['usuarios', 'assinatura'];
+  const defaultTab = allowedTabs.includes(requestedTab) ? requestedTab : 'usuarios';
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => setActiveTab(defaultTab), [defaultTab]);
 
   if (loading) {
     return (
@@ -43,8 +58,21 @@ const Configuracoes = () => {
     );
   }
 
-  const isSuperAdmin = userRole === 'super_admin';
-  const isAdmin = userRole === 'admin' || isSuperAdmin;
+  const navTriggerClass = 'min-h-10 w-full justify-start gap-2 rounded-md px-3 text-left data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:after:hidden';
+  const tabLabels: Record<string, string> = {
+    usuarios: t('configGeral.page.tabUsuarios'),
+    organizacao: t('configGeral.page.tabOrganizacao'),
+    integracoes: t('configGeral.page.tabIntegracoes'),
+    denuncia: t('configGeral.page.tabDenuncia'),
+    assinatura: t('configGeral.page.tabAssinatura'),
+    empresas: t('configGeral.page.tabEmpresas'),
+    planos: t('configGeral.page.tabPlanos'),
+    'financeiro-ia': t('configGeral.page.tabFinanceiroIA'),
+    novidades: t('configGeral.page.tabNovidades'),
+    noticias: t('configGeral.page.tabNoticias'),
+    traducoes: t('configGeral.page.tabTraducoes'),
+    blog: t('configGeral.page.tabBlog'),
+  };
 
   return (
     <div className="space-y-6">
@@ -53,77 +81,56 @@ const Configuracoes = () => {
         description={t('configGeral.page.headerDescription')}
       />
 
-      <Tabs defaultValue={defaultTab}>
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid gap-6 xl:grid-cols-[224px_minmax(0,1fr)] xl:items-start">
+        <div className="rounded-lg border bg-card p-3 md:hidden">
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {t('configGeral.page.sectionPicker')}
+          </label>
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full" aria-label={t('configGeral.page.sectionPicker')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {allowedTabs.map((tab) => (
+                <SelectItem key={tab} value={tab}>{tabLabels[tab]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <aside className="hidden gap-3 md:grid md:grid-cols-2 xl:sticky xl:top-0 xl:grid-cols-1" aria-label={t('configGeral.page.headerTitle')}>
+          <section aria-labelledby="config-company-tabs" className="min-w-0 rounded-lg border bg-card p-3">
+            <p id="config-company-tabs" className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('configGeral.page.groupCompany')}
+            </p>
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
+              <TabsTrigger className={navTriggerClass} value="usuarios"><IconUsers />{t('configGeral.page.tabUsuarios')}</TabsTrigger>
+              {isAdmin && <TabsTrigger className={navTriggerClass} value="organizacao"><IconOrg />{t('configGeral.page.tabOrganizacao')}</TabsTrigger>}
+              {isAdmin && <TabsTrigger className={navTriggerClass} value="integracoes"><IconPlug />{t('configGeral.page.tabIntegracoes')}</TabsTrigger>}
+              {isAdmin && <TabsTrigger className={navTriggerClass} value="denuncia"><IconMessage />{t('configGeral.page.tabDenuncia')}</TabsTrigger>}
+              <TabsTrigger className={navTriggerClass} value="assinatura"><IconCard />{t('configGeral.page.tabAssinatura')}</TabsTrigger>
+            </TabsList>
+          </section>
+
           {isSuperAdmin && (
-            <TabsTrigger value="empresas" className="flex items-center gap-2">
-              <IconOrg className="h-4 w-4" />
-              {t('configGeral.page.tabEmpresas')}
-            </TabsTrigger>
+            <section aria-labelledby="config-platform-tabs" className="min-w-0 rounded-lg border bg-muted/20 p-3">
+              <p id="config-platform-tabs" className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('configGeral.page.groupPlatform')}
+              </p>
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
+                <TabsTrigger className={navTriggerClass} value="empresas"><IconOrg />{t('configGeral.page.tabEmpresas')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="planos"><IconPackage />{t('configGeral.page.tabPlanos')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="financeiro-ia"><IconMoney />{t('configGeral.page.tabFinanceiroIA')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="novidades"><IconMegaphone />{t('configGeral.page.tabNovidades')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="noticias"><IconFileText />{t('configGeral.page.tabNoticias')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="traducoes"><IconGlobe />{t('configGeral.page.tabTraducoes')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="blog"><IconBook />{t('configGeral.page.tabBlog')}</TabsTrigger>
+              </TabsList>
+            </section>
           )}
-          {isSuperAdmin && (
-            <TabsTrigger value="planos" className="flex items-center gap-2">
-              <IconPackage className="h-4 w-4" />
-              {t('configGeral.page.tabPlanos')}
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="usuarios" className="flex items-center gap-2">
-            <IconUsers className="h-4 w-4" />
-            {t('configGeral.page.tabUsuarios')}
-          </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="organizacao" className="flex items-center gap-2">
-              <IconOrg className="h-4 w-4" />
-              {t('configGeral.page.tabOrganizacao')}
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="integracoes" className="flex items-center gap-2">
-              <IconPlug className="h-4 w-4" />
-              {t('configGeral.page.tabIntegracoes')}
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="denuncia" className="flex items-center gap-2">
-              <IconMessage className="h-4 w-4" />
-              {t('configGeral.page.tabDenuncia')}
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="assinatura" className="flex items-center gap-2">
-            <IconCard className="h-4 w-4" />
-            {t('configGeral.page.tabAssinatura')}
-          </TabsTrigger>
-          {isSuperAdmin && (
-            <TabsTrigger value="financeiro-ia" className="flex items-center gap-2">
-              <IconMoney className="h-4 w-4" />
-              {t('configGeral.page.tabFinanceiroIA')}
-            </TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="novidades" className="flex items-center gap-2">
-              <IconMegaphone className="h-4 w-4" />
-              {t('configGeral.page.tabNovidades')}
-            </TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="noticias" className="flex items-center gap-2">
-              <IconFileText className="h-4 w-4" />
-              {t('configGeral.page.tabNoticias')}
-            </TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="traducoes" className="flex items-center gap-2">
-              <IconGlobe className="h-4 w-4" />
-              {t('configGeral.page.tabTraducoes')}
-            </TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="blog" className="flex items-center gap-2">
-              <IconBook className="h-4 w-4" />
-              {t('configGeral.page.tabBlog')}
-            </TabsTrigger>
-          )}
-        </TabsList>
+        </aside>
+
+        <div className="min-w-0">
 
         {isSuperAdmin && (
           <TabsContent value="empresas">
@@ -283,6 +290,7 @@ const Configuracoes = () => {
             </Card>
           </TabsContent>
         )}
+        </div>
       </Tabs>
     </div>
   );

@@ -60,7 +60,7 @@ export default function DenunciaMenu() {
     );
   }
 
-  if (!empresa || !config) {
+  if (!empresa) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="max-w-md">
@@ -70,6 +70,23 @@ export default function DenunciaMenu() {
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {t('publicPortal.denunciaMenu.companyNotFoundDescription')}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!empresa.canal_ativo || !config) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="max-w-md">
+          <CardContent className="py-10 text-center">
+            <p className="text-sm font-medium text-foreground">
+              {t('publicPortal.denunciaMenu.unavailableTitle')}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('publicPortal.denunciaMenu.unavailableDescription')}
             </p>
           </CardContent>
         </Card>

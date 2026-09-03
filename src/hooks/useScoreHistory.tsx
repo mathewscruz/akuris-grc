@@ -26,7 +26,7 @@ export const useScoreHistory = (frameworkId: string, period: ScoreHistoryPeriod 
       try {
         // Calcular data de início baseado no período
         const now = new Date();
-        let startDate = new Date();
+        const startDate = new Date();
         
         switch (period) {
           case 'daily':
@@ -84,11 +84,12 @@ const groupDataByPeriod = (data: any[], period: ScoreHistoryPeriod): ScoreHistor
       case 'daily':
         key = formatarDiaParaDB(date); // YYYY-MM-DD
         break;
-      case 'weekly':
+      case 'weekly': {
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
         key = formatarDiaParaDB(weekStart);
         break;
+      }
       case 'monthly':
         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         break;
@@ -121,15 +122,18 @@ const formatDateForDisplay = (dateStr: string, period: ScoreHistoryPeriod): stri
   const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   
   switch (period) {
-    case 'daily':
+    case 'daily': {
       const [year, month, day] = dateStr.split('-');
       return `${day}/${month}`;
-    case 'weekly':
+    }
+    case 'weekly': {
       const [y, m, d] = dateStr.split('-');
       return `${d}/${m}`;
-    case 'monthly':
+    }
+    case 'monthly': {
       const [yr, mn] = dateStr.split('-');
       return months[parseInt(mn) - 1];
+    }
     case 'yearly':
       return dateStr;
     default:

@@ -13,37 +13,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
-import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
 import { CanalLayout } from '@/components/denuncia/CanalLayout';
 import { useMemo } from 'react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-interface Empresa {
-  id: string;
-  nome: string;
-  slug: string;
-  logo_url?: string;
-}
-
-interface EmpresaConfig {
-  id: string;
-  empresa_id: string;
-  ativo: boolean;
-  permitir_anonimas: boolean;
-  requerer_email: boolean;
-  texto_apresentacao?: string;
-  politica_privacidade?: string;
-  emails_notificacao: string[];
-  notificar_administradores: boolean;
-  token_publico: string;
-}
-
 interface Categoria {
   id: string;
   nome: string;
@@ -203,11 +181,9 @@ function Credencial({ rotulo, valor }: { rotulo: string; valor: string }) {
 export default function DenunciaFormulario() {
   const { empresa: empresaSlug } = useParams();
   const { t } = useLanguage();
-  const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [config, setConfig] = useState<EmpresaConfig | null>(null);
+  const canal = useCanalDenuncia(empresaSlug);
+  const { empresa, config, carregando: loading } = canal;
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [logoUrl, setLogoUrl] = useState<string>(AKURIS_DEFAULT_LOGO);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [codigoAcompanhamento, setCodigoAcompanhamento] = useState('');
   const [protocolo, setProtocolo] = useState<string>('');
@@ -236,9 +212,6 @@ export default function DenunciaFormulario() {
     Os campos e a validação são os mesmos; muda quantos se veem de cada vez.
   */
   const [etapa, setEtapa] = useState(1);
-  /* Identidade e direitos do canal — a mesma fonte das outras duas telas. */
-  const canal = useCanalDenuncia(empresaSlug);
-
   /** Com denúncias anónimas desligadas, identificar-se deixa de ser opcional. */
   const identificacaoObrigatoria = config ? !config.permitir_anonimas : false;
 
@@ -267,72 +240,31 @@ export default function DenunciaFormulario() {
   });
 
   useEffect(() => {
-    const loadConfiguracao = async () => {
-      if (!empresaSlug) {
-        logger.debug('Slug da empresa não fornecido', { module: 'DenunciaFormulario' });
-        setLoading(false);
-        return;
-      }
+    if (!empresa?.id || !config) {
+      setCategorias([]);
+      return;
+    }
 
-      try {
-        logger.debug('Carregando configuração para empresa slug', { module: 'DenunciaFormulario', action: empresaSlug });
-        
-        const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug);
-
-        if (!empresaData) {
-          logger.error('Empresa não encontrada para slug', { module: 'DenunciaFormulario', action: empresaSlug });
-          setLoading(false);
+    let ativo = true;
+    supabase
+      .rpc('get_denuncias_categorias_publicas' as never, { p_empresa_id: empresa.id } as never)
+      .then(({ data, error }) => {
+        if (!ativo) return;
+        if (error) {
+          logger.error('Erro ao carregar categorias públicas', {
+            module: 'DenunciaFormulario',
+            error: String(error),
+          });
+          setCategorias([]);
           return;
         }
+        setCategorias((data ?? []) as Categoria[]);
+      });
 
-        logger.debug('Empresa encontrada', { module: 'DenunciaFormulario' });
-        setEmpresa(empresaData);
-
-        // Buscar configurações da empresa
-        logger.debug('Buscando configurações para empresa', { module: 'DenunciaFormulario' });
-        const { data: configRaw, error: configError } = await supabase.rpc(
-          'get_denuncia_config_publica' as never,
-          { p_empresa_id: empresaData.id } as never
-        );
-
-        const configRows = (configRaw ?? null) as unknown;
-        const configData: any = Array.isArray(configRows) ? configRows[0] : configRows;
-
-        if (configError || !configData) {
-          logger.error('Erro ao buscar configurações', { module: 'DenunciaFormulario', error: String(configError) });
-          setLoading(false);
-          return;
-        }
-
-        if (!empresaData.canal_ativo) {
-          logger.debug('Canal de denúncia desativado', { module: 'DenunciaFormulario' });
-          setLoading(false);
-          return;
-        }
-
-        logger.debug('Configurações carregadas', { module: 'DenunciaFormulario' });
-        setConfig(configData);
-
-        const { data: categoriasData, error: categoriasError } = await supabase.rpc(
-          'get_denuncias_categorias_publicas' as never,
-          { p_empresa_id: empresaData.id } as never
-        );
-
-        if (!categoriasError && categoriasData) {
-          setCategorias((categoriasData ?? []) as any);
-        }
-
-        // Usar logo_url da empresa, com fallback automático para o logo Akuris
-        setLogoUrl(getCompanyLogo(empresaData.logo_url));
-      } catch (error) {
-        logger.error('Erro geral ao carregar configuração', { module: 'DenunciaFormulario', error: String(error) });
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      ativo = false;
     };
-
-    loadConfiguracao();
-  }, [empresaSlug]);
+  }, [empresa?.id, config?.id]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -503,7 +435,7 @@ export default function DenunciaFormulario() {
     );
   }
 
-  if (!empresa || !config) {
+  if (!empresa || !empresa.canal_ativo || !config) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="mx-auto max-w-md">

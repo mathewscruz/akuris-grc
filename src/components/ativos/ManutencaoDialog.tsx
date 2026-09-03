@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { formatDateOnly } from '@/lib/date-utils';

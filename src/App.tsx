@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { avisoDeConsultaFalhada, descreveErro } from '@/lib/erro-de-consulta';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -124,6 +124,21 @@ function AssessmentLinkRedirect() {
   return <Navigate to={`/assessment/${token ?? ''}`} replace />;
 }
 
+/**
+ * Um único casco autenticado para toda a navegação interna.
+ *
+ * Antes cada rota criava o seu próprio Layout. Navegar desmontava sidebar,
+ * cabeçalho, onboarding e providers visuais, repetindo consultas e estados
+ * globais. O Outlet troca apenas o conteúdo do módulo.
+ */
+function AuthenticatedShell() {
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+}
+
 function App() {
   return (
     <LanguageProvider>
@@ -166,201 +181,49 @@ function App() {
               pessoa consegue mesmo abrir, e todos os pontos de entrada
               (login, checkout, logótipo) continuam a apontar para `/dashboard`.
             */}
-            <Route path="/dashboard" element={
-              <Layout>
+            <Route element={<AuthenticatedShell />}>
+              <Route path="/dashboard" element={
                 <InicioDoCliente>
-                  <ProtectedRoute moduleName="dashboard" fallbackToRoleCheck={false}>
-                    <Dashboard />
-                  </ProtectedRoute>
+                  <ProtectedRoute moduleName="dashboard" fallbackToRoleCheck={false}><Dashboard /></ProtectedRoute>
                 </InicioDoCliente>
-              </Layout>
-            } />
-            <Route path="/planos-acao" element={
-              <Layout>
-                <ProtectedRoute moduleName="planos-acao">
-                  <PlanosAcao />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/projetos" element={
-              <Layout>
-                <ProtectedRoute moduleName="projetos">
-                  <Projetos />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/projetos/minhas-tarefas" element={
-              <Layout>
-                <ProtectedRoute moduleName="projetos">
-                  <MinhasTarefas />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/projetos/templates" element={
-              <Layout>
-                <ProtectedRoute moduleName="projetos">
-                  <ProjetoTemplates />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/projetos/:id" element={
-              <Layout>
-                <ProtectedRoute moduleName="projetos">
-                  <ProjetoDetalhe />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/relatorios" element={
-              <Layout>
-                <ProtectedRoute moduleName="relatorios" fallbackToRoleCheck={false}>
-                  <Relatorios />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/ativos" element={
-              <Layout>
-                <ProtectedRoute moduleName="ativos" fallbackToRoleCheck={false}>
-                  <Ativos />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/ativos/licencas" element={
-              <Layout>
-                <ProtectedRoute moduleName="ativos" fallbackToRoleCheck={false}>
-                  <AtivosLicencas />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/ativos/chaves" element={
-              <Layout>
-                <ProtectedRoute moduleName="ativos" fallbackToRoleCheck={false}>
-                  <AtivosChaves />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/riscos" element={
-              <Layout>
-                <ProtectedRoute moduleName="riscos" fallbackToRoleCheck={false}>
-                  <Riscos />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            {/* Aceite de Risco agora é uma aba dentro de /riscos — mantém o link antigo funcionando */}
+              } />
+              <Route path="/planos-acao" element={<ProtectedRoute moduleName="planos-acao"><PlanosAcao /></ProtectedRoute>} />
+              <Route path="/projetos" element={<ProtectedRoute moduleName="projetos"><Projetos /></ProtectedRoute>} />
+              <Route path="/projetos/minhas-tarefas" element={<ProtectedRoute moduleName="projetos"><MinhasTarefas /></ProtectedRoute>} />
+              <Route path="/projetos/templates" element={<ProtectedRoute moduleName="projetos"><ProjetoTemplates /></ProtectedRoute>} />
+              <Route path="/projetos/:id" element={<ProtectedRoute moduleName="projetos"><ProjetoDetalhe /></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute moduleName="relatorios" fallbackToRoleCheck={false}><Relatorios /></ProtectedRoute>} />
+              <Route path="/ativos" element={<ProtectedRoute moduleName="ativos" fallbackToRoleCheck={false}><Ativos /></ProtectedRoute>} />
+              <Route path="/ativos/licencas" element={<ProtectedRoute moduleName="ativos" fallbackToRoleCheck={false}><AtivosLicencas /></ProtectedRoute>} />
+              <Route path="/ativos/chaves" element={<ProtectedRoute moduleName="ativos" fallbackToRoleCheck={false}><AtivosChaves /></ProtectedRoute>} />
+              <Route path="/riscos" element={<ProtectedRoute moduleName="riscos" fallbackToRoleCheck={false}><Riscos /></ProtectedRoute>} />
+              <Route path="/continuidade" element={<ProtectedRoute moduleName="continuidade" fallbackToRoleCheck={false}><Continuidade /></ProtectedRoute>} />
+              <Route path="/gap-analysis/frameworks" element={<ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}><GapAnalysisFrameworks /></ProtectedRoute>} />
+              <Route path="/gap-analysis/framework/:frameworkId" element={<ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}><GapAnalysisFrameworkDetail /></ProtectedRoute>} />
+              <Route path="/governanca" element={<ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}><Governanca /></ProtectedRoute>} />
+              <Route path="/governanca/controles" element={<ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}><Governanca /></ProtectedRoute>} />
+              <Route path="/governanca/auditorias" element={<ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}><Governanca /></ProtectedRoute>} />
+              <Route path="/sistemas" element={<ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}><Sistemas /></ProtectedRoute>} />
+              <Route path="/contratos" element={<ProtectedRoute moduleName="contratos" fallbackToRoleCheck={false}><Contratos /></ProtectedRoute>} />
+              <Route path="/documentos" element={<ProtectedRoute moduleName="documentos" fallbackToRoleCheck={false}><Documentos /></ProtectedRoute>} />
+              <Route path="/contas-privilegiadas" element={<ProtectedRoute moduleName="contas-privilegiadas" fallbackToRoleCheck={false}><ContasPrivilegiadas /></ProtectedRoute>} />
+              <Route path="/incidentes" element={<ProtectedRoute moduleName="incidentes" fallbackToRoleCheck={false}><Incidentes /></ProtectedRoute>} />
+              <Route path="/privacidade" element={<ProtectedRoute moduleName="dados" fallbackToRoleCheck={false}><Privacidade /></ProtectedRoute>} />
+              <Route path="/due-diligence" element={<ProtectedRoute moduleName="due-diligence" fallbackToRoleCheck={false}><DueDiligence /></ProtectedRoute>} />
+              <Route path="/revisao-acessos" element={<ProtectedRoute moduleName="contas-privilegiadas" fallbackToRoleCheck={false}><RevisaoAcessos /></ProtectedRoute>} />
+              <Route path="/configuracoes" element={<ProtectedRoute moduleName="configuracoes" fallbackToRoleCheck={false}><Configuracoes /></ProtectedRoute>} />
+            </Route>
+
+            {/* Redirecionamentos legados não precisam montar o casco antes de navegar. */}
             <Route path="/riscos/aceite" element={<Navigate to="/riscos?view=aceite" replace />} />
-            <Route path="/continuidade" element={
-              <Layout>
-                <ProtectedRoute moduleName="continuidade" fallbackToRoleCheck={false}>
-                  <Continuidade />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/gap-analysis" element={
-              <Navigate to="/gap-analysis/frameworks" replace />
-            } />
-            <Route path="/gap-analysis/frameworks" element={
-              <Layout>
-                <ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}>
-                  <GapAnalysisFrameworks />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/gap-analysis/framework/:frameworkId" element={
-              <Layout>
-                <ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}>
-                  <GapAnalysisFrameworkDetail />
-                </ProtectedRoute>
-              </Layout>
-            } />
+            <Route path="/gap-analysis" element={<Navigate to="/gap-analysis/frameworks" replace />} />
             <Route path="/gap-analysis/avaliacao-aderencia" element={<Navigate to="/gap-analysis/frameworks" replace />} />
-            <Route path="/governanca" element={
-              <Layout>
-                <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
-                  <Governanca />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/governanca/controles" element={
-              <Layout>
-                <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
-                  <Governanca />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/governanca/auditorias" element={
-              <Layout>
-                <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
-                  <Governanca />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/sistemas" element={
-              <Layout>
-                <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
-                  <Sistemas />
-                </ProtectedRoute>
-              </Layout>
-            } />
             <Route path="/controles" element={<Navigate to="/governanca/controles" replace />} />
             <Route path="/auditorias" element={<Navigate to="/governanca/auditorias" replace />} />
-            <Route path="/contratos" element={
-              <Layout>
-                <ProtectedRoute moduleName="contratos" fallbackToRoleCheck={false}>
-                  <Contratos />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/documentos" element={
-              <Layout>
-                <ProtectedRoute moduleName="documentos" fallbackToRoleCheck={false}>
-                  <Documentos />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/contas-privilegiadas" element={
-              <Layout>
-                <ProtectedRoute moduleName="contas-privilegiadas" fallbackToRoleCheck={false}>
-                  <ContasPrivilegiadas />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/incidentes" element={
-              <Layout>
-                <ProtectedRoute moduleName="incidentes" fallbackToRoleCheck={false}>
-                  <Incidentes />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/privacidade" element={
-              <Layout>
-                <ProtectedRoute moduleName="dados" fallbackToRoleCheck={false}>
-                  <Privacidade />
-                </ProtectedRoute>
-              </Layout>
-            } />
             <Route path="/dados" element={<Navigate to="/privacidade" replace />} />
-            <Route path="/due-diligence" element={
-              <Layout>
-                <ProtectedRoute moduleName="due-diligence" fallbackToRoleCheck={false}>
-                  <DueDiligence />
-                </ProtectedRoute>
-              </Layout>
-            } />
-            <Route path="/revisao-acessos" element={
-              <Layout>
-                <ProtectedRoute moduleName="contas-privilegiadas" fallbackToRoleCheck={false}>
-                  <RevisaoAcessos />
-                </ProtectedRoute>
-              </Layout>
-            } />
+
             {/* `/denuncia` é dual: público (landing) ou autenticado (módulo). */}
             <Route path="/denuncia" element={<DenunciaRouter />} />
-            <Route path="/configuracoes" element={
-              <Layout>
-                <ProtectedRoute moduleName="configuracoes" fallbackToRoleCheck={false}>
-                  <Configuracoes />
-                </ProtectedRoute>
-              </Layout>
-            } />
             <Route path="*" element={<Suspense fallback={<RouteFallback />}><NotFound /></Suspense>} />
           </Routes>
           </ErrorBoundary>

@@ -52,7 +52,7 @@ import { exigirEscrita } from '@/lib/supabase-write';
 import { formatDateOnly } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { resolveItemStatusTone, resolveWorkflowStatusTone } from '@/lib/status-tone';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 /** Chave da linha que junta os tratamentos sem ROPA. */
 export const SEM_ROPA = '__sem_ropa__';

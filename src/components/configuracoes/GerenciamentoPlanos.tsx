@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { fetchPlanos, formatBRL, MODULOS_DISPONIVEIS, type Plano } from '@/lib/planos-utils';
 import { PlanoFormDialog } from './PlanoFormDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';

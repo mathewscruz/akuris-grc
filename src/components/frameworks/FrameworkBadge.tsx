@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { FrameworkGlyph } from '@/components/frameworks/FrameworkGlyph';
-import { resolveFrameworkBrand, getToneStyle } from '@/lib/framework-brand';
+import { resolveFrameworkBadgePalette, resolveFrameworkBrand } from '@/lib/framework-brand';
 
 type Size = 'sm' | 'md' | 'lg';
 
@@ -16,9 +16,9 @@ interface FrameworkBadgeProps {
 }
 
 const SIZE_MAP: Record<Size, { box: string; text: string; img: string; glifo: number }> = {
-  sm: { box: 'h-7 w-7 rounded-md', text: 'text-micro', img: 'h-5 w-5', glifo: 16 },
-  md: { box: 'h-10 w-10 rounded-lg', text: 'text-micro', img: 'h-7 w-7', glifo: 22 },
-  lg: { box: 'h-16 w-16 rounded-lg', text: 'text-base', img: 'h-12 w-12', glifo: 34 },
+  sm: { box: 'h-8 w-8 rounded-lg', text: 'text-micro', img: 'h-5 w-5', glifo: 17 },
+  md: { box: 'h-12 w-12 rounded-lg', text: 'text-micro', img: 'h-8 w-8', glifo: 27 },
+  lg: { box: 'h-16 w-16 rounded-lg', text: 'text-base', img: 'h-12 w-12', glifo: 36 },
 };
 
 /**
@@ -42,7 +42,7 @@ export const FrameworkBadge = ({
   logoUrl,
 }: FrameworkBadgeProps) => {
   const brand = resolveFrameworkBrand(name, versao);
-  const tone = getToneStyle(brand.tone);
+  const palette = resolveFrameworkBadgePalette(name, brand.tone);
   const dims = SIZE_MAP[size];
   const src = logoUrl || brand.logoSrc;
 
@@ -50,7 +50,7 @@ export const FrameworkBadge = ({
     return (
       <div
         className={cn(
-          'flex-shrink-0 flex items-center justify-center bg-white/95 ring-1 ring-border/40',
+          'flex-shrink-0 flex items-center justify-center bg-white/95 ring-1 ring-border/50 shadow-sm overflow-hidden',
           dims.box,
           className,
         )}
@@ -65,18 +65,31 @@ export const FrameworkBadge = ({
   return (
     <div
       className={cn(
-        'flex-shrink-0 flex items-center justify-center ring-1 shadow-sm select-none',
-        tone.bg,
-        tone.text,
-        tone.ring,
+        'relative isolate flex-shrink-0 flex items-center justify-center overflow-hidden text-white',
+        'ring-1 ring-black/10 shadow-[0_6px_18px_-8px_rgba(15,23,42,0.65)] select-none',
+        'transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-[1.04]',
         dims.box,
         className,
       )}
+      style={{ backgroundImage: `linear-gradient(145deg, ${palette.from}, ${palette.to})` }}
       role="img"
       aria-label={brand.fullName}
       title={brand.fullName}
     >
-      <FrameworkGlyph nome={name} tipo={tipo} size={dims.glifo} />
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_24%_16%,rgba(255,255,255,0.32),transparent_38%)]"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute -bottom-1.5 -right-1.5 h-1/2 w-1/2 rounded-full border border-white/10 bg-white/[0.06]"
+      />
+      <FrameworkGlyph
+        nome={name}
+        tipo={tipo}
+        size={dims.glifo}
+        className="relative z-10 drop-shadow-[0_1px_1px_rgba(0,0,0,0.28)]"
+      />
     </div>
   );
 };

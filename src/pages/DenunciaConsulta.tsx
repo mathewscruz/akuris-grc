@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { IconSearch, IconView, IconSuccess, IconInfo, IconTime, IconFile, IconShield, IconArrowLeft } from '@/components/icons';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
+import { useState } from 'react';
+import { IconSearch, IconView, IconSuccess, IconInfo, IconTime, IconFile, IconShield } from '@/components/icons';
+import { useParams } from 'react-router-dom';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime, formatDateOnly, parseDataLocal } from '@/lib/date-utils';
@@ -15,19 +14,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
-import { getCompanyLogo } from '@/lib/brand-logo';
 import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
 import { CanalLayout } from '@/components/denuncia/CanalLayout';
 import { SolicitarReuniao, type ReuniaoPublica } from '@/components/denuncia/SolicitarReuniao';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-interface Empresa {
-  id: string;
-  nome: string;
-  slug: string;
-  logo_url?: string;
-}
-
 interface Denuncia {
   id: string;
   protocolo: string;
@@ -146,12 +137,10 @@ function PrazosDoCaso({ denuncia }: { denuncia: { prazo_acusacao: string | null;
 
 export default function DenunciaConsulta() {
   const { empresa: empresaSlug } = useParams<{ empresa: string }>();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
-  
-  const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [loading, setLoading] = useState(true);
+  const canal = useCanalDenuncia(empresaSlug);
+  const empresa = canal.empresa;
   const [searching, setSearching] = useState(false);
   const [protocolo, setProtocolo] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -171,43 +160,6 @@ export default function DenunciaConsulta() {
   /* A reunião do art. 9.º/2 — pedida daqui, porque é aqui que quem denunciou
      está autenticado pelo protocolo e pelo código. */
   const [reunioes, setReunioes] = useState<ReuniaoPublica[]>([]);
-  /* A mesma identidade e os mesmos direitos das outras duas telas. */
-  const canal = useCanalDenuncia(empresaSlug);
-
-  useEffect(() => {
-    if (empresaSlug) {
-      carregarEmpresa();
-    }
-  }, [empresaSlug]);
-
-  const carregarEmpresa = async () => {
-    try {
-      const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug ?? '');
-
-      if (!empresaData) {
-        toast({
-          title: t('publicPortal.denunciaConsulta.error'),
-          description: t('publicPortal.denunciaConsulta.companyNotFound'),
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-
-      setEmpresa(empresaData);
-    } catch (error) {
-      logger.error('Erro ao carregar empresa', { module: 'DenunciaConsulta', error: String(error) });
-      toast({
-        title: t('publicPortal.denunciaConsulta.error'),
-        description: t('publicPortal.denunciaConsulta.internalError'),
-        variant: "destructive"
-      });
-      navigate('/');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   /* Recarrega sem passar pelo formulário — usado depois de pedir reunião ou
      de aceitar a acta, para o ecrã mostrar já o novo estado. */
   const recarregar = async () => {
@@ -360,13 +312,31 @@ export default function DenunciaConsulta() {
 
   const formatDate = (dateString: string) => formatDateTime(dateString);
 
-  if (loading) {
+  if (canal.carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <AkurisPulse size={32} />
           <p className="text-muted-foreground">{t('publicPortal.common.loading')}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!empresa || !empresa.canal_ativo || !canal.config) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="max-w-md">
+          <CardContent className="py-10 text-center">
+            <IconShield className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
+            <h2 className="mb-2 text-base font-semibold text-foreground">
+              {t('publicPortal.denunciaForm.unavailableTitle')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t('publicPortal.denunciaForm.unavailableDescription')}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

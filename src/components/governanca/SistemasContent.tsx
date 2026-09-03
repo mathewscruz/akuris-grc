@@ -147,7 +147,7 @@ export default function SistemasContent() {
   };
 
   const filteredAndSortedSistemas = useMemo(() => {
-    let filtered = sistemas.filter(sistema => {
+    const filtered = sistemas.filter(sistema => {
       const matchesSearch = searchTerm === '' || 
         sistema.nome_sistema.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sistema.tipo_sistema.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -371,6 +371,10 @@ export default function SistemasContent() {
               title: t("governancaComp.sistemas.emptyTitle"),
               description: t("governancaComp.sistemas.emptyDescription"),
               icon: <IconServer className="h-12 w-12" />,
+              action: {
+                label: t("governancaComp.sistemas.emptyAction"),
+                onClick: () => setShowSistemaDialog(true),
+              },
             }}
             loading={isLoading}
           />

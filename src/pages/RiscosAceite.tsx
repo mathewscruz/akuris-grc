@@ -134,7 +134,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       if (r.responsavel) userIds.add(r.responsavel);
     });
 
-    let profileMap = new Map<string, string>();
+    const profileMap = new Map<string, string>();
     // `responsavel` guarda UUID OU texto livre. Mandar "TI" num `.in()` sobre
     // coluna `uuid` faz o Postgres recusar a consulta inteira — e o `error`
     // era descartado, portanto TODOS os nomes da aba desapareciam de uma vez.

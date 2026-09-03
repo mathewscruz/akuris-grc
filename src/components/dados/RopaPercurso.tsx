@@ -41,7 +41,8 @@ export function RopaPercurso({ registo, realcar }: Props) {
   const alternar = (campo: string) =>
     setAbertas((s) => {
       const novo = new Set(s);
-      novo.has(campo) ? novo.delete(campo) : novo.add(campo);
+      if (novo.has(campo)) novo.delete(campo);
+      else novo.add(campo);
       return novo;
     });
 

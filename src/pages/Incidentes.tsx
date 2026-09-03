@@ -140,8 +140,8 @@ export default function Incidentes() {
 
   // Ordenar
   const sortedIncidentes = [...filteredIncidentes].sort((a, b) => {
-    let aValue = a[sortField as keyof Incidente];
-    let bValue = b[sortField as keyof Incidente];
+    const aValue = a[sortField as keyof Incidente];
+    const bValue = b[sortField as keyof Incidente];
 
     /* Critíco > Alto > Médio > Baixo. O alfabeto põe Alto antes de Baixo
        antes de Crítico — ao contrário do que a coluna promete. */

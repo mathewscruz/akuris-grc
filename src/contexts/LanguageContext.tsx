@@ -15,6 +15,8 @@ type Dictionary = Record<string, any>;
  * `lib/pt-variants.ts`), garantindo que "utilizador/ficheiro/eliminar" e
  * "usuário/arquivo/excluir" nunca aparecem misturados no mesmo ecrã.
  */
+// Construído a partir dos módulos no arranque para que todas as superfícies
+// partilhem a mesma árvore, inclusive checklists aninhados dos fluxos guiados.
 const ptBase = mergeDictionaries(pt, modulesPt);
 const dictionaries: Record<Locale, Dictionary> = {
   pt: localizePtDictionary(ptBase, 'pt'),
@@ -196,7 +198,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     persistExplicitLocale(newLocale);
     try {
       localStorage.setItem(MANUAL_KEY, String(Date.now()));
-    } catch {}
+    } catch {
+      // O idioma continua válido na sessão quando o armazenamento está indisponível.
+    }
 
     // Persist to profile if logged in
     supabase.auth.getUser().then(({ data: { user } }) => {

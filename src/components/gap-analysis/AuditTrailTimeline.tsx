@@ -58,7 +58,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
 
       // Load user names
       const userIds = [...new Set((data || []).map(e => e.user_id).filter(Boolean))] as string[];
-      let userMap = new Map<string, string>();
+      const userMap = new Map<string, string>();
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')

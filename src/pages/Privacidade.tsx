@@ -191,7 +191,10 @@ export default function Privacidade() {
       }));
 
       const dados = dadosRes.data || [];
-      const sensiveis = dados.filter((d: any) => d.tipo_dados === 'sensivel' || d.sensibilidade === 'muito_sensivel' || d.sensibilidade === 'sensivel').length;
+      // Linhas sem nome vieram de importações incompletas. Continuam visíveis
+      // para poderem ser corrigidas, mas não contam como catálogo válido.
+      const dadosValidos = dados.filter((d: any) => String(d.nome ?? '').trim().length > 0);
+      const sensiveis = dadosValidos.filter((d: any) => d.tipo_dados === 'sensivel' || d.sensibilidade === 'muito_sensivel' || d.sensibilidade === 'sensivel').length;
       /**
        * O tipo é normalizado à entrada: o valor antigo (`exclusao`,
        * `revogacao_consentimento`) passa a ler-se pela chave da lei. Sem isto
@@ -210,8 +213,9 @@ export default function Privacidade() {
         ropaRegistros: ropaEnriquecida,
         solicitacoes: allSolicitacoes,
         incidentesPrivacidade: (incidentesRes.data || []).length,
+        dadosIncompletos: dados.length - dadosValidos.length,
         stats: {
-          totalDados: dados.length,
+          totalDados: dadosValidos.length,
           dadosSensiveis: sensiveis,
           mapeamentos: (mapeamentosRes.data || []).length,
           ropaAtivos: ropaEnriquecida.filter((r: any) => r.status === 'ativo').length,
@@ -318,6 +322,7 @@ export default function Privacidade() {
     [solicitacoes, statusSolicitacoesFilter, tipoSolicitacaoFilter, searchSolicitacoesTerm],
   );
   const incidentesPrivacidade = privacidadeData?.incidentesPrivacidade || 0;
+  const dadosIncompletos = privacidadeData?.dadosIncompletos || 0;
   // "Fora do prazo" usa o prazo legal da jurisdição configurada (LGPD 15 dias,
   // RGPD/GDPR 1 mês) e não um valor fixo. Se a solicitação já tem prazo próprio
   // definido pelo utilizador, esse prevalece.
@@ -404,10 +409,19 @@ export default function Privacidade() {
       sortable: true,
       render: (value: string, row: any) => (
         <div>
-          <span className="font-medium cursor-pointer hover:text-primary" onClick={() => {
+          <button type="button" className="min-h-10 max-w-[280px] text-left" onClick={() => {
             setSelectedDado(row);
             setShowDadoSheet(true);
-          }}>{value}</span>
+          }}>
+            {String(value ?? '').trim() ? (
+              <span className="block truncate font-medium hover:text-primary" title={value}>{value}</span>
+            ) : (
+              <span className="block font-medium text-warning">{t('sweepDados.privacidade.cadastroIncompleto')}</span>
+            )}
+          </button>
+          {!String(value ?? '').trim() && (
+            <p className="text-xs text-muted-foreground">{t('sweepDados.privacidade.completeOuExclua')}</p>
+          )}
           {row.descricao && (
             <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{row.descricao}</p>
           )}
@@ -750,12 +764,26 @@ export default function Privacidade() {
           // é o registo de tratamentos — e há uma assim nos dados reais, com 7
           // ROPA e zero dados catalogados — a tira inteira mostrava zero.
           { key: 'ropa', label: t('cardsKpi.privacidade.ropaRegistros'), value: stats.ropaAtivos, onClick: () => setActiveTab('ropa') },
-          { key: 'mapeamentos', label: t('cardsKpi.privacidade.mapeamentos'), value: stats.mapeamentos, drillDown: 'privacidade_mapeamentos' },
           { key: 'solicitacoesPendentes', label: t('cardsKpi.privacidade.solicitacoesPendentes'), value: stats.solicitacoesPendentes, drillDown: 'privacidade' },
           { key: 'foraPrazo', label: t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei }), value: solicitacoesForaPrazo, tone: 'destructive', drillDown: 'privacidade_fora_prazo' },
-          { key: 'incidentes', label: t('cardsKpi.sweep.privacidade.incidentesPrivacidade'), value: incidentesPrivacidade, tone: 'warning', onClick: () => navigate('/incidentes') },
         ]}
       />
+
+      {(dadosIncompletos > 0 || incidentesPrivacidade > 0) && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
+          {dadosIncompletos > 0 && (
+            <span className="flex items-center gap-2 text-foreground">
+              <IconWarning className="h-4 w-4 shrink-0 text-warning" />
+              {t('sweepDados.privacidade.incompletosAviso', { count: dadosIncompletos })}
+            </span>
+          )}
+          {incidentesPrivacidade > 0 && (
+            <button type="button" onClick={() => navigate('/incidentes')} className="min-h-10 text-left font-medium text-primary hover:underline">
+              {t('sweepDados.privacidade.incidentesAbertos', { count: incidentesPrivacidade })}
+            </button>
+          )}
+        </div>
+      )}
 
         <TabsContent value="catalogo" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">

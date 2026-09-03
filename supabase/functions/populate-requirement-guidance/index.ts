@@ -354,7 +354,7 @@ async function generateGuidance(
 function buildPortuguesePrompt(
   req: { codigo: string | null; titulo: string; descricao: string | null; categoria: string | null },
 ): string {
-  return `Você é um consultor sênior de GRC (Governança, Riscos e Compliance) com 20 anos de experiência em Big4.
+  return `Você é um especialista sênior de GRC. Sua tarefa é transformar a norma em um playbook que uma pessoa sem experiência prévia consiga executar.
 
 Para o requisito abaixo, gere TRÊS saídas separadas claramente por delimitadores.
 
@@ -371,24 +371,24 @@ Gere o conteúdo seguindo EXATAMENTE este formato com os delimitadores indicados
 ===ORIENTACAO_START===
 Gere o conteúdo em Markdown com estas seções:
 
-## 📋 O que este requisito significa
-Explique em linguagem simples. 2-3 parágrafos curtos.
+## Entenda o requisito
+Explique em linguagem simples, em no máximo 80 palavras, o resultado que a empresa precisa alcançar.
 
-## 🎯 Por que isso importa para sua empresa
-Consequências reais: multas, perda de clientes, danos à reputação. 2-3 parágrafos.
+## Faça nesta ordem
+Liste de 3 a 7 passos concretos, sequenciais e executáveis. Diga o que criar, configurar, aprovar ou revisar. Não use conselhos vagos como "adote boas práticas".
 
-## ⚠️ O que acontece se você não faz isso
-Riscos concretos de não conformidade. Use bullets.
+## Considere concluído quando
+Crie um checklist objetivo de 3 a 6 critérios verificáveis que definem o estado pronto.
 
-## 🔍 Fatores que você deve analisar
-5-8 perguntas de autoavaliação em lista numerada.
+## Responsáveis e frequência
+Indique os papéis normalmente responsáveis e quando executar ou revisar. Não invente cargos obrigatórios se a norma não os exigir.
 
-## 💡 Dicas práticas de implementação
-4-6 passos concretos e simples.
+## Riscos de não atender
+Liste apenas riscos diretamente relacionados ao requisito. Não afirme multas ou sanções específicas sem base no texto fornecido.
 ===ORIENTACAO_END===
 
 ===EVIDENCIAS_START===
-Liste 6 a 10 exemplos de evidências que um auditor aceitaria. Uma por linha, iniciando com "- ". Seja específico.
+Liste de 4 a 7 evidências concretas que demonstram execução, não apenas intenção. Uma por linha, iniciando com "- ". Inclua registros operacionais quando forem relevantes.
 ===EVIDENCIAS_END===
 
 ===DIAGNOSTICO_START===
@@ -404,6 +404,9 @@ Pesos: 1 (normal), 2 (alta), 3 (crítica). Exatamente 5 itens.
 **Regras:**
 - Linguagem simples, sem jargão desnecessário
 - Conteúdo específico para o requisito, NÃO genérico
+- Seja conciso: a orientação inteira deve ter no máximo 450 palavras
+- Não use saudações, preâmbulos, analogias, emojis ou menções a consultorias
+- Não repita perguntas de diagnóstico dentro da orientação
 - Português brasileiro
 - Comece DIRETAMENTE com o conteúdo, sem saudações`;
 }
@@ -415,7 +418,7 @@ function buildEnglishPrompt(
   const translationBlock = base
     ? `
 
-**Existing Brazilian Portuguese version (translate and adapt it faithfully — keep the same structure, sections, order and level of detail; do NOT invent new content):**
+**Existing Brazilian Portuguese version (use it as the factual source, but rewrite it into the concise structure requested below; do NOT invent new content):**
 
 --- ORIENTATION (PT) ---
 ${base.orientacao}
@@ -426,7 +429,7 @@ ${base.perguntas || "(empty — create exactly 5 questions)"}
 `
     : '';
 
-  return `You are a senior GRC (Governance, Risk and Compliance) consultant with 20 years of Big4 experience.
+  return `You are a senior GRC specialist. Turn the standard into an implementation playbook that someone with no prior experience can execute.
 
 For the requirement below, produce THREE outputs clearly separated by the delimiters.
 
@@ -443,24 +446,24 @@ Follow EXACTLY this format with the delimiters below:
 ===ORIENTACAO_START===
 Markdown content with these sections:
 
-## 📋 What this requirement means
-Explain in plain language. 2-3 short paragraphs.
+## Understand the requirement
+Explain in plain language, in no more than 80 words, the outcome the company must achieve.
 
-## 🎯 Why this matters for your company
-Real consequences: fines, customer loss, reputational damage. 2-3 paragraphs.
+## Do this in order
+List 3 to 7 concrete, sequential, executable steps. Say what to create, configure, approve, or review. Do not use vague advice such as "follow best practices".
 
-## ⚠️ What happens if you don't do this
-Concrete non-compliance risks. Use bullets.
+## Consider it complete when
+Create an objective checklist of 3 to 6 verifiable completion criteria.
 
-## 🔍 Factors you should analyze
-5-8 self-assessment questions in a numbered list.
+## Owners and frequency
+Name the roles normally responsible and when to perform or review the activity. Do not invent mandatory job titles when the standard does not require them.
 
-## 💡 Practical implementation tips
-4-6 concrete, simple steps.
+## Risks of not complying
+List only risks directly related to the requirement. Do not claim specific fines or sanctions unless supported by the supplied text.
 ===ORIENTACAO_END===
 
 ===EVIDENCIAS_START===
-List 6 to 10 evidence examples an auditor would accept. One per line, starting with "- ". Be specific.
+List 4 to 7 concrete pieces of evidence that demonstrate execution, not only intent. One per line, starting with "- ". Include operational records where relevant.
 ===EVIDENCIAS_END===
 
 ===DIAGNOSTICO_START===
@@ -476,6 +479,9 @@ Weights: 1 (normal), 2 (high), 3 (critical). Exactly 5 items.
 **Rules:**
 - Plain business English, no unnecessary jargon
 - Content specific to this requirement, NOT generic
+- Be concise: the entire guidance must not exceed 450 words
+- Do not use greetings, preambles, analogies, emojis, or references to consultants
+- Do not repeat the diagnostic questions inside the guidance
 - Keep the JSON key names exactly as shown ("pergunta", "peso"), only the values in English
 - Start DIRECTLY with the content, no greetings`;
 }

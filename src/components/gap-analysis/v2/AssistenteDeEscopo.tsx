@@ -23,7 +23,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -116,35 +116,87 @@ export function AssistenteDeEscopo({
   const respondidas = assistente
     ? assistente.perguntas.filter((p) => respostas[p.id]).length
     : 0;
+  const todasRespondidas = respondidas === assistente.perguntas.length;
 
   if (!assistente) return null;
 
   const gravar = async () => {
     setGravando(true);
     try {
-      const linhas = excluidos
-        .map((x) => ({
-          framework_id: frameworkId,
-          empresa_id: empresaId,
-          requirement_id: idsPorCodigo[x.codigo],
-          aplicavel: false,
-          justificativa: justificativas[x.perguntaId] ?? x.justificativa,
-        }))
-        // Um código sem id é um requisito que este framework não tem. A guarda
-        // impede que isso aconteça, mas gravar `null` seria pior do que saltar.
-        .filter((l) => !!l.requirement_id);
+      /*
+        Concluir o escopo também é uma decisão quando tudo se aplica.
 
-      if (linhas.length === 0) {
-        toast.error(t('gapEscopo.nadaAExcluir'));
-        return;
-      }
+        A versão anterior gravava apenas exclusões e recusava salvar zero
+        exclusões. Uma empresa com escritório, nuvem e desenvolvimento
+        respondia as nove perguntas e ficava presa com o botão desabilitado.
+        Gravar o universo completo torna explícito tanto o que sai quanto o
+        que fica e dá ao fluxo um estado de conclusão verificável.
+      */
+      const exclusaoPorId = new Map(
+        excluidos
+          .map((x) => {
+            const requirementId = idsPorCodigo[x.codigo];
+            return requirementId
+              ? [requirementId, justificativas[x.perguntaId] ?? x.justificativa] as const
+              : null;
+          })
+          .filter((x): x is readonly [string, string] => !!x),
+      );
+      const ids = Object.values(idsPorCodigo);
+      if (ids.length === 0) throw new Error('Requisitos do framework ainda não foram carregados.');
+
+      const linhas = ids.map((requirementId) => ({
+        framework_id: frameworkId,
+        empresa_id: empresaId,
+        requirement_id: requirementId,
+        aplicavel: !exclusaoPorId.has(requirementId),
+        justificativa: exclusaoPorId.get(requirementId) || '',
+      }));
 
       const { error } = await supabase
         .from('gap_analysis_soa')
         .upsert(linhas, { onConflict: 'framework_id,empresa_id,requirement_id' });
       if (error) throw error;
 
-      toast.success(t('gapEscopo.gravado', { n: linhas.length }));
+      // Mantém a avaliação sincronizada com a SoA, inclusive quando um
+      // requisito antes excluído volta a ser aplicável numa revisão de escopo.
+      const { data: avaliacoesNA, error: erroAvaliacoes } = await supabase
+        .from('gap_analysis_evaluations')
+        .select('requirement_id')
+        .eq('framework_id', frameworkId)
+        .eq('empresa_id', empresaId)
+        .eq('conformity_status', 'nao_aplicavel');
+      if (erroAvaliacoes) throw erroAvaliacoes;
+
+      const agoraExcluidos = new Set(exclusaoPorId.keys());
+      const marcarNA = [...agoraExcluidos].map((requirementId) => ({
+        framework_id: frameworkId,
+        empresa_id: empresaId,
+        requirement_id: requirementId,
+        conformity_status: 'nao_aplicavel',
+        observacoes: exclusaoPorId.get(requirementId) || null,
+        updated_at: new Date().toISOString(),
+      }));
+      const reabrir = (avaliacoesNA || [])
+        .filter((avaliacao) => !agoraExcluidos.has(avaliacao.requirement_id))
+        .map((avaliacao) => ({
+          framework_id: frameworkId,
+          empresa_id: empresaId,
+          requirement_id: avaliacao.requirement_id,
+          conformity_status: 'nao_avaliado',
+          observacoes: null,
+          updated_at: new Date().toISOString(),
+        }));
+      if (marcarNA.length || reabrir.length) {
+        const { error: erroSincronia } = await supabase
+          .from('gap_analysis_evaluations')
+          .upsert([...marcarNA, ...reabrir], { onConflict: 'framework_id,empresa_id,requirement_id' });
+        if (erroSincronia) throw erroSincronia;
+      }
+
+      toast.success(excluidos.length > 0
+        ? t('gapEscopo.gravado', { n: excluidos.length })
+        : t('gapEscopo.gravadoSemExclusoes'));
       onAplicado();
       onOpenChange(false);
     } catch (e) {
@@ -260,9 +312,10 @@ export function AssistenteDeEscopo({
                   ));
                   setEtapa('confirmar');
                 }}
-                disabled={excluidos.length === 0}
+                disabled={!todasRespondidas || Object.keys(idsPorCodigo).length === 0}
               >
-                {t('gapEscopo.revisar')} <IconArrowRight className="ml-1.5 h-4 w-4" strokeWidth={1.5} />
+                {t(excluidos.length > 0 ? 'gapEscopo.revisar' : 'gapEscopo.confirmarTudoAplicavel')}{' '}
+                <IconArrowRight className="ml-1.5 h-4 w-4" strokeWidth={1.5} />
               </Button>
             </div>
           </>
@@ -270,13 +323,17 @@ export function AssistenteDeEscopo({
           <>
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
               <p className="text-sm leading-6 text-foreground">
-                {t('gapEscopo.confirmarResumo', {
-                  fora: excluidos.length, resta: totalRequisitos - excluidos.length,
-                })}
+                {excluidos.length > 0
+                  ? t('gapEscopo.confirmarResumo', {
+                    fora: excluidos.length, resta: totalRequisitos - excluidos.length,
+                  })
+                  : t('gapEscopo.confirmarSemExclusoes', { total: totalRequisitos })}
               </p>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                {t('gapEscopo.confirmarAviso')}
-              </p>
+              {excluidos.length > 0 && (
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {t('gapEscopo.confirmarAviso')}
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">

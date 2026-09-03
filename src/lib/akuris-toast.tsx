@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { toast as sonnerToast } from 'sonner';
+import { toast as sonnerToast } from '@/lib/toast';
 import { Icon } from '@/components/icons/Icon';
 import { type NotificationModuleKey } from '@/lib/notification-icons';
 
@@ -18,7 +18,7 @@ export interface AkurisToastOptions {
   description?: string;
   /** Ação opcional (label + onClick). */
   action?: { label: string; onClick: () => void };
-  /** Duração em ms. Por omissão herda a do Toaster (2s). */
+  /** Duração em ms. Por omissão segue o tom (2s–6s). */
   duration?: number;
   /** Id estável — reutiliza (substitui) o mesmo toast em vez de empilhar. */
   id?: string | number;

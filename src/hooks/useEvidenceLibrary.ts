@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { akurisToast } from '@/lib/akuris-toast';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { tGlobal } from '@/lib/i18n-global';
 
 export interface EvidenceLibraryItem {
@@ -104,7 +104,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
 
       // Conta links por evidência
       const ids = (evidences || []).map((e) => e.id);
-      let linkCounts: Record<string, { total: number; sugestoes: number }> = {};
+      const linkCounts: Record<string, { total: number; sugestoes: number }> = {};
       if (ids.length > 0) {
         const { data: links } = await supabase
           .from('evidence_library_links')
@@ -170,7 +170,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
           return dup as EvidenceLibraryItem;
         }
 
-        const safeName = params.file.name.replace(/[^\w.\-]+/g, '_');
+        const safeName = params.file.name.replace(/[^\w.-]+/g, '_');
         const path = `${empresaId}/${arquivo_hash.slice(0, 16)}-${Date.now()}-${safeName}`;
         const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, params.file, {
           contentType: params.file.type || 'application/octet-stream',

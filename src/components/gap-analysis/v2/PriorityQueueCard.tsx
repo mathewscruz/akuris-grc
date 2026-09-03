@@ -4,11 +4,10 @@
  * Score de prioridade = criticidade (peso) × penalidade de status (não-conforme > parcial > não-avaliado)
  *                       × urgência do prazo (vencido > <7d > <30d).
  *
- * Cada item leva à triagem rápida do requisito (callback do parent).
+ * Cada item leva ao workspace completo do requisito (callback do parent).
  * Mantém identidade Akuris — sem cores cruas, DM Sans, tokens semânticos.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { GAP_CRITICAL_WEIGHT } from '@/lib/gap-criticality';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { supabase } from '@/integrations/supabase/client';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
@@ -118,9 +117,8 @@ export function PriorityQueueCard({
           if (!ev?.conformity_status || ev.conformity_status === 'nao_avaliado') {
             reasonParts.push(t('gapV2.priorityQueue.notEvaluated'));
           }
-          // Mesmo limiar de `gap-criticality.ts`, e não um 4 solto: o peso
-          // máximo que existe no produto é 3.
-          if (peso >= GAP_CRITICAL_WEIGHT) reasonParts.push(t('gapV2.priorityQueue.highWeight'));
+          // O peso continua a ordenar a fila, mas não precisa ser repetido em
+          // todas as linhas: a posição 01, 02, 03 já comunica a prioridade.
           if (dl.factor >= 0.85) reasonParts.push(dl.reason);
           return {
             id: r.id,
@@ -285,7 +283,7 @@ export function PriorityQueueCard({
                     </span>
 
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors shrink-0">
-                      {t('gapV2.priorityQueue.triage')}
+                      {t('gapV2.priorityQueue.openRequirement')}
                       <IconArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </span>
                   </button>

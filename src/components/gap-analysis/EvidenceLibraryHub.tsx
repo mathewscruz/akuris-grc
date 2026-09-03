@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { IconCalendarClock } from '@/components/icons';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { akurisToast } from '@/lib/akuris-toast';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale } from '@/lib/date-utils';
 

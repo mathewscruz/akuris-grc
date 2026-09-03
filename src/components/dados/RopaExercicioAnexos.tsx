@@ -3,7 +3,7 @@ import { IconDelete, IconDownload, IconUpload, IconAttach } from '@/components/i
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,7 +22,7 @@ export const uploadRopaAnexo = async (params: {
   tipo: string;
 }) => {
   const { empresaId, exercicioId, file, tipo } = params;
-  const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+  const safeName = file.name.replace(/[^\w.-]+/g, "_");
   const caminho = `${empresaId}/ropa-exercicios/${exercicioId}/${Date.now()}_${safeName}`;
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(caminho, file, { upsert: false });
   if (upErr) throw upErr;

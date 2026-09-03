@@ -11,7 +11,7 @@ import type {
   ProjetoVinculoEntidade,
   ProjetoMembro,
 } from '@/types/projetos';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { tGlobal } from '@/lib/i18n-global';
 

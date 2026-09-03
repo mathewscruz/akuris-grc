@@ -47,9 +47,9 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
             </div>
           )}
 
-          <h3 className="relative mb-2 text-lg font-semibold text-foreground tracking-tight">
+          <h2 className="relative mb-2 text-lg font-semibold text-foreground tracking-tight">
             {title}
-          </h3>
+          </h2>
           {description && (
             <p className="relative mb-6 max-w-md text-sm text-muted-foreground leading-relaxed">
               {description}
@@ -82,7 +82,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
             {icon}
           </div>
         )}
-        <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
+        <h2 className="mb-2 text-lg font-semibold text-foreground">{title}</h2>
         {description && (
           <p className="mb-6 max-w-md text-sm text-muted-foreground">
             {description}

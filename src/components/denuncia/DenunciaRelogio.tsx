@@ -20,7 +20,7 @@ import { IconTime, IconSuccess } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { avisarDenunciante } from '@/lib/avisar-denunciante';
 import { encerrada as jaEncerrada } from '@/lib/prazo-da-denuncia';
 

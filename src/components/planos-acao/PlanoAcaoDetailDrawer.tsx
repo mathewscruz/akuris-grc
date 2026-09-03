@@ -23,7 +23,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { PLANO_STATUS_EDITAVEIS } from './PlanosAcaoKanban';
 import { IconEdit, IconClose, IconExternal, IconSend, IconChevronDown } from '@/components/icons';
 

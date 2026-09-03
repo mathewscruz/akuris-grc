@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';

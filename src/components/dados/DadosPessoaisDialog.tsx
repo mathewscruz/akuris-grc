@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { IconDatabase } from '@/components/icons';
+import { IconArrowLeft, IconArrowRight, IconDatabase, IconSave } from '@/components/icons';
 import { useJurisdicao } from "@/hooks/useJurisdicao";
 
 interface DadosPessoaisDialogProps {
@@ -35,7 +35,10 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
     observacoes: dados?.observacoes || ""
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [etapa, setEtapa] = useState(1);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const totalEtapas = 3;
 
   /**
    * A lei separa as bases por sensibilidade: dado sensível tem lista própria
@@ -96,9 +99,44 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
       forma_coleta: dados?.forma_coleta || "",
       observacoes: dados?.observacoes || ""
     });
-  }, [dados]);
+    setEtapa(1);
+    setErrors({});
+  }, [dados, isOpen]);
+
+  const validarEtapa = (numero: number) => {
+    const novos: Record<string, string> = {};
+    const obrigatorio = t('dadosDashboard.dadosPessoaisDialog.requiredField');
+
+    if (numero === 1) {
+      if (!formData.nome.trim()) novos.nome = obrigatorio;
+      if (!formData.categoria_dados) novos.categoria_dados = obrigatorio;
+      if (!formData.tipo_dados) novos.tipo_dados = obrigatorio;
+      if (!formData.sensibilidade) novos.sensibilidade = obrigatorio;
+    }
+    if (numero === 2 && !formData.finalidade_tratamento.trim()) {
+      novos.finalidade_tratamento = obrigatorio;
+    }
+    if (numero === 3 && !formData.base_legal) {
+      novos.base_legal = obrigatorio;
+    }
+
+    setErrors(novos);
+    return Object.keys(novos).length === 0;
+  };
+
+  const avancar = () => {
+    if (!validarEtapa(etapa)) return;
+    setEtapa((atual) => Math.min(totalEtapas, atual + 1));
+  };
 
   const handleSave = async () => {
+    for (let numero = 1; numero <= totalEtapas; numero += 1) {
+      if (!validarEtapa(numero)) {
+        setEtapa(numero);
+        return;
+      }
+    }
+
     try {
       setIsLoading(true);
       
@@ -153,16 +191,54 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
         open={isOpen}
         onOpenChange={onClose}
         title={dados?.id ? t('dadosDashboard.dadosPessoaisDialog.titleEdit') : t('dadosDashboard.dadosPessoaisDialog.titleNew')}
+        description={t('dadosDashboard.dadosPessoaisDialog.stepDescription', { current: etapa, total: totalEtapas })}
         icon={IconDatabase}
         size="lg"
         /* `isSubmitting`: sem isto o botao nunca se desligava e um
            duplo-clique gravava duas linhas. O estado ja existia — so
            nao chegava ao rodape que sabe usa-lo. */
-        onSubmit={handleSave}
         isSubmitting={isLoading}
+        footer={(
+          <div className="flex w-full items-center justify-between gap-3">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={isLoading}>
+              {t('dadosDashboard.dadosPessoaisDialog.cancel')}
+            </Button>
+            <div className="flex items-center gap-2">
+              {etapa > 1 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => { setErrors({}); setEtapa((atual) => atual - 1); }} disabled={isLoading}>
+                  <IconArrowLeft className="mr-1 h-4 w-4" />
+                  {t('dadosDashboard.dadosPessoaisDialog.previous')}
+                </Button>
+              )}
+              {etapa < totalEtapas ? (
+                <Button type="button" size="sm" onClick={avancar}>
+                  {t('dadosDashboard.dadosPessoaisDialog.next')}
+                  <IconArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="button" size="sm" onClick={handleSave} disabled={isLoading}>
+                  <IconSave className="mr-1 h-4 w-4" />
+                  {isLoading ? t('dadosDashboard.dadosPessoaisDialog.saving') : t('dadosDashboard.dadosPessoaisDialog.save')}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       >
-<div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-3 gap-2" role="list" aria-label={t('dadosDashboard.dadosPessoaisDialog.stepsLabel')}>
+            {[1, 2, 3].map((numero) => (
+              <div key={numero} role="listitem" className="space-y-1">
+                <div className={`h-1.5 rounded-full ${numero <= etapa ? 'bg-primary' : 'bg-muted'}`} />
+                <p className={`text-xs ${numero === etapa ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                  {t(`dadosDashboard.dadosPessoaisDialog.step${numero}`)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {etapa === 1 && <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="nome">{t('dadosDashboard.dadosPessoaisDialog.labelNome')}</Label>
               <Input
@@ -171,6 +247,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderNome')}
               />
+              {errors.nome && <p className="text-xs text-destructive">{errors.nome}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="categoria_dados">{t('dadosDashboard.dadosPessoaisDialog.labelCategoria')}</Label>
@@ -190,10 +267,11 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
                   <SelectItem value="outros">{t('dadosDashboard.dadosPessoaisDialog.categoriaOutros')}</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.categoria_dados && <p className="text-xs text-destructive">{errors.categoria_dados}</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="tipo_dados">{t('dadosDashboard.dadosPessoaisDialog.labelTipoDados')}</Label>
               <Select value={formData.tipo_dados} onValueChange={(value) => setFormData({ ...formData, tipo_dados: value })}>
@@ -206,6 +284,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
                   <SelectItem value="infantil">{t('dadosDashboard.dadosPessoaisDialog.tipoInfantil')}</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.tipo_dados && <p className="text-xs text-destructive">{errors.tipo_dados}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="sensibilidade">{t('dadosDashboard.dadosPessoaisDialog.labelSensibilidade')}</Label>
@@ -219,6 +298,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
                   <SelectItem value="muito_sensivel">{t('dadosDashboard.dadosPessoaisDialog.sensibilidadeMuitoSensivel')}</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.sensibilidade && <p className="text-xs text-destructive">{errors.sensibilidade}</p>}
             </div>
           </div>
 
@@ -231,8 +311,10 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
               placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderDescricao')}
             />
           </div>
+          </>}
 
-          <div className="grid grid-cols-2 gap-4">
+          {etapa === 2 && <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="origem_coleta">{t('dadosDashboard.dadosPessoaisDialog.labelOrigemColeta')}</Label>
               <Select value={formData.origem_coleta} onValueChange={(value) => setFormData({ ...formData, origem_coleta: value })}>
@@ -272,9 +354,15 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
               onChange={(e) => setFormData({ ...formData, finalidade_tratamento: e.target.value })}
               placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderFinalidadeTratamento')}
             />
+            {errors.finalidade_tratamento && <p className="text-xs text-destructive">{errors.finalidade_tratamento}</p>}
           </div>
+          </>}
 
-          <div className="grid grid-cols-2 gap-4">
+          {etapa === 3 && <>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+            {t('dadosDashboard.dadosPessoaisDialog.legalGuidance')}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="base_legal">{t('dadosDashboard.dadosPessoaisDialog.labelBaseLegal')}</Label>
               <Select value={formData.base_legal} onValueChange={(value) => setFormData({ ...formData, base_legal: value })}>
@@ -287,6 +375,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
                   ))}
                 </SelectContent>
               </Select>
+              {errors.base_legal && <p className="text-xs text-destructive">{errors.base_legal}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="prazo_retencao">{t('dadosDashboard.dadosPessoaisDialog.labelPrazoRetencao')}</Label>
@@ -308,6 +397,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
               placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderObservacoes')}
             />
           </div>
+          </>}
         </div>
 
         </DialogShell>

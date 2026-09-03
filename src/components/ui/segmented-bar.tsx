@@ -118,7 +118,7 @@ export function SegmentedBar({ segmentos, resumo, semLegenda, className }: Props
                     type="button"
                     onClick={s.onClick}
                     title={s.label}
-                    className="block w-full min-w-0 rounded-md py-0.5 pr-1 text-left transition-ui hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="block min-h-10 w-full min-w-0 rounded-md py-1 pr-1 text-left transition-ui hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {conteudo}
                   </button>

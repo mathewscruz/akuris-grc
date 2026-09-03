@@ -197,7 +197,7 @@ export default function ContasPrivilegiadas() {
 
   // Filtrar e ordenar contas
   const filteredAndSortedContas = useMemo(() => {
-    let filtered = contas.filter(conta => {
+    const filtered = contas.filter(conta => {
       const matchesSearch = searchTerm === '' || 
         conta.usuario_beneficiario.toLowerCase().includes(searchTerm.toLowerCase()) ||
         conta.email_beneficiario?.toLowerCase().includes(searchTerm.toLowerCase()) ||

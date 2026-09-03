@@ -65,7 +65,7 @@ describe('o aviso sai de todos os pontos', () => {
     */
     const helper = readFileSync('src/lib/avisar-denunciante.ts', 'utf8');
     expect(helper, 'o helper tem de apanhar a falha').toMatch(/catch\s*\(/);
-    expect(helper, 'e nunca a deixar sair').not.toMatch(/^\s*throw/m);
+    expect(helper, 'e nunca a deixar sair').not.toMatch(/^\s*throw\b/m);
 
     for (const [ficheiro] of PONTOS) {
       const s = readFileSync(ficheiro, 'utf8');

@@ -56,6 +56,10 @@ export const sweepDados = {
         itemExcluido: 'Item excluído com sucesso!',
         erro: 'Erro',
         erroExcluirItem: 'Erro ao excluir item',
+        cadastroIncompleto: 'Cadastro incompleto',
+        completeOuExclua: 'Abra para completar ou excluir este registro.',
+        incompletosAviso: '{count} cadastro(s) incompleto(s), fora dos indicadores até serem corrigidos.',
+        incidentesAbertos: '{count} incidente(s) de privacidade exigem atenção',
         categoria: {
           identificacao: 'Identificação',
           contato: 'Contato',
@@ -229,6 +233,10 @@ export const sweepDados = {
         itemExcluido: 'Item deleted successfully!',
         erro: 'Error',
         erroExcluirItem: 'Error deleting item',
+        cadastroIncompleto: 'Incomplete record',
+        completeOuExclua: 'Open it to complete or delete this record.',
+        incompletosAviso: '{count} incomplete record(s), excluded from indicators until corrected.',
+        incidentesAbertos: '{count} privacy incident(s) require attention',
         categoria: {
           identificacao: 'Identification',
           contato: 'Contact',

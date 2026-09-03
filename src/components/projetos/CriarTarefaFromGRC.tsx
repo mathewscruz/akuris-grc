@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import type { ProjetoTarefaPrioridade, ProjetoVinculoEntidade } from '@/types/projetos';
 import { PRIORIDADE_LABEL } from '@/types/projetos';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconChecklist } from '@/components/icons';
 import { exigirEscrita } from '@/lib/supabase-write';

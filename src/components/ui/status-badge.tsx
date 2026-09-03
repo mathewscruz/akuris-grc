@@ -9,8 +9,8 @@ import { Chip, type ChipFamily, type ChipTone, type SeverityLevel, type StateLev
  *
  * Regra de cor:
  *  - Com `mark` (C/A/M/B) → família SEVERIDADE, escala semântica.
- *  - Sem `mark` → família ESTADO, tinta neutra; só o estado terminal positivo
- *    recebe um acento discreto (teal), nunca o verde da severidade.
+ *  - Sem `mark` → família ESTADO, tinta neutra; estados concluídos usam teal e
+ *    bloqueados/vencidos usam vermelho porque exigem ação.
  *
  * Use sempre via resolvers em `src/lib/status-tone.tsx`.
  */
@@ -80,4 +80,3 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     </Chip>
   );
 };
-

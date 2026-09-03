@@ -84,7 +84,8 @@ export function RopaDossie({ registo, onEditar }: Props) {
   const alternar = (chave: string) =>
     setAbertos((s) => {
       const novo = new Set(s);
-      novo.has(chave) ? novo.delete(chave) : novo.add(chave);
+      if (novo.has(chave)) novo.delete(chave);
+      else novo.add(chave);
       return novo;
     });
 

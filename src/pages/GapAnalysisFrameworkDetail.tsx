@@ -8,7 +8,7 @@ import { escopoDe } from '@/lib/gap-escopo';
 import { provasPorRequisito } from '@/lib/gap-provas';
 import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { IconDownload, IconMore, IconFile, IconChevronLeft, IconChart, IconHelp } from '@/components/icons';
+import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,8 +27,8 @@ import {
   PainelDeFases,
   PriorityQueueCard,
   FrameworkHeader,
+  FrameworkJourneyNextAction,
   RequirementDrawerProvider,
-  useRequirementDrawer,
   CommandPalette,
   DocumentsHero,
   RemediationTabV2,
@@ -36,13 +36,11 @@ import {
 } from '@/components/gap-analysis/v2';
 import { useDocGen } from '@/contexts/DocGenContext';
 
-import { exportFrameworkPDF } from '@/components/gap-analysis/ExportFrameworkPDF';
-import { exportBoardPDF } from '@/components/gap-analysis/ExportBoardPDF';
 import { supabase } from '@/integrations/supabase/client';
 import { getFrameworkConfig } from '@/lib/framework-configs';
 import { useFrameworkScore } from '@/hooks/useFrameworkScore';
 import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { FRAMEWORK_DESCRIPTIONS } from '@/lib/framework-descriptions';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -72,7 +70,6 @@ function GapAnalysisFrameworkDetailInner() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
-  const { openRequirement } = useRequirementDrawer();
   const [framework, setFramework] = useState<Framework | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -81,13 +78,21 @@ function GapAnalysisFrameworkDetailInner() {
      `lib/gap-provas`: uma leitura falhada não pode virar acusação. */
   const [conformesSemProva, setConformesSemProva] = useState<number | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState('avaliacao');
+  const [activeTab, setActiveTab] = useState('diagnostico');
+  const [evidenceView, setEvidenceView] = useState<'analise' | 'biblioteca'>('analise');
   const [scoreRefreshKey, setScoreRefreshKey] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedAdherenceAssessment, setSelectedAdherenceAssessment] = useState<any>(null);
   const [adherenceView, setAdherenceView] = useState<'list' | 'result'>('list');
   const [docUploadSignal, setDocUploadSignal] = useState(0);
   const [marcoDialogAberto, setMarcoDialogAberto] = useState(false);
+
+  const abrirRequisitoCompleto = useCallback((requirementId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('req', requirementId);
+    setActiveTab('diagnostico');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
   const { openDocGen } = useDocGen();
 
   useEffect(() => {
@@ -222,7 +227,7 @@ function GapAnalysisFrameworkDetailInner() {
   // avaliação — quem pediu a edição a partir do ⌘K noutra aba ficaria a olhar
   // para nada.
   useEffect(() => {
-    if (searchParams.get('req')) setActiveTab('avaliacao');
+    if (searchParams.get('req')) setActiveTab('diagnostico');
   }, [searchParams]);
 
   /**
@@ -276,6 +281,7 @@ function GapAnalysisFrameworkDetailInner() {
     setExporting(true);
     try {
       const data = await getExportData();
+      const { exportFrameworkPDF } = await import('@/components/gap-analysis/ExportFrameworkPDF');
       await exportFrameworkPDF(data);
       toast.success(t('gapAnalysis.detail.toast.pdfExported'));
     } catch (error: any) {
@@ -291,6 +297,7 @@ function GapAnalysisFrameworkDetailInner() {
     setExporting(true);
     try {
       const data = await getExportData();
+      const { exportBoardPDF } = await import('@/components/gap-analysis/ExportBoardPDF');
       await exportBoardPDF({ ...data, t, locale });
       toast.success(t('gapAnalysis.detail.toast.boardExported'));
     } catch (error: any) {
@@ -326,28 +333,35 @@ function GapAnalysisFrameworkDetailInner() {
   const temAssistente = !!escopoDe(chaveDoFramework(framework?.nome || ''));
 
   useEffect(() => {
-    if (!empresaId || !frameworkId || !temAssistente) return;
+    if (!empresaId || !frameworkId) return;
     let cancelado = false;
     (async () => {
       /*
-        Conta EXCLUSOES, nao linhas.
+        Há dois estados válidos de conclusão:
 
-        Contava qualquer linha em gap_analysis_soa. Mas o Salvar da aba
-        Aplicabilidade grava os 121 requisitos de uma vez, aplicaveis inclusive:
-        bastava um clique la para o convite ao assistente desaparecer para
-        sempre, sem ninguem perceber porque. Quem ainda nao excluiu nada nunca
-        recortou o escopo, tenha ou nao passado pela aba.
+        · o fluxo legado/edição manual tem ao menos uma exclusão;
+        · o assistente novo ou a SoA completa registrou todos os requisitos,
+          inclusive quando todos continuam aplicáveis.
+
+        Contar apenas exclusões prendia para sempre a empresa cujo escopo não
+        exclui nada. Contar qualquer linha esconderia o assistente depois de
+        uma edição parcial. As duas condições preservam os dois casos.
       */
-      const { count } = await supabase
+      const { data } = await supabase
         .from('gap_analysis_soa')
-        .select('id', { count: 'exact', head: true })
+        .select('aplicavel')
         .eq('framework_id', frameworkId)
-        .eq('empresa_id', empresaId)
-        .eq('aplicavel', false);
-      if (!cancelado) setJaDeclarouEscopo((count ?? 0) > 0);
+        .eq('empresa_id', empresaId);
+      if (!cancelado) {
+        const linhas = data || [];
+        setJaDeclarouEscopo(
+          linhas.some((linha) => linha.aplicavel === false)
+          || (totalRequirements > 0 && linhas.length >= totalRequirements),
+        );
+      }
     })();
     return () => { cancelado = true; };
-  }, [empresaId, frameworkId, temAssistente, scoreRefreshKey]);
+  }, [empresaId, frameworkId, totalRequirements, scoreRefreshKey]);
 
   /** Filtra a tabela por estado e leva o utilizador até ela. */
   const filtrarPorEstado = useCallback((estado: string) => {
@@ -363,7 +377,15 @@ function GapAnalysisFrameworkDetailInner() {
     loadCategoryData();
   }, [loadCategoryData]);
 
-  if (loading || !framework || !config) {
+  const abrirEscopo = useCallback(() => {
+    if (temAssistente) setEscopoAberto(true);
+    else setActiveTab('soa');
+  }, [temAssistente]);
+
+  // O score também determina se a primeira experiência deve abrir o onboarding.
+  // Sem aguardar essa leitura, o utilizador novo vê por alguns instantes a tela
+  // avançada vazia ("0 de 0") antes de o guia aparecer.
+  if (loading || scoreLoading || (empresaId && jaDeclarouEscopo === null) || !framework || !config) {
     return (
       <ErrorBoundary>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
@@ -397,19 +419,19 @@ function GapAnalysisFrameworkDetailInner() {
                   overallScore={overallScore}
                   totalRequirements={totalRequirements}
                   evaluatedRequirements={evaluatedRequirements}
-                  onGoToRemediation={() => setActiveTab('remediacao')}
+                  onGoToRemediation={() => setActiveTab('adequacao')}
+                  showLabel
                 />
               )}
 
-              {/* Exportar — ação utilitária visível */}
+              {/* Recursos secundários ficam disponíveis sem competir com a próxima ação. */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={exporting}>
-                    <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                    {exporting ? t('gapAnalysis.detail.exporting') : t('gapAnalysis.detail.export')}
+                  <Button variant="ghost" size="sm" aria-label={t('gapAnalysis.detail.moreActions')}>
+                    <IconMore className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={handleExportPDF} disabled={exporting}>
                     <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportTechnical')}
@@ -418,19 +440,17 @@ function GapAnalysisFrameworkDetailInner() {
                     <IconChart className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportBoard')}
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Mais ações — agrupa Gerador de Documentos e Tour */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" aria-label={t('gapAnalysis.detail.moreActions')}>
-                    <IconMore className="h-4 w-4" strokeWidth={1.5} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => openDocGen({ frameworkId, frameworkName: framework.nome })}>
                     {t('gapAnalysis.detail.documentGenerator')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab('soa')}>
+                    <IconShieldCheck className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    {t('gapAnalysis.detail.scopeAndApplicability')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab('historico')}>
+                    <IconHistory className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    {t('gapAnalysis.detail.historyAndEvolution')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <CriarTarefaMenuItem
@@ -440,7 +460,7 @@ function GapAnalysisFrameworkDetailInner() {
                     descricaoSugerida={t('gapAnalysis.detail.taskDescription', { nome: framework.nome })}
                   />
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => { setActiveTab('avaliacao'); setShowOnboarding(true); }}>
+                  <DropdownMenuItem onClick={() => { setActiveTab('diagnostico'); setShowOnboarding(true); }}>
                     <IconHelp className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.revisitTour')}
                   </DropdownMenuItem>
@@ -451,16 +471,13 @@ function GapAnalysisFrameworkDetailInner() {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="avaliacao">{t('gapAnalysis.detail.tabs.evaluation')}</TabsTrigger>
-            <TabsTrigger value="documentos">{t('gapAnalysis.detail.tabs.documents')}</TabsTrigger>
-            <TabsTrigger value="remediacao">{t('gapAnalysis.detail.tabs.remediation')}</TabsTrigger>
-            <TabsTrigger value="soa">{t('gapAnalysis.detail.tabs.soa')}</TabsTrigger>
-            <TabsTrigger value="biblioteca">{t('gapAnalysis.detail.tabs.evidenceLibrary')}</TabsTrigger>
-            <TabsTrigger value="historico">{t('gapAnalysis.detail.tabs.history')}</TabsTrigger>
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
+            <TabsTrigger value="diagnostico">{t('gapAnalysis.detail.tabs.diagnosis')}</TabsTrigger>
+            <TabsTrigger value="adequacao">{t('gapAnalysis.detail.tabs.adaptation')}</TabsTrigger>
+            <TabsTrigger value="evidencias">{t('gapAnalysis.detail.tabs.evidence')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="avaliacao" className="space-y-5">
+          <TabsContent value="diagnostico" className="space-y-5">
             {/* Fica FORA do condicional de onboarding de propósito.
 
                 O momento de maior valor desta secção é exatamente antes de
@@ -514,6 +531,27 @@ function GapAnalysisFrameworkDetailInner() {
                     à auditoria, e até quando. Eram dois cartões empilhados que
                     respondiam à mesma coisa com os mesmos números — 556px e
                     quatro botões formando dois pares idênticos. */}
+                <FrameworkJourneyNextAction
+                  scopeDeclared={jaDeclarouEscopo === true}
+                  unevaluated={contagem.naoAvaliado}
+                  openGaps={contagem.naoConforme + contagem.parcial}
+                  missingEvidence={conformesSemProva}
+                  applicable={Math.max(0, totalRequirements - contagem.naoAplicavel)}
+                  evaluated={contagem.conforme + contagem.parcial + contagem.naoConforme}
+                  compliant={contagem.conforme}
+                  proven={conformesSemProva === null ? null : Math.max(0, contagem.conforme - conformesSemProva)}
+                  onDefineScope={abrirEscopo}
+                  onContinueDiagnosis={() => {
+                    setActiveTab('diagnostico');
+                    requestAnimationFrame(() => document.getElementById('priority-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                  }}
+                  onOpenAdaptation={() => setActiveTab('adequacao')}
+                  onOpenEvidence={() => {
+                    setEvidenceView('biblioteca');
+                    setActiveTab('evidencias');
+                  }}
+                />
+
                 <FrameworkHeader
                   frameworkName={framework.nome}
                   overallScore={overallScore}
@@ -530,95 +568,53 @@ function GapAnalysisFrameworkDetailInner() {
                     scoreAlvo: marco.score_alvo,
                   } : null}
                   onFiltrarPorEstado={filtrarPorEstado}
-                  onGoToRemediation={() => setActiveTab('remediacao')}
+                  onGoToRemediation={() => setActiveTab('adequacao')}
                   onAbrirMarco={empresaId ? () => setMarcoDialogAberto(true) : undefined}
                 />
 
-                {/* A fila é o "o que eu faço agora" e estava espremida em um
-                    terço de uma linha, debaixo de um cartão que dizia quase o
-                    mesmo. Passa a largura inteira, logo abaixo do cabeçalho. */}
-                {/*
-                    O convite ao escopo, antes de tudo.
-
-                    Vanta, Drata, Sprinto e Secureframe abrem todos por
-                    contexto e recortam a norma antes de a mostrar. Aqui a
-                    pessoa via 121 linhas em branco e a instrucao implicita de
-                    as classificar uma a uma.
-                */}
-                {empresaId && temAssistente && jaDeclarouEscopo === false && (
-                  /* Um banner, não um cartão.
-
-                     Ocupava 175px acima da dobra para dizer uma coisa que se
-                     diz numa linha, e empurrava para baixo a fila de
-                     prioridades, que é o que a pessoa veio fazer. É temporário:
-                     desaparece assim que ela recorta o escopo. */
-                  <section className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-                    <p className="min-w-0 flex-1 text-sm leading-6 text-foreground">
-                      {t('gapEscopo.conviteLinha', { total: totalRequirements })}
-                    </p>
-                    <Button size="sm" onClick={() => setEscopoAberto(true)}>
-                      {t('gapEscopo.conviteBotao')}
+                {empresaId && (
+                  <section className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <IconShieldCheck className="h-5 w-5" strokeWidth={1.5} />
+                    </span>
+                    <div className="min-w-[12rem] flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {jaDeclarouEscopo
+                          ? t('gapV2.journey.scopeDefined')
+                          : t('gapV2.journey.scopePending')}
+                      </p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {jaDeclarouEscopo
+                          ? t('gapV2.journey.scopeDefinedDescription')
+                          : t('gapV2.journey.scopePendingDescription', { total: totalRequirements })}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={abrirEscopo}>
+                      {jaDeclarouEscopo
+                        ? t('gapV2.journey.reviewScope')
+                        : t('gapV2.journey.defineScope')}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('soa')}>
+                      {t('gapV2.journey.viewApplicability')}
                     </Button>
                   </section>
                 )}
 
-                {/*
-                    O plano, antes da fila.
-
-                    A ordem da pagina passa a ser: onde estou (cabecalho), para
-                    onde vou (fases), o que faco agora (fila), onde estou fraco
-                    (mapa de calor), e o trabalho (tabela). Era medicao a seguir
-                    a medicao ate a tabela.
-                */}
-                <PainelDeFases
-                  frameworkName={framework.nome}
-                  categorias={categoryData}
-                  faseAtiva={searchParams.get('fase')}
-                  onEscolherFase={(categorias) => {
-                    const fase = (fasesDe(framework.nome) || []).find(
-                      (f) => f.categorias.join('|') === categorias.join('|'),
-                    );
-                    const sp = new URLSearchParams(window.location.search);
-                    if (fase) sp.set('fase', fase.id); else sp.delete('fase');
-                    // A fase substitui o recorte por categoria: sao dois cortes
-                    // do mesmo eixo e mante-los juntos daria lista vazia.
-                    sp.delete('cat');
-                    setSearchParams(sp, { replace: true });
-                    setActiveCategoryFilter(undefined);
-                    document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                />
-
-
-                {/*
-                    Sem `evaluatedRequirements > 0`.
-
-                    A fila é a resposta a "o que eu faço agora", e estava atrás
-                    de já se ter feito alguma coisa: quem mais precisava dela
-                    era exactamente quem não a via. E ela nunca precisou do
-                    portão — `statusPenalty` já dá 0,35 a um requisito por
-                    avaliar, portanto no dia um ela ordena por peso e devolve os
-                    seis primeiros sem uma única avaliação registada.
-                */}
                 {empresaId && (
-                  <PriorityQueueCard
-                    frameworkId={frameworkId!}
-                    empresaId={empresaId}
-                    refreshKey={scoreRefreshKey}
-                    limit={6}
-                    onRequirementClick={(req) => {
-                      openRequirement({
-                        requirementId: req.id,
-                        empresaId,
-                        onSaved: handleScoreChange,
-                      });
-                    }}
-                    onSeeAll={() => {
-                      document.getElementById('reqs-table')?.scrollIntoView({
-                        behavior: 'smooth', block: 'start',
-                      });
-                    }}
-                  />
+                  <div id="priority-queue" className="scroll-mt-4">
+                    <PriorityQueueCard
+                      frameworkId={frameworkId!}
+                      empresaId={empresaId}
+                      refreshKey={scoreRefreshKey}
+                      limit={6}
+                      onRequirementClick={(req) => abrirRequisitoCompleto(req.id)}
+                      onSeeAll={() => {
+                        document.getElementById('reqs-table')?.scrollIntoView({
+                          behavior: 'smooth', block: 'start',
+                        });
+                      }}
+                    />
+                  </div>
                 )}
 
                 {/* O mapa de calor saiu daqui.
@@ -669,43 +665,81 @@ function GapAnalysisFrameworkDetailInner() {
             )}
           </TabsContent>
 
-          <TabsContent value="documentos" className="space-y-5">
-            {adherenceView === 'result' && selectedAdherenceAssessment ? (
-              <AdherenceResultView
-                assessment={selectedAdherenceAssessment}
-                onBack={() => setAdherenceView('list')}
-                frameworkId={frameworkId!}
-                onApplied={handleScoreChange}
-              />
-            ) : (
-              <>
-                {empresaId && (
-                  <DocumentsHero
+          <TabsContent value="evidencias" className="space-y-5">
+            <Tabs value={evidenceView} onValueChange={(value) => setEvidenceView(value as 'analise' | 'biblioteca')}>
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="analise">{t('gapAnalysis.detail.evidenceViews.analysis')}</TabsTrigger>
+                <TabsTrigger value="biblioteca">{t('gapAnalysis.detail.evidenceViews.library')}</TabsTrigger>
+              </TabsList>
+              <TabsContent value="analise" className="space-y-5">
+                {adherenceView === 'result' && selectedAdherenceAssessment ? (
+                  <AdherenceResultView
+                    assessment={selectedAdherenceAssessment}
+                    onBack={() => setAdherenceView('list')}
                     frameworkId={frameworkId!}
-                    empresaId={empresaId}
-                    onUploadClick={() => setDocUploadSignal(s => s + 1)}
-                    onAIGenerate={() => openDocGen({
-                      frameworkId: frameworkId!,
-                      frameworkName: framework.nome,
-                    })}
+                    onApplied={handleScoreChange}
                   />
+                ) : (
+                  <>
+                    {empresaId && (
+                      <DocumentsHero
+                        frameworkId={frameworkId!}
+                        empresaId={empresaId}
+                        onUploadClick={() => setDocUploadSignal(s => s + 1)}
+                        onAIGenerate={() => openDocGen({
+                          frameworkId: frameworkId!,
+                          frameworkName: framework.nome,
+                        })}
+                      />
+                    )}
+                    <AdherenceAssessmentView
+                      embedded
+                      openSignal={docUploadSignal}
+                      onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
+                      frameworkId={frameworkId}
+                      frameworkNome={framework.nome}
+                    />
+                  </>
                 )}
-                <AdherenceAssessmentView
-                  embedded
-                  openSignal={docUploadSignal}
-                  onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
-                  frameworkId={frameworkId}
-                  frameworkNome={framework.nome}
-                />
-              </>
-            )}
+              </TabsContent>
+              <TabsContent value="biblioteca">
+                <EvidenceLibraryHub />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
-          <TabsContent value="remediacao">
+          <TabsContent value="adequacao" className="space-y-5">
+            <PainelDeFases
+              frameworkName={framework.nome}
+              categorias={categoryData}
+              faseAtiva={searchParams.get('fase')}
+              onEscolherFase={(categorias) => {
+                const fase = (fasesDe(framework.nome) || []).find(
+                  (f) => f.categorias.join('|') === categorias.join('|'),
+                );
+                const sp = new URLSearchParams(window.location.search);
+                if (fase) sp.set('fase', fase.id); else sp.delete('fase');
+                sp.delete('cat');
+                setSearchParams(sp, { replace: true });
+                setActiveCategoryFilter(undefined);
+                setActiveTab('diagnostico');
+                requestAnimationFrame(() => document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+              }}
+            />
             <RemediationTabV2 frameworkId={frameworkId!} frameworkName={framework.nome} />
           </TabsContent>
 
-          <TabsContent value="historico">
+          <TabsContent value="historico" className="space-y-4">
+            <section className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">{t('gapAnalysis.detail.historyAndEvolution')}</p>
+                <p className="text-xs text-muted-foreground">{t('gapAnalysis.detail.secondaryAreaDescription')}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab('diagnostico')}>
+                <IconChevronLeft className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                {t('gapAnalysis.detail.backToJourney')}
+              </Button>
+            </section>
             <FrameworkHistoryTab
               frameworkId={frameworkId!}
               frameworkName={framework.nome}
@@ -717,6 +751,16 @@ function GapAnalysisFrameworkDetailInner() {
             />
           </TabsContent>
           <TabsContent value="soa" className="space-y-4">
+            <section className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">{t('gapAnalysis.detail.scopeAndApplicability')}</p>
+                <p className="text-xs text-muted-foreground">{t('gapAnalysis.detail.secondaryAreaDescription')}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab('diagnostico')}>
+                <IconChevronLeft className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                {t('gapAnalysis.detail.backToJourney')}
+              </Button>
+            </section>
             {/*
                 A porta de volta ao assistente.
 
@@ -743,9 +787,6 @@ function GapAnalysisFrameworkDetailInner() {
               sections={config.sections}
             />
           </TabsContent>
-          <TabsContent value="biblioteca">
-            <EvidenceLibraryHub />
-          </TabsContent>
         </Tabs>
 
         {empresaId && frameworkId && (
@@ -765,6 +806,7 @@ function GapAnalysisFrameworkDetailInner() {
             frameworkId={frameworkId}
             empresaId={empresaId}
             onSaved={handleScoreChange}
+            onRequirementSelect={abrirRequisitoCompleto}
           />
         )}
       </div>

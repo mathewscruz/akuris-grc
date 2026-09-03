@@ -69,7 +69,7 @@ function chavesUsadas(): Map<string, string> {
   for (const ficheiro of fontes()) {
     // Os próprios dicionários citam chaves em comentários e exemplos; não são
     // sítios de chamada.
-    if (/[\/]i18n[\/]/.test(ficheiro)) continue;
+    if (ficheiro.split('\\').join('/').includes('/i18n/')) continue;
     const texto = readFileSync(ficheiro, 'utf8');
     for (const m of texto.matchAll(CHAMADA_LITERAL)) {
       if (!encontradas.has(m[1])) encontradas.set(m[1], ficheiro);

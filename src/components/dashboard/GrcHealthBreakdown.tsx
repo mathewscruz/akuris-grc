@@ -234,11 +234,13 @@ export function GrcHealthBreakdown() {
                   </button>
 
                   <PanelAction
-                    limpo={!l.acao}
+                    limpo={l.hasData && !l.acao}
                     onClick={() => navigate(l.link)}
                     className="px-3 py-2"
                   >
-                    {l.acao
+                    {!l.hasData
+                      ? t('dashWidgets.radar.acoes.comecarAgora')
+                      : l.acao
                       ? t(`dashWidgets.radar.acoes.${l.acao.chave}`, { count: l.acao.n })
                       : t('dashWidgets.radar.acoes.tudoEmDia')}
                   </PanelAction>

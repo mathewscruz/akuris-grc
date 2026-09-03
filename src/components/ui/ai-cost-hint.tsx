@@ -53,7 +53,7 @@ export function AiCostHint({ variant = 'inline', cost = 1, action, className }: 
             ? isSuperAdmin
               ? 'Adicione créditos em Configurações → Créditos de IA.'
               : 'Fale com o administrador para liberar mais.'
-            : `Saldo: ${restantes} de ${franquia} disponível${restantes === 1 ? '' : 's'}.`}
+            : `Saldo: ${restantes} de ${franquia} ${restantes === 1 ? 'crédito disponível' : 'créditos disponíveis'}.`}
         </span>
       </div>
     );

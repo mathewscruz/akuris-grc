@@ -133,7 +133,7 @@ serve(async (req) => {
       .maybeSingle();
 
     // 3. Resolve unique slug
-    let baseSlug = slugify(empresa_nome) || `empresa-${userId.slice(0, 8)}`;
+    const baseSlug = slugify(empresa_nome) || `empresa-${userId.slice(0, 8)}`;
     let slug = baseSlug;
     for (let i = 0; i < 5; i++) {
       const { data: collision } = await supabaseAdmin

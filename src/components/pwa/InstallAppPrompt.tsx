@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 /**
  * Diálogo com as instruções manuais (iOS/Safari não expõe evento de instalação).

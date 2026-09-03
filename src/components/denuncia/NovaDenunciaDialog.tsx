@@ -23,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface NovaDenunciaDialogProps {
   onDenunciaCriada?: () => void;

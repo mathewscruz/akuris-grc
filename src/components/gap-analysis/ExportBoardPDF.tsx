@@ -369,6 +369,6 @@ export async function exportBoardPDF(params: BoardPDFParams) {
   // Footer
   addAkurisFooter(doc);
 
-  const fileName = `Board_${frameworkName.replace(/[\/\\:]/g, '_')}_${empresaNome.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+  const fileName = `Board_${frameworkName.replace(/[/\\:]/g, '_')}_${empresaNome.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
   doc.save(fileName);
 }

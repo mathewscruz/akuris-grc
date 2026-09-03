@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { DateField } from "@/components/ui/date-field";
@@ -214,6 +214,8 @@ export function ItemAuditoriaFormDialog({
       const newResponsavel = data.responsavel_id;
       const responsavelChanged = !item || (previousResponsavel !== newResponsavel && newResponsavel);
 
+      let savedItemId = item?.id as string | undefined;
+
       if (item) {
         const { error } = await supabase
           .from("auditoria_itens")
@@ -223,18 +225,23 @@ export function ItemAuditoriaFormDialog({
         if (error) throw error;
         toast.success(t("govDialogs.itemAuditoriaFormDialog.toastUpdated"));
       } else {
-        const { error } = await supabase.from("auditoria_itens").insert(payload);
+        const { data: createdItem, error } = await supabase
+          .from("auditoria_itens")
+          .insert(payload)
+          .select("id")
+          .single();
 
         if (error) throw error;
+        savedItemId = createdItem.id;
         toast.success(t("govDialogs.itemAuditoriaFormDialog.toastCreated"));
       }
 
       // Enviar notificação se responsável foi definido/alterado
       if (responsavelChanged && newResponsavel) {
         try {
-          await supabase.functions.invoke("send-auditoria-item-notification", {
+          const { data: notificationResult, error: notificationError } = await supabase.functions.invoke("send-auditoria-item-notification", {
             body: {
-              item_id: item?.id || "new",
+              item_id: savedItemId,
               auditoria_id: auditoriaId,
               responsavel_id: newResponsavel,
               item_codigo: data.codigo,
@@ -243,8 +250,20 @@ export function ItemAuditoriaFormDialog({
               prazo: data.prazo || null,
             },
           });
+          if (notificationError) throw notificationError;
+          if (
+            notificationResult?.email_sent === false &&
+            notificationResult?.email_reason !== "preference_disabled"
+          ) {
+            toast.warning(t("govDialogs.itemAuditoriaFormDialog.toastNotificationWarning"), {
+              description: t("govDialogs.itemAuditoriaFormDialog.toastNotificationWarningDescription"),
+            });
+          }
         } catch (notifError) {
           logger.error("Erro ao enviar notificação", { error: (notifError as Error)?.message, module: 'auditorias' });
+          toast.warning(t("govDialogs.itemAuditoriaFormDialog.toastNotificationWarning"), {
+            description: t("govDialogs.itemAuditoriaFormDialog.toastNotificationWarningDescription"),
+          });
         }
       }
 

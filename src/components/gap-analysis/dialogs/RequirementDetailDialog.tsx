@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, type ComponentType } from "react";
 import { IconClose, IconUpload, IconExternal, IconCheck, IconSuccess, IconWarning, IconCalendar, IconRefresh, IconFile, IconIdea, IconChecklist, IconChevronDown, IconHistory, IconBook, IconHelp, IconOrg, IconSettings, IconFileCheck, IconCheckbox, IconShield, IconTarget } from '@/components/icons';
 import DOMPurify from 'dompurify';
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -10,9 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // (Skeleton removido — substituído por AkurisPulse)
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { type LucideIcon } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -23,7 +22,7 @@ import { resolveControleStatusTone } from "@/lib/status-tone";
 import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
-import { useOrientacaoRequisito } from '@/hooks/useOrientacaoRequisito';
+import { useOrientacaoRequisito, type PerguntaDiagnostico } from '@/hooks/useOrientacaoRequisito';
 import { DocumentosDoRequisito } from '../DocumentosDoRequisito';
 import { logger } from '@/lib/logger';
 import { useDocGen } from '@/contexts/DocGenContext';
@@ -37,6 +36,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { exigirEscrita } from '@/lib/supabase-write';
+import { getRequirementCompletionCriteria, type RequirementCompletionKey } from '@/lib/gap-requirement-completion';
 interface RequirementDetail {
   id: string;
   codigo: string;
@@ -74,6 +74,16 @@ interface EvaluationData {
   evidence_files: any[];
   plano_acao_id?: string | null;
 }
+
+const emptyEvaluationData = (): EvaluationData => ({
+  responsavel_avaliacao: '',
+  plano_acao: '',
+  observacoes: '',
+  prazo_implementacao: '',
+  riscos_vinculados: [],
+  evidence_files: [],
+  plano_acao_id: null,
+});
 
 // ---------------------------------------------------------------------------
 // Status Segmented Control — barra inline para mudar conformity_status
@@ -196,7 +206,7 @@ const JourneyStep: React.FC<{
 // ---------------------------------------------------------------------------
 
 /** Icon mapping for section titles based on keywords */
-const getSectionIcon = (title: string): { icon: LucideIcon; color: string } => {
+const getSectionIcon = (title: string): { icon: ComponentType<any>; color: string } => {
   const t = title.toLowerCase();
   if (t.includes('significa') || t.includes('conceito') || t.includes('what')) return { icon: IconTarget, color: 'text-primary' };
   if (t.includes('importa') || t.includes('relevância') || t.includes('why') || t.includes('negócio')) return { icon: IconOrg, color: 'text-warning' };
@@ -415,11 +425,31 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [linkName, setLinkName] = useState('');
   const [savingStatus, setSavingStatus] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string | null | undefined>(requirement.conformity_status);
+  const [linkedEvidenceCount, setLinkedEvidenceCount] = useState(0);
 
-  const [formData, setFormData] = useState<EvaluationData>({
-    responsavel_avaliacao: '', plano_acao: '', observacoes: '',
-    prazo_implementacao: '', riscos_vinculados: [], evidence_files: [], plano_acao_id: null
-  });
+  const [formData, setFormData] = useState<EvaluationData>(emptyEvaluationData);
+
+  const fallbackDiagnosticQuestions = useMemo<PerguntaDiagnostico[]>(() => [
+    { pergunta: t('gapUi.detail.fallbackDiagnostic.q1'), peso: 3 },
+    { pergunta: t('gapUi.detail.fallbackDiagnostic.q2'), peso: 3 },
+    { pergunta: t('gapUi.detail.fallbackDiagnostic.q3'), peso: 2 },
+    { pergunta: t('gapUi.detail.fallbackDiagnostic.q4'), peso: 3 },
+  ], [t]);
+  const usesFallbackDiagnostic = diagnosticQuestions.length === 0;
+  const effectiveDiagnosticQuestions = usesFallbackDiagnostic
+    ? fallbackDiagnosticQuestions
+    : diagnosticQuestions;
+
+  const loadLinkedEvidenceCount = useCallback(async () => {
+    if (!empresaId) return;
+    const { count, error } = await supabase
+      .from('evidence_library_links')
+      .select('id', { count: 'exact', head: true })
+      .eq('requirement_id', requirement.id)
+      .eq('empresa_id', empresaId);
+    if (error) throw error;
+    setLinkedEvidenceCount(count ?? 0);
+  }, [empresaId, requirement.id]);
 
   useEffect(() => {
     setCurrentStatus(requirement.conformity_status);
@@ -432,14 +462,18 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const loadData = async () => {
     setLoading(true);
     try {
-      const [usersRes, riscosRes] = await Promise.all([
+      const [usersRes, riscosRes, evidenceLinksRes] = await Promise.all([
         supabase.from('profiles').select('user_id, nome, email').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual').eq('empresa_id', empresaId).order('nome')
+        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual').eq('empresa_id', empresaId).order('nome'),
+        supabase.from('evidence_library_links').select('id', { count: 'exact', head: true })
+          .eq('requirement_id', requirement.id).eq('empresa_id', empresaId),
       ]);
       if (usersRes.error) throw usersRes.error;
       if (riscosRes.error) throw riscosRes.error;
+      if (evidenceLinksRes.error) throw evidenceLinksRes.error;
       setUsers(usersRes.data || []);
       setRiscos(riscosRes.data || []);
+      setLinkedEvidenceCount(evidenceLinksRes.count ?? 0);
 
       setDiagnosticAnswers({});
 
@@ -474,6 +508,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         loadedUpdatedAtRef.current = (evalData as any).updated_at || null;
       } else {
         setPlanoAcaoVinculado(null);
+        setFormData(emptyEvaluationData());
         loadedUpdatedAtRef.current = null;
       }
     } catch (error: any) {
@@ -495,12 +530,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     try {
       const evaluationId = formData.id || requirement.evaluation_id;
       if (evaluationId) {
+        const nowIso = new Date().toISOString();
         const { error } = await supabase
           .from('gap_analysis_evaluations')
-          .update({ conformity_status: newStatus, updated_at: new Date().toISOString() })
+          .update({ conformity_status: newStatus, updated_at: nowIso })
           .eq('id', evaluationId)
           .eq('empresa_id', empresaId);
         if (error) throw error;
+        loadedUpdatedAtRef.current = nowIso;
       } else {
         const { data: newEval, error } = await supabase
           .from('gap_analysis_evaluations')
@@ -515,6 +552,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           .single();
         if (error) throw error;
         setFormData(prev => ({ ...prev, id: newEval.id }));
+        loadedUpdatedAtRef.current = (newEval as any).updated_at || null;
       }
       onStatusChange?.(requirement.id, newStatus);
       const label = STATUS_OPTIONS.find(o => o.value === newStatus)?.label ?? newStatus;
@@ -751,17 +789,38 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const isNonCompliant = currentStatus === 'nao_conforme' || currentStatus === 'parcial';
   const requiresPlanoStep = isNonCompliant;
   const planoStepDone = !!planoAcaoVinculado;
-  const evidenciasCount = formData.evidence_files.length;
+  const evidenciasCount = formData.evidence_files.length + linkedEvidenceCount;
   const detalhesDone = !!formData.responsavel_avaliacao && !!formData.prazo_implementacao;
+  const diagnosticAnswered = effectiveDiagnosticQuestions.filter((_, index) => !!diagnosticAnswers[index]).length;
+  const diagnosticDone = diagnosticAnswered === effectiveDiagnosticQuestions.length;
+  const completionCriteria = getRequirementCompletionCriteria({
+    diagnosticAnswered,
+    diagnosticTotal: effectiveDiagnosticQuestions.length,
+    status: currentStatus,
+    evidenceCount: evidenciasCount,
+    hasPlan: planoStepDone,
+    hasOwner: !!formData.responsavel_avaliacao,
+    hasDeadline: !!formData.prazo_implementacao,
+    hasJustification: formData.observacoes.trim().length > 0,
+  });
+  const completionDone = completionCriteria.filter((criterion) => criterion.done).length;
+  const allCompletionDone = completionDone === completionCriteria.length;
+  const completionProgress = Math.round((completionDone / completionCriteria.length) * 100);
+  const completionLabels: Record<RequirementCompletionKey, string> = {
+    diagnostic: t('gapUi.detail.completion.diagnostic'),
+    status: t('gapUi.detail.completion.status'),
+    evidence: t('gapUi.detail.completion.evidence'),
+    plan: t('gapUi.detail.completion.plan'),
+    ownerDeadline: t('gapUi.detail.completion.ownerDeadline'),
+    justification: t('gapUi.detail.completion.justification'),
+  };
 
   // CTA contextual no footer
   const footerLabel = useMemo(() => {
     if (saving) return t('gapUi.detail.footer.saving');
-    if (!isStatusDefined) return t('gapUi.detail.footer.saveDraft');
-    const allDone = isStatusDefined && (!requiresPlanoStep || planoStepDone) && detalhesDone;
-    if (allDone) return t('gapUi.detail.footer.finishEvaluation');
-    return t('gapUi.detail.footer.saveEvaluation');
-  }, [saving, isStatusDefined, requiresPlanoStep, planoStepDone, detalhesDone, t]);
+    if (allCompletionDone) return t('gapUi.detail.footer.finishEvaluation');
+    return t('gapUi.detail.footer.saveDraft');
+  }, [saving, allCompletionDone, t]);
 
   // Sugestão automática do diagnóstico
   const diagnosticSuggestion = useMemo(() => {
@@ -770,7 +829,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     let totalWeight = 0;
     let weightedScore = 0;
     answered.forEach(([idx, ans]) => {
-      const w = diagnosticQuestions[Number(idx)]?.peso || 1;
+      const w = effectiveDiagnosticQuestions[Number(idx)]?.peso || 1;
       totalWeight += w;
       if (ans === 'sim') weightedScore += w * 1;
       else if (ans === 'parcial') weightedScore += w * 0.5;
@@ -780,7 +839,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     const label = pct >= 80 ? t('gapUi.status.conforme') : pct >= 40 ? t('gapUi.status.parcial') : t('gapUi.status.naoConforme');
     const color = pct >= 80 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-destructive';
     return { pct: Math.round(pct), suggested, label, color };
-  }, [diagnosticAnswers, diagnosticQuestions]);
+  }, [diagnosticAnswers, effectiveDiagnosticQuestions, t]);
 
   return (
     <>
@@ -935,29 +994,68 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               <div className="h-full md:w-[58%] flex-1 md:flex-none min-h-0 overflow-y-auto">
                 <div className="p-5 space-y-3">
 
+                  <section className="rounded-lg border border-primary/20 bg-primary/5 p-4" aria-labelledby="completion-title">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p id="completion-title" className="text-sm font-semibold text-foreground">
+                          {t('gapUi.detail.completion.title')}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {allCompletionDone
+                            ? t('gapUi.detail.completion.ready')
+                            : t('gapUi.detail.completion.hint')}
+                        </p>
+                      </div>
+                      <Badge variant={allCompletionDone ? 'success' : 'outline'} className="shrink-0 tabular-nums">
+                        {t('gapUi.detail.completion.progress', { done: completionDone, total: completionCriteria.length })}
+                      </Badge>
+                    </div>
+                    <div
+                      className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
+                      role="progressbar"
+                      aria-label={t('gapUi.detail.completion.title')}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={completionProgress}
+                    >
+                      <div
+                        className={cn('h-full rounded-full transition-[width]', allCompletionDone ? 'bg-success' : 'bg-primary')}
+                        style={{ width: `${completionProgress}%` }}
+                      />
+                    </div>
+                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {completionCriteria.map((criterion) => (
+                        <li key={criterion.key} className="flex items-start gap-2 text-xs">
+                          <span className={cn(
+                            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            criterion.done
+                              ? 'border-success bg-success text-success-foreground'
+                              : 'border-muted-foreground/40 text-transparent',
+                          )}>
+                            <IconCheck className="h-2.5 w-2.5" strokeWidth={2.5} />
+                          </span>
+                          <span className={criterion.done ? 'text-foreground' : 'text-muted-foreground'}>
+                            {completionLabels[criterion.key]}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+
                   {/* ===== STEP 1: Avaliar Conformidade ===== */}
                   <JourneyStep
                     number={1}
                     title={t('gapUi.detail.step1Title')}
                     description={t('gapUi.detail.step1Description')}
-                    state={isStatusDefined ? 'complete' : 'active'}
+                    state={isStatusDefined && diagnosticDone ? 'complete' : 'active'}
                     badge={
-                      isStatusDefined
+                      isStatusDefined && diagnosticDone
                         ? <Badge variant="success" className="text-micro">{t('gapUi.detail.defined')}</Badge>
-                        : <Badge variant="outline" className="text-micro">{t('gapUi.detail.pending')}</Badge>
+                        : <Badge variant="outline" className="text-micro tabular-nums">{diagnosticAnswered}/{effectiveDiagnosticQuestions.length}</Badge>
                     }
                   >
                     <div className="space-y-3">
-                      {/* Status vive aqui agora (antes duplicado numa barra no topo) */}
-                      <StatusSegmentedControl
-                        value={currentStatus}
-                        onChange={handleStatusChange}
-                        disabled={savingStatus || loading}
-                      />
-                      {savingStatus && <AkurisPulse size={14} className="text-muted-foreground" />}
-
-                      {diagnosticQuestions.length > 0 && (
-                        <div className="space-y-3 pt-3 border-t border-border/50">
+                        <div className="space-y-3">
                         <div className="flex items-center gap-1.5">
                           <IconHelp className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
                           <p className="text-xs font-medium text-foreground">{t('gapUi.detail.guidedDiagnostic')}</p>
@@ -965,8 +1063,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         <p className="text-micro text-muted-foreground">
                           {t('gapUi.detail.guidedDiagnosticHint')}
                         </p>
+                        {usesFallbackDiagnostic && (
+                          <p className="rounded-md border border-info/25 bg-info/10 px-3 py-2 text-micro leading-5 text-muted-foreground">
+                            {t('gapUi.detail.fallbackDiagnostic.hint')}
+                          </p>
+                        )}
                         <div className="space-y-2.5">
-                          {diagnosticQuestions.map((q, idx) => {
+                          {effectiveDiagnosticQuestions.map((q, idx) => {
                             const answer = diagnosticAnswers[idx] || null;
                             return (
                               <div key={idx} className="p-3 rounded-md bg-card border space-y-2">
@@ -1023,8 +1126,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             </Button>
                           </div>
                         )}
+
+                        <div className="space-y-2 border-t border-border/50 pt-3">
+                          <Label className="text-xs">{t('gapUi.detail.finalDecision')}</Label>
+                          <StatusSegmentedControl
+                            value={currentStatus}
+                            onChange={handleStatusChange}
+                            disabled={savingStatus || loading}
+                          />
+                          {savingStatus && <AkurisPulse size={14} className="text-muted-foreground" />}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </JourneyStep>
 
@@ -1052,7 +1164,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       */}
                       {requirement?.id && (
                         <div className="rounded-lg border bg-muted/20 p-3">
-                          <DocumentosDoRequisito requisitoId={requirement.id} frameworkId={frameworkId} />
+                          <DocumentosDoRequisito
+                            requisitoId={requirement.id}
+                            frameworkId={frameworkId}
+                            onChanged={() => void loadLinkedEvidenceCount()}
+                          />
                         </div>
                       )}
 
@@ -1231,7 +1347,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           requirementId={requirement.id}
                           frameworkId={frameworkId}
                           evaluationId={formData.id}
-                          onLinked={() => loadData()}
+                          onLinked={() => void loadLinkedEvidenceCount()}
                         />
                       </div>
                     </div>

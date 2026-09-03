@@ -1,4 +1,5 @@
-import { Toaster as Sonner, toast } from "sonner"
+import { Toaster as Sonner } from "sonner"
+import { toast } from '@/lib/toast'
 import { IconSuccess, IconWarning, IconError, IconInfo } from '@/components/icons';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
@@ -22,7 +23,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       position="top-right"
       expand={true}
       /*
-        Três é o limite, e dois segundos é a duração.
+        Três é o limite; três segundos é apenas o fallback para chamadas sem
+        tom. A política real vive em `src/lib/toast.ts`: sucesso 2s,
+        informação 3s, aviso 4,5s e erro 6s.
         
         Estava em quatro visíveis e 4,5s cada: uma acção que dispara três avisos
         seguidos tapava o canto do ecrã durante quase cinco segundos. Um aviso
@@ -31,12 +34,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
         ecrã, não num aviso que foge.
 
         Quem precisar de mais tempo passa `duration` na chamada, e a guarda em
-        `src/__tests__/aviso-nao-se-demora.test.ts` obriga a que seja excepção
-        deliberada e rara.
+        `src/__tests__/aviso-nao-se-demora.test.ts` obriga a que seja uma
+        excepção deliberada e rara.
       */
       visibleToasts={3}
       richColors={false}
-      duration={2000}
+      duration={3000}
       gap={12}
       offset={16}
       icons={{
@@ -102,4 +105,3 @@ const Toaster = ({ ...props }: ToasterProps) => {
 }
 
 export { Toaster, toast }
-

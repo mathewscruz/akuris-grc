@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useAiCredits } from '@/hooks/useAiCredits';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { aiEdgeFunctionLabel } from '@/lib/ai-usage-catalog';

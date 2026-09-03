@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { IconClose, IconSuccess, IconWarning, IconDot, IconDatabase, IconShield, IconFileCheck, IconLock, IconChart, IconArrowRight, IconArrowLeft, IconBolt } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { exigirEscrita } from '@/lib/supabase-write';
@@ -24,6 +24,7 @@ export function OnboardingWizard() {
   const { t } = useLanguage();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepsCompleted, setStepsCompleted] = useState<string[]>([]);
@@ -43,9 +44,40 @@ export function OnboardingWizard() {
 
   useEffect(() => {
     if (user && profile?.empresa_id) {
+      setLoading(true);
+      setOpen(false);
+      setDismissed(false);
+      setStepsCompleted([]);
       checkOnboardingStatus();
     }
   }, [user, profile?.empresa_id]);
+
+  // O assistente abre sozinho no máximo uma vez por sessão e empresa, e só
+  // no dashboard. Nos demais módulos ele continua disponível pelo botão
+  // flutuante, sem interromper o trabalho que a pessoa acabou de iniciar.
+  useEffect(() => {
+    if (loading || dismissed || completedCount >= steps.length) return;
+    if (!user || !profile?.empresa_id || location.pathname !== '/dashboard') return;
+
+    const key = `akuris_onboarding_seen:${user.id}:${profile.empresa_id}`;
+    try {
+      if (sessionStorage.getItem(key) === '1') return;
+      sessionStorage.setItem(key, '1');
+    } catch {
+      // Sem sessionStorage, abrir uma vez durante a vida deste componente.
+      if (open) return;
+    }
+    setOpen(true);
+  }, [
+    completedCount,
+    dismissed,
+    loading,
+    location.pathname,
+    open,
+    profile?.empresa_id,
+    steps.length,
+    user,
+  ]);
 
   const checkOnboardingStatus = async () => {
     if (!user || !profile?.empresa_id) return;
@@ -65,13 +97,13 @@ export function OnboardingWizard() {
           await autoDetectProgress();
         }
       } else {
-        // First time - create record and show wizard
+        // Primeiro acesso: cria o progresso. A abertura é decidida pelo efeito
+        // acima, uma única vez e no contexto certo.
         await exigirEscrita(supabase.from('onboarding_progress').insert({
           user_id: user.id,
           empresa_id: profile.empresa_id,
         }));
         await autoDetectProgress();
-        setOpen(true);
       }
     } catch (err) {
       console.error('Onboarding check error:', err);
@@ -88,7 +120,10 @@ export function OnboardingWizard() {
       supabase.from('ativos').select('id', { count: 'exact', head: true }).eq('empresa_id', profile.empresa_id),
       supabase.from('riscos').select('id', { count: 'exact', head: true }).eq('empresa_id', profile.empresa_id),
       supabase.from('controles').select('id', { count: 'exact', head: true }).eq('empresa_id', profile.empresa_id),
-      supabase.from('gap_analysis_frameworks').select('id', { count: 'exact', head: true }),
+      // Framework no catálogo não significa framework ativado pela empresa.
+      // Uma avaliação (inclusive N/A criada pelo escopo) é o primeiro sinal de
+      // que a empresa realmente começou a trabalhar naquele framework.
+      supabase.from('gap_analysis_evaluations').select('id', { count: 'exact', head: true }).eq('empresa_id', profile.empresa_id),
       supabase.from('documentos').select('id', { count: 'exact', head: true }).eq('empresa_id', profile.empresa_id),
     ]);
 
@@ -108,9 +143,6 @@ export function OnboardingWizard() {
         .eq('empresa_id', profile.empresa_id));
     }
 
-    if (!allDone && completed.length < steps.length) {
-      setOpen(true);
-    }
   };
 
   const handleDismiss = async () => {
@@ -129,7 +161,10 @@ export function OnboardingWizard() {
     navigate(step.route);
   };
 
-  if (loading || dismissed || completedCount >= steps.length) return null;
+  // O Gap Analysis tem onboarding próprio e sequencial já no catálogo. Exibir
+  // o setup geral por cima dele cria dois assistentes concorrentes no mesmo
+  // primeiro acesso.
+  if (loading || dismissed || completedCount >= steps.length || location.pathname.startsWith('/gap-analysis')) return null;
 
   return (
     <>
@@ -180,6 +215,13 @@ export function OnboardingWizard() {
                         : 'hover:bg-accent'
                   }`}
                   onClick={() => !step.completed && setCurrentStep(index)}
+                  role={step.completed ? undefined : 'button'}
+                  tabIndex={step.completed ? undefined : 0}
+                  onKeyDown={(event) => {
+                    if (step.completed || (event.key !== 'Enter' && event.key !== ' ')) return;
+                    event.preventDefault();
+                    setCurrentStep(index);
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${step.completed ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>

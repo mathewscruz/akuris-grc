@@ -35,29 +35,3 @@ export function prefetchRoute(path: string) {
     loader().catch(() => prefetched.delete(path));
   }
 }
-
-/**
- * Prefetch all module routes during browser idle time.
- * Call once after the app has mounted to warm the chunk cache so the first
- * navigation into any module is instant (no chunk download on click).
- */
-export function prefetchAllRoutes() {
-  const run = () => {
-    Object.keys(prefetchMap).forEach((path) => {
-      // Stagger slightly so we don't saturate the network at once
-      setTimeout(() => prefetchRoute(path), 0);
-    });
-  };
-
-  if (typeof window === 'undefined') return;
-
-  const ric = (window as unknown as {
-    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-  }).requestIdleCallback;
-
-  if (typeof ric === 'function') {
-    ric(run, { timeout: 4000 });
-  } else {
-    setTimeout(run, 2000);
-  }
-}

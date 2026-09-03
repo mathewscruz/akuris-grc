@@ -180,7 +180,7 @@ export const FrameworksOverviewCard = () => {
               <button
                 type="button"
                 onClick={() => navigate('/gap-analysis')}
-                className="mt-2 text-xs text-primary hover:underline"
+                className="mt-2 inline-flex min-h-10 items-center text-xs text-primary hover:underline"
               >
                 {t('dashWidgets.frameworks.startFirst')}
               </button>

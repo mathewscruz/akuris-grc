@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-;
+import { Button } from '@/components/ui/button';
 import { ReviewExternalForm } from "@/components/revisao-acessos/ReviewExternalForm";
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,9 +37,17 @@ export default function ReviewExterna() {
             sistema:sistemas_privilegiados(nome_sistema)
           `)
           .eq("link_token", token)
-          .single();
+          .maybeSingle();
 
-        if (reviewError) throw reviewError;
+        if (reviewError) {
+          logger.error('Erro ao consultar revisão externa', {
+            module: 'ReviewExterna',
+            error: reviewError.message,
+          });
+          setError(t('publicPortal.reviewExterna.loadError'));
+          setLoading(false);
+          return;
+        }
 
         if (!data) {
           setError(t('publicPortal.reviewExterna.notFound'));
@@ -66,7 +74,7 @@ export default function ReviewExterna() {
         setLoading(false);
       } catch (err: any) {
         logger.error('Erro ao carregar revisão', { module: 'ReviewExterna', error: err.message });
-        setError(err.message || t('publicPortal.reviewExterna.loadError'));
+        setError(t('publicPortal.reviewExterna.loadError'));
         setLoading(false);
       }
     };
@@ -89,10 +97,15 @@ export default function ReviewExterna() {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="max-w-md w-full p-6">
-          <Alert variant="destructive">
-            <IconInfo className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="space-y-4 text-center">
+            <Alert variant="destructive" className="text-left">
+              <IconInfo className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              {t('publicPortal.reviewExterna.backHome')}
+            </Button>
+          </div>
         </Card>
       </div>
     );

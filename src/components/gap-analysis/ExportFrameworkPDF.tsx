@@ -273,6 +273,6 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
   // Add footer to all pages (skip cover page)
   addAkurisFooter(doc);
 
-  const fileName = `${frameworkName.replace(/[\/\\:]/g, '_')}_${empresaNome.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+  const fileName = `${frameworkName.replace(/[/\\:]/g, '_')}_${empresaNome.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
   doc.save(fileName);
 }

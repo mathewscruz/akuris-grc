@@ -49,13 +49,14 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
         {/* Frameworks recomendados — destaque principal */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
           {suggestedFrameworks.slice(0, 3).map((fw) => (
-            <Card
+            <button
               key={fw.id}
-              className="group p-4 cursor-pointer hover:shadow-sm hover:border-primary/40 transition-ui bg-background"
+              type="button"
+              className="group rounded-lg border border-border bg-white p-4 text-left transition-ui hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-card"
               onClick={() => onFrameworkClick(fw.id)}
             >
               <div className="flex items-start gap-3">
-                <FrameworkLogo nome={fw.nome} tipo={fw.tipo_framework} className="h-10 w-10 shrink-0 mt-0.5"/>
+                <FrameworkLogo nome={fw.nome} tipo={fw.tipo_framework} className="h-12 w-12 shrink-0 mt-0.5"/>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
                     {fw.nome}
@@ -67,7 +68,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
                 </div>
                 <IconArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" strokeWidth={1.5}/>
               </div>
-            </Card>
+            </button>
           ))}
         </div>
 

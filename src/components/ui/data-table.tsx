@@ -14,6 +14,7 @@ import { rowOpenProps } from "@/lib/row-interaction"
 import { IconSearch, IconFilter, IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
 import { compararEscala } from '@/lib/ordem-de-escala'
 import { useRecorteDaUrl } from '@/hooks/useRecorteDaUrl'
+import { DensityToggle } from '@/components/ui/density-toggle'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
 const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
@@ -63,6 +64,10 @@ export interface Column<T> {
    */
   sortAccessor?: (item: T) => string | number | null | undefined
   className?: string
+  /** Ordem dos campos no cartão de telemóvel (menor aparece primeiro). */
+  mobilePriority?: number
+  /** Campo disponível na tabela larga, mas omitido do cartão de telemóvel. */
+  mobileHidden?: boolean
 }
 
 export interface Filter {
@@ -111,6 +116,10 @@ interface DataTableProps<T> {
   pageSize?: number
   pageSizeOptions?: number[]
   onRowClick?: (item: T) => void
+  /** Mostra o seletor global Compacta/Confortável na barra. */
+  showDensityToggle?: boolean
+  /** Quantidade de campos essenciais antes de "Ver detalhes" no telemóvel. */
+  mobileCollapsedFields?: number
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -133,12 +142,15 @@ export function DataTable<T extends Record<string, any>>({
   paginated = false,
   pageSize: initialPageSize = 10,
   pageSizeOptions = [10, 20, 50, 100],
-  onRowClick
+  onRowClick,
+  showDensityToggle = true,
+  mobileCollapsedFields = 4,
 }: DataTableProps<T>) {
   const { t } = useLanguage()
   const _searchPlaceholder = searchPlaceholder ?? t('common.searchPlaceholder')
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(initialPageSize)
+  const [expandedMobileRows, setExpandedMobileRows] = React.useState<Set<string>>(() => new Set())
 
   /**
    * Filtrar e não ter são coisas diferentes, e a tabela sabe distingui-las.
@@ -346,6 +358,9 @@ export function DataTable<T extends Record<string, any>>({
               <span className="hidden sm:inline">{t('common.export')}</span>
             </Button>
           )}
+          {showDensityToggle && (
+            <DensityToggle className="hidden md:inline-flex" />
+          )}
         </ModuleToolbar>
       </div>
 
@@ -394,7 +409,18 @@ export function DataTable<T extends Record<string, any>>({
               // coluna — que costuma ser o código e não identifica nada a quem lê.
               const principal =
                 semAcoes.find((c) => TITLE_KEYS.has(String(c.key).toLowerCase())) ?? semAcoes[0]
-              const resto = semAcoes.filter((c) => c !== principal)
+              const resto = semAcoes
+                .filter((c) => c !== principal && !c.mobileHidden)
+                .map((column, originalIndex) => ({ column, originalIndex }))
+                .sort((a, b) =>
+                  (a.column.mobilePriority ?? 100) - (b.column.mobilePriority ?? 100) ||
+                  a.originalIndex - b.originalIndex
+                )
+                .map(({ column }) => column)
+              const rowKey = String((item as any).id ?? index)
+              const expanded = expandedMobileRows.has(rowKey)
+              const visibleColumns = expanded ? resto : resto.slice(0, mobileCollapsedFields)
+              const hasMore = resto.length > mobileCollapsedFields
               const abrir = onRowClick
                 ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
                 : null
@@ -414,13 +440,34 @@ export function DataTable<T extends Record<string, any>>({
                     {acoes && <div className="shrink-0">{valor(acoes)}</div>}
                   </div>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {resto.map((column) => (
+                    {visibleColumns.map((column) => (
                       <div key={String(column.key)} className="min-w-0">
                         <dt className="text-xs text-muted-foreground">{column.label}</dt>
                         <dd className="text-sm">{valor(column)}</dd>
                       </div>
                     ))}
                   </dl>
+                  {hasMore && (
+                    <button
+                      type="button"
+                      className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-expanded={expanded}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setExpandedMobileRows((current) => {
+                          const next = new Set(current)
+                          if (next.has(rowKey)) next.delete(rowKey)
+                          else next.add(rowKey)
+                          return next
+                        })
+                      }}
+                    >
+                      {expanded ? t('common.hideDetails') : t('common.showDetails')}
+                      {expanded
+                        ? <IconChevronUp className="h-4 w-4" strokeWidth={1.5} />
+                        : <IconChevronDown className="h-4 w-4" strokeWidth={1.5} />}
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -431,9 +478,9 @@ export function DataTable<T extends Record<string, any>>({
       {/* Ecrã largo: a tabela densa, que continua a ser a melhor leitura. */}
       <div className="hidden md:block overflow-x-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-20 bg-card">
             <TableRow>
-              {columns.map((column) => {
+              {columns.map((column, columnIndex) => {
                 const sortable = isSortable(column)
                 return (
                   <TableHead
@@ -452,6 +499,7 @@ export function DataTable<T extends Record<string, any>>({
                          tinta da linha. O realce dela vem do `hover:bg-accent`
                          do `TableHead`, que é igualmente opaco. */
                       isActionsColumn(column) && `${STICKY_CELL} bg-card`,
+                      columnIndex === 0 && 'sticky left-0 z-20 bg-card',
                       sortable && "cursor-pointer select-none"
                     )}
                     onClick={() => sortable && handleSort(String(column.key))}
@@ -508,13 +556,14 @@ export function DataTable<T extends Record<string, any>>({
                   })()}
                 >
 
-                  {columns.map((column) => (
+                  {columns.map((column, columnIndex) => (
                     <TableCell
                       key={String(column.key)}
                       className={cn(
                         column.className,
                         column === colunaPrincipal && PRIMARY_CELL,
                         isActionsColumn(column) && STICKY_CELL,
+                        columnIndex === 0 && 'sticky left-0 z-10 bg-inherit',
                       )}
                     >
                       {column.render

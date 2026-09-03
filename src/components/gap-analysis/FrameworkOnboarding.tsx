@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { IconTime, IconBook, IconTarget, IconIdea, IconArrowRight, IconShield, IconScale, IconLock, IconUsers, IconAward, IconDatabase, IconFileCheck, IconGlobe, IconServer, IconOrg, IconSettings, IconLayers } from '@/components/icons';
+import { IconTime, IconBook, IconTarget, IconIdea, IconArrowRight, IconUsers, IconAward, IconCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fimDoPercurso } from '@/lib/gap-fases';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 
 interface FrameworkOnboardingProps {
   frameworkNome: string;
@@ -15,47 +16,42 @@ interface FrameworkOnboardingProps {
   onEscopo?: () => void;
 }
 
-function getOnboardingKey(nome: string): { key: string; icon: React.ReactNode } {
+function getOnboardingKey(nome: string): string {
   const lower = nome.toLowerCase();
-  const icon = (Comp: any) => <Comp className="h-8 w-8 text-primary" strokeWidth={1.5} />;
 
-  if (lower.includes('iso') && nome.includes('27001')) return { key: 'iso27001', icon: icon(IconShield) };
-  if (lower.includes('nist') && !lower.includes('800') && !lower.includes('sp 800')) return { key: 'nist', icon: icon(IconTarget) };
-  if (lower.includes('lgpd')) return { key: 'lgpd', icon: icon(IconScale) };
-  // `IconLock`, nao `Lock`: `Lock` e a classe Web Locks do navegador, existe em
-  // lib.dom.d.ts e por isso compila. Em execucao o React tentava instancia-la e
-  // o PCI DSS - 288 requisitos, o maior do catalogo - abria no ErrorBoundary.
-  if (lower.includes('pci')) return { key: 'pciDss', icon: icon(IconLock) };
-  if (lower.includes('soc')) return { key: 'soc2', icon: icon(IconFileCheck) };
-  if (lower.includes('gdpr')) return { key: 'gdpr', icon: icon(IconGlobe) };
-  if (lower.includes('hipaa')) return { key: 'hipaa', icon: icon(IconDatabase) };
-  if (lower.includes('cis')) return { key: 'cis', icon: icon(IconShield) };
-  if (lower.includes('cobit')) return { key: 'cobit', icon: icon(IconLayers) };
-  if (lower.includes('sox')) return { key: 'sox', icon: icon(IconOrg) };
-  if (lower.includes('nis2') || lower.includes('nis 2')) return { key: 'nis2', icon: icon(IconGlobe) };
-  if (lower.includes('27701')) return { key: 'iso27701', icon: icon(IconShield) };
-  if (lower.includes('9001')) return { key: 'iso9001', icon: icon(IconAward) };
-  if (lower.includes('14001')) return { key: 'iso14001', icon: icon(IconSettings) };
-  if (lower.includes('37301')) return { key: 'iso37301', icon: icon(IconScale) };
-  if (lower.includes('20000')) return { key: 'iso20000', icon: icon(IconServer) };
-  if (lower.includes('31000')) return { key: 'iso31000', icon: icon(IconTarget) };
-  if (lower.includes('itil')) return { key: 'itil', icon: icon(IconSettings) };
-  if (lower.includes('ccpa')) return { key: 'ccpa', icon: icon(IconScale) };
-  if (lower.includes('coso') && lower.includes('erm')) return { key: 'cosoErm', icon: icon(IconTarget) };
-  if (lower.includes('coso') && (lower.includes('ic') || lower.includes('interno') || lower.includes('internal'))) return { key: 'cosoIc', icon: icon(IconOrg) };
-  if (lower.includes('800-82') || lower.includes('800.82') || lower.includes('sp 800')) return { key: 'nistSp80082', icon: icon(IconSettings) };
-  if (lower.includes('dora')) return { key: 'dora', icon: icon(IconOrg) };
-  if (lower.includes('62443')) return { key: 'iso62443', icon: icon(IconLayers) };
+  if (lower.includes('iso') && nome.includes('27001')) return 'iso27001';
+  if (lower.includes('nist') && !lower.includes('800') && !lower.includes('sp 800')) return 'nist';
+  if (lower.includes('lgpd')) return 'lgpd';
+  if (lower.includes('pci')) return 'pciDss';
+  if (lower.includes('soc')) return 'soc2';
+  if (lower.includes('gdpr')) return 'gdpr';
+  if (lower.includes('hipaa')) return 'hipaa';
+  if (lower.includes('cis')) return 'cis';
+  if (lower.includes('cobit')) return 'cobit';
+  if (lower.includes('sox')) return 'sox';
+  if (lower.includes('nis2') || lower.includes('nis 2')) return 'nis2';
+  if (lower.includes('27701')) return 'iso27701';
+  if (lower.includes('9001')) return 'iso9001';
+  if (lower.includes('14001')) return 'iso14001';
+  if (lower.includes('37301')) return 'iso37301';
+  if (lower.includes('20000')) return 'iso20000';
+  if (lower.includes('31000')) return 'iso31000';
+  if (lower.includes('itil')) return 'itil';
+  if (lower.includes('ccpa')) return 'ccpa';
+  if (lower.includes('coso') && lower.includes('erm')) return 'cosoErm';
+  if (lower.includes('coso') && (lower.includes('ic') || lower.includes('interno') || lower.includes('internal'))) return 'cosoIc';
+  if (lower.includes('800-82') || lower.includes('800.82') || lower.includes('sp 800')) return 'nistSp80082';
+  if (lower.includes('dora')) return 'dora';
+  if (lower.includes('62443')) return 'iso62443';
 
-  return { key: 'generic', icon: icon(IconBook) };
+  return 'generic';
 }
 
 export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkTipo, totalRequirements, onStart, onEscopo }: FrameworkOnboardingProps) {
   const { t } = useLanguage();
-  const { key, icon } = getOnboardingKey(frameworkNome);
+  const key = getOnboardingKey(frameworkNome);
   const ns = `gapExports.onboarding.${key}`;
   const info = {
-    icon,
     description: key === 'generic'
       ? t(`${ns}.description`, { total: totalRequirements })
       : t(`${ns}.description`),
@@ -71,11 +67,16 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="w-full space-y-6">
       <Card>
         <CardContent className="pt-8 pb-6 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
-            {info.icon}
+          <div className="mb-4 inline-flex items-center justify-center">
+            <FrameworkBadge
+              name={frameworkNome}
+              versao={frameworkVersao}
+              tipo={frameworkTipo}
+              size="lg"
+            />
           </div>
           <h2 className="text-2xl font-bold mb-2">{frameworkNome} {frameworkVersao}</h2>
           <p className="text-muted-foreground max-w-xl mx-auto">{info.description}</p>
@@ -89,6 +90,35 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
           </div>
         </CardContent>
       </Card>
+
+      {/*
+          A ação principal precisa aparecer antes do material de referência.
+          No fluxo anterior ela vinha depois de cinco cartões e ficava mais de
+          uma tela abaixo da dobra; quem só queria começar precisava adivinhar
+          que havia um botão no fim da página.
+      */}
+      <div className="rounded-lg border border-primary/30 bg-primary/5 px-5 py-4 text-center">
+        {onEscopo ? (
+          <div className="flex flex-col items-center gap-2">
+            <Button size="lg" onClick={onEscopo} className="gap-2">
+              {t('gapEscopo.conviteBotao')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
+            </Button>
+            <p className="max-w-xl text-xs leading-5 text-muted-foreground">
+              {t('gapEscopo.conviteTexto', { total: totalRequirements })}
+            </p>
+            <Button variant="ghost" size="sm" onClick={onStart} className="text-xs text-muted-foreground">
+              {t('gapEscopo.irDireto')}
+            </Button>
+          </div>
+        ) : (
+          <Button size="lg" onClick={onStart} className="gap-2">
+            {t('gapExports.onboardingUi.startButton')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
+          </Button>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t('gapExports.onboardingUi.aiHint')}
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
@@ -113,7 +143,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
             <ul className="space-y-1.5">
               {benefits.benefits.map((b, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-primary mt-0.5">✓</span>
+                  <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                   <span>{b}</span>
                 </li>
               ))}
@@ -154,7 +184,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
           <ul className="space-y-2">
             {info.quickTips.map((tip, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="text-warning mt-0.5">💡</span>
+                <IconIdea className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.5} aria-hidden="true" />
                 <span>{tip}</span>
               </li>
             ))}
@@ -194,36 +224,6 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
         </CardContent>
       </Card>
 
-      {/*
-          A saida daqui e' o escopo, nao a lista.
-
-          Vanta, Drata, Sprinto e Secureframe abrem todos por contexto e
-          recortam a norma ANTES de a mostrar. Mandar a pessoa direto para
-          {totalRequirements} linhas em branco e' o oposto disso, e era o que
-          este botao fazia. Quem quiser ir direto continua a poder.
-      */}
-      <div className="text-center pb-4">
-        {onEscopo ? (
-          <div className="flex flex-col items-center gap-2">
-            <Button size="lg" onClick={onEscopo} className="gap-2">
-              {t('gapEscopo.conviteBotao')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
-            </Button>
-            <p className="max-w-xl text-xs leading-5 text-muted-foreground">
-              {t('gapEscopo.conviteTexto', { total: totalRequirements })}
-            </p>
-            <Button variant="ghost" size="sm" onClick={onStart} className="mt-1 text-xs text-muted-foreground">
-              {t('gapEscopo.irDireto')}
-            </Button>
-          </div>
-        ) : (
-          <Button size="lg" onClick={onStart} className="gap-2">
-            {t('gapExports.onboardingUi.startButton')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
-          </Button>
-        )}
-        <p className="text-xs text-muted-foreground mt-2">
-          {t('gapExports.onboardingUi.aiHint')}
-        </p>
-      </div>
     </div>
   );
 }

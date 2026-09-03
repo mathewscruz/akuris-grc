@@ -118,6 +118,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       };
 
       let controleId: string;
+      let notificationWarning = false;
       const isNewResponsavel = data.responsavel_id &&
         ((!controle && data.responsavel_id) || (controle && controle.responsavel_id !== data.responsavel_id));
 
@@ -147,14 +148,20 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
 
       if (isNewResponsavel && data.responsavel_id) {
         try {
-          await supabase.functions.invoke('send-controle-notification', {
+          const { data: notificationResult, error: notificationError } = await supabase.functions.invoke('send-controle-notification', {
             body: {
               controle_id: controleId, controle_nome: data.nome,
               controle_descricao: data.descricao, proxima_avaliacao: data.proxima_avaliacao,
               responsavel_id: data.responsavel_id,
             },
           });
-        } catch (e) { logger.error("Failed to send controle notification:", e); }
+          if (notificationError) throw notificationError;
+          notificationWarning = notificationResult?.email_sent === false &&
+            notificationResult?.email_reason !== 'preference_disabled';
+        } catch (e) {
+          notificationWarning = true;
+          logger.error("Failed to send controle notification:", e);
+        }
       }
 
       await notify(controle ? 'controle_atualizado' : 'controle_criado', {
@@ -164,10 +171,17 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
         gravidade: data.criticidade === 'critico' ? 'alta' : data.criticidade === 'alto' ? 'media' : 'baixa',
         dados: { controle_id: controleId, nome: data.nome, tipo: data.tipo, criticidade: data.criticidade, status: data.status },
       });
+      return { notificationWarning };
     },
-    onSuccess: () => {
+    onSuccess: ({ notificationWarning }) => {
       queryClient.invalidateQueries({ queryKey: ['controles'] });
       toast({ title: controle ? t('controlesAuditorias.cdlgToastUpdated') : t('controlesAuditorias.cdlgToastCreated') });
+      if (notificationWarning) {
+        toast({
+          title: t('controlesAuditorias.cdlgNotificationWarningTitle'),
+          description: t('controlesAuditorias.cdlgNotificationWarningDescription'),
+        });
+      }
       onOpenChange(false);
     },
     onError: (error) => {

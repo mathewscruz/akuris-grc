@@ -8,7 +8,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { IconWarning, IconMoney, IconTrendUp, IconTrendDown, IconChart, IconOrg, IconChip } from '@/components/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useLanguage } from '@/contexts/LanguageContext';

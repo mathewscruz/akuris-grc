@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';

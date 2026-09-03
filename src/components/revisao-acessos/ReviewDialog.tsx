@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseDateForDB, formatarDiaParaDB} from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconView } from '@/components/icons';
+import { toast } from '@/lib/toast';
 
 const reviewSchema = z.object({
   nome_revisao: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -144,7 +145,10 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
         await updateReview(review.id, payload);
       } else {
         // Gerar link token
-        const { data: tokenData } = await supabase.rpc("gerar_token_revisao");
+        const { data: tokenData, error: tokenError } = await supabase.rpc("gerar_token_revisao");
+        if (tokenError || !tokenData) {
+          throw new Error(t("revisaoAcessosComp.reviewDialog.toastErrorToken"));
+        }
         await createReview({
           ...payload,
           link_token: tokenData,
@@ -154,6 +158,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
       onSuccess();
     } catch (error) {
       console.error("Erro ao salvar revisão:", error);
+      toast.error(error instanceof Error ? error.message : t("revisaoAcessosComp.reviewDialog.toastErrorSave"));
     }
   };
 

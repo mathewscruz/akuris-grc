@@ -5,7 +5,15 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  {
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      ".claude/**",
+      ".codex/**",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
@@ -24,6 +32,10 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+      // O legado ainda contém integrações dinâmicas, especialmente payloads
+      // vindos do PostgREST. Mantemos isto visível sem impedir que o lint
+      // detecte regressões objetivas nas demais regras.
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   }
 );

@@ -1,38 +1,12 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 
 export function useEmpresaId() {
-  const { user } = useAuth();
-  const [empresaId, setEmpresaId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { profile, loading } = useAuth();
 
-  useEffect(() => {
-    async function fetchEmpresaId() {
-      if (!user?.id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('empresa_id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) throw error;
-        setEmpresaId(data?.empresa_id || null);
-      } catch (error) {
-        console.error('Erro ao buscar empresa_id:', error);
-        setEmpresaId(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEmpresaId();
-  }, [user?.id]);
-
-  return { empresaId, loading };
+  // O AuthProvider já é a fonte de verdade para usuário, perfil e empresa.
+  // Consultar `profiles` novamente em cada consumidor criava dezenas de
+  // requests idênticos e, no preview local do superadmin, ignorava a empresa
+  // escolhida no seletor. Além do custo, componentes diferentes podiam mostrar
+  // empresas diferentes na mesma tela.
+  return { empresaId: profile?.empresa_id ?? null, loading };
 }

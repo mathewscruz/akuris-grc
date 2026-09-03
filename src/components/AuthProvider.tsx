@@ -49,6 +49,28 @@ interface Company {
 export const MFA_PENDING_KEY = 'akuris_mfa_pending';
 
 const MFA_VERIFIED_CACHE_KEY = 'akuris_mfa_verified_until';
+const DEVELOPMENT_COMPANY_KEY = 'akuris_dev_company_id';
+
+export const isLocalDataPreview = () => {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+  const localHost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? '');
+  const localSupabase = /^http:\/\/(127\.0\.0\.1|localhost):54321\/?$/i.test(supabaseUrl);
+  return localHost && localSupabase;
+};
+
+const normalizeCompany = (value: unknown): Company | null => {
+  if (!value || typeof value !== 'object') return null;
+  const company = value as Company & {
+    status_licenca?: 'trial' | 'em_operacao' | null;
+    data_inicio_trial?: string | null;
+  };
+  return {
+    ...company,
+    status_licenca: company.status_licenca || 'em_operacao',
+    data_inicio_trial: company.data_inicio_trial || null,
+  };
+};
 
 const setMfaPendingFlag = (pending: boolean) => {
   try {
@@ -141,6 +163,9 @@ interface AuthContextType {
   debugAuthState: () => void;
   /** Marca uma sessão MFA como válida localmente (chamado após verify-mfa-code). */
   markMfaVerified: (expiresAt?: string) => void;
+  /** Troca a empresa efetiva apenas no preview local com Supabase local. */
+  selectDevelopmentCompany: (companyId: string) => Promise<void>;
+  developmentCompanySwitchEnabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -164,6 +189,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Versão monotônica usada para descartar resultados de evaluateSession
   // antigos que cheguem após um novo (evita "loga e desloga" por corrida).
   const evalSeqRef = React.useRef(0);
+
+  const fetchCompanyById = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('empresas')
+      .select(`
+        id,
+        nome,
+        logo_url,
+        cnpj,
+        contato,
+        ativo,
+        status_licenca,
+        data_inicio_trial,
+        plano_id,
+        creditos_consumidos,
+        plano:planos (
+          nome,
+          codigo,
+          creditos_franquia,
+          icone,
+          cor_primaria
+        )
+      `)
+      .eq('id', companyId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -208,13 +262,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         empresaId: data.empresa_id,
         role: data.role
       });
-      setProfile(data);
+      let effectiveProfile: Profile = data;
+      let effectiveCompany = data.empresas;
 
-      const newCompany = data.empresas ? {
-        ...data.empresas,
-        status_licenca: (data.empresas.status_licenca || 'em_operacao') as 'trial' | 'em_operacao',
-        data_inicio_trial: data.empresas.data_inicio_trial || null,
-      } : null;
+      if (isLocalDataPreview() && data.role === 'super_admin') {
+        const selectedCompanyId = localStorage.getItem(DEVELOPMENT_COMPANY_KEY);
+        if (selectedCompanyId && selectedCompanyId !== data.empresa_id) {
+          try {
+            const selectedCompany = await fetchCompanyById(selectedCompanyId);
+            if (selectedCompany) {
+              effectiveProfile = { ...data, empresa_id: selectedCompany.id };
+              effectiveCompany = selectedCompany;
+            } else {
+              localStorage.removeItem(DEVELOPMENT_COMPANY_KEY);
+            }
+          } catch (error) {
+            localStorage.removeItem(DEVELOPMENT_COMPANY_KEY);
+            logger.warn('Empresa local selecionada não está disponível', {
+              module: 'auth',
+              companyId: selectedCompanyId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      }
+
+      setProfile(effectiveProfile);
+
+      const newCompany = normalizeCompany(effectiveCompany);
       logger.debug('Company updated', {
         empresaId: newCompany?.id,
         empresaNome: newCompany?.nome
@@ -303,6 +378,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const developmentCompanySwitchEnabled = isLocalDataPreview() && profile?.role === 'super_admin';
+
+  const selectDevelopmentCompany = async (companyId: string) => {
+    if (!developmentCompanySwitchEnabled || !companyId || !user?.id) {
+      throw new Error('A troca de empresa só está disponível para superadministradores no ambiente local.');
+    }
+
+    const selectedCompany = await fetchCompanyById(companyId);
+    if (!selectedCompany) throw new Error('Empresa não encontrada.');
+
+    // As políticas RLS resolvem a empresa pelo perfil persistido. Alterar só o
+    // React Context fazia o cabeçalho mostrar a empresa escolhida, enquanto as
+    // leituras e escritas continuavam na empresa anterior. Esta atualização é
+    // estritamente local (a função inteira está protegida por
+    // `developmentCompanySwitchEnabled`) e mantém frontend e RLS no mesmo
+    // tenant durante o QA.
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ empresa_id: companyId })
+      .eq('user_id', user.id);
+    if (profileError) throw profileError;
+
+    localStorage.setItem(DEVELOPMENT_COMPANY_KEY, companyId);
+    setProfile((current) => current ? { ...current, empresa_id: companyId } : current);
+    setCompany(normalizeCompany(selectedCompany));
+    setLogoUpdateKey((current) => current + 1);
+
+    logger.info('Empresa de desenvolvimento alterada', {
+      module: 'auth',
+      companyId,
+      companyName: selectedCompany.nome,
+    });
+  };
+
   const markMfaVerified = (expiresAt?: string) => {
     const expMs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 24 * 60 * 60 * 1000;
     setCachedMfaUntil(expMs);
@@ -334,6 +443,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCompany(null);
       setHasTemporaryPassword(false);
       return;
+    }
+
+    // Em desenvolvimento, com frontend E Supabase locais, o e-mail de MFA
+    // não é um recurso disponível. O bypass fica preso a esses três sinais e
+    // não pode ser ativado num preview remoto nem numa base de produção.
+    if (isLocalDataPreview()) {
+      setCachedMfaUntil(Date.now() + 24 * 60 * 60 * 1000);
     }
 
     // Cache local (sessionStorage) — evita refazer a chamada toda hora.
@@ -450,6 +566,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Só limpa o cache MFA/flag DEPOIS de confirmar o signOut bem-sucedido
     setCachedMfaUntil(0);
     setMfaPendingFlag(false);
+    if (isLocalDataPreview()) localStorage.removeItem(DEVELOPMENT_COMPANY_KEY);
   };
 
   const value = {
@@ -467,6 +584,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeUserPermissions,
     debugAuthState,
     markMfaVerified,
+    selectDevelopmentCompany,
+    developmentCompanySwitchEnabled,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

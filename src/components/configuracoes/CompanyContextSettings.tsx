@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MOEDAS, SIMBOLO_MOEDA, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
 import { JURISDICOES, inferirJurisdicao, type JurisdicaoCodigo } from '@/lib/jurisdicao';

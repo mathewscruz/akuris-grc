@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAuth } from "@/components/AuthProvider";
 import { useAkurIASession, type AkurIAMsg } from "@/hooks/useAkurIASession";
 import { AkurIAMessage } from "./akuria/AkurIAMessage";
@@ -24,12 +24,12 @@ const userInitialsFrom = (name: string | null | undefined) => {
   return ((parts[0]?.[0] || "") + (parts[parts.length - 1]?.[0] || "")).toUpperCase() || "EU";
 };
 
-export function AkurIAChatbot() {
+export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }) {
   const { user, session, profile } = useAuth();
   const { locale, t } = useLanguage();
   const location = useLocation();
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [showSidebar, setShowSidebar] = useState(false);
   const [mode, setMode] = useState<PanelMode>("compact");
   const [input, setInput] = useState("");
@@ -43,6 +43,12 @@ export function AkurIAChatbot() {
   const { active, conversations, activeId, newConversation, selectConversation, deleteConversation, appendMessage, updateAssistantIn } = session_;
 
   const messages = active?.messages || [];
+
+  useEffect(() => {
+    const openAssistant = () => setOpen(true);
+    window.addEventListener('akuria:open', openAssistant);
+    return () => window.removeEventListener('akuria:open', openAssistant);
+  }, []);
 
   // Foca o input ao abrir
   useEffect(() => {
@@ -204,24 +210,6 @@ export function AkurIAChatbot() {
 
   const userInitials = userInitialsFrom(profile?.nome);
 
-  // FAB recolhe enquanto se rola (para nunca tapar a última linha/menu "...")
-  // e volta assim que o scroll pára.
-  const [scrolling, setScrolling] = useState(false);
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    const onScroll = () => {
-      setScrolling(true);
-      clearTimeout(timer);
-      timer = setTimeout(() => setScrolling(false), 450);
-    };
-    // capture: eventos de scroll de containers internos não borbulham
-    document.addEventListener('scroll', onScroll, true);
-    return () => {
-      document.removeEventListener('scroll', onScroll, true);
-      clearTimeout(timer);
-    };
-  }, []);
-
   // Dimensões por modo
   const panelClass = cn(
     "fixed z-50 rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden animate-fade-in",
@@ -232,25 +220,6 @@ export function AkurIAChatbot() {
 
   return (
     <>
-      {/* FAB */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className={cn(
-            "fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-14 w-14 rounded-full bg-card shadow-lg border border-border/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] transition-ui duration-200 hover:scale-110 flex items-center justify-center animate-fade-in group",
-            scrolling && "pointer-events-none translate-y-24 opacity-0"
-          )}
-          title="AkurIA — Assistente Inteligente"
-        >
-          <span className="absolute inset-0 rounded-full bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <img
-            src="/akuris-favicon.png"
-            alt="AkurIA"
-            className="h-8 w-8 rounded-full animate-[spin-burst_5s_ease-in-out_infinite] relative z-10"
-          />
-        </button>
-      )}
-
       {/* Painel */}
       {open && (
         <div className={panelClass}>

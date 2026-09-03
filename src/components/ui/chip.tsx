@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils';
  *  - severity  → risco/criticidade. Única família com cor semântica
  *                (vermelho/laranja/âmbar/verde) e sempre com a letra C/A/M/B.
  *  - state     → estados de processo (Ativo, Rascunho, Em andamento…).
- *                Família NEUTRA; só o estado terminal positivo recebe um
- *                acento discreto (teal), nunca o verde da severidade.
+ *                Família neutra por padrão; conclusão recebe teal e estados
+ *                bloqueados/vencidos recebem vermelho por exigirem ação.
  *  - type      → tipo/classificação. NÃO é pílula: é texto.
  *  - category  → categorias livres. NÃO é pílula: é texto.
  *
@@ -73,8 +73,10 @@ const STATE_CLASSES: Record<StateLevel, { chip: string; dot: string }> = {
     dot: 'bg-severity-medium',
   },
   blocked: {
-    chip: 'bg-state-rest-surface text-state-rest border-border',
-    dot: 'bg-severity-critical',
+    // Bloqueado/vencido exige ação: o ponto vermelho sozinho perdia-se entre
+    // estados neutros, especialmente na tabela de Planos de Ação.
+    chip: 'bg-destructive/10 text-destructive border-destructive/25',
+    dot: 'bg-destructive',
   },
 };
 
@@ -184,4 +186,3 @@ export const Chip: React.FC<ChipProps> = ({
     </span>
   );
 };
-

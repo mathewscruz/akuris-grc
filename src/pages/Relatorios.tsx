@@ -16,7 +16,7 @@ import { RelatorioDialog } from '@/components/relatorios/RelatorioDialog';
 import { RelatorioPreviewDialog } from '@/components/relatorios/RelatorioPreviewDialog';
 import { generateTemplatePDF } from '@/components/relatorios/generateTemplatePDF';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { formatDateOnly, intlLocale } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -89,7 +89,9 @@ export default function Relatorios() {
       setDialogOpen(false);
     } catch (error) {
       logger.error(t('fin.relatorios.erroCriar'), error);
-      toast.error(t('fin.relatorios.erroCriar'));
+      toast.error(t('fin.relatorios.erroCriar'), {
+        action: { label: t('common.tryAgain'), onClick: () => void handleCreate(data) },
+      });
     } finally {
       setSaving(false);
     }
@@ -97,14 +99,37 @@ export default function Relatorios() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
+    const targetId = deleteId;
     try {
-      const { error } = await supabase.from('relatorios_customizados').delete().eq('id', deleteId).eq('empresa_id', empresaId);
+      const { data: snapshot } = await supabase
+        .from('relatorios_customizados')
+        .select('*')
+        .eq('id', targetId)
+        .eq('empresa_id', empresaId)
+        .maybeSingle();
+      const { error } = await supabase.from('relatorios_customizados').delete().eq('id', targetId).eq('empresa_id', empresaId);
       if (error) throw error;
-      toast.success(t('fin.relatorios.excluido'));
+      toast.success(t('fin.relatorios.excluido'), snapshot ? {
+        duration: 6000,
+        action: {
+          label: t('common.undo'),
+          onClick: async () => {
+            const { error: restoreError } = await supabase.from('relatorios_customizados').insert(snapshot);
+            if (restoreError) {
+              logger.error('Erro ao restaurar relatório', restoreError);
+              toast.error(t('toasts.genericError'));
+              return;
+            }
+            queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
+          },
+        },
+      } : undefined);
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
     } catch (error) {
       logger.error(t('fin.relatorios.erroExcluir'), error);
-      toast.error(t('fin.relatorios.erroExcluir'));
+      toast.error(t('fin.relatorios.erroExcluir'), {
+        action: { label: t('common.tryAgain'), onClick: () => setDeleteId(targetId) },
+      });
     } finally {
       setDeleteId(null);
     }
@@ -133,7 +158,9 @@ export default function Relatorios() {
       toast.success(t('cardsKpi.sweep.sistema.pdfExportado'));
     } catch (error) {
       logger.error(t('fin.comum.erroExportarPdf'), error);
-      toast.error(t('fin.comum.erroExportarPdf'));
+      toast.error(t('fin.comum.erroExportarPdf'), {
+        action: { label: t('common.tryAgain'), onClick: () => void handleExportPDF(relatorio) },
+      });
     } finally {
       setExporting(null);
     }
@@ -153,7 +180,9 @@ export default function Relatorios() {
       setEditRelatorio(null);
     } catch (error) {
       logger.error(t('fin.relatorios.erroEditar'), error);
-      toast.error(t('fin.relatorios.erroEditar'));
+      toast.error(t('fin.relatorios.erroEditar'), {
+        action: { label: t('common.tryAgain'), onClick: () => void handleEdit(data) },
+      });
     }
   };
 
@@ -180,7 +209,9 @@ export default function Relatorios() {
       setActiveTab('meus');
     } catch (error) {
       logger.error('Erro ao criar relatório de template', error);
-      toast.error(t('fin.relatorios.erroCriar'));
+      toast.error(t('fin.relatorios.erroCriar'), {
+        action: { label: t('common.tryAgain'), onClick: () => void handleCreateFromTemplate(templateKey) },
+      });
     } finally {
       setSaving(false);
     }
@@ -191,12 +222,12 @@ export default function Relatorios() {
       <PageHeader
         title={t('modules.relatorios.title')}
         description={t('modules.relatorios.description')}
-        actions={
+        actions={relatorios.length > 0 ? (
           <Button onClick={() => setDialogOpen(true)}>
             <IconAdd className="h-4 w-4 mr-2" />
             {t('sweepCore.reports.newReport')}
           </Button>
-        }
+        ) : undefined}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -226,7 +257,7 @@ export default function Relatorios() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <IconFile className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold">{t('fin.relatorios.nenhum')}</h3>
+                <h2 className="text-lg font-semibold">{t('fin.relatorios.nenhum')}</h2>
                 <p className="text-muted-foreground text-sm mt-1 mb-4">{t('fin.relatorios.vazioDesc')}</p>
                 <Button onClick={() => setDialogOpen(true)}>
                   <IconAdd className="h-4 w-4 mr-2" />{t('sweepCore.reports.newReport')}

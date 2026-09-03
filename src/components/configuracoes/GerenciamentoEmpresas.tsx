@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconRefresh, IconShieldAlert, IconOrg, IconPower } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconRefresh, IconShieldAlert, IconOrg, IconPower, IconWarning, IconSuccess } from '@/components/icons';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { differenceInDays } from 'date-fns';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { logger } from '@/lib/logger';
@@ -481,15 +481,17 @@ const GerenciamentoEmpresasInner = () => {
       label: t('admin.empresas.columnLicenca'),
       sortable: true,
       render: (value, empresa) => value === 'trial' ? (
-        <Badge variant="outline" className="bg-warning/10 text-warning border-warning whitespace-nowrap">
-          🟡 {empresa.data_inicio_trial
+        <Badge variant="outline" className="gap-1.5 bg-warning/10 text-warning border-warning whitespace-nowrap">
+          <IconWarning className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {empresa.data_inicio_trial
             ? t('admin.empresas.trialDays', { dias: Math.max(0, 14 - differenceInDays(new Date(), new Date(empresa.data_inicio_trial))) })
             : t('admin.empresas.filterLicencaTrial')
           }
         </Badge>
       ) : (
-        <Badge variant="outline" className="bg-primary/10 text-primary border-primary whitespace-nowrap">
-          🟢 {t('admin.empresas.emOperacao')}
+        <Badge variant="outline" className="gap-1.5 bg-success/10 text-success border-success whitespace-nowrap">
+          <IconSuccess className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {t('admin.empresas.emOperacao')}
         </Badge>
       ),
     },

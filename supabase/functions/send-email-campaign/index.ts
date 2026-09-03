@@ -173,7 +173,9 @@ serve(async (req) => {
       if (body.campanha_id && body.mode !== "test") {
         await supabase.from("email_campanhas").update({ status: "falhou", erro: e?.message || String(e) }).eq("id", body.campanha_id);
       }
-    } catch {}
+    } catch {
+      // A resposta original ainda deve ser devolvida mesmo se falhar o registo do erro.
+    }
     return new Response(JSON.stringify({ error: e?.message || String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

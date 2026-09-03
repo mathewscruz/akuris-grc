@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { DataTable } from '@/components/ui/data-table';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { IconBolt, IconMore, IconOrg, IconUndo, IconTrendUp, IconHistory } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -115,7 +115,7 @@ export function CreditosIAManager() {
 
       // Fetch user names
       const userIds = [...new Set((data || []).map((d: any) => d.user_id).filter(Boolean))];
-      let profilesMap: Record<string, string> = {};
+      const profilesMap: Record<string, string> = {};
       
       if (userIds.length > 0) {
         const { data: profiles } = await supabase

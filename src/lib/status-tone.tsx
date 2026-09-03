@@ -457,10 +457,10 @@ export const resolveAprovacaoTone = (raw?: string | null): ToneResult => {
       return { tone: 'success' };
     case 'rejeitado':
       return { tone: 'destructive' };
-    case 'pendente':
     // O vocabulario do produto para "a aguardar aprovacao" e
     // `pendente_aprovacao` — e o que a restricao CHECK de `riscos` aceita e o
     // que Documentos e Contas Privilegiadas gravam.
+    case 'pendente':
     case 'pendente_aprovacao':
       return { tone: 'warning' };
     default:

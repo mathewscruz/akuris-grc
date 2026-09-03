@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconCalendar, IconChecklist } from '@/components/icons';
 import {
@@ -24,6 +24,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { dateFnsLocale, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
+import type { TablesInsert } from '@/integrations/supabase/types';
+
+interface FrameworkOption {
+  id: string;
+  nome: string;
+  versao: string | null;
+  empresa_id: string | null;
+  is_template: boolean | null;
+}
+
 interface AuditoriaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,6 +44,9 @@ interface AuditoriaDialogProps {
 
 const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: AuditoriaDialogProps) => {
   const { t } = useLanguage();
+  const { empresaId } = useEmpresaId();
+  const [frameworks, setFrameworks] = useState<FrameworkOption[]>([]);
+  const [loadingFrameworks, setLoadingFrameworks] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
@@ -45,7 +59,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
     escopo: '',
     objetivos: '',
     metodologia: '',
-    framework: ''
+    framework: '',
+    framework_id: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +81,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         escopo: auditoria.escopo || '',
         objetivos: auditoria.objetivos || '',
         metodologia: auditoria.metodologia || '',
-        framework: auditoria.framework || ''
+        framework: auditoria.framework || '',
+        framework_id: auditoria.framework_id || '',
       });
     } else {
       setFormData({
@@ -82,11 +98,44 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         escopo: '',
         objetivos: '',
         metodologia: '',
-        framework: ''
+        framework: '',
+        framework_id: '',
       });
     }
     setErrors({});
   }, [auditoria]);
+
+  useEffect(() => {
+    if (!open) return;
+    let ativo = true;
+
+    const carregarFrameworks = async () => {
+      setLoadingFrameworks(true);
+      let query = supabase
+        .from('gap_analysis_frameworks')
+        .select('id, nome, versao, empresa_id, is_template')
+        .order('nome');
+
+      query = empresaId
+        ? query.or(`empresa_id.is.null,empresa_id.eq.${empresaId}`)
+        : query.is('empresa_id', null);
+
+      const { data, error } = await query;
+      if (!ativo) return;
+      if (error) {
+        console.error('Erro ao carregar catálogo de frameworks:', error);
+        setFrameworks([]);
+      } else {
+        setFrameworks(((data || []) as FrameworkOption[]).filter((f) => f.empresa_id || f.is_template));
+      }
+      setLoadingFrameworks(false);
+    };
+
+    carregarFrameworks();
+    return () => {
+      ativo = false;
+    };
+  }, [empresaId, open]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -174,8 +223,9 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         return;
       }
 
-      const auditoriaData: Record<string, any> = {
+      const auditoriaData: TablesInsert<'auditorias'> = {
         ...formData,
+        framework_id: formData.framework_id || null,
         empresa_id: profile.empresa_id,
         data_inicio: formData.data_inicio ? formatarDiaParaDB(formData.data_inicio) : null,
         data_fim_prevista: formData.data_fim_prevista ? formatarDiaParaDB(formData.data_fim_prevista) : null,
@@ -197,7 +247,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
       } else {
         const { error } = await supabase
           .from('auditorias')
-          .insert(auditoriaData as any);
+          .insert(auditoriaData);
 
         if (error) throw error;
         toast.success(t('controlesAuditorias.adToastCreated'));
@@ -295,18 +345,41 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
             <div className="space-y-2">
               <Label htmlFor="framework">{t("controlesAuditorias.adFieldFramework")}</Label>
               <Select
-                value={formData.framework}
-                onValueChange={(value) => setFormData({ ...formData, framework: value })}
+                value={formData.framework_id || (formData.framework ? `legacy:${formData.framework}` : '')}
+                onValueChange={(value) => {
+                  if (value === 'custom') {
+                    setFormData({ ...formData, framework_id: '', framework: 'Personalizado' });
+                    return;
+                  }
+                  if (value.startsWith('legacy:')) return;
+                  const framework = frameworks.find((item) => item.id === value);
+                  setFormData({
+                    ...formData,
+                    framework_id: framework?.id || '',
+                    framework: framework?.nome || '',
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t("controlesAuditorias.adFrameworkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="COSO">COSO</SelectItem>
-                  <SelectItem value="ISO27001">ISO 27001</SelectItem>
-                  <SelectItem value="SOX">Sarbanes-Oxley</SelectItem>
-                  <SelectItem value="COBIT">COBIT</SelectItem>
-                  <SelectItem value="Personalizado">{t("controlesAuditorias.adFrameworkPersonalizado")}</SelectItem>
+                  {formData.framework && !formData.framework_id && formData.framework !== 'Personalizado' && (
+                    <SelectItem value={`legacy:${formData.framework}`}>
+                      {formData.framework} · {t('controlesAuditorias.adFrameworkLegado')}
+                    </SelectItem>
+                  )}
+                  {loadingFrameworks && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      {t('controlesAuditorias.adFrameworkLoading')}
+                    </div>
+                  )}
+                  {!loadingFrameworks && frameworks.map((framework) => (
+                    <SelectItem key={framework.id} value={framework.id}>
+                      {framework.nome}{framework.versao ? ` · ${framework.versao}` : ''}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">{t("controlesAuditorias.adFrameworkPersonalizado")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

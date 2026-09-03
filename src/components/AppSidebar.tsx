@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { AtivosIcon, IconSuccess, IconSettings, IconChevronDown, IconLogout, IconKey } from '@/components/icons';
+import { IconCompliance, IconAccess, IconPackage, IconSettings, IconChevronDown, IconLogout } from '@/components/icons';
 import logoMini from '@/assets/akuris-logo.png';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -67,7 +67,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'], moduleName: 'gap-analysis' },
       {
         title: t('sidebar.assetManagement'),
-        icon: AtivosIcon,
+        icon: IconPackage,
         subItems: [
           { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
           { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
@@ -85,7 +85,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'], moduleName: 'dados' },
       {
         title: t('sidebar.accessManagement'),
-        icon: IconKey,
+        icon: IconAccess,
         subItems: [
           { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
           { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
@@ -95,7 +95,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
       {
         title: t('sidebar.compliance'),
-        icon: IconSuccess,
+        icon: IconCompliance,
         subItems: [
           { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
           { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },

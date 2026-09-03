@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sheet';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
+import { toast as sonnerToast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';

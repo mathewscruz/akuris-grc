@@ -336,10 +336,7 @@ export function FrameworkHeader({
           */}
           <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
             {prontidao.bloqueios.length > 0
-              ? t('gapProntidao.aindaNao', {
-                  feitos: prontidao.conformes,
-                  total: prontidao.aplicaveis,
-                })
+              ? t('gapProntidao.aindaNao')
               : detalhe[veredito]}
           </p>
 

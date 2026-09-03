@@ -62,10 +62,10 @@ export default function ProjetoTemplates() {
           </Button>
           {(isAdmin || (isSuperAdmin && tpl.is_global)) && (
             <>
-              <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => { setEditing(tpl); setEditOpen(true); }}>
+              <Button size="icon" variant="outline" className="h-10 w-10" aria-label={t('projetos.templates.editAria', { nome: tpl.nome })} title={t('projetos.templates.editAria', { nome: tpl.nome })} onClick={() => { setEditing(tpl); setEditOpen(true); }}>
                 <IconEdit className="h-3.5 w-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setRemovendo(tpl)}>
+              <Button size="icon" variant="ghost" className="h-10 w-10" aria-label={t('projetos.templates.removeAria', { nome: tpl.nome })} title={t('projetos.templates.removeAria', { nome: tpl.nome })} onClick={() => setRemovendo(tpl)}>
                 <IconDelete className="h-3.5 w-3.5" />
               </Button>
             </>
@@ -78,7 +78,7 @@ export default function ProjetoTemplates() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/projetos')}><IconArrowLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label={t('projetos.templates.backAria')} title={t('projetos.templates.backAria')} onClick={() => navigate('/projetos')}><IconArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1">
           <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2"><IconLayers className="h-7 w-7 text-primary" strokeWidth={1.5} /> {t('projetos.templates.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t('projetos.templates.subtitle')}</p>

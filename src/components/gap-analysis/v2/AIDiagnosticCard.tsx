@@ -6,7 +6,7 @@
  */
 import { IconClose, IconCheck, IconWarning, IconCopy } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 

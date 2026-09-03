@@ -66,8 +66,13 @@ export function useAiCredits(): AiCreditsState {
   useEffect(() => {
     if (!empresaId) return;
     fetchSaldo();
+    // Cada montagem precisa de um tópico próprio. Em desenvolvimento, o
+    // StrictMode monta, limpa e monta o efeito novamente; o encerramento do
+    // canal anterior é assíncrono e o cliente pode devolver o canal já
+    // inscrito quando o nome é reutilizado.
+    const channelId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`ai-credits-${empresaId}`)
+      .channel(`ai-credits-${empresaId}-${channelId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'empresas', filter: `id=eq.${empresaId}` },
@@ -78,7 +83,7 @@ export function useAiCredits(): AiCreditsState {
       )
       .subscribe();
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [empresaId, fetchSaldo]);
 

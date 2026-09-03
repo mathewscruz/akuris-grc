@@ -13,7 +13,7 @@
  * olhasse para `aplicarTravas` teria passado com o ecrã partido.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { AssistenteDeEscopo } from '@/components/gap-analysis/v2/AssistenteDeEscopo';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { persistExplicitLocale } from '@/lib/i18n-locale';
@@ -23,7 +23,7 @@ import { persistExplicitLocale } from '@/lib/i18n-locale';
    que se está a medir. As perguntas não dependem desta consulta. */
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: () => ({ select: () => ({ eq: async () => ({ data: [], error: null }) }) }),
+    from: () => ({ select: () => ({ eq: async () => ({ data: [{ id: 'r1', codigo: 'A.8.25' }], error: null }) }) }),
     auth: { getSession: async () => ({ data: { session: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
   },
 }));
@@ -68,15 +68,17 @@ describe('"Não sei" no ecrã', () => {
     expect(screen.getByText(/1 de 9 respondidas/), 'o contador não subiu').toBeTruthy();
   });
 
-  it('não exclui requisito nenhum, e o botão de rever fica travado', () => {
+  it('confirma o escopo quando todas as respostas mantêm tudo aplicável', async () => {
     montar('pt-BR');
-    for (const n of ['01', '02', '03']) {
+    for (const n of ['01', '02', '03', '04', '05', '06', '07', '08', '09']) {
       fireEvent.click(within(cartao(n)).getByRole('button', { name: 'Não sei' }));
     }
-    expect(screen.getByText(/3 de 9 respondidas/)).toBeTruthy();
-    // Nada sai do escopo com dúvida: sem exclusões, não há o que rever.
+    expect(screen.getByText(/9 de 9 respondidas/)).toBeTruthy();
     expect(screen.queryByText(/saem, restam/)).toBeNull();
-    expect(screen.getByRole('button', { name: /Revisar o que sai/ }).hasAttribute('disabled')).toBe(true);
+    const confirmar = screen.getByRole('button', { name: /Confirmar escopo/ });
+    await waitFor(() => expect(confirmar.hasAttribute('disabled')).toBe(false));
+    fireEvent.click(confirmar);
+    expect(screen.getByText(/Nenhum requisito será excluído/)).toBeTruthy();
   });
 
   it('"Não" continua a excluir e a dizer quantos', () => {
@@ -84,7 +86,7 @@ describe('"Não sei" no ecrã', () => {
     fireEvent.click(within(cartao('06')).getByRole('button', { name: 'Não' }));
     // desenvolvimento_interno: A.8.25, A.8.27, A.8.28
     expect(screen.getByText(/3 requisito\(s\) saem do escopo/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Revisar o que sai/ }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: /Revisar o que sai/ }).hasAttribute('disabled')).toBe(true);
   });
 
   it('a trava muda a resposta e diz porquê, sem apagar as outras', () => {
@@ -105,7 +107,7 @@ describe('em inglês, o ecrã é inglês inteiro', () => {
   it('rótulos, pergunta e ajuda', () => {
     montar('en');
     expect(screen.getByText(/0 of 9 answered/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Review what leaves/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Confirm scope/ })).toBeTruthy();
     expect(within(cartao('01')).getByRole('button', { name: 'Not sure' })).toBeTruthy();
     expect(screen.getByText(/Does the company occupy any physical address/)).toBeTruthy();
     expect(screen.queryByText(/A empresa ocupa algum endereço/), 'pergunta em português').toBeNull();
@@ -123,10 +125,15 @@ describe('em inglês, o ecrã é inglês inteiro', () => {
     expect(screen.getByText(/they apply to off-the-shelf systems too/)).toBeTruthy();
   });
 
-  it('a justificativa que a empresa assina está em inglês', () => {
+  it('a justificativa que a empresa assina está em inglês', async () => {
     montar('en');
     fireEvent.click(within(cartao('06')).getByRole('button', { name: 'No' }));
-    fireEvent.click(screen.getByRole('button', { name: /Review what leaves/ }));
+    for (const n of ['01', '02', '03', '04', '05', '07', '08', '09']) {
+      fireEvent.click(within(cartao(n)).getByRole('button', { name: 'Not sure' }));
+    }
+    const review = screen.getByRole('button', { name: /Review what leaves/ });
+    await waitFor(() => expect(review.hasAttribute('disabled')).toBe(false));
+    fireEvent.click(review);
 
     expect(screen.getByText(/WHAT WILL BE WRITTEN IN THE STATEMENT OF APPLICABILITY/)).toBeTruthy();
     const caixa = screen.getByRole('textbox') as HTMLTextAreaElement;

@@ -93,7 +93,11 @@ export function useDashboardLive() {
       }, AGRUPAR_MS);
     };
 
-    const canal = supabase.channel(`painel-${empresaId}`);
+    // O encerramento de um canal é assíncrono. Um identificador por montagem
+    // evita que o StrictMode recupere um canal anterior já inscrito antes que
+    // a limpeza termine.
+    const channelId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const canal = supabase.channel(`painel-${empresaId}-${channelId}`);
 
     Object.entries(CONSULTAS_POR_TABELA).forEach(([tabela, chaves]) => {
       canal.on(
@@ -126,7 +130,7 @@ export function useDashboardLive() {
     return () => {
       if (timer) clearTimeout(timer);
       document.removeEventListener('visibilitychange', aoVoltar);
-      supabase.removeChannel(canal);
+      void supabase.removeChannel(canal);
     };
   }, [empresaId, queryClient]);
 }

@@ -33,7 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconDelete, IconAdd } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface Config {
   id: string;

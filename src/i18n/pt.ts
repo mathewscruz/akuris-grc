@@ -92,6 +92,11 @@ export const pt = {
     settings: 'Configurações',
     help: 'Ajuda',
     learnMore: 'Saiba mais',
+    showDetails: 'Ver detalhes',
+    hideDetails: 'Ocultar detalhes',
+    compactDensity: 'Densidade compacta',
+    comfortableDensity: 'Densidade confortável',
+    undo: 'Desfazer',
   },
   validation: {
     required: 'Campo obrigatório',
@@ -206,6 +211,7 @@ export const pt = {
     sectionInsights: 'Insights',
   },
   theme: {
+    appearance: 'Aparência',
     toggleLight: 'Modo claro',
     toggleDark: 'Modo escuro',
   },
@@ -491,6 +497,7 @@ export const pt = {
     trialExpiredDesc: 'Seu período de teste de 14 dias chegou ao fim. Entre em contato para ativar sua licença e continuar usando o Akuris.',
     activateLicense: 'Ativar Licença',
     backTooltip: 'Voltar',
+    moreOptions: 'Mais opções',
   },
   errorBoundary: {
     title: 'Algo deu errado',

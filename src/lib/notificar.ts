@@ -14,7 +14,7 @@
  * comentário JÁ foi gravado. O que não pode é continuar invisível — daí o aviso.
  */
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { tGlobal } from '@/lib/i18n-global';
 import { logger } from '@/lib/logger';
 

@@ -5,7 +5,7 @@
  * arquivos. Toda estilização vive em `src/components/ui/sonner.tsx`.
  */
 import * as React from "react"
-import { toast as sonnerToast } from "sonner"
+import { toast as sonnerToast } from "@/lib/toast"
 
 type Variant = "default" | "destructive" | "success" | "warning" | "info" | "error"
 

@@ -10,8 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
 import { AdherenceAnalysisProgress } from './AdherenceAnalysisProgress';
 import { logger } from '@/lib/logger';
 
@@ -62,9 +60,6 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     isError: false,
     errorMessage: ''
   });
-
-  // Configurar worker do PDF.js - usar .mjs para versão 5.x+
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
   // Buscar frameworks disponíveis
   const { data: frameworks, loading: loadingFrameworks } = useOptimizedQuery(
@@ -121,6 +116,9 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
 
   // Extrair texto de PDF
   const extractTextFromPDF = async (file: File): Promise<string> => {
+    // PDF.js é grande; só o descarregamos quando um PDF realmente é enviado.
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
@@ -137,6 +135,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
 
   // Extrair texto de DOCX
   const extractTextFromDOCX = async (file: File): Promise<string> => {
+    // Mammoth segue a mesma regra: Word não pesa na abertura do framework.
+    const { default: mammoth } = await import('mammoth');
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     return result.value;
@@ -190,7 +190,10 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
           clearInterval(pollInterval);
         } else if (data.status === 'erro') {
           const metadados = data.metadados_analise as any;
-          const errorMsg = metadados?.erro || t('gapAnalysis.adherenceUi.dialog.unknownError');
+          const rawError = String(metadados?.erro || '');
+          const errorMsg = /LOVABLE_API_KEY|API.?key|edge function/i.test(rawError)
+            ? t('gapAnalysis.adherenceUi.dialog.aiUnavailableError')
+            : rawError || t('gapAnalysis.adherenceUi.dialog.unknownError');
           
           setAnalysisState(prev => ({
             ...prev,
@@ -391,17 +394,21 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
 
     } catch (error: any) {
       logger.error('Error creating adherence assessment:', { error: error instanceof Error ? error.message : String(error) });
+      const rawError = String(error?.message || '');
+      const errorMessage = /LOVABLE_API_KEY|API.?key|edge function/i.test(rawError)
+        ? t('gapAnalysis.adherenceUi.dialog.aiUnavailableError')
+        : rawError || t('gapAnalysis.adherenceUi.dialog.startErrorGeneric');
       
       setAnalysisState(prev => ({
         ...prev,
         isAnalyzing: false,
         isError: true,
-        errorMessage: error.message || t('gapAnalysis.adherenceUi.dialog.startErrorTitle')
+        errorMessage
       }));
 
       toast({
         title: t('gapAnalysis.adherenceUi.dialog.startErrorTitle'),
-        description: error.message || t('gapAnalysis.adherenceUi.dialog.startErrorGeneric'),
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -489,30 +496,40 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
 
           <div className="space-y-2">
             <Label htmlFor="framework_id">{t('gapAnalysis.adherenceUi.dialog.frameworkLabel')}</Label>
-            <Select
-              value={formData.framework_id}
-              onValueChange={(value) => setFormData({ ...formData, framework_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('gapAnalysis.adherenceUi.dialog.frameworkPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingFrameworks ? (
-                  <SelectItem value="loading" disabled>{t('gapAnalysis.adherenceUi.dialog.loadingOption')}</SelectItem>
-                ) : frameworks && frameworks.length > 0 ? (
-                  frameworks.map((framework: any) => (
-                    <SelectItem key={framework.id} value={framework.id}>
-                      <div className="flex items-center gap-2">
-                        <IconShield className="h-4 w-4" strokeWidth={1.5}/>
-                        {framework.nome} {framework.versao && `(${framework.versao})`}
-                      </div>
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>{t('gapAnalysis.adherenceUi.dialog.noFrameworksOption')}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            {preSelectedFrameworkId ? (
+              <div
+                id="framework_id"
+                className="flex h-10 items-center gap-2 rounded-md border border-input bg-muted/40 px-3 text-sm"
+              >
+                <IconShield className="h-4 w-4 text-primary" strokeWidth={1.5}/>
+                <span>{preSelectedFrameworkNome || t('gapAnalysis.adherenceUi.dialog.frameworkLabel')}</span>
+              </div>
+            ) : (
+              <Select
+                value={formData.framework_id}
+                onValueChange={(value) => setFormData({ ...formData, framework_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('gapAnalysis.adherenceUi.dialog.frameworkPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingFrameworks ? (
+                    <SelectItem value="loading" disabled>{t('gapAnalysis.adherenceUi.dialog.loadingOption')}</SelectItem>
+                  ) : frameworks && frameworks.length > 0 ? (
+                    frameworks.map((framework: any) => (
+                      <SelectItem key={framework.id} value={framework.id}>
+                        <div className="flex items-center gap-2">
+                          <IconShield className="h-4 w-4" strokeWidth={1.5}/>
+                          {framework.nome} {framework.versao && `(${framework.versao})`}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>{t('gapAnalysis.adherenceUi.dialog.noFrameworksOption')}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">

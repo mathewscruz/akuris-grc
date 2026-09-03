@@ -79,8 +79,10 @@ Deno.serve(async (req) => {
     let finalEmpresaId = empresa_id
     if (!isSuperAdmin) {
       finalEmpresaId = currentUserProfile.empresa_id
-    } else if (!empresa_id) {
-      finalEmpresaId = currentUserProfile.empresa_id
+    } else if (role !== 'super_admin' && !empresa_id) {
+      throw new Error('A empresa é obrigatória para usuários que não são super administradores')
+    } else if (role === 'super_admin' && !empresa_id) {
+      finalEmpresaId = null
     }
 
     // Valida que permission_profile_id pertence à mesma empresa (item Onda 2 #14)

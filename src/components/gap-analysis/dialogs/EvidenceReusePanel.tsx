@@ -11,7 +11,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useEvidenceLibrary, type EvidenceLibraryItem } from '@/hooks/useEvidenceLibrary';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { akurisToast } from '@/lib/akuris-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 

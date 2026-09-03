@@ -11,9 +11,26 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CheckCircle2, FileText, ArrowRight, ArrowLeft, AlertCircle, Upload, Building2, Check, Clock, Calendar, ListChecks, ShieldCheck, Save, ChevronRight, FileQuestion, AlertTriangle } from 'lucide-react';
+import {
+  IconSuccess as CheckCircle2,
+  IconFileText as FileText,
+  IconArrowRight as ArrowRight,
+  IconArrowLeft as ArrowLeft,
+  IconWarning as AlertCircle,
+  IconUpload as Upload,
+  IconOrg as Building2,
+  IconCheck as Check,
+  IconTime as Clock,
+  IconCalendar as Calendar,
+  IconChecklist as ListChecks,
+  IconShieldCheck as ShieldCheck,
+  IconSave as Save,
+  IconChevron as ChevronRight,
+  IconHelp as FileQuestion,
+  IconWarning as AlertTriangle,
+} from '@/components/icons';
 
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
@@ -105,7 +122,7 @@ interface AssessmentData {
   };
 }
 
-type PublicAssessmentErrorCode = 'NOT_FOUND' | 'EXPIRED' | 'COMPLETED' | 'UNAVAILABLE' | 'INTERNAL_ERROR';
+type PublicAssessmentErrorCode = 'INVALID_REQUEST' | 'NOT_FOUND' | 'EXPIRED' | 'COMPLETED' | 'UNAVAILABLE' | 'INTERNAL_ERROR';
 
 const localeTag = () => (getAppLocale() === 'en' ? 'en-US' : 'pt-BR');
 
@@ -513,8 +530,10 @@ export default function Assessment() {
       const code = (error as Error & { code?: PublicAssessmentErrorCode }).code;
       setLoadError(code === 'EXPIRED'
         ? { title: t('publicPortal.assessment.errorExpiredTitle'), message: t('publicPortal.assessment.errorExpiredMessage') }
-        : code === 'NOT_FOUND'
+        : code === 'NOT_FOUND' || code === 'INVALID_REQUEST'
           ? { title: t('publicPortal.assessment.errorInvalidTitle'), message: t('publicPortal.assessment.errorInvalidMessage') }
+          : code === 'COMPLETED'
+            ? { title: t('publicPortal.assessment.errorCompletedTitle'), message: t('publicPortal.assessment.errorCompletedMessage') }
           : code === 'UNAVAILABLE'
             ? { title: t('publicPortal.assessment.errorUnavailableTitle'), message: t('publicPortal.assessment.errorUnavailableMessage') }
             : { title: t('publicPortal.assessment.errorGenericTitle'), message: t('publicPortal.assessment.errorGenericMessage') });

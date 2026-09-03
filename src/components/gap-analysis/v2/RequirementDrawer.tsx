@@ -10,7 +10,7 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import { IconExternal } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { StatusSeg } from './StatusSeg';
@@ -241,8 +241,11 @@ export function RequirementDrawer({
         className="w-full sm:w-[640px] lg:w-[820px] sm:max-w-[820px] p-0 overflow-hidden flex flex-col bg-popover"
       >
         <SheetTitle className="sr-only">{t('gapUi.drawer.title')}</SheetTitle>
+        <SheetDescription className="sr-only">
+          {t('gapUi.drawer.whatStandardRequires')}
+        </SheetDescription>
 
-        {loading || !requirement ? (
+        {loading || !requirement || requirement.id !== requirementId ? (
           <div className="flex-1 flex items-center justify-center">
             <AkurisPulse size={48} />
           </div>
@@ -305,6 +308,20 @@ export function RequirementDrawer({
               )}
 
               {/*
+                  A decisão que a pessoa veio tomar fica antes do material de
+                  consulta. A orientação pode ter várias páginas; deixá-la
+                  antes do status obrigava o utilizador a atravessar todo o
+                  texto para encontrar a ação principal da triagem.
+              */}
+              <section>
+                <SectionHead title={t('gapUi.drawer.complianceStatus')} />
+                <StatusSeg
+                  value={(evaluation.conformity_status as any) || null}
+                  onChange={(v) => setEvaluation(e => ({ ...e, conformity_status: v }))}
+                />
+              </section>
+
+              {/*
                   Como cumprir — secção própria, separada da norma.
 
                   Antes, a orientação e o texto da norma partilhavam a mesma
@@ -360,15 +377,6 @@ export function RequirementDrawer({
                 </section>
               )}
 
-              {/* Status */}
-              <section>
-                <SectionHead title={t('gapUi.drawer.complianceStatus')} />
-                <StatusSeg
-                  value={(evaluation.conformity_status as any) || null}
-                  onChange={(v) => setEvaluation(e => ({ ...e, conformity_status: v }))}
-                />
-              </section>
-
               {/* Diagnóstico IA */}
               <section>
                 <SectionHead
@@ -392,7 +400,7 @@ export function RequirementDrawer({
                     <AkurisPulse size={36} />
                   </div>
                 )}
-                {!diagnosing && !diagnostic && (
+                {!diagnosing && (
                   <p className="text-xs text-muted-foreground italic px-1">
                     {t('gapUi.drawer.diagnosticHint')}
                   </p>

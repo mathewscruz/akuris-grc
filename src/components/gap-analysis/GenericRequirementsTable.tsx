@@ -1,7 +1,7 @@
 import { matchesSearch } from '@/lib/search-utils';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { fasesDe, chaveDoFramework } from '@/lib/gap-fases';
-import { IconClose, IconSearch, IconWarning, IconChevron, IconChevronLeft, IconAttach, IconCheckbox, IconHelp, IconCalendarClock, IconPerson, IconShieldAlert } from '@/components/icons';
+import { IconClose, IconSearch, IconWarning, IconChevron, IconChevronLeft, IconAttach, IconCheckbox, IconHelp, IconCalendarClock, IconPerson, RiscosIcon, ControlesIcon } from '@/components/icons';
 import { rowOpenProps } from '@/lib/row-interaction';
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -22,7 +22,7 @@ import { format, differenceInCalendarDays, parseISO } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { logger } from "@/lib/logger";
 import { FrameworkConfig, NIST_PILLAR_NAMES } from "@/lib/framework-configs";
 import { RequirementDetailDialog } from "./dialogs/RequirementDetailDialog";
@@ -568,14 +568,19 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       // O upsert precisa de `conformity_status`, que é NOT NULL: para um
       // requisito ainda sem avaliação, atribuir dono não pode inventar estado.
       const estadoAtual = new Map(anterior.map(r => [r.id, r.conformity_status || 'nao_avaliado']));
-      const linhas = ids.map(reqId => ({
-        framework_id: frameworkId,
-        requirement_id: reqId,
-        empresa_id: empresaId,
-        conformity_status: estadoAtual.get(reqId) || 'nao_avaliado',
-        [campo]: valor,
-        updated_at: new Date().toISOString(),
-      }));
+      const linhas = ids.map(reqId => {
+        const base = {
+          framework_id: frameworkId,
+          requirement_id: reqId,
+          empresa_id: empresaId,
+          conformity_status: estadoAtual.get(reqId) || 'nao_avaliado',
+          updated_at: new Date().toISOString(),
+        };
+
+        return campo === 'responsavel_avaliacao'
+          ? { ...base, responsavel_avaliacao: valor }
+          : { ...base, prazo_implementacao: valor };
+      });
 
       const { error } = await supabase
         .from('gap_analysis_evaluations')
@@ -616,16 +621,20 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     });
   }, []);
 
-  const getStatusBadge = (status?: string | null) => {
-    const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' }> = {
-      conforme: { label: t('gapUi.status.conforme'), variant: 'success' },
-      parcial: { label: t('gapUi.status.parcial'), variant: 'warning' },
-      nao_conforme: { label: t('gapUi.status.naoConforme'), variant: 'destructive' },
-      nao_aplicavel: { label: t('gapUi.status.na'), variant: 'outline' },
-      nao_avaliado: { label: t('gapUi.status.naoAvaliado'), variant: 'outline' },
-    };
-    const s = statusMap[status || 'nao_avaliado'];
-    return <Badge variant={s.variant}>{s.label}</Badge>;
+  const statusTriggerClass: Record<string, string> = {
+    conforme: 'border-success/30 bg-success/5 text-success hover:bg-success/10',
+    parcial: 'border-warning/35 bg-warning/5 text-warning hover:bg-warning/10',
+    nao_conforme: 'border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10',
+    nao_aplicavel: 'border-info/30 bg-info/5 text-info hover:bg-info/10',
+    nao_avaliado: 'border-border bg-muted/30 text-muted-foreground hover:bg-accent',
+  };
+
+  const statusLabel: Record<string, string> = {
+    conforme: t('gapUi.status.conforme'),
+    parcial: t('gapUi.status.parcial'),
+    nao_conforme: t('gapUi.status.naoConforme'),
+    nao_aplicavel: t('gapUi.status.na'),
+    nao_avaliado: t('gapUi.status.naoAvaliado'),
   };
 
   const getPriorityBadge = (peso: number | null, obrigatorio?: boolean | null) => {
@@ -929,15 +938,14 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                   {t('gapUi.table.colResponsible')}
                 </span>
               </SortableTableHead>
-              <SortableTableHead field="conformity_status" sort={sort} onSort={toggleSort} className="w-28">{t('gapUi.table.colStatus')}</SortableTableHead>
+              <SortableTableHead field="conformity_status" sort={sort} onSort={toggleSort} className="w-48">{t('gapUi.table.colStatus')}</SortableTableHead>
               <SortableTableHead field="evidencias" sort={sort} onSort={toggleSort} className="w-20">{t('gapUi.table.colEvidence')}</SortableTableHead>
-              <SortableTableHead field="score" sort={sort} onSort={toggleSort} className="w-48">{t('gapUi.table.colEvaluation')}</SortableTableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   {hasActiveFilters ? t('gapUi.table.noResultsFiltered') : t('gapUi.table.noRequirementsAvailable')}
                 </TableCell>
               </TableRow>
@@ -973,7 +981,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                           className="mt-1.5 inline-flex items-center gap-1 text-micro text-warning"
                           title={(riscosPorRequisito?.get(req.id) || []).map(r => r.nome).join(', ')}
                         >
-                          <IconShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          <RiscosIcon className="h-3.5 w-3.5" />
                           {t('riscosControles.requisito.riscosDependentes', { count: riscosPorRequisito!.get(req.id)!.length })}
                         </span>
                       )}
@@ -982,7 +990,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                           className="mt-1.5 inline-flex items-center gap-1 text-micro text-destructive"
                           title={(controlosPorRequisito?.get(req.id) || []).filter(c => c.emFalha).map(c => c.nome).join(', ')}
                         >
-                          <IconShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          <ControlesIcon className="h-3.5 w-3.5" />
                           {t('vinculoReq.controloEmFalha')}
                         </span>
                       )}
@@ -990,7 +998,27 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                   </TableCell>
                   <TableCell>{renderDueDate(req.prazo_implementacao)}</TableCell>
                   <TableCell>{renderOwner(req.responsavel_avaliacao)}</TableCell>
-                  <TableCell>{getStatusBadge(req.conformity_status)}</TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={req.conformity_status || 'nao_avaliado'}
+                      onValueChange={(value) => handleStatusChange(req.id, value)}
+                      disabled={loadingEmpresa || !empresaId}
+                    >
+                      <SelectTrigger
+                        aria-label={`${t('gapUi.table.colStatus')}: ${statusLabel[req.conformity_status || 'nao_avaliado']}`}
+                        className={`h-9 min-w-[10.5rem] px-2 text-sm font-medium ${statusTriggerClass[req.conformity_status || 'nao_avaliado']}`}
+                      >
+                        <SelectValue placeholder={loadingEmpresa ? t('gapUi.table.loadingShort') : t('gapUi.table.selectShort')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nao_avaliado">{t('gapUi.status.naoAvaliado')}</SelectItem>
+                        <SelectItem value="conforme">{t('gapUi.status.conforme')}</SelectItem>
+                        <SelectItem value="parcial">{t('gapUi.status.parcial')}</SelectItem>
+                        <SelectItem value="nao_conforme">{t('gapUi.status.naoConforme')}</SelectItem>
+                        <SelectItem value="nao_aplicavel">{t('gapUi.status.na')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell>
                     {(req.evidence_files?.length || 0) > 0 ? (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -1000,23 +1028,6 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={req.conformity_status || 'nao_avaliado'}
-                      onValueChange={(value) => handleStatusChange(req.id, value)}
-                      disabled={loadingEmpresa || !empresaId}
-                    >
-                      <SelectTrigger onClick={(e) => e.stopPropagation()} className="px-2 text-sm">
-                        <SelectValue placeholder={loadingEmpresa ? t('gapUi.table.loadingShort') : t('gapUi.table.selectShort')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="conforme">{t('gapUi.status.conforme')}</SelectItem>
-                        <SelectItem value="parcial">{t('gapUi.status.parcial')}</SelectItem>
-                        <SelectItem value="nao_conforme">{t('gapUi.status.naoConforme')}</SelectItem>
-                        <SelectItem value="nao_aplicavel">{t('gapUi.status.na')}</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </TableCell>
                 </TableRow>
               ))

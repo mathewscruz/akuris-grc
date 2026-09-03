@@ -18,7 +18,7 @@ import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { IconAdd, IconExternal } from '@/components/icons';
 
 interface Props {

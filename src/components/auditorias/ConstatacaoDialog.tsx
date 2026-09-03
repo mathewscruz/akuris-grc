@@ -18,7 +18,7 @@ import { RequisitoSelect } from '@/components/auditorias/RequisitoSelect';
 import { ControleSelect } from '@/components/auditorias/ControleSelect';
 import { CLASSIFICACOES, derivarTipoCriticidade, type ClassificacaoAchado } from '@/lib/constatacoes';
 ;
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { IconWarning } from '@/components/icons';
 

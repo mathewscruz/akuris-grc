@@ -85,10 +85,15 @@ export function useCanalDenuncia(slug: string | undefined) {
   const [empresa, setEmpresa] = useState<EmpresaPublica | null>(null);
   const [config, setConfig] = useState<ConfigCanal | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [falhou, setFalhou] = useState(false);
 
   useEffect(() => {
     let vivo = true;
     (async () => {
+      setCarregando(true);
+      setFalhou(false);
+      setEmpresa(null);
+      setConfig(null);
       if (!slug) {
         setCarregando(false);
         return;
@@ -97,7 +102,7 @@ export function useCanalDenuncia(slug: string | undefined) {
         const emp = await fetchEmpresaPublicaPorSlug(slug);
         if (!vivo) return;
         setEmpresa(emp);
-        if (!emp) return;
+        if (!emp || !emp.canal_ativo) return;
 
         const { data } = await supabase.rpc(
           'get_canal_config_publica' as never,
@@ -107,6 +112,7 @@ export function useCanalDenuncia(slug: string | undefined) {
         if (vivo) setConfig(linhas[0] ?? null);
       } catch (erro) {
         logger.error('Erro ao carregar o canal', { module: 'useCanalDenuncia', error: String(erro) });
+        if (vivo) setFalhou(true);
       } finally {
         if (vivo) setCarregando(false);
       }
@@ -145,6 +151,15 @@ export function useCanalDenuncia(slug: string | undefined) {
 
   /** Como o canal se apresenta: nome escolhido, ou a razão social. */
   const nomeDoCanal = config?.nome_exibicao?.trim() || empresa?.nome || '';
+  const estado = carregando
+    ? 'carregando'
+    : falhou
+      ? 'erro'
+      : !empresa
+        ? 'nao_encontrado'
+        : !empresa.canal_ativo || !config
+          ? 'indisponivel'
+          : 'pronto';
 
-  return { empresa, config, carregando, estiloDaMarca, nomeDoCanal };
+  return { empresa, config, carregando, falhou, estado, estiloDaMarca, nomeDoCanal };
 }

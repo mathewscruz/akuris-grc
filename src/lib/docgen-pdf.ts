@@ -243,7 +243,7 @@ export async function buildDocGenPdfBlob(doc: DocGenDocument, options: PdfOption
   secoes.forEach((secao, idx) => {
     pdf.addPage();
     ctx.y = 64;
-    tocEntries[entryIdx] && (tocEntries[entryIdx].page = pdf.getNumberOfPages());
+    if (tocEntries[entryIdx]) tocEntries[entryIdx].page = pdf.getNumberOfPages();
     entryIdx += 1;
     writeRuns(ctx, [{ text: `${idx + 1}. ${secao.nome || labels.section}` }], { size: 15, boldAll: true, color: [16, 24, 40] });
     pdf.setDrawColor(117, 82, 255);
@@ -256,7 +256,7 @@ export async function buildDocGenPdfBlob(doc: DocGenDocument, options: PdfOption
   const startAppendix = (titleText: string, number: number) => {
     pdf.addPage();
     ctx.y = 64;
-    tocEntries[entryIdx] && (tocEntries[entryIdx].page = pdf.getNumberOfPages());
+    if (tocEntries[entryIdx]) tocEntries[entryIdx].page = pdf.getNumberOfPages();
     entryIdx += 1;
     writeRuns(ctx, [{ text: `${number}. ${titleText}` }], { size: 15, boldAll: true, color: [16, 24, 40] });
     ctx.y += 6;

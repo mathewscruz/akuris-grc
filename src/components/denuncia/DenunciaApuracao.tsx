@@ -47,7 +47,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface Movimentacao {
   id: string;

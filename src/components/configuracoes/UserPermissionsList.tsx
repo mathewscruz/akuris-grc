@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { UserPermissionDialog } from './UserPermissionDialog';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -45,7 +45,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
 
       // Fetch profile names
       const profileIds = [...new Set((data || []).map(u => u.permission_profile_id).filter(Boolean))];
-      let profileMap = new Map<string, string>();
+      const profileMap = new Map<string, string>();
 
       if (profileIds.length > 0) {
         const { data: profilesData } = await supabase

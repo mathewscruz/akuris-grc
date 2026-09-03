@@ -25,7 +25,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,7 @@ interface Props {
   frameworkId?: string | null;
   /** Só leitura quando a avaliação está fechada. */
   disabled?: boolean;
+  onChanged?: () => void;
 }
 
 interface LinhaVinculo {
@@ -60,7 +61,7 @@ interface LinhaVinculo {
   } | null;
 }
 
-export function DocumentosDoRequisito({ requisitoId, frameworkId, disabled }: Props) {
+export function DocumentosDoRequisito({ requisitoId, frameworkId, disabled, onChanged }: Props) {
   const { t } = useLanguage();
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -176,7 +177,10 @@ export function DocumentosDoRequisito({ requisitoId, frameworkId, disabled }: Pr
         if (erroLink) throw erroLink;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: chave }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: chave });
+      onChanged?.();
+    },
     onError: (erro) => {
       logger.error('Vínculo documento–requisito não gravado', { data: erro });
       toast.error(t('gapUi.documentosRequisito.erroGravar'));

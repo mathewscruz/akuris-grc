@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth, MFA_PENDING_KEY } from '@/components/AuthProvider';
+import { useAuth, MFA_PENDING_KEY, isLocalDataPreview } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import logoImage from '@/assets/akuris-logo.png';
 import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -85,6 +85,10 @@ const Auth = () => {
   useEffect(() => {
     if (loading) return;
     if (phase !== 'idle') return;
+    if (isLocalDataPreview()) {
+      try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+      return;
+    }
     let mfaPending = false;
     try { mfaPending = sessionStorage.getItem(MFA_PENDING_KEY) === '1'; } catch { /* ignore */ }
     if (!mfaPending) return;
@@ -186,6 +190,14 @@ const Auth = () => {
       } else {
         localStorage.removeItem('akuris_remember_email');
         localStorage.removeItem('akuris_remember_me');
+      }
+
+      if (isLocalDataPreview()) {
+        markMfaVerified();
+        try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+        toast.success(t('auth.loginSuccess'));
+        setPhase('finalizing');
+        return;
       }
 
       // Decide via send-mfa-code:

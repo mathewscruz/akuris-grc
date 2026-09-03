@@ -7,7 +7,7 @@ import { SectionHead } from './SectionHead';
 import { IconArrowRight, IconCheck, IconLink } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 /**
  * Aproveitar o que já foi avaliado noutro framework.

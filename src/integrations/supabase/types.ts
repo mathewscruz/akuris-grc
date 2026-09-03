@@ -1450,9 +1450,9 @@ export type Database = {
         ]
       }
       auditorias: {
-        Row: {
-          auditor_equipe: string[] | null
-          auditor_responsavel: string | null
+          Row: {
+            auditor_equipe: string[] | null
+            auditor_responsavel: string | null
           conclusao_forcada: boolean
           conclusao_justificativa: string | null
           created_at: string | null
@@ -1461,10 +1461,11 @@ export type Database = {
           data_fim_real: string | null
           data_inicio: string | null
           descricao: string | null
-          empresa_id: string
-          escopo: string | null
-          framework: string | null
-          id: string
+            empresa_id: string
+            escopo: string | null
+            framework: string | null
+            framework_id: string | null
+            id: string
           metodologia: string | null
           nome: string
           objetivos: string | null
@@ -1484,10 +1485,11 @@ export type Database = {
           data_fim_real?: string | null
           data_inicio?: string | null
           descricao?: string | null
-          empresa_id: string
-          escopo?: string | null
-          framework?: string | null
-          id?: string
+            empresa_id: string
+            escopo?: string | null
+            framework?: string | null
+            framework_id?: string | null
+            id?: string
           metodologia?: string | null
           nome: string
           objetivos?: string | null
@@ -1507,10 +1509,11 @@ export type Database = {
           data_fim_real?: string | null
           data_inicio?: string | null
           descricao?: string | null
-          empresa_id?: string
-          escopo?: string | null
-          framework?: string | null
-          id?: string
+            empresa_id?: string
+            escopo?: string | null
+            framework?: string | null
+            framework_id?: string | null
+            id?: string
           metodologia?: string | null
           nome?: string
           objetivos?: string | null
@@ -1519,7 +1522,15 @@ export type Database = {
           tipo?: string
           updated_at?: string | null
         }
-        Relationships: []
+          Relationships: [
+            {
+              foreignKeyName: "auditorias_framework_id_fkey"
+              columns: ["framework_id"]
+              isOneToOne: false
+              referencedRelation: "gap_analysis_frameworks"
+              referencedColumns: ["id"]
+            },
+          ]
       }
       blog_posts: {
         Row: {
@@ -10133,35 +10144,6 @@ export type Database = {
       podar_notificacoes_lidas: { Args: never; Returns: number }
       pode_ver_denuncia: { Args: { p_denuncia_id: string }; Returns: boolean }
       politica_privacidade_padrao: { Args: never; Returns: string }
-      popular_ativos_demo: {
-        Args: { p_empresa_id: string; p_user_id: string }
-        Returns: number
-      }
-      popular_categorias_base: {
-        Args: { p_empresa_id: string }
-        Returns: undefined
-      }
-      popular_controles_demo: {
-        Args: { p_empresa_id: string; p_user_id: string }
-        Returns: number
-      }
-      popular_dados_demonstracao: { Args: never; Returns: Json }
-      popular_dados_demonstracao_direto: {
-        Args: { p_empresa_id: string; p_user_id: string }
-        Returns: Json
-      }
-      popular_documentos_demo: {
-        Args: { p_empresa_id: string; p_user_id: string }
-        Returns: number
-      }
-      popular_incidentes_demo: {
-        Args: { p_empresa_id: string; p_user_id: string }
-        Returns: number
-      }
-      popular_riscos_demo: {
-        Args: { p_empresa_id: string; p_user_id: string }
-        Returns: number
-      }
       projeto_pertence_empresa: {
         Args: { _projeto_id: string }
         Returns: boolean

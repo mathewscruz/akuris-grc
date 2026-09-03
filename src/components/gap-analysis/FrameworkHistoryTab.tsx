@@ -5,10 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScoreEvolutionChart } from './ScoreEvolutionChart';
 import { useScoreHistory } from '@/hooks/useScoreHistory';
-import { exportFrameworkPDF } from './ExportFrameworkPDF';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FrameworkHistoryTabProps {
@@ -78,6 +77,7 @@ export function FrameworkHistoryTab({
         area_responsavel: r.area_responsavel,
       }));
 
+      const { exportFrameworkPDF } = await import('./ExportFrameworkPDF');
       await exportFrameworkPDF({
         frameworkName,
         frameworkVersion,

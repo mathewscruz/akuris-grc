@@ -29,7 +29,7 @@ const ISENTAS = new Set<string>();
    `max_tokens`, e isso tem de continuar a poder ser escrito.
 */
 const ESCOLHA_DE_MODELO =
-  /(?:\bmodel\s*:|\bMODEL[A-Z_]*\s*=)\s*['"`](google|openai|anthropic)\/[a-z0-9.\-]+['"`]/i;
+  /(?:\bmodel\s*:|\bMODEL[A-Z_]*\s*=)\s*['"`](google|openai|anthropic)\/[a-z0-9.-]+['"`]/i;
 
 function funcoesComIA() {
   return readdirSync(RAIZ)

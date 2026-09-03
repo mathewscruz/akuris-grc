@@ -118,6 +118,15 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
         event.preventDefault();
         onActivate();
       }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        // Itens bloqueados explicam o motivo sem alterar/fechar o menu. Tratar
+        // o teclado aqui evita que o gerenciador de foco do menu tente
+        // selecionar novamente o mesmo item controlado.
+        event.preventDefault();
+        event.stopPropagation();
+        onActivate();
+      }}
       aria-label={t("sweepRiscos.riscos.tratadoIndisponivelAria", { motivo })}
       className="flex-col items-start gap-0.5 text-muted-foreground"
     >
@@ -751,4 +760,3 @@ function coberturaPct(eficacia?: string | null): number {
   if (s.includes('inef')) return 10;
   return 0;
 }
-

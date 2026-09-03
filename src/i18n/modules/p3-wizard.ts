@@ -14,7 +14,7 @@ export const p3Wizard = {
       stepIdentificationHasErrors: 'Há campos obrigatórios por preencher nesta etapa.',
     },
     planosAcaoFiltros: {
-      statusLabel: 'Estado',
+      statusLabel: 'Status',
       priorityLabel: 'Prioridade',
       pageSizeLabel: 'Itens por página',
     },

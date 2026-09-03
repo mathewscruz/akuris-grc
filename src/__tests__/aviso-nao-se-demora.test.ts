@@ -7,9 +7,9 @@
  * aviso de confirmação não é para ler com atenção: é para se ver de canto de
  * olho que a coisa correu bem. O que exige leitura tem de estar no ecrã.
  *
- * Passou a 2s e a três empilhados. Esta guarda existe porque a uniformidade
- * não se mantém sozinha: basta uma chamada com `duration: 6000` para o padrão
- * começar a desfazer-se, e ninguém repara numa revisão de código.
+ * A duração agora segue o tom: sucesso 2s, informação 3s, aviso 4,5s e erro
+ * 6s. O máximo continua em três empilhados. Esta guarda existe porque a
+ * uniformidade não se mantém sozinha.
  *
  * ## As excepções, e porque são excepções
  *
@@ -28,18 +28,20 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fontes, ler } from './_fontes';
 
-/** Ficheiro → razão pela qual pode passar dos 2s. */
+/** Ficheiro → razão pela qual pode fixar duração acima do fallback. */
 const EXCECOES: Record<string, string> = {
   'src/hooks/useInactivityTimeout.tsx': 'contagem decrescente da sessão, não é aviso',
   'src/components/ForgotPasswordDialog.tsx': 'única instrução, com o diálogo já fechado',
   'src/components/documentos/DocGenDialog.tsx': 'aviso com botão de acção',
+  'src/pages/PlanosAcao.tsx': 'exclusão com botão Desfazer',
+  'src/pages/Relatorios.tsx': 'exclusão com botão Desfazer',
 };
 
-const DURACAO_PADRAO = 2000;
+const DURACAO_PADRAO = 3000;
 const EMPILHAMENTO_MAXIMO = 3;
 
 describe('o aviso não se demora', () => {
-  it('o Toaster define dois segundos e três empilhados', () => {
+  it('o Toaster define fallback de três segundos e três empilhados', () => {
     const sonner = readFileSync('src/components/ui/sonner.tsx', 'utf8');
 
     const duracao = /duration=\{(\d+)\}/.exec(sonner);
@@ -59,6 +61,14 @@ describe('o aviso não se demora', () => {
     ).toBe(EMPILHAMENTO_MAXIMO);
   });
 
+  it('cada tom tem o tempo adequado à quantidade de atenção exigida', () => {
+    const politica = readFileSync('src/lib/toast.ts', 'utf8');
+    expect(politica).toMatch(/success:\s*2000/);
+    expect(politica).toMatch(/info:\s*3000/);
+    expect(politica).toMatch(/warning:\s*4500/);
+    expect(politica).toMatch(/error:\s*6000/);
+  });
+
   it('nenhuma chamada nova fixa a sua própria duração', () => {
     /*
       Só interessa `duration` em objectos de opções de aviso. `logger.performance
@@ -71,6 +81,7 @@ describe('o aviso não se demora', () => {
       if (EXCECOES[ficheiro]) continue;
       if (ficheiro === 'src/components/ui/sonner.tsx') continue;
       if (ficheiro === 'src/lib/akuris-toast.tsx') continue;
+      if (ficheiro === 'src/lib/toast.ts') continue;
 
       const texto = ler(ficheiro);
       const linhas = texto.split('\n');
@@ -87,7 +98,7 @@ describe('o aviso não se demora', () => {
       'Aviso com duração própria acima do padrão. Se for mesmo caso de ' +
         'excepção — leva botão de acção, ou é a única instrução que a pessoa ' +
         'recebe — acrescente o ficheiro a EXCECOES neste teste, com a razão. ' +
-        'Se não for, tire a duração e deixe herdar os 2s.',
+        'Se não for, tire a duração e deixe herdar a política do tom.',
     ).toEqual([]);
   });
 

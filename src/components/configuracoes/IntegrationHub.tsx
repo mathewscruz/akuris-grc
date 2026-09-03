@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { SlackConfigDialog } from './integrations/SlackConfigDialog';
 import { TeamsConfigDialog } from './integrations/TeamsConfigDialog';
 import { WebhooksConfigDialog } from './integrations/WebhooksConfigDialog';

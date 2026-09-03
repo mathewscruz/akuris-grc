@@ -15,8 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 ;
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { toast } from 'sonner';
-import { exportSoAPDF } from '../SoAExportPDF';
+import { toast } from '@/lib/toast';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveConformityTone } from '@/lib/status-tone';
@@ -76,7 +75,9 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
   const [items, setItems] = useState<SoAItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [segment, setSegment] = useState<Segment>('todos');
+  // Abre pela primeira secção recomendada (na ISO 27001, as cláusulas do
+  // SGSI), em vez de despejar 121 linhas de uma vez para quem acabou de chegar.
+  const [segment, setSegment] = useState<Segment>(sections?.[0]?.id || 'todos');
   const segmentos = [{ id: 'todos', title: t('gapV2.soa.segAll') }, ...(sections || [])];
   const [justificativas, setJustificativas] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -116,7 +117,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
       const evals = evalsRes.data || [];
       const evalMap = new Map(evals.map(e => [e.requirement_id, e]));
 
-      let soaMap = new Map<string, { aplicavel: boolean; justificativa: string }>();
+      const soaMap = new Map<string, { aplicavel: boolean; justificativa: string }>();
       try {
         const { data: soaData } = await supabase
           .from('gap_analysis_soa')
@@ -126,7 +127,9 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
         (soaData as any[] | null)?.forEach(s => {
           soaMap.set(s.requirement_id, { aplicavel: s.aplicavel, justificativa: s.justificativa || '' });
         });
-      } catch {}
+      } catch {
+        // A SoA continua utilizável com os dados da avaliação quando ainda não há registo dedicado.
+      }
 
       const soaItems: SoAItem[] = reqs.map(r => {
         const evalData = evalMap.get(r.id);
@@ -364,6 +367,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
     try {
       const { data: empresa } = await supabase
         .from('empresas').select('nome').eq('id', empresaId).single();
+      const { exportSoAPDF } = await import('../SoAExportPDF');
       await exportSoAPDF({
         frameworkName,
         frameworkVersion,

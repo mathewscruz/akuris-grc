@@ -3,8 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { toast } from 'sonner';
-import { Mail, RefreshCw, Lock, ArrowLeft } from 'lucide-react';
+import { toast } from '@/lib/toast';
+import {
+  IconMail as Mail,
+  IconRefresh as RefreshCw,
+  IconLock as Lock,
+  IconArrowLeft as ArrowLeft,
+} from '@/components/icons';
 import logoImage from '@/assets/akuris-logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';

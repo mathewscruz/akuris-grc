@@ -64,7 +64,7 @@ export default function PlanosAssinatura() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
         {planos.map((plano) => {
           const monthlyPrice = isAnnual && plano.preco_anual > 0
             ? Math.round(plano.preco_anual / 12)

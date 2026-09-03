@@ -21,6 +21,8 @@ export const revisaoAcessosComp = {
         fieldDataLimite: 'Data Limite *',
         fieldObservacoes: 'Observações',
         toastErrorNaoAutenticado: 'Usuário não autenticado',
+        toastErrorToken: 'Não foi possível gerar o link seguro da revisão. Tente novamente.',
+        toastErrorSave: 'Não foi possível salvar a revisão de acessos.',
       },
       externalForm: {
         loading: 'Carregando itens...',
@@ -198,6 +200,8 @@ export const revisaoAcessosComp = {
         fieldDataLimite: 'Due Date *',
         fieldObservacoes: 'Notes',
         toastErrorNaoAutenticado: 'User not authenticated',
+        toastErrorToken: 'The secure review link could not be generated. Please try again.',
+        toastErrorSave: 'The access review could not be saved.',
       },
       externalForm: {
         loading: 'Loading items...',

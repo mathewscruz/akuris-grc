@@ -258,8 +258,8 @@ export function CategoriasDenuncia() {
 
     // Ordenar
     filtered.sort((a, b) => {
-      let aValue: any = a[sortField as keyof Categoria];
-      let bValue: any = b[sortField as keyof Categoria];
+      const aValue: any = a[sortField as keyof Categoria];
+      const bValue: any = b[sortField as keyof Categoria];
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 

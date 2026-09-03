@@ -24,7 +24,7 @@ import { IconCalendarClock, IconCheck } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export interface ReuniaoPublica {
   id: string;

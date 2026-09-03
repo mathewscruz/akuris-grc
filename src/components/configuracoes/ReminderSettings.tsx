@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatStrip } from '@/components/ui/stat-strip';
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { IconTime, IconBell, IconMail, IconUsers, IconTrendUp } from '@/components/icons';

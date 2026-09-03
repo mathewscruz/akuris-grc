@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { IconWarning, IconChecklist, IconTarget, IconArrowUpRight } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 type Destino = 'risco' | 'plano_acao' | 'incidente';
 
@@ -133,9 +133,14 @@ export function DenunciaConverter({ denuncia, onAtualizado }: Props) {
         novoId = data.id;
       }
 
+      const ligacao = alvo.coluna === 'risco_id'
+        ? { risco_id: novoId }
+        : alvo.coluna === 'plano_acao_id'
+          ? { plano_acao_id: novoId }
+          : { incidente_id: novoId };
       const { error: erroLigacao } = await supabase
         .from('denuncias')
-        .update({ [alvo.coluna]: novoId })
+        .update(ligacao)
         .eq('id', denuncia.id);
       if (erroLigacao) throw erroLigacao;
 

@@ -14,7 +14,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { classificacaoTone } from '@/lib/constatacoes';
 import { ConstatacaoDialog } from '@/components/auditorias/ConstatacaoDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { IconAdd, IconEdit, IconDelete, IconChecklist } from '@/components/icons';
 

@@ -186,7 +186,7 @@ export function DashboardMeta(props: Props) {
             onClick={() =>
               props.onPillClick ? props.onPillClick(e.key) : navigate(e.route)
             }
-            className="flex items-center gap-1.5 rounded-md px-1 py-0.5 text-xs text-muted-foreground transition-ui hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-h-10 items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-ui hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {/* O ícone identifica o módulo e mais nada: um só cinzento, sem
                 estado. Quem carrega o alarme é o número. */}

@@ -9,8 +9,8 @@
 const PT = {
   titulo: 'Prontidão para a auditoria',
 
-  /* Ainda não. Diz onde está, sem adjectivos: o número é que fala. */
-  aindaNao: '{feitos} de {total} requisitos aplicáveis estão conformes. Falta fechar o que está abaixo antes de marcar.',
+  /* Os números já aparecem no diagnóstico e em cada bloqueio logo abaixo. */
+  aindaNao: 'Resolva os bloqueios abaixo antes de agendar a auditoria.',
 
   pronto_certificado: 'Todos os requisitos aplicáveis estão conformes. Pode contratar um organismo certificador acreditado e marcar a auditoria de certificação.',
   pronto_relatorio: 'Todos os requisitos aplicáveis estão conformes. Pode contratar o auditor independente que emite o relatório.',
@@ -19,21 +19,21 @@ const PT = {
 
   bloqueio: {
     nao_avaliado: {
-      one: '1 requisito ainda não foi avaliado — sem ele, não sabe onde está',
-      other: '{count} requisitos ainda não foram avaliados — sem eles, não sabe onde está',
+      one: 'requisito ainda não foi avaliado — sem ele, não sabe onde está',
+      other: 'requisitos ainda não foram avaliados — sem eles, não sabe onde está',
     },
     nao_conforme: {
-      one: '1 requisito não conforme',
-      other: '{count} requisitos não conformes',
+      one: 'requisito não conforme',
+      other: 'requisitos não conformes',
     },
     parcial: {
-      one: '1 requisito parcialmente conforme',
-      other: '{count} requisitos parcialmente conformes',
+      one: 'requisito parcialmente conforme',
+      other: 'requisitos parcialmente conformes',
     },
     /* O auditor não avalia o que a empresa afirma: avalia o que ela mostra. */
     conforme_sem_prova: {
-      one: '1 requisito conforme sem nenhuma prova anexada',
-      other: '{count} requisitos conformes sem nenhuma prova anexada',
+      one: 'requisito conforme sem nenhuma prova anexada',
+      other: 'requisitos conformes sem nenhuma prova anexada',
     },
   },
 
@@ -50,7 +50,7 @@ const PT = {
 const EN: typeof PT = {
   titulo: 'Audit readiness',
 
-  aindaNao: '{feitos} of {total} applicable requirements are compliant. Close what is listed below before scheduling.',
+  aindaNao: 'Resolve the blockers below before scheduling the audit.',
 
   pronto_certificado: 'Every applicable requirement is compliant. You can engage an accredited certification body and schedule the certification audit.',
   pronto_relatorio: 'Every applicable requirement is compliant. You can engage the independent auditor who issues the report.',
@@ -59,20 +59,20 @@ const EN: typeof PT = {
 
   bloqueio: {
     nao_avaliado: {
-      one: '1 requirement has not been assessed yet — without it, you do not know where you stand',
-      other: '{count} requirements have not been assessed yet — without them, you do not know where you stand',
+      one: 'requirement has not been assessed yet — without it, you do not know where you stand',
+      other: 'requirements have not been assessed yet — without them, you do not know where you stand',
     },
     nao_conforme: {
-      one: '1 non-compliant requirement',
-      other: '{count} non-compliant requirements',
+      one: 'non-compliant requirement',
+      other: 'non-compliant requirements',
     },
     parcial: {
-      one: '1 partially compliant requirement',
-      other: '{count} partially compliant requirements',
+      one: 'partially compliant requirement',
+      other: 'partially compliant requirements',
     },
     conforme_sem_prova: {
-      one: '1 compliant requirement with no evidence attached',
-      other: '{count} compliant requirements with no evidence attached',
+      one: 'compliant requirement with no evidence attached',
+      other: 'compliant requirements with no evidence attached',
     },
   },
 

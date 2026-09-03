@@ -13,6 +13,8 @@ export { MaturityHero } from './MaturityHero';
 export { AIRecommendedTile } from './AIRecommendedTile';
 export { ActiveFrameworkRow } from './ActiveFrameworkRow';
 export { FrameworkHeader } from './FrameworkHeader';
+export { FrameworkJourneyNextAction, getFrameworkJourneyAction } from './FrameworkJourneyNextAction';
+export type { FrameworkJourneyAction } from './FrameworkJourneyNextAction';
 export { AssistenteDeEscopo } from './AssistenteDeEscopo';
 export { PainelDeFases } from './PainelDeFases';
 export { PriorityQueueCard } from './PriorityQueueCard';

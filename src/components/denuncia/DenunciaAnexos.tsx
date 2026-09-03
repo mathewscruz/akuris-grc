@@ -23,7 +23,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconDownload, IconFile, IconUpload, IconDelete, IconLock } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface Anexo {
   id: string;

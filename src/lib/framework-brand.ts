@@ -24,6 +24,11 @@ export interface FrameworkBrand {
   logoSrc?: string;
 }
 
+export interface FrameworkBadgePalette {
+  from: string;
+  to: string;
+}
+
 const TONE_STYLES: Record<FrameworkTone, { bg: string; text: string; ring: string }> = {
   security: {
     bg: 'bg-[hsl(217_45%_22%)]',
@@ -75,6 +80,53 @@ const normalize = (name: string): string =>
     .toLowerCase()
     .replace(/iso\/iec/g, 'iso')
     .replace(/[^a-z0-9]/g, '');
+
+/**
+ * Assinaturas cromáticas próprias do Akuris.
+ *
+ * São deliberadamente diferentes dos logótipos institucionais: ajudam o
+ * utilizador a reconhecer rapidamente cada referencial sem sugerir endosso,
+ * certificação ou autorização do titular da marca.
+ */
+const BADGE_PALETTES: Array<[RegExp, FrameworkBadgePalette]> = [
+  [/^iso27001/, { from: '#315f8f', to: '#142f50' }],
+  [/^iso27701/, { from: '#7654a8', to: '#352458' }],
+  [/^iso62443|^nistsp80082|^nist80082/, { from: '#5b6c7c', to: '#27343f' }],
+  [/^nist/, { from: '#3979a8', to: '#183c5a' }],
+  [/^cis/, { from: '#b06528', to: '#563014' }],
+  [/^pcidss|^pci/, { from: '#23858d', to: '#0d454b' }],
+  [/^soc2|^soc/, { from: '#3a758b', to: '#173c4b' }],
+  [/^lgpd/, { from: '#7046b5', to: '#351d68' }],
+  [/^gdpr|^rgpd/, { from: '#365fa7', to: '#182d59' }],
+  [/^ccpa|^cpra/, { from: '#a24770', to: '#4d1e36' }],
+  [/^hipaa/, { from: '#27828b', to: '#10464c' }],
+  [/^cobit/, { from: '#59687e', to: '#283443' }],
+  [/^itil|^iso20000/, { from: '#4c7b79', to: '#203f3e' }],
+  [/^iso9001/, { from: '#8a7441', to: '#443718' }],
+  [/^cosointernal|^cosoic/, { from: '#646977', to: '#303540' }],
+  [/^cosoerm|^coso/, { from: '#86543d', to: '#42281c' }],
+  [/^iso31000/, { from: '#9a622d', to: '#4b2e15' }],
+  [/^iso37301/, { from: '#80593a', to: '#3e2a1a' }],
+  [/^sox|^sarbanes/, { from: '#34765a', to: '#173d2d' }],
+  [/^dora/, { from: '#844b91', to: '#412347' }],
+  [/^nis2|^nis/, { from: '#515f9b', to: '#272e53' }],
+  [/^iso14001/, { from: '#3d8654', to: '#1a472a' }],
+];
+
+const TONE_PALETTES: Record<FrameworkTone, FrameworkBadgePalette> = {
+  security: { from: '#365f8c', to: '#172f4d' },
+  privacy: { from: '#7049a1', to: '#352252' },
+  governance: { from: '#5d6877', to: '#2d3540' },
+  risk: { from: '#8b5a32', to: '#462b17' },
+  financial: { from: '#347158', to: '#193a2c' },
+  health: { from: '#2f7881', to: '#173e44' },
+  environment: { from: '#3b7c50', to: '#1b4229' },
+};
+
+export function resolveFrameworkBadgePalette(name: string, tone: FrameworkTone): FrameworkBadgePalette {
+  const slug = normalize(name);
+  return BADGE_PALETTES.find(([pattern]) => pattern.test(slug))?.[1] ?? TONE_PALETTES[tone];
+}
 
 const CATALOG: FrameworkBrand[] = [
   // Privacy / data protection

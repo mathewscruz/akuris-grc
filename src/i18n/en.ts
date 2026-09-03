@@ -89,6 +89,11 @@ export const en = {
     settings: 'Settings',
     help: 'Help',
     learnMore: 'Learn more',
+    showDetails: 'View details',
+    hideDetails: 'Hide details',
+    compactDensity: 'Compact density',
+    comfortableDensity: 'Comfortable density',
+    undo: 'Undo',
   },
   validation: {
     required: 'Required field',
@@ -203,6 +208,7 @@ export const en = {
     sectionInsights: 'Insights',
   },
   theme: {
+    appearance: 'Appearance',
     toggleLight: 'Light mode',
     toggleDark: 'Dark mode',
   },
@@ -484,6 +490,7 @@ export const en = {
     trialExpiredDesc: 'Your 14-day trial has ended. Contact us to activate your license and continue using Akuris.',
     activateLicense: 'Activate License',
     backTooltip: 'Back',
+    moreOptions: 'More options',
   },
   errorBoundary: {
     title: 'Something went wrong',

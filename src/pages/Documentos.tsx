@@ -484,7 +484,7 @@ export default function Documentos() {
           actions={
             <Button size="sm" onClick={() => setDocumentoDialog({ open: true })}>
               <IconAdd className="h-4 w-4 mr-2" />
-              {t('documentos.lista.novo')}
+              {t('documentos.lista.novoDocumento')}
             </Button>
           }
           secondaryActions={[
@@ -511,14 +511,15 @@ export default function Documentos() {
           <CardContent className="p-0">
             <div className="p-4 sm:p-6 pb-4">
         <ModuleToolbar
+          className="md:[&>div:first-child]:max-w-[280px]"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           searchPlaceholder={t('documentos.lista.buscarDocumentos')}
           filters={
             <>
-              <ToolbarField label={t('documentos.lista.classificacao')}>
+              <ToolbarField label={t('documentos.lista.classificacao')} className="min-w-[176px]">
                 <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                  <SelectTrigger className="w-52">
+                  <SelectTrigger className="w-44">
                     <SelectValue placeholder={t('documentos.lista.classificacao')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -530,9 +531,9 @@ export default function Documentos() {
                   </SelectContent>
                 </Select>
               </ToolbarField>
-              <ToolbarField label={t('documentos.lista.status')}>
+              <ToolbarField label={t('documentos.lista.status')} className="min-w-[112px]">
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-28">
                     <SelectValue placeholder={t('documentos.lista.status')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -548,7 +549,7 @@ export default function Documentos() {
                   </SelectContent>
                 </Select>
               </ToolbarField>
-              <ToolbarField label={t('documentos.lista.itensPorPagina')}>
+              <ToolbarField label={t('documentos.lista.itensPorPagina')} className="min-w-[100px]">
                 <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
                   <SelectTrigger className="w-[100px]">
                     <SelectValue />
@@ -560,9 +561,9 @@ export default function Documentos() {
                   </SelectContent>
                 </Select>
               </ToolbarField>
-              <ToolbarField label={t('documentos.lista.tipo')}>
+              <ToolbarField label={t('documentos.lista.tipo')} className="min-w-[144px]">
                 <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-36">
                     <SelectValue placeholder={t('documentos.lista.tipo')} />
                   </SelectTrigger>
                   <SelectContent>

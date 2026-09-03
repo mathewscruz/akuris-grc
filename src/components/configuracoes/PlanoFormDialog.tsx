@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 ;
 import { MODULOS_DISPONIVEIS, type Plano } from '@/lib/planos-utils';
 import { useLanguage } from '@/contexts/LanguageContext';

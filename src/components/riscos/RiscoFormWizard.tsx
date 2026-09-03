@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import { IconSuccess, IconWarning, IconInfo, IconFile, IconChevron, IconSave, IconGauge, IconSettings, IconLink, IconShieldCheck, IconChevronLeft } from '@/components/icons';
+import { IconSuccess, IconWarning, IconInfo, IconFile, IconChevron, IconSave, IconGauge, IconSettings, IconLink, IconShieldCheck, IconChevronLeft, IconError, IconTime } from '@/components/icons';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { EntidadeMultiSelect } from '@/components/common/EntidadeMultiSelect';
 import { UserSelect } from './UserSelect';
 import { RiscoAnexosUpload } from './RiscoAnexosUpload';
@@ -138,6 +138,24 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     }
     const nextIdx = direction === 'next' ? Math.min(idx + 1, TABS.length - 1) : Math.max(idx - 1, 0);
     setActiveTab(TABS[nextIdx]);
+  };
+
+  const goToSelectedTab = async (target: TabKey) => {
+    const targetIdx = TABS.indexOf(target);
+    const currentIdx = TABS.indexOf(activeTab);
+    if (targetIdx <= currentIdx) {
+      setActiveTab(target);
+      return;
+    }
+
+    // Não é possível saltar da identificação para o acompanhamento deixando
+    // a avaliação no meio por preencher. Validamos todas as etapas anteriores
+    // ao destino, e não apenas a etapa atualmente visível.
+    const requiredBeforeTarget = TABS.slice(0, targetIdx).flatMap(
+      (tab) => REQUIRED_FIELDS_BY_TAB[tab],
+    );
+    const valid = requiredBeforeTarget.length === 0 || await form.trigger(requiredBeforeTarget as any);
+    if (valid) setActiveTab(target);
   };
 
   const riscoSchema = useMemo(() => makeRiscoSchema(t), [t]);
@@ -690,20 +708,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       <form onSubmit={form.handleSubmit((d) => onSubmit(d))} className="flex flex-1 min-h-0 flex-col">
         <Tabs
           value={activeTab}
-          onValueChange={(v) => {
-            const targetIdx = TABS.indexOf(v as TabKey);
-            const curIdx = TABS.indexOf(activeTab);
-            // DEFECT 5 — só permite avançar diretamente pela aba se as etapas
-            // anteriores (incluindo a atual) tiverem os campos obrigatórios.
-            if (targetIdx > curIdx) {
-              const fields = REQUIRED_FIELDS_BY_TAB[activeTab];
-              if (fields.length > 0) {
-                form.trigger(fields as any).then((valid) => { if (valid) setActiveTab(v as TabKey); });
-                return;
-              }
-            }
-            setActiveTab(v as TabKey);
-          }}
+          onValueChange={(v) => { void goToSelectedTab(v as TabKey); }}
           className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0"
         >
           {/* Sidebar — Navegação + Resumo Vivo (desktop) */}
@@ -1381,9 +1386,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   risco.status_aceite === 'aprovado' && "bg-success/10 text-success border-success/30",
                   risco.status_aceite === 'rejeitado' && "bg-destructive/10 text-destructive border-destructive/30"
                 )}>
-                  {risco.status_aceite === 'pendente' && `⏳ ${t('sweepRiscos.riscos.wizard.aceitePendente')}`}
-                  {risco.status_aceite === 'aprovado' && `✅ ${t('sweepRiscos.riscos.wizard.aceiteAprovado')}`}
-                  {risco.status_aceite === 'rejeitado' && `❌ ${t('sweepRiscos.riscos.wizard.aceiteRejeitado')}`}
+                  {risco.status_aceite === 'pendente' && <><IconTime className="h-4 w-4" />{t('sweepRiscos.riscos.wizard.aceitePendente')}</>}
+                  {risco.status_aceite === 'aprovado' && <><IconSuccess className="h-4 w-4" />{t('sweepRiscos.riscos.wizard.aceiteAprovado')}</>}
+                  {risco.status_aceite === 'rejeitado' && <><IconError className="h-4 w-4" />{t('sweepRiscos.riscos.wizard.aceiteRejeitado')}</>}
                 </div>
               )}
 
@@ -1546,7 +1551,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 {t('sweepRiscos.riscos.wizard.proxima')} <IconChevron className="h-4 w-4 ml-1" />
               </Button>
             )}
-            {(() => {
+            {(risco || isLastTab) && (() => {
               const missing: string[] = [];
               if (!watchNome?.trim()) missing.push(t('p7Wizard.riscos.missingFieldName'));
               if (!watchProbabilidade) missing.push(t('p7Wizard.riscos.missingFieldProbabilidade'));
@@ -1556,7 +1561,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 <span title={reason} className="inline-flex flex-col items-end gap-1">
                   <Button type="submit" disabled={loading} size="sm">
                     <IconSave className="h-4 w-4 mr-1.5" />
-                    {loading ? t('fin.comum.salvando') : risco ? t('fin.comum.atualizar') : t('fin.comum.salvar')}
+                    {loading
+                      ? t('fin.comum.salvando')
+                      : risco
+                        ? t('riscosDetalhe.dialog.saveChanges')
+                        : t('riscosDetalhe.dialog.finishCreate')}
                   </Button>
                   {reason && (
                     <span className="text-micro text-destructive">{reason}</span>

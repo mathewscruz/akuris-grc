@@ -37,6 +37,8 @@ export interface TrendPointLike {
   label: string;
   /** Valor da série. `null` deixa buraco na linha (período sem dados). */
   valor: number | null;
+  /** Variação em relação ao último ponto válido anterior. */
+  variacao?: number | null;
 }
 
 /** Uma linha da repartição, no rodapé do tooltip. */
@@ -63,6 +65,10 @@ interface Props {
   seletor?: ReactNode;
   /** Linha de referência horizontal (meta). */
   meta?: { valor: number; label: string } | null;
+  /** Escala fixa para não exagerar pequenas variações da série. */
+  escala?: [number, number];
+  /** Mostra a referência numérica do eixo quando a escala importa à decisão. */
+  mostrarEixoY?: boolean;
   /**
    * Repartição mostrada no tooltip, para o ponto sob o cursor.
    *
@@ -73,6 +79,10 @@ interface Props {
   divisao?: (indice: number) => TrendBreakdown[];
   /** Legenda do número do topo do tooltip. */
   tooltipLabel: string;
+  /** Nome da série mostrada no detalhe do tooltip. */
+  tooltipSerieLabel?: string;
+  /** Rótulo da comparação no tooltip (ex.: "vs. período anterior"). */
+  tooltipVariationLabel?: string;
   /**
    * Número do topo do tooltip, quando não é o valor da série.
    *
@@ -96,6 +106,8 @@ interface Props {
    * analisar um identificador acentuado em JSX.
    */
   resumo?: ReactNode;
+  /** Leitura automática da tendência, exibida junto do número principal. */
+  insight?: ReactNode;
   /** Rodapé do painel — o `PanelAction` com o próximo passo. */
   rodape?: ReactNode;
   className?: string;
@@ -116,11 +128,16 @@ export function TrendAreaChart({
   menorEMelhor = true,
   seletor,
   meta = null,
+  escala,
+  mostrarEixoY = false,
   divisao,
   tooltipLabel,
+  tooltipSerieLabel,
+  tooltipVariationLabel,
   tooltipValor,
   altura,
   resumo,
+  insight,
   rodape,
   className,
 }: Props) {
@@ -158,6 +175,7 @@ export function TrendAreaChart({
               </span>
             )}
           </div>
+          {insight && <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{insight}</div>}
         </div>
         {seletor && <div className="shrink-0">{seletor}</div>}
       </div>
@@ -172,7 +190,7 @@ export function TrendAreaChart({
         className={cn('px-1 pb-1', altura === undefined && 'flex-1 min-h-[220px]')}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
+          <ComposedChart data={data} margin={{ top: 8, right: 16, left: mostrarEixoY ? 0 : 16, bottom: 4 }}>
             <defs>
               <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={CHART_TREND} stopOpacity={0.28} />
@@ -180,7 +198,8 @@ export function TrendAreaChart({
               </linearGradient>
             </defs>
 
-            {/* Sem grelha e sem eixo Y: a leitura é a forma da curva. */}
+            {/* O eixo Y só aparece quando o chamador fornece uma escala de
+                decisão. Assim pequenas oscilações não parecem saltos enormes. */}
             <XAxis
               dataKey="label"
               axisLine={false}
@@ -189,7 +208,16 @@ export function TrendAreaChart({
               tick={{ fontSize: CHART_FONT.axis, fill: CHART_AXIS, letterSpacing: '0.06em' }}
               dy={8}
             />
-            <YAxis hide domain={[0, 'auto']} allowDecimals={false} />
+            <YAxis
+              hide={!mostrarEixoY}
+              domain={escala ?? [0, 'auto']}
+              allowDecimals={false}
+              width={mostrarEixoY ? 34 : 0}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: CHART_FONT.axis, fill: CHART_AXIS }}
+              tickCount={4}
+            />
 
             {meta && (
               <ReferenceLine
@@ -210,16 +238,33 @@ export function TrendAreaChart({
               cursor={{ stroke: CHART_TREND_GUIDE, strokeWidth: 1, strokeDasharray: '3 3' }}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
-                const p = payload[0].payload as { valor: number | null; __i: number };
+                const p = payload[0].payload as { label: string; valor: number | null; variacao?: number | null; __i: number };
                 if (p.valor === null) return null;
                 const linhas = divisao?.(p.__i) ?? [];
                 const topo = tooltipValor ? tooltipValor(p.__i) : p.valor;
                 return (
                   <div className="rounded-lg bg-foreground px-3.5 py-2.5 shadow-lg min-w-[9rem]">
+                    <div className="mb-1 text-micro font-medium uppercase tracking-wide text-background/55">
+                      {p.label}
+                    </div>
                     <div className="text-lg font-semibold tabular-nums text-background leading-tight">
                       {topo}
                     </div>
                     <div className="text-micro text-background/60">{tooltipLabel}</div>
+                    {tooltipSerieLabel && (
+                      <div className="mt-2 flex items-center justify-between gap-4 border-t border-background/15 pt-2 text-xs text-background/80">
+                        <span>{tooltipSerieLabel}</span>
+                        <span className="font-semibold tabular-nums text-background">{p.valor}</span>
+                      </div>
+                    )}
+                    {p.variacao !== null && p.variacao !== undefined && tooltipVariationLabel && (
+                      <div className="mt-1 flex items-center justify-between gap-4 text-xs text-background/70">
+                        <span>{tooltipVariationLabel}</span>
+                        <span className="font-medium tabular-nums text-background">
+                          {p.variacao > 0 ? `+${p.variacao}` : p.variacao}
+                        </span>
+                      </div>
+                    )}
                     {linhas.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-background/15 space-y-1">
                         {linhas.map((l) => (

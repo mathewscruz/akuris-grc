@@ -122,8 +122,16 @@ export function MaturityHero({
       };
     }
     if (criticalCount > 0) {
+      const ganho = ganhoSeFecharCriticos ?? 0;
+      const chaveInsight = criticalCount === 1
+        ? 'gapV2.maturityHero.insightCriticalOne'
+        : 'gapV2.maturityHero.insightCriticalMany';
       return {
-        body: <>{t('gapV2.maturityHero.insightCriticalPrefix')} <strong className="text-foreground">{criticalCount}</strong> {t('gapV2.maturityHero.insightCriticalSuffix', { pts: ganhoSeFecharCriticos ?? 0 })}</>,
+        body: <>{t(chaveInsight, {
+          count: criticalCount,
+          pts: ganho,
+          pointLabel: t(ganho === 1 ? 'gapV2.maturityHero.pointSingular' : 'gapV2.maturityHero.pointPlural'),
+        })}</>,
         cta: t('gapV2.maturityHero.insightSeePlanCta'),
       };
     }

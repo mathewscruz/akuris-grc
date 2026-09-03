@@ -13,7 +13,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { format } from 'date-fns';
 import { PermissionMatrix } from './PermissionMatrix';
@@ -256,6 +256,11 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     try {
       let empresaId = empresaIdAlvo || null;
 
+      if (!empresaId && isSuperAdmin) {
+        setPermissionProfiles([]);
+        return;
+      }
+
       if (!empresaId) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -297,6 +302,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
   // Recarrega os perfis sempre que a empresa selecionada no formulário mudar
   const empresaSelecionada = form.watch('empresa_id');
+  const papelSelecionado = form.watch('role');
   useEffect(() => {
     if (!dialogOpen) return;
     fetchPermissionProfiles(empresaSelecionada || null);
@@ -351,6 +357,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const handleSubmit = async (data: UsuarioForm) => {
     try {
       setCreating(true);
+
+      if (isSuperAdmin && data.role !== 'super_admin' && !data.empresa_id) {
+        form.setError('empresa_id', {
+          type: 'manual',
+          message: t('admin.usuarios.empresaObrigatoria'),
+        });
+        return;
+      }
       
       if (editingUsuario) {
         const profileId = data.permission_profile_id || null;
@@ -524,7 +538,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
       const link = (data as any)?.setupPasswordUrl;
       if (link) {
-        try { await navigator.clipboard.writeText(link); } catch {}
+        try { await navigator.clipboard.writeText(link); } catch { /* A área de transferência pode estar bloqueada pelo navegador. */ }
         toast.success(t('admin.usuarios.toastInviteResent', { nome: usuario.nome }));
       } else {
         toast.success(t('admin.usuarios.toastInviteResentSimple', { nome: usuario.nome }));
@@ -688,12 +702,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     },
     {
       key: 'role',
+      mobilePriority: 2,
       label: t('admin.usuarios.columnPapel'),
       sortable: true,
       render: (value) => getRoleBadge(value),
     },
     {
       key: 'permission_profile_id',
+      mobilePriority: 5,
       label: t('admin.usuarios.columnPerfilPermissao'),
       sortable: false,
       render: (_, usuario) => {
@@ -710,12 +726,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     },
     ...(isSuperAdmin ? [{
       key: 'empresa',
+      mobilePriority: 3,
       label: t('admin.usuarios.columnEmpresa'),
       sortable: false,
       render: (_, usuario) => usuario.empresas?.nome || '-',
     } as Column<Usuario>] : []),
     {
       key: 'ativo',
+      mobilePriority: 0,
       label: t('admin.usuarios.columnStatus'),
       sortable: true,
       render: (value) => (
@@ -726,6 +744,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     },
     {
       key: 'acesso',
+      mobilePriority: 1,
       label: t('admin.usuarios.columnAcesso'),
       sortable: false,
       render: (_, usuario) => {
@@ -779,6 +798,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     },
     {
       key: 'created_at',
+      mobilePriority: 4,
       label: t('admin.usuarios.columnCriadoEm'),
       sortable: true,
       render: (value) => formatDateOnly(value),
@@ -1066,14 +1086,19 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('admin.usuarios.fieldEmpresa')}</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
+                          value={field.value || (papelSelecionado === 'super_admin' ? 'none' : undefined)}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder={t('admin.usuarios.fieldEmpresaPlaceholder')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">{t('admin.usuarios.nenhumaEmpresa')}</SelectItem>
+                            {papelSelecionado === 'super_admin' && (
+                              <SelectItem value="none">{t('admin.usuarios.semEmpresaSuperAdmin')}</SelectItem>
+                            )}
                             {empresas.map((empresa) => (
                               <SelectItem key={empresa.id} value={empresa.id}>
                                 {empresa.nome}
@@ -1081,6 +1106,11 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {papelSelecionado !== 'super_admin' && (
+                          <p className="text-xs text-muted-foreground">
+                            {t('admin.usuarios.empresaObrigatoriaAjuda')}
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}

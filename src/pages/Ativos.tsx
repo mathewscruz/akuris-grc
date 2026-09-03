@@ -355,7 +355,7 @@ const Ativos = () => {
     // O corte é da carteira INTEIRA, não do resultado do filtro: senão
     // filtrar por "alto valor" recalcularia o quartil sobre si próprio.
     const corte = corteAltoValor(ativos);
-    let filtered = ativos.filter(ativo => {
+    const filtered = ativos.filter(ativo => {
       const matchesSearch = searchTerm === '' || 
         ativo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ativo.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||

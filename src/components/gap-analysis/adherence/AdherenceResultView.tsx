@@ -11,7 +11,6 @@ import { ptBR, enUS } from 'date-fns/locale';
 import type { AdherenceAssessment, PontoForte, PontoMelhoria } from './types';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
-import { exportAssessmentToPDF } from './ExportPDF';
 import { useToast } from '@/hooks/use-toast';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { logger } from '@/lib/logger';
@@ -115,6 +114,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const handleExportPDF = async () => {
     try {
       const { getCompanyLogoUrl } = await import('@/lib/brand-logo');
+      const { exportAssessmentToPDF } = await import('./ExportPDF');
       await exportAssessmentToPDF(assessment, details, getCompanyLogoUrl(empresa?.logo_url), t, dateLocale);
       toast({ title: t('gapAnalysis.adherenceUi.result.pdfExportedTitle'), description: t('gapAnalysis.adherenceUi.result.pdfExportedDescription') });
     } catch (error) {
@@ -236,7 +236,6 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
                 `pendente` fazia o painel pedir uma evidência que já existe.
               */
               evidence_status: provaDaAnalise ? 'anexada' : 'pendente',
-              status: 'em_andamento',
               observacoes: t('gapAnalysis.adherenceUi.result.autoEvaluatedNote', { doc: assessment.documento_nome }),
             }));
           applied++;

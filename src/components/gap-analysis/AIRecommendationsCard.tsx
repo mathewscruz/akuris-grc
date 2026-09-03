@@ -5,7 +5,7 @@ import { DialogShell } from '@/components/ui/dialog-shell';
 import { IconTarget, IconBolt, IconTrendUp, IconArrowRight } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -19,6 +19,7 @@ interface AIRecommendationsDialogProps {
   totalRequirements: number;
   evaluatedRequirements: number;
   onGoToRemediation?: () => void;
+  showLabel?: boolean;
 }
 
 interface Recommendations {
@@ -131,13 +132,19 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                 onClick={canAnalyze ? handleOpen : undefined}
                 disabled={loading || !canAnalyze}
                 aria-disabled={!canAnalyze}
-                className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground p-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-elegant"
+                variant={props.showLabel ? 'outline' : 'default'}
+                size="sm"
+                aria-label={props.showLabel ? undefined : t('gapAnalysis.ai.actionLabel')}
+                className={props.showLabel
+                  ? 'h-9 disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'h-9 w-9 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground p-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-elegant'}
               >
                 {loading ? (
                   <AkurisPulse size={16} />
                 ) : (
-                  <IconTarget className="h-4 w-4" strokeWidth={1.5} />
+                  <IconTarget className={props.showLabel ? 'h-4 w-4 mr-2' : 'h-4 w-4'} strokeWidth={1.5} />
                 )}
+                {props.showLabel && t('gapAnalysis.ai.actionLabel')}
               </Button>
             </span>
           </TooltipTrigger>

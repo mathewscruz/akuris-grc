@@ -48,11 +48,11 @@ function extractDocumentType(messageText: string): string | null {
 
 function extractDocumentName(messageText: string): string | null {
   const patterns = [
-    /política de ([^\n\.,]+)/i,
-    /procedimento de ([^\n\.,]+)/i,
-    /norma de ([^\n\.,]+)/i,
-    /manual de ([^\n\.,]+)/i,
-    /código de ([^\n\.,]+)/i
+    /política de ([^\n.,]+)/i,
+    /procedimento de ([^\n.,]+)/i,
+    /norma de ([^\n.,]+)/i,
+    /manual de ([^\n.,]+)/i,
+    /código de ([^\n.,]+)/i
   ];
   
   for (const pattern of patterns) {
@@ -540,7 +540,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    let { 
+    const {
       message, 
       conversation_id, 
       user_id, 
@@ -1122,7 +1122,9 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         if (typeof templateEstrutura === 'string') {
           templateEstrutura = JSON.parse(templateEstrutura);
         }
-      } catch (_e) {}
+      } catch (_e) {
+        // Estruturas antigas podem já chegar como objeto e seguem sem conversão.
+      }
 
       const frameworkGapsSection = frameworkGapsText
         ? `\n\nIMPORTANTE — O documento deve endereçar os seguintes gaps de conformidade identificados no framework "${framework_context?.framework_name}":\n${frameworkGapsText}\n\nInclua seções, controles ou procedimentos específicos que resolvam cada gap listado.`
@@ -1307,7 +1309,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         json_retry ? 0.3 : 0.35,
       );
 
-      let documentContent = parseDocumentJson(docContent);
+      const documentContent = parseDocumentJson(docContent);
 
       // P1: a re-tentativa de JSON é uma INVOCAÇÃO à parte (o cliente repete a
       // chamada com `json_retry: true` e a MESMA chave de idempotência, por
@@ -2019,7 +2021,7 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
       // Coverage map final: preferir o que a IA devolveu; senão preservar o atual
       // menos os removidos explicitamente.
       const removedCodes = new Set((parsed?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
-      let nextCoverage: any[] = Array.isArray(parsed?.document?.coverage_map) && parsed.document.coverage_map.length
+      const nextCoverage: any[] = Array.isArray(parsed?.document?.coverage_map) && parsed.document.coverage_map.length
         ? parsed.document.coverage_map
         : currentCoverage.filter((c: any) => !removedCodes.has(String(c?.requirement_codigo || '')));
 

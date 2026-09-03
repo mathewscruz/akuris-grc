@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 ;
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';

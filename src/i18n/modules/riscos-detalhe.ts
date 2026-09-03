@@ -7,7 +7,9 @@ export const riscosDetalhe = {
         titleEdit: 'Editar Risco',
         titleNew: 'Novo Risco',
         descEdit: 'Atualize as informações do risco navegando entre as abas.',
-        descNew: 'Navegue entre as abas para preencher cada seção. Você pode preencher na ordem que preferir.',
+        descNew: 'Siga as três etapas. Os campos obrigatórios são validados antes de você avançar.',
+        saveChanges: 'Salvar alterações',
+        finishCreate: 'Concluir cadastro',
       },
       // RiscoVisuals
       visuals: {
@@ -388,7 +390,9 @@ export const riscosDetalhe = {
         titleEdit: 'Edit Risk',
         titleNew: 'New Risk',
         descEdit: 'Update the risk information by navigating between tabs.',
-        descNew: 'Navigate between tabs to fill each section. You can fill them in any order you prefer.',
+        descNew: 'Follow the three steps. Required fields are validated before you continue.',
+        saveChanges: 'Save changes',
+        finishCreate: 'Finish registration',
       },
       visuals: {
         score: 'score',

@@ -12,7 +12,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
-import { IconChartLine } from '@/components/icons';
+import { IconAdd, IconChartLine } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { apetiteScoreDaConfig } from '@/components/riscos/matriz-config';
 import {
@@ -56,6 +57,10 @@ export function RiskScoreTimeline() {
   const [period, setPeriod] = useState<TimeRange>('monthly');
   const { data: matriz } = useMatrizConfigEmpresa();
   const apetite = apetiteScoreDaConfig(matriz);
+  const maximoDaEscala = Math.max(
+    1,
+    ...(matriz?.niveis_risco ?? []).map((faixa) => faixa.max),
+  );
   // Mesma chave de query do painel: a composição não custa um pedido extra.
   const { data: stats } = useRiscosStats();
 
@@ -270,6 +275,10 @@ export function RiskScoreTimeline() {
               <p className="text-sm font-medium text-foreground">{t('dashWidgets.timeline.emptyTitle')}</p>
               <p className="text-xs text-muted-foreground">{t('dashWidgets.timeline.emptyDescription')}</p>
             </div>
+            <Button size="sm" onClick={() => navigate('/riscos?action=new')}>
+              <IconAdd className="mr-2 h-4 w-4" />
+              {t('dashWidgets.timeline.emptyAction')}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -303,7 +312,6 @@ export function RiskScoreTimeline() {
 
     Só a severidade tem escala semântica: o resto do conjunto vai a cinzento.
   */
-  const outros = Math.max((stats?.medios ?? 0) + (stats?.baixos ?? 0), 0);
   const segmentos: Segmento[] = [
     {
       id: 'critico',
@@ -320,12 +328,18 @@ export function RiskScoreTimeline() {
       onClick: () => navigate('/riscos?nivel=alto'),
     },
     {
-      // Médio e baixo juntos: não há um valor de nível que os cubra aos dois,
-      // e prometer um filtro que não existe é pior do que não o oferecer.
-      id: 'outros',
-      label: t('dashWidgets.timeline.sevOutros'),
-      valor: outros,
-      cor: 'bg-muted-foreground/30',
+      id: 'medio',
+      label: t('dashWidgets.timeline.sevMedio'),
+      valor: stats?.medios ?? 0,
+      cor: 'bg-severity-medium',
+      onClick: () => navigate('/riscos?nivel=medio'),
+    },
+    {
+      id: 'baixo',
+      label: t('dashWidgets.timeline.sevBaixo'),
+      valor: stats?.baixos ?? 0,
+      cor: 'bg-severity-low',
+      onClick: () => navigate('/riscos?nivel=baixo'),
     },
   ];
 
@@ -341,6 +355,23 @@ export function RiskScoreTimeline() {
       />
     ) : null;
 
+  let scoreAnterior: number | null = null;
+  const pontosComComparacao = displayData.map((p) => {
+    const variacao = p.score === null || scoreAnterior === null
+      ? null
+      : Math.round((p.score - scoreAnterior) * 10) / 10;
+    if (p.score !== null) scoreAnterior = p.score;
+    return { label: p.date, valor: p.score, variacao };
+  });
+
+  const insight = !delta
+    ? t('dashWidgets.timeline.insightNoComparison')
+    : delta.value === 0
+      ? t('dashWidgets.timeline.insightStable')
+      : delta.value < 0
+        ? t('dashWidgets.timeline.insightImproved', { value: Math.abs(delta.value) })
+        : t('dashWidgets.timeline.insightWorsened', { value: Math.abs(delta.value) });
+
   return (
     <TrendAreaChart
       className="h-full w-full"
@@ -348,8 +379,14 @@ export function RiskScoreTimeline() {
       valor={latestScore}
       sufixo={t('dashWidgets.timeline.sufixoScoreMedio')}
       delta={delta ? delta.value : null}
-      pontos={displayData.map((p) => ({ label: p.date, valor: p.score }))}
+      insight={insight}
+      pontos={pontosComComparacao}
+      escala={[0, maximoDaEscala]}
+      mostrarEixoY
+      meta={apetite === null ? null : { valor: apetite, label: t('dashWidgets.timeline.goal', { value: apetite }) }}
       tooltipLabel={t('dashWidgets.timeline.tooltipTotal')}
+      tooltipSerieLabel={t('dashWidgets.timeline.sufixoScoreMedio')}
+      tooltipVariationLabel={t('dashWidgets.timeline.vsPrevious')}
       divisao={divisaoDoPonto}
       tooltipValor={totalDoPonto}
       seletor={seletorPeriodo}

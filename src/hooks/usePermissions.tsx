@@ -14,6 +14,79 @@ interface ModulePermission {
   can_delete: boolean;
 }
 
+/*
+  `usePermissions` é usado pelo layout, rota protegida, menu e atalhos. Cada
+  montagem fazia a mesma consulta de permissões e a mesma RPC do plano; no Gap
+  Analysis foram observadas várias leituras idênticas em paralelo, todas com
+  ~600 ms. Este cache compartilha tanto o resultado quanto a promessa em voo.
+*/
+let permissionsCache: { userId: string; data: ModulePermission[] } | null = null;
+let permissionsInFlight: { userId: string; promise: Promise<ModulePermission[]> } | null = null;
+const modulesCache = new Map<string, string[] | null>();
+const modulesInFlight = new Map<string, Promise<string[] | null>>();
+
+const readPermissions = (userId: string, force = false): Promise<ModulePermission[]> => {
+  if (!force && permissionsCache?.userId === userId) return Promise.resolve(permissionsCache.data);
+  if (!force && permissionsInFlight?.userId === userId) return permissionsInFlight.promise;
+
+  const promise = measurePerformance(
+    'fetchUserPermissions',
+    async () => await supabase
+        .from('user_module_permissions')
+        .select(`
+          module_id,
+          can_access,
+          can_create,
+          can_read,
+          can_update,
+          can_delete,
+          system_modules:module_id (
+            name
+          )
+        `)
+        .eq('user_id', userId),
+    { userId, module: 'permissions' },
+  ).then(({ data, error }) => {
+    if (error) throw error;
+    const formatted: ModulePermission[] = (data || []).map((perm: any) => ({
+      module_id: perm.module_id,
+      module_name: perm.system_modules?.name || '',
+      can_access: perm.can_access,
+      can_create: perm.can_create,
+      can_read: perm.can_read,
+      can_update: perm.can_update,
+      can_delete: perm.can_delete,
+    }));
+    permissionsCache = { userId, data: formatted };
+    logger.info('User permissions loaded', {
+      userId,
+      permissionsCount: formatted.length,
+      module: 'permissions',
+    });
+    return formatted;
+  }).finally(() => {
+    if (permissionsInFlight?.promise === promise) permissionsInFlight = null;
+  });
+
+  permissionsInFlight = { userId, promise };
+  return promise;
+};
+
+const readCompanyModules = (empresaId: string): Promise<string[] | null> => {
+  if (modulesCache.has(empresaId)) return Promise.resolve(modulesCache.get(empresaId) ?? null);
+  const current = modulesInFlight.get(empresaId);
+  if (current) return current;
+  const promise = (async () => {
+    const { data, error } = await supabase.rpc('modulos_da_empresa');
+    if (error) throw error;
+    const modules = (data as string[] | null) ?? null;
+    modulesCache.set(empresaId, modules);
+    return modules;
+  })().finally(() => modulesInFlight.delete(empresaId));
+  modulesInFlight.set(empresaId, promise);
+  return promise;
+};
+
 interface UsePermissionsReturn {
   permissions: ModulePermission[];
   /**
@@ -64,43 +137,9 @@ export const usePermissions = (): UsePermissionsReturn => {
     try {
       logger.debug('Fetching user permissions', { userId: user.id, module: 'permissions' });
 
-      const { data, error } = await measurePerformance(
-        'fetchUserPermissions',
-        () => supabase
-          .from('user_module_permissions')
-          .select(`
-            module_id,
-            can_access,
-            can_create,
-            can_read,
-            can_update,
-            can_delete,
-            system_modules:module_id (
-              name
-            )
-          `)
-          .eq('user_id', user.id),
-        { userId: user.id, module: 'permissions' }
-      );
-
-      if (error) throw error;
-
-      const formattedPermissions: ModulePermission[] = data.map((perm: any) => ({
-        module_id: perm.module_id,
-        module_name: perm.system_modules?.name || '',
-        can_access: perm.can_access,
-        can_create: perm.can_create,
-        can_read: perm.can_read,
-        can_update: perm.can_update,
-        can_delete: perm.can_delete,
-      }));
+      const formattedPermissions = await readPermissions(user.id);
 
       setPermissions(formattedPermissions);
-      logger.info('User permissions loaded', { 
-        userId: user.id, 
-        permissionsCount: formattedPermissions.length,
-        module: 'permissions'
-      });
       setErroAoLer(false);
     } catch (error) {
       logger.error('Error fetching permissions', { 
@@ -129,28 +168,28 @@ export const usePermissions = (): UsePermissionsReturn => {
      ler `planos` — a tabela não é legível por quem não é administrador. */
   useEffect(() => {
     let vivo = true;
-    if (!user) {
+    const empresaId = profile?.empresa_id;
+    if (!user || !empresaId) {
       setModulosDoPlano(null);
       return;
     }
-    supabase.rpc('modulos_da_empresa').then(({ data, error }) => {
+    readCompanyModules(empresaId).then((data) => {
       if (!vivo) return;
-      if (error) {
-        logger.error('Falha ao ler os módulos do plano', {
-          error: error.message,
-          module: 'permissions',
-        });
-        /* Falhar aberto: um erro de leitura não pode tirar o produto a
-           ninguém. Quem manda de verdade é a RLS do banco. */
-        setModulosDoPlano(null);
-        return;
-      }
-      setModulosDoPlano((data as string[] | null) ?? null);
+      setModulosDoPlano(data);
+    }).catch((error) => {
+      if (!vivo) return;
+      logger.error('Falha ao ler os módulos do plano', {
+        error: error instanceof Error ? error.message : String(error),
+        module: 'permissions',
+      });
+      /* Falhar aberto: um erro de leitura não pode tirar o produto a
+         ninguém. Quem manda de verdade é a RLS do banco. */
+      setModulosDoPlano(null);
     });
     return () => {
       vivo = false;
     };
-  }, [user]);
+  }, [user, profile?.empresa_id]);
 
   // Memoizar o mapa de permissões para melhor performance
   const permissionsMap = useMemo(() => {
@@ -215,8 +254,27 @@ export const usePermissions = (): UsePermissionsReturn => {
 
   const refetchPermissions = useCallback(async () => {
     setLoading(true);
+    if (user) {
+      permissionsCache = null;
+      try {
+        const fresh = await readPermissions(user.id, true);
+        setPermissions(fresh);
+        setErroAoLer(false);
+      } catch (error) {
+        logger.error('Error refetching permissions', {
+          error: error instanceof Error ? error.message : String(error),
+          userId: user.id,
+          module: 'permissions',
+        });
+        setPermissions([]);
+        setErroAoLer(true);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     await fetchPermissions();
-  }, [fetchPermissions]);
+  }, [fetchPermissions, user]);
 
   return {
     permissions,

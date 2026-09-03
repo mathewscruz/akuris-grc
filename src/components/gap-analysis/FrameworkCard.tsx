@@ -1,15 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { FrameworkLogo } from "./FrameworkLogos";
-import {
-  CATEGORY_BADGE_CLASS,
-  getCategory,
-  getEffortLevel,
-  type FrameworkCategory,
-} from "@/lib/gap-analysis-tokens";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { IconArrowRight, IconShield, IconLock, IconScale, IconOrg, IconWarning, IconChecklist, IconLeaf } from '@/components/icons';
+import { IconArrowRight } from '@/components/icons';
 
 interface FrameworkCardProps {
   id: string;
@@ -20,16 +13,6 @@ interface FrameworkCardProps {
   requirementCount: number;
   onClick: () => void;
 }
-
-const CATEGORY_ICON: Record<FrameworkCategory, React.ElementType> = {
-  seguranca: IconShield,
-  privacidade: IconLock,
-  risco: IconWarning,
-  governanca: IconOrg,
-  compliance: IconScale,
-  qualidade: IconChecklist,
-  ambiente: IconLeaf,
-};
 
 const FRAMEWORK_AUDIENCE_KEYS: Record<string, string> = {
   'ISO 27001': 'iso27001Short',
@@ -57,10 +40,6 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
   requirementCount,
   onClick,
   } = props;
-  // Available variant - compact card with category tag and effort
-  const cat = getCategory(tipo_framework);
-  const CategoryIcon = CATEGORY_ICON[cat];
-  const effort = getEffortLevel(requirementCount);
   const audience = FRAMEWORK_AUDIENCE_KEYS[nome];
 
   return (
@@ -68,15 +47,8 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
       className="group hover:shadow-elegant hover:border-primary/30 transition-ui duration-200 cursor-pointer h-full flex flex-col"
       onClick={onClick}
     >
-      <div className="p-3 pb-0">
-        <Badge variant="outline" className={`text-micro px-1.5 py-0 inline-flex items-center gap-1 ${CATEGORY_BADGE_CLASS[cat]}`}>
-          <CategoryIcon className="h-2.5 w-2.5" strokeWidth={1.5} />
-          {t(`gapAnalysis.frameworks.category.${cat}`)}
-        </Badge>
-      </div>
-
-      <div className="flex justify-center pt-3 pb-2">
-        <FrameworkLogo nome={nome} tipo={tipo_framework} className="h-10 w-10" />
+      <div className="flex justify-center pt-4 pb-2">
+        <FrameworkLogo nome={nome} tipo={tipo_framework} className="h-14 w-14" />
       </div>
 
       <div className="text-center px-3 pb-1">
@@ -94,10 +66,6 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
 
       <div className="px-3 py-2 flex items-center justify-center gap-2">
         <span className="text-xs text-muted-foreground">{t('gapAnalysis.card.requirementsCount', { count: requirementCount })}</span>
-        <span className="text-muted-foreground">·</span>
-        <Badge variant={effort.variant} className="text-micro px-1.5 py-0">
-          {t('gapAnalysis.card.effort', { label: effort.label })}
-        </Badge>
       </div>
 
       <div className="flex justify-center p-3 pt-0">

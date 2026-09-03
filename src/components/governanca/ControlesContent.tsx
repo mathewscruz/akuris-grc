@@ -423,7 +423,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       render: (value: any, controle: Controle) => (
         <button
           type="button"
-          className="font-medium text-left hover:text-primary hover:underline transition-colors"
+          className="inline-flex min-h-10 w-full items-center text-left font-medium transition-colors hover:text-primary hover:underline"
           onClick={(e) => {
             e.stopPropagation();
             handleOpenDetail(controle);

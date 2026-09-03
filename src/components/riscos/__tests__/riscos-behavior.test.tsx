@@ -15,6 +15,30 @@ vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: { auth: { getUser }, from },
 }));
+vi.mock('@/components/ui/dropdown-menu', async () => {
+  const ReactModule = await import('react');
+  const Container = ({ children }: React.PropsWithChildren) =>
+    ReactModule.createElement('div', null, children);
+  const Trigger = ({ children }: React.PropsWithChildren) =>
+    ReactModule.createElement('button', { type: 'button' }, children);
+  const Item = ReactModule.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    onSelect?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  }>(({ children, onSelect, ...props }, ref) =>
+    ReactModule.createElement('button', {
+      ...props,
+      ref,
+      role: 'menuitem',
+      type: 'button',
+      onClick: onSelect,
+    }, children));
+
+  return {
+    DropdownMenu: Container,
+    DropdownMenuContent: Container,
+    DropdownMenuTrigger: Trigger,
+    DropdownMenuItem: Item,
+  };
+});
 
 import { RiscoComentarios } from '../RiscoComentarios';
 import { TratadoBlockedOption } from '../RiscoDetailDrawer';

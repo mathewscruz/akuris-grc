@@ -23,7 +23,6 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) return new Response(JSON.stringify({ error: "Email service not configured" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     /*
       Quem chama tem de pertencer à empresa do destinatário.
@@ -36,24 +35,63 @@ const handler = async (req: Request): Promise<Response> => {
     */
     const ctx = await requireUserContext(req);
 
-    const resend = new Resend(resendApiKey);
     const { controle_id, controle_nome, controle_descricao, proxima_avaliacao, responsavel_id }: NotificationRequest = await req.json();
 
     if (!controle_id || !responsavel_id || !controle_nome) return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
+    const { data: responsavelData, error: responsavelError } = await supabase
+      .from("profiles")
+      .select("nome, email, empresa_id, notificar_por_email, notificar_na_aplicacao")
+      .eq("user_id", responsavel_id)
+      .single();
     if (responsavelError || !responsavelData) return new Response(JSON.stringify({ error: "Responsible user not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
-    if (!responsavelData.email) return new Response(JSON.stringify({ error: "Responsible user has no email" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
     if (!ctx.empresaId || responsavelData.empresa_id !== ctx.empresaId) return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
-    let companyName = "Akuris";
-
-    if (responsavelData.empresa_id) {
-      const { data: empresaData } = await supabase.from("empresas").select("nome").eq("id", responsavelData.empresa_id).single();
-      if (empresaData) { companyName = empresaData.nome || companyName; }
+    // O aviso dentro do Akuris não depende do provedor de e-mail. Antes, uma
+    // chave ausente ou uma rejeição do Resend impedia também esta notificação.
+    let appSent = false;
+    if (responsavelData.notificar_na_aplicacao !== false) {
+      const { error: appError } = await supabase.from("notifications").insert({
+        user_id: responsavel_id,
+        type: "info",
+        title: "Novo controle atribuído",
+        message: `Você foi designado como responsável pelo controle: ${controle_nome}`,
+        link_to: `/governanca?tab=controles&controle=${controle_id}`,
+        read: false,
+      });
+      if (appError) throw appError;
+      appSent = true;
     }
+
+    if (responsavelData.notificar_por_email === false) {
+      return new Response(JSON.stringify({
+        success: true,
+        app_sent: appSent,
+        email_sent: false,
+        email_reason: "preference_disabled",
+      }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    if (!responsavelData.email) {
+      return new Response(JSON.stringify({
+        success: true,
+        app_sent: appSent,
+        email_sent: false,
+        email_reason: "missing_address",
+      }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY ausente: controle salvo, e-mail não enviado");
+      return new Response(JSON.stringify({
+        success: true,
+        app_sent: appSent,
+        email_sent: false,
+        email_reason: "service_not_configured",
+      }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    const resend = new Resend(resendApiKey);
 
     const formatDate = (dateStr?: string): string => {
       if (!dateStr) return "Não definida";
@@ -95,22 +133,29 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    const emailResponse = await resend.emails.send({
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'Akuris <noreply@akuris.com.br>',
       to: [responsavelData.email],
       subject: `[Akuris] Você foi designado como responsável: ${controle_nome}`,
       html: htmlContent,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    if (emailError) {
+      console.error("Resend rejeitou o e-mail de atribuição do controle", emailError);
+      return new Response(JSON.stringify({
+        error: "Email provider rejected the message",
+        app_sent: appSent,
+        email_sent: false,
+      }), { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
 
-    await supabase.from("notifications").insert({
-      user_id: responsavel_id, type: "info", title: "Novo controle atribuído",
-      message: `Você foi designado como responsável pelo controle: ${controle_nome}`,
-      link_to: `/governanca?tab=controles&controle=${controle_id}`, read: false,
-    });
-
-    return new Response(JSON.stringify({ success: true, emailResponse }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    console.log("Email sent successfully:", emailData);
+    return new Response(JSON.stringify({
+      success: true,
+      app_sent: appSent,
+      email_sent: true,
+      email_id: emailData?.id ?? null,
+    }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
   } catch (error: any) {
     console.error("Error in send-controle-notification:", error);
     // Falha de autenticação responde 401/403, não 500.

@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { DataTable, Column } from '@/components/ui/data-table';
+import { DensityToggle } from '@/components/ui/density-toggle';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -22,7 +23,7 @@ import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
 import { PlanosAcaoKanban, PLANO_STATUS_EDITAVEIS } from '@/components/planos-acao/PlanosAcaoKanban';
 import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailDrawer';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { formatDateOnly, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
@@ -136,7 +137,9 @@ export default function PlanosAcao() {
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'lista' | 'kanban'>('lista');
-  const [activeTab, setActiveTab] = useState('meus');
+  // Administradores chegam na visão consolidada que o dashboard resume.
+  // Usuários comuns continuam começando pelo que está atribuído a eles.
+  const [activeTab, setActiveTab] = useState(() => isAdmin ? 'todos' : 'meus');
 
   // Planos de ação nativos
   /*
@@ -390,10 +393,33 @@ export default function PlanosAcao() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
+    const targetId = deleteId;
     try {
-      const { error } = await supabase.from('planos_acao').delete().eq('id', deleteId).eq('empresa_id', empresaId);
+      // Guardamos a linha exata antes da exclusão para que "Desfazer" seja uma
+      // recuperação real, inclusive após o refetch da lista.
+      const { data: snapshot } = await supabase
+        .from('planos_acao')
+        .select('*')
+        .eq('id', targetId)
+        .eq('empresa_id', empresaId)
+        .maybeSingle();
+      const { error } = await supabase.from('planos_acao').delete().eq('id', targetId).eq('empresa_id', empresaId);
       if (error) throw error;
-      toast.success(t('planosAcao.toastDeleted'));
+      toast.success(t('planosAcao.toastDeleted'), snapshot ? {
+        duration: 6000,
+        action: {
+          label: t('common.undo'),
+          onClick: async () => {
+            const { error: restoreError } = await supabase.from('planos_acao').insert(snapshot);
+            if (restoreError) {
+              logger.error('Erro ao restaurar plano', restoreError);
+              toast.error(t('toasts.genericError'));
+              return;
+            }
+            queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
+          },
+        },
+      } : undefined);
       queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
     } catch (error) {
       logger.error('Erro ao excluir plano', error);
@@ -431,7 +457,12 @@ export default function PlanosAcao() {
       logger.error('Erro ao atualizar status do plano de ação', error);
       queryClient.setQueryData(key, anterior);
       setDetailPlano((d: any) => (d && d.id === item.id ? { ...d, status: item.status, _displayStatus: item._displayStatus } : d));
-      toast.error(t('planosAcao.statusUpdateError'));
+      toast.error(t('planosAcao.statusUpdateError'), {
+        action: {
+          label: t('common.tryAgain'),
+          onClick: () => void handleStatusChange(item, novoStatus),
+        },
+      });
       return;
     }
 
@@ -455,7 +486,13 @@ export default function PlanosAcao() {
       sortable: true,
       render: (_: any, item: any) => (
         <div className="min-w-[220px] max-w-[420px]">
-          <p className="font-medium whitespace-normal break-words line-clamp-2">{item.titulo}</p>
+          <button
+            type="button"
+            className="min-h-10 text-left font-medium whitespace-normal break-words line-clamp-2 text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            onClick={(event) => { event.stopPropagation(); setDetailPlano(item); }}
+          >
+            {item.titulo}
+          </button>
           {item.registro_origem_titulo && (
             <p className="text-xs text-muted-foreground whitespace-normal break-words line-clamp-2">
               ↳ {moduloLabels[item.modulo_origem] || item.modulo_origem}: {item.registro_origem_titulo}
@@ -466,6 +503,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('planosAcao.columnStatus'),
       sortable: true,
       render: (_: any, item: any) => {
@@ -475,6 +513,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'prioridade',
+      mobilePriority: 1,
       label: t('planosAcao.columnPriority'),
       sortable: true,
       render: (val: string) => {
@@ -484,6 +523,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'responsavel_id',
+      mobilePriority: 3,
       label: t('planosAcao.columnResponsible'),
       render: (_: any, item: any) => (
         <span className="text-sm">{item.profiles?.nome || '-'}</span>
@@ -491,6 +531,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'prazo',
+      mobilePriority: 2,
       label: t('planosAcao.columnDeadline'),
       sortable: true,
       render: (val: string, item: any) => {
@@ -505,6 +546,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'modulo_origem',
+      mobilePriority: 4,
       label: t('planosAcao.columnOrigin'),
       render: (val: string, item: any) => (
         <Chip family="category">
@@ -544,7 +586,7 @@ export default function PlanosAcao() {
                     className={item.status === s ? 'font-semibold' : ''}
                   >
                     {statusConfig[s]?.label}
-                    {item.status === s && <span className="ml-auto text-primary">✓</span>}
+                    {item.status === s && <IconSuccess className="ml-auto h-4 w-4 text-primary" />}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
@@ -673,12 +715,15 @@ export default function PlanosAcao() {
               </>
             }
             viewSwitcher={
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'lista' | 'kanban')}>
-                <TabsList>
-                  <TabsTrigger value="lista"><IconList className="h-4 w-4 mr-1.5" />{t('planosAcao.viewList')}</TabsTrigger>
-                  <TabsTrigger value="kanban"><IconGrid className="h-4 w-4 mr-1.5" />{t('planosAcao.viewKanban')}</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="flex items-end gap-2">
+                <DensityToggle className="hidden md:inline-flex" />
+                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'lista' | 'kanban')}>
+                  <TabsList>
+                    <TabsTrigger value="lista"><IconList className="h-4 w-4 mr-1.5" />{t('planosAcao.viewList')}</TabsTrigger>
+                    <TabsTrigger value="kanban"><IconGrid className="h-4 w-4 mr-1.5" />{t('planosAcao.viewKanban')}</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             }
           />
               </div>
@@ -690,6 +735,7 @@ export default function PlanosAcao() {
                 // traz uma por omissão e o ecrã ficava com dois campos
                 // empilhados, o de baixo sem rótulo nenhum.
                 searchable={false}
+                showDensityToggle={false}
                 // A busca e os filtros vivem no `ModuleToolbar` acima; sem
                 // isto a tabela não sabia que estavam activos e o ecrã
                 // vazio dizia «Você não possui itens pendentes» a quem

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconWarning, IconLock } from '@/components/icons';
+import { IconWarning, IconLock, IconMore } from '@/components/icons';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -23,11 +23,9 @@ import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { InstallAppPrompt } from '@/components/pwa/InstallAppPrompt';
-import { AkurIAChatbot } from '@/components/dashboard/AkurIAChatbot';
 import { AkurIAActionListener } from '@/components/dashboard/akuria/AkurIAActionListener';
 
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
-import { prefetchAllRoutes } from '@/lib/route-prefetch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { differenceInDays, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -36,13 +34,27 @@ import akurisLogo from '@/assets/akuris-logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { KpiDrillDownProvider } from '@/components/dashboard/KpiDrillDownProvider';
+import { DevelopmentCompanySwitcher } from '@/components/DevelopmentCompanySwitcher';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+const AkurIAChatbot = React.lazy(() =>
+  import('@/components/dashboard/AkurIAChatbot').then((module) => ({ default: module.AkurIAChatbot })),
+);
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, loading, hasTemporaryPassword, checkTemporaryPassword, company, signOut } = useAuth();
+  const {
+    user,
+    loading,
+    hasTemporaryPassword,
+    checkTemporaryPassword,
+    company,
+    signOut,
+    developmentCompanySwitchEnabled,
+  } = useAuth();
   const navigate = useNavigate();
   /* O logótipo leva ao início de QUEM está: um cliente só-canal não tem painel. */
   const { rota: rotaInicial } = useRotaInicial();
@@ -50,21 +62,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const breadcrumbs = useBreadcrumb();
   const isMobile = useIsMobile();
   const { t } = useLanguage();
+  const [akuriaMounted, setAkuriaMounted] = React.useState(false);
+
+  const openAkuria = () => {
+    if (akuriaMounted) {
+      window.dispatchEvent(new Event('akuria:open'));
+      return;
+    }
+    setAkuriaMounted(true);
+  };
   
   // Timeout de sessão por inatividade
   useInactivityTimeout();
 
-  // Prefetch all module chunks during idle time after login,
-  // so navigating into any module is instant on first click.
-  React.useEffect(() => {
-    if (user) prefetchAllRoutes();
-  }, [user]);
-
   // Verificar se a empresa está inativa
-  const isCompanyInactive = company && company.ativo === false;
+  const isCompanyInactive = company && company.ativo === false && !developmentCompanySwitchEnabled;
 
   // Verificar se o trial expirou
   const isTrialExpired = React.useMemo(() => {
+    if (developmentCompanySwitchEnabled) return false;
     if (!company) return false;
     if (company.status_licenca !== 'trial') return false;
     if (!company.data_inicio_trial) return false;
@@ -72,7 +88,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const trialStartDate = parseISO(company.data_inicio_trial);
     const diasDecorridos = differenceInDays(new Date(), trialStartDate);
     return diasDecorridos >= 14;
-  }, [company]);
+  }, [company, developmentCompanySwitchEnabled]);
 
   if (loading) {
     return <PageSkeleton />;
@@ -220,11 +236,56 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
+              <DevelopmentCompanySwitcher />
               <div className="hidden sm:flex"><CommandPaletteButton /></div>
-              <LanguageSelector variant="app" />
-              <ThemeToggle />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={openAkuria}
+                aria-label={t('dashWidgets.akuria.openAssistant')}
+                title={t('dashWidgets.akuria.openAssistant')}
+              >
+                <img
+                  src="/akuris-favicon.png"
+                  alt=""
+                  className="h-6 w-6 rounded-full animate-spin-burst motion-reduce:animate-none"
+                />
+              </Button>
               <NotificationCenter />
-              <UserProfile />
+              {!isMobile && <div className="hidden items-center gap-2 md:flex">
+                <LanguageSelector variant="app" />
+                <ThemeToggle />
+                <UserProfile />
+              </div>}
+              {isMobile && <div className="md:hidden">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('layout.moreOptions')}
+                      title={t('layout.moreOptions')}
+                    >
+                      <IconMore className="h-5 w-5" strokeWidth={1.5} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-[min(20rem,calc(100vw-2rem))] space-y-2 p-3">
+                    <div className="flex min-h-11 items-center justify-between gap-3 border-b pb-2">
+                      <span className="text-sm font-medium text-muted-foreground">{t('language.selector')}</span>
+                      <LanguageSelector variant="app" />
+                    </div>
+                    <div className="flex min-h-11 items-center justify-between gap-3 border-b pb-2">
+                      <span className="text-sm font-medium text-muted-foreground">{t('theme.appearance')}</span>
+                      <ThemeToggle />
+                    </div>
+                    <div className="[&_button]:w-full [&_button]:justify-start">
+                      <UserProfile />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>}
             </div>
           </header>
 
@@ -265,8 +326,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Convite para criar o atalho do Akuris no ecrã inicial */}
         <InstallAppPrompt />
 
-        {/* AkurIA — assistente global em todas as páginas */}
-        <AkurIAChatbot />
+        {/* O assistente só baixa o editor Markdown e o histórico depois do
+            primeiro clique. O botão vive no cabeçalho e não cobre tabelas. */}
+        {akuriaMounted && (
+          <React.Suspense fallback={null}>
+            <AkurIAChatbot initialOpen />
+          </React.Suspense>
+        )}
         <AkurIAActionListener />
       </div>
     </SidebarProvider>

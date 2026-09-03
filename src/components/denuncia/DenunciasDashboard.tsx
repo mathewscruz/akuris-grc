@@ -198,7 +198,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
 
   // Filtrar e ordenar denúncias
   const filteredAndSortedDenuncias = useMemo(() => {
-    let filtered = denuncias.filter(denuncia => {
+    const filtered = denuncias.filter(denuncia => {
       const matchesSearch = searchTerm === '' || 
         denuncia.protocolo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         denuncia.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||

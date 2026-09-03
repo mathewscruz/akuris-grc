@@ -43,7 +43,10 @@ export function ModuleToolbar({
   const { t } = useLanguage()
   const showSearch = typeof onSearchChange === "function"
 
-  const hasFilters = Boolean(filters)
+  // Um array vazio e um Fragment vazio são truthy em JavaScript. Contar os
+  // filhos evita desenhar o segundo botão "Filtros" nas páginas que já têm a
+  // sua própria barra (Planos de Ação era o caso visível no telemóvel).
+  const hasFilters = React.Children.count(filters) > 0
   /* Abre já aberto quando há filtro aplicado: esconder o que está a mexer no
      resultado seria a mesma mentira, com outra roupa. */
   const [filtrosAbertos, setFiltrosAbertos] = React.useState(activeFilterCount > 0)
@@ -51,7 +54,7 @@ export function ModuleToolbar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 md:flex-row md:items-start md:justify-between",
+        "flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between",
         className
       )}
       {...props}
@@ -94,7 +97,7 @@ export function ModuleToolbar({
         A partir de `md` nada muda: os filtros estão sempre à vista, que é onde
         há largura para eles.
       */}
-      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-end">
+      <div className="flex w-full flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between xl:w-auto xl:justify-end">
         {hasFilters && (
           <Button
             type="button"
@@ -165,4 +168,3 @@ export function ToolbarField({
   )
 
 }
-

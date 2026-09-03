@@ -200,7 +200,7 @@ export default function AtivosLicencas() {
 
   // Filtrar e ordenar licenças
   const filteredAndSortedLicencas = useMemo(() => {
-    let filtered = licencas.filter(licenca => {
+    const filtered = licencas.filter(licenca => {
       const matchesSearch = searchTerm === '' || 
         licenca.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         licenca.tipo_licenca.toLowerCase().includes(searchTerm.toLowerCase()) ||

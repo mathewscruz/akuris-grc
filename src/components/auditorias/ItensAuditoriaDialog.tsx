@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ItemAuditoriaFormDialog } from "./ItemAuditoriaFormDialog";
 import { ItemAuditoriaDetalheDialog } from "./ItemAuditoriaDetalheDialog";
 import { ImportarControlesDialog } from "./ImportarControlesDialog";
@@ -226,12 +226,19 @@ export function ItensAuditoriaDialog({
   const handleFormSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["auditoria-itens", auditoriaId] });
     queryClient.invalidateQueries({ queryKey: ["auditoria-itens-count", auditoriaId] });
+    // Criar/editar um item vinculado atualiza `controles_auditorias` por
+    // gatilho. Sem invalidar esse cache, o filtro "Auditoria" da tabela de
+    // controles continuava usando os vínculos anteriores até recarregar.
+    queryClient.invalidateQueries({ queryKey: ["controles-auditorias-vinculos"] });
+    queryClient.invalidateQueries({ queryKey: ["auditorias-counts"] });
     setIsFormOpen(false);
   };
 
   const handleDetalheSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["auditoria-itens", auditoriaId] });
     queryClient.invalidateQueries({ queryKey: ["auditoria-itens-contagens", auditoriaId] });
+    queryClient.invalidateQueries({ queryKey: ["controles-auditorias-vinculos"] });
+    queryClient.invalidateQueries({ queryKey: ["auditorias-counts"] });
   };
 
   const getStatusBadge = (status: string) => {

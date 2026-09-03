@@ -32,7 +32,7 @@ interface Props {
 }
 
 export function PanelAction({ children, onClick, limpo, className }: Props) {
-  const base = 'flex w-full items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs';
+  const base = 'flex min-h-10 w-full items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs';
 
   if (limpo) {
     return (

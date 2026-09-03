@@ -49,7 +49,7 @@ const DESLIGADO_PARA_SEMPRE = [
    fosse e passou a estar verde por nao ver nada. Um teste que nao pode
    falhar nao esta a guardar coisa nenhuma.
 */
-const ACIONAVEL = /<(button|Button|ViewBtn|IconButton)/;
+const ACIONAVEL = /<(button|Button|ViewBtn|IconButton)\b/;
 
 /**
  * Texto sem comentários.

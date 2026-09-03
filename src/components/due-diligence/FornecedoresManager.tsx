@@ -237,7 +237,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
         if (!key) return;
         const existing = assessmentMap.get(key) || { total: 0, lastScore: null, pending: 0 };
         existing.total++;
-        if (a.status === 'concluido' && a.score_final) {
+        if (a.status === 'concluido' && a.score_final != null) {
           existing.lastScore = a.score_final;
         }
         if (a.status !== 'concluido') {
@@ -453,14 +453,19 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
       key: 'nome',
       label: t('dueDiligence.fornecedoresManager.colNome'),
       sortable: true,
+      className: 'max-w-[280px]',
       render: (_: any, f: any) => (
-        <span className={f.status === 'inativo' ? 'text-muted-foreground' : 'font-medium'}>
+        <span
+          className={`block max-w-[260px] truncate ${f.status === 'inativo' ? 'text-muted-foreground' : 'font-medium'}`}
+          title={f.nome}
+        >
           {f.nome}
         </span>
       ),
     },
     {
       key: 'cnpj',
+      mobilePriority: 5,
       label: t('dueDiligence.fornecedoresManager.colCnpj'),
       sortable: true,
       render: (_: any, f: any) => (
@@ -469,12 +474,14 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     },
     {
       key: 'categoria',
+      mobilePriority: 6,
       label: t('dueDiligence.fornecedoresManager.colCategoria'),
       sortable: true,
       render: (_: any, f: any) => (f.categoria ? formatStatus(f.categoria) : '-'),
     },
     {
       key: 'tipo',
+      mobilePriority: 7,
       label: t('dueDiligence.fornecedoresManager.colTipo'),
       sortable: true,
       render: (_: any, f: any) =>
@@ -484,11 +491,13 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     },
     {
       key: 'email',
+      mobilePriority: 3,
       label: t('dueDiligence.fornecedoresManager.colEmail'),
       render: (_: any, f: any) => f.email || '-',
     },
     {
       key: 'telefone',
+      mobilePriority: 8,
       label: t('dueDiligence.fornecedoresManager.colTelefone'),
       render: (_: any, f: any) => (
         <span className="whitespace-nowrap">{f.telefone || '-'}</span>
@@ -496,6 +505,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     },
     {
       key: 'contratos',
+      mobilePriority: 4,
       label: t('dueDiligence.fornecedoresManager.colContratos'),
       sortable: true,
       render: (_: any, f: any) => (
@@ -504,6 +514,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     },
     {
       key: 'avaliacao_risco',
+      mobilePriority: 1,
       label: t('dueDiligence.fornecedoresManager.colRisco'),
       sortable: true,
       render: (_: any, f: any) =>
@@ -517,11 +528,13 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     },
     {
       key: 'avaliacao',
+      mobilePriority: 2,
       label: t('dueDiligence.fornecedoresManager.colAvaliacao'),
       render: (_: any, f: any) => getRiskBadge(f._assessmentStats),
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('dueDiligence.fornecedoresManager.colStatus'),
       sortable: true,
       render: (_: any, f: any) => (

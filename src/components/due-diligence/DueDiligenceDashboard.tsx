@@ -11,7 +11,7 @@ import { StatStrip } from '@/components/ui/stat-strip';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
-import { startOfDay } from 'date-fns';
+import { differenceInCalendarDays, startOfDay } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DashboardStats {
@@ -21,6 +21,7 @@ interface DashboardStats {
   pendingAssessments: number;
   expiredAssessments: number;
   averageScore: number;
+  scoredAssessments: number;
   recentAssessments: any[];
   totalTemplates: number;
 }
@@ -34,6 +35,7 @@ export function DueDiligenceDashboard() {
     pendingAssessments: 0,
     expiredAssessments: 0,
     averageScore: 0,
+    scoredAssessments: 0,
     recentAssessments: []
   });
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ export function DueDiligenceDashboard() {
         a.status !== 'concluido' && !(a.data_expiracao && parseDataLocal(a.data_expiracao) < now)
       ).length;
       
-      const completedWithScores = assessments.filter(a => a.status === 'concluido' && a.score_final);
+      const completedWithScores = assessments.filter(a => a.status === 'concluido' && a.score_final != null);
       const averageScore = completedWithScores.length > 0 
         // Sem `* 10`: `score_final` já é percentagem. O KPI mostrava 750% para
         // uma avaliação de 75.
@@ -95,6 +97,7 @@ export function DueDiligenceDashboard() {
         pendingAssessments,
         expiredAssessments,
         averageScore,
+        scoredAssessments: completedWithScores.length,
         recentAssessments
       });
     } catch (error: any) {
@@ -112,7 +115,22 @@ export function DueDiligenceDashboard() {
    * uma avaliação cujo prazo é hoje — e com `new Date` cru sobre uma data sem
    * hora ainda perdia um dia por causa do fuso.
    */
-  const isExpired = (date: string) => startOfDay(new Date()) > startOfDay(parseDataLocal(date));
+  const attentionState = (assessment: any) => {
+    if (assessment.status === 'rascunho') {
+      return { tone: 'warning' as const, label: t('dueDiligence.dashboard.readyToSend') };
+    }
+    if (!assessment.data_expiracao) {
+      return { tone: 'warning' as const, label: t('dueDiligence.dashboard.noDeadline') };
+    }
+    const days = differenceInCalendarDays(startOfDay(parseDataLocal(assessment.data_expiracao)), startOfDay(new Date()));
+    if (days < 0) {
+      return { tone: 'destructive' as const, label: t('dueDiligence.dashboard.overdueBy', { count: Math.abs(days) }) };
+    }
+    if (days === 0) {
+      return { tone: 'warning' as const, label: t('dueDiligence.dashboard.dueToday') };
+    }
+    return { tone: 'warning' as const, label: t('dueDiligence.dashboard.awaitingSupplier', { count: days }) };
+  };
 
   return (
     <div className="space-y-4">
@@ -122,7 +140,7 @@ export function DueDiligenceDashboard() {
           { key: 'fornecedores', label: t('dueDiligence.dashboard.statSuppliersTitle'), value: stats.totalFornecedores, drillDown: 'due_diligence_fornecedores' },
           { key: 'concluidos', label: t('dueDiligence.dashboard.statCompletedTitle'), value: stats.completedAssessments, drillDown: 'due_diligence_concluidos' },
           { key: 'expirados', label: t('dueDiligence.dashboard.statExpiredTitle'), value: stats.expiredAssessments, tone: 'destructive', drillDown: 'due_diligence_expirados' },
-          { key: 'scoreMedio', label: t('dueDiligence.dashboard.statAverageScoreTitle'), value: `${stats.averageScore.toFixed(0)}%` },
+          { key: 'scoreMedio', label: t('dueDiligence.dashboard.statAverageScoreTitle'), value: stats.scoredAssessments > 0 ? `${stats.averageScore.toFixed(0)}%` : '—', hint: stats.scoredAssessments > 0 ? undefined : t('dueDiligence.dashboard.noScoreYet') },
         ]}
       />
 
@@ -137,8 +155,10 @@ export function DueDiligenceDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {stats.recentAssessments.map((assessment, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+              {stats.recentAssessments.map((assessment, index) => {
+                const attention = attentionState(assessment);
+                return (
+                <div key={assessment.id ?? index} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <div>
                       <p className="font-medium text-sm">{assessment.fornecedor_nome}</p>
@@ -156,15 +176,13 @@ export function DueDiligenceDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {assessment.data_expiracao && isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
-                      <StatusBadge tone="destructive">{t('dueDiligence.dashboard.expiredBadge')}</StatusBadge>
-                    )}
+                    <StatusBadge tone={attention.tone}>{attention.label}</StatusBadge>
                     <StatusBadge {...resolveDueDiligenceStatusTone(assessment.status)}>
                       {formatStatus(assessment.status)}
                     </StatusBadge>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </CardContent>
         </Card>

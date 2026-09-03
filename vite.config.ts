@@ -55,6 +55,10 @@ export default defineConfig(({ mode }) => ({
         // PDF, importação/exportação de documentos e gráficos), então ficam
         // fora do carregamento inicial e são baixadas sob demanda.
         manualChunks(id) {
+          // O helper de preload do Vite é usado por todo import() dinâmico.
+          // Se ele cair acidentalmente no primeiro vendor manual, esse vendor
+          // vira dependência estática de todas as rotas e deixa de ser lazy.
+          if (id.includes('vite/preload-helper')) return 'vite-runtime';
           if (id.includes("node_modules")) {
             if (
               id.includes("jspdf") ||
@@ -68,6 +72,24 @@ export default defineConfig(({ mode }) => ({
             }
             if (id.includes("recharts") || id.includes("/d3-")) {
               return "charts-vendor";
+            }
+            if (/node_modules[\\/](@radix-ui|cmdk|vaul)[\\/]/.test(id)) {
+              return "ui-vendor";
+            }
+            if (/node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
+              return "react-vendor";
+            }
+            if (/node_modules[\\/](@supabase|@tanstack[\\/]react-query)[\\/]/.test(id)) {
+              return "data-vendor";
+            }
+            if (/node_modules[\\/](react-hook-form|zod|@hookform)[\\/]/.test(id)) {
+              return "forms-vendor";
+            }
+            if (/node_modules[\\/](react-markdown|remark-|rehype-)/.test(id)) {
+              return "markdown-vendor";
+            }
+            if (id.includes("node_modules/date-fns")) {
+              return "date-vendor";
             }
           }
         },

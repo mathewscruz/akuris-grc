@@ -354,6 +354,15 @@ export function Riscos() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (searchParams.get('action') !== 'new') return;
+    setEditingRisco(null);
+    setRiscoDialogOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('action');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   /*
     `?nivel=critico` chega já filtrado por severidade.
 
@@ -623,7 +632,7 @@ export function Riscos() {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setDrawerRiscoId(risco.id); }}
-              className="font-medium text-left hover:text-primary transition-colors truncate"
+              className="inline-flex min-h-10 w-full items-center truncate text-left font-medium transition-colors hover:text-primary"
             >
               {value}
             </button>

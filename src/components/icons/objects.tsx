@@ -355,6 +355,17 @@ export const IconMail = icone(
   <><rect x="3" y="5" width="18" height="14" rx="2.4" /><path d="M3.6 6.6 12 12.8l8.4-6.2" /></>,
 );
 
+/** Bolacha com mordida — cookies e rastreadores web. */
+export const IconCookie = icone(
+  'IconCookie',
+  <>
+    <path d="M20.6 13.1A8.7 8.7 0 1 1 10.9 3.4a4.2 4.2 0 0 0 5.7 4.3 4.2 4.2 0 0 0 4 5.4Z" />
+    <Ponto cx={8.6} cy={9.3} r={1.05} />
+    <Ponto cx={8.8} cy={15.5} r={1.05} />
+    <Ponto cx={14.1} cy={15.1} r={1.05} />
+  </>,
+);
+
 /** Balão — mensagem, comentário. */
 export const IconMessage = icone(
   'IconMessage',
@@ -598,6 +609,36 @@ export const IconHandshake = icone(
   <><path d="M2.6 10.4 7 7l5 2.6L17 7l4.4 3.4" /><path d="M7 12.4 12 17l5-4.6" /><path d="M12 9.6V17" /></>,
 );
 
+/** Pasta com pega — trabalho, responsabilidade profissional. */
+export const IconBriefcase = icone(
+  'IconBriefcase',
+  <>
+    <rect x="3" y="7.2" width="18" height="12.6" rx="2.2" />
+    <path d="M8.4 7.2V5.4A1.8 1.8 0 0 1 10.2 3.6h3.6a1.8 1.8 0 0 1 1.8 1.8v1.8" />
+    <path d="M3 12.2c5.7 2.4 12.3 2.4 18 0" /><path d="M10.2 13.8h3.6" />
+  </>,
+);
+
+/** Pessoa com sinal de adição — admissão, cadastro de colaborador. */
+export const IconUserAdd = icone(
+  'IconUserAdd',
+  <>
+    <circle cx="9" cy="7.4" r="3.4" />
+    <path d="M2.8 20a6.4 6.4 0 0 1 11.4-4" />
+    <path d="M18.2 13.8v6.4M15 17h6.4" />
+  </>,
+);
+
+/** Casa — trabalho remoto e ambiente residencial. */
+export const IconHome = icone(
+  'IconHome',
+  <>
+    <path d="m3.2 10.2 8.8-7 8.8 7" />
+    <path d="M5.4 9.2v11h13.2v-11" />
+    <path d="M9.4 20.2v-6.4h5.2v6.4" />
+  </>,
+);
+
 /** Ponto — marcador neutro. */
 export const IconDot = icone('IconDot', <Ponto cx={12} cy={12} r={3.4} />);
 
@@ -696,6 +737,16 @@ export const IconFramework = icone(
     <rect x="2.6" y="16.4" width="6.4" height="4.6" rx="1.4" />
     <rect x="15" y="16.4" width="6.4" height="4.6" rx="1.4" />
     <path d="M12 7.6v3.4" /><path d="M5.8 16.4v-2.6h12.4v2.6" />
+  </>,
+);
+
+/** Selo com visto — conformidade como disciplina. Diferencia a área de
+ *  Compliance de um simples estado de sucesso (`IconSuccess`). */
+export const IconCompliance = icone(
+  'IconCompliance',
+  <>
+    <path d="M12 2.8 14.4 5l3.2-.1.7 3 2.5 1.9-1.2 2.8 1.2 2.8-2.5 1.9-.7 3-3.2-.1L12 21.2 9.6 19l-3.2.1-.7-3-2.5-1.9 1.2-2.8-1.2-2.8 2.5-1.9.7-3 3.2.1Z" />
+    <path d="m8.3 12.1 2.3 2.3 5-5" />
   </>,
 );
 

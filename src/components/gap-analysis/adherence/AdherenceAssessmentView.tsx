@@ -10,7 +10,7 @@ import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AdherenceAssessmentDialog } from './AdherenceAssessmentDialog';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import type { AdherenceAssessment } from './types';
 import { logger } from '@/lib/logger';
@@ -317,11 +317,15 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
         ) : (
           <div className="text-center py-12">
             <IconFileCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5}/>
-            <p className="text-muted-foreground mb-4">{t('gapAnalysis.adherenceUi.view.noAssessmentsYet')}</p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-              {t('gapAnalysis.adherenceUi.view.createFirstAssessment')}
-            </Button>
+            <p className={embedded ? 'text-muted-foreground' : 'text-muted-foreground mb-4'}>
+              {t('gapAnalysis.adherenceUi.view.noAssessmentsYet')}
+            </p>
+            {!embedded && (
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5}/>
+                {t('gapAnalysis.adherenceUi.view.createFirstAssessment')}
+              </Button>
+            )}
           </div>
         )}
       </Card>

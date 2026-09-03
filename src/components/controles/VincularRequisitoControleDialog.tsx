@@ -10,7 +10,7 @@ import { DialogShell } from '@/components/ui/dialog-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveConformityTone } from '@/lib/status-tone';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useRequisitosDisponiveis, type RequisitoOpcao } from '@/hooks/useRiscoRequisitos';
 import { useControleRequisitos, useSalvarControleRequisitos } from '@/hooks/useControleRequisitos';

@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { IconDelete, IconAdd, IconLock } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly } from '@/lib/date-utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface Acesso {
   id: string;

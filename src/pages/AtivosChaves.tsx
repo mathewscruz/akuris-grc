@@ -201,7 +201,7 @@ export default function AtivosChaves() {
 
   // Filtrar e ordenar chaves
   const filteredAndSortedChaves = useMemo(() => {
-    let filtered = chaves.filter(chave => {
+    const filtered = chaves.filter(chave => {
       const matchesSearch = searchTerm === '' || 
         chave.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         chave.tipo_chave.toLowerCase().includes(searchTerm.toLowerCase()) ||

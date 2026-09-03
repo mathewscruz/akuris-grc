@@ -140,7 +140,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
 
           try {
             switch (vinculacao.modulo) {
-              case 'contrato':
+              case 'contrato': {
                 const { data: contratoData } = await supabase
                   .from('contratos')
                   .select('nome, numero_contrato')
@@ -151,7 +151,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_numero = contratoData.numero_contrato;
                 }
                 break;
-              case 'auditoria':
+              }
+              case 'auditoria': {
                 const { data: auditoriaData } = await supabase
                   .from('auditorias')
                   .select('nome')
@@ -161,7 +162,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_nome = auditoriaData.nome;
                 }
                 break;
-              case 'risco':
+              }
+              case 'risco': {
                 const { data: riscoData } = await supabase
                   .from('riscos')
                   .select('nome')
@@ -171,7 +173,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_nome = riscoData.nome;
                 }
                 break;
-              case 'controle':
+              }
+              case 'controle': {
                 const { data: controleData } = await supabase
                   .from('controles')
                   .select('nome')
@@ -181,7 +184,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_nome = controleData.nome;
                 }
                 break;
-              case 'ativo':
+              }
+              case 'ativo': {
                 const { data: ativoData } = await supabase
                   .from('ativos')
                   .select('nome')
@@ -191,7 +195,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_nome = ativoData.nome;
                 }
                 break;
-              case 'requisito':
+              }
+              case 'requisito': {
                 const { data: reqData } = await supabase
                   .from('gap_analysis_requirements')
                   .select('codigo, titulo')
@@ -202,6 +207,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                   vinculo_numero = reqData.codigo;
                 }
                 break;
+              }
             }
           } catch (error) {
             logger.error('Erro ao buscar detalhes do item vinculado', { error: (error as Error)?.message, module: 'documentos' });

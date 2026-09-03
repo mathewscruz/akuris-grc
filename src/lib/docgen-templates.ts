@@ -4,8 +4,27 @@
  * NÃO contém texto do documento — apenas instruções estruturadas para o assistente.
  */
 
-import type { LucideIcon } from 'lucide-react';
-import { Shield, Lock, KeyRound, Database, AlertTriangle, ScrollText, Cookie, UserCheck, Archive, LifeBuoy, Activity, Siren, Scale, Handshake, Briefcase, UserPlus, Home, MonitorSmartphone } from 'lucide-react';
+import type { ComponentType } from 'react';
+import {
+  IconShield,
+  IconLock,
+  IconKey,
+  IconDatabase,
+  IconWarning,
+  IconFileText,
+  IconCookie,
+  IconUserCheck,
+  IconArchive,
+  IconLifebuoy,
+  IconActivity,
+  IncidentesIcon,
+  IconScale,
+  IconHandshake,
+  IconBriefcase,
+  IconUserAdd,
+  IconHome,
+  IconMonitor,
+} from '@/components/icons';
 
 export type DocTone = 'formal' | 'tecnico' | 'didatico';
 export type DocLanguage = 'pt-BR' | 'en';
@@ -49,7 +68,7 @@ export interface DocGenTemplate {
   label: string;
   description: string;
   category: string;
-  icon: LucideIcon;
+  icon: ComponentType<any>;
   briefingDefaults: BriefingDefaults;
   /** Prompt inicial que será enviado automaticamente para a IA. */
   seedPromptHint: string;
@@ -86,7 +105,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Segurança da Informação (PSI)',
     description: 'Documento mestre alinhado à ISO/IEC 27001 cobrindo princípios, papéis e responsabilidades.',
     category: 'seguranca',
-    icon: Shield,
+    icon: IconShield,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -101,7 +120,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Senhas',
     description: 'Regras de criação, rotação, complexidade e armazenamento de credenciais.',
     category: 'seguranca',
-    icon: KeyRound,
+    icon: IconKey,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -116,7 +135,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Controle de Acesso',
     description: 'Princípio do menor privilégio, segregação de funções e revisão de acessos.',
     category: 'seguranca',
-    icon: Lock,
+    icon: IconLock,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -131,7 +150,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Backup',
     description: 'Estratégia, periodicidade, retenção e testes de restauração.',
     category: 'seguranca',
-    icon: Database,
+    icon: IconDatabase,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -146,7 +165,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Plano de Resposta a Incidentes',
     description: 'Detecção, contenção, erradicação, recuperação e lições aprendidas.',
     category: 'seguranca',
-    icon: Siren,
+    icon: IncidentesIcon,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'plano',
@@ -164,7 +183,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Privacidade',
     description: 'Documento público em conformidade com a LGPD.',
     category: 'lgpd',
-    icon: ScrollText,
+    icon: IconFileText,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -180,7 +199,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Cookies',
     description: 'Tipos de cookies, finalidades e gestão de consentimento.',
     category: 'lgpd',
-    icon: Cookie,
+    icon: IconCookie,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -197,7 +216,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Procedimento de Atendimento ao Titular',
     description: 'Fluxo operacional para responder solicitações do titular (art. 18).',
     category: 'lgpd',
-    icon: UserCheck,
+    icon: IconUserCheck,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'procedimento',
@@ -212,7 +231,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Retenção e Descarte',
     description: 'Prazos de retenção e descarte seguro de dados.',
     category: 'lgpd',
-    icon: Archive,
+    icon: IconArchive,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -229,7 +248,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Plano de Continuidade de Negócios (BCP)',
     description: 'Estratégias para manter operações críticas durante interrupções.',
     category: 'continuidade',
-    icon: LifeBuoy,
+    icon: IconLifebuoy,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'plano',
@@ -245,7 +264,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Plano de Recuperação de Desastres (DRP)',
     description: 'Procedimentos técnicos de recuperação de TI.',
     category: 'continuidade',
-    icon: Activity,
+    icon: IconActivity,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'plano',
@@ -261,7 +280,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Gestão de Crise',
     description: 'Estrutura, papéis e processo de tomada de decisão em crise.',
     category: 'continuidade',
-    icon: AlertTriangle,
+    icon: IconWarning,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -278,7 +297,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Código de Ética e Conduta',
     description: 'Princípios éticos e regras de conduta esperadas dos colaboradores.',
     category: 'governanca',
-    icon: Scale,
+    icon: IconScale,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'norma',
@@ -293,7 +312,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política Antissuborno e Anticorrupção',
     description: 'Alinhada à ISO 37001 e Lei Anticorrupção (12.846/2013).',
     category: 'governanca',
-    icon: Handshake,
+    icon: IconHandshake,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -308,7 +327,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Conflito de Interesses',
     description: 'Identificação, declaração e tratamento de conflitos.',
     category: 'governanca',
-    icon: Briefcase,
+    icon: IconBriefcase,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -326,7 +345,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Procedimento de Onboarding',
     description: 'Integração de novos colaboradores com checklist de acessos.',
     category: 'operacional',
-    icon: UserPlus,
+    icon: IconUserAdd,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'procedimento',
@@ -341,7 +360,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Home Office',
     description: 'Regras de trabalho remoto, equipamentos e segurança.',
     category: 'operacional',
-    icon: Home,
+    icon: IconHome,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
@@ -356,7 +375,7 @@ export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
     label: 'Política de Uso Aceitável',
     description: 'Uso aceitável de equipamentos, internet e e-mail corporativos.',
     category: 'operacional',
-    icon: MonitorSmartphone,
+    icon: IconMonitor,
     briefingDefaults: {
       ...baseDefaults,
       docType: 'politica',
