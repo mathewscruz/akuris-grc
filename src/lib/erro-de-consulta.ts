@@ -15,6 +15,8 @@
  * próximo. Apanha-se no sítio por onde todas passam — o `QueryCache`.
  */
 
+import { tGlobal } from '@/lib/i18n-global';
+
 type ChaveDeConsulta = readonly unknown[];
 
 export interface AvisoDeFalha {
@@ -35,10 +37,11 @@ export function avisoDeConsultaFalhada(chave: ChaveDeConsulta): AvisoDeFalha {
   // Serve de identidade: se a mesma lista falhar três vezes seguidas, o aviso
   // é substituído em vez de se acumular na pilha.
   const assunto = chave.length > 0 ? String(chave[0]) : 'desconhecida';
+  // Textos vêm do dicionário i18n (idioma ativo do app) — nunca fixos em PT.
   return {
     id: `consulta-falhou-${assunto}`,
-    titulo: 'Não foi possível carregar estes dados',
-    descricao: 'O que aparece na tela pode estar incompleto. Tente recarregar.',
+    titulo: tGlobal('residuos.consultaFalhou.titulo'),
+    descricao: tGlobal('residuos.consultaFalhou.descricao'),
   };
 }
 
