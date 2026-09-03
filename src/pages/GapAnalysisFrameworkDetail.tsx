@@ -24,6 +24,7 @@ import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub
 import {
   AssistenteDeEscopo,
   PainelDeFases,
+  CartaoDeProntidao,
   PriorityQueueCard,
   FrameworkHeader,
   RequirementDrawerProvider,
@@ -566,6 +567,22 @@ function GapAnalysisFrameworkDetailInner() {
                     setActiveCategoryFilter(undefined);
                     document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
+                />
+
+                {/*
+                    A pergunta que faltava: «ja posso marcar?».
+
+                    O ecra respondia a onde estou (indice), por onde comeco
+                    (fases) e o que faco agora (fila) — e nao respondia a
+                    ultima, que para quem nunca fez isto e a mais aflitiva.
+                    Fica aqui, a fechar o plano: e o que vem DEPOIS das quatro
+                    fases. Aparece em todos os frameworks, incluindo os 18 que
+                    ainda nao tem plano desenhado — que e onde faz mais falta.
+                */}
+                <CartaoDeProntidao
+                  frameworkName={framework.nome}
+                  categorias={categoryData}
+                  onVerEstado={filtrarPorEstado}
                 />
 
                 {/*
