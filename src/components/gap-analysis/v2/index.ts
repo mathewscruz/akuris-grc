@@ -27,4 +27,3 @@ export { SoATabV2 } from './SoATabV2';
 export { BulkActionBar } from './BulkActionBar';
 export { getFwCategory, getFwCategoryLabel } from './fw-utils';
 export type { FwCategory } from './fw-utils';
-export { CartaoDeProntidao } from './CartaoDeProntidao';

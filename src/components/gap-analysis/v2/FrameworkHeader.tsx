@@ -31,6 +31,8 @@ import { getMaturityLevel } from './MaturityScale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconShieldCheck, IconShieldAlert, IconArrowUpRight } from '@/components/icons';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { prontidaoDoFramework } from '@/lib/gap-prontidao';
+import { fimDoPercurso } from '@/lib/gap-fases';
 
 export type EstadoFiltravel =
   | 'conforme'
@@ -55,6 +57,11 @@ interface Props {
   naoConforme: number;
   naoAplicavel: number;
   naoAvaliado: number;
+  /**
+   * Conformes sem uma unica prova anexada. `null` quando nao se conseguiu
+   * contar -- e ai nao se acusa ninguem.
+   */
+  conformesSemProva?: number | null;
   marco?: MarcoDoFramework | null;
   /** Filtra a tabela pelo estado e rola até ela. */
   onFiltrarPorEstado?: (estado: EstadoFiltravel) => void;
@@ -116,6 +123,7 @@ export function FrameworkHeader({
   naoConforme,
   naoAplicavel,
   naoAvaliado,
+  conformesSemProva = null,
   marco,
   onFiltrarPorEstado,
   onGoToRemediation,
@@ -129,14 +137,40 @@ export function FrameworkHeader({
   const avaliados = conforme + parcial + naoConforme;
   const cobertura = aplicaveis > 0 ? Math.round((avaliados / aplicaveis) * 100) : 0;
 
-  // O veredito só é confiável acima de 80% de cobertura: dizer "pronto" com
-  // metade dos requisitos por avaliar é o tipo de otimismo que se descobre na
-  // auditoria.
+  /*
+    O veredito sai de `prontidaoDoFramework`, e nao de uma conta local.
+
+    Duas coisas mudaram, e as duas eram buracos por onde passava um «pronto»
+    falso:
+
+     · «acima de 80% de cobertura» deixava dizer PRONTO com um quinto dos
+       requisitos por avaliar. Vinte por cento de uma ISO sao 23 controlos que
+       ninguem olhou -- e o auditor olha.
+     · e nada olhava para a PROVA. Cento e dezassete conformes com zero
+       ficheiros anexados liam «pronto para a auditoria», que e exactamente
+       onde uma auditoria reprova: o auditor nao avalia o que a empresa
+       afirma, avalia o que ela mostra.
+
+    Agora pronto significa: nada por avaliar, nada nao conforme, nada parcial,
+    e nada conforme sem prova. E a regra vive num sitio so, partilhada com a
+    Declaracao de Aplicabilidade -- este modulo ja teve tres formulas paralelas
+    de aderencia e uma guarda dedicada a impedir a quarta.
+  */
+  const prontidao = prontidaoDoFramework(
+    {
+      conforme, parcial, nao_conforme: naoConforme,
+      nao_aplicavel: naoAplicavel, nao_avaliado: naoAvaliado,
+      total: totalRequirements,
+    },
+    conformesSemProva,
+  );
+
   let veredito: Veredito;
-  if (cobertura < 80) veredito = 'incompleto';
+  if (prontidao.pronto) veredito = 'pronto';
+  else if (cobertura < 80) veredito = 'incompleto';
   else if (naoConforme > 0) veredito = 'nao_pronto';
-  else if (parcial > 0) veredito = 'quase';
-  else veredito = 'pronto';
+  else if (naoAvaliado > 0 || (conformesSemProva ?? 0) > 0) veredito = 'nao_pronto';
+  else veredito = 'quase';
 
   const estilo = ESTILO_VEREDITO[veredito];
 
@@ -148,7 +182,10 @@ export function FrameworkHeader({
     incompleto: t('gapAnalysis.v2.certificationReadiness.incompleteAssessment'),
     nao_pronto: t('gapAnalysis.v2.certificationReadiness.notReadyFor', { target: frameworkName }),
     quase: t('gapAnalysis.v2.certificationReadiness.almostReadyFor', { target: frameworkName }),
-    pronto: t('gapAnalysis.v2.certificationReadiness.readyForAuditOf', { target: frameworkName }),
+    /* «Pronto para a auditoria de LGPD» manda procurar uma coisa que nao
+       existe: nao ha auditoria de certificacao de LGPD. O desfecho segue a
+       familia -- certificado, relatorio, lei ou referencial. */
+    pronto: t(`gapProntidao.pronto_${fimDoPercurso(frameworkName)}`),
   };
 
   const selo: Record<Veredito, string> = {
@@ -288,7 +325,63 @@ export function FrameworkHeader({
             </span>
           </div>
           <h3 className="mt-1.5 text-base font-semibold text-foreground leading-snug">{manchete[veredito]}</h3>
-          <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{detalhe[veredito]}</p>
+          {/*
+              A frase resume; a lista detalha.
+
+              Dizia «14 nao conformidades bloqueiam -- e 15 parciais a fechar»
+              e logo abaixo repetia os mesmos 14 e 15, linha a linha. Ler duas
+              vezes o mesmo numero em dois formatos faz duvidar de qual e o
+              certo. Havendo bloqueios, a frase passa a dar a posicao; sem
+              bloqueios, continua a ser o desfecho.
+          */}
+          <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+            {prontidao.bloqueios.length > 0
+              ? t('gapProntidao.aindaNao', {
+                  feitos: prontidao.conformes,
+                  total: prontidao.aplicaveis,
+                })
+              : detalhe[veredito]}
+          </p>
+
+          {/*
+              O que falta, em lista, cada linha a filtrar a tabela.
+
+              O detalhe acima diz «14 nao conformidades bloqueiam», e ficava-se
+              por ai: os 15 por avaliar e os 58 conformes sem prova nao
+              apareciam em lado nenhum. Sao bloqueios tanto quanto os outros --
+              um requisito por avaliar e uma pergunta sem resposta, e um
+              conforme sem prova e uma afirmacao por demonstrar.
+          */}
+          {prontidao.bloqueios.length > 0 && (
+            <ul className="mt-3 space-y-1">
+              {prontidao.bloqueios.map((b) => (
+                <li key={b.chave}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onFiltrarPorEstado?.(
+                        (b.chave === 'conforme_sem_prova' ? 'conforme' : b.chave) as EstadoFiltravel,
+                      )
+                    }
+                    disabled={!onFiltrarPorEstado}
+                    className="group flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-sm transition-ui enabled:hover:bg-accent"
+                  >
+                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                      {String(b.quantos).padStart(2, '0')}
+                    </span>
+                    <span className="min-w-0 flex-1 text-muted-foreground">
+                      {t(`gapProntidao.bloqueio.${b.chave}`, { count: b.quantos })}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* A ressalva vale sobretudo quando diz «pronto». */}
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            {t('gapProntidao.ressalva')}
+          </p>
 
           {/* A legenda é o filtro. */}
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">

@@ -74,15 +74,27 @@ const ORDEM: Array<'nao_avaliado' | 'nao_conforme' | 'parcial'> = [
  * consulta ter falhado acusa de negligência quem anexou tudo. Por isso `null`
  * não é zero: com `null`, o bloqueio simplesmente não existe.
  */
-export function prontidaoDoFramework(
-  categorias: ContagemDaCategoria[],
-  conformesSemProva: number | null = null,
-): Prontidao {
+export function somarCategorias(categorias: ContagemDaCategoria[]): ContagemDaCategoria {
   const soma = (campo: keyof ContagemDaCategoria) =>
     categorias.reduce((s, c) => s + (Number(c[campo]) || 0), 0);
+  return {
+    conforme: soma('conforme'),
+    parcial: soma('parcial'),
+    nao_conforme: soma('nao_conforme'),
+    nao_aplicavel: soma('nao_aplicavel'),
+    nao_avaliado: soma('nao_avaliado'),
+    total: soma('total'),
+  };
+}
 
-  const aplicaveis = soma('total') - soma('nao_aplicavel');
-  const bloqueios: Bloqueio[] = ORDEM.map((chave) => ({ chave, quantos: soma(chave) })).filter(
+export function prontidaoDoFramework(
+  totais: ContagemDaCategoria | ContagemDaCategoria[],
+  conformesSemProva: number | null = null,
+): Prontidao {
+  const t = Array.isArray(totais) ? somarCategorias(totais) : totais;
+
+  const aplicaveis = t.total - t.nao_aplicavel;
+  const bloqueios: Bloqueio[] = ORDEM.map((chave) => ({ chave, quantos: t[chave] })).filter(
     (b) => b.quantos > 0,
   );
 
@@ -95,7 +107,7 @@ export function prontidaoDoFramework(
 
   return {
     aplicaveis,
-    conformes: soma('conforme'),
+    conformes: t.conforme,
     bloqueios,
     /*
        Um framework sem requisitos aplicáveis não está pronto — está vazio.
