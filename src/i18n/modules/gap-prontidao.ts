@@ -30,6 +30,11 @@ const PT = {
       one: '1 requisito parcialmente conforme',
       other: '{count} requisitos parcialmente conformes',
     },
+    /* O auditor não avalia o que a empresa afirma: avalia o que ela mostra. */
+    conforme_sem_prova: {
+      one: '1 requisito conforme sem nenhuma prova anexada',
+      other: '{count} requisitos conformes sem nenhuma prova anexada',
+    },
   },
 
   /*
@@ -64,6 +69,10 @@ const EN: typeof PT = {
     parcial: {
       one: '1 partially compliant requirement',
       other: '{count} partially compliant requirements',
+    },
+    conforme_sem_prova: {
+      one: '1 compliant requirement with no evidence attached',
+      other: '{count} compliant requirements with no evidence attached',
     },
   },
 

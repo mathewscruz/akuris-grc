@@ -28,6 +28,7 @@ import { useRequisitoRiscos } from '@/hooks/useRiscoRequisitos';
 import { useRequisitoControles } from '@/hooks/useControleRequisitos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconSearch, IconDownload, IconFile, IconShieldAlert } from '@/components/icons';
+import { provasPorRequisito } from '@/lib/gap-provas';
 
 interface SoAItem {
   id: string;
@@ -96,7 +97,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
     if (!empresaId) return;
     setLoading(true);
     try {
-      const [reqsRes, evalsRes] = await Promise.all([
+      const [reqsRes, evalsRes, provas] = await Promise.all([
         supabase
           .from('gap_analysis_requirements')
           .select('id, codigo, titulo, categoria, area_responsavel, titulo_en, categoria_en')
@@ -107,6 +108,8 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
           .select('requirement_id, conformity_status, observacoes, evidence_files')
           .eq('framework_id', frameworkId)
           .eq('empresa_id', empresaId),
+        /* As duas portas por onde a prova entra. Ver `lib/gap-provas`. */
+        provasPorRequisito(frameworkId, empresaId),
       ]);
 
       const reqs = reqsRes.data || [];
@@ -139,12 +142,18 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
           justificativa: soaEntry?.justificativa || (isNA ? (evalData?.observacoes || '') : ''),
           conformity_status: status,
           responsavel: r.area_responsavel,
-          // Era um literal `0`: a SoA exportada declarava zero evidências em
-          // todas as linhas, mesmo nas que têm ficheiro anexado. Numa
-          // Declaração de Aplicabilidade isso lê-se como "nada comprovado".
-          evidencias_count: Array.isArray((evalData as any)?.evidence_files)
-            ? (evalData as any).evidence_files.length
-            : 0,
+          /*
+            Era um literal `0`: a SoA exportada declarava zero evidências em
+            todas as linhas, mesmo nas que têm ficheiro anexado. Numa
+            Declaração de Aplicabilidade isso lê-se como "nada comprovado".
+
+            E a correcção de então só apanhou metade: lia `evidence_files`, o
+            array antigo, e ignorava `evidence_library_links` — que é por onde
+            `DocumentosDoRequisito` grava hoje, e por onde entra o
+            reaproveitamento de uma prova já usada noutro framework. Quem anexa
+            pelo caminho normal continuava a exportar zero.
+          */
+          evidencias_count: provas?.get(r.id) ?? 0,
         };
       });
 

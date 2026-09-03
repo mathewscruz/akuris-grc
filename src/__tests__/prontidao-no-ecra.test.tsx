@@ -38,11 +38,21 @@ const cat = (p: Partial<Record<string, number>>) => ({
   conforme: 0, parcial: 0, nao_conforme: 0, nao_aplicavel: 0, nao_avaliado: 0, total: 0, ...p,
 }) as any;
 
-function montar(categorias: any[], nome = 'ISO/IEC 27001', onVerEstado = () => {}) {
+function montar(
+  categorias: any[],
+  nome = 'ISO/IEC 27001',
+  onVerEstado: (e: string) => void = () => {},
+  conformesSemProva: number | null = null,
+) {
   persistExplicitLocale('pt-BR');
   return render(
     <LanguageProvider>
-      <CartaoDeProntidao frameworkName={nome} categorias={categorias} onVerEstado={onVerEstado} />
+      <CartaoDeProntidao
+        frameworkName={nome}
+        categorias={categorias}
+        conformesSemProva={conformesSemProva}
+        onVerEstado={onVerEstado}
+      />
     </LanguageProvider>,
   );
 }
@@ -75,7 +85,7 @@ describe('quando ainda falta', () => {
   it('cada bloqueio leva à tabela filtrada por aquele estado', () => {
     const vistos: string[] = [];
     montar([cat({ total: 6, conforme: 2, nao_avaliado: 2, nao_conforme: 2 })], 'ISO/IEC 27001',
-      (e: string) => vistos.push(e));
+      (e) => { vistos.push(e); });
     for (const b of screen.getAllByRole('button')) fireEvent.click(b);
     expect(vistos).toEqual(['nao_avaliado', 'nao_conforme']);
   });
@@ -137,6 +147,45 @@ describe('os casos em que não se pronuncia', () => {
        escopo lia «pode marcar a auditoria» com zero requisitos cumpridos. */
     const { container } = montar([cat({ total: 12, nao_aplicavel: 12 })]);
     expect(container.textContent).not.toMatch(/Pode contratar/);
+  });
+});
+
+describe('conforme sem prova', () => {
+  const tudoConforme = [cat({ total: 8, conforme: 8 })];
+
+  it('impede o «pode marcar» de quem não tem nada anexado', () => {
+    /* O caso que mais custa caro: 8 requisitos conformes, zero ficheiros. O
+       auditor não avalia o que a empresa afirma — avalia o que ela mostra. */
+    montar(tudoConforme, 'ISO/IEC 27001', () => {}, 8);
+    expect(screen.queryByText(/Pode contratar/), 'diria «pronto» sem uma prova').toBeNull();
+    expect(screen.getByText(/8 requisitos conformes sem nenhuma prova anexada/)).toBeTruthy();
+  });
+
+  it('leva à tabela dos conformes, que é onde se anexa', () => {
+    const vistos: string[] = [];
+    montar(tudoConforme, 'ISO/IEC 27001', (e) => { vistos.push(e); }, 3);
+    fireEvent.click(screen.getByRole('button'));
+    expect(vistos).toEqual(['conforme']);
+  });
+
+  it('vai depois dos outros: é a última varredura, não a primeira tarefa', () => {
+    montar([cat({ total: 9, conforme: 4, nao_avaliado: 2, nao_conforme: 3 })], 'ISO/IEC 27001',
+      () => {}, 4);
+    const itens = screen.getAllByRole('button').map((b) => b.textContent ?? '');
+    expect(itens[itens.length - 1]).toMatch(/sem nenhuma prova/);
+  });
+
+  it('leitura falhada não acusa ninguém', () => {
+    /* `null` não é zero. Com a consulta em baixo, o produto não pode dizer a
+       quem anexou tudo que não anexou nada. */
+    montar(tudoConforme, 'ISO/IEC 27001', () => {}, null);
+    expect(screen.queryByText(/sem nenhuma prova/)).toBeNull();
+    expect(screen.getByText(/organismo certificador acreditado/)).toBeTruthy();
+  });
+
+  it('zero conformes sem prova não vira bloqueio', () => {
+    montar(tudoConforme, 'ISO/IEC 27001', () => {}, 0);
+    expect(screen.getByText(/organismo certificador acreditado/)).toBeTruthy();
   });
 });
 

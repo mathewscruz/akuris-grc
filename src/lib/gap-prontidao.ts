@@ -36,8 +36,7 @@ export interface ContagemDaCategoria {
 
 /** Um motivo para ainda não se poder marcar a auditoria. */
 export interface Bloqueio {
-  /** `nao_avaliado` | `nao_conforme` | `parcial` — a chave do estado. */
-  chave: 'nao_avaliado' | 'nao_conforme' | 'parcial';
+  chave: 'nao_avaliado' | 'nao_conforme' | 'parcial' | 'conforme_sem_prova';
   quantos: number;
 }
 
@@ -59,16 +58,40 @@ export interface Prontidao {
  * sem resposta, e não se marca auditoria sem saber onde se está. Depois o que
  * está errado, e por fim o que está a meio.
  */
-const ORDEM: Bloqueio['chave'][] = ['nao_avaliado', 'nao_conforme', 'parcial'];
+const ORDEM: Array<'nao_avaliado' | 'nao_conforme' | 'parcial'> = [
+  'nao_avaliado',
+  'nao_conforme',
+  'parcial',
+];
 
-export function prontidaoDoFramework(categorias: ContagemDaCategoria[]): Prontidao {
+/**
+ * `conformesSemProva` é `null` quando não se conseguiu contar.
+ *
+ * É o bloqueio mais perigoso de errar nos dois sentidos. Omiti-lo deixa o
+ * produto dizer «pode marcar a auditoria» a quem tem 121 requisitos conformes e
+ * zero ficheiros — e é isso que reprova uma auditoria: o auditor não avalia o
+ * que a empresa afirma, avalia o que ela mostra. Mas inventá-lo por uma
+ * consulta ter falhado acusa de negligência quem anexou tudo. Por isso `null`
+ * não é zero: com `null`, o bloqueio simplesmente não existe.
+ */
+export function prontidaoDoFramework(
+  categorias: ContagemDaCategoria[],
+  conformesSemProva: number | null = null,
+): Prontidao {
   const soma = (campo: keyof ContagemDaCategoria) =>
     categorias.reduce((s, c) => s + (Number(c[campo]) || 0), 0);
 
   const aplicaveis = soma('total') - soma('nao_aplicavel');
-  const bloqueios = ORDEM.map((chave) => ({ chave, quantos: soma(chave) })).filter(
+  const bloqueios: Bloqueio[] = ORDEM.map((chave) => ({ chave, quantos: soma(chave) })).filter(
     (b) => b.quantos > 0,
   );
+
+  /* Vai no fim: é a última varredura antes de telefonar ao auditor, não a
+     primeira coisa a fazer. Mas conta como bloqueio — um «conforme» sem prova
+     é uma afirmação por demonstrar, e a auditoria começa exactamente aí. */
+  if (conformesSemProva !== null && conformesSemProva > 0) {
+    bloqueios.push({ chave: 'conforme_sem_prova', quantos: conformesSemProva });
+  }
 
   return {
     aplicaveis,

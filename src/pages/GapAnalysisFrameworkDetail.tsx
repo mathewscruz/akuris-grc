@@ -5,6 +5,7 @@ import { DefinirMarcoDialog } from '@/components/gap-analysis/v2/DefinirMarcoDia
 import { useMarcoCertificacao } from '@/hooks/useMarcoCertificacao';
 import { fasesDe, chaveDoFramework } from '@/lib/gap-fases';
 import { escopoDe } from '@/lib/gap-escopo';
+import { provasPorRequisito } from '@/lib/gap-provas';
 import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IconDownload, IconMore, IconFile, IconChevronLeft, IconChart, IconHelp } from '@/components/icons';
@@ -77,6 +78,9 @@ function GapAnalysisFrameworkDetailInner() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [categoryData, setCategoryData] = useState<any[]>([]);
+  /* Conformes sem uma única prova anexada. `null` enquanto não se sabe — ver
+     `lib/gap-provas`: uma leitura falhada não pode virar acusação. */
+  const [conformesSemProva, setConformesSemProva] = useState<number | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState('avaliacao');
   const [scoreRefreshKey, setScoreRefreshKey] = useState(0);
@@ -112,9 +116,11 @@ function GapAnalysisFrameworkDetailInner() {
   const loadCategoryData = useCallback(async () => {
     if (!frameworkId || !empresaId) return;
     try {
-      const [reqsRes, evalsRes] = await Promise.all([
+      const [reqsRes, evalsRes, provas] = await Promise.all([
         supabase.from('gap_analysis_requirements').select('id, categoria, categoria_en, peso').eq('framework_id', frameworkId),
         supabase.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', frameworkId).eq('empresa_id', empresaId),
+        /* As duas portas por onde a prova entra, somadas num sítio só. */
+        provasPorRequisito(frameworkId, empresaId),
       ]);
       const reqs = reqsRes.data || [];
       const evals = evalsRes.data || [];
@@ -122,6 +128,20 @@ function GapAnalysisFrameworkDetailInner() {
       // Fora do escopo pelo SoA conta como não aplicável, não como lacuna.
       const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
       foraDoEscopo.forEach(id => evalMap.set(id, 'nao_aplicavel'));
+      /*
+        Um «conforme» sem prova é uma afirmação por demonstrar.
+
+        O auditor não avalia o que a empresa diz: avalia o que ela mostra. Sem
+        esta conta, o cartão de prontidão diria «pode marcar a auditoria» a
+        quem tem 121 requisitos conformes e zero ficheiros — e é exactamente
+        aí que uma auditoria reprova.
+      */
+      setConformesSemProva(
+        provas === null
+          ? null
+          : reqs.filter((r) => evalMap.get(r.id) === 'conforme' && !(provas.get(r.id) ?? 0)).length,
+      );
+
       const catMap: Record<string, { conforme: number; parcial: number; nao_conforme: number; nao_aplicavel: number; nao_avaliado: number; total: number }> = {};
       // Guarda os requisitos de cada categoria para a conta de score sair de
       // `calcularScoreFramework`, e não de uma fórmula local.
@@ -582,6 +602,7 @@ function GapAnalysisFrameworkDetailInner() {
                 <CartaoDeProntidao
                   frameworkName={framework.nome}
                   categorias={categoryData}
+                  conformesSemProva={conformesSemProva}
                   onVerEstado={filtrarPorEstado}
                 />
 

@@ -31,13 +31,21 @@ interface Props {
   frameworkName: string;
   /** As mesmas contagens que alimentam o mapa de calor e o painel de fases. */
   categorias: ContagemDaCategoria[];
+  /**
+   * Requisitos conformes sem prova nenhuma. `null` quando não se conseguiu
+   * contar — e aí não se acusa ninguém.
+   */
+  conformesSemProva?: number | null;
   /** Leva à tabela já filtrada por aquele estado. */
   onVerEstado: (estado: string) => void;
 }
 
-export function CartaoDeProntidao({ frameworkName, categorias, onVerEstado }: Props) {
+export function CartaoDeProntidao({ frameworkName, categorias, conformesSemProva = null, onVerEstado }: Props) {
   const { t } = useLanguage();
-  const p = useMemo(() => prontidaoDoFramework(categorias), [categorias]);
+  const p = useMemo(
+    () => prontidaoDoFramework(categorias, conformesSemProva),
+    [categorias, conformesSemProva],
+  );
   const fim = fimDoPercurso(frameworkName);
 
   /* Sem requisitos carregados não há nada a dizer — e dizer «pronto» a um ecrã
@@ -75,7 +83,7 @@ export function CartaoDeProntidao({ frameworkName, categorias, onVerEstado }: Pr
                 <li key={b.chave}>
                   <button
                     type="button"
-                    onClick={() => onVerEstado(b.chave)}
+                    onClick={() => onVerEstado(b.chave === 'conforme_sem_prova' ? 'conforme' : b.chave)}
                     className={cn(
                       'group flex w-full items-center gap-2 rounded-md border border-border',
                       'bg-background px-3 py-2 text-left text-sm transition-ui',
