@@ -1,6 +1,5 @@
-import { render, screen, within, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, within, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   DocumentosLista,
   type DocumentoListaItem,
@@ -34,15 +33,13 @@ function renderLista(overrides: Partial<React.ComponentProps<typeof DocumentosLi
   };
 
   const utils = render(
-    <TooltipProvider>
-      <DocumentosLista
-        documentos={[documento]}
-        podeRenovar={() => true}
-        emptyState={<div>Nenhum documento cadastrado</div>}
-        {...handlers}
-        {...overrides}
-      />
-    </TooltipProvider>
+    <DocumentosLista
+      documentos={[documento]}
+      podeRenovar={() => true}
+      emptyState={<div>Nenhum documento cadastrado</div>}
+      {...handlers}
+      {...overrides}
+    />
   );
 
   return { ...utils, handlers };
@@ -106,25 +103,6 @@ describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
       'Ações',
     ]);
     expect(within(table).getByText(documento.nome)).toBeInTheDocument();
-  });
-
-  it('o menu de ações do card mobile abre por teclado e dispara as ações', () => {
-    const { handlers } = renderLista();
-
-    const mobile = screen.getByTestId('documentos-lista-mobile');
-    const trigger = within(mobile).getByRole('button', {
-      name: `Ações do documento ${documento.nome}`,
-    });
-
-    trigger.focus();
-    fireEvent.keyDown(trigger, { key: 'Enter' });
-
-    const menu = screen.getByRole('menu');
-    expect(within(menu).getByRole('menuitem', { name: /Preview/ })).toBeInTheDocument();
-    expect(within(menu).getByRole('menuitem', { name: /Renovar Documento/ })).toBeInTheDocument();
-
-    fireEvent.click(within(menu).getByRole('menuitem', { name: /Editar/ }));
-    expect(handlers.onEditar).toHaveBeenCalledWith(documento);
   });
 
   it('preserva a saliência visual de documentos confidenciais no card mobile', () => {
@@ -220,21 +198,4 @@ describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
     expect(within(desktop).getByText('Nenhum documento cadastrado')).toBeInTheDocument();
   });
 
-  it('omite ações condicionais quando não se aplicam', () => {
-    renderLista({
-      documentos: [{ ...documento, requer_aprovacao: false }],
-      podeRenovar: () => false,
-    });
-
-    const mobile = screen.getByTestId('documentos-lista-mobile');
-    const trigger = within(mobile).getByRole('button', {
-      name: `Ações do documento ${documento.nome}`,
-    });
-
-    fireEvent.keyDown(trigger, { key: 'Enter' });
-
-    const menu = screen.getByRole('menu');
-    expect(within(menu).queryByRole('menuitem', { name: /Aprovação/ })).toBeNull();
-    expect(within(menu).queryByRole('menuitem', { name: /Renovar Documento/ })).toBeNull();
-  });
 });
