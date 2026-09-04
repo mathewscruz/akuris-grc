@@ -17,6 +17,7 @@ describe('faixas editoriais dos módulos', () => {
     expect(banner).toContain('text-primary/[0.055]');
     expect(privacidade).toContain('icon={PrivacidadeIcon}');
     expect(gap).toContain('icon={GapAnalysisIcon}');
+    expect(gap).toContain('iconClassName="right-8 top-4 translate-y-0 md:right-10"');
     expect(jornada).toContain('icon={CurrentIcon}');
     expect(continuidade).toContain('icon={ContinuidadeIcon}');
   });

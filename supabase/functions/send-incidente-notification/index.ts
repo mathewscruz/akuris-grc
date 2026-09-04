@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 const corsHeaders = {
@@ -66,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
     const config = gravidadeConfig[gravidade] || gravidadeConfig.media;
     const truncateText = (text?: string, maxLength = 300): string => { if (!text) return "Sem descrição"; return text.length > maxLength ? text.substring(0, maxLength) + "..." : text; };
-    const incidenteLink = `https://akuris.com.br/incidentes?incidente=${incidente_id}`;
+    const incidenteLink = `https://akuris.pt/incidentes?incidente=${incidente_id}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -78,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
       <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">⚠️ Incidente ${config.text}</span>
     </div>
     <div style="text-align: center; padding: 24px 32px 16px;">
-      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
     </div>
     <div style="padding: 0 32px 32px;">
       <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">Novo Incidente Registrado</h1>
@@ -106,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailPromises = Array.from(emailList).map(async (email) => {
       try {
-        const { error: emailError } = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [email], subject: `[Akuris] ⚠️ Incidente ${config.text}: ${titulo}`, html: htmlContent });
+        const { error: emailError } = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [email], subject: `[Incidente ${config.text}] ${titulo}`, html: sanitizeEmailDocument(htmlContent), text: htmlToText(htmlContent) });
         if (emailError) return { email, success: false, error: emailError };
         return { email, success: true };
       } catch (error) { return { email, success: false, error }; }

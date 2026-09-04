@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import DOMPurify from 'dompurify';
 
 interface EmailPreviewProps {
   assunto: string;
@@ -14,18 +15,19 @@ interface EmailPreviewProps {
 export function EmailPreview({ assunto, conteudoHtml, imagemUrl }: EmailPreviewProps) {
   const { t } = useLanguage();
   const srcDoc = useMemo(() => {
-    const safeImage = imagemUrl
-      ? `<img src="${imagemUrl}" alt="" style="display:block;width:100%;max-width:512px;height:auto;border-radius:8px;margin:0 0 24px" />`
+    const safeUrl = imagemUrl && /^https:\/\//i.test(imagemUrl) ? imagemUrl.replace(/["<>]/g, '') : null;
+    const safeImage = safeUrl
+      ? `<img src="${safeUrl}" alt="" style="display:block;width:100%;max-width:512px;height:auto;border-radius:8px;margin:0 0 24px" />`
       : '';
 
     const title = (assunto || t('configGeral.emailPreview.defaultSubject')).replace(/[<>]/g, '');
 
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
       body{margin:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 0}
-      .container{background:#ffffff;margin:0 auto;max-width:600px;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0}
-      .header{background:#0a1628;padding:36px 40px;text-align:center}
-      .header img{display:block;margin:0 auto;max-width:200px;height:auto}
-      .accent{height:3px;background:linear-gradient(90deg,#7552ff,#5a3fd6,#7552ff)}
+      .container{background:#ffffff;margin:0 auto;max-width:600px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0}
+      .header{background:#0a1628;padding:28px 40px;text-align:left}
+      .header img{display:block;margin:0;max-width:160px;height:auto}
+      .accent{height:2px;background:#7552ff}
       .titleSection{padding:36px 44px 0}
       h1{color:#0a1628;font-size:26px;font-weight:700;line-height:34px;margin:0}
       .content{padding:24px 44px 8px;color:#2d3748;font-size:15px;line-height:26px}
@@ -42,10 +44,10 @@ export function EmailPreview({ assunto, conteudoHtml, imagemUrl }: EmailPreviewP
       .footer a{color:#7552ff;text-decoration:none}
     </style></head><body>
       <div class="container">
-        <div class="header"><img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" /></div>
+        <div class="header"><img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" /></div>
         <div class="accent"></div>
         <div class="titleSection"><h1>${title}</h1></div>
-        <div class="content">${safeImage}${conteudoHtml || `<p style="color:#a0aec0">${t('configGeral.emailPreview.placeholderContent')}</p>`}</div>
+        <div class="content">${safeImage}${DOMPurify.sanitize(conteudoHtml, { USE_PROFILES: { html: true } }) || `<p style="color:#a0aec0">${t('configGeral.emailPreview.placeholderContent')}</p>`}</div>
         <div class="signature"><p>${t('configGeral.emailPreview.signatureThanks')}</p><p class="name">${t('configGeral.emailPreview.signatureTeam')}</p></div>
         <div class="footer">
           <p>${t('configGeral.emailPreview.footerLine1')}</p>

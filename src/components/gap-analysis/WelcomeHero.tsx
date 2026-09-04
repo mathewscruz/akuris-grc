@@ -38,6 +38,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
       icon={GapAnalysisIcon}
       className="from-primary/5 via-background to-accent/5"
       contentClassName="p-6 md:p-8"
+      iconClassName="right-8 top-4 translate-y-0 md:right-10"
     >
         <div className="flex items-center gap-2 mb-3">
           <Badge variant="secondary" className="text-xs">{t('gapAnalysis.welcome.badge')}</Badge>

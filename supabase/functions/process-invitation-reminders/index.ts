@@ -1,5 +1,6 @@
 import React from 'npm:react@18.3.1'
 import { Resend } from 'npm:resend@4.0.0'
+import { htmlToText } from '../_shared/email.ts'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { InvitationReminderEmail } from './_templates/invitation-reminder-email.tsx'
@@ -163,7 +164,7 @@ Deno.serve(async (req) => {
         }
 
         // Enviar e-mail de lembrete
-        const loginUrl = 'https://akuris.com.br'
+        const loginUrl = 'https://akuris.pt'
         
         const html = await renderAsync(
           React.createElement(InvitationReminderEmail, {
@@ -181,6 +182,7 @@ Deno.serve(async (req) => {
           to: [user.email],
           subject: `Lembrete: Seu acesso ao Akuris está aguardando - ${user.empresas.nome}`,
           html,
+          text: htmlToText(html),
         })
 
         if (emailError) {

@@ -65,7 +65,7 @@ export const InvitationReminderEmail = ({
     {reminderNumber === maxReminders && (
       <Section style={emailStyles.warningBox}>
         <Text style={{ ...emailStyles.textSmall, margin: '0', color: '#975a16' }}>
-          ⚠️ <strong>Último lembrete.</strong> Após este aviso, seu acesso poderá ser desativado.
+          <strong>Último lembrete.</strong> Após este aviso, seu acesso poderá ser desativado.
         </Text>
       </Section>
     )}

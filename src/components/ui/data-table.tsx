@@ -11,10 +11,9 @@ import { useLanguage } from "@/contexts/LanguageContext"
 import { countActiveFilters } from "@/lib/filter-active"
 import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
 import { rowOpenProps } from "@/lib/row-interaction"
-import { IconSearch, IconFilter, IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
+import { IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
 import { compararEscala } from '@/lib/ordem-de-escala'
 import { useRecorteDaUrl } from '@/hooks/useRecorteDaUrl'
-import { DensityToggle } from '@/components/ui/density-toggle'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
 const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
@@ -116,8 +115,6 @@ interface DataTableProps<T> {
   pageSize?: number
   pageSizeOptions?: number[]
   onRowClick?: (item: T) => void
-  /** Mostra o seletor global Compacta/Confortável na barra. */
-  showDensityToggle?: boolean
   /** Quantidade de campos essenciais antes de "Ver detalhes" no telemóvel. */
   mobileCollapsedFields?: number
 }
@@ -139,11 +136,10 @@ export function DataTable<T extends Record<string, any>>({
   sortDirection,
   onSort,
   className,
-  paginated = false,
-  pageSize: initialPageSize = 10,
+  paginated = true,
+  pageSize: initialPageSize = 20,
   pageSizeOptions = [10, 20, 50, 100],
   onRowClick,
-  showDensityToggle = true,
   mobileCollapsedFields = 4,
 }: DataTableProps<T>) {
   const { t } = useLanguage()
@@ -331,6 +327,12 @@ export function DataTable<T extends Record<string, any>>({
       : <IconChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
   }
 
+  const hasToolbar =
+    (searchable && typeof onSearchChange === 'function') ||
+    filters.length > 0 ||
+    Boolean(onExport) ||
+    Boolean(onRefresh)
+
   if (loading) {
     return (
       <div className={cn("flex flex-col items-center justify-center gap-3 py-16", className)}>
@@ -342,9 +344,9 @@ export function DataTable<T extends Record<string, any>>({
 
   // Always render the table structure to show headers
   return (
-    <div className={cn("", className)}>
+    <div className={cn("bg-card", className)}>
       {/* Barra padrão do sistema: pesquisa à esquerda, filtros rotulados e acções à direita */}
-      <div className="p-4 sm:p-6 pb-4">
+      {hasToolbar && <div className="border-b border-border/60 p-4">
         <ModuleToolbar
           searchValue={searchable ? searchValue : undefined}
           /*
@@ -398,11 +400,8 @@ export function DataTable<T extends Record<string, any>>({
               <span className="hidden sm:inline">{t('common.export')}</span>
             </Button>
           )}
-          {showDensityToggle && (
-            <DensityToggle className="hidden md:inline-flex" />
-          )}
         </ModuleToolbar>
-      </div>
+      </div>}
 
       {/* O recorte que veio do painel, dito por extenso e com saída.
           Sem isto a lista encolhia sem explicação — que é a outra maneira de
@@ -637,7 +636,7 @@ export function DataTable<T extends Record<string, any>>({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t">
           <div className="flex items-center gap-3">
             <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-              {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, data.length)} {t('common.of')} {data.length}
+              {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, sortedData.length)} {t('common.of')} {sortedData.length}
             </span>
             <label className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
               <span>{t('p3Filtros.table.rowsPerPage')}</span>

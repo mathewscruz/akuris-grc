@@ -32,7 +32,7 @@ import {
   loadAkurisLogo,
 } from '@/lib/pdf-utils';
 import { formatDateOnly } from '@/lib/date-utils';
-import type { ParecerDaIA } from './ParecerIA';
+import type { ParecerDaIA } from './parecer-ia-types';
 
 export interface DadosDoRelatorio {
   fornecedorNome: string;

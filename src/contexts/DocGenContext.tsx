@@ -1,5 +1,6 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { DocGenDialog } from '@/components/documentos/DocGenDialog';
+import React, { Suspense, createContext, useCallback, useContext, useMemo, useState } from 'react';
+
+const DocGenDialog = React.lazy(() => import('@/components/documentos/DocGenDialog').then((module) => ({ default: module.DocGenDialog })));
 
 export type DocGenMode = 'generate' | 'validate';
 
@@ -67,16 +68,20 @@ export const DocGenProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <DocGenContext.Provider value={value}>
       {children}
-      <DocGenDialog
-        open={isOpen}
-        onOpenChange={handleOpenChange}
-        frameworkId={opts.frameworkId}
-        frameworkName={opts.frameworkName}
-        mode={opts.mode}
-        requirementContext={opts.requirementContext}
-        onDocumentoVinculado={opts.onDocumentoVinculado}
-        onDocumentSaved={opts.onDone}
-      />
+      {isOpen && (
+        <Suspense fallback={null}>
+          <DocGenDialog
+            open={isOpen}
+            onOpenChange={handleOpenChange}
+            frameworkId={opts.frameworkId}
+            frameworkName={opts.frameworkName}
+            mode={opts.mode}
+            requirementContext={opts.requirementContext}
+            onDocumentoVinculado={opts.onDocumentoVinculado}
+            onDocumentSaved={opts.onDone}
+          />
+        </Suspense>
+      )}
     </DocGenContext.Provider>
   );
 };

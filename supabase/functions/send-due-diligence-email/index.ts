@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -113,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     const fornecedor_nome = assessment.fornecedor_nome || 'Fornecedor';
     const fornecedor_email = assessment.fornecedor_email;
     const data_expiracao = assessment.data_expiracao;
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://akuris.com.br';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://akuris.pt';
     const assessment_link = assessment.link_token
       ? `${siteUrl}/assessment/${assessment.link_token}`
       : undefined;
@@ -122,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
     let emailContent: { subject: string; html: string };
 
 
-    const headerHtml = `<div style="text-align: center; margin-bottom: 30px;"><img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" /></div>`;
+    const headerHtml = `<div style="text-align:left;margin-bottom:30px"><img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" /></div>`;
     const footerHtml = `<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;"><p style="color: #64748b; font-size: 14px;">Este é um e-mail automático da <strong>Akuris</strong>. Em caso de dúvidas, entre em contato conosco.</p><p style="color: #8898aa; font-size: 12px;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>`;
 
     switch (type) {
@@ -156,7 +157,8 @@ const handler = async (req: Request): Promise<Response> => {
       from: 'Akuris <noreply@akuris.com.br>',
       to: [fornecedor_email],
       subject: emailContent.subject,
-      html: emailContent.html,
+      html: sanitizeEmailDocument(emailContent.html),
+      text: htmlToText(emailContent.html),
     });
 
     return new Response(JSON.stringify({ success: true, messageId: emailResponse.data?.id }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });

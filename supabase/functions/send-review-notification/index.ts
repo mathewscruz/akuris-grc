@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { Resend } from 'npm:resend@2.0.0';
+import { htmlToText, sanitizeEmailDocument } from '../_shared/email.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
       if (empresaData) { companyName = empresaData.nome || companyName; }
     }
 
-    const reviewLink = `https://akuris.com.br/review/${review.link_token}`;
+    const reviewLink = `https://akuris.pt/review/${review.link_token}`;
     const formatDate = (dateStr?: string): string => { if (!dateStr) return 'Não definida'; try { return new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return dateStr; } };
 
     const htmlContent = `
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
   <div style="background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
     </div>
     <h1 style="font-size: 22px; color: #0a1628; text-align: center; margin-bottom: 24px; font-weight: 600;">🔐 Nova Revisão de Acesso Atribuída</h1>
     <p style="font-size: 15px; margin-bottom: 20px;">Olá <strong>${review.responsavel.nome || 'Usuário'}</strong>,</p>
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    const emailResponse = aceitaEmail ? await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [review.responsavel.email], subject: `[Akuris] Nova Revisão de Acesso: ${review.nome_revisao}`, html: htmlContent }) : { skipped: 'destinatario dispensou o aviso por e-mail' };
+    const emailResponse = aceitaEmail ? await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [review.responsavel.email], subject: `[Revisão de acesso] ${review.nome_revisao}`, html: sanitizeEmailDocument(htmlContent), text: htmlToText(htmlContent) }) : { skipped: 'destinatario dispensou o aviso por e-mail' };
     console.log('E-mail:', emailResponse);
 
     await supabaseClient.from('notifications').insert({ user_id: review.responsavel_revisao, title: 'Nova Revisão de Acesso Atribuída', message: `Você foi atribuído como responsável pela revisão "${review.nome_revisao}" do sistema ${review.sistema?.nome_sistema || 'N/A'}.`, type: 'info', link_to: '/revisao-acessos', metadata: { review_id: reviewId, tipo: 'revisao_atribuida' } });

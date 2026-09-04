@@ -1,175 +1,82 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { authCorsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface VerifyMFARequest {
-  code: string
-}
-
-async function hashOTP(code: string, userId: string): Promise<string> {
-  const enc = new TextEncoder()
-  const buf = await crypto.subtle.digest('SHA-256', enc.encode(`${userId}:${code}`))
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, '0'))
+async function hashOTP(code: string, userId: string, sessionId: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(`${userId}:${sessionId}:${code}`),
+  )
+  return Array.from(new Uint8Array(signature))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')
 }
 
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const corsHeaders = authCorsHeaders(req)
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: corsHeaders })
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
-  }
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  })
 
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
+    if (!authHeader?.startsWith('Bearer ')) return json({ success: false, error_code: 'unauthorized' }, 401)
 
-    const token = authHeader.replace('Bearer ', '')
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+    const body = await req.json().catch(() => ({})) as { code?: unknown }
+    const code = typeof body.code === 'string' ? body.code.trim() : ''
+    if (!/^\d{6}$/.test(code)) return json({ success: false, error_code: 'invalid_code', remaining_attempts: 5 })
+
+    const token = authHeader.slice('Bearer '.length)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseAuth = createClient(supabaseUrl, anonKey)
     const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token)
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
-    const callerUserId = claimsData.claims.sub as string
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const { code }: VerifyMFARequest = await req.json()
-
-    if (!code) {
-      throw new Error('code é obrigatório')
+    const userId = typeof claimsData?.claims?.sub === 'string' ? claimsData.claims.sub : null
+    const sessionId = typeof claimsData?.claims?.session_id === 'string' ? claimsData.claims.session_id : null
+    if (claimsError || !userId || !sessionId || !serviceKey) {
+      return json({ success: false, error_code: 'session_context_missing' }, 401)
     }
 
-    // Always operate on the caller's identity
-    const userId = callerUserId
-
-    // Buscar código válido (não usado e não expirado)
-    const { data: mfaCode, error: fetchError } = await supabaseAdmin
-      .from('mfa_codes')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('used', false)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (fetchError) {
-      console.error('Erro ao buscar código MFA:', fetchError)
-      throw new Error('Erro ao verificar código')
-    }
-
-    if (!mfaCode) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Código expirado ou inválido. Solicite um novo código.' 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
-
-    // Verificar tentativas (máximo 5)
-    if (mfaCode.attempts >= 5) {
-      // Marcar como usado para bloquear
-      await supabaseAdmin
-        .from('mfa_codes')
-        .update({ used: true })
-        .eq('id', mfaCode.id)
-
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Muitas tentativas. Solicite um novo código.' 
-      }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
-
-    // Incrementar tentativas
-    await supabaseAdmin
-      .from('mfa_codes')
-      .update({ attempts: mfaCode.attempts + 1 })
-      .eq('id', mfaCode.id)
-
-    // Verificar código: compara hash do valor recebido com o hash persistido
-    const providedHash = await hashOTP(code.trim(), userId)
-    if (!mfaCode.code_hash || !safeEqual(mfaCode.code_hash, providedHash)) {
-      const remaining = 4 - mfaCode.attempts
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: `Código incorreto. ${remaining} tentativa(s) restante(s).` 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
-
-    // Código correto - marcar como usado
-    await supabaseAdmin
-      .from('mfa_codes')
-      .update({ used: true })
-      .eq('id', mfaCode.id)
-
-    // Criar sessão MFA válida por 24h
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('empresa_id')
-      .eq('user_id', userId)
-      .single()
-
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    if (profile?.empresa_id) {
-      const { error: sessionError } = await supabaseAdmin
-        .from('mfa_sessions')
-        .insert({
-          user_id: userId,
-          empresa_id: profile.empresa_id,
-          verified_at: new Date().toISOString(),
-          expires_at: expiresAt,
-        })
-
-      if (sessionError) {
-        console.error('Erro ao criar sessão MFA:', sessionError)
-      }
-    }
-
-    return new Response(JSON.stringify({ success: true, expires_at: expiresAt }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey)
+    const codeHash = await hashOTP(code, userId, sessionId, serviceKey)
+    const { data: rows, error } = await supabaseAdmin.rpc('verify_session_mfa_code_attempt', {
+      p_user_id: userId,
+      p_auth_session_id: sessionId,
+      p_code_hash: codeHash,
     })
-  } catch (error: any) {
-    console.error('Erro na função verify-mfa-code:', error)
-    return new Response(
-      JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }),
-      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    )
+    if (error) {
+      console.error('verify-mfa-code: transaction failed', error)
+      return json({ success: false, error_code: 'verification_unavailable' }, 503)
+    }
+
+    const result = Array.isArray(rows) ? rows[0] : rows
+    if (!result) return json({ success: false, error_code: 'verification_unavailable' }, 503)
+    if (result.status !== 'verified') {
+      return json({
+        success: false,
+        error_code: result.status,
+        remaining_attempts: result.remaining_attempts ?? 0,
+      })
+    }
+
+    return json({
+      success: true,
+      expires_at: result.session_expires_at,
+    })
+  } catch (error) {
+    console.error('verify-mfa-code: unexpected failure', error)
+    return json({ success: false, error_code: 'verification_unavailable' }, 500)
   }
 })

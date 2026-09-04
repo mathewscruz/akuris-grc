@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { authCorsHeaders } from "../_shared/cors.ts";
+import { EMAIL_FROM, emailDocument, escapeHtml, htmlToText } from "../_shared/email.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -33,22 +35,19 @@ function destinatarios(): string[] {
   return lista;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 interface ContactFormData {
   name: string;
   email: string;
   company?: string;
   phone?: string;
-  message: string;
+  role?: string;
+  companySize?: string;
+  message?: string;
 }
 
 // Tetos de tamanho. A tabela nao tinha nenhum e aceitava mensagem de qualquer
 // dimensao vinda de quem nao esta autenticado.
-const LIMITES = { name: 120, email: 254, company: 160, phone: 40, message: 4000 };
+const LIMITES = { name: 120, email: 254, company: 160, phone: 40, role: 120, companySize: 80, message: 1000 };
 
 /** SHA-256 em hexadecimal — e o formato que `consume_contact_form_attempt` exige. */
 async function sha256Hex(valor: string): Promise<string> {
@@ -62,8 +61,9 @@ async function sha256Hex(valor: string): Promise<string> {
 function validar(d: ContactFormData): string | null {
   const nome = (d?.name ?? "").trim();
   const email = (d?.email ?? "").trim();
-  const mensagem = (d?.message ?? "").trim();
-  if (!nome || !email || !mensagem) return "Nome, e-mail e mensagem sao obrigatorios";
+  const empresa = (d?.company ?? "").trim();
+  const tamanho = (d?.companySize ?? "").trim();
+  if (!nome || !email || !empresa || !tamanho) return "Nome, e-mail, empresa e porte são obrigatórios";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "E-mail invalido";
   for (const [campo, max] of Object.entries(LIMITES)) {
     const v = (d as Record<string, string | undefined>)[campo];
@@ -72,25 +72,15 @@ function validar(d: ContactFormData): string | null {
   return null;
 }
 
-function escapeHtml(s: string | undefined | null): string {
-  if (!s) return "";
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: authCorsHeaders(req) });
   }
 
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
     });
   }
 
@@ -101,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (problema) {
       return new Response(JSON.stringify({ success: false, error: problema }), {
         status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
       });
     }
 
@@ -129,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (podeSeguir !== true) {
       return new Response(
         JSON.stringify({ success: false, error: "Muitas tentativas. Tente novamente mais tarde." }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        { status: 429, headers: { "Content-Type": "application/json", ...authCorsHeaders(req) } },
       );
     }
 
@@ -144,7 +134,9 @@ const handler = async (req: Request): Promise<Response> => {
         email: contactData.email.trim(),
         company: contactData.company?.trim() || null,
         phone: contactData.phone?.trim() || null,
-        message: contactData.message.trim(),
+        role: contactData.role?.trim() || null,
+        company_size: contactData.companySize?.trim() || null,
+        message: contactData.message?.trim() || null,
       })
       .select("id")
       .single();
@@ -154,43 +146,24 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to save contact form data");
     }
 
+    const emailBody = `
+      <p style="margin:0 0 18px;color:#566276">Uma nova solicitação de demonstração foi registrada no site.</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
+        <tr><td style="padding:10px 0;color:#687589;width:34%">Nome</td><td style="padding:10px 0;font-weight:600">${escapeHtml(contactData.name)}</td></tr>
+        <tr><td style="padding:10px 0;color:#687589">E-mail</td><td style="padding:10px 0"><a href="mailto:${escapeHtml(contactData.email)}" style="color:#5f43db">${escapeHtml(contactData.email)}</a></td></tr>
+        <tr><td style="padding:10px 0;color:#687589">Empresa</td><td style="padding:10px 0">${escapeHtml(contactData.company)}</td></tr>
+        <tr><td style="padding:10px 0;color:#687589">Porte</td><td style="padding:10px 0">${escapeHtml(contactData.companySize)}</td></tr>
+        ${contactData.role ? `<tr><td style="padding:10px 0;color:#687589">Cargo</td><td style="padding:10px 0">${escapeHtml(contactData.role)}</td></tr>` : ""}
+      </table>
+      ${contactData.message ? `<div style="margin-top:22px;padding-top:20px;border-top:1px solid #e7ebf0"><p style="margin:0 0 8px;color:#687589;font-size:13px">Desafio informado</p><p style="margin:0;white-space:pre-line">${escapeHtml(contactData.message)}</p></div>` : ""}`;
+    const emailHtml = emailDocument("Nova solicitação de demonstração", emailBody, { eyebrow: "Contato comercial" });
     const emailResponse = await resend.emails.send({
-      from: "Akuris <noreply@akuris.com.br>",
+      from: EMAIL_FROM,
       to: destinatarios(),
-      subject: `Novo contato pelo site - ${contactData.name}`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f7fa; padding: 20px;">
-          <div style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
-            <div style="background-color: #0a1628; padding: 32px; text-align: center;">
-              <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
-            </div>
-            <div style="height: 3px; background: linear-gradient(90deg, #7552ff, #5a3fd6, #7552ff);"></div>
-            
-            <div style="padding: 32px;">
-              <div style="background-color: #f0eeff; padding: 20px; border-radius: 8px; border-left: 4px solid #7552ff; margin-bottom: 24px;">
-                <p style="margin: 0 0 8px;"><strong>Nome:</strong> ${escapeHtml(contactData.name)}</p>
-                <p style="margin: 0 0 8px;"><strong>E-mail:</strong> ${escapeHtml(contactData.email)}</p>
-                ${contactData.company ? `<p style="margin: 0 0 8px;"><strong>Empresa:</strong> ${escapeHtml(contactData.company)}</p>` : ''}
-                ${contactData.phone ? `<p style="margin: 0;"><strong>Telefone:</strong> ${escapeHtml(contactData.phone)}</p>` : ''}
-              </div>
-              
-              <h3 style="color: #0a1628; margin: 0 0 12px;">Mensagem:</h3>
-              <div style="background-color: #ffffff; border-left: 4px solid #7552ff; padding: 15px; margin: 0 0 24px; border-radius: 4px; background-color: #f8fafc;">
-                ${escapeHtml(contactData.message).replace(/\n/g, '<br>')}
-              </div>
-            </div>
-            
-            <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
-              <p style="color: #8898aa; font-size: 12px; margin: 0;">
-                Este e-mail foi enviado automaticamente pelo formulário de contato do site Akuris.
-              </p>
-              <p style="color: #8898aa; font-size: 12px; margin: 8px 0 0;">
-                © ${new Date().getFullYear()} Akuris. Todos os direitos reservados.
-              </p>
-            </div>
-          </div>
-        </div>
-      `,
+      replyTo: contactData.email.trim(),
+      subject: `[Novo contato] ${contactData.company?.trim()} — ${contactData.name.trim()}`,
+      html: emailHtml,
+      text: htmlToText(emailHtml),
     });
 
     console.log("Contact email sent successfully:", emailResponse);
@@ -212,7 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
         message: "Mensagem enviada com sucesso!" 
       }), {
         status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
       }
     );
 
@@ -225,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
         error: "Erro interno do servidor" 
       }), {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
       }
     );
   }

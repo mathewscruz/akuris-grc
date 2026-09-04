@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
-import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
+import { useLandingReveal, useScrolled } from "@/hooks/useLandingAnimations";
 import { DemoRequestDialog } from "@/components/landing/DemoRequestDialog";
 import { SEO } from "@/components/SEO";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -60,6 +60,10 @@ const LandingPage = () => {
 
   const modules = useMemo(() => buildModules(t), [t]);
   const frameworks = useMemo(() => buildFrameworks(t), [t]);
+  const faqs = useMemo(() => [1, 2, 3, 4, 5, 6].map((number) => ({
+    question: t(`publico.landing.faq.q${number}`),
+    answer: t(`publico.landing.faq.a${number}`),
+  })), [t]);
 
   useEffect(() => {
     document.documentElement.classList.add("lp-html");
@@ -68,7 +72,6 @@ const LandingPage = () => {
 
   useLandingReveal();
   const scrolled = useScrolled(64);
-  const score = useCountUp(87, 1200);
 
   const scrollTo = (id: string) => {
     /* Fecha a gaveta antes de rolar: deixá-la aberta esconderia justamente o
@@ -92,6 +95,15 @@ const LandingPage = () => {
         title={t("publico.landing.seoTitle")}
         description={t("publico.landing.seoDesc")}
         canonical="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map(({ question, answer }) => ({
+            '@type': 'Question',
+            name: question,
+            acceptedAnswer: { '@type': 'Answer', text: answer },
+          })),
+        }}
       />
       {/* NAV */}
       <header className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
@@ -101,10 +113,12 @@ const LandingPage = () => {
           </a>
           <nav className="lp-nav-links" aria-label={t("publico.landing.nav.principal")}>
             {SECOES.map((s) => (
-              <button key={s.id} onClick={() => scrollTo(s.id)}>
+              <a key={s.id} href={`#${s.id}`}>
                 {s.rotulo}
-              </button>
+              </a>
             ))}
+            <a href="/blog">{t("publico.landing.nav.blog")}</a>
+            <a href="/planos">{t("publico.landing.nav.planos")}</a>
           </nav>
           <div className="lp-nav-cta">
             <span className="lp-nav-lang">
@@ -135,10 +149,12 @@ const LandingPage = () => {
           <div className="lp-container">
             <nav aria-label={t("publico.landing.nav.principal")}>
               {SECOES.map((s) => (
-                <button key={s.id} onClick={() => scrollTo(s.id)}>
+                <a key={s.id} href={`#${s.id}`} onClick={() => setMenuAberto(false)}>
                   {s.rotulo}
-                </button>
+                </a>
               ))}
+              <a href="/blog">{t("publico.landing.nav.blog")}</a>
+              <a href="/planos">{t("publico.landing.nav.planos")}</a>
             </nav>
             <button
               className="lp-btn lp-btn-ghost"
@@ -178,100 +194,38 @@ const LandingPage = () => {
 
             <div className="lp-hero-meta" role="group" aria-label={t("publico.landing.hero.indicadores")}>
               <div>
-                <span className="k">+20</span>
+                <span className="k">360°</span>
                 <span className="l">{t("publico.landing.hero.kpiFrameworks")}</span>
               </div>
               <div>
-                <span className="k">87%</span>
+                <span className="k">1→N</span>
                 <span className="l">{t("publico.landing.hero.kpiAderencia")}</span>
               </div>
               <div>
-                <span className="k">−64%</span>
+                <span className="k">LIVE</span>
                 <span className="l">{t("publico.landing.hero.kpiTempo")}</span>
               </div>
             </div>
           </div>
 
-          <div className="lp-hero-vis" aria-hidden="true">
-            {/* Posture */}
-            <div
-              className="lp-card lp-vis-a lp-posture"
-              ref={score.ref as React.RefObject<HTMLDivElement>}
-              data-reveal
-            >
+          <div className="lp-hero-vis lp-workflow-wrap" aria-hidden="true">
+            <div className="lp-card lp-workflow" data-reveal>
               <div className="lp-card-title">
-                <span className="t">{t("publico.landing.hero.posturaIso")}</span>
+                <span className="t">{t("publico.landing.workflow.title")}</span>
                 <span className="dot" />
               </div>
-              <div className="score">
-                {score.value}<sup>/100</sup>
-              </div>
-              <div className="bars">
-                {([
-                  [t("publico.landing.hero.barControles"), 92, false],
-                  [t("publico.landing.hero.barEvidencias"), 78, false],
-                  [t("publico.landing.hero.barRiscos"), 84, false],
-                  [t("publico.landing.hero.barTreinamento"), 71, true],
-                ] as [string, number, boolean][]).map(([lab, v, warn], i) => (
-                  <div className="bar" key={lab}>
-                    <span className="lab">{lab}</span>
-                    <span className="track">
-                      <span
-                        className="fill"
-                        style={{
-                          width: `${v}%`,
-                          background: warn ? "var(--lp-warn)" : "var(--lp-accent)",
-                          ["--bar-delay" as string]: `${200 + i * 120}ms`,
-                        }}
-                      />
-                    </span>
-                    <span className="v">{v}%</span>
+              <div className="lp-workflow-list">
+                {(["risk", "control", "evidence", "audit"] as const).map((item, index) => (
+                  <div className="lp-workflow-step" key={item} style={{ ["--step-delay" as string]: `${index * 120}ms` }}>
+                    <span className="lp-workflow-index">0{index + 1}</span>
+                    <span className="lp-workflow-name">{t(`publico.landing.workflow.${item}`)}</span>
+                    <span className="lp-workflow-state">{t(`publico.landing.workflow.${item}State`)}</span>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Matrix */}
-            <div className="lp-card lp-vis-b" data-reveal style={{ ["--lp-reveal-delay" as string]: "120ms" }}>
-              <div className="lp-card-title">
-                <span className="t">{t("publico.landing.hero.matriz")}</span>
-                <span className="dot" />
-              </div>
-              <div className="lp-matrix">
-                {[
-                  "", "", "l1", "l1", "l2", "l2", "l3", "warn",
-                  "", "l1", "l1", "l2", "l2", "l3", "l3", "warn",
-                  "l1", "l1", "l2", "l2", "l2", "l3", "warn", "warn",
-                  "l1", "l2", "l2", "l2", "l3", "l3", "warn", "warn",
-                ].map((cls, i) => (
-                  <div key={i} className={`c ${cls}`} />
-                ))}
-              </div>
-              <div className="lp-matrix-foot">
-                <span>{t("publico.landing.hero.matrizAtivos")}</span>
-                <span>{t("publico.landing.hero.matrizCriticos")}</span>
-              </div>
-            </div>
-
-            {/* Timeline */}
-            <div className="lp-card lp-vis-c" data-reveal style={{ ["--lp-reveal-delay" as string]: "240ms" }}>
-              <div className="lp-card-title">
-                <span className="t">{t("publico.landing.hero.atividade")}</span>
-                <span className="t lp-mono" style={{ color: "var(--lp-text-3)" }}>14:32</span>
-              </div>
-              <div className="lp-timeline">
-                {([
-                  ["14:31", t("publico.landing.hero.ev1"), "ok", t("publico.landing.hero.evOk")],
-                  ["13:48", t("publico.landing.hero.ev2"), "pen", t("publico.landing.hero.evPend")],
-                  ["13:02", t("publico.landing.hero.ev3"), "ok", t("publico.landing.hero.evOk")],
-                  ["12:14", t("publico.landing.hero.ev4"), "rev", t("publico.landing.hero.evRev")],
-                ] as [string, string, string, string][]).map(([d, txt, s, lab]) => (
-                  <div className="row" key={d}>
-                    <span className="d">{d}</span>
-                    <span className="tx">{txt}</span>
-                    <span className={`s ${s}`}>{lab}</span>
-                  </div>
-                ))}
+              <div className="lp-workflow-foot">
+                <span>{t("publico.landing.workflow.foot")}</span>
+                <span className="lp-mono">CTRL → PROVA</span>
               </div>
             </div>
           </div>
@@ -338,7 +292,6 @@ const LandingPage = () => {
             identificados como cenário ilustrativo. Substituir por números
             medidos é uma melhoria; deixá-los a passar por medidos, não.
           */}
-          <p className="lp-metrics-nota">{t("publico.landing.metricas.nota")}</p>
         </div>
       </section>
 
@@ -360,51 +313,12 @@ const LandingPage = () => {
               <p className="lede">{t("publico.landing.autonomia.lede")}</p>
             </div>
 
-            {/*
-              Ilustração, não leitura ao vivo.
-
-              Este cartão mostra um índice de 87/100 e barras de 92/88/81 --
-              todos literais no código -- e trazia por cima o selo «● Atualizado
-              agora». Um dado estático a afirmar que acabou de ser medido. Era
-              também o único mockup da página sem `aria-hidden`: um leitor de
-              ecrã anunciava-o como conteúdo real.
-
-              Agora diz o que é, e sai da árvore de acessibilidade como os
-              outros mockups (hero, matriz de risco, feed).
-            */}
-            <div
-              className="lp-card lp-posture lp-posture-xl"
-              data-reveal
-              aria-hidden="true"
-              style={{ ["--lp-reveal-delay" as string]: "120ms" }}
-            >
-              <div className="lp-card-title">
-                <span className="t">{t("publico.landing.autonomia.posturaTitulo")}</span>
-                <span className="t">{t("publico.landing.autonomia.exemplo")}</span>
-              </div>
-              <div className="score">
-                87<sup>/100</sup>
-              </div>
-              <p className="lp-posture-sub">{t("publico.landing.autonomia.sub")}</p>
-              <div className="bars lp-posture-rows">
-                {([
-                  [t("publico.landing.autonomia.rowIso"), 92],
-                  [t("publico.landing.autonomia.rowLgpd"), 88],
-                  [t("publico.landing.autonomia.rowSoc"), 81],
-                ] as [string, number][]).map(([lab, v]) => (
-                  <div className="lp-bar-row" key={lab}>
-                    <span className="lab">{lab}</span>
-                    <span className="v">
-                      {v}% <span className="chk" aria-hidden="true">✓</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="lp-posture-foot">
-                <span>{t("publico.landing.autonomia.footConsultor")}</span>
-                <span>{t("publico.landing.autonomia.footPlanilha")}</span>
-                <span>{t("publico.landing.autonomia.footEspera")}</span>
-              </div>
+            <div className="lp-card lp-evidence-chain" data-reveal aria-hidden="true">
+              {(["framework", "requirement", "control", "evidence"] as const).map((item, index) => (
+                <div className="lp-chain-node" key={item}>
+                  <span>0{index + 1}</span><strong>{t(`publico.landing.workflow.${item}`)}</strong><i>{t(`publico.landing.workflow.${index === 3 ? 'verified' : 'linked'}`)}</i>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -439,17 +353,15 @@ const LandingPage = () => {
               {t("publico.landing.metricas.titulo")} <em>{t("publico.landing.metricas.tituloEm")}</em>
             </h2>
           </div>
-          <div className="lp-metrics">
+          <div className="lp-metrics lp-personas">
             {([
-              ["−64", "%", t("publico.landing.metricas.m1Label"), t("publico.landing.metricas.m1Desc")],
-              ["3,8", "×", t("publico.landing.metricas.m2Label"), t("publico.landing.metricas.m2Desc")],
-              ["+42", "%", t("publico.landing.metricas.m3Label"), t("publico.landing.metricas.m3Desc")],
-              ["12", t("publico.landing.metricas.m4Sup"), t("publico.landing.metricas.m4Label"), t("publico.landing.metricas.m4Desc")],
-            ] as [string, string, string, string][]).map(([v, sup, l, p]) => (
+              ["01", t("publico.landing.metricas.m1Label"), t("publico.landing.metricas.m1Desc")],
+              ["02", t("publico.landing.metricas.m2Label"), t("publico.landing.metricas.m2Desc")],
+              ["03", t("publico.landing.metricas.m3Label"), t("publico.landing.metricas.m3Desc")],
+              ["04", t("publico.landing.metricas.m4Label"), t("publico.landing.metricas.m4Desc")],
+            ] as [string, string, string][]).map(([v, l, p]) => (
               <div className="lp-metric" key={l}>
-                <div className="v">
-                  {v}<sup>{sup}</sup>
-                </div>
+                <div className="v">{v}</div>
                 <div className="l">{l}</div>
                 <p>{p}</p>
               </div>
@@ -510,20 +422,13 @@ const LandingPage = () => {
             <h2>{t("publico.landing.faq.titulo")} <em>{t("publico.landing.faq.tituloEm")}</em></h2>
           </div>
           <div className="lp-faq-list">
-            {([
-              [t("publico.landing.faq.q1"), t("publico.landing.faq.a1")],
-              [t("publico.landing.faq.q2"), t("publico.landing.faq.a2")],
-              [t("publico.landing.faq.q3"), t("publico.landing.faq.a3")],
-              [t("publico.landing.faq.q4"), t("publico.landing.faq.a4")],
-              [t("publico.landing.faq.q5"), t("publico.landing.faq.a5")],
-              [t("publico.landing.faq.q6"), t("publico.landing.faq.a6")],
-            ] as [string, string][]).map(([q, a], i) => (
-              <details className="lp-faq" key={q} open={i === 0}>
+            {faqs.map(({ question, answer }, i) => (
+              <details className="lp-faq" key={question} open={i === 0}>
                 <summary>
-                  {q}
+                  {question}
                   <span className="plus" aria-hidden="true" />
                 </summary>
-                <div className="body">{a}</div>
+                <div className="body">{answer}</div>
               </details>
             ))}
           </div>
@@ -575,13 +480,15 @@ const LandingPage = () => {
                 <li><button onClick={() => scrollTo("contato")}>{t("publico.landing.nav.contato")}</button></li>
                 <li><button onClick={() => navigate("/auth")}>{t("publico.landing.nav.acessar")}</button></li>
                 <li><a href="/politica-privacidade">{t("publico.landing.footer.politica")}</a></li>
+                <li><a href="/blog">{t("publico.landing.nav.blog")}</a></li>
+                <li><a href="/planos">{t("publico.landing.nav.planos")}</a></li>
               </ul>
             </div>
             <div>
               <h5>{t("publico.landing.footer.contato")}</h5>
               <ul>
                 <li><a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a></li>
-                <li><a href="https://akuris.com.br">akuris.com.br</a></li>
+                <li><a href="https://akuris.pt">akuris.pt</a></li>
               </ul>
             </div>
           </div>

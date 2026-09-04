@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { AssessmentResponsesViewer } from './AssessmentResponsesViewer';
 import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
-import type { ParecerDaIA } from './ParecerIA';
+import type { ParecerDaIA } from './parecer-ia-types';
 import { gerarRelatorioFornecedor } from './relatorio-fornecedor';
 import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { startOfDay } from 'date-fns';

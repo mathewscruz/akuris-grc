@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     }
 
     // Gerar novo link de recovery
-    const siteUrl = 'https://akuris.com.br'
+    const siteUrl = (Deno.env.get('APP_URL') || Deno.env.get('SITE_URL') || 'https://akuris.pt').replace(/\/$/, '')
     let setupPasswordUrl = `${siteUrl}/auth`
 
     try {

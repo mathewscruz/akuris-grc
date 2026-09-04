@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
 
       const subject = r.milestone === 'd_minus_3'
         ? `⏰ Seu trial Akuris termina em 3 dias`
-        : `🔔 Seu trial Akuris terminou`;
+        : `Seu período de avaliação Akuris terminou`;
 
       const message = r.milestone === 'd_minus_3'
         ? `Olá, equipe ${r.nome}!\n\nSeu período de avaliação gratuita do Akuris termina em 3 dias. Para continuar usando a plataforma sem interrupções, entre em contato para ativar seu plano.`
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
           body: {
             userName: r.nome,
             userEmail: r.email,
-            setupPasswordUrl: 'https://akuris.com.br/',
+            setupPasswordUrl: 'https://akuris.pt/',
             companyName: 'Akuris',
             companyLogoUrl: '',
             customSubject: subject,

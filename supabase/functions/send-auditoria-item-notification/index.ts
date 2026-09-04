@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -144,7 +145,7 @@ serve(async (req) => {
 
     const resend = new Resend(resendApiKey);
     const prazoFormatted = prazo ? new Date(prazo).toLocaleDateString('pt-BR') : "Não definido";
-    const appUrl = Deno.env.get("APP_URL") || "https://akuris.com.br";
+    const appUrl = Deno.env.get("APP_URL") || "https://akuris.pt";
     const auditoriaLink = `${appUrl}${itemLink}`;
 
     const emailHtml = `
@@ -156,7 +157,7 @@ serve(async (req) => {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         <tr><td style="padding: 32px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-          <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+          <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
         </td></tr>
         <tr><td style="padding: 32px;">
           <h1 style="color: #0a1628; margin: 0 0 24px 0; font-size: 24px;">📋 Novo Item de Auditoria Atribuído</h1>
@@ -188,7 +189,8 @@ serve(async (req) => {
       from: 'Akuris <noreply@akuris.com.br>',
       to: [responsavel.email],
       subject: `[Auditoria] Item atribuído: ${item_codigo} - ${item_titulo}`,
-      html: emailHtml,
+      html: sanitizeEmailDocument(emailHtml),
+      text: htmlToText(emailHtml),
     });
 
     if (emailError) {

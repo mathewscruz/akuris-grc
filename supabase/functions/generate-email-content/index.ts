@@ -2,11 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 import { MODELOS } from "../_shared/modelos.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { authCorsHeaders } from "../_shared/cors.ts";
+import { sanitizeEmailHtml } from "../_shared/email.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -22,7 +19,9 @@ REGRAS OBRIGATÓRIAS:
 - Não use estilos inline complexos. Pode usar style="color:#7552ff" em links e style="margin:0 0 16px" em parágrafos se necessário.
 - Tom: profissional, consultivo, direto, em português do Brasil. Sem saudações genéricas no início ("Olá", "Prezado") — vá direto ao tema.
 - Estrutura recomendada: <h2> com título do tema, parágrafo introdutório, <h3> com subtemas, listas com diferenciais.
-- Sempre que falar de um módulo, destaque: o que ele resolve, principais funcionalidades, e o diferencial competitivo da Akuris.
+- Sempre que falar de um módulo, explique: o problema, as funcionalidades comprováveis e o próximo passo.
+- Não invente estatísticas, clientes, certificações, prazos, superlativos ou comparações com concorrentes.
+- Evite clichês como "revolucione", "descubra o segredo", "solução completa" e excesso de exclamações.
 - Termine com um parágrafo de chamada para ação convidando a explorar a plataforma.
 - Tamanho: entre 250 e 500 palavras.
 
@@ -38,18 +37,6 @@ async function isSuperAdmin(token: string): Promise<{ ok: boolean; userId?: stri
     .eq("user_id", user.id)
     .maybeSingle();
   return { ok: data?.role === "super_admin", userId: user.id };
-}
-
-function sanitizeHtml(html: string): string {
-  // Strip script/style tags and event handlers
-  let out = html.replace(/<script[\s\S]*?<\/script>/gi, "");
-  out = out.replace(/<style[\s\S]*?<\/style>/gi, "");
-  out = out.replace(/\son\w+="[^"]*"/gi, "");
-  out = out.replace(/\son\w+='[^']*'/gi, "");
-  out = out.replace(/javascript:/gi, "");
-  // Remove markdown code fences if model included them
-  out = out.replace(/^```html\s*/i, "").replace(/```\s*$/i, "");
-  return out.trim();
 }
 
 async function generateText(prompt: string): Promise<string> {
@@ -69,7 +56,7 @@ async function generateText(prompt: string): Promise<string> {
   if (!r.ok) throw new Error(`AI gateway error ${r.status}: ${await r.text()}`);
   const data = await r.json();
   const content = data.choices?.[0]?.message?.content || "";
-  return sanitizeHtml(content);
+  return sanitizeEmailHtml(content.replace(/^```html\s*/i, "").replace(/```\s*$/i, ""));
 }
 
 async function generateImage(theme: string): Promise<string | null> {
@@ -113,6 +100,7 @@ async function generateImage(theme: string): Promise<string | null> {
 }
 
 serve(async (req) => {
+  const corsHeaders = authCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const authHeader = req.headers.get("Authorization");
@@ -162,7 +150,7 @@ serve(async (req) => {
           body: JSON.stringify({
             model: MODELOS.MECANICO,
             messages: [
-              { role: "system", content: "Você cria assuntos curtos (até 70 caracteres) e atrativos para e-mails corporativos da Akuris (plataforma GRC). Retorne APENAS o assunto, sem aspas, sem prefixos." },
+              { role: "system", content: "Você cria assuntos claros (até 70 caracteres) para e-mails corporativos da Akuris. Use linguagem factual, sem clickbait, emojis, superlativos ou promessas. Retorne apenas o assunto." },
               { role: "user", content: `Tema: ${prompt}` },
             ],
           }),

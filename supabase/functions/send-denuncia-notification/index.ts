@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 const corsHeaders = {
@@ -189,7 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p style="font-size: 13px; color: #92400e; margin: 0;"><strong>Ação Necessária:</strong> Uma nova denúncia foi registrada e requer sua atenção.</p>
       </div>
       <div style="text-align: center;">
-        <a href="https://akuris.com.br/denuncia" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px;">Acessar Canal de Denúncias</a>
+        <a href="https://akuris.pt/denuncia" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px;">Acessar Canal de Denúncias</a>
       </div>
     </div>
     <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
@@ -202,7 +203,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailPromises = Array.from(emailList).map(async (email) => {
       try {
-        const { error: emailError } = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [email], subject: `Nova Denúncia - Protocolo ${denuncia.protocolo}`, html: emailHtml });
+        const { error: emailError } = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [email], subject: `[Nova denúncia] Protocolo ${denuncia.protocolo}`, html: sanitizeEmailDocument(emailHtml), text: htmlToText(emailHtml) });
         if (emailError) return { email, success: false, error: emailError };
         return { email, success: true };
       } catch (error) { return { email, success: false, error }; }

@@ -112,7 +112,7 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
         </div>
 
         {phase !== "success" ? (
-          <form onSubmit={submit} className="lp-demo-form" autoComplete="off" noValidate>
+          <form onSubmit={submit} className="lp-demo-form" autoComplete="on" noValidate>
             <input
               type="text" tabIndex={-1} autoComplete="off" aria-hidden
               value={honeypot} onChange={(e) => setHoneypot(e.target.value)}
@@ -121,27 +121,27 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
 
             <div className="lp-demo-row">
               <Field label={d("nome")} id="d-name" error={errors.name}>
-                <input id="d-name" className="lp-modal-input" placeholder={d("nomePlaceholder")}
+                <input id="d-name" name="name" autoComplete="name" className="lp-modal-input" placeholder={d("nomePlaceholder")}
                   value={data.name} onChange={(e) => onChange("name", e.target.value)} />
               </Field>
               <Field label={d("cargo")} id="d-role" error={errors.role}>
-                <input id="d-role" className="lp-modal-input" placeholder={d("cargoPlaceholder")}
+                <input id="d-role" name="organization-title" autoComplete="organization-title" className="lp-modal-input" placeholder={d("cargoPlaceholder")}
                   value={data.role} onChange={(e) => onChange("role", e.target.value)} />
               </Field>
             </div>
 
             <Field label={d("emailCorporativo")} id="d-email" error={errors.email}>
-              <input id="d-email" type="email" className="lp-modal-input" placeholder={d("emailPlaceholder")}
+              <input id="d-email" name="email" autoComplete="email" type="email" className="lp-modal-input" placeholder={d("emailPlaceholder")}
                 value={data.email} onChange={(e) => onChange("email", e.target.value)} />
             </Field>
 
             <div className="lp-demo-row">
               <Field label={d("empresa")} id="d-company" error={errors.company}>
-                <input id="d-company" className="lp-modal-input" placeholder={d("razaoSocial")}
+                <input id="d-company" name="organization" autoComplete="organization" className="lp-modal-input" placeholder={d("razaoSocial")}
                   value={data.company} onChange={(e) => onChange("company", e.target.value)} />
               </Field>
               <Field label={d("tamanho")} id="d-size" error={errors.companySize}>
-                <select id="d-size" className="lp-modal-input lp-modal-select"
+                <select id="d-size" name="company-size" className="lp-modal-input lp-modal-select"
                   value={data.companySize} onChange={(e) => onChange("companySize", e.target.value)}>
                   {sizes.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
                 </select>
@@ -149,7 +149,7 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
             </div>
 
             <Field label={d("desafio")} id="d-msg">
-              <textarea id="d-msg" rows={3} className="lp-modal-input lp-modal-textarea"
+              <textarea id="d-msg" name="message" rows={3} className="lp-modal-input lp-modal-textarea"
                 placeholder={d("desafioPlaceholder")}
                 value={data.message} onChange={(e) => onChange("message", e.target.value)} />
             </Field>

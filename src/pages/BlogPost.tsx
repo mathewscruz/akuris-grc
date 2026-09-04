@@ -74,9 +74,9 @@ export default function BlogPost() {
       publisher: {
         '@type': 'Organization',
         name: 'Akuris',
-        logo: { '@type': 'ImageObject', url: 'https://akuris.com.br/akuris-logo.png' },
+        logo: { '@type': 'ImageObject', url: 'https://akuris.pt/akuris-logo.png' },
       },
-      mainEntityOfPage: `https://akuris.com.br${url}`,
+      mainEntityOfPage: `https://akuris.pt${url}`,
       inLanguage: 'pt-BR',
       keywords: post.tags?.join(', '),
     },
@@ -84,9 +84,9 @@ export default function BlogPost() {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://akuris.com.br/' },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://akuris.com.br/blog' },
-        { '@type': 'ListItem', position: 3, name: post.titulo, item: `https://akuris.com.br${url}` },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://akuris.pt/' },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://akuris.pt/blog' },
+        { '@type': 'ListItem', position: 3, name: post.titulo, item: `https://akuris.pt${url}` },
       ],
     },
   ];

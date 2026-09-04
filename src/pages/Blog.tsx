@@ -42,7 +42,7 @@ export default function Blog() {
     '@type': 'Blog',
     name: 'Blog Akuris',
     description: 'Guias práticos de GRC, LGPD, ISO 27001, SOC 2, gestão de riscos e auditoria interna.',
-    url: 'https://akuris.com.br/blog',
+    url: 'https://akuris.pt/blog',
     inLanguage: 'pt-BR',
   };
 

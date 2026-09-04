@@ -1,83 +1,53 @@
-// Edge Function: check-mfa-session
-// Retorna se o usuário autenticado tem uma sessão MFA válida (não expirada).
-// Usada pelo AuthProvider como gate global — qualquer sessão Supabase
-// (login novo, restaurada, refrescada) só é exposta ao app após esta checagem.
-
 import { createClient } from 'npm:@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { authCorsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const corsHeaders = authCorsHeaders(req)
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  })
 
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ verified: false, error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
+    if (!authHeader?.startsWith('Bearer ')) return json({ verified: false, error_code: 'unauthorized' }, 401)
 
-    const token = authHeader.replace('Bearer ', '')
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+    const token = authHeader.slice('Bearer '.length)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseAuth = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '')
     const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token)
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ verified: false, error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
+    const userId = typeof claimsData?.claims?.sub === 'string' ? claimsData.claims.sub : null
+    const sessionId = typeof claimsData?.claims?.session_id === 'string' ? claimsData.claims.session_id : null
+    if (claimsError || !userId || !sessionId) {
+      return json({ verified: false, error_code: 'session_context_missing' }, 401)
     }
-
-    const userId = claimsData.claims.sub as string
 
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      supabaseUrl,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
-
-    const { data: validSession, error: sessionError } = await supabaseAdmin
+    const { data: validSession, error } = await supabaseAdmin
       .from('mfa_sessions')
-      .select('id, verified_at, expires_at')
+      .select('verified_at, expires_at')
       .eq('user_id', userId)
+      .eq('auth_session_id', sessionId)
       .gt('expires_at', new Date().toISOString())
       .order('verified_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (sessionError) {
-      console.error('Erro ao consultar mfa_sessions:', sessionError)
-      // Em caso de erro de leitura, NÃO liberar acesso.
-      return new Response(JSON.stringify({ verified: false, error: 'check_failed' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
+    if (error) {
+      console.error('check-mfa-session: query failed', error)
+      return json({ verified: false, error_code: 'verification_unavailable' }, 503)
     }
 
-    if (validSession) {
-      return new Response(
-        JSON.stringify({ verified: true, expires_at: validSession.expires_at }),
-        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      )
-    }
-
-    return new Response(JSON.stringify({ verified: false }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    })
+    return validSession
+      ? json({ verified: true, expires_at: validSession.expires_at })
+      : json({ verified: false })
   } catch (error) {
-    console.error('Erro inesperado em check-mfa-session:', error)
-    return new Response(JSON.stringify({ verified: false, error: 'internal_error' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    })
+    console.error('check-mfa-session: unexpected failure', error)
+    return json({ verified: false, error_code: 'verification_unavailable' }, 500)
   }
 })

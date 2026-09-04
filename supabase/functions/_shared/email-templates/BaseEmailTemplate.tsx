@@ -19,6 +19,7 @@ interface BaseEmailTemplateProps {
   companyName?: string;
   companyLogoUrl?: string;
   showFooter?: boolean;
+  footerNote?: React.ReactNode;
 }
 
 // Logo em texto — nunca quebra, funciona em todos os clientes de e-mail
@@ -48,6 +49,7 @@ export const BaseEmailTemplate = ({
   companyName = 'Akuris',
   companyLogoUrl,
   showFooter = true,
+  footerNote,
 }: BaseEmailTemplateProps) => {
   return (
     <Html>
@@ -55,19 +57,37 @@ export const BaseEmailTemplate = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Dark Header with logo image */}
+          {/* Cabeçalho editorial: marca alinhada ao conteúdo, sem hero genérico. */}
           <Section style={headerSection}>
-            <Img
-              src="https://akuris-grc.lovable.app/akuris-logo-email.png"
-              alt="Akuris"
-              width="160"
-              height="48"
-              style={{ display: 'block', margin: '0 auto', maxWidth: '160px', height: 'auto' }}
-            />
+            <table role="presentation" width="100%" cellPadding="0" cellSpacing="0">
+              <tbody>
+                <tr>
+                  <td align="left">
+                    <Img
+                      src="https://akuris.pt/akuris-logo-email.png"
+                      alt="Akuris"
+                      width="160"
+                      height="48"
+                      style={{ display: 'block', margin: '0', maxWidth: '160px', height: 'auto' }}
+                    />
+                  </td>
+                  {companyLogoUrl && (
+                    <td align="right">
+                      <Img
+                        src={companyLogoUrl}
+                        alt={companyName}
+                        width="112"
+                        height="40"
+                        style={{ display: 'block', margin: '0 0 0 auto', maxWidth: '112px', maxHeight: '40px', objectFit: 'contain' as const }}
+                      />
+                    </td>
+                  )}
+                </tr>
+              </tbody>
+            </table>
           </Section>
 
-          {/* Gradient accent line */}
-          <div style={gradientLine} />
+          <div style={brandLine} />
 
           {/* Title */}
           <Section style={titleSection}>
@@ -94,7 +114,7 @@ export const BaseEmailTemplate = ({
             <Section style={footer}>
               <Text style={footerCopy}>
                 Este é um e-mail automático enviado pela plataforma{' '}
-                <Link href="https://akuris.com.br" style={{ color: COLORS.primary, textDecoration: 'none' }}>
+                <Link href="https://akuris.pt" style={{ color: COLORS.primary, textDecoration: 'none' }}>
                   Akuris
                 </Link>
                 .
@@ -102,6 +122,7 @@ export const BaseEmailTemplate = ({
               <Text style={footerCopy}>
                 © {new Date().getFullYear()} Akuris · Governança, Risco e Compliance
               </Text>
+              {footerNote && <Text style={footerCopy}>{footerNote}</Text>}
             </Section>
           )}
         </Container>
@@ -115,7 +136,7 @@ export default BaseEmailTemplate;
 // ─── Styles ──────────────────────────────────────────────
 
 const main = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#f4f5f7',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   padding: '40px 0',
 };
@@ -124,30 +145,20 @@ const container = {
   backgroundColor: COLORS.surface,
   margin: '0 auto',
   maxWidth: '600px',
-  borderRadius: '12px',
+  borderRadius: '8px',
   overflow: 'hidden' as const,
   border: `1px solid ${COLORS.border}`,
 };
 
 const headerSection = {
   backgroundColor: COLORS.secondary,
-  padding: '36px 40px',
-  textAlign: 'center' as const,
+  padding: '28px 40px',
+  textAlign: 'left' as const,
 };
 
-const textLogoStyle = {
-  fontSize: '28px',
-  fontWeight: '800' as const,
-  color: '#ffffff',
-  letterSpacing: '3px',
-  margin: '0',
-  textAlign: 'center' as const,
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-};
-
-const gradientLine = {
-  height: '3px',
-  background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.primaryDark}, ${COLORS.primary})`,
+const brandLine = {
+  height: '2px',
+  backgroundColor: COLORS.primary,
 };
 
 const titleSection = {
@@ -156,8 +167,8 @@ const titleSection = {
 
 const h1 = {
   color: COLORS.secondary,
-  fontSize: '26px',
-  fontWeight: '700',
+  fontSize: '24px',
+  fontWeight: '600',
   lineHeight: '34px',
   margin: '0',
 };
@@ -226,7 +237,7 @@ export const emailStyles = {
 
   button: {
     backgroundColor: COLORS.primary,
-    borderRadius: '50px',
+    borderRadius: '6px',
     color: '#ffffff',
     display: 'inline-block',
     fontSize: '15px',
@@ -239,7 +250,7 @@ export const emailStyles = {
   buttonSecondary: {
     backgroundColor: 'transparent',
     border: `2px solid ${COLORS.primary}`,
-    borderRadius: '50px',
+    borderRadius: '6px',
     color: COLORS.primary,
     display: 'inline-block',
     fontSize: '15px',

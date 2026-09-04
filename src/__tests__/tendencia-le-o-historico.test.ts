@@ -11,10 +11,6 @@
  * Um gráfico de risco que estruturalmente não pode melhorar é pior do que
  * nenhum: é o número que vai ao conselho.
  *
- * O mais revelador é que já tinha sido corrigido — em `useRiskScoreTrend`, cujo
- * próprio comentário descreve este bug — e o painel ficou com a versão antiga.
- * Duas implementações do mesmo conceito, e a errada era a mais visível.
- *
  * A regra: quem desenha série temporal de risco lê `riscos_historico_avaliacoes`
  * e resolve a avaliação vigente com `risco-vigente.ts`. Ninguém volta a inferir
  * o passado a partir do estado presente.
@@ -28,8 +24,7 @@ function seriesDeRisco(): string[] {
   return fontes().filter(
     (f) =>
       f.includes('RiskScoreTimeline') ||
-      f.includes('RiskTrendChart') ||
-      f.includes('useRiskScoreTrend'),
+      f.includes('RiskTrendChart'),
   );
 }
 

@@ -20,16 +20,17 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { InicioDoCliente } from "@/components/InicioDoCliente";
-import Layout from "@/components/Layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteFallback } from "@/components/ui/route-fallback";
+import { SEO } from "@/components/SEO";
 import { DocGenProvider } from "@/contexts/DocGenContext";
 import { installStatsInvalidation } from "@/lib/stats-invalidation";
 import { seguirEscritas } from "@/lib/atualizar-apos-escrita";
 
 // Lazy-loaded pages
 const Auth = React.lazy(() => import("@/pages/Auth"));
+const Layout = React.lazy(() => import("@/components/Layout"));
+const InicioDoCliente = React.lazy(() => import("@/components/InicioDoCliente").then((module) => ({ default: module.InicioDoCliente })));
 const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
 const Ativos = React.lazy(() => import("@/pages/Ativos"));
 const AtivosLicencas = React.lazy(() => import("@/pages/AtivosLicencas"));
@@ -57,8 +58,7 @@ const DueDiligence = React.lazy(() => import("@/pages/DueDiligence"));
 const Assessment = React.lazy(() => import("@/pages/Assessment"));
 const RevisaoAcessos = React.lazy(() => import("@/pages/RevisaoAcessos"));
 const ReviewExterna = React.lazy(() => import("@/pages/ReviewExterna"));
-const Denuncia = React.lazy(() => import("@/pages/Denuncia"));
-import DenunciaRouter from "@/pages/DenunciaRouter";
+const DenunciaRouter = React.lazy(() => import("@/pages/DenunciaRouter"));
 const DenunciaExternaRedirect = React.lazy(
   () => import("@/pages/DenunciaExternaRedirect"),
 );
@@ -162,9 +162,14 @@ function AssessmentLinkRedirect() {
  */
 function AuthenticatedShell() {
   return (
-    <Layout>
-      <Outlet />
-    </Layout>
+    <DocGenProvider>
+      <SEO title="Akuris" description="Área segura da plataforma Akuris." noindex />
+      <Suspense fallback={<RouteFallback />}>
+        <Layout>
+          <Outlet />
+        </Layout>
+      </Suspense>
+    </DocGenProvider>
   );
 }
 
@@ -175,32 +180,25 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <Router>
-              <DocGenProvider>
                 <ErrorBoundary>
                   <Routes>
                     {/* Rotas públicas com Suspense individual (não tem sidebar para preservar) */}
                     <Route
                       path="/auth"
                       element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <Auth />
-                        </Suspense>
+                        <><SEO title="Acesso | Akuris" description="Acesso seguro à plataforma Akuris." noindex /><Suspense fallback={<RouteFallback />}><Auth /></Suspense></>
                       }
                     />
                     <Route
                       path="/definir-senha"
                       element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <DefinirSenha />
-                        </Suspense>
+                        <><SEO title="Definir senha | Akuris" description="Definição segura de senha na plataforma Akuris." noindex /><Suspense fallback={<RouteFallback />}><DefinirSenha /></Suspense></>
                       }
                     />
                     <Route
                       path="/assessment/:token"
                       element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <Assessment />
-                        </Suspense>
+                        <><SEO title="Avaliação | Akuris" description="Avaliação segura de due diligence." noindex /><Suspense fallback={<RouteFallback />}><Assessment /></Suspense></>
                       }
                     />
                     {/* Compatibilidade: links antigos enviados por e-mail */}
@@ -319,9 +317,7 @@ function App() {
                     <Route
                       path="/review/:token"
                       element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <ReviewExterna />
-                        </Suspense>
+                        <><SEO title="Revisão de acesso | Akuris" description="Revisão segura de acessos." noindex /><Suspense fallback={<RouteFallback />}><ReviewExterna /></Suspense></>
                       }
                     />
 
@@ -653,7 +649,6 @@ function App() {
                     />
                   </Routes>
                 </ErrorBoundary>
-              </DocGenProvider>
             </Router>
 
             <SonnerToaster />

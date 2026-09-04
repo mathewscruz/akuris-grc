@@ -27,12 +27,15 @@ describe('criticidade comunica intensidade, não uma inicial decorativa', () => 
     expect(tokens).not.toContain('--severity-critical: 272 58% 30%');
   });
 
-  it('preenche apenas os segmentos ativos em sequência e respeita movimento reduzido', () => {
+  it('preenche apenas os segmentos ativos em sequência, repete o ciclo e respeita movimento reduzido', () => {
     expect(chip).toContain('data-severity-step={step}');
     expect(chip).toContain('data-active={step <= activeSteps || undefined}');
-    expect(chip).toContain('--severity-step-delay');
-    expect(tokens).toContain('@keyframes akuris-severity-fill');
-    expect(tokens).toContain('.akuris-severity-step[data-active="true"]');
+    expect(chip).not.toContain('--severity-step-delay');
+    for (const step of [1, 2, 3, 4]) {
+      expect(tokens).toContain(`@keyframes akuris-severity-fill-${step}`);
+      expect(tokens).toContain(`data-severity-step="${step}"`);
+    }
+    expect(tokens).toContain('2.2s var(--motion-ease) infinite both');
     expect(tokens).toContain('.akuris-severity-step,');
   });
 });

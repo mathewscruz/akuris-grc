@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 import { requireUserContext, authErrorResponse } from "../_shared/auth.ts";
 
 const corsHeaders = {
@@ -103,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
       return desc.length > 300 ? desc.substring(0, 300) + "..." : desc;
     };
 
-    const controleLink = `https://akuris.com.br/governanca?tab=controles&controle=${controle_id}`;
+    const controleLink = `https://akuris.pt/governanca/controles?controle=${controle_id}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -112,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
   <div style="background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
     </div>
     <h1 style="font-size: 22px; color: #0a1628; text-align: center; margin-bottom: 24px; font-weight: 600;">📋 Você foi designado como responsável</h1>
     <p style="font-size: 15px; margin-bottom: 20px;">Olá <strong>${responsavelData.nome || "Usuário"}</strong>,</p>
@@ -137,7 +138,8 @@ const handler = async (req: Request): Promise<Response> => {
       from: 'Akuris <noreply@akuris.com.br>',
       to: [responsavelData.email],
       subject: `[Akuris] Você foi designado como responsável: ${controle_nome}`,
-      html: htmlContent,
+      html: sanitizeEmailDocument(htmlContent),
+      text: htmlToText(htmlContent),
     });
 
     if (emailError) {

@@ -31,6 +31,7 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { Resend } from 'npm:resend@2.0.0';
+import { htmlToText, sanitizeEmailDocument } from '../_shared/email.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,7 +134,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const en = String(idioma ?? 'pt').startsWith('en');
     const linha = (MOTIVOS[String(motivo ?? '')] ?? MOTIVOS.estado)[en ? 'en' : 'pt'];
-    const site = Deno.env.get('SITE_URL') ?? 'https://akuris.com.br';
+    const site = Deno.env.get('SITE_URL') ?? 'https://akuris.pt';
     const url = `${site}/${destino.empresa_slug}/denuncia/consulta`;
 
     const assunto = en
@@ -165,7 +166,8 @@ serve(async (req: Request): Promise<Response> => {
       from: 'Akuris <noreply@akuris.com.br>',
       to: [destino.email],
       subject: assunto,
-      html,
+      html: sanitizeEmailDocument(html),
+      text: htmlToText(html),
     });
     if (erroEmail) {
       console.error('Aviso ao denunciante falhou:', erroEmail);

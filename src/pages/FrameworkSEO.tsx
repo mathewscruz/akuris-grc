@@ -24,9 +24,9 @@ export default function FrameworkSEO() {
       publisher: {
         '@type': 'Organization',
         name: 'Akuris',
-        logo: { '@type': 'ImageObject', url: 'https://akuris.com.br/akuris-logo.png' },
+        logo: { '@type': 'ImageObject', url: 'https://akuris.pt/akuris-logo.png' },
       },
-      mainEntityOfPage: `https://akuris.com.br${url}`,
+      mainEntityOfPage: `https://akuris.pt${url}`,
       inLanguage: 'pt-BR',
       about: { '@type': 'Thing', name: fw.nome },
     },
@@ -43,9 +43,9 @@ export default function FrameworkSEO() {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://akuris.com.br/' },
-        { '@type': 'ListItem', position: 2, name: 'Frameworks', item: 'https://akuris.com.br/frameworks' },
-        { '@type': 'ListItem', position: 3, name: fw.nome, item: `https://akuris.com.br${url}` },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://akuris.pt/' },
+        { '@type': 'ListItem', position: 2, name: 'Frameworks', item: 'https://akuris.pt/frameworks' },
+        { '@type': 'ListItem', position: 3, name: fw.nome, item: `https://akuris.pt${url}` },
       ],
     },
   ];

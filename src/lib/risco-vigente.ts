@@ -10,9 +10,8 @@
  * número que vai ao conselho.
  *
  * A verdade está em `riscos_historico_avaliacoes`, que guarda cada reavaliação
- * com a sua data. `useRiskScoreTrend` já a lia para o módulo de Riscos; o
- * painel tinha a versão antiga. Este ficheiro é a resolução partilhada, para
- * não ficarem duas implementações do mesmo conceito outra vez.
+ * com a sua data. Este ficheiro é a resolução partilhada, para o módulo de
+ * Riscos e o painel executivo não divergirem outra vez.
  */
 
 /** Uma linha de `riscos_historico_avaliacoes`, no mínimo necessário. */

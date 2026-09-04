@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const formatDate = (dateStr: string): string => { try { return new Date(dateStr + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }); } catch { return dateStr; } };
     const formatCurrency = (val?: number): string => { if (!val) return "Não informado"; return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val); };
-    const contratoLink = `https://akuris.com.br/contratos?contrato=${contrato_id}`;
+    const contratoLink = `https://akuris.pt/contratos?contrato=${contrato_id}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -126,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
       <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${urgencyConfig.icon} Contrato ${isCritical ? 'Vencido' : 'Próximo do Vencimento'}</span>
     </div>
     <div style="text-align: center; padding: 24px 32px 16px;">
-      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
     </div>
     <div style="padding: 0 32px 32px;">
       <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">${isCritical ? 'Contrato Vencido!' : 'Contrato Próximo do Vencimento'}</h1>
@@ -160,7 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailPromises = Array.from(emailList).map(async (email) => {
       try {
-        const { error: emailError } = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [email], subject: `[Akuris] ${urgencyConfig.icon} Contrato ${isCritical ? 'Vencido' : 'Vencendo'}: ${nome}`, html: htmlContent });
+        const { error: emailError } = await resend.emails.send({ from: 'Akuris <noreply@akuris.com.br>', to: [email], subject: `[Ação necessária] Contrato ${isCritical ? 'vencido' : 'próximo do vencimento'}: ${nome}`, html: sanitizeEmailDocument(htmlContent), text: htmlToText(htmlContent) });
         if (emailError) { console.error(`Erro ao enviar para ${email}:`, emailError); return { email, success: false, error: emailError }; }
         return { email, success: true };
       } catch (error) { return { email, success: false, error }; }

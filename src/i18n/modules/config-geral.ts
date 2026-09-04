@@ -91,6 +91,7 @@ export const configGeral = {
       organizacaoTab: {},
       emailCampanhaEditor: {
         titleEdit: "Editar campanha",
+        titleView: "Visualizar campanha",
         titleNew: "Nova campanha de e-mail",
         description:
           "Crie um e-mail informativo para todos os usuários ativos. O cabeçalho e rodapé Akuris são aplicados automaticamente.",
@@ -108,6 +109,8 @@ export const configGeral = {
         uploadManualLabel: "Enviar imagem manualmente",
         uploadOrAiHint: "ou use a IA acima",
         contentLabel: "Conteúdo do e-mail (HTML)",
+        editorVisual: "Editor visual",
+        editorHtml: "HTML avançado",
         contentPlaceholder: "<h2>Título</h2><p>Texto…</p>",
         contentHint:
           "Apenas o conteúdo principal. O cabeçalho com logo Akuris e o rodapé são aplicados automaticamente.",
@@ -137,7 +140,7 @@ export const configGeral = {
         toastDraftSaveError: "Não foi possível salvar a campanha",
         toastDraftSaved: "Rascunho salvo",
         toastCountRecipientsError: "Erro ao contar destinatários",
-        toastSendSuccess: "Campanha enviada: {sent} entregues, {failed} falhas",
+        toastSendSuccess: "Campanha processada: {sent} aceitas pelo provedor, {failed} falhas",
         toastSendError: "Falha ao enviar",
         toastTestSentSuccess: "Teste enviado para {email}",
         toastTestSentDefault: "Teste enviado para seu e-mail",
@@ -344,6 +347,7 @@ export const configGeral = {
       organizacaoTab: {},
       emailCampanhaEditor: {
         titleEdit: "Edit campaign",
+        titleView: "View campaign",
         titleNew: "New email campaign",
         description:
           "Create an informative email for all active users. The Akuris header and footer are applied automatically.",
@@ -361,6 +365,8 @@ export const configGeral = {
         uploadManualLabel: "Upload image manually",
         uploadOrAiHint: "or use AI above",
         contentLabel: "Email content (HTML)",
+        editorVisual: "Visual editor",
+        editorHtml: "Advanced HTML",
         contentPlaceholder: "<h2>Title</h2><p>Text…</p>",
         contentHint:
           "Main content only. The Akuris logo header and footer are applied automatically.",
@@ -390,7 +396,7 @@ export const configGeral = {
         toastDraftSaveError: "Unable to save the campaign",
         toastDraftSaved: "Draft saved",
         toastCountRecipientsError: "Error counting recipients",
-        toastSendSuccess: "Campaign sent: {sent} delivered, {failed} failed",
+        toastSendSuccess: "Campaign processed: {sent} accepted by provider, {failed} failed",
         toastSendError: "Failed to send",
         toastTestSentSuccess: "Test sent to {email}",
         toastTestSentDefault: "Test sent to your email",

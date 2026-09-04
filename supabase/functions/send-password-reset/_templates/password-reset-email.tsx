@@ -4,7 +4,6 @@ import { BaseEmailTemplate, emailStyles } from '../../_shared/email-templates/Ba
 
 interface PasswordResetEmailProps {
   userName: string;
-  userEmail: string;
   resetUrl: string;
   companyName?: string;
   companyLogoUrl?: string;
@@ -12,14 +11,14 @@ interface PasswordResetEmailProps {
 
 export const PasswordResetEmail = ({
   userName,
-  userEmail,
   resetUrl,
   companyName,
   companyLogoUrl,
 }: PasswordResetEmailProps) => (
   <BaseEmailTemplate
     previewText="Redefinição de senha — Akuris"
-    title="Redefinição de Senha"
+    title="Redefinir senha"
+    companyName={companyName}
     companyLogoUrl={companyLogoUrl}
   >
     <Text style={emailStyles.text}>
@@ -32,12 +31,12 @@ export const PasswordResetEmail = ({
 
     <Section style={emailStyles.buttonSection}>
       <Link href={resetUrl} style={emailStyles.button}>
-        Redefinir Minha Senha
+        Redefinir minha senha
       </Link>
     </Section>
 
     <Text style={emailStyles.textSmall}>
-      ⏳ Este link expira em <strong>1 hora</strong>. Se expirar, solicite uma nova redefinição.
+      Validade: <strong>1 hora</strong>. Depois desse prazo, solicite um novo link.
     </Text>
 
     <Text style={emailStyles.textSmall}>

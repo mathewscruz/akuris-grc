@@ -1,33 +1,27 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { useTableDensity } from "@/hooks/useTableDensity"
 
 /**
- * Tabela base com densidade reativa global.
- * - `comfortable` (padrão): linhas mais espaçadas, header h-12, cell p-4
- * - `compact`: header h-9, cell py-2 px-3 — útil para grandes volumes
- * Densidade é controlada por `<DensityToggle />` + `useTableDensity` (localStorage).
+ * Tabela base do produto.
+ *
+ * Há uma única densidade deliberada: 40px no cabeçalho e cerca de 44px nas
+ * linhas. É suficientemente compacta para listas operacionais e continua
+ * confortável para leitura e toque. A escolha deixa de ser empurrada para o
+ * usuário e todas as telas mantêm o mesmo ritmo vertical.
  */
-type Density = "compact" | "comfortable"
-const DensityCtx = React.createContext<Density>("comfortable")
-
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => {
-  const [density] = useTableDensity()
   return (
-    <DensityCtx.Provider value={density}>
-      <div className="relative w-full overflow-auto">
-        <table
-          ref={ref}
-          data-density={density}
-          className={cn("akuris-table w-full caption-bottom text-sm", className)}
-          {...props}
-        />
-      </div>
-    </DensityCtx.Provider>
+    <div className="relative w-full overflow-auto bg-card">
+      <table
+        ref={ref}
+        className={cn("akuris-table w-full caption-bottom bg-card text-sm", className)}
+        {...props}
+      />
+    </div>
   )
 })
 Table.displayName = "Table"
@@ -95,17 +89,11 @@ TableRow.displayName = "TableRow"
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => {
-  const density = React.useContext(DensityCtx)
-  const sizing =
-    density === "compact"
-      ? "h-9 px-3"
-      : "h-12 px-4"
-  return (
+>(({ className, ...props }, ref) => (
     <th
       ref={ref}
       className={cn(
-        sizing,
+        "h-10 px-4",
         /* O cabeçalho é uma etiqueta, não conteúdo: corpo mais pequeno que a
            célula, caixa alta e cor apagada. Antes tinha o MESMO tamanho do
            conteúdo e a tabela não tinha estrutura visível. */
@@ -118,21 +106,17 @@ const TableHead = React.forwardRef<
       )}
       {...props}
     />
-  )
-})
+))
 TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => {
-  const density = React.useContext(DensityCtx)
-  const sizing = density === "compact" ? "py-2.5 px-3" : "p-4"
-  return (
+>(({ className, ...props }, ref) => (
     <td
       ref={ref}
       className={cn(
-        sizing,
+        "px-4 py-3",
         /* O conteúdo secundário recua para cinzento: o que fica preto é o
            nome do registo (ver `PRIMARY_CELL` no DataTable) e os estados. */
         "align-middle text-xs text-muted-foreground [&:has([role=checkbox])]:pr-0",
@@ -140,8 +124,7 @@ const TableCell = React.forwardRef<
       )}
       {...props}
     />
-  )
-})
+))
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef<

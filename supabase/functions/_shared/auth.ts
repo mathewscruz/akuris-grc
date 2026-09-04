@@ -2,10 +2,11 @@
 // Validates the caller's JWT and resolves their empresa_id from profiles.
 // NEVER trust empresa_id (or user_id) supplied in the request body.
 
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 export interface AuthContext {
   userId: string;
+  sessionId: string;
   empresaId: string | null;
   role: string | null;
   supabase: SupabaseClient; // service-role client for downstream queries
@@ -34,13 +35,14 @@ export async function requireUserContext(req: Request): Promise<AuthContext> {
   }
   const token = authHeader.replace("Bearer ", "");
 
-  // Verify the JWT using anon key (validates signature + expiration).
+  // Verifica assinatura/expiração e extrai o session_id emitido pelo GoTrue.
   const verifier = createClient(SUPABASE_URL, ANON_KEY);
-  const { data: userData, error: userErr } = await verifier.auth.getUser(token);
-  if (userErr || !userData?.user) {
+  const { data: claimsData, error: claimsError } = await verifier.auth.getClaims(token);
+  const userId = typeof claimsData?.claims?.sub === 'string' ? claimsData.claims.sub : null;
+  const sessionId = typeof claimsData?.claims?.session_id === 'string' ? claimsData.claims.session_id : null;
+  if (claimsError || !userId || !sessionId) {
     throw new AuthError("Unauthorized: invalid or expired token", 401);
   }
-  const userId = userData.user.id;
 
   // Service-role client for elevated reads.
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -57,6 +59,7 @@ export async function requireUserContext(req: Request): Promise<AuthContext> {
 
   return {
     userId,
+    sessionId,
     empresaId: profile?.empresa_id ?? null,
     role: profile?.role ?? null,
     supabase,
@@ -64,18 +67,16 @@ export async function requireUserContext(req: Request): Promise<AuthContext> {
 }
 
 /**
- * Ensures the caller has a valid (unexpired) MFA session in `mfa_sessions`.
- * Skips the check when MFA_ENFORCED env var is set to '0' or 'false'
- * (allows disabling for internal service-role invocations only).
+ * Ensures the caller has a valid MFA session bound to this JWT session.
+ * There is deliberately no environment flag that disables this gate: callers
+ * that do not need user MFA must use a separate service-role-only entry point.
  */
 export async function requireValidMfa(ctx: AuthContext): Promise<void> {
-  const flag = (Deno.env.get('MFA_ENFORCED') || '1').toLowerCase();
-  if (flag === '0' || flag === 'false' || flag === 'off') return;
-
   const { data, error } = await ctx.supabase
     .from('mfa_sessions')
     .select('id, expires_at')
     .eq('user_id', ctx.userId)
+    .eq('auth_session_id', ctx.sessionId)
     .gt('expires_at', new Date().toISOString())
     .order('expires_at', { ascending: false })
     .limit(1)

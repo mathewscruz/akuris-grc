@@ -31,7 +31,6 @@ import { fontes, ler } from './_fontes';
 /** Ficheiro → razão pela qual pode fixar duração acima do fallback. */
 const EXCECOES: Record<string, string> = {
   'src/hooks/useInactivityTimeout.tsx': 'contagem decrescente da sessão, não é aviso',
-  'src/components/ForgotPasswordDialog.tsx': 'única instrução, com o diálogo já fechado',
   'src/components/documentos/DocGenDialog.tsx': 'aviso com botão de acção',
   'src/pages/PlanosAcao.tsx': 'exclusão com botão Desfazer',
   'src/pages/Relatorios.tsx': 'exclusão com botão Desfazer',

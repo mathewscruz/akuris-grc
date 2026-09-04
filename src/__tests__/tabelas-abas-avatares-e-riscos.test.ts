@@ -18,6 +18,7 @@ const riscosIcone = ler('src/components/icons/modules/RiscosIcon.tsx');
 const catalogoModulos = ler('src/lib/module-icons.ts');
 const tailwind = ler('tailwind.config.ts');
 const html = ler('index.html');
+const planos = ler('src/pages/PlanosAcao.tsx');
 
 describe('padrão visual das tabelas', () => {
   it('leva o degradê de Atividades Recentes para a tabela compartilhada', () => {
@@ -35,7 +36,26 @@ describe('padrão visual das tabelas', () => {
     expect(dataTable).toContain('<TableHeader className="sticky top-0 z-20">');
     expect(estilos).toContain('.akuris-table > thead th');
     expect(estilos).toContain('linear-gradient(');
+    expect(estilos).toContain('hsl(var(--card)) 0%');
     expect(estilos).toContain('hsl(var(--card)) 100%');
+  });
+
+  it('usa fundo branco, uma densidade única e paginação por padrão', () => {
+    expect(tabela).toContain('bg-card text-sm');
+    expect(tabela).toContain('"h-10 px-4"');
+    expect(tabela).toContain('"px-4 py-3"');
+    expect(tabela).not.toContain('useTableDensity');
+    expect(dataTable).toContain('paginated = true');
+    expect(dataTable).toContain('pageSize: initialPageSize = 20');
+    expect(dataTable).toContain('const hasToolbar =');
+    expect(dataTable).not.toContain('DensityToggle');
+  });
+
+  it('separa o modo Lista/Kanban das abas do módulo e aproxima filtros da tabela', () => {
+    expect(planos).toContain('role="group"');
+    expect(planos).toContain("onClick={() => setViewMode('lista')}");
+    expect(planos).toContain('border-b border-border/60 p-4');
+    expect(planos).not.toContain('DensityToggle');
   });
 
   it('não sugere interação no estado vazio', () => {

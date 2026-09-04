@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText } from "../_shared/email.ts";
 import React from "npm:react@18.3.1";
 import { renderAsync } from "npm:@react-email/components@0.0.22";
 import { TestEmail } from "./_templates/test-email.tsx";
@@ -41,6 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
       to: [email],
       subject: '[TESTE] Akuris — Teste de E-mail',
       html,
+      text: htmlToText(html),
     });
 
     if (emailError) throw emailError;

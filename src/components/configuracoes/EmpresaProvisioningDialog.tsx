@@ -25,7 +25,7 @@ interface Props {
  * nova empresa (registo, licença, canal de denúncia, estrutura de dados),
  * seguindo o mesmo padrão visual do progresso do DocGen.
  */
-export const EmpresaProvisioningDialog: React.FC<Props> = ({ open, steps, title, description }) => {
+const EmpresaProvisioningDialog: React.FC<Props> = ({ open, steps, title, description }) => {
   const { t } = useLanguage();
   const doneCount = steps.filter((s) => s.state === 'done').length;
   const percent = steps.length ? Math.round((doneCount / steps.length) * 100) : 0;

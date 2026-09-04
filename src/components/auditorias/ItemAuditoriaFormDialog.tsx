@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { DateField } from "@/components/ui/date-field";
 import { ControleSelect } from "./ControleSelect";

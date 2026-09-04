@@ -126,7 +126,6 @@ const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
             step === 4 && 'h-3',
             step <= activeSteps ? 'opacity-100' : 'opacity-20 [animation:none]',
           )}
-          style={{ '--severity-step-delay': `${(step - 1) * 65}ms` } as React.CSSProperties}
         />
       ))}
     </span>

@@ -11,7 +11,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { DataTable, Column } from '@/components/ui/data-table';
-import { DensityToggle } from '@/components/ui/density-toggle';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -686,7 +685,7 @@ export default function PlanosAcao() {
         <TabsContent value={activeTab} className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
-              <div className="p-4 sm:p-6 pb-4">
+              <div className="border-b border-border/60 p-4">
           <ModuleToolbar
             searchValue={search}
             onSearchChange={setSearch}
@@ -725,14 +724,31 @@ export default function PlanosAcao() {
               </>
             }
             viewSwitcher={
-              <div className="flex items-end gap-2">
-                <DensityToggle className="hidden md:inline-flex" />
-                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'lista' | 'kanban')}>
-                  <TabsList>
-                    <TabsTrigger value="lista"><IconList className="h-4 w-4 mr-1.5" />{t('planosAcao.viewList')}</TabsTrigger>
-                    <TabsTrigger value="kanban"><IconGrid className="h-4 w-4 mr-1.5" />{t('planosAcao.viewKanban')}</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <div
+                role="group"
+                aria-label={`${t('planosAcao.viewList')} / ${t('planosAcao.viewKanban')}`}
+                className="inline-flex rounded-lg border border-border bg-muted/25 p-1"
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-pressed={viewMode === 'lista'}
+                  className={viewMode === 'lista' ? 'bg-card text-primary shadow-sm hover:bg-card' : 'text-muted-foreground'}
+                  onClick={() => setViewMode('lista')}
+                >
+                  <IconList className="mr-1.5 h-4 w-4" />{t('planosAcao.viewList')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-pressed={viewMode === 'kanban'}
+                  className={viewMode === 'kanban' ? 'bg-card text-primary shadow-sm hover:bg-card' : 'text-muted-foreground'}
+                  onClick={() => setViewMode('kanban')}
+                >
+                  <IconGrid className="mr-1.5 h-4 w-4" />{t('planosAcao.viewKanban')}
+                </Button>
               </div>
             }
           />
@@ -745,7 +761,6 @@ export default function PlanosAcao() {
                 // traz uma por omissão e o ecrã ficava com dois campos
                 // empilhados, o de baixo sem rótulo nenhum.
                 searchable={false}
-                showDensityToggle={false}
                 // A busca e os filtros vivem no `ModuleToolbar` acima; sem
                 // isto a tabela não sabia que estavam activos e o ecrã
                 // vazio dizia «Você não possui itens pendentes» a quem

@@ -33,7 +33,7 @@ const move = <T,>(arr: T[], from: number, to: number) => {
   return copy;
 };
 
-export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onChange }) => {
+const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onChange }) => {
   const { t } = useLanguage();
   const setMeta = (k: string, v: any) => onChange({ ...value, metadados: { ...(value.metadados || {}), [k]: v } });
   const setSection = (idx: number, patch: Partial<DocSection>) => {

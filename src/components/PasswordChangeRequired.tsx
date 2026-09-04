@@ -19,21 +19,21 @@ interface PasswordChangeRequiredProps {
 }
 
 // Função para calcular força da senha
-const calculatePasswordStrength = (password: string, t: (k: string) => string): { score: number; label: string; color: string } => {
+const calculatePasswordStrength = (password: string, t: (k: string) => string): { score: number; label: string } => {
   let score = 0;
-  
-  if (password.length >= 6) score += 20;
-  if (password.length >= 8) score += 20;
+
+  if (password.length >= 8) score += 30;
+  if (password.length >= 12) score += 10;
   if (/[a-z]/.test(password)) score += 15;
   if (/[A-Z]/.test(password)) score += 15;
   if (/[0-9]/.test(password)) score += 15;
   if (/[^a-zA-Z0-9]/.test(password)) score += 15;
 
-  if (score <= 20) return { score, label: t('passwordChange.strengthVeryWeak'), color: 'bg-destructive' };
-  if (score <= 40) return { score, label: t('passwordChange.strengthWeak'), color: 'bg-warning' };
-  if (score <= 60) return { score, label: t('passwordChange.strengthFair'), color: 'bg-warning' };
-  if (score <= 80) return { score, label: t('passwordChange.strengthGood'), color: 'bg-info' };
-  return { score, label: t('passwordChange.strengthStrong'), color: 'bg-success' };
+  if (score <= 20) return { score, label: t('passwordChange.strengthVeryWeak') };
+  if (score <= 40) return { score, label: t('passwordChange.strengthWeak') };
+  if (score <= 60) return { score, label: t('passwordChange.strengthFair') };
+  if (score <= 80) return { score, label: t('passwordChange.strengthGood') };
+  return { score, label: t('passwordChange.strengthStrong') };
 };
 
 const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, onPasswordChanged }) => {
@@ -45,6 +45,7 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [requestError, setRequestError] = useState('');
 
   // Cálculo de força da senha
   const passwordStrength = useMemo(() => calculatePasswordStrength(newPassword, t), [newPassword, t]);
@@ -65,25 +66,26 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRequestError('');
     
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error(t('passwordChange.fillAllFields'));
+      setRequestError(t('passwordChange.fillAllFields'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error(t('passwordChange.passwordsDontMatch'));
+      setRequestError(t('passwordChange.passwordsDontMatch'));
       return;
     }
 
     const falha = primeiraFalha(newPassword, t);
     if (falha) {
-      toast.error(falha);
+      setRequestError(falha);
       return;
     }
 
     if (newPassword === currentPassword) {
-      toast.error(t('passwordChange.mustBeDifferent'));
+      setRequestError(t('passwordChange.mustBeDifferent'));
       return;
     }
 
@@ -92,7 +94,7 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
 
       // Validar senha atual via re-autenticação
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser?.email) throw new Error('Não foi possível obter o email do usuário');
+      if (!currentUser?.email) throw new Error('current_user_missing');
 
       const { error: reAuthError } = await supabase.auth.signInWithPassword({
         email: currentUser.email,
@@ -100,7 +102,7 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
       });
 
       if (reAuthError) {
-        toast.error(t('passwordChange.incorrectCurrent'));
+        setRequestError(t('passwordChange.incorrectCurrent'));
         return;
       }
 
@@ -111,20 +113,36 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
 
       if (error) throw error;
 
-      // Atualizar status da senha temporária
+      // Atualizar status da senha temporária. Depois de a senha mudar, as
+      // revogações ainda são tentadas mesmo se esta escrita falhar.
+      let temporaryPasswordError: unknown = null;
       const user = await supabase.auth.getUser();
       if (user.data.user) {
-        await exigirEscrita(supabase
-          .from('temporary_passwords')
-          .update({ is_temporary: false })
-          .eq('user_id', user.data.user.id));
+        try {
+          await exigirEscrita(supabase
+            .from('temporary_passwords')
+            .update({ is_temporary: false })
+            .eq('user_id', user.data.user.id));
+        } catch (writeError) {
+          temporaryPasswordError = writeError;
+        }
       }
 
-      toast.success(t('passwordChange.success'));
+      const { error: revokeError } = await supabase.rpc('revoke_my_mfa_sessions');
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
+      if (temporaryPasswordError || revokeError || signOutError) {
+        throw temporaryPasswordError || revokeError || signOutError;
+      }
+
       onPasswordChanged();
-    } catch (error: any) {
-      logger.error('Erro ao alterar senha', { module: 'Auth', action: 'change-password' });
-      toast.error(error.message || t('passwordChange.error'));
+      toast.success(t('passwordChange.successRelogin'));
+    } catch (error) {
+      logger.error('Erro ao alterar senha', {
+        module: 'Auth',
+        action: 'change-password',
+        reason: error instanceof Error ? error.name : 'unknown',
+      });
+      setRequestError(t('passwordChange.error'));
     } finally {
       setLoading(false);
     }
@@ -137,9 +155,12 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader className="text-center">
-          <IconWarning className="mx-auto mb-4 h-7 w-7 text-warning" />
-          <DialogTitle className="text-xl">{t('passwordChange.title')}</DialogTitle>
+        <DialogHeader className="border-b border-border pb-4 text-left">
+          <div className="mb-2 flex items-center gap-2 text-warning">
+            <IconWarning className="h-4 w-4" />
+            <span className="text-xs font-medium uppercase tracking-[0.14em]">{t('defineSenhaPage.eyebrow')}</span>
+          </div>
+          <DialogTitle className="text-xl font-semibold">{t('passwordChange.title')}</DialogTitle>
           <DialogDescription>
             {t('passwordChange.description')}
           </DialogDescription>
@@ -161,14 +182,16 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   id="currentPassword"
                   type={showCurrentPassword ? 'text' : 'password'}
                   value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  onChange={(e) => { setCurrentPassword(e.target.value); setRequestError(''); }}
                   placeholder={t('passwordChange.currentPasswordPlaceholder')}
                   className="pr-10"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 flex items-center pr-3"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  aria-label={showCurrentPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showCurrentPassword ? (
                     <IconHide className="h-4 w-4 text-muted-foreground" />
@@ -186,14 +209,16 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => { setNewPassword(e.target.value); setRequestError(''); }}
                   placeholder={t('passwordChange.newPasswordPlaceholder')}
                   className="pr-10"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 flex items-center pr-3"
                   onClick={() => setShowNewPassword(!showNewPassword)}
+                  aria-label={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showNewPassword ? (
                     <IconHide className="h-4 w-4 text-muted-foreground" />
@@ -227,14 +252,16 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setRequestError(''); }}
                   placeholder={t('passwordChange.confirmPasswordPlaceholder')}
                   className="pr-10"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 flex items-center pr-3"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showConfirmPassword ? (
                     <IconHide className="h-4 w-4 text-muted-foreground" />
@@ -283,6 +310,12 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                 </li>
               </ul>
             </div>
+
+            {requestError && (
+              <p role="alert" aria-live="assertive" className="border-l-2 border-destructive pl-3 text-sm text-destructive">
+                {requestError}
+              </p>
+            )}
 
             <Button 
               type="submit" 

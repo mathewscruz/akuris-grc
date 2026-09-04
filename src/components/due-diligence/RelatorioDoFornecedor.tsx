@@ -47,7 +47,7 @@ import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateShort } from '@/lib/date-utils';
 import { resolveScoreDueDiligenceTone } from '@/lib/status-tone';
-import type { ParecerDaIA, SecaoDoParecer } from './ParecerIA';
+import type { ParecerDaIA, SecaoDoParecer } from './parecer-ia-types';
 
 /** Uma secção como o cálculo a devolve. */
 export interface SecaoDoScore {

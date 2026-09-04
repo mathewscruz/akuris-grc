@@ -12,6 +12,7 @@ import { PlanBadge } from '@/components/PlanBadge';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SEO } from '@/components/SEO';
 export default function PlanosAssinatura() {
   const { t } = useLanguage();
   const [isAnnual, setIsAnnual] = useState(false);
@@ -35,6 +36,7 @@ export default function PlanosAssinatura() {
 
   return (
     <div className="container mx-auto px-4 py-12 space-y-8">
+      <SEO title="Planos Akuris | Plataforma GRC" description="Conheça as opções da Akuris para centralizar riscos, controles, auditorias e privacidade." canonical="/planos" />
       <div className="flex justify-start">
         <Button asChild variant="ghost" size="sm">
           <Link to="/"><IconArrowLeft className="h-4 w-4 mr-2" /> {t('cardsKpi.sweep.sistema.voltar')}</Link>

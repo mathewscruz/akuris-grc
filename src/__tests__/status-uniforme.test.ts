@@ -20,6 +20,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fontesTsx, ler, linhas } from './_fontes';
 import { resolve } from 'node:path';
+import { resolveScoreDueDiligenceTone, resolveSeverityTone } from '@/lib/status-tone';
 
 const arquivos = fontesTsx();
 
@@ -75,5 +76,28 @@ describe('estado tem sempre a mesma forma', () => {
       });
     }
     expect(infratores, 'O corpo de letra do chip é o do componente — um chip menor que os outros lê-se como defeito.').toEqual([]);
+  });
+});
+
+describe('cor comunica sempre o mesmo significado', () => {
+  it('mantém uma única rampa para severidade em todos os módulos', () => {
+    expect(resolveSeverityTone('Crítico')).toMatchObject({ tone: 'destructive', mark: 'C' });
+    expect(resolveSeverityTone('Alta')).toMatchObject({ tone: 'orange', mark: 'A' });
+    expect(resolveSeverityTone('Médio')).toMatchObject({ tone: 'warning', mark: 'M' });
+    expect(resolveSeverityTone('Baixa')).toMatchObject({ tone: 'success', mark: 'B' });
+  });
+
+  it('usa a rampa inversa para scores, onde um número maior é melhor', () => {
+    expect(resolveScoreDueDiligenceTone(90).tone).toBe('success');
+    expect(resolveScoreDueDiligenceTone(70).tone).toBe('warning');
+    expect(resolveScoreDueDiligenceTone(50).tone).toBe('orange');
+    expect(resolveScoreDueDiligenceTone(20).tone).toBe('destructive');
+  });
+
+  it('o dashboard reutiliza os mesmos resolvers e preserva o medidor', () => {
+    const drawer = ler('src/components/dashboard/KpiDrillDownDrawer.tsx');
+    expect(drawer).toContain('resolveSeverityTone(v)');
+    expect(drawer).toContain('resolveScoreDueDiligenceTone(v)');
+    expect(drawer).toContain('mark={item.mark}');
   });
 });

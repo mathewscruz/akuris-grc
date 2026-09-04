@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useReacoes, useToggleReacao } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
@@ -7,12 +6,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { IconReaction } from '@/components/icons';
 
 const EMOJIS = ['👍', '✅', '🚀', '🎉', '🙏', '👀', '❓', '🛑'];
-
-export function ReacoesBar({ comentarioIds }: { comentarioIds: string[] }) {
-  // umbrella loader — caller renderiza vários, mas hook único economiza calls
-  useReacoes(comentarioIds);
-  return null;
-}
 
 export function ReacoesPorComentario({ comentarioId, reacoes }: { comentarioId: string; reacoes: ReturnType<typeof useReacoes>['data'] }) {
   const { user } = useAuth();

@@ -37,7 +37,7 @@ export const TestEmail = ({
     </Section>
 
     <Section style={emailStyles.buttonSection}>
-      <Link href="https://akuris.com.br" style={emailStyles.button}>
+      <Link href="https://akuris.pt" style={emailStyles.button}>
         Acessar Plataforma
       </Link>
     </Section>

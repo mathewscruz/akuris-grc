@@ -120,7 +120,7 @@ serve(async (req) => {
           "sections": [{
             "activityTitle": "✅ Conexão com GovernAII estabelecida!",
             "activitySubtitle": new Date().toLocaleString('pt-BR'),
-            "activityImage": "https://akuris.com.br/akuris-logo.png",
+            "activityImage": "https://akuris.pt/akuris-logo.png",
             "facts": [{
               "name": "Status",
               "value": "Conectado com sucesso"

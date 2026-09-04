@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
+import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from("empresas").select("nome").eq("id", empresa_id).single();
     const companyName = empresa?.nome || "Akuris";
 
-    const riscoLink = `https://akuris.com.br/riscos`;
+    const riscoLink = `https://akuris.pt/riscos`;
     let destinatario = aprovador;
     let subject = "";
     let heading = "";
@@ -84,8 +85,8 @@ const handler = async (req: Request): Promise<Response> => {
       ctaText = "Revisar e Decidir";
     } else if (tipo === "aprovado") {
       destinatario = solicitante!;
-      subject = `[Akuris] ✅ Aceite de Risco Aprovado: ${risco_nome}`;
-      heading = "✅ Aceite de Risco Aprovado";
+      subject = `[Aceite aprovado] ${risco_nome}`;
+      heading = "Aceite de risco aprovado";
       bodyText = `<strong>${aprovador.nome || "O aprovador"}</strong> aprovou o aceite formal do risco abaixo. Ele agora aparece no sub-módulo de Aceite de Risco.`;
       ctaText = "Ver Aceite de Risco";
     } else {
@@ -107,11 +108,11 @@ const handler = async (req: Request): Promise<Response> => {
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
-  <div style="background-color: #ffffff; border-radius: 12px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
-    <div style="background-color: #0a1628; text-align: center; padding: 32px 32px 16px;">
-      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+  <div style="background-color: #ffffff; border-radius: 8px; padding: 0; border:1px solid #e2e8f0; overflow: hidden;">
+    <div style="background-color: #0a1628; text-align: left; padding: 26px 32px;">
+      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
     </div>
-    <div style="height: 3px; background: linear-gradient(90deg, #7552ff, #5a3fd6, #7552ff);"></div>
+    <div style="height: 2px; background: #7552ff;"></div>
     <div style="padding: 32px;">
       <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">${heading}</h1>
       <p style="font-size: 15px; color: #3c4149; margin: 0 0 20px;">Olá <strong>${destinatario?.nome || "Usuário"}</strong>,</p>
@@ -136,7 +137,8 @@ const handler = async (req: Request): Promise<Response> => {
       from: "Akuris <noreply@akuris.com.br>",
       to: [destinatario.email],
       subject,
-      html: htmlContent,
+      html: sanitizeEmailDocument(htmlContent),
+      text: htmlToText(htmlContent),
     });
 
     console.log(`E-mail de aceite de risco (${tipo}) enviado para ${destinatario?.email}`);

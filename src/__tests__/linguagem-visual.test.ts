@@ -77,7 +77,7 @@ describe('ícones', () => {
       .filter((f) => /\bAkurisAIIcon\b/.test(linhas(f).join('\n')));
     expect(
       foraDoAssistente,
-      'AkurisAIIcon é a marca do assistente. Fora dele, use o rótulo ou SeloSugerido.',
+      'AkurisAIIcon é a marca do assistente. Fora dele, use um rótulo que descreva o estado.',
     ).toEqual([]);
   });
 });

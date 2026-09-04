@@ -1,265 +1,254 @@
-import React, { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { toast } from '@/lib/toast';
-import {
-  IconMail as Mail,
-  IconRefresh as RefreshCw,
-  IconLock as Lock,
-  IconArrowLeft as ArrowLeft,
-} from '@/components/icons';
-import logoImage from '@/assets/akuris-logo.png';
+import { IconArrowLeft, IconRefresh, IconShieldCheck } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
-import { CornerAccent } from '@/components/identity/CornerAccent';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { logger } from '@/lib/logger';
 
 interface MFAVerificationProps {
-  userId: string;
   email: string;
+  codeExpiresAt?: string;
   onVerified: (expiresAt?: string) => void;
   onCancel: () => void;
-  /**
-   * O envio do código falhou antes deste ecrã abrir.
-   *
-   * Sem isto, o ecrã dizia «Enviamos um código de 6 dígitos para:» mesmo
-   * quando a função de envio devolvia 500 — e a pessoa ficava à espera
-   * de um email que nunca foi gerado, num ecrã que lhe garantia o
-   * contrário. O `Auth` já sabia da falha; faltava dizê-lo aqui.
-   */
   envioFalhou?: boolean;
 }
 
-/**
- * Símbolo Akuris (mesmo path do AkurisPulse) — usado como identidade
- * visual no topo do card MFA, substituindo ícones genéricos do Lucide.
- */
-const AKURIS_PATH =
-  'M43.7,13.1 L72.3,66.9 Q76,74 68,74 L61,74 Q56,74 53.4,69.7 L42.6,52.3 Q40,48 37.4,52.3 L26.6,69.7 Q24,74 19,74 L12,74 Q4,74 7.7,66.9 L36.3,13.1 Q40,6 43.7,13.1 Z';
+const secondsUntil = (iso?: string) => {
+  if (!iso) return 5 * 60;
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 1000));
+};
 
-const AkurisMark = ({ size = 28 }: { size?: number }) => (
-  <svg viewBox="0 0 80 80" width={size} height={size} aria-hidden="true">
-    <path d={AKURIS_PATH} fill="currentColor" />
-  </svg>
-);
+const formatTimer = (seconds: number) =>
+  `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-export const MFAVerification: React.FC<MFAVerificationProps> = ({
-  userId,
+export const MFAVerification = ({
   email,
+  codeExpiresAt,
   onVerified,
   onCancel,
   envioFalhou = false,
-}) => {
+}: MFAVerificationProps) => {
   const { t } = useLanguage();
-  const { markMfaVerified } = useAuth();
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  /* Espelha a prop, mas «Reenviar» pode mudá-la nos dois sentidos sem
-     voltar ao `Auth`: reenviou e correu bem, o ecrã volta a poder
-     prometer o código; correu mal, continua a dizer a verdade. */
   const [semCodigo, setSemCodigo] = useState(envioFalhou);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(60);
+  const [expiresAt, setExpiresAt] = useState(codeExpiresAt);
+  const [expiryCountdown, setExpiryCountdown] = useState(() => secondsUntil(codeExpiresAt));
+
   useEffect(() => setSemCodigo(envioFalhou), [envioFalhou]);
-  const [countdown, setCountdown] = useState(60);
-  const [canResend, setCanResend] = useState(false);
+  useEffect(() => {
+    if (codeExpiresAt) {
+      setExpiresAt(codeExpiresAt);
+      setExpiryCountdown(secondsUntil(codeExpiresAt));
+    }
+  }, [codeExpiresAt]);
 
   useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setCanResend(true);
-    }
-  }, [countdown]);
+    const timer = window.setInterval(() => {
+      setResendCountdown((current) => Math.max(0, current - 1));
+      setExpiryCountdown(secondsUntil(expiresAt));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [expiresAt]);
 
-  const handleVerify = async () => {
-    if (code.length !== 6) {
-      toast.error(t('mfaScreen.enterFullCode'));
-      return;
-    }
+  const maskedEmail = useMemo(() => {
+    const [local = '', domain = ''] = email.split('@');
+    const visible = local.slice(0, Math.min(2, local.length));
+    return domain ? `${visible}${'•'.repeat(Math.max(3, local.length - visible.length))}@${domain}` : email;
+  }, [email]);
 
+  const messageForCode = useCallback((errorCode?: string, remaining?: number) => {
+    if (errorCode === 'invalid_code') {
+      return t('mfaScreen.invalidWithAttempts', { attempts: String(Math.max(0, remaining ?? 0)) });
+    }
+    if (errorCode === 'expired_code') return t('mfaScreen.expiredCode');
+    if (errorCode === 'too_many_attempts') return t('mfaScreen.tooManyAttempts');
+    if (errorCode === 'session_context_missing') return t('mfaScreen.sessionExpired');
+    return t('mfaScreen.verifyError');
+  }, [t]);
+
+  const handleVerify = useCallback(async () => {
+    if (code.length !== 6 || isVerifying || semCodigo || expiryCountdown <= 0) return;
     setIsVerifying(true);
+    setErrorMessage('');
     try {
-      const response = await supabase.functions.invoke('verify-mfa-code', {
-        body: { code },
-      });
-
+      const response = await supabase.functions.invoke('verify-mfa-code', { body: { code } });
       if (response.error) throw response.error;
 
-      const data = response.data;
-      if (data.success) {
-        // Marca a sessão MFA como válida no AuthProvider (cache local + libera flag).
-        markMfaVerified(data.expires_at);
-        onVerified(data.expires_at);
-      } else {
-        toast.error(data.error || t('mfaScreen.invalidCode'));
-        setCode('');
+      if (response.data?.success === true) {
+        onVerified(response.data.expires_at);
+        return;
       }
-    } catch (error: any) {
-      toast.error(t('mfaScreen.verifyError'));
+
+      setErrorMessage(messageForCode(response.data?.error_code, response.data?.remaining_attempts));
+      setCode('');
+      if (response.data?.error_code === 'expired_code' || response.data?.error_code === 'too_many_attempts') {
+        setExpiryCountdown(0);
+      }
+    } catch (error) {
+      logger.warn('Não foi possível verificar o MFA', {
+        module: 'Auth',
+        action: 'verify-mfa',
+        reason: error instanceof Error ? error.name : 'unknown',
+      });
+      setErrorMessage(t('mfaScreen.verifyError'));
       setCode('');
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, [code, expiryCountdown, isVerifying, messageForCode, onVerified, semCodigo, t]);
+
+  useEffect(() => {
+    if (code.length === 6 && !isVerifying) void handleVerify();
+  }, [code, handleVerify, isVerifying]);
 
   const handleResend = async () => {
+    if (resendCountdown > 0 || isResending) return;
     setIsResending(true);
+    setErrorMessage('');
     try {
       const response = await supabase.functions.invoke('send-mfa-code', {
-        body: { force: true },
+        body: { force: true, context: 'session_restore' },
       });
-
       if (response.error) throw response.error;
 
-      const data = response.data;
-      if (data.success) {
-        toast.success(t('mfaScreen.newCodeSent'));
+      if (response.data?.success === true) {
         setSemCodigo(false);
-        setCountdown(60);
-        setCanResend(false);
         setCode('');
+        setResendCountdown(Number(response.data.resend_after ?? 60));
+        const nextExpiry = response.data.expires_at as string | undefined;
+        setExpiresAt(nextExpiry);
+        setExpiryCountdown(secondsUntil(nextExpiry));
+        return;
+      }
+
+      if (response.data?.error_code === 'cooldown') {
+        setResendCountdown(Number(response.data.retry_after ?? 60));
+        setErrorMessage(t('mfaScreen.waitBeforeResend'));
+      } else if (response.data?.error_code === 'rate_limited') {
+        setErrorMessage(t('mfaScreen.rateLimited'));
       } else {
-        toast.error(data.error || t('mfaScreen.resendError'));
+        setErrorMessage(t('mfaScreen.resendError'));
         setSemCodigo(true);
       }
-    } catch (error: any) {
-      toast.error(t('mfaScreen.resendError'));
+    } catch (error) {
+      logger.warn('Não foi possível reenviar o MFA', {
+        module: 'Auth',
+        action: 'resend-mfa',
+        reason: error instanceof Error ? error.name : 'unknown',
+      });
+      setErrorMessage(t('mfaScreen.resendError'));
       setSemCodigo(true);
     } finally {
       setIsResending(false);
     }
   };
 
-  // Auto-submit quando 6 dígitos
-  useEffect(() => {
-    if (code.length === 6) {
-      handleVerify();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
-
-  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+  const codeExpired = expiryCountdown <= 0;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[hsl(230,25%,7%)] to-[hsl(228,20%,9%)] px-6 py-12 relative overflow-hidden">
-      <AkurisMarkPattern opacity={0.04} />
-      <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="w-full max-w-sm relative z-10 space-y-8">
-        <div className="text-center auth-entra">
-          <img src={logoImage} alt="Akuris" className="h-12 mx-auto object-contain" />
+    <AuthShell>
+      <div className="space-y-8">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+            <span className="text-xs font-medium uppercase tracking-[0.16em] text-primary">{t('mfaScreen.eyebrow')}</span>
+            <span className="text-xs tabular-nums text-white/35">{t('mfaScreen.step')}</span>
+          </div>
+          <h1 className="text-[1.75rem] font-medium tracking-[-0.02em] text-white">{t('mfaScreen.heading')}</h1>
+          <p className={semCodigo ? 'text-sm leading-6 text-warning' : 'text-sm leading-6 text-white/50'}>
+            {semCodigo
+              ? t('mfaScreen.envioFalhouDescricao', { email: maskedEmail })
+              : t('mfaScreen.descriptionWithEmail', { email: maskedEmail })}
+          </p>
         </div>
 
-        <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md p-8 space-y-7 auth-entra overflow-hidden">
-          <CornerAccent />
-
-          <div className="text-center space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <AkurisMark size={28} />
-            </div>
-            <div className="space-y-2">
-              <span className="block text-primary/70 text-xs font-medium">
-                {t('mfaScreen.eyebrow')}
+        {!semCodigo && (
+          <>
+            <div className="flex items-center justify-between border-y border-white/[0.08] py-3 text-xs">
+              <span className="flex items-center gap-2 text-white/45">
+                <IconShieldCheck className="h-4 w-4 text-primary" />
+                {t('mfaScreen.codeValidity')}
               </span>
-              <h2 className="text-2xl font-semibold text-white tracking-tight">
-                {t('mfaScreen.heading')}
-              </h2>
-              <p className={semCodigo ? 'text-sm text-warning' : 'text-sm text-white/50'}>
-                {semCodigo
-                  ? t('mfaScreen.envioFalhouDescricao', { email: maskedEmail })
-                  : t('mfaScreen.description')}
-              </p>
+              <span className={codeExpired ? 'font-semibold tabular-nums text-destructive' : 'font-semibold tabular-nums text-white/80'}>
+                {formatTimer(expiryCountdown)}
+              </span>
             </div>
 
-            {/* A pastilha do e-mail só faz sentido quando há mesmo um
-                código a caminho dele; na mensagem de falha o endereço já
-                aparece dentro da frase. */}
-            {!semCodigo && (
-              <div className="flex justify-center pt-1">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02]">
-                  <Mail className="w-3.5 h-3.5 text-primary/60" />
-                  <span className="text-xs text-white/80 font-medium tracking-wide">{maskedEmail}</span>
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-center">
-            <InputOTP
-              maxLength={6}
-              value={code}
-              onChange={(value) => setCode(value)}
-              disabled={isVerifying}
-            >
-              <InputOTPGroup className="gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <div key={index} className="contents">
-                    {index === 3 && (
-                      <span className="self-center w-2 h-px bg-white/15" aria-hidden="true" />
-                    )}
+            <div className="flex justify-center">
+              <InputOTP
+                maxLength={6}
+                value={code}
+                onChange={(value) => {
+                  if (/^\d*$/.test(value)) {
+                    setCode(value);
+                    setErrorMessage('');
+                  }
+                }}
+                disabled={isVerifying || codeExpired}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                aria-label={t('mfaScreen.codeInputLabel')}
+              >
+                <InputOTPGroup className="gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
                     <InputOTPSlot
+                      key={index}
                       index={index}
-                      className="w-11 h-14 text-lg font-semibold bg-[hsl(230,25%,9%)] border-white/[0.10] text-white rounded-lg transition-ui data-[active=true]:border-primary data-[active=true]:ring-2 data-[active=true]:ring-primary/20"
+                      className="h-14 w-11 rounded-md border-white/[0.10] bg-white/[0.025] text-lg font-semibold text-white transition-ui data-[active=true]:border-primary data-[active=true]:ring-2 data-[active=true]:ring-primary/20"
                     />
-                  </div>
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </>
+        )}
 
-          <Button
-            onClick={handleVerify}
-            className="w-full h-12 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-ui rounded-lg"
-            disabled={isVerifying || code.length !== 6}
+        {(errorMessage || codeExpired) && (
+          <p role="alert" aria-live="assertive" className="border-l-2 border-destructive pl-3 text-sm leading-5 text-destructive">
+            {errorMessage || t('mfaScreen.expiredCode')}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {!semCodigo && (
+            <Button
+              onClick={handleVerify}
+              className="h-11 w-full rounded-md text-sm font-medium"
+              disabled={isVerifying || code.length !== 6 || codeExpired}
+            >
+              {isVerifying ? <><AkurisPulse size={16} className="mr-2" />{t('mfaScreen.verifying')}</> : t('mfaScreen.verify')}
+            </Button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendCountdown > 0 || isResending}
+            className="flex min-h-11 w-full items-center justify-center gap-2 text-xs text-primary transition-colors hover:text-primary/80 disabled:cursor-not-allowed disabled:text-white/30"
           >
-            {isVerifying ? (
-              <><AkurisPulse size={16} className="mr-2" />{t('mfaScreen.verifying')}</>
-            ) : (
-              t('mfaScreen.verify')
-            )}
-          </Button>
+            {isResending
+              ? <><AkurisPulse size={13} />{t('mfaScreen.resending')}</>
+              : resendCountdown > 0
+                ? t('mfaScreen.resendIn', { seconds: String(resendCountdown) })
+                : <><IconRefresh className="h-3.5 w-3.5" />{t('mfaScreen.resendCode')}</>}
+          </button>
 
-          {/* Selo de segurança */}
-          <div>
-            <div className="h-px bg-gradient-to-r from-transparent via-white/8 to-transparent mb-3" />
-            <p className="flex items-center justify-center gap-1.5 text-white/35 text-micro">
-              <Lock className="w-3 h-3" />
-              {t('mfaScreen.securityFootnote')}
-            </p>
-          </div>
-
-          <div className="text-center space-y-3">
-            <button
-              onClick={handleResend}
-              disabled={!canResend || isResending}
-              className="text-sm text-primary hover:text-primary/80 disabled:text-white/30 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1.5"
-            >
-              {isResending ? (
-                <><AkurisPulse size={12} /> {t('mfaScreen.resending')}</>
-              ) : canResend ? (
-                <><RefreshCw className="w-3 h-3" /> {t('mfaScreen.resendCode')}</>
-              ) : (
-                <>{t('mfaScreen.resendIn', { seconds: String(countdown) })}</>
-              )}
-            </button>
-
-            <button
-              onClick={onCancel}
-              className="block w-full text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <ArrowLeft className="w-3 h-3" />
-                {t('mfaScreen.backToLogin')}
-              </span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex min-h-11 w-full items-center justify-center gap-2 text-xs text-white/45 transition-colors hover:text-white/75"
+          >
+            <IconArrowLeft className="h-3.5 w-3.5" />
+            {t('mfaScreen.backToLogin')}
+          </button>
         </div>
-
-        <p className="text-white/20 text-xs text-center">© {new Date().getFullYear()} Akuris — {t('mfaScreen.allRightsReserved')}</p>
       </div>
-    </div>
+    </AuthShell>
   );
 };

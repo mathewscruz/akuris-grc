@@ -13,7 +13,7 @@ export const MFACodeEmail = ({
 }: MFACodeEmailProps) => (
   <BaseEmailTemplate
     previewText={`${code} — Código de verificação Akuris`}
-    title="Código de Verificação"
+    title="Código de verificação"
   >
     <Text style={emailStyles.text}>
       Olá <strong>{userName}</strong>,
@@ -30,7 +30,7 @@ export const MFACodeEmail = ({
     </Section>
 
     <Text style={emailStyles.textSmall}>
-      ⏳ Este código expira em <strong>5 minutos</strong>. Não compartilhe com ninguém.
+      Validade: <strong>5 minutos</strong>. Não compartilhe este código com ninguém.
     </Text>
 
     <Text style={emailStyles.textSmall}>

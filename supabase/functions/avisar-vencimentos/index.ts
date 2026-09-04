@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
   };
 
   try {
-    const site = Deno.env.get('SITE_URL') ?? 'https://akuris.com.br';
+    const site = Deno.env.get('SITE_URL') ?? 'https://akuris.pt';
     const contagem = { controle_vencendo: 0, contrato_vencendo: 0, plano_acao_vencido: 0 };
 
     /* Controlos cuja próxima avaliação cai dentro da janela. */

@@ -56,18 +56,19 @@ enabled = true
 # painel. Enquanto isso nao for feito, produção continua a aceitar 6 caracteres.
 password_min_length = 8
 password_required_characters = "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789"
-site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["https://lnlkahtugwmkznasapfd.supabase.co/auth/v1/callback"]
+password_hibp_enabled = true
+site_url = "http://127.0.0.1:8081"
+additional_redirect_urls = ["http://127.0.0.1:8081/definir-senha", "http://localhost:8081/definir-senha", "https://akuris.pt/definir-senha", "https://www.akuris.pt/definir-senha", "https://akuris.com.br/definir-senha", "https://www.akuris.com.br/definir-senha", "https://lnlkahtugwmkznasapfd.supabase.co/auth/v1/callback"]
 jwt_expiry = 3600
 refresh_token_rotation_enabled = true
 security_refresh_token_reuse_interval = 10
-enable_signup = true
+enable_signup = false
 enable_anonymous_sign_ins = false
 
 [auth.email]
-enable_signup = true
+enable_signup = false
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 
 # Segundo fator: TOTP (app autenticadora) e WebAuthn (chave/biometria).
 # Em projeto hospedado isto exige `supabase config push` ou activacao no painel
@@ -129,6 +130,15 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-contact-email]
+verify_jwt = false
+
+[functions.send-email-campaign]
+verify_jwt = true
+
+[functions.unsubscribe-email]
+verify_jwt = false
+
+[functions.resend-webhook]
 verify_jwt = false
 
 [functions.public-assessment]

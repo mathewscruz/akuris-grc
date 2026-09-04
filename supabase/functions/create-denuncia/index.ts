@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
             evento: 'denuncia_recebida',
             titulo: `Nova denúncia: ${result.protocolo ?? ''}`,
             descricao: 'Entrou uma denúncia no canal. Abra o Akuris para a ver.',
-            link: `${Deno.env.get('SITE_URL') ?? 'https://akuris.com.br'}/denuncia`,
+            link: `${Deno.env.get('SITE_URL') ?? 'https://akuris.pt'}/denuncia`,
             dados: { protocolo: result.protocolo ?? null, id: denunciaId },
             gravidade: 'alta',
             timestamp: new Date().toISOString(),

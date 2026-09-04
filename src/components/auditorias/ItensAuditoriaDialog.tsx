@@ -26,7 +26,7 @@ import { toast } from "@/lib/toast";
 import { ItemAuditoriaFormDialog } from "./ItemAuditoriaFormDialog";
 import { ItemAuditoriaDetalheDialog } from "./ItemAuditoriaDetalheDialog";
 import { ImportarControlesDialog } from "./ImportarControlesDialog";
-import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
 import { formatDateOnly } from "@/lib/date-utils";
 import { formatPrioridade, formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";

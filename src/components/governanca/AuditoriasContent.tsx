@@ -24,7 +24,7 @@ import { resolveAuditoriaStatusTone, resolveAuditoriaPrioridadeTone } from "@/li
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from '@/hooks/use-toast';
-import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
 import AuditoriaDialog from "@/components/auditorias/AuditoriaDialog";
 import { ItensAuditoriaDialog } from "@/components/auditorias/ItensAuditoriaDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";

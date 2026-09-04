@@ -24,17 +24,8 @@ import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 
-import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 import { MAX_IDS_NO_ENDERECO } from '@/hooks/useRecorteDaUrl';
-
-/**
- * Alto ou crítico — o par que merece destaque visual.
- *
- * Cada linha comparava `criticidade === 'alta'` com o texto cru. Depois da
- * normalização de vocabulário isso nunca é verdade, e todos os itens do
- * drill-down passariam a sair com o mesmo tom neutro.
- */
-const severo = (v?: string | null) => ['alto', 'critico'].includes(severidadeDeFaixas(v));
+import { resolveScoreDueDiligenceTone, resolveSeverityTone } from '@/lib/status-tone';
 /**
  * Limite superior da janela, em `YYYY-MM-DD`, para os recortes de "vencendo".
  * Formatado a partir dos componentes LOCAIS: `toISOString()` converte para UTC
@@ -122,7 +113,9 @@ interface DrillItem {
   title: string;
   subtitle?: string;
   status?: string;
-  tone?: 'destructive' | 'warning' | 'success' | 'info' | 'neutral' | 'primary';
+  tone?: 'destructive' | 'warning' | 'orange' | 'success' | 'info' | 'neutral' | 'primary';
+  /** Presente apenas em escalas de severidade/score; seleciona o medidor. */
+  mark?: string;
   date?: string;
 }
 
@@ -226,16 +219,23 @@ type Recorte = {
   sub?: (r: any) => string | undefined;
   estado?: (r: any) => string | undefined;
   tom?: (r: any) => DrillItem['tone'];
+  marca?: (r: any) => string | undefined;
   quando?: (r: any) => string | null | undefined;
 };
 
-/** Tom por criticidade, com as várias grafias que o produto grava. */
-const tomPorNivel = (v?: string | null): DrillItem['tone'] => {
-  const n = (v || '').toLowerCase();
-  if (n.includes('crit')) return 'destructive';
-  if (n.includes('alt')) return 'warning';
-  if (n.includes('med') || n.includes('méd')) return 'info';
-  return 'neutral';
+/** A gaveta usa a mesma escala das tabelas: crítico vermelho, alto laranja,
+ * médio âmbar e baixo verde. O `mark` também seleciona o medidor visual. */
+const tomPorNivel = (v?: string | null): DrillItem['tone'] => resolveSeverityTone(v).tone;
+const marcaPorNivel = (v?: string | null): string | undefined => resolveSeverityTone(v).mark;
+const tomPorScore = (v?: number | null): DrillItem['tone'] => resolveScoreDueDiligenceTone(v).tone;
+const marcaPorScore = (v?: number | null): string | undefined => resolveScoreDueDiligenceTone(v).mark;
+const indicadorPorNivel = (v?: string | null): Pick<DrillItem, 'tone' | 'mark'> => {
+  const { tone, mark } = resolveSeverityTone(v);
+  return { tone, mark };
+};
+const indicadorPorScore = (v?: number | null): Pick<DrillItem, 'tone' | 'mark'> => {
+  const { tone, mark } = resolveScoreDueDiligenceTone(v);
+  return { tone, mark };
 };
 
 const RECORTES: Record<string, Recorte> = {
@@ -271,7 +271,7 @@ const RECORTES: Record<string, Recorte> = {
     rota: '/sistemas', icone: IconServer,
     onde: (q) => q.eq('ativo', true), ordem: ['updated_at', false],
     titulo: (x) => x.nome_sistema, sub: (x) => formatStatus(x.tipo_sistema || ''),
-    estado: (x) => formatStatus(x.criticidade || ''), tom: (x) => tomPorNivel(x.criticidade),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: (x) => tomPorNivel(x.criticidade), marca: (x) => marcaPorNivel(x.criticidade),
     quando: (x) => x.updated_at,
   },
   sistemas_criticos: {
@@ -280,7 +280,7 @@ const RECORTES: Record<string, Recorte> = {
     // As três grafias que a página conta como criticidade alta.
     onde: (q) => q.in('criticidade', ['critica', 'critico', 'alta']),
     titulo: (x) => x.nome_sistema, sub: (x) => formatStatus(x.tipo_sistema || ''),
-    estado: (x) => formatStatus(x.criticidade || ''), tom: (x) => tomPorNivel(x.criticidade),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: (x) => tomPorNivel(x.criticidade), marca: (x) => marcaPorNivel(x.criticidade),
     quando: (x) => x.updated_at,
   },
   sistemas_inativos: {
@@ -296,7 +296,7 @@ const RECORTES: Record<string, Recorte> = {
     rota: '/denuncia', icone: DenunciasIcon,
     onde: (q) => q.eq('status', 'nova'), ordem: ['created_at', false],
     titulo: (x) => x.titulo || x.protocolo, sub: (x) => x.protocolo,
-    estado: (x) => formatStatus(x.gravidade || ''), tom: (x) => tomPorNivel(x.gravidade),
+    estado: (x) => formatStatus(x.gravidade || ''), tom: (x) => tomPorNivel(x.gravidade), marca: (x) => marcaPorNivel(x.gravidade),
     quando: (x) => x.created_at,
   },
   denuncias_andamento: {
@@ -304,7 +304,7 @@ const RECORTES: Record<string, Recorte> = {
     rota: '/denuncia', icone: DenunciasIcon,
     onde: (q) => q.in('status', ['em_analise', 'em_investigacao']), ordem: ['created_at', false],
     titulo: (x) => x.titulo || x.protocolo, sub: (x) => formatStatus(x.status || ''),
-    estado: (x) => formatStatus(x.gravidade || ''), tom: (x) => tomPorNivel(x.gravidade),
+    estado: (x) => formatStatus(x.gravidade || ''), tom: (x) => tomPorNivel(x.gravidade), marca: (x) => marcaPorNivel(x.gravidade),
     quando: (x) => x.created_at,
   },
   denuncias_resolvidas: {
@@ -345,8 +345,8 @@ const RECORTES: Record<string, Recorte> = {
     tabela: 'continuidade_tarefas', campos: 'id, titulo, prioridade, status, prazo',
     rota: '/continuidade', icone: IconChecklist,
     onde: (q) => q.eq('status', 'pendente'), ordem: ['prazo', true],
-    titulo: (x) => x.titulo, sub: (x) => formatStatus(x.prioridade || ''),
-    estado: (x) => formatStatus(x.status || ''), tom: (x) => tomPorNivel(x.prioridade),
+    titulo: (x) => x.titulo, sub: (x) => formatStatus(x.status || ''),
+    estado: (x) => formatStatus(x.prioridade || ''), tom: (x) => tomPorNivel(x.prioridade), marca: (x) => marcaPorNivel(x.prioridade),
     quando: (x) => x.prazo,
   },
   // ---- Contas privilegiadas ---------------------------------------------
@@ -453,6 +453,7 @@ const RECORTES: Record<string, Recorte> = {
     titulo: (r) => r.nome,
     estado: (r) => formatStatus(r.nivel_risco_residual || r.nivel_risco_inicial || ''),
     tom: (r) => tomPorNivel(r.nivel_risco_residual || r.nivel_risco_inicial),
+    marca: (r) => marcaPorNivel(r.nivel_risco_residual || r.nivel_risco_inicial),
     quando: (r) => r.created_at,
   },
   riscos_aceite_revisoes: {
@@ -470,7 +471,7 @@ const RECORTES: Record<string, Recorte> = {
     rota: '/due-diligence', icone: DueDiligenceIcon,
     onde: (q) => q.eq('status', 'ativo'), ordem: ['nome', true],
     titulo: (f) => f.nome, sub: (f) => formatStatus(f.categoria || ''),
-    estado: (f) => formatStatus(f.avaliacao_risco || ''), tom: (f) => tomPorNivel(f.avaliacao_risco),
+    estado: (f) => formatStatus(f.avaliacao_risco || ''), tom: (f) => tomPorNivel(f.avaliacao_risco), marca: (f) => marcaPorNivel(f.avaliacao_risco),
   },
   due_diligence_concluidos: {
     tabela: 'due_diligence_assessments', campos: 'id, fornecedor_nome, score_final, updated_at',
@@ -478,7 +479,8 @@ const RECORTES: Record<string, Recorte> = {
     onde: (q) => q.eq('status', 'concluido'), ordem: ['updated_at', false],
     titulo: (a) => a.fornecedor_nome,
     estado: (a) => (typeof a.score_final === 'number' ? `${a.score_final}%` : undefined),
-    tom: (a) => (typeof a.score_final !== 'number' ? 'neutral' : a.score_final < 50 ? 'destructive' : a.score_final < 70 ? 'warning' : 'success'),
+    tom: (a) => tomPorScore(a.score_final),
+    marca: (a) => marcaPorScore(a.score_final),
     quando: (a) => a.updated_at,
   },
   due_diligence_expirados: {
@@ -543,6 +545,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           subtitle: recorte.sub?.(r),
           status: recorte.estado?.(r),
           tone: recorte.tom?.(r) ?? 'neutral',
+          mark: recorte.marca?.(r),
           date: fmtDate(recorte.quando?.(r)),
         }));
       },
@@ -578,13 +581,12 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .sort((a: any, b: any) => rank(b._nivel) - rank(a._nivel))
             
             .map((r: any) => {
-              const nivel = (r._nivel || '').toLowerCase();
               return {
                 id: r.id,
                 title: r.nome,
                 subtitle: r.status,
                 status: r._nivel || d('noLevel'),
-                tone: (nivel.includes('crit') ? 'destructive' : nivel.includes('alt') ? 'warning' : nivel.includes('med') ? 'info' : 'neutral') as DrillItem['tone'],
+                ...indicadorPorNivel(r._nivel),
                 date: fmtDate(r.updated_at),
               };
             });
@@ -610,13 +612,12 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((i: any) => {
-            const c = (i.criticidade || '').toLowerCase();
             return {
               id: i.id,
               title: i.titulo,
               subtitle: formatStatus(i.status || ''),
               status: formatStatus(i.criticidade || ''),
-              tone: (c.includes('crit') ? 'destructive' : c.includes('alt') ? 'warning' : 'info') as DrillItem['tone'],
+              ...indicadorPorNivel(i.criticidade),
               date: fmtDate(i.created_at),
             };
           });
@@ -672,7 +673,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             title: a.nome,
             subtitle: formatStatus(a.tipo || ''),
             status: formatStatus(a.criticidade || ''),
-            tone: severo(a.criticidade) ? 'warning' : 'neutral',
+            ...indicadorPorNivel(a.criticidade),
             date: fmtDate(a.updated_at),
           }));
         },
@@ -785,7 +786,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               title: d.fornecedor_nome,
               subtitle: d.status,
               status: typeof score === 'number' ? t('dashWidgets.drill.score', { value: score }) : undefined,
-              tone: (typeof score !== 'number' ? 'neutral' : score < 50 ? 'destructive' : score < 70 ? 'warning' : 'success') as DrillItem['tone'],
+              ...indicadorPorScore(score),
               date: fmtDate(d.updated_at),
             };
           });
@@ -807,13 +808,12 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((d: any) => {
-            const g = (d.gravidade || '').toLowerCase();
             return {
               id: d.id,
               title: d.titulo || d.protocolo || t('dashWidgets.drill.fallbackComplaint'),
               subtitle: d.protocolo,
               status: d.gravidade || d.status,
-              tone: (g.includes('crit') || g.includes('alt') ? 'destructive' : 'warning') as DrillItem['tone'],
+              ...indicadorPorNivel(d.gravidade),
               date: fmtDate(d.created_at),
             };
           });
@@ -835,13 +835,12 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .limit(LIMITE_DO_RECORTE);
           if (error) throw error;
           return (data || []).map((c: any) => {
-            const cr = (c.criticidade || '').toLowerCase();
             return {
               id: c.id,
               title: c.nome,
               subtitle: c.codigo || c.status,
               status: c.criticidade || c.status,
-              tone: (cr.includes('alt') || cr.includes('crit') ? 'warning' : 'info') as DrillItem['tone'],
+              ...indicadorPorNivel(c.criticidade),
               date: fmtDate(c.proxima_avaliacao),
             };
           });
@@ -872,7 +871,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               title: c.nome,
               subtitle: c.tipo_chave,
               status: overdue ? d('rotationOverdue') : c.criticidade,
-              tone: (overdue ? 'destructive' : severo(c.criticidade) ? 'warning' : 'neutral') as DrillItem['tone'],
+              ...(overdue ? { tone: 'destructive' as const } : indicadorPorNivel(c.criticidade)),
               date: fmtDate(c.data_proxima_rotacao),
             };
           });
@@ -901,7 +900,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               title: l.nome,
               subtitle: l.tipo_licenca,
               status: expired ? d('expiredFem') : l.criticidade,
-              tone: (expired ? 'destructive' : severo(l.criticidade) ? 'warning' : 'info') as DrillItem['tone'],
+              ...(expired ? { tone: 'destructive' as const } : indicadorPorNivel(l.criticidade)),
               date: fmtDate(l.data_vencimento),
             };
           });
@@ -1359,7 +1358,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               title: a.nome,
               subtitle: formatStatus(a.tipo || ''),
               status: formatStatus(a.criticidade || ''),
-              tone: (criticidadeAtivo(a) === 'critico' ? 'destructive' : 'warning') as DrillItem['tone'],
+              ...indicadorPorNivel(a.criticidade),
             }));
         },
       };
@@ -1384,7 +1383,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             title: i.titulo,
             subtitle: formatStatus(i.status),
             status: formatStatus(i.criticidade),
-            tone: (severidadeDeFaixas(i.criticidade) === 'critico' ? 'destructive' : 'warning') as DrillItem['tone'],
+            ...indicadorPorNivel(i.criticidade),
             date: fmtDate(i.created_at),
           }));
         },
@@ -1508,7 +1507,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             title: s.nome_sistema,
             subtitle: formatStatus(s.tipo_sistema || ''),
             status: formatStatus(s.criticidade || ''),
-            tone: (severo(s.criticidade) ? 'warning' : 'info') as DrillItem['tone'],
+            ...indicadorPorNivel(s.criticidade),
             date: fmtDate(s.updated_at),
           }));
         },
@@ -1649,7 +1648,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
                   <div className="text-sm font-medium text-foreground truncate">{item.title}</div>
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     {item.status && (
-                      <StatusBadge tone={item.tone ?? 'neutral'} variant="soft">
+                      <StatusBadge tone={item.tone ?? 'neutral'} mark={item.mark} variant="soft">
                         {formatStatus(item.status)}
                       </StatusBadge>
                     )}
@@ -1704,4 +1703,3 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
     </Sheet>
   );
 };
-

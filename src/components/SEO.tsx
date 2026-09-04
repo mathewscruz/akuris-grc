@@ -12,8 +12,8 @@ interface SEOProps {
   noindex?: boolean;
 }
 
-const BASE_URL = 'https://akuris.com.br';
-const DEFAULT_OG = 'https://storage.googleapis.com/gpt-engineer-file-uploads/MJNkC7cGUPbiXnnNmwkC0KGKpFQ2/social-images/social-1778100765278-AKURIS.webp';
+const BASE_URL = 'https://akuris.pt';
+const DEFAULT_OG = `${BASE_URL}/og-akuris.png`;
 
 export function SEO({
   title,
@@ -54,6 +54,9 @@ export function SEO({
       <meta property="og:url" content={url} />
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={ogImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="Akuris — governança, riscos e conformidade conectados" />
       <meta property="og:site_name" content="Akuris" />
       <meta property="og:locale" content={ogLocale} />
 
@@ -61,6 +64,7 @@ export function SEO({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image:alt" content="Akuris — governança, riscos e conformidade conectados" />
 
       {schemas.map((schema, i) => (
         <script key={i} type="application/ld+json">

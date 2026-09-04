@@ -4,6 +4,7 @@ import akurisLogo from "@/assets/akuris-logo.png";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { IconArrowLeft, IconShield, IconMail, IconPin } from '@/components/icons';
+import { SEO } from '@/components/SEO';
 
 const PoliticaPrivacidade = () => {
   const { t, locale } = useLanguage();
@@ -11,6 +12,7 @@ const PoliticaPrivacidade = () => {
 
   return (
     <div className="min-h-screen bg-[#0A1628] text-white">
+      <SEO title={`${p("titulo")} | Akuris`} description="Conheça como a Akuris trata dados pessoais, atende direitos de titulares e protege informações." canonical="/politica-privacidade" />
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A1628]/90 backdrop-blur-xl border-b border-white/5 py-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

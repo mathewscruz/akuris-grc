@@ -30,6 +30,8 @@ interface Campanha {
   enviado_em: string | null;
   total_destinatarios: number;
   total_enviados: number;
+  total_entregues: number;
+  total_rejeitados: number;
   total_falhados: number;
   created_at: string;
 }
@@ -141,7 +143,9 @@ export default function NoticiasTab() {
                     {c.status === 'enviado' && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <IconUsers className="h-3 w-3" />
-                        {t('configPlanos.noticiasTab.entregues', { enviados: c.total_enviados, total: c.total_destinatarios })}
+                        {t('configPlanos.noticiasTab.aceitos', { enviados: c.total_enviados, total: c.total_destinatarios })}
+                        {c.total_entregues > 0 && t('configPlanos.noticiasTab.entregues', { count: c.total_entregues })}
+                        {c.total_rejeitados > 0 && t('configPlanos.noticiasTab.rejeitados', { count: c.total_rejeitados })}
                         {c.total_falhados > 0 && t('configPlanos.noticiasTab.falhas', { count: c.total_falhados })}
                       </p>
                     )}

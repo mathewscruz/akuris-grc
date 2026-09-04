@@ -1687,34 +1687,40 @@ export type Database = {
       contact_form_submissions: {
         Row: {
           company: string | null
+          company_size: string | null
           created_at: string | null
           email: string
           id: string
-          message: string
+          message: string | null
           name: string
           phone: string | null
+          role: string | null
           processed_at: string | null
           status: string | null
         }
         Insert: {
           company?: string | null
+          company_size?: string | null
           created_at?: string | null
           email: string
           id?: string
-          message: string
+          message?: string | null
           name: string
           phone?: string | null
+          role?: string | null
           processed_at?: string | null
           status?: string | null
         }
         Update: {
           company?: string | null
+          company_size?: string | null
           created_at?: string | null
           email?: string
           id?: string
-          message?: string
+          message?: string | null
           name?: string
           phone?: string | null
+          role?: string | null
           processed_at?: string | null
           status?: string | null
         }
@@ -4922,28 +4928,52 @@ export type Database = {
       }
       email_campanha_logs: {
         Row: {
+          accepted_at: string | null
+          bounced_at: string | null
           campanha_id: string
           created_at: string
+          delivered_at: string | null
           email: string
           erro: string | null
           id: string
+          idempotency_key: string | null
+          provider_id: string | null
+          recipient_id: string | null
           status: string
+          complained_at: string | null
+          updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          bounced_at?: string | null
           campanha_id: string
           created_at?: string
+          delivered_at?: string | null
           email: string
           erro?: string | null
           id?: string
+          idempotency_key?: string | null
+          provider_id?: string | null
+          recipient_id?: string | null
           status: string
+          complained_at?: string | null
+          updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          bounced_at?: string | null
           campanha_id?: string
           created_at?: string
+          delivered_at?: string | null
           email?: string
           erro?: string | null
           id?: string
+          idempotency_key?: string | null
+          provider_id?: string | null
+          recipient_id?: string | null
           status?: string
+          complained_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -4967,8 +4997,11 @@ export type Database = {
           imagem_url: string | null
           status: string
           total_destinatarios: number
+          total_entregues: number
           total_enviados: number
           total_falhados: number
+          total_reclamacoes: number
+          total_rejeitados: number
           updated_at: string
         }
         Insert: {
@@ -4982,8 +5015,11 @@ export type Database = {
           imagem_url?: string | null
           status?: string
           total_destinatarios?: number
+          total_entregues?: number
           total_enviados?: number
           total_falhados?: number
+          total_reclamacoes?: number
+          total_rejeitados?: number
           updated_at?: string
         }
         Update: {
@@ -4997,8 +5033,11 @@ export type Database = {
           imagem_url?: string | null
           status?: string
           total_destinatarios?: number
+          total_entregues?: number
           total_enviados?: number
           total_falhados?: number
+          total_reclamacoes?: number
+          total_rejeitados?: number
           updated_at?: string
         }
         Relationships: []
@@ -6576,6 +6615,7 @@ export type Database = {
       mfa_codes: {
         Row: {
           attempts: number
+          auth_session_id: string | null
           code_hash: string
           created_at: string
           delivered_at: string | null
@@ -6587,6 +6627,7 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          auth_session_id?: string | null
           code_hash: string
           created_at?: string
           delivered_at?: string | null
@@ -6598,6 +6639,7 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          auth_session_id?: string | null
           code_hash?: string
           created_at?: string
           delivered_at?: string | null
@@ -6619,6 +6661,7 @@ export type Database = {
       }
       mfa_sessions: {
         Row: {
+          auth_session_id: string | null
           created_at: string
           empresa_id: string
           expires_at: string
@@ -6628,6 +6671,7 @@ export type Database = {
           verified_at: string
         }
         Insert: {
+          auth_session_id?: string | null
           created_at?: string
           empresa_id: string
           expires_at?: string
@@ -6637,6 +6681,7 @@ export type Database = {
           verified_at?: string
         }
         Update: {
+          auth_session_id?: string | null
           created_at?: string
           empresa_id?: string
           expires_at?: string
@@ -7058,6 +7103,8 @@ export type Database = {
           nome: string
           notificar_na_aplicacao: boolean
           notificar_por_email: boolean
+          receber_comunicados: boolean
+          email_unsubscribe_token: string
           permission_profile_id: string | null
           preferred_locale: string
           role: Database["public"]["Enums"]["user_role"]
@@ -7076,6 +7123,8 @@ export type Database = {
           nome: string
           notificar_na_aplicacao?: boolean
           notificar_por_email?: boolean
+          receber_comunicados?: boolean
+          email_unsubscribe_token?: string
           permission_profile_id?: string | null
           preferred_locale: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -7094,6 +7143,8 @@ export type Database = {
           nome?: string
           notificar_na_aplicacao?: boolean
           notificar_por_email?: boolean
+          receber_comunicados?: boolean
+          email_unsubscribe_token?: string
           permission_profile_id?: string | null
           preferred_locale?: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -10331,6 +10382,19 @@ export type Database = {
           status: string
         }[]
       }
+      issue_session_mfa_code: {
+        Args: {
+          p_auth_session_id: string
+          p_code_hash: string
+          p_user_id: string
+        }
+        Returns: {
+          code_id: string | null
+          expires_at: string | null
+          retry_after: number | null
+          status: string
+        }[]
+      }
       ler_credenciais_integracao: {
         Args: { p_config_id: string }
         Returns: string
@@ -10476,6 +10540,20 @@ export type Database = {
         Returns: boolean
       }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }
+      revoke_my_mfa_sessions: { Args: never; Returns: undefined }
+      revoke_other_mfa_sessions: { Args: never; Returns: undefined }
+      verify_session_mfa_code_attempt: {
+        Args: {
+          p_auth_session_id: string
+          p_code_hash: string
+          p_user_id: string
+        }
+        Returns: {
+          remaining_attempts: number
+          session_expires_at: string | null
+          status: string
+        }[]
+      }
       verify_mfa_code_attempt: {
         Args: { p_code_hash: string; p_user_id: string }
         Returns: {

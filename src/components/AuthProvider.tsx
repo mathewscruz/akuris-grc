@@ -48,7 +48,7 @@ interface Company {
 // =============================================================================
 export const MFA_PENDING_KEY = 'akuris_mfa_pending';
 
-const MFA_VERIFIED_CACHE_KEY = 'akuris_mfa_verified_until';
+const MFA_VERIFIED_CACHE_KEY = 'akuris_mfa_verified_session';
 const DEVELOPMENT_COMPANY_KEY = 'akuris_dev_company_id';
 
 export const isLocalDataPreview = () => {
@@ -82,21 +82,51 @@ const setMfaPendingFlag = (pending: boolean) => {
   }
 };
 
-const getCachedMfaUntil = (): number => {
+const getAuthSessionId = (session: Session | null): string | null => {
+  if (!session?.access_token) return null;
+  try {
+    const encoded = session.access_token.split('.')[1];
+    if (!encoded) return null;
+    const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const payload = JSON.parse(atob(padded)) as { session_id?: unknown };
+    return typeof payload.session_id === 'string' && payload.session_id ? payload.session_id : null;
+  } catch {
+    return null;
+  }
+};
+
+const isMfaPending = (): boolean => {
+  try {
+    return typeof window !== 'undefined' && sessionStorage.getItem(MFA_PENDING_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
+const getCachedMfaUntil = (session: Session | null): number => {
   try {
     if (typeof window === 'undefined') return 0;
     const raw = sessionStorage.getItem(MFA_VERIFIED_CACHE_KEY);
-    return raw ? parseInt(raw, 10) || 0 : 0;
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as { sessionId?: unknown; expiresAt?: unknown };
+    const sessionId = getAuthSessionId(session);
+    if (!sessionId || parsed.sessionId !== sessionId || typeof parsed.expiresAt !== 'number') return 0;
+    return parsed.expiresAt;
   } catch {
     return 0;
   }
 };
 
-const setCachedMfaUntil = (timestampMs: number) => {
+const setCachedMfaUntil = (timestampMs: number, session: Session | null = null) => {
   try {
     if (typeof window === 'undefined') return;
-    if (timestampMs > 0) sessionStorage.setItem(MFA_VERIFIED_CACHE_KEY, String(timestampMs));
-    else sessionStorage.removeItem(MFA_VERIFIED_CACHE_KEY);
+    const sessionId = getAuthSessionId(session);
+    if (timestampMs > 0 && sessionId) {
+      sessionStorage.setItem(MFA_VERIFIED_CACHE_KEY, JSON.stringify({ sessionId, expiresAt: timestampMs }));
+    } else {
+      sessionStorage.removeItem(MFA_VERIFIED_CACHE_KEY);
+    }
   } catch {
     /* ignore */
   }
@@ -120,19 +150,25 @@ const setCachedMfaUntil = (timestampMs: number) => {
  * da superfície de falha, para uma resposta que é forçosamente igual nas três.
  * Enquanto uma pergunta está no ar, quem chegar recebe a mesma promessa.
  */
-let perguntaNoAr: Promise<{ verified: boolean; expiresAt?: string }> | null = null;
+let perguntaNoAr: { sessionId: string; promise: Promise<{ verified: boolean; expiresAt?: string }> } | null = null;
 
-const checkMfaSessionRemote = (): Promise<{ verified: boolean; expiresAt?: string }> => {
-  if (perguntaNoAr) return perguntaNoAr;
-  perguntaNoAr = perguntarAoBackend().finally(() => {
-    perguntaNoAr = null;
+const checkMfaSessionRemote = (session: Session): Promise<{ verified: boolean; expiresAt?: string }> => {
+  const sessionId = getAuthSessionId(session);
+  if (!sessionId) return Promise.resolve({ verified: false });
+  if (perguntaNoAr?.sessionId === sessionId) return perguntaNoAr.promise;
+  const promise = perguntarAoBackend(session).finally(() => {
+    if (perguntaNoAr?.sessionId === sessionId) perguntaNoAr = null;
   });
-  return perguntaNoAr;
+  perguntaNoAr = { sessionId, promise };
+  return promise;
 };
 
-const perguntarAoBackend = async (): Promise<{ verified: boolean; expiresAt?: string }> => {
+const perguntarAoBackend = async (session: Session): Promise<{ verified: boolean; expiresAt?: string }> => {
   try {
-    const { data, error } = await supabase.functions.invoke('check-mfa-session', { body: {} });
+    const { data, error } = await supabase.functions.invoke('check-mfa-session', {
+      body: {},
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
     if (error) {
       logger.warn('check-mfa-session falhou', { module: 'auth', error: String(error) });
       return { verified: false };
@@ -414,11 +450,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const markMfaVerified = (expiresAt?: string) => {
     const expMs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 24 * 60 * 60 * 1000;
-    setCachedMfaUntil(expMs);
     setMfaPendingFlag(false);
     // Reavalia a sessão Supabase atual para expor user/session ao app sem
     // depender de refreshSession (evita disparar eventos auth duplicados).
     supabase.auth.getSession().then(({ data: { session: current } }) => {
+      setCachedMfaUntil(expMs, current);
       evaluateSession(current);
     });
   };
@@ -449,12 +485,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // não é um recurso disponível. O bypass fica preso a esses três sinais e
     // não pode ser ativado num preview remoto nem numa base de produção.
     if (isLocalDataPreview()) {
-      setCachedMfaUntil(Date.now() + 24 * 60 * 60 * 1000);
+      setMfaPendingFlag(false);
+      setCachedMfaUntil(Date.now() + 24 * 60 * 60 * 1000, rawSession);
     }
 
-    // Cache local (sessionStorage) — evita refazer a chamada toda hora.
-    const cachedUntil = getCachedMfaUntil();
-    if (cachedUntil > Date.now()) {
+    // O cache só vale para o mesmo session_id. O marcador pending ganha
+    // sempre durante um login novo, mesmo se ainda existir cache antigo.
+    const cachedUntil = getCachedMfaUntil(rawSession);
+    if (!isMfaPending() && cachedUntil > Date.now()) {
       if (!isLatest()) return;
       setMfaPendingFlag(false);
       setSession(rawSession);
@@ -469,7 +507,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Sem cache válido → consulta o backend.
-    const { verified, expiresAt } = await checkMfaSessionRemote();
+    const { verified, expiresAt } = await checkMfaSessionRemote(rawSession);
     if (!isLatest()) return; // descarta resposta antiga
 
     if (!verified) {
@@ -484,7 +522,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // MFA confirmado pelo backend.
-    if (expiresAt) setCachedMfaUntil(new Date(expiresAt).getTime());
+    if (expiresAt) setCachedMfaUntil(new Date(expiresAt).getTime(), rawSession);
     setMfaPendingFlag(false);
     setSession(rawSession);
     setUser(rawSession.user);

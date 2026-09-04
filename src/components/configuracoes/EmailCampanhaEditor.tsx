@@ -213,6 +213,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('ativo', true)
+      .eq('receber_comunicados', true)
       .not('email', 'is', null);
     if (error) {
       logger.error('Erro contar destinatários', error);
@@ -276,15 +277,15 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-6xl">
           <DialogHeader>
-            <DialogTitle>{id ? t('configGeral.emailCampanhaEditor.titleEdit') : t('configGeral.emailCampanhaEditor.titleNew')}</DialogTitle>
+            <DialogTitle>{somenteLeitura ? t('configGeral.emailCampanhaEditor.titleView') : id ? t('configGeral.emailCampanhaEditor.titleEdit') : t('configGeral.emailCampanhaEditor.titleNew')}</DialogTitle>
             <DialogDescription>
               {t('configGeral.emailCampanhaEditor.description')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className={`grid gap-6 ${somenteLeitura ? '' : 'lg:grid-cols-2'}`}>
             {/* Coluna esquerda — formulário */}
-            <div className="space-y-5">
+            {!somenteLeitura && <div className="space-y-5">
               <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   {t('configGeral.emailCampanhaEditor.aiGenerateTitle')}
@@ -355,19 +356,38 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
 
               <div className="space-y-2">
                 <Label htmlFor="conteudo">{t('configGeral.emailCampanhaEditor.contentLabel')}</Label>
-                <Textarea
-                  id="conteudo"
-                  value={conteudoHtml}
-                  onChange={(e) => setConteudoHtml(e.target.value)}
-                  placeholder={t('configGeral.emailCampanhaEditor.contentPlaceholder')}
-                  rows={14}
-                  className="font-mono text-xs"
-                />
+                <Tabs defaultValue="visual">
+                  <TabsList className="h-9">
+                    <TabsTrigger value="visual">{t('configGeral.emailCampanhaEditor.editorVisual')}</TabsTrigger>
+                    <TabsTrigger value="html">{t('configGeral.emailCampanhaEditor.editorHtml')}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="visual">
+                    <div
+                      id="conteudo"
+                      contentEditable
+                      suppressContentEditableWarning
+                      role="textbox"
+                      aria-multiline="true"
+                      className="min-h-[280px] rounded-md border border-input bg-background px-4 py-3 text-sm leading-7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onInput={(event) => setConteudoHtml(event.currentTarget.innerHTML)}
+                      dangerouslySetInnerHTML={{ __html: conteudoHtml }}
+                    />
+                  </TabsContent>
+                  <TabsContent value="html">
+                    <Textarea
+                      value={conteudoHtml}
+                      onChange={(e) => setConteudoHtml(e.target.value)}
+                      placeholder={t('configGeral.emailCampanhaEditor.contentPlaceholder')}
+                      rows={14}
+                      className="font-mono text-xs"
+                    />
+                  </TabsContent>
+                </Tabs>
                 <p className="text-xs text-muted-foreground">
                   {t('configGeral.emailCampanhaEditor.contentHint')}
                 </p>
               </div>
-            </div>
+            </div>}
 
             {/* Coluna direita — preview */}
             <div className="space-y-2">
@@ -381,11 +401,11 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
 
           <DialogFooter className="flex-wrap gap-2">
             <Button variant="ghost" onClick={() => onOpenChange(false)}>{t('configGeral.emailCampanhaEditor.cancelButton')}</Button>
-            <Button variant="outline" onClick={handleSaveDraft} disabled={somenteLeitura || saving || sending || sendingTest}>
+            {!somenteLeitura && <Button variant="outline" onClick={handleSaveDraft} disabled={saving || sending || sendingTest}>
               {saving ? <AkurisPulse size={16} /> : <IconSave className="h-4 w-4" />}
               {t('configGeral.emailCampanhaEditor.saveDraftButton')}
-            </Button>
-            <Button
+            </Button>}
+            {!somenteLeitura && <Button
               variant="secondary"
               onClick={handleSendTest}
               disabled={somenteLeitura || saving || sending || sendingTest}
@@ -393,11 +413,11 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
             >
               {sendingTest ? <AkurisPulse size={16} /> : <IconMail className="h-4 w-4" />}
               {t('configGeral.emailCampanhaEditor.sendTestButton')}
-            </Button>
-            <Button onClick={openConfirmSend} disabled={somenteLeitura || saving || sending || sendingTest}>
+            </Button>}
+            {!somenteLeitura && <Button onClick={openConfirmSend} disabled={saving || sending || sendingTest}>
               <IconSend className="h-4 w-4" />
               {t('configGeral.emailCampanhaEditor.sendAllButton')}
-            </Button>
+            </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>

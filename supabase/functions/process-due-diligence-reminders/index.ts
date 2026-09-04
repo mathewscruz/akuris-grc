@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     let successCount = 0;
     let errorCount = 0;
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://akuris.com.br';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://akuris.pt';
 
     for (const assessment of assessments || []) {
       try {

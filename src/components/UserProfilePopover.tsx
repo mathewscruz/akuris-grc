@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { IconUpload, IconView, IconHide, IconBell, IconImage, IconLock, IconPerson } from '@/components/icons';
+import { IconUpload, IconView, IconHide, IconBell, IconImage, IconLock, IconPerson, IconMonitor } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,8 +85,10 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
   const [notificationPrefs, setNotificationPrefs] = useState({
     email_notifications: true,
     in_app_notifications: true,
+    marketing_emails: true,
   });
   const [aGravarPrefs, setAGravarPrefs] = useState(false);
+  const [endingOtherSessions, setEndingOtherSessions] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -94,7 +96,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('notificar_por_email, notificar_na_aplicacao')
+        .select('notificar_por_email, notificar_na_aplicacao, receber_comunicados')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) {
@@ -105,6 +107,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
         setNotificationPrefs({
           email_notifications: data.notificar_por_email ?? true,
           in_app_notifications: data.notificar_na_aplicacao ?? true,
+          marketing_emails: data.receber_comunicados ?? true,
         });
       }
     })();
@@ -121,6 +124,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
       .update({
         notificar_por_email: prefs.email_notifications,
         notificar_na_aplicacao: prefs.in_app_notifications,
+        receber_comunicados: prefs.marketing_emails,
       })
       .eq('user_id', user.id);
     setAGravarPrefs(false);
@@ -206,17 +210,9 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
 
   const handleProfileSubmit = async (data: PerfilForm) => {
     try {
-      // Atualizar perfil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ nome: data.nome })
-        .eq('user_id', user?.id);
-
-      if (profileError) throw profileError;
-
-      // Atualizar senha se fornecida
+      // A senha atual é conferida antes de qualquer escrita no perfil. Assim,
+      // uma credencial errada não altera silenciosamente o nome da conta.
       if (data.nova_senha && data.senha_atual) {
-        // Validar senha atual via re-autenticação
         const { error: reAuthError } = await supabase.auth.signInWithPassword({
           email: user?.email || '',
           password: data.senha_atual,
@@ -226,12 +222,35 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
           toast.error(t('userProfilePopover.incorrectCurrentPassword'));
           return;
         }
+      }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ nome: data.nome })
+        .eq('user_id', user?.id);
+
+      if (profileError) throw profileError;
+
+      if (data.nova_senha && data.senha_atual) {
 
         const { error: passwordError } = await supabase.auth.updateUser({
           password: data.nova_senha
         });
 
         if (passwordError) throw passwordError;
+
+        const { error: revokeError } = await supabase.rpc('revoke_my_mfa_sessions');
+        const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
+        if (revokeError || signOutError) {
+          logger.warn('Senha alterada com revogação parcial de sessão', {
+            module: 'Auth',
+            revokeMfaFailed: Boolean(revokeError),
+            signOutFailed: Boolean(signOutError),
+          });
+        }
+        toast.success(t('passwordChange.successRelogin'));
+        onClose?.();
+        return;
       }
 
       await refetchProfile();
@@ -260,6 +279,26 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
       ...prev,
       [field]: !prev[field]
     }));
+  };
+
+  const handleEndOtherSessions = async () => {
+    setEndingOtherSessions(true);
+    try {
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
+      if (signOutError) throw signOutError;
+      const { error: mfaError } = await supabase.rpc('revoke_other_mfa_sessions');
+      if (mfaError) throw mfaError;
+      toast.success(t('userProfilePopover.otherSessionsEnded'));
+    } catch (error) {
+      logger.error('Não foi possível encerrar as outras sessões', {
+        module: 'Auth',
+        action: 'revoke-other-sessions',
+        reason: error instanceof Error ? error.name : 'unknown',
+      });
+      toast.error(t('userProfilePopover.otherSessionsError'));
+    } finally {
+      setEndingOtherSessions(false);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -300,6 +339,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 type={showPasswords[key] ? 'text' : 'password'}
                 placeholder={t(placeholderKey)}
                 className="pr-10"
+                autoComplete={key === 'atual' ? 'current-password' : 'new-password'}
                 {...field}
               />
               <Button
@@ -308,7 +348,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                 onClick={() => togglePasswordVisibility(key)}
-                aria-label={t(labelKey)}
+                aria-label={showPasswords[key] ? t('auth.hidePassword') : t('auth.showPassword')}
               >
                 {showPasswords[key] ? (
                   <IconHide className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
@@ -444,6 +484,28 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 {passwordField('nova_senha', 'nova', 'userProfilePopover.newPassword', 'userProfilePopover.newPasswordPlaceholder')}
                 {passwordField('confirmar_senha', 'confirmar', 'userProfilePopover.confirmNewPassword', 'userProfilePopover.confirmNewPasswordPlaceholder')}
               </div>
+              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-muted/30 text-muted-foreground">
+                    <IconMonitor className="h-4 w-4" strokeWidth={1.5} />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium">{t('userProfilePopover.activeSessions')}</p>
+                    <p className="text-xs text-muted-foreground">{t('userProfilePopover.activeSessionsDescription')}</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={endingOtherSessions}
+                  onClick={handleEndOtherSessions}
+                >
+                  {endingOtherSessions
+                    ? t('userProfilePopover.endingOtherSessions')
+                    : t('userProfilePopover.endOtherSessions')}
+                </Button>
+              </div>
             </TabsContent>
 
             <div className="mt-5 flex justify-end border-t pt-4">
@@ -468,6 +530,20 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               checked={notificationPrefs.email_notifications}
               onCheckedChange={(checked) =>
                 saveNotificationPrefs({ ...notificationPrefs, email_notifications: checked })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5 pr-4">
+              <Label htmlFor="pp-marketing-email" className="text-sm">{t('userProfilePopover.marketingEmails')}</Label>
+              <p className="text-xs text-muted-foreground">{t('userProfilePopover.marketingEmailsDesc')}</p>
+            </div>
+            <Switch
+              id="pp-marketing-email"
+              disabled={aGravarPrefs}
+              checked={notificationPrefs.marketing_emails}
+              onCheckedChange={(checked) =>
+                saveNotificationPrefs({ ...notificationPrefs, marketing_emails: checked })
               }
             />
           </div>
