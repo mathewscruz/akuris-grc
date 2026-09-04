@@ -397,7 +397,7 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
       return;
     }
     if (finalizar && risco?.id && reavaliacaoInvalidaAceite(data) && !data.ultima_observacao_avaliacao?.trim()) {
-      setActiveTab('avaliacao');
+      setActiveTab('acompanhamento');
       toast.error('Explique brevemente o motivo da reavaliação para manter a trilha de auditoria compreensível.');
       return;
     }

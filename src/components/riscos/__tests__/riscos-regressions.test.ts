@@ -78,6 +78,21 @@ describe('regressões do módulo de riscos', () => {
     expect(drawer).toContain("t('riscosDetalhe.drawer.comentarios')");
     expect(tPt('riscosDetalhe.drawer.comentarios')).toBe('Comentários');
   });
+
+  it('leva a reavaliação sem motivo à aba que contém o campo exigido', () => {
+    const wizard = source('src/components/riscos/RiscoFormWizard.tsx');
+    const validationStart = wizard.indexOf(
+      "if (finalizar && risco?.id && reavaliacaoInvalidaAceite(data) && !data.ultima_observacao_avaliacao?.trim())",
+    );
+    const validation = wizard.slice(validationStart, validationStart + 420);
+
+    expect(validationStart).toBeGreaterThanOrEqual(0);
+    expect(validation).toContain("setActiveTab('acompanhamento')");
+    expect(validation).not.toContain("setActiveTab('avaliacao')");
+    expect(wizard).toMatch(
+      /<TabsContent value="acompanhamento"[\s\S]*?name="ultima_observacao_avaliacao"/,
+    );
+  });
 });
 
 describe('invariantes estruturais da migração QA-061 (sem Postgres/Supabase local disponível)', () => {
