@@ -8,82 +8,83 @@
  * Uso normal continua sendo `const { t } = useLanguage()` com a chave
  * completa, ex.: t('riscos.title').
  */
-import { riscos } from './riscos';
-import { riscosVisoes } from './riscos-visoes';
-import { riscosDialogs } from './riscos-dialogs';
-import { riscosDetalhe } from './riscos-detalhe';
-import { riscosControles } from './riscos-controles';
-import { riscosBiblioteca } from './riscos-biblioteca';
-import { documentos } from './documentos';
-import { documentosExtras } from './documentos-extras';
-import { docgen } from './docgen';
-import { gapAnalysis } from './gap-analysis';
-import { gapAdherence } from './gap-adherence';
-import { gapV2 } from './gap-v2';
-import { gapUi } from './gap-ui';
-import { gapExports } from './gap-exports';
-import { gapFases } from './gap-fases';
-import { gapProntidao } from './gap-prontidao';
-import { gapEscopo } from './gap-escopo';
-import { planosAcao } from './planos-acao';
-import { minhasTarefas } from './minhas-tarefas';
-import { contratosAtivos } from './contratos-ativos';
-import { dueDiligence } from './due-diligence';
-import { controlesAuditorias } from './controles-auditorias';
-import { projetos } from './projetos';
-import { incidentesComp } from './incidentes-comp';
-import { continuidadeComp } from './continuidade-comp';
-import { contasPrivilegiadasComp } from './contas-privilegiadas-comp';
-import { revisaoAcessosComp } from './revisao-acessos-comp';
-import { relatoriosComp } from './relatorios-comp';
-import { governancaComp } from './governanca-comp';
-import { dadosDashboard } from './dados-dashboard';
-import { dashboardWidgets } from './dashboard-widgets';
-import { publicPortal } from './public-portal';
-import { denunciasAdmin } from './denuncias';
-import { admin } from './admin-empresas';
-import { acessosDd } from './acessos-dd';
-import { modDialogs } from './modulos-dialogs';
-import { contratosDialogs } from './contratos-dialogs';
-import { dadosDialogs } from './dados-dialogs';
-import { govDialogs } from './gov-dialogs';
-import { configIntegrations } from './config-integrations';
-import { configPerms } from './config-permissoes';
-import { configPlanos } from './config-planos';
-import { configGeral } from './config-geral';
-import { finalI18n } from './final-i18n';
-import { campos } from './campos';
-import { cardsKpi } from './cards-kpi';
-import { residuos } from './residuos';
-import { publico } from './publico';
-import { sweepConfig } from './sweep-config';
-import { sweepDocumentos } from './sweep-documentos';
-import { sweepDados } from './sweep-dados';
-import { sweepDenuncias } from './sweep-denuncias';
-import { sweepRiscos } from './sweep-riscos';
-import { sweepCore } from './sweep-core';
-import { buscaGlobal } from './busca-global';
-import { jurisdicao } from './jurisdicao';
-import { p3Breadcrumbs } from './p3-breadcrumbs';
-import { p3Projetos } from './p3-projetos';
-import { p3Filtros } from './p3-filtros';
-import { p3Kpis } from './p3-kpis';
-import { p3Denuncia } from './p3-denuncia';
-import { p3Import } from './p3-import';
-import { p3Wizard } from './p3-wizard';
-import { p7Wizard } from './p7-wizard';
-import { p7Enum } from './p7-enums';
-import { p8Layout } from './p8-layout';
-import { detalheRegisto } from './detalhe-registo';
-import { vinculoRequisitos } from './vinculo-requisitos';
-import { t4Ciclo } from './t4-ciclo';
-import { pwa } from './pwa';
-import { fornecedorStatus } from './fornecedor-status';
+import { riscos } from "./riscos";
+import { riscosVisoes } from "./riscos-visoes";
+import { riscosDialogs } from "./riscos-dialogs";
+import { riscosDetalhe } from "./riscos-detalhe";
+import { riscosControles } from "./riscos-controles";
+import { riscosBiblioteca } from "./riscos-biblioteca";
+import { documentos } from "./documentos";
+import { documentosExtras } from "./documentos-extras";
+import { docgen } from "./docgen";
+import { gapAnalysis } from "./gap-analysis";
+import { gapAdherence } from "./gap-adherence";
+import { gapV2 } from "./gap-v2";
+import { gapUi } from "./gap-ui";
+import { gapExports } from "./gap-exports";
+import { gapFases } from "./gap-fases";
+import { gapProntidao } from "./gap-prontidao";
+import { gapEscopo } from "./gap-escopo";
+import { planosAcao } from "./planos-acao";
+import { minhasTarefas } from "./minhas-tarefas";
+import { contratosAtivos } from "./contratos-ativos";
+import { dueDiligence } from "./due-diligence";
+import { controlesAuditorias } from "./controles-auditorias";
+import { projetos } from "./projetos";
+import { incidentesComp } from "./incidentes-comp";
+import { continuidadeComp } from "./continuidade-comp";
+import { contasPrivilegiadasComp } from "./contas-privilegiadas-comp";
+import { revisaoAcessosComp } from "./revisao-acessos-comp";
+import { relatoriosComp } from "./relatorios-comp";
+import { governancaComp } from "./governanca-comp";
+import { dadosDashboard } from "./dados-dashboard";
+import { dashboardWidgets } from "./dashboard-widgets";
+import { publicPortal } from "./public-portal";
+import { denunciasAdmin } from "./denuncias";
+import { admin } from "./admin-empresas";
+import { acessosDd } from "./acessos-dd";
+import { modDialogs } from "./modulos-dialogs";
+import { contratosDialogs } from "./contratos-dialogs";
+import { dadosDialogs } from "./dados-dialogs";
+import { govDialogs } from "./gov-dialogs";
+import { configIntegrations } from "./config-integrations";
+import { configPerms } from "./config-permissoes";
+import { configPlanos } from "./config-planos";
+import { configGeral } from "./config-geral";
+import { finalI18n } from "./final-i18n";
+import { campos } from "./campos";
+import { cardsKpi } from "./cards-kpi";
+import { residuos } from "./residuos";
+import { publico } from "./publico";
+import { sweepConfig } from "./sweep-config";
+import { sweepDocumentos } from "./sweep-documentos";
+import { sweepDados } from "./sweep-dados";
+import { sweepDenuncias } from "./sweep-denuncias";
+import { sweepRiscos } from "./sweep-riscos";
+import { sweepCore } from "./sweep-core";
+import { buscaGlobal } from "./busca-global";
+import { jurisdicao } from "./jurisdicao";
+import { p3Breadcrumbs } from "./p3-breadcrumbs";
+import { p3Projetos } from "./p3-projetos";
+import { p3Filtros } from "./p3-filtros";
+import { p3Kpis } from "./p3-kpis";
+import { p3Denuncia } from "./p3-denuncia";
+import { p3Import } from "./p3-import";
+import { p3Wizard } from "./p3-wizard";
+import { p7Wizard } from "./p7-wizard";
+import { p7Enum } from "./p7-enums";
+import { p8Layout } from "./p8-layout";
+import { detalheRegisto } from "./detalhe-registo";
+import { vinculoRequisitos } from "./vinculo-requisitos";
+import { t4Ciclo } from "./t4-ciclo";
+import { pwa } from "./pwa";
+import { fornecedorStatus } from "./fornecedor-status";
+import { privacidadePrograma } from "./privacidade-programa";
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
 function isDictionary(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -99,15 +100,17 @@ export function mergeDictionaries(
 
   for (const [key, value] of Object.entries(addition)) {
     const current = merged[key];
-    merged[key] = isDictionary(current) && isDictionary(value)
-      ? mergeDictionaries(current, value)
-      : value;
+    merged[key] =
+      isDictionary(current) && isDictionary(value)
+        ? mergeDictionaries(current, value)
+        : value;
   }
 
   return merged;
 }
 
 const modules: Record<string, ModuleDict> = {
+  privacidadePrograma,
   fornecedorStatus,
   detalheRegisto,
   vinculoRequisitos,
@@ -181,9 +184,7 @@ const modules: Record<string, ModuleDict> = {
   pwa,
 };
 
-
-
-function collect(locale: 'pt' | 'en'): Record<string, unknown> {
+function collect(locale: "pt" | "en"): Record<string, unknown> {
   let out: Record<string, unknown> = {};
   for (const mod of Object.values(modules)) {
     out = mergeDictionaries(out, mod[locale]);
@@ -191,5 +192,5 @@ function collect(locale: 'pt' | 'en'): Record<string, unknown> {
   return out;
 }
 
-export const modulesPt = collect('pt');
-export const modulesEn = collect('en');
+export const modulesPt = collect("pt");
+export const modulesEn = collect("en");

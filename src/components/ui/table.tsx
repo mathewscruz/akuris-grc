@@ -23,7 +23,7 @@ const Table = React.forwardRef<
         <table
           ref={ref}
           data-density={density}
-          className={cn("w-full caption-bottom text-sm", className)}
+          className={cn("akuris-table w-full caption-bottom text-sm", className)}
           {...props}
         />
       </div>
@@ -41,7 +41,7 @@ const TableHeader = React.forwardRef<
      cabeçalho pintava as dez colunas de uma vez — o que não diz nada, porque
      não há uma "linha de cabeçalho" para escolher. Fica desligado aqui e é o
      `TableHead` que trata do seu próprio realce. */
-  <thead ref={ref} className={cn("[&_tr]:border-b [&_tr]:hover:bg-transparent", className)} {...props} />
+  <thead ref={ref} className={cn("akuris-table-header [&_tr]:border-b", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -79,7 +79,12 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-[hsl(var(--table-row-hover))] data-[state=selected]:bg-accent",
+      /*
+       * O realce vive no padrão da tabela, não em cada módulo. A classe
+       * desenha o mesmo degradê de Atividades Recentes e preserva as pontas
+       * suaves mesmo em linhas clicáveis, selecionadas ou com células fixas.
+       */
+      "realce-linha-tabela border-b data-[state=selected]:bg-accent",
       className
     )}
     {...props}
@@ -106,8 +111,9 @@ const TableHead = React.forwardRef<
            conteúdo e a tabela não tinha estrutura visível. */
         "text-left align-middle text-micro font-medium uppercase tracking-wide",
         "text-muted-foreground/75 [&:has([role=checkbox])]:pr-0",
-        /* Cada coluna realça-se a si própria, incluindo a de Ações. */
-        "transition-colors hover:bg-accent",
+        /* Só o botão de uma coluna ordenável reage ao rato. Um cabeçalho
+           passivo que acende parece clicável e induz ao erro. */
+        "transition-colors",
         className
       )}
       {...props}

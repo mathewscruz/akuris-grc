@@ -54,13 +54,13 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
       <div className="flex items-center justify-between p-3 border-b border-border">
         <h3 className="text-sm font-semibold capitalize">{monthLabel}</h3>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes - 1, 1))}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes - 1, 1))} aria-label={t('common.previous')} title={t('common.previous')}>
             <IconChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" className="h-7" onClick={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }}>
             {t('projetos.calendar.today')}
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes + 1, 1))}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes + 1, 1))} aria-label={t('common.next')} title={t('common.next')}>
             <IconChevron className="h-4 w-4" />
           </Button>
         </div>

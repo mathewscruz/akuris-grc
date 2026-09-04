@@ -1,11 +1,13 @@
 import * as React from 'react';
 import { BaseModuleIcon, type ModuleIconProps } from './_BaseModuleIcon';
 
-/** Incidentes — Raio dentro de círculo de impacto. */
+/** Incidentes — registo operacional atravessado por um pulso anómalo. */
 export const IncidentesIcon = React.forwardRef<SVGSVGElement, ModuleIconProps>((props, ref) => (
   <BaseModuleIcon ref={ref} {...props}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M13 6 L8.5 13 L11.5 13 L11 18 L15.5 11 L12.5 11 Z" />
+    <path d="M5 4h14v16H5Z" />
+    <path d="M5 8h14" />
+    <circle cx="8" cy="6" r=".7" fill="currentColor" stroke="none" />
+    <path d="M7.5 14h2.3l2-4 2.7 7 1.7-3H19" />
   </BaseModuleIcon>
 ));
 IncidentesIcon.displayName = 'IncidentesIcon';

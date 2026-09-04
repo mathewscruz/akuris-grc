@@ -118,6 +118,20 @@ export function CategoriasDenuncia() {
       return;
     }
 
+    const nomeNormalizado = formData.nome.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
+    const duplicada = categorias.some((categoria) =>
+      categoria.id !== editingCategoria?.id &&
+      categoria.nome.trim().toLocaleLowerCase().replace(/\s+/g, ' ') === nomeNormalizado,
+    );
+    if (duplicada) {
+      toast({
+        title: t('denunciasAdmin.categorias.duplicate'),
+        description: t('denunciasAdmin.categorias.duplicateHint'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       if (editingCategoria) {

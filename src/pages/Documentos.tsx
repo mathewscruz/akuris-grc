@@ -4,7 +4,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
-import { IconAdd, IconSearch, IconFilter, IconDownload, IconUpload, IconSuccess, IconTime, IconFile, IconFolder, IconShield, IconTrendUp } from '@/components/icons';
+import { IconAdd, IconSearch, IconFilter, IconDownload, IconUpload, IconSuccess, IconTime, IconFile, IconFolder, IconShield, IconTrendUp, IconChecklist } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -503,6 +503,14 @@ export default function Documentos() {
             { key: 'vencidos', label: t('documentos.lista.vencidosKpi'), value: statsDocumentos?.vencidos || 0, tone: (statsDocumentos?.vencidos || 0) > 0 ? 'destructive' : undefined, drillDown: 'documentos_vencidos' },
             { key: 'vencendo30', label: t('documentos.lista.vencendo30'), value: statsDocumentos?.vencendo30Dias || 0, tone: 'warning', drillDown: 'documentos_vencendo' },
             { key: 'pendentes', label: t('documentos.lista.pendentesAprovacaoKpi'), value: statsDocumentos?.pendentesAprovacao || 0, tone: (statsDocumentos?.pendentesAprovacao || 0) > 0 ? 'warning' : undefined, drillDown: 'documentos_pendentes' },
+            {
+              key: 'cadastroIncompleto',
+              label: t('cardsKpi.documentos.cadastroIncompleto'),
+              value: documentos.filter((documento) => !documento.classificacao || !documento.categoria_id || !documento.responsavel_id).length,
+              tone: documentos.some((documento) => !documento.classificacao || !documento.categoria_id || !documento.responsavel_id) ? 'warning' : undefined,
+              hint: t('cardsKpi.documentos.cadastroIncompletoHint'),
+              icon: IconChecklist,
+            },
           ]}
         />
 

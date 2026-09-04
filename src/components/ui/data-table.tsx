@@ -269,6 +269,46 @@ export function DataTable<T extends Record<string, any>>({
     ? sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
     : sortedData
 
+  const rowId = React.useCallback((item: T, index: number) =>
+    String((item as any).id ?? (item as any).codigo ?? index), [])
+  const seenRows = React.useRef<Set<string>>(new Set())
+  const rowsInitialized = React.useRef(false)
+  const newRowsTimer = React.useRef<number | null>(null)
+  const [newRows, setNewRows] = React.useState<Set<string>>(() => new Set())
+
+  /* Diferencia “a lista terminou de carregar” de “entrou um registo”. O
+     primeiro lote não pisca; IDs que surgem depois recebem o marcador curto.
+     O conjunto é cumulativo para limpar um filtro não parecer inserção. */
+  React.useEffect(() => {
+    if (loading) return
+    const ids = data.map(rowId)
+    if (!rowsInitialized.current) {
+      ids.forEach((id) => seenRows.current.add(id))
+      rowsInitialized.current = true
+      return
+    }
+    const added = ids.filter((id) => !seenRows.current.has(id))
+    ids.forEach((id) => seenRows.current.add(id))
+    if (added.length === 0) return
+    setNewRows(new Set(added))
+    if (newRowsTimer.current !== null) window.clearTimeout(newRowsTimer.current)
+    newRowsTimer.current = window.setTimeout(() => setNewRows(new Set()), 950)
+  }, [data, loading, rowId])
+
+  React.useEffect(() => () => {
+    if (newRowsTimer.current !== null) window.clearTimeout(newRowsTimer.current)
+  }, [])
+
+  const dataMotionKey = React.useMemo(() => [
+    currentPage,
+    pageSize,
+    searchValue,
+    activeSortField ?? '',
+    activeSortDirection ?? '',
+    filters.map((filter) => `${filter.key}:${filter.value}`).join('|'),
+    paginatedData.map(rowId).join('|'),
+  ].join('::'), [currentPage, pageSize, searchValue, activeSortField, activeSortDirection, filters, paginatedData, rowId])
+
   const handleSort = (field: string) => {
     if (onSort) {
       onSort(field)
@@ -284,7 +324,7 @@ export function DataTable<T extends Record<string, any>>({
 
   const getSortIcon = (field: string) => {
     if (activeSortField !== field) {
-      return <IconSort className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
+      return <IconSort className="h-3.5 w-3.5 opacity-30 transition-opacity group-hover/th:opacity-70" strokeWidth={1.5} />
     }
     return activeSortDirection === 'asc'
       ? <IconChevronUp className="h-4 w-4 text-foreground" strokeWidth={1.5} />
@@ -401,7 +441,7 @@ export function DataTable<T extends Record<string, any>>({
             />
           )
         ) : (
-          <div className="divide-y border-t">
+          <div key={`mobile-${dataMotionKey}`} className="akuris-data-refresh divide-y border-t">
             {paginatedData.map((item, index) => {
               const acoes = columns.find(isActionsColumn)
               const semAcoes = columns.filter((c) => !isActionsColumn(c))
@@ -430,10 +470,11 @@ export function DataTable<T extends Record<string, any>>({
                   : String(item[column.key as keyof T] ?? '-')
               return (
                 <div
-                  key={item.id || index}
+                  key={rowId(item, index)}
                   data-focus-id={(item as any).id}
+                  data-row-new={newRows.has(rowId(item, index)) || undefined}
                   {...(abrir ?? {})}
-                  className={cn('p-4 space-y-3', abrir?.className)}
+                  className={cn('akuris-data-card p-4 space-y-3', abrir?.className)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 font-medium">{principal && valor(principal)}</div>
@@ -478,7 +519,7 @@ export function DataTable<T extends Record<string, any>>({
       {/* Ecrã largo: a tabela densa, que continua a ser a melhor leitura. */}
       <div className="hidden md:block overflow-x-auto">
         <Table>
-          <TableHeader className="sticky top-0 z-20 bg-card">
+          <TableHeader className="sticky top-0 z-20">
             <TableRow>
               {columns.map((column, columnIndex) => {
                 const sortable = isSortable(column)
@@ -498,24 +539,31 @@ export function DataTable<T extends Record<string, any>>({
                          que ficava de fora do realce, com o branco a cobrir a
                          tinta da linha. O realce dela vem do `hover:bg-accent`
                          do `TableHead`, que é igualmente opaco. */
-                      isActionsColumn(column) && `${STICKY_CELL} bg-card`,
-                      columnIndex === 0 && 'sticky left-0 z-20 bg-card',
-                      sortable && "cursor-pointer select-none"
+                      isActionsColumn(column) && 'sticky right-0 z-10',
+                      columnIndex === 0 && 'sticky left-0 z-20',
+                      sortable && "select-none"
                     )}
-                    onClick={() => sortable && handleSort(String(column.key))}
                   >
-                    <div className="flex items-center gap-1.5">
-                      {column.label}
-                      {sortable && getSortIcon(String(column.key))}
-                    </div>
+                    {sortable ? (
+                      <button
+                        type="button"
+                        className="inline-flex w-full items-center gap-1.5 rounded-md py-2 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        onClick={() => handleSort(String(column.key))}
+                      >
+                        {column.label}
+                        {getSortIcon(String(column.key))}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1.5">{column.label}</div>
+                    )}
                   </TableHead>
                 )
               })}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody key={`desktop-${dataMotionKey}`} className="akuris-data-refresh">
             {!loading && data.length === 0 ? (
-              <TableRow>
+              <TableRow data-table-static="">
                 <TableCell colSpan={columns.length} className="p-0">
                   {ecraVazio && (
                     <EmptyState
@@ -530,7 +578,7 @@ export function DataTable<T extends Record<string, any>>({
             ) : (
               paginatedData.map((item, index) => (
                 <TableRow
-                  key={item.id || index}
+                  key={rowId(item, index)}
                   /*
                     O alvo do `?focus=<id>`.
 
@@ -546,6 +594,7 @@ export function DataTable<T extends Record<string, any>>({
                     mortos do lado de ca.
                   */
                   data-focus-id={(item as any).id}
+                  data-row-new={newRows.has(rowId(item, index)) || undefined}
                   {...(() => {
                     const base = onRowClick
                       ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)

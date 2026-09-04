@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useFocusRow } from '@/hooks/useFocusRow';
-import { IconFilter, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconSuccess, IconWarning, IconInfo, IconError, IconTime, IconCalendar, IconFile, IconShield, IconMessage } from '@/components/icons';
+import { IconFilter, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconSuccess, IconWarning, IconInfo, IconError, IconTime, IconCalendar, IconFile, IconShield, IconMessage, IconChecklist, IconAttach, IconMegaphone, IncidentesIcon } from '@/components/icons';
 import { logger } from '@/lib/logger';
 import { exportCSV } from '@/lib/csv-utils';
 import { useIncidentesStats } from '@/hooks/useIncidentesStats';
@@ -42,6 +42,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { isUuid } from '@/lib/uuid';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 import { compararEscala } from '@/lib/ordem-de-escala';
@@ -58,6 +59,12 @@ interface Incidente {
   data_resolucao: string;
   responsavel_deteccao: string;
   responsavel_tratamento: string;
+  origem_deteccao?: string | null;
+  impacto_estimado?: string | null;
+  dados_afetados?: string | null;
+  sistemas_afetados?: string[] | null;
+  ativos_afetados?: string[] | null;
+  riscos_relacionados?: string[] | null;
   created_at: string;
   tratamentos_count?: number;
   comunicacoes_count?: number;
@@ -103,18 +110,67 @@ export default function Incidentes() {
   const { data: incidentes = [], isLoading: loading } = useQuery({
     queryKey: ['incidentes', empresaId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('incidentes')
-        .select('*')
-        .eq('empresa_id', empresaId!)
-        .order('created_at', { ascending: false });
+      const [incidentesResult, tratamentosResult, comunicacoesResult, evidenciasResult] = await Promise.all([
+        supabase
+          .from('incidentes')
+          .select('*')
+          .eq('empresa_id', empresaId!)
+          .order('created_at', { ascending: false }),
+        supabase.from('incidentes_tratamentos').select('incidente_id'),
+        supabase.from('incidentes_comunicacoes').select('incidente_id'),
+        supabase.from('incidentes_evidencias').select('incidente_id'),
+      ]);
 
-      if (error) throw error;
-      return (data || []) as Incidente[];
+      if (incidentesResult.error) throw incidentesResult.error;
+      if (tratamentosResult.error) throw tratamentosResult.error;
+      if (comunicacoesResult.error) throw comunicacoesResult.error;
+      if (evidenciasResult.error) throw evidenciasResult.error;
+
+      const contar = (linhas: Array<{ incidente_id: string }> | null) => {
+        const mapa = new Map<string, number>();
+        (linhas || []).forEach(({ incidente_id }) => mapa.set(incidente_id, (mapa.get(incidente_id) || 0) + 1));
+        return mapa;
+      };
+      const tratamentos = contar(tratamentosResult.data);
+      const comunicacoes = contar(comunicacoesResult.data);
+      const evidencias = contar(evidenciasResult.data);
+      return (incidentesResult.data || []).map((incidente) => ({
+        ...incidente,
+        tratamentos_count: tratamentos.get(incidente.id) || 0,
+        comunicacoes_count: comunicacoes.get(incidente.id) || 0,
+        evidencias_count: evidencias.get(incidente.id) || 0,
+      })) as Incidente[];
     },
     enabled: !!empresaId,
     staleTime: 1000 * 60 * 2,
   });
+
+  const { data: perfisIncidentes = [] } = useQuery({
+    queryKey: ['incidentes-perfis', empresaId],
+    enabled: !!empresaId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, nome, email')
+        .eq('empresa_id', empresaId!);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const nomePorUsuario = useMemo(() => {
+    const mapa = new Map<string, string>();
+    perfisIncidentes.forEach((perfil) => {
+      const nome = perfil.nome || perfil.email || perfil.user_id;
+      mapa.set(perfil.user_id, nome);
+      mapa.set(perfil.id, nome);
+    });
+    return mapa;
+  }, [perfisIncidentes]);
+  const nomeResponsavel = (valor?: string | null) => {
+    if (!valor) return null;
+    return nomePorUsuario.get(valor) || (isUuid(valor) ? t('sweepRiscos.incidentes.responsavelIndisponivel') : valor);
+  };
 
   const invalidateIncidentes = () => {
     queryClient.invalidateQueries({ queryKey: ['incidentes'] });
@@ -126,7 +182,7 @@ export default function Incidentes() {
     const matchesSearch = searchTerm === '' || 
       incidente.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       incidente.categoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incidente.responsavel_tratamento?.toLowerCase().includes(searchTerm.toLowerCase());
+      nomeResponsavel(incidente.responsavel_tratamento)?.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Mesmo predicado dos cartões (camada única de métricas)
     const matchesStatus = statusFilter === 'todos' || estadoIncidente(incidente) === statusFilter;
@@ -493,7 +549,7 @@ export default function Incidentes() {
             sortDirection={sortDirection}
             onSort={handleSort}
             emptyState={{
-              icon: <IconWarning className="h-8 w-8" />,
+              icon: <IncidentesIcon className="h-8 w-8" />,
               title: t('fin.incidentes.nenhum'),
               description: t('sweepRiscos.incidentes.emptyStateDesc')
             }}
@@ -505,6 +561,8 @@ export default function Incidentes() {
         open={!!detalheIncidente}
         onOpenChange={(o) => !o && setDetalheIncidente(null)}
         title={detalheIncidente?.titulo}
+        eyebrow={t('sweepRiscos.incidentes.detailEyebrow')}
+        icon={IncidentesIcon}
         subtitle={detalheIncidente ? formatStatus(detalheIncidente.tipo_incidente) : undefined}
         badges={detalheIncidente ? (
           <>
@@ -517,15 +575,73 @@ export default function Incidentes() {
           </>
         ) : undefined}
         actions={detalheIncidente ? (
-          <Button variant="outline" size="sm" onClick={() => { const i = detalheIncidente; setDetalheIncidente(null); handleEdit(i); }}>
-            <IconEdit className="h-4 w-4 mr-2" />{t('sweepRiscos.incidentes.actionEditar')}
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
+            <Button
+              size="sm"
+              className="h-11 shrink-0 justify-start px-4 shadow-sm"
+              onClick={() => { const i = detalheIncidente; setDetalheIncidente(null); handleEdit(i); }}
+            >
+              <IconEdit className="mr-2 h-4 w-4" />
+              {t('sweepRiscos.incidentes.actionEditar')}
+            </Button>
+            <div className="grid min-w-0 flex-1 grid-cols-1 gap-1 rounded-lg border border-border/80 bg-surface-1 p-1 sm:grid-cols-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="group h-9 min-w-0 justify-start gap-2 px-2.5 text-muted-foreground hover:bg-popover hover:text-foreground hover:shadow-sm"
+                onClick={() => { setSelectedIncidente(detalheIncidente); setTratamentoDialogOpen(true); }}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-primary/[0.07] text-primary">
+                  <IconChecklist className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0 truncate">{t('sweepRiscos.incidentes.actionTratamentos')}</span>
+                <span className="ml-auto border-l border-border/70 pl-2 text-xs font-semibold tabular-nums text-muted-foreground">
+                  {detalheIncidente.tratamentos_count || 0}
+                </span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="group h-9 min-w-0 justify-start gap-2 px-2.5 text-muted-foreground hover:bg-popover hover:text-foreground hover:shadow-sm"
+                onClick={() => { setSelectedIncidente(detalheIncidente); setEvidenciaDialogOpen(true); }}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-primary/[0.07] text-primary">
+                  <IconAttach className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0 truncate">{t('sweepRiscos.incidentes.actionEvidencias')}</span>
+                <span className="ml-auto border-l border-border/70 pl-2 text-xs font-semibold tabular-nums text-muted-foreground">
+                  {detalheIncidente.evidencias_count || 0}
+                </span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="group h-9 min-w-0 justify-start gap-2 px-2.5 text-muted-foreground hover:bg-popover hover:text-foreground hover:shadow-sm"
+                onClick={() => { setSelectedIncidente(detalheIncidente); setComunicacaoDialogOpen(true); }}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-primary/[0.07] text-primary">
+                  <IconMegaphone className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0 truncate">{t('sweepRiscos.incidentes.actionComunicacao')}</span>
+                <span className="ml-auto border-l border-border/70 pl-2 text-xs font-semibold tabular-nums text-muted-foreground">
+                  {detalheIncidente.comunicacoes_count || 0}
+                </span>
+              </Button>
+            </div>
+          </div>
         ) : undefined}
         fields={detalheIncidente ? [
           { label: t('fin.comum.categoria'), value: detalheIncidente.categoria ? formatStatus(detalheIncidente.categoria) : null },
+          { label: t('sweepRiscos.incidentes.origemDeteccao'), value: detalheIncidente.origem_deteccao ? formatStatus(detalheIncidente.origem_deteccao) : null },
+          { label: t('sweepRiscos.incidentes.impactoEstimado'), value: detalheIncidente.impacto_estimado },
+          { label: t('sweepRiscos.incidentes.responsavelDeteccao'), value: nomeResponsavel(detalheIncidente.responsavel_deteccao) },
+          { label: t('sweepRiscos.incidentes.responsavelTratamento'), value: nomeResponsavel(detalheIncidente.responsavel_tratamento) },
           { label: t('fin.incidentes.dataOcorrencia'), value: detalheIncidente.data_ocorrencia ? formatDateOnly(detalheIncidente.data_ocorrencia) : null },
           { label: t('fin.incidentes.dataDeteccao'), value: detalheIncidente.data_deteccao ? formatDateOnly(detalheIncidente.data_deteccao) : null },
           { label: t('fin.incidentes.dataResolucao'), value: detalheIncidente.data_resolucao ? formatDateOnly(detalheIncidente.data_resolucao) : null },
+          { label: t('sweepRiscos.incidentes.dadosAfetados'), value: detalheIncidente.dados_afetados, full: true },
+          { label: t('sweepRiscos.incidentes.sistemasAfetados'), value: detalheIncidente.sistemas_afetados?.join(', '), full: true },
+          { label: t('sweepRiscos.incidentes.ativosAfetados'), value: detalheIncidente.ativos_afetados?.join(', '), full: true },
           { label: t('fin.comum.descricao'), value: detalheIncidente.descricao, full: true },
         ] : []}
         createdAt={detalheIncidente?.created_at}

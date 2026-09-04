@@ -29,6 +29,7 @@ export const en = {
     add: 'Add',
     remove: 'Remove',
     loading: 'Loading...',
+    retry: 'Try again',
     fimAntesDoInicio: 'The end date must be the same as or later than the start date.',
     noResults: 'No results found',
     noResultsHint: 'Adjust the search or filters to see more records.',

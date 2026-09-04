@@ -37,7 +37,7 @@ interface Fornecedor {
   status: string;
   categoria?: string;
   tipo: string;
-  avaliacao_risco?: string;
+  avaliacao_risco?: string | null;
   created_at?: string;
   dados_receita?: ConsultaCnpj | Json | null;
   receita_consultada_em?: string | null;
@@ -174,7 +174,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     observacoes: '',
     categoria: '',
     tipo: 'pessoa_juridica',
-    avaliacao_risco: 'baixo',
+    avaliacao_risco: 'nao_avaliado',
     consultaReceita: null
   });
 
@@ -280,7 +280,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
           observacoes: data.observacoes || null,
           categoria: data.categoria || null,
           tipo: data.tipo || 'pessoa_juridica',
-          avaliacao_risco: data.avaliacao_risco || 'baixo',
+          avaliacao_risco: data.avaliacao_risco === 'nao_avaliado' ? null : data.avaliacao_risco || null,
           ...camposDaReceita(data.consultaReceita),
           empresa_id: profile?.empresa_id,
           status: 'ativo',
@@ -316,7 +316,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
           observacoes: data.observacoes || null,
           categoria: data.categoria || null,
           tipo: data.tipo || 'pessoa_juridica',
-          avaliacao_risco: data.avaliacao_risco || 'baixo',
+          avaliacao_risco: data.avaliacao_risco === 'nao_avaliado' ? null : data.avaliacao_risco || null,
           ...camposDaReceita(data.consultaReceita),
         })
         .eq('id', id);
@@ -360,7 +360,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
   });
 
   const resetForm = () => {
-    setFormData({ nome: '', email: '', cnpj: '', telefone: '', endereco: '', contato_responsavel: '', observacoes: '', categoria: '', tipo: 'pessoa_juridica', avaliacao_risco: 'baixo', consultaReceita: null });
+    setFormData({ nome: '', email: '', cnpj: '', telefone: '', endereco: '', contato_responsavel: '', observacoes: '', categoria: '', tipo: 'pessoa_juridica', avaliacao_risco: 'nao_avaliado', consultaReceita: null });
   };
 
   const handleEdit = (fornecedor: Fornecedor) => {
@@ -375,7 +375,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
       observacoes: fornecedor.observacoes || '',
       categoria: fornecedor.categoria || '',
       tipo: fornecedor.tipo || 'pessoa_juridica',
-      avaliacao_risco: fornecedor.avaliacao_risco || 'baixo',
+      avaliacao_risco: fornecedor.avaliacao_risco || 'nao_avaliado',
       consultaReceita: (fornecedor.dados_receita as ConsultaCnpj | null) ?? null
     });
     setDialogOpen(true);
@@ -412,13 +412,13 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
 
   // O nível de risco declarado (baixo/médio/alto/crítico) traduz-se pelas chaves
   // que o resto do Akuris já usa, para o selo não ficar preso ao português.
-  const rotuloRisco = (v?: string) => {
+  const rotuloRisco = (v?: string | null) => {
     switch (v) {
       case 'baixo': return t('campos.opcoes.baixo');
       case 'medio': return t('campos.opcoes.medio');
       case 'alto': return t('campos.opcoes.alto');
       case 'critico': return t('campos.opcoes.critico');
-      default: return v ? formatStatus(v) : '-';
+      default: return v ? formatStatus(v) : t('dueDiligence.fornecedoresManager.riskNeverEvaluated');
     }
   };
 
@@ -523,7 +523,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
             {rotuloRisco(f.avaliacao_risco)}
           </StatusBadge>
         ) : (
-          '-'
+          <StatusBadge tone="neutral">{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</StatusBadge>
         ),
     },
     {
@@ -679,6 +679,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
                     <Select value={formData.avaliacao_risco} onValueChange={(value) => setFormData({ ...formData, avaliacao_risco: value })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="nao_avaliado">{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</SelectItem>
                         <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
                         <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
                         <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>

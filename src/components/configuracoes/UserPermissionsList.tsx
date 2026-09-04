@@ -143,7 +143,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-xs text-muted-foreground">
-                    {t('configPerms.usersList.noProfileBadge')}
+                    {t('configPerms.usersList.roleFallbackBadge', { role: getRoleLabel(user.role) })}
                   </Badge>
                 )}
 

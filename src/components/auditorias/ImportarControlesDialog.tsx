@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconSearch, IconShield } from '@/components/icons';
+import { IconSearch, ControlesIcon } from '@/components/icons';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -160,7 +160,7 @@ export function ImportarControlesDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={IconShield}
+      icon={ControlesIcon}
       title={t("controlesAuditorias.icdTitle")}
       size="md"
       noScroll

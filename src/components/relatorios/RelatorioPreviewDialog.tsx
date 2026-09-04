@@ -20,10 +20,12 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && relatorio?.template_base && empresaId) {
+    const widgets = Array.isArray(relatorio?.configuracao?.widgets) ? relatorio.configuracao.widgets : [];
+    const fontes = widgets.length > 0 ? widgets : relatorio?.template_base ? [relatorio.template_base] : [];
+    if (open && fontes.length > 0 && empresaId) {
       setLoading(true);
-      fetchTemplateData(relatorio.template_base, empresaId)
-        .then(setData)
+      Promise.all(fontes.map((fonte: string) => fetchTemplateData(fonte, empresaId)))
+        .then((conjuntos) => setData({ sections: conjuntos.flatMap((conjunto) => conjunto.sections) }))
         .catch(() => setData({ sections: [] }))
         .finally(() => setLoading(false));
     }
@@ -35,7 +37,7 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
       onOpenChange={onOpenChange}
       icon={IconChart}
       title={t('relatoriosComp.preview.title', { nome: relatorio?.nome ?? '' })}
-      description={relatorio?.template_base || undefined}
+      description={relatorio?.descricao || relatorio?.template_base || undefined}
       size="lg"
       hideFooter
     >

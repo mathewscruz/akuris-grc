@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IconDownload, IconView, IconSuccess, IconInfo, IconTime, IconCalendar, IconFile, IconPerson } from '@/components/icons';
+import { IconDownload, IconView, IconSuccess, IconInfo, IconTime, IconCalendar, IconFile, IconPerson, DocumentosIcon } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
@@ -154,7 +154,7 @@ export const HistoricoVersoesDialog = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={IconFile}
+      icon={DocumentosIcon}
       title={t('documentosExtras.historico.titulo').replace('{nome}', documento.nome)}
       size="lg"
       hideFooter

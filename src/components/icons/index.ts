@@ -20,12 +20,34 @@ export { AkurisSidebarIcon } from './AkurisSidebarIcon';
 // === Ícones proprietários de módulos GRC ===
 export { RiscosIcon } from './modules/RiscosIcon';
 export { ControlesIcon } from './modules/ControlesIcon';
+export { AuditoriasIcon } from './modules/AuditoriasIcon';
+export { GovernancaIcon } from './modules/GovernancaIcon';
 export { AtivosIcon } from './modules/AtivosIcon';
 export { IncidentesIcon } from './modules/IncidentesIcon';
 export { GapAnalysisIcon } from './modules/GapAnalysisIcon';
 export { DueDiligenceIcon } from './modules/DueDiligenceIcon';
 export { DocumentosIcon } from './modules/DocumentosIcon';
 export { DenunciasIcon } from './modules/DenunciasIcon';
+export {
+  DashboardIcon,
+  PlanosAcaoIcon,
+  ProjetosIcon,
+  FrameworksIcon,
+  GestaoAtivosIcon,
+  LicencasIcon,
+  ChavesIcon,
+  ContratosIcon,
+  PrivacidadeIcon,
+  GestaoAcessosIcon,
+  SistemasIcon,
+  ContasPrivilegiadasIcon,
+  RevisaoAcessosIcon,
+  ComplianceIcon,
+  ContinuidadeIcon,
+  RelatoriosIcon,
+  ConfiguracoesIcon,
+  SaidaIcon,
+} from './modules/NavigationIcons';
 
 // === Marca proprietária para ações de IA (substitui Brain/Sparkles/Wand2/ScanSearch) ===
 export { AkurisAIIcon } from './modules/AkurisAIIcon';

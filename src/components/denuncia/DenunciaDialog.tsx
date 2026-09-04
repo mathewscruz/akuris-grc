@@ -24,7 +24,7 @@ import {
   IconCalendar,
   IconPerson,
   IconMail,
-  IconShield,
+  DenunciasIcon,
   IconSave,
   IconLock,
 } from '@/components/icons';
@@ -280,7 +280,7 @@ export function DenunciaDialog({
       onOpenChange={onOpenChange}
       title={t('denunciasAdmin.dialog.title', { protocolo: denuncia.protocolo })}
       description={t('denunciasAdmin.dialog.description')}
-      icon={IconShield}
+      icon={DenunciasIcon}
       size="lg"
       hideFooter
       disableShortcuts

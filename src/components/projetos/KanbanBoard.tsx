@@ -138,7 +138,7 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
           <h3 className="text-sm font-semibold">{coluna.nome}</h3>
           <span className="text-xs text-muted-foreground tabular-nums">({tarefas.length})</span>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} title={t('projetos.kanban.addTaskDetailed')}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} aria-label={t('projetos.kanban.addTaskDetailed')} title={t('projetos.kanban.addTaskDetailed')}>
           <IconAdd className="h-4 w-4" />
         </Button>
       </div>
@@ -185,7 +185,14 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
 function DraggableTask({ tarefa, onClick }: { tarefa: ProjetoTarefa; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: tarefa.id });
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners} className={isDragging ? 'opacity-30' : ''} onClick={onClick}>
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      data-dragging={isDragging || undefined}
+      className={`akuris-kanban-card ${isDragging ? 'opacity-30' : ''}`}
+      onClick={onClick}
+    >
       <TaskCard tarefa={tarefa} />
     </div>
   );
@@ -195,7 +202,7 @@ function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: bool
   const { t } = useLanguage();
   const atrasada = tarefa.prazo && !tarefa.concluida_em && parseDataLocal(tarefa.prazo) < new Date();
   return (
-    <Card className={`p-3 cursor-pointer hover:border-primary/40 transition-colors ${dragging ? 'shadow-elegant rotate-2' : ''}`}>
+    <Card data-dragging={dragging || undefined} className={`akuris-kanban-card p-3 cursor-pointer hover:border-primary/40 ${dragging ? 'shadow-elegant' : ''}`}>
       <p className="text-sm font-medium mb-2 line-clamp-2">{tarefa.titulo}</p>
       <div className="flex items-center gap-1.5 flex-wrap">
         <StatusBadge tone={prioridadeTone[tarefa.prioridade]}>

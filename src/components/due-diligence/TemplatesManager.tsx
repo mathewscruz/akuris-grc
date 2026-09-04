@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -169,6 +169,12 @@ export function TemplatesManager() {
     template?: Template;
     mode?: 'create' | 'edit' | 'duplicate' | 'questions';
   }>({ open: false });
+
+  useEffect(() => {
+    const abrirNovoTemplate = () => setTemplateDialog({ open: true, mode: 'create' });
+    window.addEventListener('createDueDiligenceTemplate', abrirNovoTemplate);
+    return () => window.removeEventListener('createDueDiligenceTemplate', abrirNovoTemplate);
+  }, []);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     template?: Template;
@@ -566,13 +572,6 @@ export function TemplatesManager() {
                   >
                     <IconFilter className="h-4 w-4 mr-2" />
                     {t('dueDiligence.templatesManager.filters')}
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => setTemplateDialog({ open: true, mode: 'create' })}
-                  >
-                    <IconAdd className="h-4 w-4 mr-2" />
-                    {t('dueDiligence.templatesManager.newTemplate')}
                   </Button>
                 </div>
               </div>

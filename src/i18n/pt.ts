@@ -29,6 +29,7 @@ export const pt = {
     add: 'Adicionar',
     remove: 'Remover',
     loading: 'Carregando...',
+    retry: 'Tentar novamente',
     /* Um período não acaba antes de começar. Havia duas versões desta
        frase escritas à mão, em dois módulos; os outros quatro nem
        validavam. */

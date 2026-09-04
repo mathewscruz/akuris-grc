@@ -63,6 +63,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const { t } = useLanguage();
   const [akuriaMounted, setAkuriaMounted] = React.useState(false);
+  const mainRef = React.useRef<HTMLElement>(null);
+
+  /* Cada módulo começa no topo do seu próprio conteúdo. Sem isto, o casco
+     persistente conservava o scroll do módulo anterior e a nova página podia
+     aparecer a meio, o que parecia um salto de layout. `useLayoutEffect`
+     corrige antes da pintura, portanto não há frame intermédio visível. */
+  React.useLayoutEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname]);
 
   const openAkuria = () => {
     if (akuriaMounted) {
@@ -254,8 +263,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Button>
               <NotificationCenter />
               {!isMobile && <div className="hidden items-center gap-2 md:flex">
-                <LanguageSelector variant="app" />
                 <ThemeToggle />
+                <LanguageSelector variant="app" />
                 <UserProfile />
               </div>}
               {isMobile && <div className="md:hidden">
@@ -301,7 +310,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               para o botão flutuante do assistente, que é `fixed` e passa por
               cima do conteúdo a rolar de qualquer maneira — só protegiam os
               últimos 96px da página, à custa de uma faixa vazia em todas. */}
-          <main className="min-w-0 flex-1 flex flex-col p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-28 md:pb-10">
+          <main ref={mainRef} className="min-w-0 flex-1 flex flex-col p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-28 md:pb-10">
             <ErrorBoundary>
               <React.Suspense fallback={<ModuleLoadingSkeleton />}>
                 <div className="min-w-0 max-w-full flex flex-1 flex-col">

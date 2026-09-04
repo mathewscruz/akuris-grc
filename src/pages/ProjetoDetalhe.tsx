@@ -3,7 +3,7 @@ import { IconAdd, IconDownload, IconFile, IconArrowLeft, IconSettings } from '@/
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
@@ -74,7 +74,7 @@ export default function ProjetoDetalhe() {
     setSearchParams(proximo, { replace: true });
   }, [searchParams, tarefas, setSearchParams]);
 
-  if (isLoading) return <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>;
+  if (isLoading) return <ModuleLoadingSkeleton statCards={3} />;
   if (!projeto) return <div className="p-6">{t('projetos.detalhe.notFound')}</div>;
 
   const openNovaTarefa = (colunaId?: string) => {
@@ -92,7 +92,7 @@ export default function ProjetoDetalhe() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/projetos')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/projetos')} aria-label={t('common.back')} title={t('common.back')}>
           <IconArrowLeft className="h-4 w-4" />
         </Button>
         <div className="h-6 w-1 rounded" style={{ backgroundColor: projeto.cor ?? '#7552FF' }} />

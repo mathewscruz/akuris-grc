@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { IconCompliance, IconAccess, IconPackage, IconSettings, IconChevronDown, IconLogout } from '@/components/icons';
+import { ComplianceIcon, GestaoAcessosIcon, GestaoAtivosIcon, IconChevronDown, SaidaIcon } from '@/components/icons';
 import logoMini from '@/assets/akuris-logo.png';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
@@ -67,7 +67,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'], moduleName: 'gap-analysis' },
       {
         title: t('sidebar.assetManagement'),
-        icon: IconPackage,
+        icon: GestaoAtivosIcon,
         subItems: [
           { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
           { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
@@ -85,7 +85,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'], moduleName: 'dados' },
       {
         title: t('sidebar.accessManagement'),
-        icon: IconAccess,
+        icon: GestaoAcessosIcon,
         subItems: [
           { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
           { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
@@ -95,7 +95,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
       {
         title: t('sidebar.compliance'),
-        icon: IconCompliance,
+        icon: ComplianceIcon,
         subItems: [
           { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
           { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
@@ -112,6 +112,8 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
     ],
   },
 ];
+
+const ConfiguracoesNavIcon = MODULE_ICON['/configuracoes'];
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -160,6 +162,51 @@ export function AppSidebar() {
     : 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-1';
   const contentPad = isCompact ? 'py-1' : 'py-2';
   const subWrapperCls = isDense ? 'space-y-0 mt-0.5 ml-4 pl-1.5' : 'space-y-1 mt-1 ml-6 pl-2';
+  const [navIndicator, setNavIndicator] = useState({ top: 0, height: 0, visible: false });
+
+  /* O marcador é um elemento único: quando muda o módulo, ele percorre a
+     distância até ao novo item. Duas bordas independentes apenas piscariam
+     (uma some, outra nasce) e não dariam continuidade à navegação. */
+  React.useLayoutEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+
+    const measure = () => {
+      const active = content.querySelector<HTMLElement>('.akuris-nav-link[aria-current="page"]');
+      if (!active) {
+        setNavIndicator((current) => ({ ...current, visible: false }));
+        return;
+      }
+      const contentRect = content.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      const next = {
+        top: activeRect.top - contentRect.top + content.scrollTop + activeRect.height * 0.22,
+        height: activeRect.height * 0.56,
+        visible: true,
+      };
+      setNavIndicator((current) =>
+        Math.abs(current.top - next.top) < 0.5 &&
+        Math.abs(current.height - next.height) < 0.5 &&
+        current.visible
+          ? current
+          : next
+      );
+    };
+
+    measure();
+    const frame = requestAnimationFrame(measure);
+    const ro = new ResizeObserver(measure);
+    ro.observe(content);
+    const mo = new MutationObserver(measure);
+    mo.observe(content, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-current', 'data-state'] });
+    content.addEventListener('scroll', measure, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+      mo.disconnect();
+      content.removeEventListener('scroll', measure);
+    };
+  }, [currentPath, openGroups, isCollapsed, fit]);
 
   // Open group automatically when it contains the active route
   useEffect(() => {
@@ -320,8 +367,17 @@ export function AppSidebar() {
 
       <SidebarContent
         ref={contentRef as any}
-        className={`${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-ui duration-200 ease-out`}
+        className={`relative ${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-ui duration-200 ease-out`}
       >
+        <span
+          aria-hidden="true"
+          className="akuris-sidebar-indicator"
+          style={{
+            height: navIndicator.height,
+            opacity: navIndicator.visible ? 1 : 0,
+            transform: `translate3d(0, ${navIndicator.top}px, 0)`,
+          }}
+        />
         {getVisibleSections().map((section) => (
           <SidebarGroup key={section.id} className={isDense ? 'py-0' : isCompact ? 'py-1' : ''}>
             {!isCollapsed && (
@@ -357,7 +413,7 @@ export function AppSidebar() {
                                 />
                                 {/* Dot indicator: filho ativo enquanto grupo está fechado */}
                                 {hasActiveSubItem(item.subItems) && !openGroups.includes(item.title) && (
-                                  <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                  <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary" />
                                 )}
                               </span>
                               {!isCollapsed && (
@@ -385,7 +441,7 @@ export function AppSidebar() {
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
                         {!isCollapsed && (
-                          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                          <CollapsibleContent>
                             <div className={`${subWrapperCls} border-l-2 border-sidebar-border/30`}>
                               {item.subItems.map((subItem, idx) => {
                                 const active = isActive(subItem.url);
@@ -401,7 +457,7 @@ export function AppSidebar() {
                                       to={subItem.url}
                                       end
                                       onMouseEnter={() => prefetchRoute(subItem.url)}
-                                      className={`flex items-center w-full min-w-0 px-3 rounded-md transition-colors duration-200 ${
+                                      className={`akuris-nav-link flex items-center w-full min-w-0 px-3 rounded-md ${
                                         active
                                           ? '!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary'
                                           : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
@@ -436,7 +492,7 @@ export function AppSidebar() {
                               end
                               onClick={handleNavClick}
                               onMouseEnter={() => prefetchRoute(item.url!)}
-                              className={`flex items-center w-full min-w-0 px-3 rounded-md transition-colors duration-200 ${
+                              className={`akuris-nav-link flex items-center w-full min-w-0 px-3 rounded-md ${
                                 active
                                   ? '!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary'
                                   : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
@@ -480,9 +536,9 @@ export function AppSidebar() {
                     <NavLink
                       to="/configuracoes"
                       onClick={handleNavClick}
-                      className={({ isActive }) => `flex items-center w-full px-3 ${getNavCls({ isActive })}`}
+                      className={({ isActive }) => `akuris-nav-link flex items-center w-full px-3 ${getNavCls({ isActive })}`}
                     >
-                      <IconSettings
+                      <ConfiguracoesNavIcon
                         className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                           isActive('/configuracoes') ? 'text-primary-foreground' : ''
                         }`}
@@ -515,7 +571,7 @@ export function AppSidebar() {
               isCollapsed ? 'justify-center' : 'justify-start'
             }`}
           >
-            <IconLogout className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
+            <SaidaIcon className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
             {!isCollapsed && (
               <span className="text-sm font-medium truncate">
                 {t('sidebar.logout')}

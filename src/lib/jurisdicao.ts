@@ -7,9 +7,9 @@
  * configurada na empresa (`empresas.jurisdicao`).
  */
 
-export type JurisdicaoCodigo = 'BR' | 'PT_EU' | 'INTL';
+export type JurisdicaoCodigo = "BR" | "PT_EU" | "INTL";
 
-export const JURISDICOES: JurisdicaoCodigo[] = ['BR', 'PT_EU', 'INTL'];
+export const JURISDICOES: JurisdicaoCodigo[] = ["BR", "PT_EU", "INTL"];
 
 export interface JurisdicaoConfig {
   codigo: JurisdicaoCodigo;
@@ -31,42 +31,67 @@ export interface JurisdicaoConfig {
 
 export const JURISDICAO_CONFIG: Record<JurisdicaoCodigo, JurisdicaoConfig> = {
   BR: {
-    codigo: 'BR',
-    lei: 'LGPD',
-    autoridade: 'ANPD',
-    autoridadeKey: 'jurisdicao.autoridades.anpd',
+    codigo: "BR",
+    lei: "LGPD",
+    autoridade: "ANPD",
+    autoridadeKey: "jurisdicao.autoridades.anpd",
     prazoTitularDias: 15,
-    prazoTitularKey: 'jurisdicao.prazos.titular.br',
-    prazoViolacaoKey: 'jurisdicao.prazos.violacao.br',
-    artigoTitularKey: 'jurisdicao.artigos.titular.br',
+    prazoTitularKey: "jurisdicao.prazos.titular.br",
+    prazoViolacaoKey: "jurisdicao.prazos.violacao.br",
+    artigoTitularKey: "jurisdicao.artigos.titular.br",
   },
   PT_EU: {
-    codigo: 'PT_EU',
-    lei: 'RGPD',
-    autoridade: 'CNPD',
-    autoridadeKey: 'jurisdicao.autoridades.cnpd',
+    codigo: "PT_EU",
+    lei: "RGPD",
+    autoridade: "CNPD",
+    autoridadeKey: "jurisdicao.autoridades.cnpd",
     prazoTitularDias: 30,
-    prazoTitularKey: 'jurisdicao.prazos.titular.ptEu',
-    prazoViolacaoKey: 'jurisdicao.prazos.violacao.ptEu',
-    artigoTitularKey: 'jurisdicao.artigos.titular.ptEu',
+    prazoTitularKey: "jurisdicao.prazos.titular.ptEu",
+    prazoViolacaoKey: "jurisdicao.prazos.violacao.ptEu",
+    artigoTitularKey: "jurisdicao.artigos.titular.ptEu",
   },
   INTL: {
-    codigo: 'INTL',
-    lei: 'GDPR',
-    autoridade: '',
-    autoridadeKey: 'jurisdicao.autoridades.intl',
+    codigo: "INTL",
+    lei: "GDPR",
+    autoridade: "",
+    autoridadeKey: "jurisdicao.autoridades.intl",
     prazoTitularDias: 30,
-    prazoTitularKey: 'jurisdicao.prazos.titular.intl',
-    prazoViolacaoKey: 'jurisdicao.prazos.violacao.intl',
-    artigoTitularKey: 'jurisdicao.artigos.titular.intl',
+    prazoTitularKey: "jurisdicao.prazos.titular.intl",
+    prazoViolacaoKey: "jurisdicao.prazos.violacao.intl",
+    artigoTitularKey: "jurisdicao.artigos.titular.intl",
   },
 };
 
 /** Direitos do titular, por jurisdição (chaves i18n). */
 export const DIREITOS_TITULAR: Record<JurisdicaoCodigo, string[]> = {
-  BR: ['confirmacao', 'acesso', 'correcao', 'anonimizacao', 'portabilidade', 'eliminacao', 'informacao', 'revogacao'],
-  PT_EU: ['acesso', 'retificacao', 'apagamento', 'limitacao', 'portabilidade', 'oposicao', 'decisaoAutomatizada'],
-  INTL: ['acesso', 'retificacao', 'apagamento', 'limitacao', 'portabilidade', 'oposicao', 'decisaoAutomatizada'],
+  BR: [
+    "confirmacao",
+    "acesso",
+    "correcao",
+    "anonimizacao",
+    "portabilidade",
+    "eliminacao",
+    "informacao",
+    "revogacao",
+  ],
+  PT_EU: [
+    "acesso",
+    "retificacao",
+    "apagamento",
+    "limitacao",
+    "portabilidade",
+    "oposicao",
+    "decisaoAutomatizada",
+  ],
+  INTL: [
+    "acesso",
+    "retificacao",
+    "apagamento",
+    "limitacao",
+    "portabilidade",
+    "oposicao",
+    "decisaoAutomatizada",
+  ],
 };
 
 /**
@@ -83,49 +108,85 @@ export const DIREITOS_TITULAR: Record<JurisdicaoCodigo, string[]> = {
  * era possível gravar "Biometria — Legítimo Interesse" e o produto imprimia
  * isso na ROPA que vai para a autoridade.
  */
-export const BASES_LEGAIS: Record<JurisdicaoCodigo, { comuns: string[]; sensiveis: string[] }> = {
+export const BASES_LEGAIS: Record<
+  JurisdicaoCodigo,
+  { comuns: string[]; sensiveis: string[] }
+> = {
   // LGPD: Art. 7 (dados pessoais) e Art. 11 (dados pessoais sensíveis).
   BR: {
     comuns: [
-      'consentimento', 'cumprimento_obrigacao', 'politicas_publicas', 'estudo_pesquisa',
-      'execucao_contrato', 'exercicio_direitos', 'protecao_vida', 'tutela_saude',
-      'legitimo_interesse', 'protecao_credito',
+      "consentimento",
+      "cumprimento_obrigacao",
+      "politicas_publicas",
+      "estudo_pesquisa",
+      "execucao_contrato",
+      "exercicio_direitos",
+      "protecao_vida",
+      "tutela_saude",
+      "legitimo_interesse",
+      "protecao_credito",
     ],
     sensiveis: [
-      'consentimento', 'cumprimento_obrigacao', 'politicas_publicas', 'estudo_pesquisa',
-      'exercicio_direitos', 'protecao_vida', 'tutela_saude', 'prevencao_fraude',
+      "consentimento",
+      "cumprimento_obrigacao",
+      "politicas_publicas",
+      "estudo_pesquisa",
+      "exercicio_direitos",
+      "protecao_vida",
+      "tutela_saude",
+      "prevencao_fraude",
     ],
   },
   // RGPD/GDPR: Art. 6 (licitude) e Art. 9.2 (categorias especiais).
   PT_EU: {
     comuns: [
-      'consentimento', 'execucao_contrato', 'cumprimento_obrigacao',
-      'protecao_vida', 'interesse_publico', 'legitimo_interesse',
+      "consentimento",
+      "execucao_contrato",
+      "cumprimento_obrigacao",
+      "protecao_vida",
+      "interesse_publico",
+      "legitimo_interesse",
     ],
     sensiveis: [
-      'consentimento_explicito', 'obrigacao_trabalho', 'protecao_vida',
-      'dados_publicos_titular', 'exercicio_direitos', 'interesse_publico_relevante',
-      'tutela_saude', 'saude_publica', 'arquivo_investigacao',
+      "consentimento_explicito",
+      "obrigacao_trabalho",
+      "protecao_vida",
+      "dados_publicos_titular",
+      "exercicio_direitos",
+      "interesse_publico_relevante",
+      "tutela_saude",
+      "saude_publica",
+      "arquivo_investigacao",
     ],
   },
   INTL: {
     comuns: [
-      'consentimento', 'execucao_contrato', 'cumprimento_obrigacao',
-      'protecao_vida', 'interesse_publico', 'legitimo_interesse',
+      "consentimento",
+      "execucao_contrato",
+      "cumprimento_obrigacao",
+      "protecao_vida",
+      "interesse_publico",
+      "legitimo_interesse",
     ],
     sensiveis: [
-      'consentimento_explicito', 'obrigacao_trabalho', 'protecao_vida',
-      'dados_publicos_titular', 'exercicio_direitos', 'interesse_publico_relevante',
-      'tutela_saude', 'saude_publica', 'arquivo_investigacao',
+      "consentimento_explicito",
+      "obrigacao_trabalho",
+      "protecao_vida",
+      "dados_publicos_titular",
+      "exercicio_direitos",
+      "interesse_publico_relevante",
+      "tutela_saude",
+      "saude_publica",
+      "arquivo_investigacao",
     ],
   },
 };
 
 /** Sensibilidades que o catálogo classifica como dado sensível. */
-const SENSIBILIDADES_SENSIVEIS = new Set(['sensivel', 'muito_sensivel']);
+const SENSIBILIDADES_SENSIVEIS = new Set(["sensivel", "muito_sensivel"]);
 
 export const ehDadoSensivel = (sensibilidade?: string | null): boolean =>
-  SENSIBILIDADES_SENSIVEIS.has(String(sensibilidade ?? '').toLowerCase());
+  SENSIBILIDADES_SENSIVEIS.has(String(sensibilidade ?? "").toLowerCase());
 
 /**
  * Bases aplicáveis a um registo. Sem sensibilidade conhecida devolve as
@@ -148,19 +209,19 @@ export function basesLegaisAplicaveis(
  * jurisdição). Nos dois casos o registo continua visível: esconder um dado
  * estranho num produto de conformidade é pior do que mostrá-lo marcado.
  */
-export type EstadoBaseLegal = 'ok' | 'incompativel' | 'desconhecida';
+export type EstadoBaseLegal = "ok" | "incompativel" | "desconhecida";
 
 export function avaliarBaseLegal(
   codigo: JurisdicaoCodigo,
   valor?: string | null,
   sensibilidade?: string | null,
 ): EstadoBaseLegal {
-  if (!valor) return 'desconhecida';
+  if (!valor) return "desconhecida";
   const conjunto = BASES_LEGAIS[codigo] ?? BASES_LEGAIS.BR;
-  if (basesLegaisAplicaveis(codigo, sensibilidade).includes(valor)) return 'ok';
+  if (basesLegaisAplicaveis(codigo, sensibilidade).includes(valor)) return "ok";
   const conhecidaNaJurisdicao =
     conjunto.comuns.includes(valor) || conjunto.sensiveis.includes(valor);
-  return conhecidaNaJurisdicao ? 'incompativel' : 'desconhecida';
+  return conhecidaNaJurisdicao ? "incompativel" : "desconhecida";
 }
 
 /**
@@ -170,44 +231,74 @@ export function avaliarBaseLegal(
 export function inferirJurisdicao(locale?: string): JurisdicaoCodigo {
   const langs: string[] = [];
   if (locale) langs.push(locale);
-  if (typeof navigator !== 'undefined') {
-    langs.push(...(navigator.languages || []), navigator.language || '');
+  if (typeof navigator !== "undefined") {
+    langs.push(...(navigator.languages || []), navigator.language || "");
   }
   const lower = langs.filter(Boolean).map((l) => l.toLowerCase());
 
-  let timeZone = '';
+  let timeZone = "";
   try {
-    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
   } catch {
-    timeZone = '';
+    timeZone = "";
   }
 
-  const host = typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
+  const host =
+    typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
 
-  if (host.endsWith('.br') || host.endsWith('.com.br')) return 'BR';
-  if (host.endsWith('.pt')) return 'PT_EU';
+  if (host.endsWith(".br") || host.endsWith(".com.br")) return "BR";
+  if (host.endsWith(".pt")) return "PT_EU";
 
-  if (lower.some((l) => l.startsWith('pt-br'))) return 'BR';
-  if (lower.some((l) => l.startsWith('pt-pt'))) return 'PT_EU';
+  if (lower.some((l) => l.startsWith("pt-br"))) return "BR";
+  if (lower.some((l) => l.startsWith("pt-pt"))) return "PT_EU";
 
-  if (timeZone.startsWith('America/')) return lower.some((l) => l.startsWith('pt')) ? 'BR' : 'INTL';
-  if (timeZone === 'Europe/Lisbon' || timeZone === 'Atlantic/Azores' || timeZone === 'Atlantic/Madeira') return 'PT_EU';
-  if (timeZone.startsWith('Europe/')) return lower.some((l) => l.startsWith('pt')) ? 'PT_EU' : 'INTL';
+  if (timeZone.startsWith("America/"))
+    return lower.some((l) => l.startsWith("pt")) ? "BR" : "INTL";
+  if (
+    timeZone === "Europe/Lisbon" ||
+    timeZone === "Atlantic/Azores" ||
+    timeZone === "Atlantic/Madeira"
+  )
+    return "PT_EU";
+  if (timeZone.startsWith("Europe/"))
+    return lower.some((l) => l.startsWith("pt")) ? "PT_EU" : "INTL";
 
-  if (lower.some((l) => l.startsWith('pt'))) return 'PT_EU';
-  return 'INTL';
+  if (lower.some((l) => l.startsWith("pt"))) return "PT_EU";
+  return "INTL";
 }
 
 /** Data limite de resposta a uma solicitação de titular, segundo a jurisdição. */
-export function prazoResposta(dataAbertura: string | Date, codigo: JurisdicaoCodigo): Date {
-  const base = typeof dataAbertura === 'string' ? new Date(dataAbertura) : new Date(dataAbertura.getTime());
-  const dias = JURISDICAO_CONFIG[codigo].prazoTitularDias;
+export function prazoResposta(
+  dataAbertura: string | Date,
+  codigo: JurisdicaoCodigo,
+  agentePequenoPorte = false,
+): Date {
+  const base =
+    typeof dataAbertura === "string"
+      ? new Date(dataAbertura)
+      : new Date(dataAbertura.getTime());
+  // O RGPD fala em um mês, não em 30 dias. Janeiro 31 → fevereiro 28/29,
+  // por exemplo, deve respeitar o calendário em vez de somar 30 dias.
+  if (codigo === "PT_EU" || codigo === "INTL") {
+    const diaOriginal = base.getDate();
+    base.setMonth(base.getMonth() + 1, 1);
+    const ultimoDia = new Date(
+      base.getFullYear(),
+      base.getMonth() + 1,
+      0,
+    ).getDate();
+    base.setDate(Math.min(diaOriginal, ultimoDia));
+    return base;
+  }
+  const dias =
+    JURISDICAO_CONFIG[codigo].prazoTitularDias *
+    (codigo === "BR" && agentePequenoPorte ? 2 : 1);
   base.setDate(base.getDate() + dias);
   return base;
 }
 
 /** Última jurisdição conhecida — para helpers puros (PDF/exportações). */
-let jurisdicaoAtual: JurisdicaoCodigo = 'PT_EU';
+let jurisdicaoAtual: JurisdicaoCodigo = "PT_EU";
 export function setJurisdicaoAtual(codigo: JurisdicaoCodigo) {
   jurisdicaoAtual = codigo;
 }

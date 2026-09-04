@@ -180,6 +180,8 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       value: `${stats?.mediaConformidade || 0}%`,
       icon: IconTrendUp,
       hint: t('gapAnalysis.adherenceUi.view.averageComplianceDescription'),
+      target: 100,
+      direction: 'higher-is-better' as const,
     }
   ];
 

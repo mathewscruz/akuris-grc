@@ -278,6 +278,12 @@ export default function AtivosChaves() {
       sortable: true,
     },
     {
+      key: 'algoritmo',
+      label: t('detalheRegisto.algoritmo'),
+      sortable: true,
+      render: (_: any, chave: ChaveCriptografica) => chave.algoritmo || '-',
+    },
+    {
       key: 'data_proxima_rotacao',
       label: t('fin.chaves.proximaRotacao'),
       sortable: true,
@@ -305,19 +311,13 @@ export default function AtivosChaves() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Avatar className="h-8 w-8 cursor-pointer">
-                  {chave.responsavel_avatar && (
-                    <AvatarImage src={chave.responsavel_avatar} alt={chave.responsavel_nome} />
-                  )}
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {chave.responsavel_nome
-                      .split(' ')
-                      .map(n => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    {chave.responsavel_avatar && <AvatarImage src={chave.responsavel_avatar} alt={chave.responsavel_nome} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">{chave.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <span className="truncate text-sm">{chave.responsavel_nome.split(/\s+/)[0]}</span>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{chave.responsavel_nome}</p>
@@ -439,6 +439,13 @@ export default function AtivosChaves() {
           { key: 'ativas', label: t('sweepDados.ativos.kpiChavesAtivasTitle'), value: stats?.ativas ?? 0, drillDown: 'chaves_ativas' },
           { key: 'rotacoesPendentes', label: t('fin.chaves.rotacoesPendentes'), value: stats?.rotacao30dias ?? 0, tone: 'warning', drillDown: 'chaves_rotacao' },
           { key: 'criticas', label: t('fin.comum.criticasF'), value: stats?.criticas ?? 0, tone: 'destructive', drillDown: 'chaves_criticas' },
+          {
+            key: 'incompletas',
+            label: t('cardsKpi.chaves.cadastroIncompleto'),
+            value: chaves.filter((c) => !c.responsavel || !c.algoritmo || !c.localizacao || !c.data_proxima_rotacao).length,
+            tone: chaves.some((c) => !c.responsavel || !c.algoritmo || !c.localizacao || !c.data_proxima_rotacao) ? 'warning' : undefined,
+            hint: t('cardsKpi.chaves.cadastroIncompletoHint'),
+          },
         ]}
       />
 

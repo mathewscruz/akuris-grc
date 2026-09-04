@@ -74,6 +74,7 @@ export const configPerms = {
         errorFetch: 'Erro ao carregar usuários',
         emptyState: 'Nenhum usuário encontrado',
         noProfileBadge: 'Sem perfil',
+        roleFallbackBadge: 'Padrão do papel: {role}',
         manage: 'Gerenciar',
         role: {
           super_admin: 'Super Admin',
@@ -202,6 +203,7 @@ export const configPerms = {
         errorFetch: 'Error loading users',
         emptyState: 'No users found',
         noProfileBadge: 'No profile',
+        roleFallbackBadge: 'Role default: {role}',
         manage: 'Manage',
         role: {
           super_admin: 'Super Admin',

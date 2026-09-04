@@ -14,14 +14,16 @@ import { TesteDialog } from './TesteDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatStatus } from '@/lib/text-utils';
+import { PreparacaoContinuidade } from './PreparacaoContinuidade';
 
 interface PlanoDetalheDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plano: any;
+  onSuccess?: () => void;
 }
 
-export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDialogProps) {
+export function PlanoDetalheDialog({ open, onOpenChange, plano, onSuccess }: PlanoDetalheDialogProps) {
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -138,11 +140,16 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
 
           {plano.descricao && <p className="text-sm text-muted-foreground mb-4">{plano.descricao}</p>}
 
-          <Tabs defaultValue="tarefas">
+          <Tabs defaultValue="preparacao">
             <TabsList>
+              <TabsTrigger value="preparacao">{t('continuidadeComp.detalhe.tabPreparacao')}</TabsTrigger>
               <TabsTrigger value="tarefas">{t('continuidadeComp.detalhe.tabTarefas', { count: tarefas.length })}</TabsTrigger>
               <TabsTrigger value="testes">{t('continuidadeComp.detalhe.tabTestes', { count: testes.length })}</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="preparacao">
+              <PreparacaoContinuidade plano={plano} onSuccess={onSuccess} />
+            </TabsContent>
 
             <TabsContent value="tarefas" className="space-y-3">
               <div className="flex justify-end">
@@ -170,10 +177,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
                           {tarefa.prazo && <p className="text-xs text-muted-foreground mt-1">{t('continuidadeComp.detalhe.prazoPrefix')}: {formatDateOnly(tarefa.prazo)}</p>}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTarefaDialog({ open: true, tarefa })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTarefaDialog({ open: true, tarefa })} aria-label={t('common.edit')} title={t('common.edit')}>
                             <IconEdit className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'tarefa', id: tarefa.id })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'tarefa', id: tarefa.id })} aria-label={t('common.delete')} title={t('common.delete')}>
                             <IconDelete className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -208,10 +215,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
                           {teste.licoes_aprendidas && <p className="text-xs text-muted-foreground mt-1"><strong>{t('continuidadeComp.detalhe.licoesPrefix')}:</strong> {teste.licoes_aprendidas}</p>}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTesteDialog({ open: true, teste })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTesteDialog({ open: true, teste })} aria-label={t('common.edit')} title={t('common.edit')}>
                             <IconEdit className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'teste', id: teste.id })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'teste', id: teste.id })} aria-label={t('common.delete')} title={t('common.delete')}>
                             <IconDelete className="h-3.5 w-3.5" />
                           </Button>
                         </div>

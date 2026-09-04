@@ -302,19 +302,13 @@ export default function AtivosLicencas() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Avatar className="h-8 w-8 cursor-pointer">
-                  {licenca.responsavel_avatar && (
-                    <AvatarImage src={licenca.responsavel_avatar} alt={licenca.responsavel_nome} />
-                  )}
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {licenca.responsavel_nome
-                      .split(' ')
-                      .map(n => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    {licenca.responsavel_avatar && <AvatarImage src={licenca.responsavel_avatar} alt={licenca.responsavel_nome} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">{licenca.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <span className="truncate text-sm">{licenca.responsavel_nome.split(/\s+/)[0]}</span>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{licenca.responsavel_nome}</p>
@@ -422,6 +416,13 @@ export default function AtivosLicencas() {
           { key: 'ativas', label: t('cardsKpi.licencas.licencasAtivas'), value: stats?.ativas ?? 0, drillDown: 'licencas_ativas' },
           { key: 'aVencer', label: t('sweepDados.ativos.statusAVencer'), value: stats?.vencendo30dias ?? 0, tone: 'warning', drillDown: 'licencas_a_vencer' },
           { key: 'vencidas', label: t('sweepDados.ativos.kpiVencidasTitle'), value: stats?.vencidas ?? 0, tone: 'destructive', drillDown: 'licencas_vencidas' },
+          {
+            key: 'incompletas',
+            label: t('cardsKpi.licencas.cadastroIncompleto'),
+            value: licencas.filter((l) => !l.responsavel || !l.data_vencimento || l.valor_renovacao == null).length,
+            tone: licencas.some((l) => !l.responsavel || !l.data_vencimento || l.valor_renovacao == null) ? 'warning' : undefined,
+            hint: t('cardsKpi.licencas.cadastroIncompletoHint'),
+          },
         ]}
       />
 

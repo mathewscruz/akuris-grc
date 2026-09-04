@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -124,7 +124,7 @@ export default function Projetos() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>
+        <ModuleLoadingSkeleton statCards={4} />
       ) : visiveis.length === 0 ? (
         <EmptyState
           variant="illustrated"

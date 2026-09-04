@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { WelcomeHero } from '@/components/gap-analysis/WelcomeHero';
 import { FrameworkCatalog } from '@/components/gap-analysis/FrameworkCatalog';
 import {
@@ -431,8 +431,6 @@ export default function GapAnalysisFrameworks() {
   // adotar olhando esse número. Só volta quando existir mapeamento cruzado real
   // entre requisitos de frameworks diferentes, que o esquema hoje não tem.
   const aiRecommended = useMemo(() => {
-    const activeTypes = new Set(activeFrameworks.map(fw => getCategory(fw.tipo_framework)));
-
     const candidates = availableFrameworks
       .map(fw => {
         const cat = getCategory(fw.tipo_framework);
@@ -446,6 +444,16 @@ export default function GapAnalysisFrameworks() {
     return candidates;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableFrameworks, activeFrameworks.length, jurisdicaoCodigo]);
+
+  // Os recomendados já aparecem em destaque logo acima. Repeti-los no
+  // catálogo expandido fazia parecer que havia mais frameworks do que de fato
+  // há e obrigava a comparar o mesmo item duas vezes. Em uma busca explícita,
+  // todos os resultados continuam visíveis no catálogo.
+  const catalogFrameworks = useMemo(() => {
+    if (hasFilters) return filteredAvailableFrameworks;
+    const recomendados = new Set(aiRecommended.map(({ fw }) => fw.id));
+    return filteredAvailableFrameworks.filter((fw) => !recomendados.has(fw.id));
+  }, [aiRecommended, filteredAvailableFrameworks, hasFilters]);
 
   // Quanto de cada candidato a empresa já tem pronto, pela equivalência entre
   // requisitos. É a resposta real à pergunta que o "reuso estimado" aleatório
@@ -480,9 +488,7 @@ export default function GapAnalysisFrameworks() {
             title={t('gapAnalysis.frameworks.title')}
             description={t('gapAnalysis.frameworks.description')}
           />
-          <div className="flex items-center justify-center py-24">
-            <AkurisPulse size={48} />
-          </div>
+          <ModuleLoadingSkeleton statCards={3} />
         </div>
       </ErrorBoundary>
     );
@@ -567,7 +573,7 @@ export default function GapAnalysisFrameworks() {
             )}
 
             {/* Recomendados para sua empresa */}
-            {aiRecommended.length > 0 && (
+            {aiRecommended.length > 0 && !hasFilters && (
               <section>
                 <SectionHead
                   title={t('gapAnalysis.frameworks.recommended.title')}
@@ -650,15 +656,15 @@ export default function GapAnalysisFrameworks() {
                   </span>
                   <span className="font-mono text-micro tabular-nums text-muted-foreground">
                     {hasFilters && catalogOpen
-                      ? `${filteredAvailableFrameworks.length}/${availableFrameworks.length}`
-                      : String(availableFrameworks.length).padStart(2, '0')}
+                      ? `${catalogFrameworks.length}/${availableFrameworks.length}`
+                      : String(catalogFrameworks.length).padStart(2, '0')}
                   </span>
                   <div className="h-px flex-1 bg-border/60 ml-2" />
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-4">
                 <FrameworkCatalog
-                  frameworks={filteredAvailableFrameworks}
+                  frameworks={catalogFrameworks}
                   requirementCounts={requirementCounts}
                   onFrameworkClick={handleFrameworkClick}
                 />

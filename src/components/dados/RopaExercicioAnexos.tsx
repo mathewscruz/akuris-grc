@@ -1,8 +1,19 @@
 import { useRef, useState } from "react";
-import { IconDelete, IconDownload, IconUpload, IconAttach } from '@/components/icons';
+import {
+  IconDelete,
+  IconDownload,
+  IconUpload,
+  IconAttach,
+} from "@/components/icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -12,8 +23,19 @@ import { logger } from "@/lib/logger";
 import { formatDateOnly } from "@/lib/date-utils";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { EmptyState } from "@/components/ui/empty-state";
+import { exigirEscrita, exigirLinhas } from "@/lib/supabase-write";
 
 const BUCKET = "dados-documentos";
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "text/plain",
+  "text/csv",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
 
 export const uploadRopaAnexo = async (params: {
   empresaId: string;
@@ -22,24 +44,36 @@ export const uploadRopaAnexo = async (params: {
   tipo: string;
 }) => {
   const { empresaId, exercicioId, file, tipo } = params;
+  if (file.size > MAX_FILE_SIZE)
+    throw new Error("O arquivo deve ter no máximo 10 MB.");
+  if (file.type && !ALLOWED_TYPES.has(file.type))
+    throw new Error("Formato de arquivo não permitido.");
   const safeName = file.name.replace(/[^\w.-]+/g, "_");
   const caminho = `${empresaId}/ropa-exercicios/${exercicioId}/${Date.now()}_${safeName}`;
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(caminho, file, { upsert: false });
+  const { error: upErr } = await supabase.storage
+    .from(BUCKET)
+    .upload(caminho, file, { upsert: false });
   if (upErr) throw upErr;
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { error } = await supabase.from("ropa_exercicio_anexos").insert({
-    exercicio_id: exercicioId,
-    empresa_id: empresaId,
-    tipo,
-    nome_arquivo: file.name,
-    caminho,
-    mime_type: file.type || null,
-    tamanho: file.size,
-    uploaded_by: user?.id ?? null,
-  });
-  if (error) throw error;
+  try {
+    await exigirEscrita(
+      supabase.from("ropa_exercicio_anexos").insert({
+        exercicio_id: exercicioId,
+        empresa_id: empresaId,
+        tipo,
+        nome_arquivo: file.name,
+        caminho,
+        mime_type: file.type || null,
+        tamanho: file.size,
+        uploaded_by: user?.id ?? null,
+      }),
+    );
+  } catch (error) {
+    await supabase.storage.from(BUCKET).remove([caminho]);
+    throw error;
+  }
 };
 
 const formatSize = (bytes?: number | null) => {
@@ -49,7 +83,15 @@ const formatSize = (bytes?: number | null) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
+export function RopaExercicioAnexos({
+  exercicioId,
+  canCreate = false,
+  canDelete = false,
+}: {
+  exercicioId: string;
+  canCreate?: boolean;
+  canDelete?: boolean;
+}) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
@@ -72,7 +114,10 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
     },
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["ropa-exercicio-anexos", exercicioId, empresaId] });
+  const refresh = () =>
+    queryClient.invalidateQueries({
+      queryKey: ["ropa-exercicio-anexos", exercicioId, empresaId],
+    });
 
   const handleFile = async (file: File) => {
     if (!empresaId) return;
@@ -83,7 +128,9 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
       refresh();
     } catch (error: any) {
       logger.error("Erro ao carregar anexo do exercício ROPA", { data: error });
-      toast.error(t("dadosDashboard.ropaExercicios.erroAnexo"), { description: error?.message });
+      toast.error(t("dadosDashboard.ropaExercicios.erroAnexo"), {
+        description: error?.message,
+      });
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -93,48 +140,68 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
   const handleDelete = async (anexo: any) => {
     if (!empresaId) return;
     try {
-      await supabase.storage.from(BUCKET).remove([anexo.caminho]);
-      const { error } = await supabase
-        .from("ropa_exercicio_anexos")
-        .delete()
-        .eq("id", anexo.id)
-        .eq("empresa_id", empresaId);
-      if (error) throw error;
+      const { error: storageError } = await supabase.storage
+        .from(BUCKET)
+        .remove([anexo.caminho]);
+      if (storageError) throw storageError;
+      await exigirLinhas(
+        supabase
+          .from("ropa_exercicio_anexos")
+          .delete()
+          .eq("id", anexo.id)
+          .eq("empresa_id", empresaId)
+          .select("id"),
+      );
       toast.success(t("dadosDashboard.ropaExercicios.anexoRemovido"));
       refresh();
     } catch (error: any) {
       logger.error("Erro ao remover anexo do exercício ROPA", { data: error });
-      toast.error(t("dadosDashboard.ropaExercicios.erroAnexo"), { description: error?.message });
+      toast.error(t("dadosDashboard.ropaExercicios.erroAnexo"), {
+        description: error?.message,
+      });
     }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Select value={tipo} onValueChange={setTipo}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="relatorio_executivo">{t("dadosDashboard.ropaExercicios.tipos.relatorio_executivo")}</SelectItem>
-            <SelectItem value="planilha">{t("dadosDashboard.ropaExercicios.tipos.planilha")}</SelectItem>
-            <SelectItem value="evidencia">{t("dadosDashboard.ropaExercicios.tipos.evidencia")}</SelectItem>
-          </SelectContent>
-        </Select>
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void handleFile(file);
-          }}
-        />
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
-          <IconUpload className="mr-2 h-4 w-4" />
-          {t("dadosDashboard.ropaExercicios.carregarAnexo")}
-        </Button>
-      </div>
+      {canCreate && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={tipo} onValueChange={setTipo}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="relatorio_executivo">
+                {t("dadosDashboard.ropaExercicios.tipos.relatorio_executivo")}
+              </SelectItem>
+              <SelectItem value="planilha">
+                {t("dadosDashboard.ropaExercicios.tipos.planilha")}
+              </SelectItem>
+              <SelectItem value="evidencia">
+                {t("dadosDashboard.ropaExercicios.tipos.evidencia")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleFile(file);
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+          >
+            <IconUpload className="mr-2 h-4 w-4" />
+            {t("dadosDashboard.ropaExercicios.carregarAnexo")}
+          </Button>
+        </div>
+      )}
 
       {isLoading ? (
         <AkurisPulse />
@@ -147,11 +214,17 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
       ) : (
         <ul className="divide-y rounded-lg border">
           {anexos.map((anexo: any) => (
-            <li key={anexo.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+            <li
+              key={anexo.id}
+              className="flex flex-wrap items-center justify-between gap-3 p-3"
+            >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{anexo.nome_arquivo}</p>
+                <p className="truncate text-sm font-medium">
+                  {anexo.nome_arquivo}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {t(`dadosDashboard.ropaExercicios.tipos.${anexo.tipo}`)} · {formatSize(anexo.tamanho)} ·{" "}
+                  {t(`dadosDashboard.ropaExercicios.tipos.${anexo.tipo}`)} ·{" "}
+                  {formatSize(anexo.tamanho)} ·{" "}
                   {formatDateOnly(anexo.created_at)}
                 </p>
               </div>
@@ -161,14 +234,24 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
                   size="sm"
                   onClick={async () => {
                     const ok = await openStorageFile(BUCKET, anexo.caminho);
-                    if (!ok) toast.error(t("dadosDashboard.ropaExercicios.erroAbrirAnexo"));
+                    if (!ok)
+                      toast.error(
+                        t("dadosDashboard.ropaExercicios.erroAbrirAnexo"),
+                      );
                   }}
                 >
                   <IconDownload className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(anexo)}>
-                  <IconDelete className="h-4 w-4" />
-                </Button>
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => handleDelete(anexo)}
+                  >
+                    <IconDelete className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </li>
           ))}

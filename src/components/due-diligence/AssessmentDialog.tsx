@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
-import { IconExternal, IconChecklist, IconCopy, IconMail } from '@/components/icons';
+import { IconExternal, IconCopy, IconMail, DueDiligenceIcon } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -297,7 +297,7 @@ export function AssessmentDialog({
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={IconChecklist}
+        icon={DueDiligenceIcon}
         title={t('dueDiligence.assessmentDialog.viewTitle')}
         description={t('dueDiligence.assessmentDialog.viewDescription')}
         size="md"
@@ -384,7 +384,7 @@ export function AssessmentDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={IconChecklist}
+      icon={DueDiligenceIcon}
       title={t('dueDiligence.assessmentDialog.createTitle')}
       description={t('dueDiligence.assessmentDialog.createDescription')}
       size="sm"

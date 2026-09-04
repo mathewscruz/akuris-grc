@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { IconAdd, IconFilter, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield, IconChart, IconTest, IconLink } from '@/components/icons';
+import { IconAdd, IconFilter, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield, IconChart, IconTest, IconLink, IconTag } from '@/components/icons';
 import { createPortal } from "react-dom";
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLocation, useSearchParams } from "react-router-dom";
@@ -514,19 +514,24 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Avatar className="h-8 w-8 cursor-pointer">
-                    {controle.responsavel_foto && (
-                      <AvatarImage src={controle.responsavel_foto} alt={controle.responsavel_nome} />
-                    )}
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {controle.responsavel_nome
-                        .split(' ')
-                        .map(n => n[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="inline-flex max-w-40 cursor-default items-center gap-2">
+                    <Avatar className="h-8 w-8 shrink-0 ring-primary/20">
+                      {controle.responsavel_foto && (
+                        <AvatarImage src={controle.responsavel_foto} alt={controle.responsavel_nome} />
+                      )}
+                      <AvatarFallback className="text-micro">
+                        {controle.responsavel_nome
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate text-xs font-medium text-foreground/85">
+                      {controle.responsavel_nome.split(/\s+/)[0]}
+                    </span>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{controle.responsavel_nome}</p>
@@ -645,25 +650,31 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           {
             key: 'efetividade',
             icon: IconTest,
-            // O denominador vai no rótulo, como em "Preventivos 4 de 6": sem ele,
-            // "100%" com um único controlo testado de seis lia-se como ambiente
-            // de controlo integralmente eficaz.
-            label: stats?.efetividade === null || stats?.efetividade === undefined
-              ? t("governancaComp.controles.statEfetividade")
-              : t('cardsKpi.metricas.efetividadeDe', { testados: stats?.controlesTestados ?? 0, total: stats?.total ?? 0 }),
-            value: stats?.efetividade === null || stats?.efetividade === undefined
+            label: t('cardsKpi.metricas.coberturaTestes'),
+            value: !stats?.total || !stats?.controlesTestados
               ? t('cardsKpi.metricas.semDados')
-              : `${stats.efetividade}%`,
+              : `${Math.round((stats.controlesTestados / stats.total) * 100)}%`,
             hint: stats?.efetividade === null || stats?.efetividade === undefined
               ? t('cardsKpi.metricas.efetividadeSemTestes')
-              : t('cardsKpi.metricas.efetividadeTestada', { testados: stats?.controlesTestados ?? 0, total: stats?.total ?? 0 }),
+              : t('cardsKpi.metricas.coberturaComEfetividade', {
+                  testados: stats?.controlesTestados ?? 0,
+                  total: stats?.total ?? 0,
+                  efetividade: stats.efetividade,
+                }),
+            progress: stats?.total
+              ? Math.round(((stats?.controlesTestados ?? 0) / stats.total) * 100)
+              : undefined,
+            target: 100,
+            direction: 'higher-is-better',
             drillDown: 'controles_testados',
           },
           {
             key: 'preventivos',
             icon: IconSuccess,
-            label: t('cardsKpi.metricas.preventivosDe', { preventivos: stats?.preventivos ?? 0, total: stats?.total ?? 0 }),
+            label: t('cardsKpi.metricas.preventivos'),
             value: `${stats?.percentualPreventivos ?? 0}%`,
+            context: t('cardsKpi.metricas.preventivosDe', { preventivos: stats?.preventivos ?? 0, total: stats?.total ?? 0 }),
+            progress: stats?.percentualPreventivos ?? 0,
             drillDown: 'controles_preventivos',
           },
         ]}
@@ -701,6 +712,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
               {t("governancaComp.controles.exportarCsv")}
             </ActionsMenuItem>
             <ActionsMenuItem onClick={() => setCategoriasDialogOpen(true)}>
+              <IconTag className="mr-2 h-4 w-4" strokeWidth={1.5} />
               {t("governancaComp.controles.buttonCategorias")}
             </ActionsMenuItem>
             <ActionsMenuItem onClick={() => setRelatoriosDialogOpen(true)}>

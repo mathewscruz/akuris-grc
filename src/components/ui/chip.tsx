@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
  *
  * Famílias:
  *  - severity  → risco/criticidade. Única família com cor semântica
- *                (vermelho/laranja/âmbar/verde) e sempre com a letra C/A/M/B.
+ *                (vermelho/laranja/âmbar/verde) e um medidor de 1–4 níveis.
  *  - state     → estados de processo (Ativo, Rascunho, Em andamento…).
  *                Família neutra por padrão; conclusão recebe teal e estados
  *                bloqueados/vencidos recebem vermelho por exigirem ação.
@@ -32,26 +32,21 @@ export type StateLevel = 'rest' | 'active' | 'done' | 'attention' | 'blocked';
 export type ChipTone = SeverityLevel | StateLevel | 'neutral';
 
 
-const SEVERITY_CLASSES: Record<SeverityLevel, { chip: string; mark: string }> = {
+const SEVERITY_CLASSES: Record<SeverityLevel, { chip: string }> = {
   critical: {
     chip: 'bg-severity-critical/10 text-severity-critical border-severity-critical/25',
-    mark: 'bg-severity-critical text-background',
   },
   high: {
     chip: 'bg-severity-high/10 text-severity-high border-severity-high/25',
-    mark: 'bg-severity-high text-background',
   },
   medium: {
     chip: 'bg-severity-medium/10 text-severity-medium border-severity-medium/25',
-    mark: 'bg-severity-medium text-background',
   },
   low: {
     chip: 'bg-severity-low/10 text-severity-low border-severity-low/25',
-    mark: 'bg-severity-low text-background',
   },
   none: {
     chip: 'bg-severity-none/10 text-severity-none border-severity-none/25',
-    mark: 'bg-severity-none text-background',
   },
 };
 
@@ -91,20 +86,58 @@ const NEUTRAL_CHIP = 'bg-muted text-muted-foreground border-border';
  * ninguém o tivesse decidido. Um chip de estado não precisa de escala: ou
  * cabe numa célula de tabela, ou não é um chip.
  *
- * A sigla usa o mesmo corpo do rótulo (`text-micro`) para que nenhuma das
- * duas metades do chip domine a outra.
+ * A altura de 24px dá ao rótulo presença suficiente numa linha de tabela sem
+ * o transformar num botão. O medidor substitui as antigas letras C/A/M/B:
+ * quatro segmentos expressam criticidade máxima, um segmento expressa baixa.
+ * O próprio rótulo mantém a informação textual para não depender de cor.
  */
 const CHIP_SIZING = {
-  wrapper: 'h-5 px-2 text-micro gap-1.5',
+  wrapper: 'h-6 px-2.5 text-xs gap-2',
   dot: 'h-1.5 w-1.5',
-  mark: 'h-3.5 w-3.5 text-micro',
+  mark: 'h-3.5 w-[15px]',
 } as const;
+
+const SEVERITY_STEPS: Record<SeverityLevel, number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+  none: 0,
+};
+
+const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
+  const activeSteps = SEVERITY_STEPS[level];
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('inline-flex items-end gap-px flex-shrink-0', CHIP_SIZING.mark)}
+    >
+      {[1, 2, 3, 4].map((step) => (
+        <span
+          key={step}
+          data-severity-step={step}
+          data-active={step <= activeSteps || undefined}
+          className={cn(
+            'akuris-severity-step w-[3px] origin-bottom -skew-y-12 bg-current',
+            step === 1 && 'h-1.5',
+            step === 2 && 'h-2',
+            step === 3 && 'h-2.5',
+            step === 4 && 'h-3',
+            step <= activeSteps ? 'opacity-100' : 'opacity-20 [animation:none]',
+          )}
+          style={{ '--severity-step-delay': `${(step - 1) * 65}ms` } as React.CSSProperties}
+        />
+      ))}
+    </span>
+  );
+};
 
 export interface ChipProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   family?: ChipFamily;
   /** Nível dentro da família. Ignorado nas famílias type/category. */
   tone?: ChipTone;
-  /** Letra redundante à cor (WCAG 1.4.1): C/A/M/B na escala de severidade. */
+  /** Mantida por compatibilidade e para selecionar a família de severidade. */
   mark?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
@@ -147,24 +180,7 @@ export const Chip: React.FC<ChipProps> = ({
   if (family === 'severity' && isSeverity(tone)) {
     const s = SEVERITY_CLASSES[tone];
     chipClass = s.chip;
-    leading = mark ? (
-      <span
-        aria-hidden="true"
-        /* `font-semibold` e não `font-bold`: a letra tem o mesmo corpo do
-           rótulo, mas a 700 contra os 500 dele, dentro de uma caixa cheia,
-           lia-se maior do que o nome que devia acompanhar. O peso é que
-           desequilibrava, não o tamanho. */
-        className={cn(
-          'inline-flex items-center justify-center rounded-md font-semibold leading-none flex-shrink-0',
-          CHIP_SIZING.mark,
-          s.mark,
-        )}
-      >
-        {mark}
-      </span>
-    ) : (
-      <span aria-hidden="true" className={cn('rounded-full flex-shrink-0', CHIP_SIZING.dot, s.mark)} />
-    );
+    leading = <SeverityMeter level={tone} />;
   } else if (family === 'state') {
     const s = STATE_CLASSES[isState(tone) ? tone : 'rest'];
     chipClass = s.chip;
@@ -173,9 +189,12 @@ export const Chip: React.FC<ChipProps> = ({
 
   return (
     <span
+      data-chip-family={family}
+      data-chip-tone={tone}
       className={cn(
         'inline-flex items-center rounded-md border font-medium leading-none whitespace-nowrap',
         CHIP_SIZING.wrapper,
+        family === 'severity' && 'min-w-[74px]',
         chipClass,
         className,
       )}

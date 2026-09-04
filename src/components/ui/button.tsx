@@ -26,25 +26,25 @@ const buttonVariants = cva(
   // Medido em 375px: botões de acção declarados `w-8` (32px) apareciam com
   // 28px porque o pai flex os espremia. Um alvo de toque de 28px falha o
   // mínimo de qualquer guia de acessibilidade, e falha sobretudo o polegar.
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-ui duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "akuris-button inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-ui focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-elegant active:scale-[0.98]",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 active:scale-[0.98]",
+        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-elegant",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         // Secundário com fundo sólido (branco puro via bg-card) — contrasta com a
         // página (bg-background ~98%) nos dois temas; não fica transparente.
         outline: "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 active:scale-[0.98]",
+        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         // Terciário sem fundo — ícones, toolbars, itens de menu, ações de linha.
         ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-success text-success-foreground shadow-sm hover:bg-success/90 active:scale-[0.98]",
-        warning: "bg-warning text-warning-foreground shadow-sm hover:bg-warning/90 active:scale-[0.98]",
+        success: "bg-success text-success-foreground shadow-sm hover:bg-success/90",
+        warning: "bg-warning text-warning-foreground shadow-sm hover:bg-warning/90",
         // GovernAII Signature Variants
-        gradient: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow active:scale-[0.98] hover:brightness-110",
-        premium: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow active:scale-[0.98] hover:brightness-110",
-        glow: "bg-primary text-primary-foreground shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] active:scale-[0.98]",
+        gradient: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow hover:brightness-110",
+        premium: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow hover:brightness-110",
+        glow: "bg-primary text-primary-foreground shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]",
         soft: "bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20",
       },
       /*

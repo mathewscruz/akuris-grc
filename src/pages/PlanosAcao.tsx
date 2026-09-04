@@ -134,8 +134,11 @@ export default function PlanosAcao() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [prioridadeFilter, setPrioridadeFilter] = useState('todos');
-  const [sortField, setSortField] = useState('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  // A fila abre pela urgência real: prazos mais próximos (inclusive vencidos)
+  // primeiro. Itens sem prazo ficam no fim, em vez de disputar o topo com o
+  // trabalho que já tem compromisso assumido.
+  const [sortField, setSortField] = useState('prazo');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'lista' | 'kanban'>('lista');
   // Administradores chegam na visão consolidada que o dashboard resume.
   // Usuários comuns continuam começando pelo que está atribuído a eles.
@@ -340,8 +343,15 @@ export default function PlanosAcao() {
     }
 
     result.sort((a: any, b: any) => {
-      const aVal = a[sortField] || '';
-      const bVal = b[sortField] || '';
+      const aRaw = a[sortField];
+      const bRaw = b[sortField];
+      if (sortField === 'prazo') {
+        const aMissing = !aRaw;
+        const bMissing = !bRaw;
+        if (aMissing !== bMissing) return aMissing ? 1 : -1;
+      }
+      const aVal = aRaw || '';
+      const bVal = bRaw || '';
       /* Critíco > Alto > Médio > Baixo. O alfabeto põe Alto antes de Baixo
          antes de Crítico — ao contrário do que a coluna promete. */
       const escala = compararEscala(aVal, bVal);

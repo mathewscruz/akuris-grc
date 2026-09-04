@@ -22,7 +22,7 @@ const Progress = React.forwardRef<
         `--progress-background` — uma variável que este componente nunca leu.
         Todas as barras "coloridas" do produto eram roxas. */}
     <ProgressPrimitive.Indicator
-      className={cn('h-full w-full flex-1 bg-primary transition-ui', indicatorClassName)}
+      className={cn('akuris-motion-data h-full w-full flex-1 bg-primary transition-transform motion-reduce:transition-none', indicatorClassName)}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>

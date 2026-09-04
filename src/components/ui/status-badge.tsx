@@ -8,7 +8,7 @@ import { Chip, type ChipFamily, type ChipTone, type SeverityLevel, type StateLev
  * a competir com versões "suaves" dentro da mesma escala.
  *
  * Regra de cor:
- *  - Com `mark` (C/A/M/B) → família SEVERIDADE, escala semântica.
+ *  - Com `mark` → família SEVERIDADE, escala semântica e medidor de intensidade.
  *  - Sem `mark` → família ESTADO, tinta neutra; estados concluídos usam teal e
  *    bloqueados/vencidos usam vermelho porque exigem ação.
  *
@@ -37,7 +37,7 @@ interface StatusBadgeProps {
   variant?: StatusVariant;
   /** Aceite por compatibilidade — a distinção é feita pela escala de severidade. */
   intensity?: StatusIntensity;
-  /** Letra curta redundante à cor (WCAG 1.4.1): C/A/M/B na severidade. */
+  /** Marca histórica; seleciona a família de severidade. */
   mark?: string;
   /** `type` = taxonomia: sai da pílula e vira texto. Vem dos resolvers. */
   family?: 'type';
@@ -73,9 +73,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const family: ChipFamily = familyProp ?? (mark ? 'severity' : 'state');
   const chipTone: ChipTone = mark ? SEVERITY_FROM_TONE[tone] : STATE_FROM_TONE[tone];
+  const contentKey = typeof children === 'string' || typeof children === 'number'
+    ? String(children)
+    : '';
 
   return (
-    <Chip family={family} tone={chipTone} mark={mark} icon={icon} className={className}>
+    <Chip
+      key={`${family}-${chipTone}-${mark ?? ''}-${contentKey}`}
+      family={family}
+      tone={chipTone}
+      mark={mark}
+      icon={icon}
+      className={['akuris-status-badge', className].filter(Boolean).join(' ')}
+    >
       {children}
     </Chip>
   );

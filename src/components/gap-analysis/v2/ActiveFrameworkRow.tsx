@@ -151,4 +151,3 @@ const SEG_DOT: Record<string, string> = {
   nao_aplicavel: 'bg-info',
   nao_avaliado: 'bg-muted-foreground/40',
 };
-

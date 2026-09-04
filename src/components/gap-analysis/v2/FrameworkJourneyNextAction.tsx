@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { ModuleBanner } from '@/components/ui/module-banner';
 import {
   IconArrowRight,
   IconCheck,
@@ -126,7 +126,12 @@ export function FrameworkJourneyNextAction({
   ];
 
   return (
-    <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card shadow-elegant">
+    <ModuleBanner
+      icon={CurrentIcon}
+      className="border-primary/25 from-primary/10 shadow-elegant"
+      contentClassName="p-0"
+      iconClassName="right-8"
+    >
       <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
@@ -193,7 +198,7 @@ export function FrameworkJourneyNextAction({
                   aria-valuenow={progress}
                 >
                   <div
-                    className={cn('h-full rounded-full transition-[width]', stage.done ? 'bg-success' : 'bg-primary')}
+                    className={cn('akuris-motion-data h-full rounded-full transition-[width] motion-reduce:transition-none', stage.done ? 'bg-success' : 'bg-primary')}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -202,6 +207,6 @@ export function FrameworkJourneyNextAction({
           );
         })}
       </ol>
-    </Card>
+    </ModuleBanner>
   );
 }

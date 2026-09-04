@@ -777,7 +777,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>
         <Input placeholder={t('gapUi.table.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 pr-9" />
         {searchTerm && (
-          <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setSearchTerm('')}>
+          <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setSearchTerm('')} aria-label={t('common.clear')} title={t('common.clear')}>
             <IconClose className="h-4 w-4" />
           </Button>
         )}

@@ -16,7 +16,7 @@ import type { StatusTone, StatusIntensity } from '@/components/ui/status-badge';
 export interface ToneResult {
   tone: StatusTone;
   intensity?: StatusIntensity;
-  /** Letra redundante à cor (WCAG 1.4.1): C/A/M/B na escala de severidade. */
+  /** Marca que seleciona a família de severidade; a interface exibe um medidor. */
   mark?: string;
   /**
    * `type` marca TAXONOMIA — o que a coisa é, e não em que estado está.
@@ -297,13 +297,10 @@ export const resolveSeverityTone = (raw?: string | null): ToneResult => {
  *
  * ## O que fica
  *
- * A família de severidade, que tem as quatro cores e leva uma MARCA — a letra
- * que impede a cor de ser o único sinal (WCAG 1.4.1), como já acontece no
- * mapa de risco com C/A/M/B.
- *
- * A marca é uma nota de A a D, e não a inicial do rótulo: «Regular» e «Ruim»
- * começam ambas por R, e a letra tem de distinguir. A–D lê-se em qualquer
- * língua e já traz a ordem consigo.
+ * A família de severidade, que tem as quatro cores e leva uma marca interna.
+ * A interface converte a faixa num medidor ordenado de quatro segmentos; o
+ * rótulo e o próprio score continuam visíveis, portanto a leitura não depende
+ * apenas da cor (WCAG 1.4.1).
  *
  * A escala é a INVERSA da severidade, e é de propósito: aqui o número alto é o
  * bom. 80+ verde, 60+ amarelo, 40+ laranja, abaixo disso vermelho — a rampa

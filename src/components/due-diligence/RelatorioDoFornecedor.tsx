@@ -43,6 +43,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Progress } from '@/components/ui/progress';
+import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateShort } from '@/lib/date-utils';
 import { resolveScoreDueDiligenceTone } from '@/lib/status-tone';
@@ -149,13 +150,13 @@ function Mostrador({ score, tom }: { score: number; tom: Tom }) {
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="6" className="stroke-border" />
         <circle
           cx="40" cy="40" r={r} fill="none" strokeWidth="6" strokeLinecap="round"
-          className={TRACO[tom]}
+          className={cn(TRACO[tom], 'akuris-motion-data transition-[stroke-dasharray] motion-reduce:transition-none')}
           strokeDasharray={`${preenchido} ${perimetro}`}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className={cn('text-2xl font-semibold tabular-nums leading-none', TEXTO[tom])}>
-          {score.toFixed(0)}
+          <AnimatedMetricValue value={score.toFixed(0)} />
         </span>
         <span className="text-micro text-muted-foreground leading-none mt-0.5">/100</span>
       </div>
@@ -376,7 +377,7 @@ export function RelatorioDoFornecedor({
                 <div className="px-4 py-3 border-t border-border/60">
                   <Rotulo tom="destructive">{t('dueDiligence.relatorioFornecedor.custaramPontos')}</Rotulo>
                   <div className="mt-2 overflow-x-auto">
-                    <table className="w-full text-xs">
+                    <table className="akuris-table w-full text-xs">
                       <thead>
                         <tr className="text-micro uppercase tracking-wide text-muted-foreground">
                           <th className="text-left font-medium pb-1.5">{t('dueDiligence.relatorioFornecedor.colPergunta')}</th>

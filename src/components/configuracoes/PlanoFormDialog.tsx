@@ -263,7 +263,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                   {form.recursos_destacados.map((r, i) => (
                     <div key={i} className="flex items-center justify-between gap-2 p-2 rounded bg-muted text-sm">
                       <span>{r}</span>
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeRecurso(i)}>
+                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeRecurso(i)} aria-label={t('common.remove')} title={t('common.remove')}>
                         <IconClose className="h-3 w-3" />
                       </Button>
                     </div>

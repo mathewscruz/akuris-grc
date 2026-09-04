@@ -31,6 +31,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { PanelAction } from '@/components/ui/panel-action';
+import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { IconTarget, IconShield } from '@/components/icons';
 import { moduleIcon } from '@/lib/module-icons';
 import { cn } from '@/lib/utils';
@@ -126,7 +127,7 @@ export function GrcHealthBreakdown() {
 
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-3xl font-bold leading-none tabular-nums text-foreground">
-          {maturity.score}
+          <AnimatedMetricValue value={maturity.score} />
         </span>
         <span className="text-xs text-muted-foreground">
           {t('dashWidgets.radar.maturitySuffix')}

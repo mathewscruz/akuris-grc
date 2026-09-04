@@ -4,6 +4,7 @@
  * Aceita accent tone para listra superior.
  */
 import { cn } from '@/lib/utils';
+import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 
 export type KpiTone = 'neutral' | 'primary' | 'success' | 'warning' | 'destructive' | 'info';
 
@@ -55,7 +56,11 @@ export function KpiTiny({
         {eyebrow}
       </div>
       <div className={cn('mt-1 flex items-baseline gap-1', VALUE_COLOR[tone])}>
-        <span className="text-2xl font-bold tabular-nums leading-none tracking-tight font-sans">{value}</span>
+        <span className="text-2xl font-bold tabular-nums leading-none tracking-tight font-sans">
+          {typeof value === 'number' || typeof value === 'string'
+            ? <AnimatedMetricValue value={value} />
+            : value}
+        </span>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       {foot && (

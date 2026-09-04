@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type ComponentType } from "react";
-import { IconClose, IconUpload, IconExternal, IconCheck, IconSuccess, IconWarning, IconCalendar, IconRefresh, IconFile, IconIdea, IconChecklist, IconChevronDown, IconHistory, IconBook, IconHelp, IconOrg, IconSettings, IconFileCheck, IconCheckbox, IconShield, IconTarget } from '@/components/icons';
+import { IconClose, IconUpload, IconExternal, IconCheck, IconSuccess, IconWarning, IconCalendar, IconRefresh, IconFile, IconIdea, IconChecklist, IconChevronDown, IconHistory, IconBook, IconHelp, IconOrg, IconSettings, IconFileCheck, IconCheckbox, IconShield, IconTarget, GapAnalysisIcon } from '@/components/icons';
 import DOMPurify from 'dompurify';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
@@ -847,7 +847,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         open={open}
         onOpenChange={onOpenChange}
         title={`${requirement.codigo} — ${requirement.titulo}`}
-        icon={IconShield}
+        icon={GapAnalysisIcon}
         size="2xl"
         noScroll
         onSubmit={handleSave}
@@ -1019,7 +1019,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       aria-valuenow={completionProgress}
                     >
                       <div
-                        className={cn('h-full rounded-full transition-[width]', allCompletionDone ? 'bg-success' : 'bg-primary')}
+                        className={cn('akuris-motion-data h-full rounded-full transition-[width] motion-reduce:transition-none', allCompletionDone ? 'bg-success' : 'bg-primary')}
                         style={{ width: `${completionProgress}%` }}
                       />
                     </div>

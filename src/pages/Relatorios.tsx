@@ -59,7 +59,7 @@ export default function Relatorios() {
       if (!empresaId) return [];
       const { data, error } = await supabase
         .from('relatorios_customizados')
-        .select('*')
+        .select('*, relatorio_agendamentos(*)')
         .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -72,18 +72,36 @@ export default function Relatorios() {
     total: relatorios.length,
     publicados: relatorios.filter((r: any) => r.status === 'publicado').length,
     rascunhos: relatorios.filter((r: any) => r.status === 'rascunho').length,
+    agendados: relatorios.filter((r: any) => r.relatorio_agendamentos?.some((a: any) => a.ativo)).length,
   }), [relatorios]);
+
+  const salvarAgendamento = async (relatorioId: string, agendamento: any | null) => {
+    if (!empresaId) return;
+    if (!agendamento) {
+      const { error } = await supabase.from('relatorio_agendamentos').delete().eq('relatorio_id', relatorioId).eq('empresa_id', empresaId);
+      if (error) throw error;
+      return;
+    }
+    const { error } = await supabase.from('relatorio_agendamentos').upsert({
+      ...agendamento,
+      relatorio_id: relatorioId,
+      empresa_id: empresaId,
+    }, { onConflict: 'relatorio_id' });
+    if (error) throw error;
+  };
 
   const handleCreate = async (data: any) => {
     if (!empresaId || !user?.id) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('relatorios_customizados').insert({
-        ...data,
+      const { agendamento, ...relatorioData } = data;
+      const { data: criado, error } = await supabase.from('relatorios_customizados').insert({
+        ...relatorioData,
         empresa_id: empresaId,
         created_by: user.id,
-      });
+      }).select('id').single();
       if (error) throw error;
+      await salvarAgendamento(criado.id, agendamento);
       toast.success(t('fin.relatorios.criado'));
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
       setDialogOpen(false);
@@ -139,7 +157,7 @@ export default function Relatorios() {
     if (!empresaId) return;
     setExporting(relatorio.id);
     try {
-      if (relatorio.template_base && templateConfigs[relatorio.template_base]) {
+      if (relatorio.template_base || relatorio.configuracao?.widgets?.length) {
         await generateTemplatePDF(relatorio, empresaId);
       } else {
         // Relatório customizado sem template - exportar básico
@@ -168,13 +186,15 @@ export default function Relatorios() {
 
   const handleEdit = async (data: any) => {
     if (!editRelatorio) return;
+    setSaving(true);
     try {
+      const { agendamento, ...relatorioData } = data;
       const { error } = await supabase.from('relatorios_customizados').update({
-        nome: data.nome,
-        descricao: data.descricao,
-        template_base: data.template_base,
+        ...relatorioData,
+        updated_by: user?.id,
       }).eq('id', editRelatorio.id);
       if (error) throw error;
+      await salvarAgendamento(editRelatorio.id, agendamento);
       toast.success(t('fin.relatorios.atualizado'));
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
       setEditRelatorio(null);
@@ -183,6 +203,8 @@ export default function Relatorios() {
       toast.error(t('fin.relatorios.erroEditar'), {
         action: { label: t('common.tryAgain'), onClick: () => void handleEdit(data) },
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -241,6 +263,7 @@ export default function Relatorios() {
           { key: 'total', label: t('fin.relatorios.total'), value: stats.total },
           { key: 'publicados', label: t('sweepCore.reports.published'), value: stats.publicados },
           { key: 'rascunhos', label: t('sweepCore.reports.drafts'), value: stats.rascunhos, tone: 'warning' },
+          { key: 'agendados', label: t('relatoriosComp.dialog.scheduled'), value: stats.agendados },
         ]}
       />
 
@@ -294,6 +317,11 @@ export default function Relatorios() {
                     <p className="text-xs text-muted-foreground mb-3">
                       {t('sweepCore.reports.createdOn', { date: formatDateOnly(rel.created_at) })}
                     </p>
+                    {rel.relatorio_agendamentos?.some((a: any) => a.ativo) && (
+                      <Badge variant="outline" className="mb-3 text-xs">
+                        {t('relatoriosComp.dialog.scheduleBadge', { frequencia: formatStatus(rel.relatorio_agendamentos[0].frequencia) })}
+                      </Badge>
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
@@ -301,7 +329,7 @@ export default function Relatorios() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {rel.template_base && templateConfigs[rel.template_base] && (
+                        {(rel.template_base || rel.configuracao?.widgets?.length) && (
                           <DropdownMenuItem onClick={() => setPreviewRelatorio(rel)}>
                             <IconView className="h-4 w-4 mr-2" />{t('sweepCore.reports.view')}
                           </DropdownMenuItem>

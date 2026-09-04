@@ -18,7 +18,7 @@ const PageTransition: React.FC<PageTransitionProps> = ({ children, routeKey }) =
        páginas que não pedem altura não notam diferença. */
     <div
       key={routeKey}
-      className="animate-page-enter will-change-[opacity,transform] flex flex-1 flex-col"
+      className="akuris-page-transition motion-reduce:animate-none flex flex-1 flex-col"
     >
       {children}
     </div>

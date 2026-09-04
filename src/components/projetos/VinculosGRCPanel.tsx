@@ -78,7 +78,7 @@ export function VinculosGRCPanel({ tarefaId }: Props) {
               <span className="font-medium">{t(`entidades.${v.entidade_tipo}`)}</span>{' '}
               <VinculoResumo tipo={v.entidade_tipo as EntityKey} id={v.entidade_id} />
             </span>
-            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove.mutate(v.id)}>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove.mutate(v.id)} aria-label={t('common.delete')} title={t('common.delete')}>
               <IconDelete className="h-3 w-3" />
             </Button>
           </li>

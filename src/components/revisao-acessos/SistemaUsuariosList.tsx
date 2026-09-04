@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconAdd, IconEdit, IconDelete, IconMore, IconUsers } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconMore, IconUsers, IconKey } from '@/components/icons';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -66,6 +66,7 @@ export function SistemaUsuariosList() {
   const [usuarioToDelete, setUsuarioToDelete] = useState<SistemaUsuario | null>(null);
   const [filtroSistema, setFiltroSistema] = useState<string>("todos");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isImportingPrivileged, setIsImportingPrivileged] = useState(false);
 
   const { data: sistemas } = useOptimizedQuery<Sistema[]>(
     async () => {
@@ -81,7 +82,7 @@ export function SistemaUsuariosList() {
     { cacheKey: `sistemas-privilegiados-${empresaId}` }
   );
 
-  const { data: usuarios, loading } = useOptimizedQuery<SistemaUsuario[]>(
+  const { data: usuarios, loading, refetch: refetchUsuarios } = useOptimizedQuery<SistemaUsuario[]>(
     async () => {
       let query = supabase
         .from("sistemas_usuarios")
@@ -105,7 +106,95 @@ export function SistemaUsuariosList() {
 
   const invalidateCache = () => {
     queryClient.invalidateQueries({ queryKey: [`sistemas-usuarios-${empresaId}`] });
+    void refetchUsuarios();
   };
+
+  const handleImportPrivilegedAccounts = async () => {
+    if (!empresaId) return;
+    setIsImportingPrivileged(true);
+    try {
+      const [{ data: contas, error: contasError }, { data: existentes, error: existentesError }] = await Promise.all([
+        supabase
+          .from('contas_privilegiadas')
+          .select('id, sistema_id, usuario_beneficiario, email_beneficiario, tipo_acesso, nivel_privilegio, data_concessao, data_expiracao, justificativa_negocio, observacoes, status')
+          .eq('empresa_id', empresaId),
+        supabase
+          .from('sistemas_usuarios')
+          .select('id, origem_id')
+          .eq('empresa_id', empresaId)
+          .eq('origem', 'conta_privilegiada'),
+      ]);
+      if (contasError) throw contasError;
+      if (existentesError) throw existentesError;
+
+      const porOrigem = new Map((existentes || []).map((item) => [item.origem_id, item.id]));
+      const agora = new Date().toISOString();
+      const registros = (contas || []).map((conta) => ({
+        empresa_id: empresaId,
+        sistema_id: conta.sistema_id,
+        nome_usuario: conta.usuario_beneficiario,
+        email_usuario: conta.email_beneficiario,
+        tipo_acesso: conta.tipo_acesso,
+        nivel_privilegio: conta.nivel_privilegio,
+        data_concessao: conta.data_concessao,
+        data_expiracao: conta.data_expiracao,
+        justificativa: conta.justificativa_negocio,
+        observacoes: conta.observacoes,
+        ativo: !['revogado', 'expirado', 'inativo'].includes(conta.status),
+        origem: 'conta_privilegiada',
+        origem_id: conta.id,
+        sincronizado_em: agora,
+      }));
+
+      const novos = registros.filter((item) => !porOrigem.has(item.origem_id));
+      const atualizacoes = registros.filter((item) => porOrigem.has(item.origem_id));
+      if (novos.length) {
+        const { error } = await supabase.from('sistemas_usuarios').insert(novos);
+        if (error) throw error;
+      }
+      for (const item of atualizacoes) {
+        const { origem_id, ...campos } = item;
+        const { error } = await supabase
+          .from('sistemas_usuarios')
+          .update(campos)
+          .eq('id', porOrigem.get(origem_id)!);
+        if (error) throw error;
+      }
+
+      toast({
+        title: t('revisaoAcessosComp.usuariosList.importSuccessTitle'),
+        description: t('revisaoAcessosComp.usuariosList.importSuccessDescription', {
+          criados: novos.length,
+          atualizados: atualizacoes.length,
+        }),
+      });
+      invalidateCache();
+    } catch (error) {
+      toast({
+        title: t('revisaoAcessosComp.usuariosList.importErrorTitle'),
+        description: error instanceof Error ? error.message : t('revisaoAcessosComp.usuariosList.importErrorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImportingPrivileged(false);
+    }
+  };
+
+  const actionButtons = (
+    <div className="flex flex-wrap justify-end gap-2">
+      <Button variant="outline" onClick={handleImportPrivilegedAccounts} disabled={isImportingPrivileged}>
+        <IconKey className="mr-2 h-4 w-4" />
+        {isImportingPrivileged
+          ? t('revisaoAcessosComp.usuariosList.importingPrivileged')
+          : t('revisaoAcessosComp.usuariosList.importPrivileged')}
+      </Button>
+      <SincronizarDiretorio onSincronizado={invalidateCache} />
+      <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
+        <IconAdd className="h-4 w-4 mr-2" />
+        {t('revisaoAcessosComp.usuariosList.buttonNovo')}
+      </Button>
+    </div>
+  );
 
   const handleEdit = (usuario: SistemaUsuario) => {
     setSelectedUsuario(usuario);
@@ -268,13 +357,7 @@ export function SistemaUsuariosList() {
               ))}
             </SelectContent>
           </Select>
-          <div className="flex gap-2">
-            <SincronizarDiretorio onSincronizado={invalidateCache} />
-            <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
-              <IconAdd className="h-4 w-4 mr-2" />
-              {t("revisaoAcessosComp.usuariosList.buttonNovo")}
-            </Button>
-          </div>
+          {actionButtons}
         </div>
 
         <EmptyState
@@ -314,13 +397,7 @@ export function SistemaUsuariosList() {
             ))}
           </SelectContent>
         </Select>
-        <div className="flex gap-2">
-          <SincronizarDiretorio onSincronizado={invalidateCache} />
-          <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
-            <IconAdd className="h-4 w-4 mr-2" />
-            {t("revisaoAcessosComp.usuariosList.buttonNovo")}
-          </Button>
-        </div>
+        {actionButtons}
       </div>
 
       <DataTable

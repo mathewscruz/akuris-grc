@@ -21,7 +21,7 @@ export function ModuleLoadingSkeleton({
 
   return (
     <div
-      className="w-full animate-in fade-in-0 space-y-6 duration-200"
+      className="w-full animate-in fade-in-0 space-y-6 duration-200 motion-reduce:animate-none"
       role="status"
       aria-label={t('residuos.geral.carregandoModulo')}
     >

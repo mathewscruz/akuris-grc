@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { IconFile, IconShield } from '@/components/icons';
+import { AuditoriasIcon, ControlesIcon } from '@/components/icons';
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -88,11 +88,11 @@ export default function Governanca() {
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="max-w-md">
           <TabsTrigger value="controles" className="flex items-center gap-2">
-            <IconShield className="h-4 w-4" />
+            <ControlesIcon className="h-5 w-5" />
             {t('modules.governanca.controls')}
           </TabsTrigger>
           <TabsTrigger value="auditorias" className="flex items-center gap-2">
-            <IconFile className="h-4 w-4" />
+            <AuditoriasIcon className="h-5 w-5" />
             {t('modules.governanca.audits')}
           </TabsTrigger>
         </TabsList>

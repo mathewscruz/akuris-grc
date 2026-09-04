@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { splitResponsavel } from '@/lib/uuid';
 import { corteAltoValor, isAtivoAltoValor, valorNegocioNumerico } from '@/lib/metrics/ativos';
-import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconWarning, IconServer, IconActivity, IconTrendUp, IconShield, IconSettings, IconHistory, IconCloud } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconWarning, IconServer, IconActivity, IconTrendUp, IconShield, IconSettings, IconHistory, IconCloud, IconChecklist } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -459,12 +459,15 @@ const Ativos = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Avatar className="h-8 w-8 cursor-pointer">
-                  {ativo.proprietario_avatar && <AvatarImage src={ativo.proprietario_avatar} alt={ativo.proprietario_nome} />}
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {ativo.proprietario_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    {ativo.proprietario_avatar && <AvatarImage src={ativo.proprietario_avatar} alt={ativo.proprietario_nome} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {ativo.proprietario_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate text-sm">{ativo.proprietario_nome.split(/\s+/)[0]}</span>
+                </div>
               </TooltipTrigger>
               <TooltipContent><p>{ativo.proprietario_nome}</p></TooltipContent>
             </Tooltip>
@@ -586,6 +589,14 @@ const Ativos = () => {
           { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: IconActivity, drillDown: 'ativos_operacionais' },
           { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, icon: IconTrendUp, drillDown: 'ativos_alto_valor' },
           { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), icon: IconWarning, tone: 'destructive', drillDown: 'ativos_criticos' },
+          {
+            key: 'naoClassificados',
+            label: t('cardsKpi.sweep.ativos.naoClassificados'),
+            value: ativos.filter((ativo) => ativo.tipo === 'nao_classificado').length,
+            icon: IconChecklist,
+            tone: ativos.some((ativo) => ativo.tipo === 'nao_classificado') ? 'warning' : undefined,
+            hint: t('cardsKpi.sweep.ativos.naoClassificadosHint'),
+          },
         ]}
       />
 

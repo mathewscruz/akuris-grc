@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { IconClose, IconUpload, IconFile, IconLink, IconSettings, IconTag, IconAttach } from '@/components/icons';
+import { IconClose, IconUpload, IconFile, IconLink, IconSettings, IconTag, IconAttach, DocumentosIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -615,7 +615,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, categorias = []
           ? t('documentos.dialogs.passoDocGen')
           : documento ? t('documentos.dialogs.atualizeInformacoes') : t('documentos.dialogs.adicioneNovoDocumento')
       }
-      icon={IconFile}
+      icon={DocumentosIcon}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}

@@ -17,6 +17,7 @@ import { DialogShell } from "@/components/ui/dialog-shell";
 import { IconExternal, IconWarning, IconShield, IconBolt, IconTime, IconTarget } from '@/components/icons';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { AnimatedMetricValue } from "@/components/ui/stat-strip";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { AlertDetail } from "@/hooks/useDashboardStats";
 
@@ -118,7 +119,7 @@ const AlertsDetailDialog = ({
         {grupos.map((g) => (
           <div key={g.tipo} className="rounded-lg border border-border bg-card p-3 text-center">
             <p className={`text-2xl font-bold tabular-nums ${g.total > 0 ? g.tinta : 'text-muted-foreground'}`}>
-              {g.total}
+              <AnimatedMetricValue value={g.total} />
             </p>
             <p className="text-micro text-muted-foreground">{g.rotuloCurto}</p>
           </div>

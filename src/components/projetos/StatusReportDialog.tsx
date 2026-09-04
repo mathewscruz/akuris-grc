@@ -78,7 +78,13 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
                 { key: 'total', label: t('projetos.statusReport.statTasks'), value: metrics.total },
                 { key: 'concluidas', label: t('projetos.statusReport.statDone'), value: metrics.concluidas },
                 { key: 'atrasadas', label: t('projetos.statusReport.statOverdue'), value: metrics.atrasadas, tone: 'destructive' },
-                { key: 'progresso', label: t('projetos.statusReport.statProgress'), value: `${metrics.progressoMedio}%` },
+                {
+                  key: 'progresso',
+                  label: t('projetos.statusReport.statProgress'),
+                  value: `${metrics.progressoMedio}%`,
+                  target: 100,
+                  direction: 'higher-is-better',
+                },
               ]}
             />
 

@@ -212,7 +212,7 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
 
   // Dimensões por modo
   const panelClass = cn(
-    "fixed z-50 rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden animate-fade-in",
+    "akuris-surface-enter fixed z-50 rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden",
     mode === "compact" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[400px] h-[calc(100dvh-9rem)] max-h-[600px]",
     mode === "expanded" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[640px] h-[calc(100dvh-7rem)] max-h-[760px]",
     mode === "fullscreen" && "inset-4 md:inset-10 max-h-none max-w-none"
@@ -241,7 +241,7 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
             {/* Header */}
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.03] to-transparent">
               <div className="relative">
-                <img src="/akuris-favicon.png" alt="AkurIA" className="h-8 w-8 rounded-full" />
+                <img src="/akuris-favicon.png" alt="AkurIA" className={cn('h-8 w-8 rounded-full', isLoading ? 'akuris-ai-processing' : 'akuris-ai-rest')} />
                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success border-2 border-card" />
               </div>
               <div className="flex-1 min-w-0">
@@ -258,6 +258,7 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
                     size="icon"
                     className="h-7 w-7"
                     onClick={() => setShowSidebar((v) => !v)}
+                    aria-label={t("dashWidgets.akuria.history")}
                     title={t("dashWidgets.akuria.history")}
                   >
                     <IconHistory className="h-3.5 w-3.5" />
@@ -268,6 +269,7 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
                   size="icon"
                   className="h-7 w-7"
                   onClick={newConversation}
+                  aria-label={t("dashWidgets.akuria.newConversation")}
                   title={t("dashWidgets.akuria.newConversation")}
                 >
                   <IconAdd className="h-3.5 w-3.5" />
@@ -279,11 +281,12 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
                   onClick={() =>
                     setMode((m) => (m === "compact" ? "expanded" : m === "expanded" ? "fullscreen" : "compact"))
                   }
+                  aria-label={mode === "fullscreen" ? t('common.close') : t('common.view')}
                   title={mode === "fullscreen" ? "Reduzir" : "Expandir"}
                 >
                   {mode === "fullscreen" ? <IconCollapse className="h-3.5 w-3.5" /> : <IconExpand className="h-3.5 w-3.5" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)} aria-label={t('common.close')} title={t('common.close')}>
                   <IconClose className="h-4 w-4" />
                 </Button>
               </div>
@@ -295,7 +298,7 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
                 {messages.length === 0 && (
                   <div className="py-6 text-center space-y-2">
                     <div className="h-12 w-12 mx-auto flex items-center justify-center">
-                      <img src="/akuris-favicon.png" alt="" className="h-8 w-8 rounded-full" />
+                      <img src="/akuris-favicon.png" alt="" className="akuris-ai-rest h-8 w-8 rounded-full" />
                     </div>
                     <p className="font-medium text-sm text-foreground">Olá, {profile?.nome?.split(" ")[0] || "tudo bem"}? 👋</p>
                     <p className="text-xs text-muted-foreground max-w-[280px] mx-auto">
@@ -319,12 +322,12 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
                 {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                   <div className="flex gap-2.5">
                     <div className="h-7 w-7 rounded-full overflow-hidden border border-border bg-card shrink-0">
-                      <img src="/akuris-favicon.png" alt="AkurIA" className="h-full w-full object-cover" />
+                      <img src="/akuris-favicon.png" alt="AkurIA" className="akuris-ai-processing h-full w-full object-cover" />
                     </div>
                     <div className="bg-muted/70 border border-border/50 rounded-lg rounded-tl-sm px-3.5 py-2.5 flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
+                      <span className="akuris-ai-processing h-1.5 w-1.5 rounded-full bg-muted-foreground/60 [animation-delay:0ms]" />
+                      <span className="akuris-ai-processing h-1.5 w-1.5 rounded-full bg-muted-foreground/60 [animation-delay:120ms]" />
+                      <span className="akuris-ai-processing h-1.5 w-1.5 rounded-full bg-muted-foreground/60 [animation-delay:240ms]" />
                     </div>
                   </div>
                 )}
@@ -351,7 +354,7 @@ export function AkurIAChatbot({ initialOpen = false }: { initialOpen?: boolean }
                   disabled={isLoading}
                 />
                 {isLoading ? (
-                  <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0" onClick={stop} title={t("dashWidgets.akuria.cancel")}>
+                  <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0" onClick={stop} aria-label={t("dashWidgets.akuria.cancel")} title={t("dashWidgets.akuria.cancel")}>
                     <IconStop className="h-4 w-4" />
                   </Button>
                 ) : (

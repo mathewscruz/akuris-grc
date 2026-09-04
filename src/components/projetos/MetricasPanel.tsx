@@ -2,6 +2,7 @@ import React from 'react';
 import { IconSuccess, IconWarning, IconTime, IconTrendUp, IconTimer } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
@@ -103,7 +104,7 @@ function Mini({ icon, label, value, hint, tone }: { icon: React.ReactNode; label
           <span className="h-4 w-4 inline-flex items-center justify-center text-primary [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
           {label}
         </div>
-        <div className="text-2xl font-semibold tabular-nums">{value}</div>
+        <div className="text-2xl font-semibold tabular-nums"><AnimatedMetricValue value={value} /></div>
         {hint && (tone ? <StatusBadge tone={tone}>{hint}</StatusBadge> : <div className="text-xs text-muted-foreground">{hint}</div>)}
       </CardContent>
     </Card>

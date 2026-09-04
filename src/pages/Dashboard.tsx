@@ -1,4 +1,4 @@
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PanelAction } from '@/components/ui/panel-action';
 import { useAuth } from '@/components/AuthProvider';
@@ -96,12 +96,7 @@ export default function Dashboard() {
     dashboardLoading;
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-24">
-        <AkurisPulse size={48} />
-        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
-      </div>
-    );
+    return <ModuleLoadingSkeleton statCards={4} />;
   }
 
   /*

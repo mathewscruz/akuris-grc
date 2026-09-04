@@ -157,17 +157,31 @@ export default function Contratos() {
     queryKey: ['fornecedores', empresaId],
     queryFn: async () => {
       if (!empresaId) return [];
-      const { data, error } = await supabase
-        .from('fornecedores')
-        .select('*')
-        .eq('empresa_id', empresaId)
-        .order('nome');
+      const [{ data, error }, { data: avaliacoes, error: avaliacoesError }] = await Promise.all([
+        supabase
+          .from('fornecedores')
+          .select('*')
+          .eq('empresa_id', empresaId)
+          .order('nome'),
+        supabase
+          .from('due_diligence_assessments')
+          .select('fornecedor_id, fornecedor_email')
+          .eq('empresa_id', empresaId),
+      ]);
 
       if (error) throw error;
+      if (avaliacoesError) throw avaliacoesError;
+      const fornecedoresAvaliados = new Set((avaliacoes || []).map((a) => a.fornecedor_id).filter(Boolean));
+      const emailsAvaliados = new Set((avaliacoes || []).map((a) => a.fornecedor_email?.trim().toLowerCase()).filter(Boolean));
       // Esta lista alimenta o selector do wizard de contrato e o selo de risco
       // na gaveta do contrato. A contagem de contratos por fornecedor -- que a
       // antiga aba mostrava -- vive agora no gestor unico (Due Diligence).
-      return data || [];
+      return (data || []).map((fornecedor) => ({
+        ...fornecedor,
+        _hasAssessment:
+          fornecedoresAvaliados.has(fornecedor.id) ||
+          (!!fornecedor.email && emailsAvaliados.has(fornecedor.email.trim().toLowerCase())),
+      }));
     },
     enabled: !!empresaId,
   });
@@ -198,6 +212,15 @@ export default function Contratos() {
   }, [searchParams, contratos, fornecedores]);
 
   const loading = loadingContratos || loadingFornecedores;
+
+  const statsFornecedores = useMemo(() => ({
+    total: fornecedores.length,
+    ativos: fornecedores.filter((f) => f.status === 'ativo').length,
+    nuncaAvaliados: fornecedores.filter((f) => !f._hasAssessment).length,
+    incompletos: fornecedores.filter((f) =>
+      !f.categoria || (!f.cnpj && f.tipo !== 'pessoa_fisica') || (!f.contato_responsavel && !f.email),
+    ).length,
+  }), [fornecedores]);
 
   const invalidateData = () => {
     queryClient.invalidateQueries({ queryKey: ['contratos'] });
@@ -446,12 +469,12 @@ export default function Contratos() {
               </Button>
             )
           }
-          secondaryActions={[
+          secondaryActions={currentTab === 'contratos' ? [
             { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <IconDownload className="h-4 w-4" />, onClick: handleExportCSV },
             { label: t('cardsKpi.denuncias.relatorios'), icon: <IconChart className="h-4 w-4" />, onClick: () => setRelatoriosOpen(true) },
             { label: t('modules.dueDiligence.templates'), icon: <IconFile className="h-4 w-4" />, onClick: () => setTemplatesOpen(true) },
             { label: t('p3Import.importButtonLabel'), icon: <IconUpload className="h-4 w-4" />, onClick: () => setImportDialogOpen(true), separatorBefore: true },
-          ]}
+          ] : []}
         />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
@@ -475,7 +498,7 @@ export default function Contratos() {
             </TabsTrigger>
           </TabsList>
 
-        <StatStrip
+        {currentTab === 'contratos' ? <StatStrip
           loading={!statsContratos}
           items={[
             {
@@ -520,7 +543,25 @@ export default function Contratos() {
               drillDown: 'contratos_renovacao',
             },
           ]}
-        />
+        /> : <StatStrip
+          loading={loadingFornecedores}
+          items={[
+            { key: 'fornecedores', label: t('cardsKpi.contratos.fornecedoresTotal'), value: statsFornecedores.total },
+            { key: 'fornecedoresAtivos', label: t('cardsKpi.contratos.fornecedoresAtivos'), value: statsFornecedores.ativos },
+            {
+              key: 'nuncaAvaliados',
+              label: t('cardsKpi.contratos.fornecedoresNuncaAvaliados'),
+              value: statsFornecedores.nuncaAvaliados,
+              tone: statsFornecedores.nuncaAvaliados > 0 ? 'warning' : undefined,
+            },
+            {
+              key: 'cadastroIncompleto',
+              label: t('cardsKpi.contratos.fornecedoresIncompletos'),
+              value: statsFornecedores.incompletos,
+              tone: statsFornecedores.incompletos > 0 ? 'warning' : undefined,
+            },
+          ]}
+        />}
 
         <RelatoriosContratos open={relatoriosOpen} onOpenChange={setRelatoriosOpen} hideTrigger />
         <TemplatesContratos open={templatesOpen} onOpenChange={setTemplatesOpen} hideTrigger />

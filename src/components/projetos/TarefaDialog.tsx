@@ -246,7 +246,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
           onChange={(e) => setNovo(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } } }}
         />
-        <Button type="button" size="icon" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }}>
+        <Button type="button" size="icon" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }} aria-label={t('common.add')} title={t('common.add')}>
           <IconAdd className="h-4 w-4" />
         </Button>
       </div>
@@ -255,7 +255,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
           <li key={i.id} className="flex items-center gap-2 group">
             <Checkbox checked={i.concluido} onCheckedChange={(c) => toggle.mutate({ id: i.id, concluido: !!c })} />
             <span className={`flex-1 text-sm ${i.concluido ? 'line-through text-muted-foreground' : ''}`}>{i.texto}</span>
-            <Button type="button" variant="ghost" size="icon" className="md:opacity-0 md:group-hover:opacity-100 h-7 w-7" onClick={() => remove.mutate(i.id)}>
+            <Button type="button" variant="ghost" size="icon" className="md:opacity-0 md:group-hover:opacity-100 h-7 w-7" onClick={() => remove.mutate(i.id)} aria-label={t('common.delete')} title={t('common.delete')}>
               <IconDelete className="h-3 w-3" />
             </Button>
           </li>

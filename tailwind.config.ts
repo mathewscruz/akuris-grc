@@ -21,8 +21,14 @@ export default {
     },
     extend: {
       fontFamily: {
+        /* DM Sans é a família única da interface. A hierarquia vem dos pesos
+           e do tracking, preservando a identidade original sem misturar
+           famílias entre títulos, formulários e tabelas. */
         sans: ['DM Sans', 'system-ui', 'sans-serif'],
         display: ['DM Sans', 'system-ui', 'sans-serif'],
+        /* A classe semântica `font-mono` continua a identificar conteúdo
+           técnico, mas sem introduzir uma segunda família no produto. */
+        mono: ['DM Sans', 'system-ui', 'sans-serif'],
       },
       transitionProperty: {
         /**
@@ -235,6 +241,14 @@ export default {
 						height: '0'
 					}
 				},
+				'collapsible-down': {
+					from: { height: '0', opacity: '0' },
+					to: { height: 'var(--radix-collapsible-content-height)', opacity: '1' }
+				},
+				'collapsible-up': {
+					from: { height: 'var(--radix-collapsible-content-height)', opacity: '1' },
+					to: { height: '0', opacity: '0' }
+				},
 			'fade-in': {
 					'0%': {
 						opacity: '0',
@@ -287,7 +301,7 @@ export default {
 					'100%': { transform: 'rotate(1080deg)' }
 				},
 				'page-enter': {
-					'0%': { opacity: '0.4', transform: 'translateY(4px)' },
+					'0%': { opacity: '0.72', transform: 'translateY(3px)' },
 					'100%': { opacity: '1', transform: 'translateY(0)' }
 				},
 				'toast-enter': {
@@ -310,8 +324,10 @@ export default {
 			},
 			animation: {
 				'caret-blink': 'caret-blink 1.25s ease-out infinite',
-				'accordion-down': 'accordion-down 0.25s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
+				'accordion-down': 'accordion-down var(--motion-surface) var(--motion-ease)',
+				'accordion-up': 'accordion-up 180ms var(--motion-ease-standard)',
+				'collapsible-down': 'collapsible-down var(--motion-surface) var(--motion-ease)',
+				'collapsible-up': 'collapsible-up 180ms var(--motion-ease-standard)',
 				'fade-in': 'fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
 				'fade-out': 'fade-out 0.3s ease-out',
 				'scale-in': 'scale-in 0.2s ease-out',
@@ -319,11 +335,11 @@ export default {
 				'shimmer': 'shimmer 2s infinite linear',
 				'pulse-subtle': 'pulse-subtle 3s infinite ease-in-out',
 				'spin-burst': 'spin-burst 5s ease-in-out infinite',
-				'page-enter': 'page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both',
+				'page-enter': 'page-enter var(--motion-surface) var(--motion-ease) both',
 				'toast-enter': 'toast-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
 				'toast-exit': 'toast-exit 0.22s cubic-bezier(0.4, 0, 1, 1) both',
 				'notification-enter': 'notification-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
-				'tab-enter': 'tab-enter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both'
+				'tab-enter': 'tab-enter var(--motion-surface) var(--motion-ease) both'
 			},
 			spacing: {
 				'xs': 'var(--spacing-xs)',

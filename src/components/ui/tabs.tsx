@@ -104,10 +104,54 @@ const ESBATIMENTO: Record<string, string | undefined> = {
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, style, ...props }, ref) => {
+>(({ className, style, children, ...props }, ref) => {
   const interna = React.useRef<HTMLDivElement>(null)
   const lado = useTransbordo(interna)
   const mascara = ESBATIMENTO[lado]
+  const activeValue = React.useContext(TabsValueContext)
+  const [indicator, setIndicator] = React.useState({ left: 0, top: 0, width: 0, visible: false })
+
+  /* Um único indicador desloca-se entre as abas. Antes cada aba desenhava a
+     própria borda: uma desaparecia e outra aparecia, sem explicar a mudança
+     de contexto. A posição é medida porque os rótulos são traduzidos, podem
+     quebrar em duas linhas e têm larguras diferentes. */
+  React.useLayoutEffect(() => {
+    const list = interna.current
+    if (!list) return
+
+    const measure = () => {
+      const active = list.querySelector<HTMLElement>('[role="tab"][data-state="active"]')
+      if (!active) {
+        setIndicator((current) => ({ ...current, visible: false }))
+        return
+      }
+      const next = {
+        left: active.offsetLeft,
+        top: active.offsetTop + active.offsetHeight - 2,
+        width: active.offsetWidth,
+        visible: true,
+      }
+      setIndicator((current) =>
+        current.left === next.left && current.top === next.top && current.width === next.width && current.visible
+          ? current
+          : next
+      )
+    }
+
+    measure()
+    const frame = requestAnimationFrame(measure)
+    const ro = new ResizeObserver(measure)
+    ro.observe(list)
+    Array.from(list.querySelectorAll<HTMLElement>('[role="tab"]')).forEach((tab) => ro.observe(tab))
+    const mo = new MutationObserver(measure)
+    mo.observe(list, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-state'] })
+
+    return () => {
+      cancelAnimationFrame(frame)
+      ro.disconnect()
+      mo.disconnect()
+    }
+  }, [activeValue])
 
   return (
   <TabsPrimitive.List
@@ -119,7 +163,7 @@ const TabsList = React.forwardRef<
     data-transbordo={lado}
     style={{ maskImage: mascara, WebkitMaskImage: mascara, ...style }}
     className={cn(
-      "flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
+      "relative flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
       /*
          A barra passa para a linha de baixo em vez de esconder uma aba.
 
@@ -152,7 +196,18 @@ const TabsList = React.forwardRef<
       className,
     )}
     {...props}
-  />
+  >
+    {children}
+    <span
+      aria-hidden="true"
+      className="akuris-tab-indicator"
+      style={{
+        width: indicator.width,
+        opacity: indicator.visible ? 1 : 0,
+        transform: `translate3d(${indicator.left}px, ${indicator.top}px, 0)`,
+      }}
+    />
+  </TabsPrimitive.List>
   )
 })
 TabsList.displayName = TabsPrimitive.List.displayName
@@ -166,11 +221,17 @@ const TabsTrigger = React.forwardRef<
     className={cn(
       "group relative inline-flex min-w-0 shrink-0 items-center justify-center gap-2 whitespace-nowrap",
       "border-b-2 border-transparent bg-transparent px-1 py-3 -mb-px text-sm font-medium leading-tight",
-      "ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded-sm",
+      "akuris-motion-micro ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded-md",
       "disabled:pointer-events-none disabled:opacity-50",
-      "text-muted-foreground hover:text-foreground hover:border-border",
-      "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold",
-      "dark:data-[state=active]:text-foreground [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:shrink-0 dark:data-[state=active]:[&_svg]:text-primary",
+      "text-muted-foreground hover:text-foreground",
+      "data-[state=active]:text-primary data-[state=active]:font-semibold",
+      /* O glifo funciona como âncora de navegação: discreto em repouso,
+         nítido e ligeiramente elevado na aba activa. Um único tratamento
+         substitui as 221 variações locais sem transformar o ícone num botão. */
+      "dark:data-[state=active]:text-foreground",
+      "[&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground/80",
+      "[&_svg]:transition-[color,transform,filter] [&_svg]:duration-200",
+      "hover:[&_svg]:text-foreground data-[state=active]:[&_svg]:scale-105 data-[state=active]:[&_svg]:text-primary data-[state=active]:[&_svg]:drop-shadow-sm",
       className,
     )}
     {...props}

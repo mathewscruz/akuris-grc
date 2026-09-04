@@ -19,7 +19,7 @@ export const riscosDetalhe = {
       // RiscosTabs
       tabs: {
         matrix: 'Matriz',
-        table: 'Tabela',
+        table: 'Riscos',
         aceite: 'Aceite',
       },
       // UserSelect
@@ -445,7 +445,7 @@ export const riscosDetalhe = {
       },
       tabs: {
         matrix: 'Matrix',
-        table: 'Table',
+        table: 'Risks',
         aceite: 'Acceptance',
       },
       userSelect: {

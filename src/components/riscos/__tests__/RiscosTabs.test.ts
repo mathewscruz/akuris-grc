@@ -6,8 +6,8 @@ describe('RiscosTabs', () => {
     expect(resolveRiscosView('overview', 'matrix')).toBe('table');
   });
 
-  it('usa a última área válida quando a URL não escolhe uma visão', () => {
-    expect(resolveRiscosView(null, 'matrix')).toBe('matrix');
+  it('abre a carteira de riscos quando a URL não escolhe uma visão', () => {
+    expect(resolveRiscosView(null, 'matrix')).toBe('table');
     expect(resolveRiscosView(null, 'overview')).toBe('table');
   });
 

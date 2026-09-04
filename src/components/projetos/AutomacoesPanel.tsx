@@ -83,10 +83,10 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
               </div>
               <div className="flex items-center gap-1">
                 <Switch checked={a.ativa} onCheckedChange={() => toggleAtiva(a)} />
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditando(a); setOpen(true); }}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditando(a); setOpen(true); }} aria-label={t('common.edit')} title={t('common.edit')}>
                   <IconEdit className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setRemovendo(a)}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setRemovendo(a)} aria-label={t('common.delete')} title={t('common.delete')}>
                   <IconDelete className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -193,7 +193,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
                     <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                     <SelectContent>{TIPOS_ACAO.map((tp) => <SelectItem key={tp.value} value={tp.value}>{tp.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => rmAcao(i)}><IconDelete className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => rmAcao(i)} aria-label={t('common.delete')} title={t('common.delete')}><IconDelete className="h-3.5 w-3.5" /></Button>
                 </div>
                 {a.tipo === 'mover_para_coluna' && (
                   <Select value={a.coluna_id ?? ''} onValueChange={(v) => setAcao(i, { coluna_id: v })}>

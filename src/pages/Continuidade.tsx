@@ -318,6 +318,7 @@ export default function Continuidade() {
         open={detalheDialog.open}
         onOpenChange={o => setDetalheDialog(p => ({ ...p, open: o }))}
         plano={detalheDialog.plano}
+        onSuccess={refreshAll}
       />
 
       <ConfirmDialog

@@ -117,14 +117,22 @@ export function FrameworkHistoryTab({
             label: t('sweepRiscos.gap.history.scoreAtual'),
             value: formatScore(currentScore),
             icon: trend === 'up' ? IconTrendUp : trend === 'down' ? IconTrendDown : IconMinus,
-            hint: stats ? `${liveDiff > 0 ? '+' : ''}${formatScore(liveDiff)}` : undefined,
+            trend: stats ? {
+              label: `${liveDiff > 0 ? '+' : ''}${formatScore(liveDiff)} ${t('cardsKpi.sweep.gap.vsAnterior')}`,
+              direction: trend === 'up' ? 'up' : trend === 'down' ? 'down' : 'flat',
+              favorable: trend === 'up' ? true : trend === 'down' ? false : undefined,
+            } : undefined,
             tone: trend === 'down' ? 'destructive' : undefined,
+            target: 100,
+            direction: 'higher-is-better',
           },
           {
             key: 'progresso',
             label: t('sweepRiscos.gap.history.progresso'),
             value: `${totalRequirements > 0 ? Math.round((evaluatedRequirements / totalRequirements) * 100) : 0}%`,
             hint: t('sweepRiscos.gap.history.requisitosAvaliados', { evaluated: evaluatedRequirements, total: totalRequirements }),
+            target: 100,
+            direction: 'higher-is-better',
           },
         ]}
       />

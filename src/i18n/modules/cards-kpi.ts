@@ -11,7 +11,12 @@ export const cardsKpi = {
         efetividadeSemTestes: 'A efetividade só aparece depois do primeiro teste de controle registrado.',
         efetividadeTestada: 'Média dos últimos testes de {testados} de {total} controlos',
         efetividadeDe: 'Efetividade {testados} de {total}',
+        coberturaTestes: 'Cobertura de testes',
+        coberturaComEfetividade: '{testados} de {total} avaliados · {efetividade}% efetivos',
+        preventivos: 'Controles preventivos',
         preventivosDe: 'Preventivos {preventivos} de {total}',
+        tudoEmDia: 'Tudo em dia',
+        meta: 'Meta {value}%',
       },
       contratos: {
         totalContratos: 'Total de Contratos',
@@ -23,6 +28,10 @@ export const cardsKpi = {
         valorVencidoHint: 'Contratos ativos com prazo ultrapassado',
         emptyContratos: 'Comece criando contratos para gerenciar suas parcerias.',
         emptyFornecedores: 'Cadastre fornecedores para associar aos contratos.',
+        fornecedoresTotal: 'Fornecedores',
+        fornecedoresAtivos: 'Fornecedores ativos',
+        fornecedoresNuncaAvaliados: 'Nunca avaliados',
+        fornecedoresIncompletos: 'Cadastro incompleto',
       },
 
       privacidade: {
@@ -53,7 +62,13 @@ export const cardsKpi = {
         relatorios: 'Relatórios de Denúncias',
         abrirRelatorios: 'Relatórios',
       },
+      documentos: {
+        cadastroIncompleto: 'Cadastro incompleto',
+        cadastroIncompletoHint: 'Sem classificação, categoria ou responsável definido',
+      },
       licencas: {
+        cadastroIncompleto: 'Cadastro incompleto',
+        cadastroIncompletoHint: 'Sem responsável, vencimento ou custo de renovação',
         totalLicencas: 'Total de Licenças',
         licencasRegistradas: 'Licenças registradas',
         licencasAtivas: 'Licenças Ativas',
@@ -65,6 +80,8 @@ export const cardsKpi = {
         coberturaTestes: 'Cobertura de testes',
       },
       chaves: {
+        cadastroIncompleto: 'Cadastro incompleto',
+        cadastroIncompletoHint: 'Sem responsável, algoritmo, cofre/localização ou rotação',
         totalChaves: 'Total de Chaves',
       },
     sweep: {
@@ -78,6 +95,8 @@ export const cardsKpi = {
         risco: 'Risco',
       },
       ativos: {
+        naoClassificados: 'Por classificar',
+        naoClassificadosHint: 'Defina o tipo para completar o inventário e melhorar os filtros.',
         ativos: 'Ativos',
         inativosDescontinuados: '{inativos} inativos · {descontinuados} descontinuados',
         doTotal: '{pct}% do total',
@@ -187,7 +206,12 @@ export const cardsKpi = {
         efetividadeSemTestes: 'Effectiveness appears only after the first control test is recorded.',
         efetividadeTestada: 'Average of the latest tests on {testados} of {total} controls',
         efetividadeDe: 'Effectiveness {testados} of {total}',
+        coberturaTestes: 'Test coverage',
+        coberturaComEfetividade: '{testados} of {total} assessed · {efetividade}% effective',
+        preventivos: 'Preventive controls',
         preventivosDe: 'Preventive {preventivos} of {total}',
+        tudoEmDia: 'All clear',
+        meta: 'Target {value}%',
       },
       contratos: {
         totalContratos: 'Total contracts',
@@ -199,6 +223,10 @@ export const cardsKpi = {
         valorVencidoHint: 'Active contracts past their end date',
         emptyContratos: 'Start by creating contracts to manage your partnerships.',
         emptyFornecedores: 'Register suppliers to link them to contracts.',
+        fornecedoresTotal: 'Suppliers',
+        fornecedoresAtivos: 'Active suppliers',
+        fornecedoresNuncaAvaliados: 'Never assessed',
+        fornecedoresIncompletos: 'Incomplete registration',
       },
 
       privacidade: {
@@ -229,7 +257,13 @@ export const cardsKpi = {
         relatorios: 'Whistleblowing reports',
         abrirRelatorios: 'Reports',
       },
+      documentos: {
+        cadastroIncompleto: 'Incomplete records',
+        cadastroIncompletoHint: 'Missing classification, category, or owner',
+      },
       licencas: {
+        cadastroIncompleto: 'Incomplete registration',
+        cadastroIncompletoHint: 'Missing owner, expiration, or renewal cost',
         totalLicencas: 'Total licenses',
         licencasRegistradas: 'Licenses registered',
         licencasAtivas: 'Active licenses',
@@ -241,6 +275,8 @@ export const cardsKpi = {
         coberturaTestes: 'Test coverage',
       },
       chaves: {
+        cadastroIncompleto: 'Incomplete registration',
+        cadastroIncompletoHint: 'Missing owner, algorithm, vault/location, or rotation',
         totalChaves: 'Total keys',
       },
     sweep: {
@@ -254,6 +290,8 @@ export const cardsKpi = {
         risco: 'Risk',
       },
       ativos: {
+        naoClassificados: 'Unclassified',
+        naoClassificadosHint: 'Define the type to complete the inventory and improve filtering.',
         ativos: 'Assets',
         inativosDescontinuados: '{inativos} inactive · {descontinuados} discontinued',
         doTotal: '{pct}% of total',

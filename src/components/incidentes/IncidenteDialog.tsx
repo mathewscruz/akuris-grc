@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { IconAdd, IconWarning, IconFile, IconCalendar, IconShield, IconDatabase, IconUsers, IconLayers } from '@/components/icons';
+import { IconAdd, IconWarning, IconFile, IconCalendar, IconShield, IconDatabase, IconUsers, IconLayers, IncidentesIcon } from '@/components/icons';
 import { EntidadeMultiSelect } from '@/components/common/EntidadeMultiSelect';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { Button } from '@/components/ui/button';
@@ -635,7 +635,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         description={
           incidente ? t('incidentesComp.incidente.descEdit') : t('incidentesComp.incidente.descNew')
         }
-        icon={IconWarning}
+        icon={IncidentesIcon}
         tabs={tabs}
         summary={summary}
         activeTab={activeTab}

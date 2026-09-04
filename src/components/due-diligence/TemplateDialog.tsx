@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QuestionsManager } from './QuestionsManager';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconChecklist } from '@/components/icons';
+import { DueDiligenceIcon } from '@/components/icons';
 
 interface Template {
   id: string;
@@ -199,7 +199,7 @@ export function TemplateDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={IconChecklist}
+      icon={DueDiligenceIcon}
       title={getDialogTitle()}
       description={getDialogDescription()}
       size={isQuestions ? 'xl' : 'sm'}

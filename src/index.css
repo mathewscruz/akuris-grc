@@ -151,20 +151,12 @@
     --brand-ink: 0 0% 100%;
 
     /* ── Severidade: exclusiva de risco/criticidade ───────────────────────
-       Sempre acompanhada da letra C/A/M/B, por isso pode ser discreta.
-
-       A escala vai do roxo escuro ao verde, com o vermelho reservado ao
-       ALTO. O crítico deixa de ser vermelho por uma razão prática: quando o
-       topo da escala é vermelho, o degrau abaixo tem de ser laranja, e
-       laranja e âmbar são quase indistinguíveis num ponto de 6px — a escala
-       perdia o degrau justamente onde ele decide o trabalho de amanhã.
-
-       O roxo do crítico NÃO é o roxo da marca (252 100% 66%): é muito mais
-       escuro e ligeiramente mais magenta, para não se confundir com ação e
-       navegação. Todos passam AA como cor de texto sobre branco — medido:
-       crítico 11,5:1 · alto 6,0:1 · médio 4,9:1 · baixo 5,3:1. */
-    --severity-critical: 272 58% 30%;
-    --severity-high: 0 65% 45%;
+       A progressão segue a leitura habitual de risco: vermelho profundo no
+       crítico, laranja no alto, âmbar no médio e verde no baixo. O roxo fica
+       reservado à marca, navegação ativa e ações primárias. O medidor de
+       quatro segmentos no chip preserva a distinção sem depender da cor. */
+    --severity-critical: 355 68% 39%;
+    --severity-high: 24 86% 37%;
     --severity-medium: 45 90% 38%;
     --severity-low: 145 60% 30%;
     --severity-none: 200 12% 46%;
@@ -231,6 +223,19 @@
     
     /* Transitions */
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Movimento Akuris
+     *
+     * Três ritmos, uma só curva de desaceleração. Microinterações respondem
+     * imediatamente; superfícies têm tempo suficiente para explicar de onde
+     * vieram; dados mudam mais devagar para o olho conseguir comparar antes e
+     * depois. Componentes não devem inventar durações fora destes tokens. */
+    --motion-micro: 140ms;
+    --motion-surface: 210ms;
+    --motion-data: 420ms;
+    --motion-count: 560ms;
+    --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
     
     /* Spacing */
     --spacing-xs: 0.25rem;
@@ -355,11 +360,9 @@
     --brand-ink: 0 0% 100%;
 
     /* ── Severidade — dark ───────────────────────────────────────────────
-       Mesmas matizes do tema claro, subidas em luminosidade para lerem
-       sobre o fundo escuro. O crítico não pode escurecer aqui: no escuro,
-       "mais escuro" é menos visível, e a escala inverteria de sentido. */
-    --severity-critical: 272 70% 72%;
-    --severity-high: 0 72% 63%;
+       Mesmas matizes do tema claro, com luminosidade suficiente no navy. */
+    --severity-critical: 355 78% 68%;
+    --severity-high: 24 92% 66%;
     --severity-medium: 45 80% 60%;
     --severity-low: 145 50% 58%;
     --severity-none: 200 12% 62%;
@@ -478,8 +481,28 @@ input:-webkit-autofill:focus {
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* A DM Sans ganha precisão pela hierarquia, não por uma segunda família:
+     títulos fecham ligeiramente o tracking; componentes continuam livres
+     para definir tamanho e peso segundo a sua importância. */
+  :where(h1, h2, h3) {
+    font-family: theme('fontFamily.display');
+    letter-spacing: -0.018em;
+  }
+
+  /* IDs, protocolos, valores técnicos e atalhos também são DM Sans. A
+     distinção passa a vir da própria família: peso médio, algarismos de
+     largura estável, zero distinguível e um pouco mais de respiração. As
+     classes explícitas de peso/tracking continuam a poder refinar um caso. */
+  :where(code, kbd, samp, pre, .font-mono) {
+    font-family: theme('fontFamily.sans');
+    font-weight: 500;
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: "tnum" 1, "zero" 1, "rlig" 1, "calt" 1;
+    letter-spacing: 0.035em;
   }
 
   /* Uma espessura de traço para os ícones de catálogo.
@@ -502,6 +525,13 @@ input:-webkit-autofill:focus {
     outline: 2px solid hsl(var(--primary));
     outline-offset: 2px;
     border-radius: var(--radius);
+  }
+
+  /* Um crítico deve ser encontrado antes mesmo de a pessoa terminar de ler a
+     linha. A régua fina preserva a superfície neutra da tabela e evita o
+     ruído de pintar a linha inteira. */
+  tbody tr:has([data-chip-family="severity"][data-chip-tone="critical"]) > td:first-child {
+    box-shadow: inset 2px 0 0 hsl(var(--severity-critical));
   }
   
   /* Custom Scrollbar */
@@ -542,13 +572,19 @@ input:-webkit-autofill:focus {
    * paragens e repete-se em várias listas: escrito à mão em cada uma, era
    * garantido divergirem.
    */
-  .realce-linha {
+  .realce-linha,
+  .akuris-table tbody > tr:not([data-table-static]) {
     border-radius: 0.375rem;
-    transition: background-image 0.15s ease-out;
+    transition: background-image var(--motion-micro) var(--motion-ease),
+                background-color var(--motion-micro) var(--motion-ease),
+                box-shadow var(--motion-micro) var(--motion-ease);
   }
 
   .realce-linha:hover,
-  .realce-linha:focus-visible {
+  .realce-linha:focus-visible,
+  .akuris-table tbody > tr:not([data-table-static]):hover,
+  .akuris-table tbody > tr:not([data-table-static]):focus-visible,
+  .akuris-table tbody > tr:not([data-table-static]):focus-within {
     background-image: linear-gradient(
       90deg,
       hsl(var(--accent) / 0) 0,
@@ -558,11 +594,112 @@ input:-webkit-autofill:focus {
     );
   }
 
+  /**
+   * Padrão de leitura para tabelas Akuris.
+   *
+   * A regra acima contém Atividades Recentes e as tabelas no MESMO seletor:
+   * não são duas imitações parecidas, é literalmente o mesmo degradê. Nas
+   * tabelas consultivas ele também ajuda o olho a seguir uma linha larga.
+   */
+  /* Cabeçalho de leitura único, inclusive nas poucas tabelas operacionais que
+     não usam o componente React compartilhado. */
+  .akuris-table > thead > tr {
+    background-color: transparent;
+  }
+
+  .akuris-table > thead th {
+    /* A faixa nasce no neutro discreto do cabeçalho e dissolve-se na
+       superfície da tabela. Células sticky recebem a mesma camada, logo não
+       voltam a formar blocos cinzentos nas duas extremidades. */
+    background-color: hsl(var(--card));
+    background-image: linear-gradient(
+      180deg,
+      hsl(var(--muted) / 0.32) 0%,
+      hsl(var(--muted) / 0.14) 48%,
+      hsl(var(--card)) 100%
+    );
+    color: hsl(var(--muted-foreground) / 0.78);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+
+  .akuris-table tbody > tr:not([data-table-static]):hover,
+  .akuris-table tbody > tr:not([data-table-static]):focus-visible,
+  .akuris-table tbody > tr:not([data-table-static]):focus-within {
+    background-color: hsl(var(--card));
+  }
+
+  /* As colunas congeladas precisam continuar opacas sobre a rolagem. Nas
+     pontas, o fundo branco e o realce são duas camadas da mesma transição. */
+  .akuris-table tbody > tr:hover > td.sticky:first-child,
+  .akuris-table tbody > tr:focus-within > td.sticky:first-child {
+    background-color: hsl(var(--card));
+    background-image: linear-gradient(90deg, hsl(var(--card)) 0, hsl(var(--accent)) 2rem);
+  }
+
+  .akuris-table tbody > tr:hover > td.sticky:last-child,
+  .akuris-table tbody > tr:focus-within > td.sticky:last-child {
+    background-color: hsl(var(--card));
+    background-image: linear-gradient(90deg, hsl(var(--accent)) calc(100% - 2rem), hsl(var(--card)) 100%);
+  }
+
+  /* Ações continuam visíveis (importante para descoberta), mas aproximam-se
+     * da linha quando ela ganha foco. Em dispositivos tácteis não existe
+     * hover, portanto não reduzimos a opacidade. */
+  @media (hover: hover) and (pointer: fine) {
+    .akuris-table tbody > tr:not([data-table-static]) > td:last-child button,
+    .akuris-table tbody > tr:not([data-table-static]) > td:last-child [role="button"] {
+      opacity: 0.68;
+      transform: translateX(2px);
+      transition: opacity var(--motion-micro) var(--motion-ease),
+                  transform var(--motion-micro) var(--motion-ease),
+                  color var(--motion-micro) var(--motion-ease),
+                  background-color var(--motion-micro) var(--motion-ease);
+    }
+
+    .akuris-table tbody > tr:not([data-table-static]):hover > td:last-child button,
+    .akuris-table tbody > tr:not([data-table-static]):hover > td:last-child [role="button"],
+    .akuris-table tbody > tr:not([data-table-static]):focus-within > td:last-child button,
+    .akuris-table tbody > tr:not([data-table-static]):focus-within > td:last-child [role="button"] {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Uma atualização de busca/filtro não corta a tabela no mesmo frame. */
+  .akuris-data-refresh {
+    animation: akuris-data-refresh var(--motion-surface) var(--motion-ease) both;
+  }
+
+  /* Registo recém-inserido: marca lateral e brilho curto, sem piscar a linha
+     * inteira nem usar a cor como único sinal. */
+  .akuris-table tbody > tr[data-row-new="true"],
+  .akuris-data-card[data-row-new="true"] {
+    animation: akuris-row-new 900ms var(--motion-ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .akuris-table tbody > tr {
+      transition: none;
+    }
+
+    .akuris-data-refresh,
+    .akuris-table tbody > tr[data-row-new="true"],
+    .akuris-data-card[data-row-new="true"] {
+      animation: none;
+    }
+  }
+
   /* Numa lista estreita não há 4rem para gastar em desvanecimento: o realce
      ficaria só bordas. Aí a passagem é mais curta. */
   @media (max-width: 640px) {
     .realce-linha:hover,
-    .realce-linha:focus-visible {
+    .realce-linha:focus-visible,
+    .akuris-table tbody > tr:not([data-table-static]):hover,
+    .akuris-table tbody > tr:not([data-table-static]):focus-visible,
+    .akuris-table tbody > tr:not([data-table-static]):focus-within {
       background-image: linear-gradient(
         90deg,
         hsl(var(--accent) / 0) 0,
@@ -651,7 +788,279 @@ input:-webkit-autofill:focus {
   }
 }
 
+/* ========================================
+   Akuris Motion System
+   ======================================== */
+@keyframes akuris-page-in {
+  from { opacity: 0.76; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes akuris-surface-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes akuris-content-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes akuris-data-refresh {
+  from { opacity: 0.62; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes akuris-row-new {
+  0%   { box-shadow: inset 3px 0 0 hsl(var(--primary)); background-color: hsl(var(--primary) / 0.10); }
+  58%  { box-shadow: inset 3px 0 0 hsl(var(--primary)); background-color: hsl(var(--primary) / 0.045); }
+  100% { box-shadow: inset 0 0 0 hsl(var(--primary) / 0); background-color: transparent; }
+}
+
+@keyframes akuris-status-settle {
+  0%   { opacity: 0.7; transform: translateY(2px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes akuris-severity-fill {
+  0%   { opacity: 0.18; transform: skewY(-12deg) scaleY(0.16); }
+  72%  { opacity: 1; transform: skewY(-12deg) scaleY(1.08); }
+  100% { opacity: 1; transform: skewY(-12deg) scaleY(1); }
+}
+
+@keyframes akuris-bell-arrival {
+  0%, 100% { transform: rotate(0); }
+  28% { transform: rotate(10deg); }
+  58% { transform: rotate(-7deg); }
+  80% { transform: rotate(3deg); }
+}
+
+@keyframes akuris-risk-outline {
+  0%   { filter: drop-shadow(0 0 0 hsl(var(--destructive) / 0)); transform: scale(1); }
+  45%  { filter: drop-shadow(0 0 5px hsl(var(--destructive) / 0.48)); transform: scale(1.06); }
+  100% { filter: drop-shadow(0 0 0 hsl(var(--destructive) / 0)); transform: scale(1); }
+}
+
+@keyframes akuris-ai-breathe {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 hsl(var(--primary) / 0)); }
+  50% { transform: scale(1.025); filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.22)); }
+}
+
+@keyframes akuris-ai-processing {
+  0%, 100% { transform: translateY(0); opacity: 0.72; }
+  50% { transform: translateY(-2px); opacity: 1; }
+}
+
+.akuris-page-transition {
+  animation: akuris-page-in var(--motion-surface) var(--motion-ease) both;
+}
+
+.akuris-surface-enter {
+  animation: akuris-surface-in var(--motion-surface) var(--motion-ease) both;
+}
+
+.akuris-button {
+  transition-duration: var(--motion-micro);
+  transition-timing-function: var(--motion-ease);
+}
+
+.akuris-motion-micro {
+  transition-duration: var(--motion-micro);
+  transition-timing-function: var(--motion-ease);
+  animation-duration: var(--motion-micro) !important;
+  animation-timing-function: var(--motion-ease) !important;
+}
+
+.akuris-motion-data {
+  transition-duration: var(--motion-data);
+  transition-timing-function: var(--motion-ease);
+}
+
+.akuris-overlay[data-state="open"] {
+  animation-duration: var(--motion-surface) !important;
+  animation-timing-function: var(--motion-ease) !important;
+}
+
+.akuris-overlay[data-state="closed"] {
+  animation-duration: 180ms !important;
+  animation-timing-function: var(--motion-ease-standard) !important;
+}
+
+.akuris-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.akuris-button > svg {
+  transition: transform var(--motion-micro) var(--motion-ease);
+}
+
+.akuris-button:active:not(:disabled) > svg {
+  transform: scale(0.93);
+}
+
+.akuris-tab-indicator {
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  height: 2px;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  pointer-events: none;
+  transition: transform var(--motion-surface) var(--motion-ease),
+              width var(--motion-surface) var(--motion-ease),
+              opacity var(--motion-micro) ease-out;
+}
+
+.akuris-nav-link {
+  position: relative;
+  isolation: isolate;
+  transition: color var(--motion-micro) var(--motion-ease),
+              background-color var(--motion-surface) var(--motion-ease),
+              box-shadow var(--motion-surface) var(--motion-ease),
+              transform var(--motion-micro) var(--motion-ease);
+}
+
+.akuris-sidebar-indicator {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  z-index: 4;
+  width: 2px;
+  border-radius: 999px;
+  background: hsl(var(--primary-glow));
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.38);
+  pointer-events: none;
+  transition: opacity var(--motion-micro) var(--motion-ease),
+              height var(--motion-surface) var(--motion-ease),
+              transform var(--motion-surface) var(--motion-ease);
+}
+
+.akuris-nav-link[aria-current="page"] svg {
+  transform: translateX(1px);
+}
+
+.akuris-status-badge {
+  animation: akuris-status-settle var(--motion-surface) var(--motion-ease) both;
+  transition: color var(--motion-micro) var(--motion-ease),
+              background-color var(--motion-micro) var(--motion-ease),
+              border-color var(--motion-micro) var(--motion-ease);
+}
+
+.akuris-severity-step[data-active="true"] {
+  animation: akuris-severity-fill 360ms var(--motion-ease) both;
+  animation-delay: var(--severity-step-delay, 0ms);
+}
+
+.akuris-dialog-content[data-state="open"] > :not(button),
+.akuris-sheet-content[data-state="open"] > :not(button) {
+  animation: akuris-content-in var(--motion-surface) var(--motion-ease) both;
+}
+
+/* `tailwindcss-animate` aplica 150ms como valor de reserva à animação; estes
+   seletores garantem que diálogos e drawers obedecem ao ritmo de superfície
+   mesmo quando uma tela acrescenta classes próprias ao shell. */
+.akuris-dialog-content[data-state="open"],
+.akuris-sheet-content[data-state="open"] {
+  animation-duration: var(--motion-surface) !important;
+  animation-timing-function: var(--motion-ease) !important;
+}
+
+.akuris-dialog-content[data-state="closed"],
+.akuris-sheet-content[data-state="closed"] {
+  animation-duration: 180ms !important;
+  animation-timing-function: var(--motion-ease-standard) !important;
+}
+
+.akuris-dialog-content[data-state="open"] > :not(button):nth-child(2),
+.akuris-sheet-content[data-state="open"] > :not(button):nth-child(2) {
+  animation-delay: 24ms;
+}
+
+.akuris-dialog-content[data-state="open"] > :not(button):nth-child(n+3),
+.akuris-sheet-content[data-state="open"] > :not(button):nth-child(n+3) {
+  animation-delay: 42ms;
+}
+
+.akuris-bell-arrival {
+  transform-origin: 50% 15%;
+  animation: akuris-bell-arrival 480ms var(--motion-ease) both;
+}
+
+.akuris-risk-attention {
+  animation: akuris-risk-outline 560ms var(--motion-ease) both;
+}
+
+.akuris-ai-rest {
+  animation: akuris-ai-breathe 3.6s ease-in-out infinite;
+}
+
+.akuris-ai-processing {
+  animation: akuris-ai-processing 760ms ease-in-out infinite;
+}
+
+.akuris-kanban-card {
+  transition: transform var(--motion-surface) var(--motion-ease),
+              opacity var(--motion-micro) var(--motion-ease),
+              box-shadow var(--motion-surface) var(--motion-ease),
+              border-color var(--motion-micro) var(--motion-ease);
+}
+
+.akuris-kanban-card:hover {
+  transform: translateY(-1px);
+}
+
+.akuris-kanban-card[data-dragging="true"] {
+  transform: translateY(-4px) rotate(1deg) scale(1.01);
+}
+
+/* A animação nativa de entrada dos gráficos ocorre apenas quando o SVG é
+   montado; o tooltip, por outro lado, acompanha o ponteiro com o ritmo curto. */
+.recharts-responsive-container {
+  animation: akuris-data-refresh var(--motion-data) var(--motion-ease) both;
+}
+
+.recharts-tooltip-wrapper {
+  transition: transform var(--motion-micro) var(--motion-ease),
+              opacity var(--motion-micro) var(--motion-ease) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .akuris-page-transition,
+  .akuris-surface-enter,
+  .akuris-data-refresh,
+  .akuris-data-card[data-row-new="true"],
+  .akuris-status-badge,
+  .akuris-severity-step,
+  .akuris-bell-arrival,
+  .akuris-risk-attention,
+  .akuris-ai-rest,
+  .akuris-ai-processing,
+  .recharts-responsive-container,
+  .akuris-dialog-content[data-state="open"] > :not(button),
+  .akuris-sheet-content[data-state="open"] > :not(button) {
+    animation: none !important;
+  }
+
+  .akuris-button,
+  .akuris-motion-micro,
+  .akuris-motion-data,
+  .akuris-overlay,
+  .akuris-button > svg,
+  .akuris-tab-indicator,
+  .akuris-nav-link,
+  .akuris-sidebar-indicator,
+  .akuris-kanban-card,
+  .recharts-tooltip-wrapper {
+    transition: none !important;
+  }
+
+  .akuris-button:active:not(:disabled),
+  .akuris-button:active:not(:disabled) > svg,
+  .akuris-kanban-card:hover,
+  .akuris-kanban-card[data-dragging="true"] {
+    transform: none !important;
+  }
+
   .lp-fade-up {
     transition: none !important;
     opacity: 1 !important;
@@ -724,7 +1133,7 @@ input:-webkit-autofill:focus {
   --lp-pad: 32px;
   --lp-serif: 'DM Sans', system-ui, sans-serif;
   --lp-sans: 'DM Sans', system-ui, sans-serif;
-  --lp-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --lp-mono: 'DM Sans', system-ui, sans-serif;
 
   background: var(--lp-ink-0);
   color: var(--lp-text);
@@ -1543,7 +1952,7 @@ input:-webkit-autofill:focus {
   --lp-accent-2: #cfc4ff;
   --lp-sans: 'DM Sans', system-ui, sans-serif;
   --lp-serif: 'DM Sans', system-ui, sans-serif;
-  --lp-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --lp-mono: 'DM Sans', system-ui, sans-serif;
   background: linear-gradient(180deg, #0f1d33 0%, #0a1628 100%) !important;
   color: #f5f7fa;
   border: 1px solid #233149 !important;

@@ -23,7 +23,7 @@ import NoticiasTab from '@/components/configuracoes/NoticiasTab';
 import BlogManager from '@/components/configuracoes/BlogManager';
 import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
 
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { useEffect, useState } from 'react';
 const Configuracoes = () => {
   const { t } = useLanguage();
@@ -51,7 +51,7 @@ const Configuracoes = () => {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <AkurisPulse size={48} className="mb-4" />
+          <ModuleLoadingSkeleton showTable={false} />
           <p className="text-muted-foreground">{t('configGeral.page.loading')}</p>
         </div>
       </div>

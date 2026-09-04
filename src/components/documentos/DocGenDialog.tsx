@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { IconAdd, IconDownload, IconSend, IconFile, IconSave, IconHistory, IconArrowLeft } from '@/components/icons';
+import { IconAdd, IconDownload, IconSend, IconFile, IconSave, IconHistory, IconArrowLeft, DocumentosIcon } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import { akurisToast } from '@/lib/akuris-toast';
@@ -1299,7 +1299,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       title={`${t('docgen.dialog.title')}${currentDocType ? ` · ${currentDocType}` : ''}${requirementContext ? ` — ${requirementContext.requirementCode}` : ''}`}
       description={DOCGEN_DIALOG_DESCRIPTION}
       descriptionSrOnly
-      icon={IconFile}
+      icon={DocumentosIcon}
       size="xl"
       noScroll
       hideFooter

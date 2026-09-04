@@ -270,7 +270,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                       <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                         {revealedKeys.get(key.id) ? revealedKeys.get(key.id) : `${key.prefixo}••••••••••••••••••••`}
                       </code>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={async () => {
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={revealedKeys.has(key.id) ? t('common.close') : t('common.view')} title={revealedKeys.has(key.id) ? t('common.close') : t('common.view')} onClick={async () => {
                         if (revealedKeys.has(key.id)) {
                           setRevealedKeys(prev => {
                             const next = new Map(prev);
@@ -288,7 +288,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                       }}>
                         {revealedKeys.has(key.id) ? <IconHide className="h-3 w-3" /> : <IconView className="h-3 w-3" />}
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={async () => {
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={t('common.copy')} title={t('common.copy')} onClick={async () => {
                         const cached = revealedKeys.get(key.id);
                         if (cached) { copyKey(cached); return; }
                         const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });

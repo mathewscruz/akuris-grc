@@ -73,11 +73,12 @@ const NotificationCenter: React.FC = () => {
 
   // Buscar notificações manuais
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -90,28 +91,46 @@ const NotificationCenter: React.FC = () => {
 
   // Buscar todas as notificações automáticas do sistema
   const { data: automaticNotifications = [] } = useQuery({
-    queryKey: ['automatic-notifications', [...readAutomaticIds], locale],
+    queryKey: ['automatic-notifications', profile?.empresa_id, user?.id, [...readAutomaticIds], locale],
     queryFn: async () => {
       const notificacoes: Notification[] = [];
       const readIds = readAutomaticIds;
-      
-      const { data: documentos } = await supabase
-        .from('documentos')
-        .select('id, nome, data_vencimento, tipo')
-        .not('data_vencimento', 'is', null)
-        .eq('status', 'ativo');
+      const empresaId = profile?.empresa_id;
+      if (!empresaId) return [];
 
-      const { data: contratos } = await supabase
-        .from('contratos')
-        .select('id, nome, data_fim, renovacao_automatica')
-        .not('data_fim', 'is', null)
-        .eq('status', 'ativo');
-
-      const { data: controles } = await supabase
-        .from('controles')
-        .select('id, nome, proxima_avaliacao')
-        .not('proxima_avaliacao', 'is', null)
-        .eq('status', 'ativo');
+      // As fontes são independentes. Em série, o sino aguardava até 14 viagens
+      // ao banco e repetia tudo ao trocar de empresa; em paralelo e com tenant
+      // na chave/cache, o tempo percebido passa a ser o da consulta mais lenta.
+      const [
+        { data: documentos },
+        { data: contratos },
+        { data: controles },
+        { data: incidentes },
+        { data: manutencoesPendentes },
+        { data: aprovacoesDocumentos },
+        { data: licencas },
+        { data: chaves },
+        { data: riscosRevisao },
+      ] = await Promise.all([
+        supabase.from('documentos').select('id, nome, data_vencimento, tipo')
+          .eq('empresa_id', empresaId).not('data_vencimento', 'is', null).eq('status', 'ativo'),
+        supabase.from('contratos').select('id, nome, data_fim, renovacao_automatica')
+          .eq('empresa_id', empresaId).not('data_fim', 'is', null).eq('status', 'ativo'),
+        supabase.from('controles').select('id, nome, proxima_avaliacao')
+          .eq('empresa_id', empresaId).not('proxima_avaliacao', 'is', null).eq('status', 'ativo'),
+        supabase.from('incidentes').select('id, titulo, criticidade, status, updated_at')
+          .eq('empresa_id', empresaId).in('status', ['aberto', 'em_investigacao', 'contido']).eq('criticidade', 'critica'),
+        supabase.from('ativos_manutencoes').select('id, ativo_id, data_manutencao, tipo_manutencao, ativos(nome)')
+          .eq('empresa_id', empresaId).in('status', ['agendada', 'em_andamento']).not('data_manutencao', 'is', null),
+        supabase.from('documentos_aprovacoes').select(APROVACOES_PENDENTES_SELECT)
+          .eq('aprovador_id', user!.id).eq('status', 'pendente').eq('tipo_acao', 'solicitacao'),
+        supabase.from('ativos_licencas').select('id, nome, data_vencimento, tipo_licenca')
+          .eq('status', 'ativa').eq('empresa_id', empresaId).not('data_vencimento', 'is', null),
+        supabase.from('ativos_chaves_criptograficas').select('id, nome, data_proxima_rotacao, tipo_chave, ambiente')
+          .eq('status', 'ativa').eq('empresa_id', empresaId).not('data_proxima_rotacao', 'is', null),
+        supabase.from('riscos').select('id, nome, data_proxima_revisao, nivel_risco_inicial, nivel_risco_residual')
+          .eq('empresa_id', empresaId).not('data_proxima_revisao', 'is', null),
+      ]);
 
       /*
         O produto grava `em_investigacao`; `investigacao` não existe numa
@@ -120,31 +139,6 @@ const NotificationCenter: React.FC = () => {
         que um incidente crítico passa mais tempo. É o mesmo defeito que já
         tinha sido corrigido em `useDashboardStats` e ficou por corrigir aqui.
       */
-      const { data: incidentes } = await supabase
-        .from('incidentes')
-        .select('id, titulo, criticidade, status')
-        .in('status', ['aberto', 'em_investigacao', 'contido'])
-        .eq('criticidade', 'critica');
-
-      const { data: ativos } = await supabase
-        .from('ativos')
-        .select('id, nome, criticidade, status')
-        .eq('criticidade', 'critico')
-        .eq('status', 'ativo');
-
-      const { data: manutencoesPendentes } = await supabase
-        .from('ativos_manutencoes')
-        .select('id, ativo_id, data_manutencao, tipo_manutencao, ativos(nome)')
-        .in('status', ['agendada', 'em_andamento'])
-        .not('data_manutencao', 'is', null);
-
-      const { data: aprovacoesDocumentos } = await supabase
-        .from('documentos_aprovacoes')
-        .select(APROVACOES_PENDENTES_SELECT)
-        .eq('aprovador_id', user?.id || '')
-        .eq('status', 'pendente')
-        .eq('tipo_acao', 'solicitacao');
-
       const hoje = new Date();
 
       // Processar documentos
@@ -158,7 +152,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.docVencidoMsg', { nome: doc.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/documentos',
             metadata: { documento_id: doc.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(doc.data_vencimento!).toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento === 0) {
           notificacoes.push({
@@ -167,7 +161,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.docHojeMsg', { nome: doc.nome }),
             type: 'warning', read: false, link_to: '/documentos',
             metadata: { documento_id: doc.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(doc.data_vencimento!).toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 7) {
           notificacoes.push({
@@ -176,7 +170,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.docBreveMsg', { nome: doc.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/documentos',
             metadata: { documento_id: doc.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(doc.data_vencimento!).toISOString(), isAutomatic: true
           });
         }
       });
@@ -192,7 +186,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.contratoVencidoMsg', { nome: contrato.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/contratos',
             metadata: { contrato_id: contrato.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(contrato.data_fim!).toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
           const renovacaoMsg = contrato.renovacao_automatica ? t('fin.notif.renovacaoAtiva') : '';
@@ -202,7 +196,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.contratoProximoMsg', { nome: contrato.nome, dias: diasParaVencimento, extra: renovacaoMsg }),
             type: 'warning', read: false, link_to: '/contratos',
             metadata: { contrato_id: contrato.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(contrato.data_fim!).toISOString(), isAutomatic: true
           });
         }
       });
@@ -218,7 +212,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.controlePendenteMsg', { nome: controle.nome, dias: diasParaAvaliacao }),
             type: 'warning', read: false, link_to: `/controles?detalhe=${controle.id}`,
             metadata: { controle_id: controle.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(controle.proxima_avaliacao!).toISOString(), isAutomatic: true
           });
         }
       });
@@ -231,35 +225,9 @@ const NotificationCenter: React.FC = () => {
           message: t('fin.notif.incidenteCriticoMsg', { nome: incidente.titulo, status: formatStatus(incidente.status) }),
           type: 'error', read: false, link_to: `/incidentes?detalhe=${incidente.id}`,
           metadata: { incidente_id: incidente.id },
-          created_at: new Date().toISOString(), isAutomatic: true
+          created_at: incidente.updated_at, isAutomatic: true
         });
       });
-
-      // Processar ativos críticos
-      (ativos || []).forEach(ativo => {
-        notificacoes.push({
-          id: `ativo-critico-${ativo.id}`,
-          title: t('fin.notif.ativoCritico'),
-          message: t('fin.notif.ativoCriticoMsg', { nome: ativo.nome }),
-          type: 'warning', read: false, link_to: '/ativos',
-          metadata: { ativo_id: ativo.id },
-          created_at: new Date().toISOString(), isAutomatic: true
-        });
-      });
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('empresa_id')
-        .eq('user_id', user!.id)
-        .single();
-      const userEmpresaId = profileData?.empresa_id;
-
-      const { data: licencas } = await supabase
-        .from('ativos_licencas')
-        .select('id, nome, data_vencimento, tipo_licenca')
-        .eq('status', 'ativa')
-        .eq('empresa_id', userEmpresaId || '')
-        .not('data_vencimento', 'is', null);
 
       (licencas || []).forEach(licenca => {
         const diasParaVencimento = differenceInDays(parseDataLocal(licenca.data_vencimento), hoje);
@@ -271,7 +239,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.licencaVencidaMsg', { nome: licenca.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/ativos/licencas',
             metadata: { licenca_id: licenca.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(licenca.data_vencimento).toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
           notificacoes.push({
@@ -280,17 +248,10 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.licencaVencendoMsg', { nome: licenca.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/ativos/licencas',
             metadata: { licenca_id: licenca.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(licenca.data_vencimento).toISOString(), isAutomatic: true
           });
         }
       });
-
-      const { data: chaves } = await supabase
-        .from('ativos_chaves_criptograficas')
-        .select('id, nome, data_proxima_rotacao, tipo_chave, ambiente')
-        .eq('status', 'ativa')
-        .eq('empresa_id', userEmpresaId || '')
-        .not('data_proxima_rotacao', 'is', null);
 
       (chaves || []).forEach(chave => {
         const diasParaRotacao = differenceInDays(parseDataLocal(chave.data_proxima_rotacao), hoje);
@@ -302,7 +263,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.chaveExpiradaMsg', { nome: chave.nome, ambiente: chave.ambiente, dias: Math.abs(diasParaRotacao) }),
             type: 'error', read: false, link_to: '/ativos/chaves',
             metadata: { chave_id: chave.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(chave.data_proxima_rotacao).toISOString(), isAutomatic: true
           });
         } else if (diasParaRotacao <= 30) {
           notificacoes.push({
@@ -311,7 +272,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.chaveRotacaoMsg', { nome: chave.nome, dias: diasParaRotacao }),
             type: 'warning', read: false, link_to: '/ativos/chaves',
             metadata: { chave_id: chave.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(chave.data_proxima_rotacao).toISOString(), isAutomatic: true
           });
         }
       });
@@ -326,16 +287,10 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.manutencaoMsg', { tipo: manutencao.tipo_manutencao, nome: (manutencao as any).ativos?.nome, quando: diasParaManutencao === 0 ? t('fin.comum.hoje') : t('fin.comum.emDias', { dias: diasParaManutencao }) }),
             type: 'warning', read: false, link_to: '/ativos',
             metadata: { ativo_id: manutencao.ativo_id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(manutencao.data_manutencao!).toISOString(), isAutomatic: true
           });
         }
       });
-
-      const { data: riscosRevisao } = await supabase
-        .from('riscos')
-        .select('id, nome, data_proxima_revisao, nivel_risco_inicial, nivel_risco_residual')
-        .eq('empresa_id', userEmpresaId || '')
-        .not('data_proxima_revisao', 'is', null);
 
       (riscosRevisao || []).forEach(risco => {
         const diasParaRevisao = differenceInDays(parseDataLocal(risco.data_proxima_revisao!), hoje);
@@ -347,7 +302,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.riscoRevisaoVencidaMsg', { nome: risco.nome, nivel: risco.nivel_risco_residual || risco.nivel_risco_inicial || 'N/A', dias: Math.abs(diasParaRevisao) }),
             type: 'error', read: false, link_to: '/riscos',
             metadata: { risco_id: risco.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(risco.data_proxima_revisao!).toISOString(), isAutomatic: true
           });
         } else if (diasParaRevisao <= 7) {
           notificacoes.push({
@@ -356,7 +311,7 @@ const NotificationCenter: React.FC = () => {
             message: t('fin.notif.riscoRevisaoProximaMsg', { nome: risco.nome, dias: diasParaRevisao }),
             type: 'warning', read: false, link_to: '/riscos',
             metadata: { risco_id: risco.id },
-            created_at: new Date().toISOString(), isAutomatic: true
+            created_at: parseDataLocal(risco.data_proxima_revisao!).toISOString(), isAutomatic: true
           });
         }
       });
@@ -380,7 +335,7 @@ const NotificationCenter: React.FC = () => {
         read: readIds.has(notif.id)
       }));
     },
-    enabled: !!user,
+    enabled: !!user && !!profile?.empresa_id,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -434,6 +389,22 @@ const NotificationCenter: React.FC = () => {
   };
 
   const unreadCount = allNotifications.filter(n => !n.read).length;
+  const previousUnreadCount = React.useRef<number | null>(null);
+  const [bellArrival, setBellArrival] = React.useState(false);
+
+  React.useEffect(() => {
+    const previous = previousUnreadCount.current;
+    previousUnreadCount.current = unreadCount;
+    if (previous === null || unreadCount <= previous) return;
+
+    setBellArrival(false);
+    const start = requestAnimationFrame(() => setBellArrival(true));
+    const stop = window.setTimeout(() => setBellArrival(false), 520);
+    return () => {
+      cancelAnimationFrame(start);
+      window.clearTimeout(stop);
+    };
+  }, [unreadCount]);
 
   const markRead = (notification: Notification) => {
     if (notification.read) return;
@@ -628,7 +599,7 @@ const NotificationCenter: React.FC = () => {
               (unreadCount > 0 || changelog.hasNew) && 'ring-1 ring-primary/25 bg-primary/[0.04]'
             )}
           >
-            <IconBell className="h-[18px] w-[18px]" strokeWidth={1.5} />
+            <IconBell className={cn('h-[18px] w-[18px]', bellArrival && 'akuris-bell-arrival')} strokeWidth={1.5} />
             {unreadCount > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-md bg-destructive px-1 text-micro font-semibold leading-none text-destructive-foreground tabular-nums shadow-[0_2px_6px_-1px_hsl(var(--destructive)/0.5)]"
@@ -867,4 +838,3 @@ const NotificationCenter: React.FC = () => {
 };
 
 export default NotificationCenter;
-

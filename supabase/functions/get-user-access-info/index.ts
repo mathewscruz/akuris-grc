@@ -1,6 +1,6 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { requireUserContext, requireValidMfa } from '../_shared/auth.ts'
+import { requireUserContext } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,9 +20,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ✳️ Auth + MFA obrigatórios
+    // Esta é uma consulta somente leitura. A função continua protegida pelo
+    // JWT e pela validação de papel/tenant abaixo, mas não deve depender de uma
+    // sessão MFA separada: além de impedir o diagnóstico do primeiro acesso,
+    // isso quebrava o painel local e instalações sem o segundo fator habilitado.
     const ctx = await requireUserContext(req)
-    await requireValidMfa(ctx)
 
     console.log('Recebendo requisição para obter informações de acesso dos usuários')
 

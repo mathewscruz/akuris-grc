@@ -641,8 +641,10 @@ async function fetchDenunciasData(empresaId: string) {
 // ── PDF generator ────────────────────────────────────────────────────
 export async function generateTemplatePDF(relatorio: any, empresaId: string) {
   const doc = new jsPDF();
-  const templateBase = relatorio.template_base;
-  const data = await fetchTemplateData(templateBase, empresaId);
+  const widgets = Array.isArray(relatorio?.configuracao?.widgets) ? relatorio.configuracao.widgets : [];
+  const fontes = widgets.length > 0 ? widgets : relatorio.template_base ? [relatorio.template_base] : [];
+  const conjuntos = await Promise.all(fontes.map((fonte: string) => fetchTemplateData(fonte, empresaId)));
+  const data = { sections: conjuntos.flatMap((conjunto) => conjunto.sections) };
   const logo = await loadAkurisLogo();
 
   // Cover

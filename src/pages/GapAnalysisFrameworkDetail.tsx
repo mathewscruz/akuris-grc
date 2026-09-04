@@ -43,7 +43,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { FRAMEWORK_DESCRIPTIONS } from '@/lib/framework-descriptions';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reqTitulo, reqCategoria, fwNome, fwDescricao } from "@/lib/gap-i18n";
 import { fetchFrameworkRequirements } from '@/lib/framework-requirements';
@@ -389,7 +389,7 @@ function GapAnalysisFrameworkDetailInner() {
     return (
       <ErrorBoundary>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
-          <AkurisPulse size={64} />
+          <ModuleLoadingSkeleton statCards={4} />
           <p className="text-sm text-muted-foreground">{t('gapAnalysis.detail.loading')}</p>
         </div>
       </ErrorBoundary>

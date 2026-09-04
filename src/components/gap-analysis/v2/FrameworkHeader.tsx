@@ -25,6 +25,7 @@
 import { useMemo } from 'react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMaturityLevel } from './MaturityScale';
@@ -294,7 +295,7 @@ export function FrameworkHeader({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-3xl font-bold tabular-nums leading-none tracking-tight text-foreground">
-                {score}<span className="text-lg text-muted-foreground">%</span>
+                <AnimatedMetricValue value={score} /><span className="text-lg text-muted-foreground">%</span>
               </span>
             </div>
           </div>

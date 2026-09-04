@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { SortableTableHead, compareSortValues } from '@/components/ui/sortable-table-head';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
@@ -213,7 +213,7 @@ export default function MinhasTarefas() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>
+        <ModuleLoadingSkeleton statCards={4} />
       ) : itens.length === 0 ? (
         <EmptyState
           variant="illustrated"
@@ -234,4 +234,3 @@ export default function MinhasTarefas() {
     </div>
   );
 }
-

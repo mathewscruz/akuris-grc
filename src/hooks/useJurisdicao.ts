@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
-import { formatStatus } from '@/lib/text-utils';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useMemo } from "react";
+import { formatStatus } from "@/lib/text-utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   JURISDICAO_CONFIG,
   DIREITOS_TITULAR,
@@ -13,7 +13,7 @@ import {
   setJurisdicaoAtual,
   type JurisdicaoCodigo,
   type JurisdicaoConfig,
-} from '@/lib/jurisdicao';
+} from "@/lib/jurisdicao";
 
 /**
  * Jurisdição de proteção de dados da empresa autenticada.
@@ -25,22 +25,30 @@ export function useJurisdicao() {
   const empresaId = profile?.empresa_id;
 
   const { data } = useQuery({
-    queryKey: ['empresa-jurisdicao', empresaId],
-    queryFn: async (): Promise<JurisdicaoCodigo | null> => {
+    queryKey: ["empresa-jurisdicao", empresaId],
+    queryFn: async (): Promise<{
+      codigo: JurisdicaoCodigo | null;
+      agentePequenoPorte: boolean;
+    }> => {
       const { data, error } = await supabase
-        .from('empresas')
-        .select('jurisdicao')
-        .eq('id', empresaId!)
+        .from("empresas")
+        .select("jurisdicao, agente_tratamento_pequeno_porte")
+        .eq("id", empresaId!)
         .maybeSingle();
       if (error) throw error;
       const value = (data as any)?.jurisdicao as JurisdicaoCodigo | undefined;
-      return value && JURISDICAO_CONFIG[value] ? value : null;
+      return {
+        codigo: value && JURISDICAO_CONFIG[value] ? value : null,
+        agentePequenoPorte: Boolean(
+          (data as any)?.agente_tratamento_pequeno_porte,
+        ),
+      };
     },
     enabled: !!empresaId,
     staleTime: 1000 * 60 * 30,
   });
 
-  const codigo: JurisdicaoCodigo = data || inferirJurisdicao(locale);
+  const codigo: JurisdicaoCodigo = data?.codigo || inferirJurisdicao(locale);
   setJurisdicaoAtual(codigo);
 
   const config: JurisdicaoConfig = JURISDICAO_CONFIG[codigo];
@@ -49,6 +57,7 @@ export function useJurisdicao() {
     () => ({
       codigo,
       config,
+      agentePequenoPorte: data?.agentePequenoPorte || false,
       /** Designação da lei aplicável (LGPD / RGPD / GDPR). */
       lei: config.lei,
       /** Autoridade de controlo (sigla ou termo genérico traduzido). */
@@ -62,7 +71,10 @@ export function useJurisdicao() {
       /** Base legal citada (artigo). */
       artigoTitular: t(config.artigoTitularKey),
       /** Nomes dos direitos do titular na jurisdição ativa. */
-      direitos: DIREITOS_TITULAR[codigo].map((k) => ({ key: k, label: t(`jurisdicao.direitos.${k}`) })),
+      direitos: DIREITOS_TITULAR[codigo].map((k) => ({
+        key: k,
+        label: t(`jurisdicao.direitos.${k}`),
+      })),
       /**
        * Bases legais que a lei aplicável admite para o grau de sensibilidade
        * dado. Dado sensível tem lista própria e mais curta — é o que impede
@@ -87,13 +99,15 @@ export function useJurisdicao() {
           // minúscula com underscore, no meio de uma coluna de rótulos.
           // `formatStatus` é o tradutor único de valores de domínio.
           label: valor
-            ? (estado === 'desconhecida' ? formatStatus(valor) : t(`jurisdicao.basesLegais.${valor}`))
-            : '-',
+            ? estado === 'desconhecida'
+              ? formatStatus(valor)
+              : t(`jurisdicao.basesLegais.${valor}`)
+            : "-",
         };
       },
       /** Rótulo da jurisdição para seletores. */
       label: t(`jurisdicao.opcoes.${codigo}`),
     }),
-    [codigo, config, t],
+    [codigo, config, data?.agentePequenoPorte, t],
   );
 }

@@ -1,17 +1,13 @@
 import { useRef, useState } from "react";
-import { IconDownload, IconUpload } from '@/components/icons';
+import { IconDownload, IconUpload } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-;
-
 import { toast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
-import { exportRopaWorkbook, parseRopaWorkbook, toRopaPayload } from "@/lib/ropa-planilha";
 import { normalizeRopaLabel } from "@/lib/ropa-schema";
-
-import { formatarDiaParaDB } from '@/lib/date-utils';
+import { formatarDiaParaDB } from "@/lib/date-utils";
 interface Props {
   registos: any[];
   /**
@@ -34,18 +30,35 @@ export function RopaImportExport({ registos, exercicioId, onImported }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (registos.length === 0) {
       toast.info(t("dadosDashboard.ropaPlanilha.semRegistos"));
       return;
     }
-    exportRopaWorkbook(registos, locale, `ROPA_${formatarDiaParaDB(new Date())}.xlsx`);
+    setBusy(true);
+    try {
+      // SheetJS pesa centenas de KB; só é transferido quando o usuário
+      // realmente importa ou exporta uma planilha.
+      const { exportRopaWorkbook } = await import("@/lib/ropa-planilha");
+      exportRopaWorkbook(
+        registos,
+        locale,
+        `ROPA_${formatarDiaParaDB(new Date())}.xlsx`,
+      );
+    } catch (error: any) {
+      logger.error("Falha ao exportar planilha ROPA", error);
+      toast.error(t("dadosDashboard.ropaPlanilha.erroExportar"));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleFile = async (file: File) => {
     if (!empresaId) return;
     setBusy(true);
     try {
+      const { parseRopaWorkbook, toRopaPayload } =
+        await import("@/lib/ropa-planilha");
       const buffer = await file.arrayBuffer();
       const parsed = parseRopaWorkbook(buffer);
       if (parsed.length === 0) {
@@ -61,7 +74,9 @@ export function RopaImportExport({ registos, exercicioId, onImported }: Props) {
       const resolveUser = (name: string) => {
         const norm = normalizeRopaLabel(name);
         const match = (perfis || []).find(
-          (p: any) => normalizeRopaLabel(p.nome || "") === norm || normalizeRopaLabel(p.email || "") === norm,
+          (p: any) =>
+            normalizeRopaLabel(p.nome || "") === norm ||
+            normalizeRopaLabel(p.email || "") === norm,
         );
         return match?.user_id ?? null;
       };
@@ -78,14 +93,22 @@ export function RopaImportExport({ registos, exercicioId, onImported }: Props) {
         exercicio_id: exercicioId,
       }));
 
-      const { error } = await supabase.from("ropa_registros").insert(rows as any);
+      const { error } = await supabase
+        .from("ropa_registros")
+        .insert(rows as any);
       if (error) throw error;
 
-      toast.success(t("dadosDashboard.ropaPlanilha.importadoSucesso", { count: rows.length }));
+      toast.success(
+        t("dadosDashboard.ropaPlanilha.importadoSucesso", {
+          count: rows.length,
+        }),
+      );
       onImported();
     } catch (error: any) {
       logger.error("Falha ao importar planilha ROPA", error);
-      toast.error(t("dadosDashboard.ropaPlanilha.erroImportar"), { description: error?.message });
+      toast.error(t("dadosDashboard.ropaPlanilha.erroImportar"), {
+        description: error?.message,
+      });
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -96,7 +119,6 @@ export function RopaImportExport({ registos, exercicioId, onImported }: Props) {
     <div className="flex flex-wrap items-center gap-2">
       <input
         ref={inputRef}
-
         type="file"
         accept=".xlsx,.xls,.csv"
         className="hidden"
@@ -106,12 +128,22 @@ export function RopaImportExport({ registos, exercicioId, onImported }: Props) {
         }}
       />
       {exercicioId ? (
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+        >
           <IconUpload className="mr-2 h-4 w-4" />
           {t("dadosDashboard.ropaPlanilha.importar")}
         </Button>
       ) : null}
-      <Button variant="outline" size="sm" onClick={handleExport}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onClick={() => void handleExport()}
+      >
         <IconDownload className="mr-2 h-4 w-4" />
         {t("dadosDashboard.ropaPlanilha.exportar")}
       </Button>

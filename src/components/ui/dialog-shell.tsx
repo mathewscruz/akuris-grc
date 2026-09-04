@@ -24,6 +24,12 @@ import { useWizardShortcuts } from '@/hooks/useWizardShortcuts';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconSave } from '@/components/icons';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export type DialogShellSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -31,6 +37,8 @@ interface DialogShellProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  /** Short context above the title, e.g. "Internal control · CTRL-001". */
+  eyebrow?: string;
   description?: string;
   /** Renderiza a descrição apenas para leitores de tela (mantém o header compacto) */
   descriptionSrOnly?: boolean;
@@ -45,6 +53,8 @@ interface DialogShellProps {
   cancelLabel?: string;
   isSubmitting?: boolean;
   submitDisabled?: boolean;
+  /** Explain why the primary action is unavailable without forcing trial-and-error. */
+  submitBlockedReason?: string;
   /** Whether form is dirty (drives unsaved changes guard) */
   isDirty?: boolean;
   /** Width preset */
@@ -92,6 +102,7 @@ export function DialogShell({
   open,
   onOpenChange,
   title,
+  eyebrow,
   description,
   descriptionSrOnly = false,
   icon: Icon,
@@ -102,6 +113,7 @@ export function DialogShell({
   cancelLabel,
   isSubmitting = false,
   submitDisabled = false,
+  submitBlockedReason,
   isDirty = false,
   size = 'lg',
   disableShortcuts = false,
@@ -141,20 +153,32 @@ export function DialogShell({
             className
           )}
         >
-          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="flex items-center gap-3 text-xl">
+          <DialogHeader className="flex-shrink-0 border-b border-border/70 bg-surface-1/55 px-5 pb-5 pt-5 sm:px-7 sm:pt-6">
+            <DialogTitle className="flex items-center gap-3 pr-10 text-xl">
               {Icon && (
-                <span className="flex h-9 w-9 items-center justify-center text-primary">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary shadow-sm">
                   <Icon className="h-5 w-5" />
                 </span>
               )}
-              {title}
+              <span className="min-w-0">
+                {eyebrow && (
+                  <span className="mb-0.5 block text-micro font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                    {eyebrow}
+                  </span>
+                )}
+                <span className="block truncate leading-tight">{title}</span>
+              </span>
             </DialogTitle>
             {/*
               Sempre exatamente uma DialogDescription: o Radix a associa ao
               DialogContent via aria-describedby, sem duplicidade/conflito.
             */}
-            <DialogDescription className={cn((!description || descriptionSrOnly) && 'sr-only')}>
+            <DialogDescription
+              className={cn(
+                (!description || descriptionSrOnly) && 'sr-only',
+                description && !descriptionSrOnly && Icon && 'pl-[3.25rem]'
+              )}
+            >
               {description || fallbackDialogDescription(title)}
             </DialogDescription>
           </DialogHeader>
@@ -172,7 +196,7 @@ export function DialogShell({
               <div className="flex flex-1 min-h-0 flex-col">{children}</div>
             ) : (
               <ScrollArea className="flex-1 min-h-0">
-                <div className="px-6 py-6">{children}</div>
+                <div className="px-5 py-5 sm:px-7 sm:py-6">{children}</div>
               </ScrollArea>
             )}
           </div>
@@ -194,7 +218,29 @@ export function DialogShell({
                   >
                     {_cancelLabel}
                   </Button>
-                  {onSubmit && (
+                  {onSubmit && (submitDisabled && submitBlockedReason ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={onSubmit}
+                              disabled
+                              className="gap-1"
+                            >
+                              <IconSave className="h-4 w-4" />
+                              {_submitLabel}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                          {submitBlockedReason}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
                     <Button
                       type="button"
                       size="sm"
@@ -205,7 +251,7 @@ export function DialogShell({
                       <IconSave className="h-4 w-4" />
                       {isSubmitting ? t('common.saving') : _submitLabel}
                     </Button>
-                  )}
+                  ))}
                 </div>
               )}
             </div>

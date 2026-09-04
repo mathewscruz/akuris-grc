@@ -4,7 +4,7 @@ import { useSearchParams, useLocation } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, Column } from '@/components/ui/data-table';
@@ -590,12 +590,7 @@ export function Riscos() {
   // (calcTrend e MiniSparkline removidos com os KPI cards antigos)
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-24">
-        <AkurisPulse size={48} />
-        <p className="text-sm text-muted-foreground">{t('riscos.page.loading')}</p>
-      </div>
-    );
+    return <ModuleLoadingSkeleton statCards={5} />;
   }
 
   if (riscosError) {
@@ -784,6 +779,14 @@ export function Riscos() {
     },
   ];
 
+  // Tendência só é uma informação quando há pelo menos duas avaliações para
+  // comparar. Uma coluna inteira de traços desperdiçava espaço justamente na
+  // fase inicial, quando a tabela precisa ser mais simples e orientativa.
+  if (!riscos.some((risco) => (risco.historico_scores?.length ?? 0) >= 2)) {
+    const indiceTendencia = riscoColumns.findIndex((coluna) => coluna.key === 'trend');
+    if (indiceTendencia >= 0) riscoColumns.splice(indiceTendencia, 1);
+  }
+
   const filters = [
     {
       key: 'status',
@@ -924,7 +927,6 @@ export function Riscos() {
 
           const matrixNode = (
             <div className="space-y-4">
-              <SeverityKpiRow counts={sevCounts} />
               {/*
                 A coluna do painel só existe quando há painel.
 
@@ -981,6 +983,10 @@ export function Riscos() {
 
           const tableNode = (
             <div className="space-y-3">
+              {/* Os números pertencem à carteira que a pessoa vai gerir. Na
+                  Matriz ficavam escondidos numa visualização analítica; aqui
+                  antecedem a lista principal e preservam o contexto da ação. */}
+              <SeverityKpiRow counts={sevCounts} />
               <Card className="rounded-lg border overflow-hidden">
                 <CardContent className="p-0">
                   <div className="px-4 pt-4 sm:px-6 sm:pt-6">

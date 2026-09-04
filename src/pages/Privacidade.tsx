@@ -1,16 +1,37 @@
 import { useMemo, useState, useEffect } from "react";
-import { IconChevron, IconChevronLeft, IconSearch, IconAdd, IconEdit, IconDelete, IconView, IconMore, IconWarning, IconTime, IconFile, IconDatabase, IconUsers, IconLink, IconShieldAlert } from '@/components/icons';
-import { logger } from '@/lib/logger';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEmpresaId } from '@/hooks/useEmpresaId';
+import {
+  IconChevron,
+  IconChevronLeft,
+  IconSearch,
+  IconAdd,
+  IconEdit,
+  IconDelete,
+  IconView,
+  IconMore,
+  IconWarning,
+  IconTime,
+  IconFile,
+  IconDatabase,
+  IconUsers,
+  IconLink,
+  IconShieldAlert,
+} from "@/components/icons";
+import { logger } from "@/lib/logger";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useFocusRow } from '@/hooks/useFocusRow';
+import { useFocusRow } from "@/hooks/useFocusRow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DadosPessoaisDialog } from "@/components/dados/DadosPessoaisDialog";
@@ -23,20 +44,36 @@ import { SolicitacaoTitularDialog } from "@/components/dados/SolicitacaoTitularD
 import { DescoberDadosTab } from "@/components/dados/DescoberDadosTab";
 import { StatStrip } from "@/components/ui/stat-strip";
 import { PageHeader } from "@/components/ui/page-header";
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
-import { startOfDay, differenceInDays } from 'date-fns';
-import { formatStatus } from '@/lib/text-utils';
-import { rotuloCategoriaDados } from '@/lib/dados-categorias';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
-import { rotuloTipoSolicitacao, tiposSolicitacaoDaJurisdicao, normalizarTipoSolicitacao } from '@/lib/direitos-titular';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveSensibilidadeTone, resolveItemStatusTone, resolveWorkflowStatusTone } from '@/lib/status-tone';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { formatDateOnly, parseDataLocal } from "@/lib/date-utils";
+import { startOfDay, differenceInDays } from "date-fns";
+import { formatStatus } from "@/lib/text-utils";
+import { rotuloCategoriaDados } from "@/lib/dados-categorias";
+import { RecordDetailDrawer } from "@/components/common/RecordDetailDrawer";
+import {
+  rotuloTipoSolicitacao,
+  tiposSolicitacaoDaJurisdicao,
+  normalizarTipoSolicitacao,
+} from "@/lib/direitos-titular";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  resolveSensibilidadeTone,
+  resolveItemStatusTone,
+  resolveWorkflowStatusTone,
+} from "@/lib/status-tone";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useJurisdicao } from "@/hooks/useJurisdicao";
 import { prazoResposta, ehDadoSensivel } from "@/lib/jurisdicao";
-import { rotuloCanalSolicitacao } from '@/lib/canal-solicitacao';
+import { rotuloCanalSolicitacao } from "@/lib/canal-solicitacao";
+import { usePermissions } from "@/hooks/usePermissions";
+import { exigirLinhas } from "@/lib/supabase-write";
+import { CentroPrivacidadeTab } from "@/components/dados/CentroPrivacidadeTab";
 
 export default function Privacidade() {
   /*
@@ -49,8 +86,12 @@ export default function Privacidade() {
   const jurisdicao = useJurisdicao();
   const navigate = useNavigate();
   const { empresaId } = useEmpresaId();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
+  const podeCriar = canCreate("dados");
+  const podeEditar = canUpdate("dados");
+  const podeExcluir = canDelete("dados");
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("catalogo");
+  const [activeTab, setActiveTab] = useState("jornada");
   const [searchParams] = useSearchParams();
   const [showDadosDialog, setShowDadosDialog] = useState(false);
   const [showMapeamentoDialog, setShowMapeamentoDialog] = useState(false);
@@ -58,9 +99,11 @@ export default function Privacidade() {
   /** Sinal para o botão do cabeçalho pedir um ROPA novo ao `RopaTab`. */
   const [novoExercicioSinal, setNovoExercicioSinal] = useState(0);
   /** Nível aberto na aba ROPA — decide o que o botão do cabeçalho cria. */
-  const [nivelRopa, setNivelRopa] = useState<NivelRopa>('ropas');
+  const [nivelRopa, setNivelRopa] = useState<NivelRopa>("ropas");
   /** ROPA onde o próximo tratamento vai nascer. */
-  const [ropaDoNovoTratamento, setRopaDoNovoTratamento] = useState<string | null>(null);
+  const [ropaDoNovoTratamento, setRopaDoNovoTratamento] = useState<
+    string | null
+  >(null);
 
   const [showRopaDialog, setShowRopaDialog] = useState(false);
   const [showSolicitacaoDialog, setShowSolicitacaoDialog] = useState(false);
@@ -68,78 +111,124 @@ export default function Privacidade() {
   const [selectedRopa, setSelectedRopa] = useState<any>(null);
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<any>(null);
   const [showDadoSheet, setShowDadoSheet] = useState(false);
-  const [preSelectedDadoId, setPreSelectedDadoId] = useState<string | undefined>();
-  
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; type: string }>({
+  const [preSelectedDadoId, setPreSelectedDadoId] = useState<
+    string | undefined
+  >();
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: string;
+    type: string;
+  }>({
     open: false,
-    id: '',
-    type: ''
+    id: "",
+    type: "",
   });
-  
+
   // States for Catálogo tab DataTable
   const [catalogoSortField, setCatalogoSortField] = useState<string>("");
-  const [catalogoSortDirection, setCatalogoSortDirection] = useState<"asc" | "desc">("asc");
+  const [catalogoSortDirection, setCatalogoSortDirection] = useState<
+    "asc" | "desc"
+  >("asc");
   const [searchCatalogoTerm, setSearchCatalogoTerm] = useState("");
   const [categoriaFilter, setCategoriaFilter] = useState("todos");
   const [sensibilidadeFilter, setSensibilidadeFilter] = useState("todos");
-  
+
   // States for Solicitações tab DataTable
   const [searchSolicitacoesTerm, setSearchSolicitacoesTerm] = useState("");
-  const [statusSolicitacoesFilter, setStatusSolicitacoesFilter] = useState("todos");
+  const [statusSolicitacoesFilter, setStatusSolicitacoesFilter] =
+    useState("todos");
   const [tipoSolicitacaoFilter, setTipoSolicitacaoFilter] = useState("todos");
-  const [sortSolicitacoesField, setSortSolicitacoesField] = useState<string>("");
-  const [sortSolicitacoesDirection, setSortSolicitacoesDirection] = useState<"asc" | "desc">("asc");
-  
+  const [sortSolicitacoesField, setSortSolicitacoesField] =
+    useState<string>("");
+  const [sortSolicitacoesDirection, setSortSolicitacoesDirection] = useState<
+    "asc" | "desc"
+  >("asc");
+
   const { toast } = useToast();
 
   // React Query for all privacy data
-  const { data: privacidadeData, isLoading } = useQuery({
-    queryKey: ['privacidade', empresaId],
+  const {
+    data: privacidadeData,
+    isLoading,
+    isError,
+    error: erroCarregamento,
+    refetch,
+  } = useQuery({
+    queryKey: ["privacidade", empresaId],
     queryFn: async () => {
       if (!empresaId) return null;
-      
-      const dadosRes = await supabase.from('dados_pessoais').select('*').eq('empresa_id', empresaId).order('nome');
-      const ropaRes = await supabase.from('ropa_registros').select('*').eq('empresa_id', empresaId).order('nome_tratamento');
-      const solicitacoesRes = await supabase.from('dados_solicitacoes_titular').select('*').eq('empresa_id', empresaId).order('data_solicitacao', { ascending: false });
+
+      const dadosRes = await supabase
+        .from("dados_pessoais")
+        .select("*")
+        .eq("empresa_id", empresaId)
+        .order("nome");
+      const ropaRes = await supabase
+        .from("ropa_registros")
+        .select("*")
+        .eq("empresa_id", empresaId)
+        .order("nome_tratamento");
+      const solicitacoesRes = await supabase
+        .from("dados_solicitacoes_titular")
+        .select("*")
+        .eq("empresa_id", empresaId)
+        .order("data_solicitacao", { ascending: false });
+      if (dadosRes.error) throw dadosRes.error;
+      if (ropaRes.error) throw ropaRes.error;
+      if (solicitacoesRes.error) throw solicitacoesRes.error;
       const dadosIds = (dadosRes.data || []).map((d: any) => d.id);
       // `dados_mapeamento` não tem `empresa_id`: a consulta devolvia HTTP 400 e
       // o duplo `as any` escondia o erro de tipos que o teria apanhado. O KPI
       // "Mapeamentos" e a coluna da tabela nunca contaram nada. O recorte por
       // empresa é feito pelos dados pessoais, que já vêm filtrados.
-      const mapeamentosRes = dadosIds.length > 0
-        ? await supabase.from('dados_mapeamento').select('id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
-        : { data: [], error: null };
+      const mapeamentosRes =
+        dadosIds.length > 0
+          ? await supabase
+              .from("dados_mapeamento")
+              .select("id, dados_pessoais_id")
+              .in("dados_pessoais_id", dadosIds)
+          : { data: [], error: null };
       if (mapeamentosRes.error) throw mapeamentosRes.error;
-      const ropaDadosRes = dadosIds.length > 0
-        ? await supabase.from('ropa_dados_vinculados').select('id, ropa_id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
-        : { data: [] };
+      const ropaDadosRes =
+        dadosIds.length > 0
+          ? await supabase
+              .from("ropa_dados_vinculados")
+              .select("id, ropa_id, dados_pessoais_id")
+              .in("dados_pessoais_id", dadosIds)
+          : { data: [], error: null };
+      if (ropaDadosRes.error) throw ropaDadosRes.error;
       // A coluna é `tipo_incidente` (não `tipo`) e o produto grava
       // `em_investigacao` (não `investigacao`): o cartão marcava 0 em todas as
       // empresas, cada uma com um incidente de privacidade contido no banco.
       const incidentesRes = await supabase
-        .from('incidentes')
-        .select('id')
-        .eq('tipo_incidente', 'privacidade')
-        .eq('empresa_id', empresaId)
-        .in('status', ['aberto', 'em_investigacao', 'contido']);
+        .from("incidentes")
+        .select("id")
+        .eq("tipo_incidente", "privacidade")
+        .eq("empresa_id", empresaId)
+        .in("status", ["aberto", "em_investigacao", "contido"]);
       if (incidentesRes.error) throw incidentesRes.error;
 
       const mapeamentosCounts: Record<string, number> = {};
       (mapeamentosRes.data || []).forEach((m: any) => {
-        mapeamentosCounts[m.dados_pessoais_id] = (mapeamentosCounts[m.dados_pessoais_id] || 0) + 1;
+        mapeamentosCounts[m.dados_pessoais_id] =
+          (mapeamentosCounts[m.dados_pessoais_id] || 0) + 1;
       });
-      
+
       /**
        * `ropa_dados_vinculados` não tem chave estrangeira nenhuma: apagar um
        * ROPA deixa as ligações para trás. Um dado da Akuris declarava 9 ROPAs
        * numa empresa com zero registos ROPA — as 9 ligações apontavam a
        * identificadores que já não existem. Só conta o que existe.
        */
-      const ropasExistentes = new Set((ropaRes.data || []).map((r: any) => r.id));
+      const ropasExistentes = new Set(
+        (ropaRes.data || []).map((r: any) => r.id),
+      );
       const ropasCounts: Record<string, number> = {};
       (ropaDadosRes.data || []).forEach((r: any) => {
         if (!ropasExistentes.has(r.ropa_id)) return;
-        ropasCounts[r.dados_pessoais_id] = (ropasCounts[r.dados_pessoais_id] || 0) + 1;
+        ropasCounts[r.dados_pessoais_id] =
+          (ropasCounts[r.dados_pessoais_id] || 0) + 1;
       });
 
       /**
@@ -149,10 +238,13 @@ export default function Privacidade() {
        * dado comum e a base ilícita nunca apareceria.
        */
       const sensibilidadePorDado: Record<string, string> = {};
-      (dadosRes.data || []).forEach((d: any) => { sensibilidadePorDado[d.id] = d.sensibilidade; });
+      (dadosRes.data || []).forEach((d: any) => {
+        sensibilidadePorDado[d.id] = d.sensibilidade;
+      });
       const ropaSensivel = new Set<string>();
       (ropaDadosRes.data || []).forEach((v: any) => {
-        if (ehDadoSensivel(sensibilidadePorDado[v.dados_pessoais_id])) ropaSensivel.add(v.ropa_id);
+        if (ehDadoSensivel(sensibilidadePorDado[v.dados_pessoais_id]))
+          ropaSensivel.add(v.ropa_id);
       });
       /**
        * Um tratamento pode apoiar-se em várias bases legais, e desde
@@ -163,13 +255,14 @@ export default function Privacidade() {
        * que ela é a segunda.
        */
       const ropaIds = (ropaRes.data || []).map((r: any) => r.id);
-      const basesRes = ropaIds.length > 0
-        ? await supabase
-            .from('ropa_bases_legais')
-            .select('ropa_id, base_legal, ordem')
-            .in('ropa_id', ropaIds)
-            .order('ordem')
-        : { data: [], error: null };
+      const basesRes =
+        ropaIds.length > 0
+          ? await supabase
+              .from("ropa_bases_legais")
+              .select("ropa_id, base_legal, ordem")
+              .in("ropa_id", ropaIds)
+              .order("ordem")
+          : { data: [], error: null };
       if (basesRes.error) throw basesRes.error;
       const basesPorRopa: Record<string, string[]> = {};
       (basesRes.data || []).forEach((b: any) => {
@@ -178,23 +271,34 @@ export default function Privacidade() {
 
       const ropaEnriquecida = (ropaRes.data || []).map((r: any) => ({
         ...r,
-        sensibilidade_maxima: ropaSensivel.has(r.id) ? 'sensivel' : 'comum',
+        sensibilidade_maxima: ropaSensivel.has(r.id) ? "sensivel" : "comum",
         // Sempre um array: um registo antigo sem linhas normalizadas continua
         // a valer pela coluna, em vez de ficar sem base legal nenhuma.
-        bases_legais: basesPorRopa[r.id] ?? (r.base_legal ? [r.base_legal] : []),
+        bases_legais:
+          basesPorRopa[r.id] ?? (r.base_legal ? [r.base_legal] : []),
       }));
 
       const dadosEnriquecidos = (dadosRes.data || []).map((dado: any) => ({
         ...dado,
         mapeamentos_count: mapeamentosCounts[dado.id] || 0,
-        ropas_count: ropasCounts[dado.id] || 0
+        ropas_count: ropasCounts[dado.id] || 0,
       }));
 
       const dados = dadosRes.data || [];
       // Linhas sem nome vieram de importações incompletas. Continuam visíveis
       // para poderem ser corrigidas, mas não contam como catálogo válido.
-      const dadosValidos = dados.filter((d: any) => String(d.nome ?? '').trim().length > 0);
-      const sensiveis = dadosValidos.filter((d: any) => d.tipo_dados === 'sensivel' || d.sensibilidade === 'muito_sensivel' || d.sensibilidade === 'sensivel').length;
+      const dadosValidos = dados.filter(
+        (d: any) => String(d.nome ?? "").trim().length > 0,
+      );
+      // O total do cabeçalho precisa representar tudo o que está no catálogo.
+      // Registros incompletos continuam separados no alerta de qualidade, mas
+      // não podem desaparecer do KPI e divergir da jornada operacional.
+      const sensiveis = dados.filter(
+        (d: any) =>
+          d.tipo_dados === "sensivel" ||
+          d.sensibilidade === "muito_sensivel" ||
+          d.sensibilidade === "sensivel",
+      ).length;
       /**
        * O tipo é normalizado à entrada: o valor antigo (`exclusao`,
        * `revogacao_consentimento`) passa a ler-se pela chave da lei. Sem isto
@@ -206,8 +310,10 @@ export default function Privacidade() {
         ...s,
         tipo_solicitacao: normalizarTipoSolicitacao(s.tipo_solicitacao),
       }));
-      const pendentes = allSolicitacoes.filter((s: any) => s.status === 'pendente').length;
-      
+      const pendentes = allSolicitacoes.filter(
+        (s: any) => !["atendida", "rejeitada"].includes(s.status),
+      ).length;
+
       return {
         dadosPessoais: dadosEnriquecidos,
         ropaRegistros: ropaEnriquecida,
@@ -215,12 +321,13 @@ export default function Privacidade() {
         incidentesPrivacidade: (incidentesRes.data || []).length,
         dadosIncompletos: dados.length - dadosValidos.length,
         stats: {
-          totalDados: dadosValidos.length,
+          totalDados: dados.length,
           dadosSensiveis: sensiveis,
           mapeamentos: (mapeamentosRes.data || []).length,
-          ropaAtivos: ropaEnriquecida.filter((r: any) => r.status === 'ativo').length,
-          solicitacoesPendentes: pendentes
-        }
+          ropaAtivos: ropaEnriquecida.filter((r: any) => r.status === "ativo")
+            .length,
+          solicitacoesPendentes: pendentes,
+        },
       };
     },
     enabled: !!empresaId,
@@ -233,9 +340,18 @@ export default function Privacidade() {
     davam um array NOVO em cada passagem enquanto a consulta não respondia,
     e tudo o que dependia delas voltava a correr sem nada ter mudado.
   */
-  const dadosPessoais = useMemo(() => privacidadeData?.dadosPessoais || [], [privacidadeData]);
-  const ropaRegistros = useMemo(() => privacidadeData?.ropaRegistros || [], [privacidadeData]);
-  const solicitacoes = useMemo(() => privacidadeData?.solicitacoes || [], [privacidadeData]);
+  const dadosPessoais = useMemo(
+    () => privacidadeData?.dadosPessoais || [],
+    [privacidadeData],
+  );
+  const ropaRegistros = useMemo(
+    () => privacidadeData?.ropaRegistros || [],
+    [privacidadeData],
+  );
+  const solicitacoes = useMemo(
+    () => privacidadeData?.solicitacoes || [],
+    [privacidadeData],
+  );
 
   /*
     A aba certa para o registo certo.
@@ -252,14 +368,14 @@ export default function Privacidade() {
   */
   const [focoRopa, setFocoRopa] = useState<string | null>(null);
   useEffect(() => {
-    const alvo = searchParams.get('focus');
+    const alvo = searchParams.get("focus");
     if (!alvo) return;
     if (dadosPessoais.some((d) => d.id === alvo)) {
-      setActiveTab('catalogo');
+      setActiveTab("catalogo");
       return;
     }
     if (ropaRegistros.some((r) => r.id === alvo)) {
-      setActiveTab('ropa');
+      setActiveTab("ropa");
       setFocoRopa(alvo);
     }
   }, [searchParams, dadosPessoais, ropaRegistros]);
@@ -277,7 +393,7 @@ export default function Privacidade() {
    * `'todos'` é o valor de "sem filtro", e é também o estado inicial — daí a
    * opção correspondente ter passado a existir em cada lista.
    */
-  const semFiltro = (v: string) => !v || v === 'todos';
+  const semFiltro = (v: string) => !v || v === "todos";
 
   /**
    * "Não há registos" e "o filtro não casou" são coisas diferentes.
@@ -287,20 +403,38 @@ export default function Privacidade() {
    * registro", com botão de criar, numa tabela que tem três. Quem lê isso
    * conclui que perdeu dados.
    */
-  const vazio = (temRegistos: boolean, doModulo: { icon: JSX.Element; title: string; description: string; action: { label: string; onClick: () => void } }) =>
+  const vazio = (
+    temRegistos: boolean,
+    doModulo: {
+      icon: JSX.Element;
+      title: string;
+      description: string;
+      action?: { label: string; onClick: () => void };
+    },
+  ) =>
     temRegistos
-      ? { icon: <IconSearch className="h-8 w-8" />, title: t('common.noResults'), description: t('common.noResultsHint') }
+      ? {
+          icon: <IconSearch className="h-8 w-8" />,
+          title: t("common.noResults"),
+          description: t("common.noResultsHint"),
+        }
       : doModulo;
   const contem = (texto: unknown, termo: string) =>
-    !termo || String(texto ?? '').toLowerCase().includes(termo.toLowerCase());
+    !termo ||
+    String(texto ?? "")
+      .toLowerCase()
+      .includes(termo.toLowerCase());
 
   const dadosFiltrados = useMemo(
     () =>
       dadosPessoais.filter(
         (d: any) =>
-          (semFiltro(categoriaFilter) || d.categoria_dados === categoriaFilter) &&
-          (semFiltro(sensibilidadeFilter) || d.sensibilidade === sensibilidadeFilter) &&
-          (contem(d.nome, searchCatalogoTerm) || contem(d.descricao, searchCatalogoTerm)),
+          (semFiltro(categoriaFilter) ||
+            d.categoria_dados === categoriaFilter) &&
+          (semFiltro(sensibilidadeFilter) ||
+            d.sensibilidade === sensibilidadeFilter) &&
+          (contem(d.nome, searchCatalogoTerm) ||
+            contem(d.descricao, searchCatalogoTerm)),
       ),
     [dadosPessoais, categoriaFilter, sensibilidadeFilter, searchCatalogoTerm],
   );
@@ -309,8 +443,10 @@ export default function Privacidade() {
     () =>
       solicitacoes.filter(
         (s: any) =>
-          (semFiltro(statusSolicitacoesFilter) || s.status === statusSolicitacoesFilter) &&
-          (semFiltro(tipoSolicitacaoFilter) || s.tipo_solicitacao === tipoSolicitacaoFilter) &&
+          (semFiltro(statusSolicitacoesFilter) ||
+            s.status === statusSolicitacoesFilter) &&
+          (semFiltro(tipoSolicitacaoFilter) ||
+            s.tipo_solicitacao === tipoSolicitacaoFilter) &&
           // O titular vive em `dados_titular`, que é `jsonb` — não há colunas
           // `nome_titular`/`email_titular`. Procurar nelas devolvia sempre
           // zero: escrever "Bianca" esvaziava uma tabela que mostra
@@ -319,7 +455,12 @@ export default function Privacidade() {
             contem(s.dados_titular?.email, searchSolicitacoesTerm) ||
             contem(s.dados_titular?.documento, searchSolicitacoesTerm)),
       ),
-    [solicitacoes, statusSolicitacoesFilter, tipoSolicitacaoFilter, searchSolicitacoesTerm],
+    [
+      solicitacoes,
+      statusSolicitacoesFilter,
+      tipoSolicitacaoFilter,
+      searchSolicitacoesTerm,
+    ],
   );
   const incidentesPrivacidade = privacidadeData?.incidentesPrivacidade || 0;
   const dadosIncompletos = privacidadeData?.dadosIncompletos || 0;
@@ -335,11 +476,15 @@ export default function Privacidade() {
     // se chama "Fora do prazo (LGPD)".
     const inicioDeHoje = startOfDay(new Date());
     return solicitacoes.filter((s: any) => {
-      if (s.status === 'atendida' || s.status === 'rejeitada') return false;
+      if (s.status === "atendida" || s.status === "rejeitada") return false;
       const limite = s.prazo_resposta
         ? parseDataLocal(s.prazo_resposta)
-        : (s.data_solicitacao || s.created_at)
-          ? prazoResposta(s.data_solicitacao || s.created_at, jurisdicao.codigo)
+        : s.data_solicitacao || s.created_at
+          ? prazoResposta(
+              s.data_solicitacao || s.created_at,
+              jurisdicao.codigo,
+              jurisdicao.agentePequenoPorte,
+            )
           : null;
       return limite ? startOfDay(limite) < inicioDeHoje : false;
     }).length;
@@ -349,29 +494,43 @@ export default function Privacidade() {
     dadosSensiveis: 0,
     mapeamentos: 0,
     ropaAtivos: 0,
-    solicitacoesPendentes: 0
+    solicitacoesPendentes: 0,
   };
 
   const invalidatePrivacidade = () => {
-    queryClient.invalidateQueries({ queryKey: ['privacidade'] });
+    queryClient.invalidateQueries({ queryKey: ["privacidade"] });
   };
 
   const getSensibilidadeBadge = (tipo: string, sensibilidade: string) => {
     // Nível efetivo: tipo_dados 'sensivel' garante ao menos "Sensível"
-    let nivel = sensibilidade || 'comum';
-    if (tipo === 'sensivel' && nivel === 'comum') nivel = 'sensivel';
+    let nivel = sensibilidade || "comum";
+    if (tipo === "sensivel" && nivel === "comum") nivel = "sensivel";
     const labels: Record<string, string> = {
-      muito_sensivel: t('sweepDados.privacidade.sensibilidade.muitoSensivel'),
-      sensivel: t('sweepDados.privacidade.sensibilidade.sensivel'),
-      moderado: t('sweepDados.privacidade.sensibilidade.moderado'),
-      comum: t('sweepDados.privacidade.sensibilidade.comum'),
+      muito_sensivel: t("sweepDados.privacidade.sensibilidade.muitoSensivel"),
+      sensivel: t("sweepDados.privacidade.sensibilidade.sensivel"),
+      moderado: t("sweepDados.privacidade.sensibilidade.moderado"),
+      comum: t("sweepDados.privacidade.sensibilidade.comum"),
     };
-    return <StatusBadge {...resolveSensibilidadeTone(nivel)}>{labels[nivel] || t('sweepDados.privacidade.sensibilidade.comum')}</StatusBadge>;
+    return (
+      <StatusBadge {...resolveSensibilidadeTone(nivel)}>
+        {labels[nivel] || t("sweepDados.privacidade.sensibilidade.comum")}
+      </StatusBadge>
+    );
   };
 
   const getStatusBadge = (status: string) => {
-    const isWorkflow = ['pendente', 'em_analise', 'atendida', 'rejeitada'].includes(status);
-    const tone = isWorkflow ? resolveWorkflowStatusTone(status) : resolveItemStatusTone(status);
+    const isWorkflow = [
+      "pendente",
+      "aguardando_identidade",
+      "em_analise",
+      "em_execucao",
+      "prorrogada",
+      "atendida",
+      "rejeitada",
+    ].includes(status);
+    const tone = isWorkflow
+      ? resolveWorkflowStatusTone(status)
+      : resolveItemStatusTone(status);
     return <StatusBadge {...tone}>{formatStatus(status)}</StatusBadge>;
   };
 
@@ -388,14 +547,16 @@ export default function Privacidade() {
   const celulaBaseLegal = (valor: string, sensibilidade?: string | null) => {
     const { estado, label } = jurisdicao.baseLegal(valor, sensibilidade);
     if (!valor) return <span className="text-muted-foreground">-</span>;
-    if (estado === 'ok') return <Badge variant="secondary">{label}</Badge>;
+    if (estado === "ok") return <Badge variant="secondary">{label}</Badge>;
     return (
       <span className="inline-flex items-center gap-1.5">
         <Badge variant="secondary">{label}</Badge>
         <StatusBadge tone="destructive">
-          {t(estado === 'incompativel'
-            ? 'sweepDados.privacidade.baseLegalIncompativel'
-            : 'sweepDados.privacidade.baseLegalDesconhecida')}
+          {t(
+            estado === "incompativel"
+              ? "sweepDados.privacidade.baseLegalIncompativel"
+              : "sweepDados.privacidade.baseLegalDesconhecida",
+          )}
         </StatusBadge>
       </span>
     );
@@ -404,119 +565,209 @@ export default function Privacidade() {
   // Catálogo DataTable columns
   const catalogoColumns = [
     {
-      key: 'nome',
-      label: t('sweepDados.privacidade.colNome'),
+      key: "nome",
+      label: t("sweepDados.privacidade.colNome"),
       sortable: true,
       render: (value: string, row: any) => (
         <div>
-          <button type="button" className="min-h-10 max-w-[280px] text-left" onClick={() => {
-            setSelectedDado(row);
-            setShowDadoSheet(true);
-          }}>
-            {String(value ?? '').trim() ? (
-              <span className="block truncate font-medium hover:text-primary" title={value}>{value}</span>
+          <button
+            type="button"
+            className="min-h-10 max-w-[280px] text-left"
+            onClick={() => {
+              setSelectedDado(row);
+              setShowDadoSheet(true);
+            }}
+          >
+            {String(value ?? "").trim() ? (
+              <span
+                className="block truncate font-medium hover:text-primary"
+                title={value}
+              >
+                {value}
+              </span>
             ) : (
-              <span className="block font-medium text-warning">{t('sweepDados.privacidade.cadastroIncompleto')}</span>
+              <span className="block font-medium text-warning">
+                {t("sweepDados.privacidade.cadastroIncompleto")}
+              </span>
             )}
           </button>
-          {!String(value ?? '').trim() && (
-            <p className="text-xs text-muted-foreground">{t('sweepDados.privacidade.completeOuExclua')}</p>
+          {!String(value ?? "").trim() && (
+            <p className="text-xs text-muted-foreground">
+              {t("sweepDados.privacidade.completeOuExclua")}
+            </p>
           )}
           {row.descricao && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{row.descricao}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+              {row.descricao}
+            </p>
           )}
         </div>
-      )
+      ),
     },
     {
-      key: 'categoria_dados',
-      label: t('sweepDados.privacidade.colCategoria'),
+      key: "categoria_dados",
+      label: t("sweepDados.privacidade.colCategoria"),
       sortable: true,
-      render: (value: string) => <Badge variant="outline">{getCategoriaLabel(value)}</Badge>
+      render: (value: string) => (
+        <Badge variant="outline">{getCategoriaLabel(value)}</Badge>
+      ),
     },
     {
-      key: 'sensibilidade',
-      label: t('sweepDados.privacidade.colSensibilidade'),
+      key: "sensibilidade",
+      label: t("sweepDados.privacidade.colSensibilidade"),
       sortable: true,
-      render: (value: string, row: any) => getSensibilidadeBadge(row.tipo_dados, value)
+      render: (value: string, row: any) =>
+        getSensibilidadeBadge(row.tipo_dados, value),
     },
     {
-      key: 'base_legal',
-      label: t('sweepDados.privacidade.colBaseLegal'),
+      key: "base_legal",
+      label: t("sweepDados.privacidade.colBaseLegal"),
       sortable: true,
-      render: (value: string, row: any) => celulaBaseLegal(value, row?.sensibilidade)
+      render: (value: string, row: any) =>
+        celulaBaseLegal(value, row?.sensibilidade),
     },
     {
-      key: 'mapeamentos_count',
-      label: t('sweepDados.privacidade.colMapeamentos'),
+      key: "mapeamentos_count",
+      label: t("sweepDados.privacidade.colMapeamentos"),
       sortable: true,
-      render: (value: number) => value > 0 ? (
-        <Badge variant="secondary">{value}</Badge>
-      ) : <span className="text-muted-foreground">0</span>
+      render: (value: number) =>
+        value > 0 ? (
+          <Badge variant="secondary">{value}</Badge>
+        ) : (
+          <span className="text-muted-foreground">0</span>
+        ),
     },
     {
-      key: 'ropas_count',
-      label: t('sweepDados.privacidade.colRopas'),
+      key: "ropas_count",
+      label: t("sweepDados.privacidade.colRopas"),
       sortable: true,
-      render: (value: number) => value > 0 ? (
-        <Badge variant="secondary">{value}</Badge>
-      ) : <span className="text-muted-foreground">0</span>
+      render: (value: number) =>
+        value > 0 ? (
+          <Badge variant="secondary">{value}</Badge>
+        ) : (
+          <span className="text-muted-foreground">0</span>
+        ),
     },
     {
-      key: 'actions',
-      label: t('sweepDados.privacidade.colAcoes'),
+      key: "actions",
+      label: t("sweepDados.privacidade.colAcoes"),
       render: (_: any, row: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("layout.moreActions")}
+              title={t("layout.moreActions")}
+            >
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowDadoSheet(true); }}>
-              <IconView className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.verDetalhes')}
+            <DropdownMenuItem
+              onClick={() => {
+                setSelectedDado(row);
+                setShowDadoSheet(true);
+              }}
+            >
+              <IconView className="h-4 w-4 mr-2" />{" "}
+              {t("sweepDados.privacidade.verDetalhes")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowDadosDialog(true); }}>
-              <IconEdit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowMapeamentoDialog(true); }}>
-              <IconLink className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.mapear')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setPreSelectedDadoId(row.id); setShowRopaWizard(true); }}>
-              <IconFile className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.criarRopa')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDelete(row.id, 'dados')} className="text-destructive focus:text-destructive">
-              <IconDelete className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
-            </DropdownMenuItem>
+            {podeEditar && (
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedDado(row);
+                  setShowDadosDialog(true);
+                }}
+              >
+                <IconEdit className="h-4 w-4 mr-2" />{" "}
+                {t("sweepDados.privacidade.editar")}
+              </DropdownMenuItem>
+            )}
+            {podeCriar && (
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedDado(row);
+                  setShowMapeamentoDialog(true);
+                }}
+              >
+                <IconLink className="h-4 w-4 mr-2" />{" "}
+                {t("sweepDados.privacidade.mapear")}
+              </DropdownMenuItem>
+            )}
+            {podeCriar && (
+              <DropdownMenuItem
+                onClick={() => {
+                  setPreSelectedDadoId(row.id);
+                  setShowRopaWizard(true);
+                }}
+              >
+                <IconFile className="h-4 w-4 mr-2" />{" "}
+                {t("sweepDados.privacidade.criarRopa")}
+              </DropdownMenuItem>
+            )}
+            {podeExcluir && (
+              <DropdownMenuItem
+                onClick={() => handleDelete(row.id, "dados")}
+                className="text-destructive focus:text-destructive"
+              >
+                <IconDelete className="h-4 w-4 mr-2" />{" "}
+                {t("sweepDados.privacidade.excluir")}
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
-      )
-    }
+      ),
+    },
   ];
 
   const catalogoFilters = [
     {
-      key: 'categoria_dados',
-      label: t('sweepDados.privacidade.colCategoria'),
-      type: 'select' as const,
+      key: "categoria_dados",
+      label: t("sweepDados.privacidade.colCategoria"),
+      type: "select" as const,
       options: [
-        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.categorias') },
-        { value: 'identificacao', label: t('sweepDados.privacidade.categoria.identificacao') },
-        { value: 'contato', label: t('sweepDados.privacidade.categoria.contato') },
-        { value: 'localizacao', label: t('sweepDados.privacidade.categoria.localizacao') },
-        { value: 'financeiro', label: t('sweepDados.privacidade.categoria.financeiro') },
-        { value: 'saude', label: t('sweepDados.privacidade.categoria.saude') },
-        { value: 'biometrico', label: t('sweepDados.privacidade.categoria.biometrico') },
-        { value: 'comportamental', label: t('sweepDados.privacidade.categoria.comportamental') },
-        { value: 'outros', label: t('sweepDados.privacidade.categoria.outros') }
+        {
+          value: "todos",
+          label: t("sweepDados.privacidade.filtroTodas.categorias"),
+        },
+        {
+          value: "identificacao",
+          label: t("sweepDados.privacidade.categoria.identificacao"),
+        },
+        {
+          value: "contato",
+          label: t("sweepDados.privacidade.categoria.contato"),
+        },
+        {
+          value: "localizacao",
+          label: t("sweepDados.privacidade.categoria.localizacao"),
+        },
+        {
+          value: "financeiro",
+          label: t("sweepDados.privacidade.categoria.financeiro"),
+        },
+        { value: "saude", label: t("sweepDados.privacidade.categoria.saude") },
+        {
+          value: "biometrico",
+          label: t("sweepDados.privacidade.categoria.biometrico"),
+        },
+        {
+          value: "comportamental",
+          label: t("sweepDados.privacidade.categoria.comportamental"),
+        },
+        {
+          value: "outros",
+          label: t("sweepDados.privacidade.categoria.outros"),
+        },
       ],
       value: categoriaFilter,
-      onChange: setCategoriaFilter
+      onChange: setCategoriaFilter,
     },
     {
-      key: 'sensibilidade',
-      label: t('sweepDados.privacidade.colSensibilidade'),
-      type: 'select' as const,
+      key: "sensibilidade",
+      label: t("sweepDados.privacidade.colSensibilidade"),
+      type: "select" as const,
       // Os rótulos estavam deslocados uma posição: `sensivel` aparecia como
       // "Moderado" e `muito_sensivel` como "Sensível". Filtrar por "Sensível"
       // devolvia zero linhas ao lado de uma tabela com dois crachás "Sensível".
@@ -525,27 +776,43 @@ export default function Privacidade() {
       // existia — não era oferecido. A migration `20260819270000` normaliza
       // `normal` para `comum` e fixa os três valores com um CHECK.
       options: [
-        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.sensibilidades') },
-        { value: 'comum', label: t('sweepDados.privacidade.sensibilidade.comum') },
-        { value: 'sensivel', label: t('sweepDados.privacidade.sensibilidade.sensivel') },
-        { value: 'muito_sensivel', label: t('sweepDados.privacidade.sensibilidade.muitoSensivel') }
+        {
+          value: "todos",
+          label: t("sweepDados.privacidade.filtroTodas.sensibilidades"),
+        },
+        {
+          value: "comum",
+          label: t("sweepDados.privacidade.sensibilidade.comum"),
+        },
+        {
+          value: "sensivel",
+          label: t("sweepDados.privacidade.sensibilidade.sensivel"),
+        },
+        {
+          value: "muito_sensivel",
+          label: t("sweepDados.privacidade.sensibilidade.muitoSensivel"),
+        },
       ],
       value: sensibilidadeFilter,
-      onChange: setSensibilidadeFilter
-    }
+      onChange: setSensibilidadeFilter,
+    },
   ];
 
   // Solicitações DataTable columns
   const solicitacoesColumns = [
     {
-      key: 'tipo_solicitacao',
-      label: t('sweepDados.privacidade.colTipo'),
+      key: "tipo_solicitacao",
+      label: t("sweepDados.privacidade.colTipo"),
       sortable: true,
-      render: (value: string) => <Badge variant="outline">{rotuloTipoSolicitacao(value, jurisdicao.codigo, t)}</Badge>
+      render: (value: string) => (
+        <Badge variant="outline">
+          {rotuloTipoSolicitacao(value, jurisdicao.codigo, t)}
+        </Badge>
+      ),
     },
     {
-      key: 'dados_titular',
-      label: t('sweepDados.privacidade.colTitular'),
+      key: "dados_titular",
+      label: t("sweepDados.privacidade.colTitular"),
       /**
        * `dados_titular` é `jsonb`: o cliente Supabase já devolve um objeto.
        * Aqui fazia-se `JSON.parse(objeto)`, que estoira sempre — o catch
@@ -554,15 +821,22 @@ export default function Privacidade() {
        * titular dentro do prazo legal, era a informação mais importante.
        */
       render: (value: unknown) => {
-        const titular = typeof value === 'string'
-          ? (() => { try { return JSON.parse(value); } catch { return null; } })()
-          : (value as Record<string, string> | null);
-        return titular?.nome || titular?.email || '-';
-      }
+        const titular =
+          typeof value === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(value);
+                } catch {
+                  return null;
+                }
+              })()
+            : (value as Record<string, string> | null);
+        return titular?.nome || titular?.email || "-";
+      },
     },
     {
-      key: 'canal_solicitacao',
-      label: t('sweepDados.privacidade.colCanal'),
+      key: "canal_solicitacao",
+      label: t("sweepDados.privacidade.colCanal"),
       sortable: true,
       // Sem `render`, saía o valor cru do banco — "telefone", "portal",
       // "email" — em minúsculas, ao lado de colunas que mostram "Correção" e
@@ -570,13 +844,13 @@ export default function Privacidade() {
       render: (value: string) => rotuloCanalSolicitacao(value, t),
     },
     {
-      key: 'status',
-      label: t('sweepDados.privacidade.colStatus'),
-      render: (value: string) => getStatusBadge(value)
+      key: "status",
+      label: t("sweepDados.privacidade.colStatus"),
+      render: (value: string) => getStatusBadge(value),
     },
     {
-      key: 'prazo_resposta',
-      label: t('sweepDados.privacidade.colPrazo'),
+      key: "prazo_resposta",
+      label: t("sweepDados.privacidade.colPrazo"),
       sortable: true,
       /**
        * A tela tem um KPI "Fora do prazo", mas a lista mostrava todas as datas
@@ -585,72 +859,132 @@ export default function Privacidade() {
        */
       render: (value: string, row: any) => {
         if (!value) return <span className="text-muted-foreground">-</span>;
-        const encerrada = row.status === 'atendida' || row.status === 'rejeitada';
-        const dias = differenceInDays(startOfDay(parseDataLocal(value)), startOfDay(new Date()));
+        const encerrada =
+          row.status === "atendida" || row.status === "rejeitada";
+        const dias = differenceInDays(
+          startOfDay(parseDataLocal(value)),
+          startOfDay(new Date()),
+        );
         return (
           <span className="inline-flex items-center gap-2">
             {formatDateOnly(value)}
             {!encerrada && dias < 0 && (
-              <StatusBadge tone="destructive">{t('sweepDados.privacidade.prazoVencido')}</StatusBadge>
+              <StatusBadge tone="destructive">
+                {t("sweepDados.privacidade.prazoVencido")}
+              </StatusBadge>
             )}
             {!encerrada && dias >= 0 && dias <= 3 && (
-              <StatusBadge tone="warning">{t('sweepDados.privacidade.prazoEmDias', { dias })}</StatusBadge>
+              <StatusBadge tone="warning">
+                {t("sweepDados.privacidade.prazoEmDias", { dias })}
+              </StatusBadge>
             )}
           </span>
         );
-      }
+      },
     },
     {
-      key: 'actions',
-      label: t('sweepDados.privacidade.colAcoes'),
+      key: "actions",
+      label: t("sweepDados.privacidade.colAcoes"),
       render: (_: any, solicitacao: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("layout.moreActions")}
+              title={t("layout.moreActions")}
+            >
               <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}>
-              <IconEdit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
+            <DropdownMenuItem
+              onClick={() => {
+                setSelectedSolicitacao(solicitacao);
+                setShowSolicitacaoDialog(true);
+              }}
+            >
+              <IconEdit className="h-4 w-4 mr-2" />{" "}
+              {t("sweepDados.privacidade.editar")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDelete(solicitacao.id, 'solicitacao')} className="text-destructive focus:text-destructive">
-              <IconDelete className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
-            </DropdownMenuItem>
+            {podeExcluir && (
+              <DropdownMenuItem
+                onClick={() => handleDelete(solicitacao.id, "solicitacao")}
+                className="text-destructive focus:text-destructive"
+              >
+                <IconDelete className="h-4 w-4 mr-2" />{" "}
+                {t("sweepDados.privacidade.excluir")}
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
-      )
-    }
+      ),
+    },
   ];
 
   const solicitacoesFilters = [
     {
-      key: 'status',
-      label: t('sweepDados.privacidade.colStatus'),
-      type: 'select' as const,
+      key: "status",
+      label: t("sweepDados.privacidade.colStatus"),
+      type: "select" as const,
       options: [
-        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.estados') },
-        { value: 'pendente', label: t('sweepDados.privacidade.statusSolicitacao.pendente') },
-        { value: 'em_analise', label: t('sweepDados.privacidade.statusSolicitacao.emAnalise') },
-        { value: 'atendida', label: t('sweepDados.privacidade.statusSolicitacao.atendida') },
-        { value: 'rejeitada', label: t('sweepDados.privacidade.statusSolicitacao.rejeitada') }
+        {
+          value: "todos",
+          label: t("sweepDados.privacidade.filtroTodas.estados"),
+        },
+        {
+          value: "pendente",
+          label: t("sweepDados.privacidade.statusSolicitacao.pendente"),
+        },
+        {
+          value: "aguardando_identidade",
+          label: t(
+            "sweepDados.privacidade.statusSolicitacao.aguardandoIdentidade",
+          ),
+        },
+        {
+          value: "em_analise",
+          label: t("sweepDados.privacidade.statusSolicitacao.emAnalise"),
+        },
+        {
+          value: "em_execucao",
+          label: t("sweepDados.privacidade.statusSolicitacao.emExecucao"),
+        },
+        {
+          value: "prorrogada",
+          label: t("sweepDados.privacidade.statusSolicitacao.prorrogada"),
+        },
+        {
+          value: "atendida",
+          label: t("sweepDados.privacidade.statusSolicitacao.atendida"),
+        },
+        {
+          value: "rejeitada",
+          label: t("sweepDados.privacidade.statusSolicitacao.rejeitada"),
+        },
       ],
       value: statusSolicitacoesFilter,
-      onChange: setStatusSolicitacoesFilter
+      onChange: setStatusSolicitacoesFilter,
     },
     {
-      key: 'tipo_solicitacao',
-      label: t('sweepDados.privacidade.colTipo'),
-      type: 'select' as const,
+      key: "tipo_solicitacao",
+      label: t("sweepDados.privacidade.colTipo"),
+      type: "select" as const,
       // Os direitos são os da lei aplicável — LGPD Art. 18, RGPD Arts. 15-22 —
       // e não uma lista fixa de seis que ignorava metade deles.
       options: [
-        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.tipos') },
-        ...tiposSolicitacaoDaJurisdicao(jurisdicao.codigo, t).map((d) => ({ value: d.key, label: d.label })),
+        {
+          value: "todos",
+          label: t("sweepDados.privacidade.filtroTodas.tipos"),
+        },
+        ...tiposSolicitacaoDaJurisdicao(jurisdicao.codigo, t).map((d) => ({
+          value: d.key,
+          label: d.label,
+        })),
       ],
       value: tipoSolicitacaoFilter,
-      onChange: setTipoSolicitacaoFilter
-    }
+      onChange: setTipoSolicitacaoFilter,
+    },
   ];
 
   const handleDelete = (id: string, type: string) => {
@@ -663,39 +997,72 @@ export default function Privacidade() {
 
       // Use type-safe table operations
       switch (deleteConfirm.type) {
-        case 'dados':
-          ({ error } = await supabase.from('dados_pessoais').delete().eq('id', deleteConfirm.id));
+        case "dados":
+          ({ error } = await exigirLinhas(
+            supabase
+              .from("dados_pessoais")
+              .delete()
+              .eq("id", deleteConfirm.id)
+              .select("id"),
+          ));
           break;
-        case 'mapeamento':
-          ({ error } = await supabase.from('dados_mapeamento').delete().eq('id', deleteConfirm.id));
+        case "mapeamento":
+          ({ error } = await exigirLinhas(
+            supabase
+              .from("dados_mapeamento")
+              .delete()
+              .eq("id", deleteConfirm.id)
+              .select("id"),
+          ));
           break;
-        case 'ropa':
-          ({ error } = await supabase.from('ropa_registros').delete().eq('id', deleteConfirm.id));
+        case "ropa":
+          ({ error } = await exigirLinhas(
+            supabase
+              .from("ropa_registros")
+              .delete()
+              .eq("id", deleteConfirm.id)
+              .select("id"),
+          ));
           break;
-        case 'fluxo':
-          ({ error } = await supabase.from('dados_fluxos').delete().eq('id', deleteConfirm.id));
+        case "fluxo":
+          ({ error } = await exigirLinhas(
+            supabase
+              .from("dados_fluxos")
+              .delete()
+              .eq("id", deleteConfirm.id)
+              .select("id"),
+          ));
           break;
-        case 'solicitacao':
-          ({ error } = await supabase.from('dados_solicitacoes_titular').delete().eq('id', deleteConfirm.id));
+        case "solicitacao":
+          ({ error } = await exigirLinhas(
+            supabase
+              .from("dados_solicitacoes_titular")
+              .delete()
+              .eq("id", deleteConfirm.id)
+              .select("id"),
+          ));
           break;
         default:
-          throw new Error(t('sweepDados.privacidade.tipoInvalido'));
+          throw new Error(t("sweepDados.privacidade.tipoInvalido"));
       }
 
       if (error) throw error;
 
       toast({
-        title: t('sweepDados.privacidade.sucesso'),
-        description: t('sweepDados.privacidade.itemExcluido'),
+        title: t("sweepDados.privacidade.sucesso"),
+        description: t("sweepDados.privacidade.itemExcluido"),
       });
 
       invalidatePrivacidade();
-      setDeleteConfirm({ open: false, id: '', type: '' });
+      setDeleteConfirm({ open: false, id: "", type: "" });
     } catch (error: any) {
-      logger.error('Erro ao excluir item de privacidade', { error: error instanceof Error ? error.message : String(error) });
+      logger.error("Erro ao excluir item de privacidade", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast({
-        title: t('sweepDados.privacidade.erro'),
-        description: error.message || t('sweepDados.privacidade.erroExcluirItem'),
+        title: t("sweepDados.privacidade.erro"),
+        description:
+          error.message || t("sweepDados.privacidade.erroExcluirItem"),
         variant: "destructive",
       });
     }
@@ -704,86 +1071,175 @@ export default function Privacidade() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('modules.privacidade.title')}
-        description={t('jurisdicao.privacidade.descricao', { lei: jurisdicao.lei })}
+        title={t("modules.privacidade.title")}
+        description={t("jurisdicao.privacidade.descricao", {
+          lei: jurisdicao.lei,
+        })}
         actions={
-          activeTab === 'catalogo' ? (
+          activeTab === "catalogo" && podeCriar ? (
             <Button size="sm" onClick={() => setShowDadosDialog(true)}>
               <IconAdd className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novoDado')}
+              {t("sweepDados.privacidade.novoDado")}
             </Button>
-          ) : activeTab === 'ropa' ? (
+          ) : activeTab === "ropa" && podeCriar ? (
             // O botão cria o que a lista mostra: um ROPA na lista de ROPAs, um
             // tratamento quando já se está dentro de um. No dossiê não há nada
             // para criar.
-            nivelRopa === 'ropas' ? (
-              <Button size="sm" onClick={() => setNovoExercicioSinal((n) => n + 1)}>
+            nivelRopa === "ropas" ? (
+              <Button
+                size="sm"
+                onClick={() => setNovoExercicioSinal((n) => n + 1)}
+              >
                 <IconAdd className="mr-2 h-4 w-4" />
-                {t('ropaLista.novoRopa')}
+                {t("ropaLista.novoRopa")}
               </Button>
-            ) : nivelRopa === 'tratamentos' ? (
+            ) : nivelRopa === "tratamentos" ? (
               <Button size="sm" onClick={() => setShowRopaWizard(true)}>
                 <IconAdd className="mr-2 h-4 w-4" />
-                {t('ropaLista.novoTratamento')}
+                {t("ropaLista.novoTratamento")}
               </Button>
             ) : undefined
-          ) : activeTab === 'solicitacoes' ? (
-
+          ) : activeTab === "solicitacoes" && podeCriar ? (
             <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
               <IconAdd className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novaSolicitacao')}
+              {t("sweepDados.privacidade.novaSolicitacao")}
             </Button>
           ) : undefined
         }
         secondaryActions={
-          activeTab === 'catalogo'
-            ? [{
-                label: t('sweepDados.privacidade.mapearDado'),
-                icon: <IconLink className="h-4 w-4" />,
-                onClick: () => setShowMapeamentoDialog(true),
-              }]
+          activeTab === "catalogo" && podeCriar
+            ? [
+                {
+                  label: t("sweepDados.privacidade.mapearDado"),
+                  icon: <IconLink className="h-4 w-4" />,
+                  onClick: () => setShowMapeamentoDialog(true),
+                },
+              ]
             : undefined
         }
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
-          <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
-          <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
-          <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
+        <TabsList className="h-auto flex-wrap justify-start">
+          <TabsTrigger value="jornada">
+            {t("privacidadePrograma.tabs.jornada")}
+          </TabsTrigger>
+          <TabsTrigger value="catalogo">
+            {t("cardsKpi.privacidade.abaCatalogo")}
+          </TabsTrigger>
+          <TabsTrigger value="ropa">
+            {t("sweepDados.privacidade.abaRopa")}
+          </TabsTrigger>
+          <TabsTrigger value="solicitacoes">
+            {t("cardsKpi.privacidade.abaSolicitacoes")}
+          </TabsTrigger>
+          <TabsTrigger value="descobertas">
+            {t("sweepDados.privacidade.abaDescobertas")}
+          </TabsTrigger>
         </TabsList>
 
-      <StatStrip
-        loading={isLoading}
-        items={[
-          { key: 'totalDados', label: t('cardsKpi.privacidade.totalDados'), value: stats.totalDados, drillDown: 'privacidade_catalogo' },
-          { key: 'dadosSensiveis', label: t('cardsKpi.privacidade.dadosSensiveis'), value: stats.dadosSensiveis, tone: 'warning', drillDown: 'privacidade_sensiveis' },
-          // O ROPA não tinha card nenhum, apesar de `stats.ropaAtivos` já ser
-          // calculado e deitado fora. Numa empresa cujo trabalho de privacidade
-          // é o registo de tratamentos — e há uma assim nos dados reais, com 7
-          // ROPA e zero dados catalogados — a tira inteira mostrava zero.
-          { key: 'ropa', label: t('cardsKpi.privacidade.ropaRegistros'), value: stats.ropaAtivos, onClick: () => setActiveTab('ropa') },
-          { key: 'solicitacoesPendentes', label: t('cardsKpi.privacidade.solicitacoesPendentes'), value: stats.solicitacoesPendentes, drillDown: 'privacidade' },
-          { key: 'foraPrazo', label: t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei }), value: solicitacoesForaPrazo, tone: 'destructive', drillDown: 'privacidade_fora_prazo' },
-        ]}
-      />
+        <StatStrip
+          loading={isLoading}
+          items={[
+            {
+              key: "totalDados",
+              label: t("cardsKpi.privacidade.totalDados"),
+              value: stats.totalDados,
+              drillDown: "privacidade_catalogo",
+            },
+            {
+              key: "dadosSensiveis",
+              label: t("cardsKpi.privacidade.dadosSensiveis"),
+              value: stats.dadosSensiveis,
+              tone: "warning",
+              drillDown: "privacidade_sensiveis",
+            },
+            // O ROPA não tinha card nenhum, apesar de `stats.ropaAtivos` já ser
+            // calculado e deitado fora. Numa empresa cujo trabalho de privacidade
+            // é o registo de tratamentos — e há uma assim nos dados reais, com 7
+            // ROPA e zero dados catalogados — a tira inteira mostrava zero.
+            {
+              key: "ropa",
+              label: t("cardsKpi.privacidade.ropaRegistros"),
+              value: stats.ropaAtivos,
+              onClick: () => setActiveTab("ropa"),
+            },
+            {
+              key: "solicitacoesPendentes",
+              label: t("cardsKpi.privacidade.solicitacoesPendentes"),
+              value: stats.solicitacoesPendentes,
+              drillDown: "privacidade",
+            },
+            {
+              key: "foraPrazo",
+              label: t("jurisdicao.privacidade.foraPrazo", {
+                lei: jurisdicao.lei,
+              }),
+              value: solicitacoesForaPrazo,
+              tone: "destructive",
+              drillDown: "privacidade_fora_prazo",
+            },
+          ]}
+        />
 
-      {(dadosIncompletos > 0 || incidentesPrivacidade > 0) && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
-          {dadosIncompletos > 0 && (
-            <span className="flex items-center gap-2 text-foreground">
-              <IconWarning className="h-4 w-4 shrink-0 text-warning" />
-              {t('sweepDados.privacidade.incompletosAviso', { count: dadosIncompletos })}
-            </span>
-          )}
-          {incidentesPrivacidade > 0 && (
-            <button type="button" onClick={() => navigate('/incidentes')} className="min-h-10 text-left font-medium text-primary hover:underline">
-              {t('sweepDados.privacidade.incidentesAbertos', { count: incidentesPrivacidade })}
-            </button>
-          )}
-        </div>
-      )}
+        {isError && (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <p className="font-medium text-destructive">
+                {t("privacidadePrograma.erroCarregamentoTitulo")}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("privacidadePrograma.erroCarregamentoDescricao")}
+                {erroCarregamento instanceof Error
+                  ? ` ${erroCarregamento.message}`
+                  : ""}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              {t("common.retry")}
+            </Button>
+          </div>
+        )}
+
+        {(dadosIncompletos > 0 || incidentesPrivacidade > 0) && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
+            {dadosIncompletos > 0 && (
+              <span className="flex items-center gap-2 text-foreground">
+                <IconWarning className="h-4 w-4 shrink-0 text-warning" />
+                {t("sweepDados.privacidade.incompletosAviso", {
+                  count: dadosIncompletos,
+                })}
+              </span>
+            )}
+            {incidentesPrivacidade > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate("/incidentes")}
+                className="min-h-10 text-left font-medium text-primary hover:underline"
+              >
+                {t("sweepDados.privacidade.incidentesAbertos", {
+                  count: incidentesPrivacidade,
+                })}
+              </button>
+            )}
+          </div>
+        )}
+
+        <TabsContent value="jornada" className="space-y-4">
+          <CentroPrivacidadeTab
+            dadosPessoais={dadosPessoais}
+            ropaRegistros={ropaRegistros}
+            solicitacoes={solicitacoes}
+            incidentesPrivacidade={incidentesPrivacidade}
+            onNavigate={setActiveTab}
+            canCreate={podeCriar}
+            canUpdate={podeEditar}
+            canDelete={podeExcluir}
+          />
+        </TabsContent>
 
         <TabsContent value="catalogo" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
@@ -793,8 +1249,11 @@ export default function Privacidade() {
                 pageSize={20}
                 data={dadosFiltrados}
                 columns={catalogoColumns}
-                onRowClick={(row) => { setSelectedDado(row); setShowDadoSheet(true); }}
-                searchPlaceholder={t('sweepDados.privacidade.buscarDados')}
+                onRowClick={(row) => {
+                  setSelectedDado(row);
+                  setShowDadoSheet(true);
+                }}
+                searchPlaceholder={t("sweepDados.privacidade.buscarDados")}
                 searchValue={searchCatalogoTerm}
                 onSearchChange={setSearchCatalogoTerm}
                 filters={catalogoFilters}
@@ -802,20 +1261,24 @@ export default function Privacidade() {
                 sortDirection={catalogoSortDirection}
                 onSort={(field) => {
                   if (field === catalogoSortField) {
-                    setCatalogoSortDirection(catalogoSortDirection === 'asc' ? 'desc' : 'asc');
+                    setCatalogoSortDirection(
+                      catalogoSortDirection === "asc" ? "desc" : "asc",
+                    );
                   } else {
                     setCatalogoSortField(field);
-                    setCatalogoSortDirection('asc');
+                    setCatalogoSortDirection("asc");
                   }
                 }}
                 emptyState={vazio(dadosPessoais.length > 0, {
                   icon: <IconDatabase className="h-8 w-8" />,
-                  title: t('sweepDados.privacidade.emptyDadosTitulo'),
-                  description: t('sweepDados.privacidade.emptyDadosDescricao'),
-                  action: {
-                    label: t('sweepDados.privacidade.novoDado'),
-                    onClick: () => setShowDadosDialog(true)
-                  }
+                  title: t("sweepDados.privacidade.emptyDadosTitulo"),
+                  description: t("sweepDados.privacidade.emptyDadosDescricao"),
+                  action: podeCriar
+                    ? {
+                        label: t("sweepDados.privacidade.novoDado"),
+                        onClick: () => setShowDadosDialog(true),
+                      }
+                    : undefined,
                 })}
               />
             </CardContent>
@@ -829,17 +1292,25 @@ export default function Privacidade() {
           <RopaTab
             registos={ropaRegistros}
             aoRecarregar={invalidatePrivacidade}
-            aoEditarTratamento={(registo) => { setSelectedRopa(registo); setShowRopaDialog(true); }}
-            aoApagarTratamento={(id) => handleDelete(id, 'ropa')}
-            aoCriarTratamento={(exercicioId) => { setRopaDoNovoTratamento(exercicioId); setShowRopaWizard(true); }}
+            aoEditarTratamento={(registo) => {
+              setSelectedRopa(registo);
+              setShowRopaDialog(true);
+            }}
+            aoApagarTratamento={(id) => handleDelete(id, "ropa")}
+            aoCriarTratamento={(exercicioId) => {
+              setRopaDoNovoTratamento(exercicioId);
+              setShowRopaWizard(true);
+            }}
             novoRopaSinal={novoExercicioSinal}
             aoMudarNivel={setNivelRopa}
             focoTratamentoId={focoRopa}
+            canCreate={podeCriar}
+            canUpdate={podeEditar}
+            canDelete={podeExcluir}
           />
         </TabsContent>
 
         <TabsContent value="solicitacoes" className="space-y-4">
-
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -847,10 +1318,15 @@ export default function Privacidade() {
                 pageSize={20}
                 data={solicitacoesFiltradas}
                 columns={solicitacoesColumns}
-                onRowClick={(solicitacao) => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}
+                onRowClick={(solicitacao) => {
+                  setSelectedSolicitacao(solicitacao);
+                  setShowSolicitacaoDialog(true);
+                }}
                 loading={false}
                 searchable
-                searchPlaceholder={t('sweepDados.privacidade.buscarSolicitacoes')}
+                searchPlaceholder={t(
+                  "sweepDados.privacidade.buscarSolicitacoes",
+                )}
                 searchValue={searchSolicitacoesTerm}
                 onSearchChange={setSearchSolicitacoesTerm}
                 filters={solicitacoesFilters}
@@ -858,20 +1334,26 @@ export default function Privacidade() {
                 sortDirection={sortSolicitacoesDirection}
                 onSort={(field) => {
                   if (sortSolicitacoesField === field) {
-                    setSortSolicitacoesDirection(sortSolicitacoesDirection === 'asc' ? 'desc' : 'asc');
+                    setSortSolicitacoesDirection(
+                      sortSolicitacoesDirection === "asc" ? "desc" : "asc",
+                    );
                   } else {
                     setSortSolicitacoesField(field);
-                    setSortSolicitacoesDirection('asc');
+                    setSortSolicitacoesDirection("asc");
                   }
                 }}
                 emptyState={vazio(solicitacoes.length > 0, {
                   icon: <IconUsers className="h-8 w-8" />,
-                  title: t('sweepDados.privacidade.emptySolicitacoesTitulo'),
-                  description: t('sweepDados.privacidade.emptySolicitacoesDescricao'),
-                  action: {
-                    label: t('sweepDados.privacidade.novaSolicitacao'),
-                    onClick: () => setShowSolicitacaoDialog(true)
-                  }
+                  title: t("sweepDados.privacidade.emptySolicitacoesTitulo"),
+                  description: t(
+                    "sweepDados.privacidade.emptySolicitacoesDescricao",
+                  ),
+                  action: podeCriar
+                    ? {
+                        label: t("sweepDados.privacidade.novaSolicitacao"),
+                        onClick: () => setShowSolicitacaoDialog(true),
+                      }
+                    : undefined,
                 })}
               />
             </CardContent>
@@ -879,7 +1361,11 @@ export default function Privacidade() {
         </TabsContent>
 
         <TabsContent value="descobertas" className="space-y-4">
-          <DescoberDadosTab onRefresh={invalidatePrivacidade} />
+          <DescoberDadosTab
+            onRefresh={invalidatePrivacidade}
+            canCreate={podeCriar}
+            canDelete={podeExcluir}
+          />
         </TabsContent>
       </Tabs>
 
@@ -891,6 +1377,8 @@ export default function Privacidade() {
         }}
         onSave={invalidatePrivacidade}
         dados={selectedDado}
+        registrosDisponiveis={dadosPessoais}
+        readOnly={selectedDado ? !podeEditar : !podeCriar}
       />
       <MapeamentoDialog
         isOpen={showMapeamentoDialog}
@@ -911,6 +1399,7 @@ export default function Privacidade() {
         }}
         onSave={invalidatePrivacidade}
         ropa={selectedRopa}
+        readOnly={!podeEditar}
       />
       <RopaWizard
         isOpen={showRopaWizard}
@@ -930,8 +1419,9 @@ export default function Privacidade() {
         }}
         onSave={invalidatePrivacidade}
         solicitacao={selectedSolicitacao}
+        readOnly={selectedSolicitacao ? !podeEditar : !podeCriar}
       />
-      
+
       {/*
         Era uma Sheet própria com quatro campos — nome, descrição, categoria e
         base legal — de um catálogo que tem onze. Finalidade, prazo de retenção
@@ -944,33 +1434,74 @@ export default function Privacidade() {
         onOpenChange={setShowDadoSheet}
         title={selectedDado?.nome}
         subtitle={selectedDado?.descricao}
-        badges={selectedDado && (
-          <>
-            {getSensibilidadeBadge(selectedDado.tipo_dados, selectedDado.sensibilidade)}
-            {celulaBaseLegal(selectedDado.base_legal, selectedDado.sensibilidade)}
-          </>
-        )}
-        fields={selectedDado ? [
-          { label: t('sweepDados.privacidade.colCategoria'), value: rotuloCategoriaDados(selectedDado.categoria_dados, t) },
-          { label: t('sweepDados.privacidade.detTipoDados'), value: formatStatus(selectedDado.tipo_dados) },
-          { label: t('sweepDados.privacidade.detOrigemColeta'), value: formatStatus(selectedDado.origem_coleta) },
-          { label: t('sweepDados.privacidade.detFormaColeta'), value: formatStatus(selectedDado.forma_coleta) },
-          { label: t('sweepDados.privacidade.detPrazoRetencao'), value: selectedDado.prazo_retencao },
-          { label: t('sweepDados.privacidade.colMapeamentos'), value: String(selectedDado.mapeamentos_count ?? 0) },
-          { label: t('sweepDados.privacidade.colRopas'), value: String(selectedDado.ropas_count ?? 0) },
-          { label: t('sweepDados.privacidade.detFinalidade'), value: selectedDado.finalidade_tratamento, full: true },
-          { label: t('sweepDados.privacidade.detObservacoes'), value: selectedDado.observacoes, full: true },
-        ] : []}
+        badges={
+          selectedDado && (
+            <>
+              {getSensibilidadeBadge(
+                selectedDado.tipo_dados,
+                selectedDado.sensibilidade,
+              )}
+              {celulaBaseLegal(
+                selectedDado.base_legal,
+                selectedDado.sensibilidade,
+              )}
+            </>
+          )
+        }
+        fields={
+          selectedDado
+            ? [
+                {
+                  label: t("sweepDados.privacidade.colCategoria"),
+                  value: rotuloCategoriaDados(selectedDado.categoria_dados, t),
+                },
+                {
+                  label: t("sweepDados.privacidade.detTipoDados"),
+                  value: formatStatus(selectedDado.tipo_dados),
+                },
+                {
+                  label: t("sweepDados.privacidade.detOrigemColeta"),
+                  value: formatStatus(selectedDado.origem_coleta),
+                },
+                {
+                  label: t("sweepDados.privacidade.detFormaColeta"),
+                  value: formatStatus(selectedDado.forma_coleta),
+                },
+                {
+                  label: t("sweepDados.privacidade.detPrazoRetencao"),
+                  value: selectedDado.prazo_retencao,
+                },
+                {
+                  label: t("sweepDados.privacidade.colMapeamentos"),
+                  value: String(selectedDado.mapeamentos_count ?? 0),
+                },
+                {
+                  label: t("sweepDados.privacidade.colRopas"),
+                  value: String(selectedDado.ropas_count ?? 0),
+                },
+                {
+                  label: t("sweepDados.privacidade.detFinalidade"),
+                  value: selectedDado.finalidade_tratamento,
+                  full: true,
+                },
+                {
+                  label: t("sweepDados.privacidade.detObservacoes"),
+                  value: selectedDado.observacoes,
+                  full: true,
+                },
+              ]
+            : []
+        }
         createdAt={selectedDado?.created_at}
         updatedAt={selectedDado?.updated_at}
       />
 
       <ConfirmDialog
         open={deleteConfirm.open}
-        onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title={t('residuos.privacidade.excluirItem')}
-        description={t('residuos.privacidade.excluirItemConfirm')}
-        confirmText={t('sweepDados.privacidade.excluir')}
+        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
+        title={t("residuos.privacidade.excluirItem")}
+        description={t("residuos.privacidade.excluirItemConfirm")}
+        confirmText={t("sweepDados.privacidade.excluir")}
         variant="destructive"
         onConfirm={confirmDelete}
       />

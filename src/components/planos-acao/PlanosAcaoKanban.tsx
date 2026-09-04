@@ -221,12 +221,17 @@ function PlanoCard({
   });
 
   return (
-    <div ref={overlay ? undefined : setNodeRef} className={isDragging ? 'opacity-30' : ''}>
+    <div
+      ref={overlay ? undefined : setNodeRef}
+      data-dragging={isDragging || undefined}
+      className={`akuris-kanban-card ${isDragging ? 'opacity-30' : ''}`}
+    >
       <Card
         data-focus-id={item.id}
+        data-dragging={overlay || undefined}
         className={[
-          'p-3 transition-shadow group',
-          overlay ? 'shadow-elegant rotate-1 cursor-grabbing' : 'hover:shadow-sm',
+          'akuris-kanban-card p-3 group',
+          overlay ? 'shadow-elegant cursor-grabbing' : 'hover:shadow-sm',
         ].join(' ')}
       >
         <div className="flex items-start gap-1.5">

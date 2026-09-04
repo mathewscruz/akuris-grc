@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { IconAdd, IconEdit, IconDelete, IconMore, IconServer } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +39,7 @@ interface SistemaPrivilegiado {
   imagem_url?: string;
 }
 
-export default function SistemasContent() {
+export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [showSistemaDialog, setShowSistemaDialog] = useState(false);
@@ -337,16 +338,16 @@ export default function SistemasContent() {
         ]}
       />
 
+      {actionsSlot && createPortal(
+        <Button onClick={() => setShowSistemaDialog(true)} size="sm">
+          <IconAdd className="mr-2 h-4 w-4" />
+          {t("governancaComp.sistemas.buttonNovo")}
+        </Button>,
+        actionsSlot,
+      )}
+
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <div className="p-6 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h3 className="text-lg font-semibold">{t("governancaComp.sistemas.title")}</h3>
-            <Button onClick={() => setShowSistemaDialog(true)} size="sm">
-              <IconAdd className="h-4 w-4 mr-2" />
-              {t("governancaComp.sistemas.buttonNovo")}
-            </Button>
-          </div>
-          
           <DataTable
             paginated
             pageSize={20}

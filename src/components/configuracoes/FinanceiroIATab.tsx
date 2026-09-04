@@ -308,7 +308,7 @@ export function FinanceiroIATab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="akuris-table w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colModelo')}</th>
@@ -405,7 +405,7 @@ export function FinanceiroIATab() {
             <p className="text-sm text-muted-foreground">{t('configPlanos.financeiroIA.funcionalidadesVazio')}</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="akuris-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left">
                     <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncionalidade')}</th>

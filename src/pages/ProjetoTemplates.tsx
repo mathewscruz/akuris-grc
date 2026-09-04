@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useTemplates, useUpsertTemplate, useDeleteTemplate, useAplicarTemplate, type Template } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
@@ -91,7 +91,7 @@ export default function ProjetoTemplates() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>
+        <ModuleLoadingSkeleton statCards={3} />
       ) : templates.length === 0 ? (
         <EmptyState variant="illustrated" icon={<IconLayers className="h-8 w-8" />} title={t('projetos.templates.emptyTitle')} description={t('projetos.templates.emptyDesc')} />
       ) : (

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { IconEdit, IconDelete, IconDownload, IconUpload, IconCalendar, IconSend, IconFile, IconMessage, IconPerson, IconMail, IconShield, IconActivity, IconLink, IconAttach, IconTest, IconChecklist } from '@/components/icons';
+import { IconEdit, IconDelete, IconDownload, IconUpload, IconCalendar, IconSend, IconFile, IconMessage, IconPerson, IconMail, IconShield, IconActivity, IconLink, IconAttach, IconTest, IconChecklist, ControlesIcon } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -36,6 +36,7 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 import TestesList from "@/components/controles/TestesList";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PlanosAcaoVinculados } from "@/components/riscos/PlanosAcaoVinculados";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { notificarVarios } from '@/lib/notificar';
@@ -478,82 +479,102 @@ export function ControleDetalheDialog({
         open={open}
         onOpenChange={onOpenChange}
         title={controle.nome}
-        icon={IconShield}
+        eyebrow={`${t('controlesAuditorias.cddEyebrow')}${controle.codigo ? ` · ${controle.codigo}` : ''}`}
+        icon={ControlesIcon}
         size="lg"
         hideFooter
         disableShortcuts
       >
-        <div className="space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="gap-1">
-                <IconShield className="h-3 w-3" />
-                {capitalizeText(controle.tipo)}
-              </Badge>
-              <StatusBadge {...resolveCriticidadeTone(controle.criticidade)}>
-                {formatStatus(controle.criticidade)}
-              </StatusBadge>
-              <StatusBadge {...resolveControleStatusTone(controle.status)}>
-                {formatStatus(controle.status)}
-              </StatusBadge>
+        <div className="space-y-5">
+          <section className="overflow-hidden rounded-lg border border-border/80 bg-popover shadow-sm">
+            <div className="flex flex-col gap-3 bg-surface-1/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="mb-2 text-micro font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  {t('controlesAuditorias.cddSituation')}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="gap-1 bg-popover">
+                    <IconShield className="h-3 w-3" />
+                    {capitalizeText(controle.tipo)}
+                  </Badge>
+                  <StatusBadge {...resolveCriticidadeTone(controle.criticidade)}>
+                    {formatStatus(controle.criticidade)}
+                  </StatusBadge>
+                  <StatusBadge {...resolveControleStatusTone(controle.status)}>
+                    {formatStatus(controle.status)}
+                  </StatusBadge>
+                </div>
+              </div>
+              {canEdit && (
+                <Button size="sm" onClick={onEdit}>
+                  <IconEdit className="mr-2 h-4 w-4" />
+                  {t('controlesAuditorias.cddEdit')}
+                </Button>
+              )}
             </div>
-            {canEdit && (
-              <Button variant="outline" size="sm" onClick={onEdit}>
-                <IconEdit className="h-4 w-4 mr-2" />
-                {t('controlesAuditorias.cddEdit')}
-              </Button>
-            )}
-          </div>
 
-          {/* Metadados do controle - linha separada */}
-          <div className="flex-shrink-0 flex flex-wrap gap-4 items-center text-sm bg-card rounded-lg p-3 border border-border">
-            {controle.responsavel_nome && (
-              <div className="flex items-center gap-2">
-                <IconPerson className="h-4 w-4 text-primary" />
-                <span className="font-medium">{controle.responsavel_nome}</span>
-              </div>
-            )}
-            {controle.frequencia && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <IconActivity className="h-4 w-4" />
-                <span>{capitalizeText(controle.frequencia)}</span>
-              </div>
-            )}
-            {controle.proxima_avaliacao && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <IconCalendar className="h-4 w-4" />
-                <span>{formatDateOnly(controle.proxima_avaliacao)}</span>
-              </div>
-            )}
-            {controle.categoria && (
-              <Badge 
-                variant="outline" 
-                style={{ borderColor: controle.categoria.cor, color: controle.categoria.cor }}
-              >
-                {controle.categoria.nome}
-              </Badge>
-            )}
-          </div>
+            <dl className="grid grid-cols-1 border-t border-border/70 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]">
+              {controle.responsavel_nome && (
+                <div className="border-b border-border/60 px-4 py-3 sm:border-r lg:border-b-0">
+                  <dt className="mb-1.5 text-micro text-muted-foreground">{t('controlesAuditorias.cddOwner')}</dt>
+                  <dd className="flex items-center gap-2 text-sm font-medium">
+                    <IconPerson className="h-4 w-4 text-primary" />
+                    <span className="truncate">{controle.responsavel_nome}</span>
+                  </dd>
+                </div>
+              )}
+              {controle.frequencia && (
+                <div className="border-b border-border/60 px-4 py-3 sm:border-r lg:border-b-0">
+                  <dt className="mb-1.5 text-micro text-muted-foreground">{t('controlesAuditorias.cddFrequency')}</dt>
+                  <dd className="flex items-center gap-2 text-sm font-medium">
+                    <IconActivity className="h-4 w-4 text-muted-foreground" />
+                    {capitalizeText(controle.frequencia)}
+                  </dd>
+                </div>
+              )}
+              {controle.proxima_avaliacao && (
+                <div className="border-b border-border/60 px-4 py-3 sm:border-r lg:border-b-0">
+                  <dt className="mb-1.5 text-micro text-muted-foreground">{t('controlesAuditorias.cddNextAssessment')}</dt>
+                  <dd className="flex items-center gap-2 text-sm font-medium">
+                    <IconCalendar className="h-4 w-4 text-muted-foreground" />
+                    {formatDateOnly(controle.proxima_avaliacao)}
+                  </dd>
+                </div>
+              )}
+              {controle.categoria && (
+                <div className="border-b border-border/60 px-4 py-3 lg:border-b-0">
+                  <dt className="mb-1.5 text-micro text-muted-foreground">{t('controlesAuditorias.cddCategory')}</dt>
+                  <dd className="text-sm font-medium">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: controle.categoria.cor }}
+                        aria-hidden="true"
+                      />
+                      {controle.categoria.nome}
+                    </span>
+                  </dd>
+                </div>
+              )}
+            </dl>
 
-          {/* Descrição separada com suporte a quebras de linha e scroll */}
-          {controle.descricao?.trim() && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium mb-2 text-foreground flex items-center gap-2">
-                <IconFile className="h-4 w-4" />
-                {t('controlesAuditorias.cddDescricao')}
-              </h4>
-              <ScrollArea className="max-h-[200px]">
-                <div className="bg-card rounded-lg p-4 border border-border/50">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {controle.descricao?.trim() && (
+              <div className="border-t border-border/70 px-4 py-4">
+                <h4 className="mb-2 flex items-center gap-2 text-micro font-medium text-muted-foreground">
+                  <IconFile className="h-4 w-4" />
+                  {t('controlesAuditorias.cddDescricao')}
+                </h4>
+                <ScrollArea className="max-h-[160px]">
+                  <p className="whitespace-pre-wrap pr-3 text-sm leading-relaxed text-foreground">
                     {controle.descricao}
                   </p>
-                </div>
-              </ScrollArea>
-            </div>
-          )}
+                </ScrollArea>
+              </div>
+            )}
+          </section>
 
           {/* Tabs */}
-          <Tabs defaultValue="comentarios" className="mt-4">
+          <Tabs defaultValue="comentarios">
             <TabsList className="flex-shrink-0">
               <TabsTrigger value="comentarios" className="flex items-center gap-2">
                 <IconMessage className="h-4 w-4" />
@@ -592,20 +613,20 @@ export function ControleDetalheDialog({
 
             <TabsContent value="comentarios" className="flex flex-col space-y-4">
               {/* Input de novo comentário com menções */}
-              <div className="flex gap-2 mb-4 flex-shrink-0">
-                <div className="flex-1 relative">
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder={t('controlesAuditorias.cddCommentPlaceholder')}
-                    value={novoComentario}
-                    onChange={handleCommentChange}
-                    rows={2}
-                    className="w-full pr-10"
-                  />
+              <div className="relative flex-shrink-0 rounded-lg border border-border/80 bg-popover shadow-sm focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder={t('controlesAuditorias.cddCommentPlaceholder')}
+                  value={novoComentario}
+                  onChange={handleCommentChange}
+                  rows={3}
+                  className="min-h-[92px] resize-none border-0 bg-transparent pb-11 pr-12 shadow-none focus-visible:ring-0"
+                />
+                <div className="absolute inset-x-2 bottom-2 flex items-center justify-between">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-2 h-6 w-6 p-0"
+                    className="h-7 gap-1.5 px-2 text-muted-foreground"
                     onClick={() => {
                       setNovoComentario(prev => prev + "@");
                       setMentionSearch("");
@@ -613,55 +634,62 @@ export function ControleDetalheDialog({
                       textareaRef.current?.focus();
                     }}
                     title={t('controlesAuditorias.cddMentionTitle')}
+                    aria-label={t('controlesAuditorias.cddMentionTitle')}
                   >
-                    <IconMail className="h-4 w-4 text-muted-foreground" />
+                    <IconMail className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('controlesAuditorias.cddMentionShort')}</span>
                   </Button>
-                  
-                  {/* Dropdown de menções - renderizado via Portal */}
-                  <Popover open={showMentions && filteredUsers && filteredUsers.length > 0} onOpenChange={setShowMentions}>
-                    <PopoverTrigger asChild>
-                      <span className="absolute bottom-0 left-0 w-0 h-0" />
-                    </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-64 p-0" 
-                      align="start" 
-                      side="bottom"
-                      onOpenAutoFocus={(e) => e.preventDefault()}
-                    >
-                      {filteredUsers?.map((user) => (
-                        <button
-                          key={user.user_id}
-                          className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 text-sm first:rounded-t-md last:rounded-b-md"
-                          onClick={() => insertMention(user)}
-                        >
-                          <IconPerson className="h-4 w-4 text-muted-foreground" />
-                          <span>{user.nome}</span>
-                        </button>
-                      ))}
-                    </PopoverContent>
-                  </Popover>
+                  <Button
+                    onClick={handleAddComentario}
+                    disabled={!novoComentario.trim() || isSubmittingComment}
+                    aria-label={t('controlesAuditorias.cddCommentSend')}
+                    size="sm"
+                    className="h-8 gap-1.5"
+                  >
+                    {isSubmittingComment ? (
+                      <AkurisPulse size={16} />
+                    ) : (
+                      <IconSend className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline">{t('controlesAuditorias.cddCommentSend')}</span>
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleAddComentario}
-                  disabled={!novoComentario.trim() || isSubmittingComment}
-                  aria-label={t('controlesAuditorias.cddCommentSend')}
-                  className="self-end"
-                >
-                  {isSubmittingComment ? (
-                    <AkurisPulse size={16} />
-                  ) : (
-                    <IconSend className="h-4 w-4" />
-                  )}
-                </Button>
+
+                {/* Dropdown de menções - renderizado via Portal */}
+                <Popover open={showMentions && filteredUsers && filteredUsers.length > 0} onOpenChange={setShowMentions}>
+                  <PopoverTrigger asChild>
+                    <span className="absolute bottom-0 left-0 h-0 w-0" />
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-64 p-0"
+                    align="start"
+                    side="bottom"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    {filteredUsers?.map((user) => (
+                      <button
+                        key={user.user_id}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent first:rounded-t-md last:rounded-b-md"
+                        onClick={() => insertMention(user)}
+                      >
+                        <IconPerson className="h-4 w-4 text-muted-foreground" />
+                        <span>{user.nome}</span>
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Lista de comentários */}
               <ScrollArea className="min-h-[150px] max-h-[300px]">
                 <div className="space-y-3 pr-4">
                   {comentarios?.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      {t('controlesAuditorias.cddNoComments')}
-                    </p>
+                    <EmptyState
+                      icon={<IconMessage className="h-6 w-6" />}
+                      title={t('controlesAuditorias.cddNoComments')}
+                      description={t('controlesAuditorias.cddNoCommentsDescription')}
+                      className="rounded-lg border border-dashed border-border/70 bg-surface-1/45 py-9"
+                    />
                   ) : (
                     comentarios?.map((c) => (
                       <div

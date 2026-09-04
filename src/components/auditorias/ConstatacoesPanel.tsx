@@ -173,6 +173,8 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={t('common.edit')}
+                    title={t('common.edit')}
                     onClick={() => {
                       setEmEdicao(achado);
                       setDialogOpen(true);
@@ -180,7 +182,7 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
                   >
                     <IconEdit className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setAEliminar(achado)}>
+                  <Button variant="ghost" size="icon" onClick={() => setAEliminar(achado)} aria-label={t('common.delete')} title={t('common.delete')}>
                     <IconDelete className="h-4 w-4 text-destructive" strokeWidth={1.5} />
                   </Button>
                 </div>
@@ -208,4 +210,3 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
     </div>
   );
 }
-

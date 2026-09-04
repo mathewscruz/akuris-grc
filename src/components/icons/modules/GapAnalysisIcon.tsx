@@ -1,13 +1,12 @@
 import * as React from 'react';
 import { BaseModuleIcon, type ModuleIconProps } from './_BaseModuleIcon';
 
-/** Gap Analysis — Alvo com seta indicando o "gap" entre atual e meta. */
+/** Gap Analysis — ponte explícita entre o patamar atual e o patamar alvo. */
 export const GapAnalysisIcon = React.forwardRef<SVGSVGElement, ModuleIconProps>((props, ref) => (
   <BaseModuleIcon ref={ref} {...props}>
-    <circle cx="12" cy="12" r="8.5" />
-    <circle cx="12" cy="12" r="4.5" />
-    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
-    <path d="M19 5 L12 12" />
+    <path d="M4 19v-7h5v7M15 19V5h5v14" />
+    <path d="m8 14 7-7" />
+    <path d="M11 7h4v4" />
   </BaseModuleIcon>
 ));
 GapAnalysisIcon.displayName = 'GapAnalysisIcon';

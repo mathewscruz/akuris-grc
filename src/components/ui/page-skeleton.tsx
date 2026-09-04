@@ -1,10 +1,10 @@
-import { LoadingOverlay } from "./LoadingOverlay";
+import { ModuleLoadingSkeleton } from './module-loading-skeleton';
 
 /**
- * PageSkeleton — descontinuado como skeleton estrutural.
- * Agora delega para o loader oficial AkurisPulse via LoadingOverlay,
- * mantendo a API para todos os pontos de uso existentes.
+ * Reserva a estrutura da página durante consultas de dados. Isso reduz o
+ * salto de layout e permite ao usuário antecipar onde filtros, KPIs e tabela
+ * aparecerão, enquanto o pulse continua reservado às ações locais.
  */
 export function PageSkeleton() {
-  return <LoadingOverlay />;
+  return <ModuleLoadingSkeleton />;
 }

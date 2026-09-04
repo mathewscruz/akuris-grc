@@ -410,17 +410,23 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
     {
       key: 'acoes',
       label: t('denunciasAdmin.dashboard.colAcoes'),
-      render: (_: any, denuncia: Denuncia) => (
-        <Button
+      render: (_: any, denuncia: Denuncia) => {
+        const prazo = jaEncerrada(denuncia) ? null : prazoActivo(denuncia);
+        const dias = prazo ? diasAte(prazo.data) : null;
+        const requerAcao = !jaEncerrada(denuncia) && (
+          (dias !== null && dias < 0) || porResponder.has(denuncia.id) || !denuncia.responsavel_id
+        );
+        return <Button
           variant="ghost"
-          size="icon-sm"
+          size={requerAcao ? 'sm' : 'icon-sm'}
           onClick={() => handleVisualizarDenuncia(denuncia)}
-          aria-label={t('common.view')}
-          title={t('common.view')}
+          className={requerAcao ? 'text-warning hover:text-warning' : undefined}
+          aria-label={requerAcao ? t('denunciasAdmin.dashboard.treatPending') : t('common.view')}
+          title={requerAcao ? t('denunciasAdmin.dashboard.treatPending') : t('common.view')}
         >
-          <IconView className="h-4 w-4" />
-        </Button>
-      )
+          {requerAcao ? <><IconWarning className="mr-2 h-4 w-4" />{t('denunciasAdmin.dashboard.treatPending')}</> : <IconView className="h-4 w-4" />}
+        </Button>;
+      }
     }
   ];
 

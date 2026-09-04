@@ -295,12 +295,14 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-end">
-                      {canUpdate('riscos') && <Button variant="ghost" size="icon" onClick={() => handleEdit(tratamento)}>
+                      {canUpdate('riscos') && <Button variant="ghost" size="icon" onClick={() => handleEdit(tratamento)} aria-label={t('common.edit')} title={t('common.edit')}>
                         <IconEdit className="h-3.5 w-3.5" strokeWidth={1.5} />
                       </Button>}
                       {canDelete('riscos') && <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={t('common.delete')}
+                        title={t('common.delete')}
                         onClick={() => openDeleteDialog(tratamento)}
                         className="text-destructive hover:text-destructive"
                       >

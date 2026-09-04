@@ -1,9 +1,9 @@
-import { Card } from '@/components/ui/card';
+import { ModuleBanner } from '@/components/ui/module-banner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FrameworkLogo } from './FrameworkLogos';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconArrowRight } from '@/components/icons';
+import { GapAnalysisIcon, IconArrowRight } from '@/components/icons';
 
 interface SuggestedFramework {
   id: string;
@@ -34,8 +34,11 @@ const FRAMEWORK_AUDIENCE_KEYS: Record<string, string> = {
 export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFrameworks }: WelcomeHeroProps) {
   const { t } = useLanguage();
   return (
-    <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-      <div className="p-6 md:p-8">
+    <ModuleBanner
+      icon={GapAnalysisIcon}
+      className="from-primary/5 via-background to-accent/5"
+      contentClassName="p-6 md:p-8"
+    >
         <div className="flex items-center gap-2 mb-3">
           <Badge variant="secondary" className="text-xs">{t('gapAnalysis.welcome.badge')}</Badge>
         </div>
@@ -76,7 +79,6 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
           {t('gapAnalysis.welcome.viewAll')}
           <IconArrowRight className="h-4 w-4 ml-1" strokeWidth={1.5}/>
         </Button>
-      </div>
-    </Card>
+    </ModuleBanner>
   );
 }

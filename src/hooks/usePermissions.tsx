@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger, measurePerformance } from '@/lib/logger';
-import { chaveDePlano, SEMPRE_PERMITIDOS } from '@/lib/autorizacao';
+import { decidirAcesso } from '@/lib/autorizacao';
 
 interface ModulePermission {
   module_id: string;
@@ -204,53 +204,31 @@ export const usePermissions = (): UsePermissionsReturn => {
     return permissionsMap.get(moduleName);
   }, [permissionsMap]);
 
-  /* O plano é teto para todos, super_admin da empresa incluído. */
-  const dentroDoPlano = useCallback((moduleName: string) => {
-    if (modulosDoPlano === null) return true;
-    if (SEMPRE_PERMITIDOS.has(moduleName)) return true;
-    return modulosDoPlano.includes(chaveDePlano(moduleName));
-  }, [modulosDoPlano]);
-
   const canAccess = useCallback((moduleName: string) => {
-    if (!dentroDoPlano(moduleName)) return false;
-    // Super-admin sempre tem acesso total
-    if (profile?.role === 'super_admin') return true;
-
-    const permission = getPermissionForModule(moduleName);
-    return permission?.can_access || false;
-  }, [dentroDoPlano, getPermissionForModule, profile?.role]);
+    return decidirAcesso({
+      papel: profile?.role,
+      modulo: moduleName,
+      acao: 'access',
+      permissao: getPermissionForModule(moduleName),
+      modulosDoPlano,
+    });
+  }, [getPermissionForModule, modulosDoPlano, profile?.role]);
 
   const canCreate = useCallback((moduleName: string) => {
-    // Super-admin sempre tem acesso total
-    if (profile?.role === 'super_admin') return true;
-    
-    const permission = getPermissionForModule(moduleName);
-    return permission?.can_create || false;
-  }, [getPermissionForModule, profile?.role]);
+    return decidirAcesso({ papel: profile?.role, modulo: moduleName, acao: 'create', permissao: getPermissionForModule(moduleName), modulosDoPlano });
+  }, [getPermissionForModule, modulosDoPlano, profile?.role]);
 
   const canRead = useCallback((moduleName: string) => {
-    // Super-admin sempre tem acesso total
-    if (profile?.role === 'super_admin') return true;
-    
-    const permission = getPermissionForModule(moduleName);
-    return permission?.can_read || false;
-  }, [getPermissionForModule, profile?.role]);
+    return decidirAcesso({ papel: profile?.role, modulo: moduleName, acao: 'read', permissao: getPermissionForModule(moduleName), modulosDoPlano });
+  }, [getPermissionForModule, modulosDoPlano, profile?.role]);
 
   const canUpdate = useCallback((moduleName: string) => {
-    // Super-admin sempre tem acesso total
-    if (profile?.role === 'super_admin') return true;
-    
-    const permission = getPermissionForModule(moduleName);
-    return permission?.can_update || false;
-  }, [getPermissionForModule, profile?.role]);
+    return decidirAcesso({ papel: profile?.role, modulo: moduleName, acao: 'update', permissao: getPermissionForModule(moduleName), modulosDoPlano });
+  }, [getPermissionForModule, modulosDoPlano, profile?.role]);
 
   const canDelete = useCallback((moduleName: string) => {
-    // Super-admin sempre tem acesso total
-    if (profile?.role === 'super_admin') return true;
-    
-    const permission = getPermissionForModule(moduleName);
-    return permission?.can_delete || false;
-  }, [getPermissionForModule, profile?.role]);
+    return decidirAcesso({ papel: profile?.role, modulo: moduleName, acao: 'delete', permissao: getPermissionForModule(moduleName), modulosDoPlano });
+  }, [getPermissionForModule, modulosDoPlano, profile?.role]);
 
   const refetchPermissions = useCallback(async () => {
     setLoading(true);

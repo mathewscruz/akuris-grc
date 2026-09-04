@@ -890,13 +890,6 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
                     <IconFilter className="h-4 w-4 mr-2" />
                     {t('dueDiligence.assessmentsManagerEnhanced.filters')}
                   </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => setAssessmentDialog({ open: true, assessment: null, mode: 'create' })}
-                  >
-                    <IconAdd className="h-4 w-4 mr-2" />
-                    {t('dueDiligence.assessmentsManagerEnhanced.newAssessment')}
-                  </Button>
                 </div>
               </div>
               

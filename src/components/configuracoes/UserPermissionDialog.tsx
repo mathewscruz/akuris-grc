@@ -290,7 +290,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
           */
             className="border rounded-lg overflow-x-auto"
           >
-            <table className="w-full text-sm">
+            <table className="akuris-table w-full text-sm">
               <thead>
                 <tr className="border-b bg-card">
                   <th className="text-left px-3 py-2 font-medium">{t('configPerms.userDialog.colModule')}</th>

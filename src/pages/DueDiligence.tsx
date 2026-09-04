@@ -67,14 +67,22 @@ export default function DueDiligence() {
       <PageHeader
         title={t('modules.dueDiligence.title')}
         description={t('modules.dueDiligence.description')}
-        actions={
-          activeTab === 'fornecedores' ? (
-            <Button onClick={() => gestorFornecedores.current?.abrirNovo()}>
-              <IconAdd className="h-4 w-4 mr-2" />
-              {t('dueDiligence.fornecedoresManager.newSupplier')}
-            </Button>
-          ) : undefined
-        }
+        actions={(
+          <Button
+            onClick={() => {
+              if (activeTab === 'fornecedores') gestorFornecedores.current?.abrirNovo();
+              if (activeTab === 'assessments') window.dispatchEvent(new CustomEvent('createAssessment'));
+              if (activeTab === 'templates') window.dispatchEvent(new CustomEvent('createDueDiligenceTemplate'));
+            }}
+          >
+            <IconAdd className="mr-2 h-4 w-4" />
+            {activeTab === 'fornecedores'
+              ? t('dueDiligence.fornecedoresManager.newSupplier')
+              : activeTab === 'assessments'
+                ? t('dueDiligence.assessmentsManagerEnhanced.newAssessment')
+                : t('dueDiligence.templatesManager.newTemplate')}
+          </Button>
+        )}
       />
 
       {/* Dashboard always visible on top */}

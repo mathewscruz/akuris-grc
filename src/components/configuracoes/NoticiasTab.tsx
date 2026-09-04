@@ -151,7 +151,7 @@ export default function NoticiasTab() {
                       {isDraft ? <IconEdit className="h-3.5 w-3.5" /> : <IconSend className="h-3.5 w-3.5" />}
                       {isDraft ? t('configPlanos.noticiasTab.editar') : t('configPlanos.noticiasTab.ver')}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setDeletingId(c.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => setDeletingId(c.id)} aria-label={t('common.delete')} title={t('common.delete')}>
                       <IconDelete className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>

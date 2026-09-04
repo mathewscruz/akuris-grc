@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconUpload, IconInfo, IconFile } from '@/components/icons';
+import { IconUpload, IconInfo, DocumentosIcon } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -151,7 +151,7 @@ export const RenovarDocumentoDialog = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={IconFile}
+      icon={DocumentosIcon}
       title={t('documentosExtras.renovar.titulo')}
       size="md"
       footer={

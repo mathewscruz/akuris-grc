@@ -20,7 +20,7 @@ import { FieldHelpTooltip } from "@/components/ui/field-help-tooltip";
 import { logger } from "@/lib/logger";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconShieldCheck, IconSettings, IconLink, IconCalendar } from '@/components/icons';
+import { IconShieldCheck, IconSettings, IconLink, IconCalendar, ControlesIcon } from '@/components/icons';
 import { exigirEscrita } from '@/lib/supabase-write';
 
 const formatDateForDatabase = (dateString: string): string | null => (!dateString ? null : dateString);
@@ -421,7 +421,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       onOpenChange={onOpenChange}
       title={controle ? t('controlesAuditorias.cdlgTitleEdit') : t('controlesAuditorias.cdlgTitleNew')}
       description={t('controlesAuditorias.cdlgDescription')}
-      icon={IconShieldCheck}
+      icon={ControlesIcon}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}

@@ -57,7 +57,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "!border !border-border rounded-lg",
             "shadow-[0_18px_40px_-16px_hsl(0_0%_0%/0.55),0_2px_6px_-2px_hsl(0_0%_0%/0.25)]",
             "!p-4 !pl-5 overflow-hidden",
-            "data-[state=open]:animate-toast-enter data-[state=closed]:animate-toast-exit",
+            "data-[state=open]:animate-toast-enter data-[state=closed]:animate-toast-exit motion-reduce:animate-none",
             "!items-start !gap-3",
             // Acento vertical 3px — tons via data-type do Sonner
             "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:content-['']",

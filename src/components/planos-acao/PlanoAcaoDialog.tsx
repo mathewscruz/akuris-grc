@@ -178,7 +178,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
 
   const missingFields: string[] = [];
   if (!titulo.trim()) missingFields.push(t('planosAcaoWizard.missingFieldTitle'));
-  const submitBlockedReason = missingFields.length > 0
+  const submitBlockedReason = showTitleError && missingFields.length > 0
     ? `${t('planosAcaoWizard.missingFieldsPrefix')}: ${missingFields.join(', ')}`
     : undefined;
 

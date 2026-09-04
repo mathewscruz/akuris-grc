@@ -281,7 +281,7 @@ export function InboundWebhooksManager() {
                       <code className="text-micro bg-muted px-1 py-0.5 rounded max-w-[200px] truncate">
                         {baseUrl}?token={wh.webhook_token.substring(0, 8)}...
                       </code>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyUrl(wh.webhook_token)}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyUrl(wh.webhook_token)} aria-label={t('common.copy')} title={t('common.copy')}>
                         <IconCopy className="h-3 w-3" />
                       </Button>
                     </div>
@@ -297,6 +297,7 @@ export function InboundWebhooksManager() {
                         size="icon"
                         className="h-7 w-7"
                         title={t('configGeral.inboundWebhooks.actionViewPayload')}
+                        aria-label={t('configGeral.inboundWebhooks.actionViewPayload')}
                         onClick={() => setPayloadDialogOpen(wh.modulo_destino)}
                       >
                         <IconCode className="h-3.5 w-3.5" />
@@ -306,6 +307,7 @@ export function InboundWebhooksManager() {
                         size="icon"
                         className="h-7 w-7"
                         title={t('configGeral.inboundWebhooks.actionSendTest')}
+                        aria-label={t('configGeral.inboundWebhooks.actionSendTest')}
                         disabled={testingWebhook === wh.id || !wh.ativo}
                         onClick={() => handleTestWebhook(wh)}
                       >
@@ -315,7 +317,7 @@ export function InboundWebhooksManager() {
                           <IconSend className="h-3.5 w-3.5" />
                         )}
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm(wh.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm(wh.id)} aria-label={t('common.delete')} title={t('common.delete')}>
                         <IconDelete className="h-3.5 w-3.5" />
                       </Button>
                     </div>
