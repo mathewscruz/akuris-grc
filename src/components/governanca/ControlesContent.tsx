@@ -46,6 +46,9 @@ import { shortControleId } from '@/lib/controle-id';
 import { formatDateOnly, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { compararEscala } from '@/lib/ordem-de-escala';
+import { usePermissions } from '@/hooks/usePermissions';
+import { exigirLinhas } from '@/lib/supabase-write';
+import { logger } from '@/lib/logger';
 
 interface Controle {
   id: string;
@@ -107,6 +110,10 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
+  const podeCriarControle = canCreate('controles');
+  const podeEditarControle = canUpdate('controles');
+  const podeExcluirControle = canDelete('controles');
   
   // Handle sorting
   const handleSort = (field: string) => {
@@ -265,23 +272,46 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   // Deletar controle
   const deleteControleMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('controles')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await exigirLinhas(
+        supabase
+          .from('controles')
+          .delete()
+          .eq('id', id)
+          .select('id'),
+        'SEM_PERMISSAO_OU_CONTROLE_INEXISTENTE',
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles'] });
+      queryClient.invalidateQueries({ queryKey: ['controles-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['controles-auditorias-vinculos'] });
+      queryClient.invalidateQueries({ queryKey: ['auditoria-itens'] });
       toast({
         title: t("governancaComp.controles.toastDeletedTitle"),
         description: t("governancaComp.controles.toastDeletedDesc"),
       });
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      const details = error && typeof error === 'object' ? error as Record<string, unknown> : {};
+      const code = typeof details.code === 'string' ? details.code : '';
+      const message = typeof details.message === 'string'
+        ? details.message
+        : error instanceof Error ? error.message : String(error);
+      const semPermissao = code === '42501' || message.includes('SEM_PERMISSAO');
+      const aindaVinculado = code === '23503';
+
+      logger.error('Erro ao excluir controle', {
+        code,
+        error: message,
+        module: 'controles',
+      });
       toast({
         title: t("governancaComp.controles.toastErrorTitle"),
-        description: t("governancaComp.controles.toastErrorDesc"),
+        description: semPermissao
+          ? t("governancaComp.controles.toastErrorPermission")
+          : aindaVinculado
+            ? t("governancaComp.controles.toastErrorLinked")
+            : t("governancaComp.controles.toastErrorDesc"),
         variant: "destructive",
       });
     }
@@ -554,7 +584,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       key: 'actions' as keyof Controle,
       label: t("governancaComp.controles.columnAcoes"),
       sortable: false,
-      render: (value: any, controle: Controle) => (
+      render: (value: any, controle: Controle) => (podeEditarControle || podeExcluirControle) ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {/* Botão só-ícone: sem nome acessível não aparecia sequer na árvore
@@ -569,31 +599,37 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleEdit(controle)}>
-              <IconEdit className="h-4 w-4 mr-2" />
-              {t("governancaComp.controles.buttonEditar")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              setSelectedControleForTests(controle);
-              setTestesDialogOpen(true);
-            }}>
-              <IconTest className="h-4 w-4 mr-2" />
-              {t("governancaComp.controles.buttonGerenciarTestes")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              setSelectedControleForVinculacao(controle);
-              setVinculacaoDialogOpen(true);
-            }}>
-              <IconLink className="h-4 w-4 mr-2" />
-              {t("governancaComp.controles.buttonGerenciarVinculacoes")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDelete(controle.id)} className="text-destructive focus:text-destructive">
-              <IconDelete className="h-4 w-4 mr-2" />
-              {t("governancaComp.controles.buttonExcluir")}
-            </DropdownMenuItem>
+            {podeEditarControle && (
+              <>
+                <DropdownMenuItem onClick={() => handleEdit(controle)}>
+                  <IconEdit className="h-4 w-4 mr-2" />
+                  {t("governancaComp.controles.buttonEditar")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setSelectedControleForTests(controle);
+                  setTestesDialogOpen(true);
+                }}>
+                  <IconTest className="h-4 w-4 mr-2" />
+                  {t("governancaComp.controles.buttonGerenciarTestes")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setSelectedControleForVinculacao(controle);
+                  setVinculacaoDialogOpen(true);
+                }}>
+                  <IconLink className="h-4 w-4 mr-2" />
+                  {t("governancaComp.controles.buttonGerenciarVinculacoes")}
+                </DropdownMenuItem>
+              </>
+            )}
+            {podeExcluirControle && (
+              <DropdownMenuItem onClick={() => handleDelete(controle.id)} className="text-destructive focus:text-destructive">
+                <IconDelete className="h-4 w-4 mr-2" />
+                {t("governancaComp.controles.buttonExcluir")}
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      ) : null
     }
   ];
 
@@ -673,13 +709,15 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             </ActionsMenuItem>
           </ActionsMenuContent>
         </ActionsMenu>
-        <Button
-          size="sm"
-          onClick={() => setControleDialogOpen(true)}
-        >
-          <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5} />
-          {t("governancaComp.controles.buttonNovo")}
-        </Button>
+        {podeCriarControle && (
+          <Button
+            size="sm"
+            onClick={() => setControleDialogOpen(true)}
+          >
+            <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5} />
+            {t("governancaComp.controles.buttonNovo")}
+          </Button>
+        )}
         </>,
         actionsSlot
       )}
@@ -759,7 +797,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
               description: filtrosAtivos
                 ? t("governancaComp.controles.emptyFilteredDescription")
                 : t("governancaComp.controles.emptyDescription"),
-              action: filtrosAtivos
+              action: filtrosAtivos || !podeCriarControle
                 ? undefined
                 : {
                     label: t("governancaComp.controles.emptyAction"),
@@ -815,6 +853,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           if (!open) setSelectedControleForDetail(null);
         }}
         controle={selectedControleForDetail}
+        canEdit={podeEditarControle}
         onEdit={() => {
           setDetalheDialogOpen(false);
           if (selectedControleForDetail) {

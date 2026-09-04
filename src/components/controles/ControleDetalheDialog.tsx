@@ -44,6 +44,7 @@ interface ControleDetalheDialogProps {
   onOpenChange: (open: boolean) => void;
   controle: any;
   onEdit: () => void;
+  canEdit?: boolean;
 }
 
 export function ControleDetalheDialog({
@@ -51,6 +52,7 @@ export function ControleDetalheDialog({
   onOpenChange,
   controle,
   onEdit,
+  canEdit = true,
 }: ControleDetalheDialogProps) {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
@@ -495,10 +497,12 @@ export function ControleDetalheDialog({
                 {formatStatus(controle.status)}
               </StatusBadge>
             </div>
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              <IconEdit className="h-4 w-4 mr-2" />
-              {t('controlesAuditorias.cddEdit')}
-            </Button>
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                <IconEdit className="h-4 w-4 mr-2" />
+                {t('controlesAuditorias.cddEdit')}
+              </Button>
+            )}
           </div>
 
           {/* Metadados do controle - linha separada */}

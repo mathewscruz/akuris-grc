@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { logger } from "@/lib/logger";
 import { IconChecklist } from '@/components/icons';
+import { shortControleId } from '@/lib/controle-id';
 
 const makeFormSchema = (t: (key: string) => string) => z.object({
   codigo: z.string().min(1, t("govDialogs.itemAuditoriaFormDialog.zodCodigoRequired")),
@@ -142,6 +143,12 @@ export function ItemAuditoriaFormDialog({
 
   const handleControleChange = (value: string, controle?: any) => {
     form.setValue("controle_vinculado_id", value);
+    // Um item ligado a um controle usa o identificador canônico desse controle.
+    // Isso evita que Auditoria mostre A-001 e Controles mostre CTRL-0042 para o
+    // mesmo registro lógico.
+    if (controle) {
+      form.setValue("codigo", shortControleId(controle.id, controle.codigo), { shouldValidate: true });
+    }
     // Auto-preencher campos se controle selecionado e campos estão vazios
     if (controle && !form.getValues("titulo")) {
       form.setValue("titulo", controle.nome);

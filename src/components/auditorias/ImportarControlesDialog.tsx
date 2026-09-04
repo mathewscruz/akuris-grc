@@ -16,6 +16,7 @@ import { criticidadeControle } from "@/lib/metrics/controles";
 import { norm } from "@/lib/metrics/core";
 import { Checkbox as ToggleInativos } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { shortControleId } from '@/lib/controle-id';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -49,7 +50,7 @@ export function ImportarControlesDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("controles")
-        .select("id, nome, descricao, tipo, status, criticidade")
+        .select("id, codigo, nome, descricao, tipo, status, criticidade")
         .eq("empresa_id", empresaId!)
         .order("nome");
 
@@ -103,22 +104,11 @@ export function ImportarControlesDialog({
 
       const selectedControles = controles?.filter((c) => selectedIds.includes(c.id)) || [];
 
-      // O código do item é o identificador do papel de trabalho: tem de
-      // continuar a sequência da auditoria, não recomeçar em CTRL-001 a cada
-      // importação (duas importações geravam códigos repetidos).
-      const { data: existentes } = await supabase
-        .from("auditoria_itens")
-        .select("codigo")
-        .eq("auditoria_id", auditoriaId)
-        .like("codigo", "CTRL-%");
-      const ultimoNumero = (existentes ?? []).reduce((maior, item) => {
-        const n = Number(String(item.codigo).replace("CTRL-", ""));
-        return Number.isFinite(n) && n > maior ? n : maior;
-      }, 0);
-
-      const itemsToInsert = selectedControles.map((controle, index) => ({
+      const itemsToInsert = selectedControles.map((controle) => ({
         auditoria_id: auditoriaId,
-        codigo: `CTRL-${String(ultimoNumero + index + 1).padStart(3, "0")}`,
+        // Controle e item representam a mesma referência durante a auditoria;
+        // por isso compartilham o código, em vez de manter duas sequências.
+        codigo: shortControleId(controle.id, controle.codigo),
         titulo: controle.nome,
         descricao: controle.descricao || null,
         controle_vinculado_id: controle.id,

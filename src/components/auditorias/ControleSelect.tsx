@@ -10,9 +10,11 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconShield } from '@/components/icons';
+import { shortControleId } from '@/lib/controle-id';
 
 interface Controle {
   id: string;
+  codigo: string | null;
   nome: string;
   descricao: string | null;
   tipo: string;
@@ -46,7 +48,7 @@ export function ControleSelect({
     try {
       const { data, error } = await supabase
         .from("controles")
-        .select("id, nome, descricao, tipo, status")
+        .select("id, codigo, nome, descricao, tipo, status")
         .eq("empresa_id", empresaId!)
         .order("nome");
 
@@ -69,10 +71,18 @@ export function ControleSelect({
     <Select value={value || "_none"} onValueChange={handleChange}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder={placeholder ?? t('controlesAuditorias.csPlaceholder')}>
-          {value && controles.find((c) => c.id === value)?.nome}
+          {value && (() => {
+            const controle = controles.find((c) => c.id === value);
+            return controle
+              ? `${shortControleId(controle.id, controle.codigo)} · ${controle.nome}`
+              : undefined;
+          })()}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent
+        position="popper"
+        className="max-h-72 w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+      >
         <SelectItem value="_none">
           <span className="text-muted-foreground">{t('controlesAuditorias.csNenhum')}</span>
         </SelectItem>
@@ -82,10 +92,12 @@ export function ControleSelect({
           </SelectItem>
         ) : (
           controles.map((controle) => (
-            <SelectItem key={controle.id} value={controle.id}>
-              <div className="flex items-center gap-2">
-                <IconShield className="h-3 w-3 text-muted-foreground" />
-                <span>{controle.nome}</span>
+            <SelectItem key={controle.id} value={controle.id} className="max-w-full">
+              <div className="flex min-w-0 items-center gap-2">
+                <IconShield className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span className="truncate">
+                  {shortControleId(controle.id, controle.codigo)} · {controle.nome}
+                </span>
               </div>
             </SelectItem>
           ))
