@@ -1,43 +1,48 @@
 /**
- * RiscosTabs — controla as 4 visões (Visão geral · Matriz · Tabela · Aceite)
- * via `?view=`. Lembra a última escolha em localStorage.
+ * RiscosTabs — controla as três áreas operacionais (Matriz · Tabela · Aceite)
+ * via `?view=` e lembra a última escolha em localStorage.
  *
- * Sem ícones nos separadores: os rótulos já dizem o que são, e "Visão geral" e
- * "Matriz" partilhavam o MESMO glifo — o ícone não estava a distinguir nada,
- * estava a sugerir que as duas abas eram a mesma coisa.
+ * A antiga visão geral foi removida por duplicar indicadores que já vivem no
+ * Dashboard, na Matriz e nos filtros rápidos da Tabela. Links e preferências
+ * antigos com `overview` são normalizados para `table`.
  */
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-export type RiscosView = 'overview' | 'matrix' | 'table' | 'aceite';
+export type RiscosView = 'matrix' | 'table' | 'aceite';
 const STORAGE_KEY = 'akuris.riscos.view';
-const VALID: RiscosView[] = ['overview', 'matrix', 'table', 'aceite'];
+const VALID: RiscosView[] = ['matrix', 'table', 'aceite'];
+
+export function resolveRiscosView(requested: string | null, stored: string | null): RiscosView {
+  if (requested) return VALID.includes(requested as RiscosView) ? requested as RiscosView : 'table';
+  return VALID.includes(stored as RiscosView) ? stored as RiscosView : 'table';
+}
 
 interface Props {
-  overview: React.ReactNode;
   matrix: React.ReactNode;
   table: React.ReactNode;
   aceite: React.ReactNode;
 }
 
-export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
+export function RiscosTabs({ matrix, table, aceite }: Props) {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlView = searchParams.get('view') as RiscosView | null;
-  const stored = (typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEY) as RiscosView | null) : null);
-  const initial: RiscosView =
-    urlView && VALID.includes(urlView) ? urlView : stored && VALID.includes(stored) ? stored : 'table';
+  const requestedView = searchParams.get('view');
+  const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+  // Um parâmetro explícito inválido (incluindo o legado `overview`) deve cair
+  // sempre na Tabela; sem parâmetro, respeitamos a última área válida.
+  const activeView = resolveRiscosView(requestedView, stored);
 
   useEffect(() => {
-    if (!urlView) {
+    if (requestedView !== activeView) {
       const sp = new URLSearchParams(searchParams);
-      sp.set('view', initial);
+      sp.set('view', activeView);
       setSearchParams(sp, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (stored !== activeView) localStorage.setItem(STORAGE_KEY, activeView);
+  }, [activeView, requestedView, searchParams, setSearchParams, stored]);
 
   const onChange = (v: string) => {
     const view = v as RiscosView;
@@ -48,14 +53,8 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
   };
 
   return (
-    <Tabs value={urlView || initial} onValueChange={onChange} className="w-full">
+    <Tabs value={activeView} onValueChange={onChange} className="w-full">
       <TabsList>
-        <TabsTrigger
-          value="overview"
-          className="text-xs"
-        >
-          {t('riscosDetalhe.tabs.overview')}
-        </TabsTrigger>
         <TabsTrigger
           value="matrix"
           className="text-xs"
@@ -75,7 +74,6 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
           {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="overview">{overview}</TabsContent>
       <TabsContent value="matrix">{matrix}</TabsContent>
       <TabsContent value="table">{table}</TabsContent>
       <TabsContent value="aceite">{aceite}</TabsContent>

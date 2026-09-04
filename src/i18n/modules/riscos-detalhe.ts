@@ -18,7 +18,6 @@ export const riscosDetalhe = {
       },
       // RiscosTabs
       tabs: {
-        overview: 'Visão geral',
         matrix: 'Matriz',
         table: 'Tabela',
         aceite: 'Aceite',
@@ -445,7 +444,6 @@ export const riscosDetalhe = {
         emptyLabel: '—',
       },
       tabs: {
-        overview: 'Overview',
         matrix: 'Matrix',
         table: 'Table',
         aceite: 'Acceptance',

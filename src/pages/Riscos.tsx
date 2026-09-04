@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
-import { IconAdd, IconClose, IconEdit, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconUserOff, IconCalendarClock, IconArchive } from '@/components/icons';
+import { IconAdd, IconClose, IconEdit, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconArchive } from '@/components/icons';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { StatStrip } from '@/components/ui/stat-strip';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,7 +37,6 @@ import {
   postoDaSeveridade,
 } from '@/lib/metrics/riscos';
 import { useMatrizConfigEmpresa, MATRIZ_QUERY_KEY } from '@/hooks/useMatrizConfigEmpresa';
-import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
@@ -53,10 +51,6 @@ import { RiscoAnexosIcone } from '@/components/riscos/RiscoAnexosIcone';
 import { RiscosTabs } from '@/components/riscos/RiscosTabs';
 import RiscosAceite from '@/pages/RiscosAceite';
 import { RiscoDetailDrawer } from '@/components/riscos/RiscoDetailDrawer';
-import { AppetiteBanner } from '@/components/riscos/overview/AppetiteBanner';
-import { RiskTrendChart } from '@/components/riscos/overview/RiskTrendChart';
-import { RiskCategoryBars } from '@/components/riscos/overview/RiskCategoryBars';
-import { RiskWatchlist } from '@/components/riscos/overview/RiskWatchlist';
 import { SeverityKpiRow } from '@/components/riscos/matrix/SeverityKpiRow';
 import { RiskHeatmap } from '@/components/riscos/matrix/RiskHeatmap';
 import { HeatmapCellPanel } from '@/components/riscos/matrix/HeatmapCellPanel';
@@ -135,7 +129,6 @@ export function Riscos() {
   const { toast } = useToast();
   const location = useLocation();
   const { data: stats, refetch: refetchStats } = useRiscosStats();
-  const { data: trendPoints = [] } = useRiskScoreTrend();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
@@ -321,8 +314,8 @@ export function Riscos() {
 
   /**
    * Refaz TODAS as consultas afetadas por criar/editar/apagar risco.
-   * `refetchType: 'all'` garante que abas ainda não montadas (Visão geral,
-   * Matriz) e os KPIs do Dashboard também sejam atualizados, e o `await`
+   * `refetchType: 'all'` garante que a Matriz, a Tabela e os KPIs do Dashboard
+   * também sejam atualizados, e o `await`
    * permite fechar o modal só depois de a lista já conter o novo risco.
    */
   const invalidateRiscos = async () => {
@@ -866,8 +859,6 @@ export function Riscos() {
           ]}
         />
 
-        {/* KPI cards antigos removidos — KPIs agora vivem dentro das abas (Visão geral / Matriz). */}
-
         {/* AKURIS QA-055 — sem configuração de matriz não há nível de risco
             calculável. Antes o erro era silencioso; agora é explícito e acionável. */}
         {matrizConfigIndisponivel && (
@@ -903,17 +894,10 @@ export function Riscos() {
         )}
 
         {(() => {
-          // Derivações compartilhadas para Visão geral e Matriz
+          // Derivações da Matriz
           // Apetite score = max do nível marcado como limite de apetite na config da
           // matriz (fallback: nível "médio", para matrizes sem a marcação).
           const acimaApetite = riscos.filter((r) => isAcimaDoApetite(r, apetiteScore)).length;
-          // Alinhado à coluna Resp. da tabela: conta riscos sem nome de responsável
-          // resolvido (um ID que não resolve para um perfil também aparece como "—").
-          const semResponsavel = riscos.filter((r) => !r.responsavel_nome).length;
-          const revisaoVencida = riscos.filter((r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido').length;
-          // Status efetivo (AKURIS QA-065): o KPI acompanha o badge exibido.
-          const emTratamento = riscos.filter((r) => (r.status_efetivo ?? r.status) === 'em_tratamento').length;
-
           // Contagem por severidade — a MESMA de que a exportação e o painel se
           // servem. Esta página tinha duas: os cartões liam o rótulo gravado e
           // a exportação lia as faixas, e o cartão dizia "2 Críticos" com um só
@@ -937,50 +921,6 @@ export function Riscos() {
                 // O painel exibe o status coerente, igual à tabela (AKURIS QA-065).
                 .map((r) => ({ ...r, status: r.status_efetivo ?? r.status }))
             : [];
-
-          const overviewNode = (
-            <div className="space-y-5">
-              <AppetiteBanner
-                count={acimaApetite}
-                onSeeMatrix={() => {
-                  const sp = new URLSearchParams(searchParams);
-                  sp.set('view', 'matrix');
-                  setSearchParams(sp);
-                }}
-              />
-              <StatStrip
-                items={[
-                  { key: 'acimaApetite', label: t('riscos.page.kpi.aboveAppetite'), value: acimaApetite, icon: IconWarning, tone: 'destructive', hint: t('riscos.page.kpi.highOrCritical'), onClick: () => {
-                    const sp = new URLSearchParams(searchParams); sp.set('view', 'matrix'); setSearchParams(sp);
-                  }},
-                  { key: 'semResponsavel', label: t('riscos.page.kpi.noResponsible'), value: semResponsavel, icon: IconUserOff, tone: 'warning', hint: t('riscos.page.kpi.awaitingAssignment'), onClick: () => {
-                    const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
-                  }},
-                  { key: 'revisaoVencida', label: t('riscos.page.kpi.overdueReview'), value: revisaoVencida, icon: IconCalendarClock, tone: 'warning', hint: t('riscos.page.kpi.slaExpired'), onClick: () => {
-                    const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
-                  }},
-                  { key: 'emTratamento', label: t('riscos.page.kpi.inTreatment'), value: emTratamento, icon: IconShieldCheck, hint: t('riscos.page.kpi.planInProgress'), onClick: () => {
-                    const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
-                  }},
-                ]}
-              />
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2"><RiskTrendChart points={trendPoints} /></div>
-                <RiskCategoryBars riscos={riscos as any} />
-              </div>
-              <RiskWatchlist
-                riscos={riscos as any}
-                totalCount={riscos.length}
-                apetiteScore={apetiteScore}
-                faixas={matrizConfig?.niveis_risco}
-                onOpenRisk={(id) => setDrawerRiscoId(id)}
-                onSeeAll={() => {
-                  const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
-                }}
-              />
-            </div>
-          );
 
           const matrixNode = (
             <div className="space-y-4">
@@ -1080,7 +1020,7 @@ export function Riscos() {
             </div>
           );
 
-          return <RiscosTabs overview={overviewNode} matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
+          return <RiscosTabs matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
         })()}
         
         {/* Dialogs */}

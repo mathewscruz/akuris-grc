@@ -45,7 +45,7 @@ interface PointData {
  * classificava por `nivel.includes('alt')`, a quarta leitura de rótulo do
  * produto, cega a qualquer faixa renomeada.
  *
- * Passa a ser a mesma contagem da aba Visão geral: riscos cujo score excede o
+ * Usa a mesma contagem da Matriz: riscos cujo score excede o
  * apetite da matriz vigente.
  */
 const GOAL_VALUE = 0;
