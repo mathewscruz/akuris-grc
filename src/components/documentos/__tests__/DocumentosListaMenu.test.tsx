@@ -1,5 +1,102 @@
+import type {
+  ButtonHTMLAttributes,
+  Dispatch,
+  ReactElement,
+  ReactNode,
+  SetStateAction,
+} from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+/*
+ * Estes testes verificam o contrato do Akuris (nomes acessíveis, teclado,
+ * ações condicionais e callbacks), não a implementação do portal do Radix.
+ * O portal mantém timers de posicionamento/foco no jsdom e, no runner Linux,
+ * podia levar mais de um minuto para terminar depois de todos os asserts já
+ * terem passado. Um menu mínimo e sem portal conserva o comportamento que o
+ * componente precisa fornecer e deixa o ciclo de vida do teste determinístico.
+ */
+vi.mock('@/components/ui/dropdown-menu', async () => {
+  const React = await import('react');
+
+  interface MenuContextValue {
+    open: boolean;
+    setOpen: Dispatch<SetStateAction<boolean>>;
+  }
+
+  const MenuContext = React.createContext<MenuContextValue | null>(null);
+
+  function useMenu() {
+    const value = React.useContext(MenuContext);
+    if (!value) throw new Error('O menu de teste precisa de um contexto');
+    return value;
+  }
+
+  function DropdownMenu({ children }: { children: ReactNode }) {
+    const [open, setOpen] = React.useState(false);
+    return <MenuContext.Provider value={{ open, setOpen }}>{children}</MenuContext.Provider>;
+  }
+
+  function DropdownMenuTrigger({ children }: { asChild?: boolean; children: ReactElement }) {
+    const { setOpen } = useMenu();
+    const child = children as ReactElement<ButtonHTMLAttributes<HTMLButtonElement>>;
+
+    return React.cloneElement(child, {
+      'aria-expanded': undefined,
+      onClick: (event) => {
+        child.props.onClick?.(event);
+        setOpen(true);
+      },
+      onKeyDown: (event) => {
+        child.props.onKeyDown?.(event);
+        if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+          event.preventDefault();
+          setOpen(true);
+        }
+      },
+    });
+  }
+
+  function DropdownMenuContent({ children }: { children: ReactNode; align?: string }) {
+    const { open } = useMenu();
+    return open ? <div role="menu">{children}</div> : null;
+  }
+
+  const DropdownMenuItem = React.forwardRef<
+    HTMLButtonElement,
+    ButtonHTMLAttributes<HTMLButtonElement>
+  >(({ children, onClick, ...props }, ref) => {
+    const { setOpen } = useMenu();
+    return (
+      <button
+        {...props}
+        ref={ref}
+        type="button"
+        role="menuitem"
+        onClick={(event) => {
+          onClick?.(event);
+          setOpen(false);
+        }}
+      >
+        {children}
+      </button>
+    );
+  });
+  DropdownMenuItem.displayName = 'DropdownMenuItemTest';
+
+  function DropdownMenuSeparator() {
+    return <div role="separator" />;
+  }
+
+  return {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+  };
+});
+
 import {
   DocumentosLista,
   type DocumentoListaItem,
