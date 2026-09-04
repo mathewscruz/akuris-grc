@@ -11,6 +11,12 @@ import "@testing-library/jest-dom";
   `type` e `slice`.
 */
 if (typeof window !== "undefined") {
+  // O produto detecta o idioma real do navegador em runtime. Os testes, por
+  // outro lado, precisam de uma base explícita e independente do SO do runner.
+  // Cada teste que cobre outro idioma continua podendo sobrescrever estas chaves.
+  localStorage.setItem("governaii-locale", "pt-BR");
+  localStorage.setItem("governaii-locale-explicit", "1");
+
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
