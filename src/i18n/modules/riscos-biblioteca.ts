@@ -1,5 +1,5 @@
 /**
- * Biblioteca de riscos pré-construída. Português de Portugal no PT.
+ * Biblioteca de riscos pré-construída. Português do Brasil no PT.
  */
 export const riscosBiblioteca = {
   pt: {
@@ -14,27 +14,27 @@ export const riscosBiblioteca = {
       origem: 'Origem',
       todasOrigens: 'Todas as origens',
       apenasNaoImportados: 'Ocultar já importados',
-      mapearControlos: 'Ligar aos controlos recomendados (Anexo A)',
+      mapearControlos: 'Relacionar aos requisitos recomendados (Anexo A)',
       mapearControlosAjuda:
         'Liga cada risco importado aos requisitos correspondentes dos frameworks activos no Gap Analysis.',
-      selecionarTodos: 'Seleccionar visíveis',
-      limparSelecao: 'Limpar selecção',
-      selecionados: '{count} cenário(s) seleccionado(s)',
-      importar: 'Importar seleccionados',
-      importando: 'A importar…',
+      selecionarTodos: 'Selecionar visíveis',
+      limparSelecao: 'Limpar seleção',
+      selecionados: '{count} cenário(s) selecionado(s)',
+      importar: 'Importar selecionados',
+      importando: 'Importando…',
       jaImportado: 'Já importado',
       semResultados: 'Nenhum cenário corresponde a esta pesquisa.',
       sugestao: 'Sugestão: P {p} × I {i}',
       causas: 'Causas típicas',
       consequencias: 'Consequências',
-      controlos: 'Controlos recomendados',
+      controlos: 'Requisitos recomendados',
       tiposAtivo: 'Ativos típicos',
       sucessoTitulo: 'Cenários importados',
       sucessoDesc:
-        '{criados} risco(s) criado(s) como rascunho, {ligacoes} ligação(ões) a controlos, {duplicados} ignorado(s) por já existirem.',
-      nadaCriado: 'Nenhum risco novo: todos os cenários seleccionados já existiam.',
+        '{criados} risco(s) criado(s) como rascunho, {ligacoes} relação(ões) com requisitos, {duplicados} ignorado(s) por já existirem.',
+      nadaCriado: 'Nenhum risco novo: todos os cenários selecionados já existiam.',
       erroTitulo: 'Não foi possível importar',
-      erroDesc: 'Tente novamente ou seleccione menos cenários.',
+      erroDesc: 'Tente novamente ou selecione menos cenários.',
       vazioCta: 'Começar pela biblioteca',
       vazioDesc:
         'Importe cenários de risco pré-construídos e ajuste-os à sua realidade, em vez de começar do zero.',

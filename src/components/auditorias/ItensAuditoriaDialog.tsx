@@ -28,7 +28,7 @@ import { ItemAuditoriaDetalheDialog } from "./ItemAuditoriaDetalheDialog";
 import { ImportarControlesDialog } from "./ImportarControlesDialog";
 import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
 import { formatDateOnly } from "@/lib/date-utils";
-import { formatStatus } from "@/lib/text-utils";
+import { formatPrioridade, formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveWorkflowStatusTone, resolveAuditoriaPrioridadeTone } from "@/lib/status-tone";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -252,7 +252,7 @@ export function ItensAuditoriaDialog({
   const getPrioridadeBadge = (prioridade: string) => {
     return (
       <StatusBadge {...resolveAuditoriaPrioridadeTone(prioridade)}>
-        {formatStatus(prioridade)}
+        {formatPrioridade(prioridade)}
       </StatusBadge>
     );
   };

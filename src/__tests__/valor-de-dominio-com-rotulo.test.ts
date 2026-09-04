@@ -21,7 +21,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { fontes, ler } from './_fontes';
-import { formatStatus } from '@/lib/text-utils';
+import { formatPrioridade, formatStatus } from '@/lib/text-utils';
 
 /** Nomes de campo que carregam vocabulário controlado. */
 const CAMPO_DE_DOMINIO =
@@ -106,5 +106,12 @@ describe('valor de domínio com rótulo', () => {
     expect(formatStatus('telefone')).toBe('Telefone');
     expect(formatStatus('em_andamento')).toBe('Em Andamento');
     expect(formatStatus('')).toBe('');
+  });
+
+  it('prioridade usa o gênero feminino em português', () => {
+    expect(formatPrioridade('baixa')).toBe('Baixa');
+    expect(formatPrioridade('media')).toBe('Média');
+    expect(formatPrioridade('alta')).toBe('Alta');
+    expect(formatPrioridade('critica')).toBe('Crítica');
   });
 });

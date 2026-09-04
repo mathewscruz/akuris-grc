@@ -37,12 +37,20 @@ export interface RiscoControleVinculado {
   controle: { nome: string; tipo: string; status: string; criticidade: string } | null;
 }
 
+export interface RiscoIncidenteRelacionado {
+  id: string;
+  titulo: string;
+  status: string;
+  criticidade: string;
+  data_ocorrencia: string;
+}
+
 export function useRiscoDetail(riscoId: string | null) {
   return useQuery({
     queryKey: ['risco-detail', riscoId],
     enabled: !!riscoId,
     queryFn: async () => {
-      const [tratRes, histRes, ctrlRes] = await Promise.all([
+      const [tratRes, histRes, ctrlRes, incidentesRes] = await Promise.all([
         supabase
           .from('riscos_tratamentos')
           .select('id, descricao, tipo_tratamento, status, prazo, data_conclusao, responsavel, eficacia')
@@ -57,6 +65,12 @@ export function useRiscoDetail(riscoId: string | null) {
           .from('controles_riscos')
           .select('id, controle_id, eficacia_estimada, tipo_vinculacao, controle:controles(nome, tipo, status, criticidade)')
           .eq('risco_id', riscoId!),
+        supabase
+          .from('incidentes')
+          .select('id, titulo, status, criticidade, data_ocorrencia')
+          .contains('riscos_relacionados', [riscoId!])
+          .order('data_ocorrencia', { ascending: false })
+          .limit(10),
       ]);
 
       const failedQuery = [
@@ -76,6 +90,9 @@ export function useRiscoDetail(riscoId: string | null) {
           ...c,
           controle: Array.isArray(c.controle) ? c.controle[0] : c.controle,
         })) as RiscoControleVinculado[],
+        // Incidentes pertencem a outro módulo e podem estar indisponíveis por
+        // permissão. Isso não deve derrubar todo o perfil do risco.
+        incidentes: (incidentesRes.error ? [] : (incidentesRes.data || [])) as RiscoIncidenteRelacionado[],
       };
     },
     staleTime: 1000 * 60,

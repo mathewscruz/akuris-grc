@@ -45,6 +45,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { createPortal } from 'react-dom';
 import { MatrizPreviewGrid } from './MatrizPreviewGrid';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import {
   DEFAULT_ESCALA_IMPACTO,
   DEFAULT_ESCALA_PROBABILIDADE,
@@ -157,9 +158,12 @@ export function MatrizForm({ onSuccess, footerSlot }: Props) {
 
   const [reclassificados, setReclassificados] = useState<RiscoReclassificado[] | null>(null);
   const [carregandoPrevisao, setCarregandoPrevisao] = useState(false);
+  const [confirmarApetiteOpen, setConfirmarApetiteOpen] = useState(false);
 
   const pMax = escalaProbabilidade.length;
   const iMax = escalaImpacto.length;
+  const scoreMaximo = metodoCalculo === 'soma' ? pMax + iMax : pMax * iMax;
+  const apetiteIncluiTodaEscala = apetiteScore != null && apetiteScore >= scoreMaximo;
 
   const problema = useMemo(
     () => validarFaixas(niveisRisco, pMax, iMax, metodoCalculo),
@@ -346,7 +350,7 @@ export function MatrizForm({ onSuccess, footerSlot }: Props) {
     return t('sweepRiscos.riscos.matrizForm.erroGenerico');
   };
 
-  const gravar = async () => {
+  const gravar = async (apetiteConfirmado = false) => {
     if (!profile?.empresa_id) return;
     if (problema) {
       toast.error(mensagemProblema());
@@ -354,6 +358,10 @@ export function MatrizForm({ onSuccess, footerSlot }: Props) {
     }
     if (!nome.trim()) {
       toast.error(t('sweepRiscos.riscos.matrizForm.erroNomeObrigatorio'));
+      return;
+    }
+    if (apetiteIncluiTodaEscala && !apetiteConfirmado) {
+      setConfirmarApetiteOpen(true);
       return;
     }
 
@@ -398,7 +406,7 @@ export function MatrizForm({ onSuccess, footerSlot }: Props) {
       <Button type="button" variant="outline" onClick={onSuccess}>
         {t('fin.comum.cancelar')}
       </Button>
-      <Button type="button" onClick={gravar} disabled={gravando || !!problema}>
+      <Button type="button" onClick={() => void gravar()} disabled={gravando || !!problema}>
         {gravando ? t('fin.comum.salvando') : t('fin.riscos.matrizForm.atualizarMatriz')}
       </Button>
     </div>
@@ -423,6 +431,24 @@ export function MatrizForm({ onSuccess, footerSlot }: Props) {
           <AlertDescription>{mensagemProblema()}</AlertDescription>
         </Alert>
       )}
+
+      {apetiteIncluiTodaEscala && !problema && (
+        <Alert className="border-warning/40 bg-warning/5">
+          <IconWarning className="h-4 w-4 text-warning" strokeWidth={1.5} />
+          <AlertDescription>
+            O limite de apetite cobre a pontuação máxima ({scoreMaximo}). Com esta configuração, nenhum risco será sinalizado como acima do apetite.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <ConfirmDialog
+        open={confirmarApetiteOpen}
+        onOpenChange={setConfirmarApetiteOpen}
+        title="Confirmar apetite sem exceções"
+        description={`O limite ${apetiteScore} inclui toda a escala até ${scoreMaximo}. Isso desativa, na prática, os alertas de risco acima do apetite. Deseja publicar esta nova versão mesmo assim?`}
+        confirmText="Publicar mesmo assim"
+        onConfirm={() => { setConfirmarApetiteOpen(false); void gravar(true); }}
+      />
 
       {/* ── As três decisões ─────────────────────────────────────────── */}
       <section className="rounded-lg border border-border bg-card p-5 space-y-6">

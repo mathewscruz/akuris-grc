@@ -46,6 +46,7 @@ import { FRAMEWORK_DESCRIPTIONS } from '@/lib/framework-descriptions';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reqTitulo, reqCategoria, fwNome, fwDescricao } from "@/lib/gap-i18n";
+import { fetchFrameworkRequirements } from '@/lib/framework-requirements';
 
 interface Framework {
   id: string;
@@ -120,13 +121,12 @@ function GapAnalysisFrameworkDetailInner() {
   const loadCategoryData = useCallback(async () => {
     if (!frameworkId || !empresaId) return;
     try {
-      const [reqsRes, evalsRes, provas] = await Promise.all([
-        supabase.from('gap_analysis_requirements').select('id, categoria, categoria_en, peso').eq('framework_id', frameworkId),
+      const [reqs, evalsRes, provas] = await Promise.all([
+        fetchFrameworkRequirements(frameworkId),
         supabase.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', frameworkId).eq('empresa_id', empresaId),
         /* As duas portas por onde a prova entra, somadas num sítio só. */
         provasPorRequisito(frameworkId, empresaId),
       ]);
-      const reqs = reqsRes.data || [];
       const evals = evalsRes.data || [];
       const evalMap = new Map(evals.map(e => [e.requirement_id, e.conformity_status || 'nao_avaliado']));
       // Fora do escopo pelo SoA conta como não aplicável, não como lacuna.

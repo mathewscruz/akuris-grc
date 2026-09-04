@@ -368,7 +368,17 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       <WizardSummaryRow label={t('planosAcao.summaryLabelTitle')} value={titulo || <span className="text-muted-foreground italic">{t('planosAcao.summaryNoTitle')}</span>} highlight />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelPriority')}
-        value={<StatusBadge {...resolvePrioridadeTone(prioridade)}>{formatStatus(prioridade)}</StatusBadge>}
+        value={
+          <StatusBadge {...resolvePrioridadeTone(prioridade)}>
+            {prioridade === 'baixa'
+              ? t('planosAcao.priorityBaixa')
+              : prioridade === 'alta'
+                ? t('planosAcao.priorityAlta')
+                : prioridade === 'critica'
+                  ? t('planosAcao.priorityCritica')
+                  : t('planosAcao.priorityMedia')}
+          </StatusBadge>
+        }
       />
       <WizardSummaryRow label={t('planosAcao.summaryLabelStatus')} value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow

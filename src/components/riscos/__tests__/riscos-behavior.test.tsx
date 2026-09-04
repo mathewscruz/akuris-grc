@@ -124,6 +124,15 @@ describe('falha ao carregar detalhes do risco', () => {
         ? { data: null, error: { message: 'relation riscos_tratamentos unavailable' } }
         : { data: [], error: null };
       const terminal = Promise.resolve(result);
+      if (table === 'incidentes') {
+        return {
+          select: () => ({
+            contains: () => ({
+              order: () => ({ limit: () => terminal }),
+            }),
+          }),
+        };
+      }
       return {
         select: () => ({
           eq: () => table === 'controles_riscos'

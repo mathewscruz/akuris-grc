@@ -17,6 +17,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { IconSuccess, IconError, IconTime, IconSend, IconPerson, IconMessage, IconShieldCheck } from '@/components/icons';
 import { notificar } from '@/lib/notificar';
 import { dateFnsLocale, datePattern, formatarDiaParaDB } from '@/lib/date-utils';
+import { usePermissions } from '@/hooks/usePermissions';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -26,9 +27,12 @@ interface Props {
 
 export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: Props) {
   const { profile } = useAuth();
+  const { canUpdate } = usePermissions();
+  const podeDecidir = canUpdate('riscos');
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [comentario, setComentario] = useState('');
+  const [comentarioAprovacao, setComentarioAprovacao] = useState('');
+  const [comentarioAceite, setComentarioAceite] = useState('');
   const [aprovadorId, setAprovadorId] = useState('');
 
   const statusAprovacao = risco?.status_aprovacao || 'rascunho';
@@ -40,6 +44,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
   const isAprovadorAceite = risco?.aprovador_aceite === profile?.user_id;
 
   const handleEnviarAprovacao = async () => {
+    if (!podeDecidir) return;
     if (!aprovadorId) {
       toast.error(t('riscosDialogs.aprovacao.selecioneAprovador'));
       return;
@@ -53,7 +58,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           usuario_id: profile?.user_id,
           usuario_nome: profile?.nome,
           data: new Date().toISOString(),
-          comentario: comentario || t('riscosDialogs.aprovacao.enviadoParaAprovacao')
+          comentario: comentarioAprovacao || t('riscosDialogs.aprovacao.enviadoParaAprovacao')
         }
       ];
 
@@ -80,7 +85,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       });
 
       toast.success(t('riscosDialogs.aprovacao.riscoEnviado'));
-      setComentario('');
+      setComentarioAprovacao('');
       onSuccess();
     } catch (error: any) {
       toast.error(t('riscosDialogs.aprovacao.erro', { mensagem: error.message }));
@@ -90,6 +95,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
   };
 
   const handleDecisao = async (decisao: 'aprovado' | 'rejeitado') => {
+    if (!podeDecidir) return;
     setLoading(true);
     try {
       const novoHistorico = [
@@ -99,7 +105,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           usuario_id: profile?.user_id,
           usuario_nome: profile?.nome,
           data: new Date().toISOString(),
-          comentario: comentario || (decisao === 'aprovado' ? t('riscosDialogs.aprovacao.aprovado') : t('riscosDialogs.aprovacao.rejeitado'))
+          comentario: comentarioAprovacao || (decisao === 'aprovado' ? t('riscosDialogs.aprovacao.aprovado') : t('riscosDialogs.aprovacao.rejeitado'))
         }
       ];
 
@@ -108,7 +114,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
         .update({
           status_aprovacao: decisao,
           data_aprovacao: decisao === 'aprovado' ? new Date().toISOString() : null,
-          comentarios_aprovacao: comentario || null,
+          comentarios_aprovacao: comentarioAprovacao || null,
           historico_aprovacao: novoHistorico
         })
         .eq('id', risco.id)
@@ -120,14 +126,14 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
         await notificar({
           destinatario: risco.created_by,
           titulo: decisao === 'aprovado' ? t('riscosDialogs.aprovacao.decisaoTituloAprovado') : t('riscosDialogs.aprovacao.decisaoTituloRejeitado'),
-          mensagem: t('riscosDialogs.aprovacao.decisaoMessage', { nome: risco.nome, decisao, comentario: comentario ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario }) : '' }),
+          mensagem: t('riscosDialogs.aprovacao.decisaoMessage', { nome: risco.nome, decisao, comentario: comentarioAprovacao ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario: comentarioAprovacao }) : '' }),
           tipo: decisao === 'aprovado' ? 'success' : 'warning',
           linkPara: '/riscos',
         });
       }
 
       toast.success(t('riscosDialogs.aprovacao.riscoDecisao', { decisao }));
-      setComentario('');
+      setComentarioAprovacao('');
       onSuccess();
     } catch (error: any) {
       toast.error(t('riscosDialogs.aprovacao.erro', { mensagem: error.message }));
@@ -137,13 +143,14 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
   };
 
   const handleDecisaoAceite = async (decisao: 'aprovado' | 'rejeitado') => {
+    if (!podeDecidir) return;
     setLoading(true);
     try {
       const agora = new Date();
       const historicoAceite: any[] = Array.isArray(risco?.historico_aceite) ? risco.historico_aceite : [];
       const updateData: any = {
         status_aceite: decisao,
-        comentarios_aprovacao: comentario || null,
+        comentarios_aceite: comentarioAceite || null,
       };
 
       if (decisao === 'aprovado') {
@@ -167,7 +174,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             aprovador_nome: profile?.nome,
             valido_ate: validoAte,
             justificativa: risco?.justificativa_aceite || null,
-            comentario: comentario || null,
+            comentario: comentarioAceite || null,
           },
         ];
       } else {
@@ -180,7 +187,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             em: agora.toISOString(),
             aprovador: profile?.user_id,
             aprovador_nome: profile?.nome,
-            comentario: comentario || null,
+            comentario: comentarioAceite || null,
           },
         ];
       }
@@ -198,7 +205,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
         await notificar({
           destinatario: risco.created_by,
           titulo: decisao === 'aprovado' ? t('riscosDialogs.aprovacao.aceiteAprovadoTitulo') : t('riscosDialogs.aprovacao.aceiteRejeitadoTitulo'),
-          mensagem: t('riscosDialogs.aprovacao.aceiteDecisaoMessage', { nome: risco.nome, decisao, comentario: comentario ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario }) : '' }),
+          mensagem: t('riscosDialogs.aprovacao.aceiteDecisaoMessage', { nome: risco.nome, decisao, comentario: comentarioAceite ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario: comentarioAceite }) : '' }),
           tipo: decisao === 'aprovado' ? 'success' : 'warning',
           linkPara: decisao === 'aprovado' ? '/riscos/aceite' : '/riscos',
         });
@@ -214,7 +221,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             solicitante_id: risco.created_by,
             empresa_id: profile?.empresa_id,
             tipo: decisao,
-            comentario: comentario || undefined
+            comentario: comentarioAceite || undefined
           }
         });
       } catch (emailError) {
@@ -222,7 +229,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       }
 
       toast.success(decisao === 'aprovado' ? t('riscosDialogs.aprovacao.aceiteDecisaoToastAprovado') : t('riscosDialogs.aprovacao.aceiteDecisaoToastRejeitado'));
-      setComentario('');
+      setComentarioAceite('');
       onSuccess();
     } catch (error: any) {
       toast.error(t('riscosDialogs.aprovacao.erro', { mensagem: error.message }));
@@ -263,11 +270,11 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
                   )}
                 </p>
 
-                {isAprovadorAceite ? (
+                {isAprovadorAceite && podeDecidir ? (
                   <>
                     <Textarea
-                      value={comentario}
-                      onChange={(e) => setComentario(e.target.value)}
+                      value={comentarioAceite}
+                      onChange={(e) => setComentarioAceite(e.target.value)}
                       placeholder={t('riscosDialogs.aprovacao.comentarioPlaceholder')}
                       className="min-h-[60px]"
                     />
@@ -304,22 +311,28 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             )}
 
             {/* === SEÇÃO APROVAÇÃO GERAL === */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{t('riscosDialogs.aprovacao.statusAprovacao')}</span>
-              {getStatusBadge(statusAprovacao)}
+            <div className="space-y-1 border-t pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold">Aprovação da avaliação</span>
+                {getStatusBadge(statusAprovacao)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Valida a qualidade do registro e da avaliação. Não significa aceitar o risco residual.
+              </p>
             </div>
 
-            {(statusAprovacao === 'rascunho' || statusAprovacao === 'rejeitado') && (
+            {(statusAprovacao === 'rascunho' || statusAprovacao === 'rejeitado') && podeDecidir && (
               <div className="space-y-3 border rounded-lg p-4">
                 <Label>{t('riscosDialogs.aprovacao.enviarParaAprovacao')}</Label>
                 <UserSelect
                   value={aprovadorId}
                   onValueChange={setAprovadorId}
                   placeholder={t('riscosDialogs.aprovacao.selecioneOAprovador')}
+                  excludedUserIds={profile?.user_id ? [profile.user_id] : []}
                 />
                 <Textarea
-                  value={comentario}
-                  onChange={(e) => setComentario(e.target.value)}
+                  value={comentarioAprovacao}
+                  onChange={(e) => setComentarioAprovacao(e.target.value)}
                   placeholder={t('riscosDialogs.aprovacao.comentarioOpcional')}
                   className="min-h-[60px]"
                 />
@@ -330,12 +343,12 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
               </div>
             )}
 
-            {statusAprovacao === 'pendente_aprovacao' && isAprovador && (
+            {statusAprovacao === 'pendente_aprovacao' && isAprovador && podeDecidir && (
               <div className="space-y-3 border rounded-lg p-4">
                 <Label htmlFor="comentario">{t('riscosDialogs.aprovacao.suaDecisao')}</Label>
                 <Textarea id="comentario"
-                  value={comentario}
-                  onChange={(e) => setComentario(e.target.value)}
+                  value={comentarioAprovacao}
+                  onChange={(e) => setComentarioAprovacao(e.target.value)}
                   placeholder={t('riscosDialogs.aprovacao.comentarioDecisao')}
                   className="min-h-[60px]"
                 />

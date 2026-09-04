@@ -31,7 +31,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { akurisToast } from '@/lib/akuris-toast';
 import { logger } from '@/lib/logger';
-import { IconCheck, IconBook, IconSearch } from '@/components/icons';
+import { IconCheck, IconBook, IconSearch, IconChevron } from '@/components/icons';
 import {
   useRiscosBiblioteca,
   useRiscosBibliotecaImportados,
@@ -100,6 +100,7 @@ export function BibliotecaRiscosDialog({
   const [ocultarImportados, setOcultarImportados] = useState(true);
   const [mapearControlos, setMapearControlos] = useState(true);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
 
   const { data: cenarios = [], isLoading } = useRiscosBiblioteca(open);
   const { data: importados = new Set<string>() } = useRiscosBibliotecaImportados(open);
@@ -156,6 +157,14 @@ export function BibliotecaRiscosDialog({
     });
   };
 
+  const alternarDetalhes = (codigo: string) => {
+    setExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(codigo)) next.delete(codigo); else next.add(codigo);
+      return next;
+    });
+  };
+
   const handleImportar = async () => {
     const codigos = Array.from(selecionados);
     if (codigos.length === 0) return;
@@ -197,6 +206,7 @@ export function BibliotecaRiscosDialog({
   const renderCard = (c: RiscoBiblioteca) => {
     const jaImportado = importados.has(c.codigo);
     const marcado = selecionados.has(c.codigo);
+    const expandido = expandidos.has(c.codigo);
     return (
       <li
         key={c.codigo}
@@ -240,9 +250,21 @@ export function BibliotecaRiscosDialog({
             </div>
 
             <p className="mt-1 text-sm font-semibold leading-tight text-foreground">{c.titulo}</p>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{c.descricao}</p>
+            <p className={`mt-1 text-sm leading-relaxed text-muted-foreground ${expandido ? '' : 'line-clamp-2'}`}>{c.descricao}</p>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-1 h-7 px-0 text-xs text-muted-foreground hover:bg-transparent hover:text-foreground"
+              onClick={() => alternarDetalhes(c.codigo)}
+              aria-expanded={expandido}
+            >
+              {expandido ? 'Ocultar detalhes' : 'Ver causas, impactos e referências'}
+              <IconChevron className={`ml-1.5 h-3.5 w-3.5 transition-transform ${expandido ? 'rotate-180' : ''}`} />
+            </Button>
+
+            {expandido && <><div className="mt-3 grid gap-3 sm:grid-cols-2">
               {!!c.causas?.length && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground">
@@ -295,7 +317,7 @@ export function BibliotecaRiscosDialog({
                   </Badge>
                 ))}
               </div>
-            )}
+            )}</>}
           </div>
         </div>
       </li>

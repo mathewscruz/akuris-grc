@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { FrameworkConfig, NIST_PILLAR_NAMES } from '@/lib/framework-configs';
 import { tGlobal } from '@/lib/i18n-global';
+import { fetchFrameworkRequirements } from '@/lib/framework-requirements';
 
 interface Requirement {
   id: string;
@@ -111,14 +112,9 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
         setLoading(true);
         setError(null);
 
-        // Buscar requisitos do framework
-        const { data: requirements, error: reqError } = await supabase
-          .from('gap_analysis_requirements')
-          .select('id, codigo, titulo, categoria, area_responsavel, peso')
-          .eq('framework_id', frameworkId)
-          .order('ordem', { ascending: true });
-
-        if (reqError) throw reqError;
+        // O catálogo é compartilhado com cabeçalho, fila e tabela para não
+        // repetir a mesma consulta quatro vezes durante a abertura da página.
+        const requirements = await fetchFrameworkRequirements(frameworkId);
 
         // Buscar avaliações existentes
         const { data: evaluations, error: evalError } = await supabase

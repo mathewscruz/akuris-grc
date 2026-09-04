@@ -9,9 +9,10 @@ interface RiscoDialogProps {
   onOpenChange: (open: boolean) => void;
   risco?: any;
   onSuccess: () => void | Promise<void>;
+  initialTab?: 'identificacao' | 'avaliacao' | 'acompanhamento';
 }
 
-export function RiscoDialog({ open, onOpenChange, risco, onSuccess }: RiscoDialogProps) {
+export function RiscoDialog({ open, onOpenChange, risco, onSuccess, initialTab = 'identificacao' }: RiscoDialogProps) {
   const { t } = useLanguage();
   // Aguarda o refetch da lista antes de fechar: sem isto o modal fecha e a
   // tabela continua vazia até um reload manual.
@@ -43,7 +44,7 @@ export function RiscoDialog({ open, onOpenChange, risco, onSuccess }: RiscoDialo
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <RiscoFormWizard risco={risco} onSuccess={handleSuccess} />
+          <RiscoFormWizard risco={risco} onSuccess={handleSuccess} initialTab={initialTab} />
         </div>
       </DialogContent>
     </Dialog>

@@ -19,6 +19,7 @@ import {
 } from '@/components/gap-analysis/v2';
 import type { StackSegment } from '@/components/gap-analysis/v2';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ModuleToolbar } from '@/components/ui/module-toolbar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
@@ -497,14 +498,17 @@ export default function GapAnalysisFrameworks() {
           {CATEGORY_OPTIONS.map(opt => {
             const active = categoryFilter === opt.id;
             return (
-              <Badge
+              <Button
                 key={opt.id}
+                type="button"
+                size="sm"
                 variant={active ? 'default' : 'outline'}
-                className="cursor-pointer text-xs"
+                aria-pressed={active}
+                className="h-7 rounded-md px-2.5 text-xs"
                 onClick={() => setCategoryFilter(opt.id)}
               >
                 {t(opt.labelKey)}
-              </Badge>
+              </Button>
             );
           })}
         </div>

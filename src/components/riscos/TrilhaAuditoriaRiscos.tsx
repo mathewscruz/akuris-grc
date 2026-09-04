@@ -31,6 +31,15 @@ interface AuditLog {
 }
 
 const AUDIT_FIELDS = ["nome", "descricao", "status", "categoria_id", "matriz_id", "probabilidade_inicial", "impacto_inicial", "nivel_risco_inicial", "probabilidade_residual", "impacto_residual", "nivel_risco_residual", "responsavel", "causas", "consequencias", "controles_existentes", "aceito", "justificativa_aceite", "data_proxima_revisao", "status_aprovacao", "aprovador_id", "data_aprovacao"] as const;
+const CAMPOS_DERIVADOS = new Set([
+  'matriz_id', 'score_inicial', 'score_residual', 'score_efetivo',
+  'severidade_inicial', 'severidade_residual', 'severidade_efetiva',
+  'nivel_risco_inicial', 'nivel_risco_residual',
+]);
+
+const isReclassificacaoAutomatica = (log: AuditLog) =>
+  log.action === 'UPDATE' && !!log.changed_fields?.length &&
+  log.changed_fields.every((field) => CAMPOS_DERIVADOS.has(field));
 
 export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }: TrilhaAuditoriaRiscosProps) {
   const { t } = useLanguage();
@@ -63,7 +72,8 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
     }
   };
 
-  const getActionBadge = (action: string) => {
+  const getActionBadge = (action: string, automatico = false) => {
+    if (automatico) return <StatusBadge tone="neutral">Reclassificação automática</StatusBadge>;
     switch (action) {
       case 'INSERT': return <StatusBadge tone="success">Criado</StatusBadge>;
       case 'UPDATE': return <StatusBadge tone="info">Atualizado</StatusBadge>;
@@ -148,9 +158,11 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
                           <div className="flex items-center gap-2">
                             {getActionIcon(log.action)}
                             <CardTitle className="text-lg">
-                              Risco {log.action === 'INSERT' ? 'Criado' : log.action === 'UPDATE' ? 'Atualizado' : t('fin.comum.excluido')}
+                              {isReclassificacaoAutomatica(log)
+                                ? 'Risco reclassificado pela matriz'
+                                : `Risco ${log.action === 'INSERT' ? 'Criado' : log.action === 'UPDATE' ? 'Atualizado' : t('fin.comum.excluido')}`}
                             </CardTitle>
-                            {getActionBadge(log.action)}
+                            {getActionBadge(log.action, isReclassificacaoAutomatica(log))}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">

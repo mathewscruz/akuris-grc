@@ -29,7 +29,7 @@ import AuditoriaDialog from "@/components/auditorias/AuditoriaDialog";
 import { ItensAuditoriaDialog } from "@/components/auditorias/ItensAuditoriaDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { formatDateOnly, formatarDiaParaDB} from "@/lib/date-utils";
-import { formatStatus } from "@/lib/text-utils";
+import { formatPrioridade, formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
@@ -286,7 +286,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
         a.nome,
         formatStatus(a.tipo),
         formatStatus(a.status),
-        formatStatus(a.prioridade),
+        formatPrioridade(a.prioridade),
         a.data_inicio ? formatDateOnly(a.data_inicio) : '-',
         auditor?.nome || '-',
         counts.itens,
@@ -378,7 +378,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       label: t("governancaComp.auditorias.columnPrioridade"),
       sortable: true,
       render: (_v: any, a: any) => (
-        <StatusBadge {...resolveAuditoriaPrioridadeTone(a.prioridade)}>{formatStatus(a.prioridade)}</StatusBadge>
+        <StatusBadge {...resolveAuditoriaPrioridadeTone(a.prioridade)}>{formatPrioridade(a.prioridade)}</StatusBadge>
       ),
     },
     {

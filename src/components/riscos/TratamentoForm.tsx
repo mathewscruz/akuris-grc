@@ -20,13 +20,13 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from '@/lib/toast';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { UserSelect } from './UserSelect';
-import { severidadeRisco } from '@/lib/metrics/riscos';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { dateFnsLocale, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
+import { isUuid } from '@/lib/uuid';
 function makeTratamentoSchema(t: (key: string) => string) {
   return z.object({
     tipo_tratamento: z.string().min(1, t('sweepRiscos.riscos.tratForm2.tipoObrigatorio')),
@@ -37,6 +37,16 @@ function makeTratamentoSchema(t: (key: string) => string) {
     data_inicio: z.date().optional(),
     status: z.string().default('pendente'),
     eficacia: z.string().optional()
+  }).superRefine((data, ctx) => {
+    if (!data.responsavel) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['responsavel'], message: 'Defina quem executará o tratamento.' });
+    }
+    if (data.responsavel && !isUuid(data.responsavel)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['responsavel'], message: 'Selecione uma pessoa ativa da empresa como responsável.' });
+    }
+    if (!data.prazo) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['prazo'], message: 'Defina um prazo para acompanhar o tratamento.' });
+    }
   });
 }
 
@@ -111,78 +121,29 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
     setLoading(true);
     try {
-      const submitData = {
-        risco_id: riscoId,
-        tipo_tratamento: data.tipo_tratamento,
-        descricao: data.descricao,
-        responsavel: data.responsavel || null,
-        custo: data.custo ? parseFloat(data.custo) : null,
-        prazo: data.prazo ? formatarDiaParaDB(data.prazo) : null,
-        data_inicio: data.data_inicio ? formatarDiaParaDB(data.data_inicio) : null,
-        status: data.status,
-        eficacia: data.eficacia || null
-      };
+      /* Uma RPC transacional grava o tratamento e o plano correspondente.
+         Assim não existe mais o estado “tratamento criado, plano falhou”. */
+      const { error } = await (supabase as any).rpc('salvar_tratamento_risco', {
+        p_risco_id: riscoId,
+        p_tratamento_id: tratamento?.id || null,
+        p_tipo_tratamento: data.tipo_tratamento,
+        p_descricao: data.descricao,
+        p_responsavel: data.responsavel || null,
+        p_custo: data.custo ? parseFloat(data.custo) : null,
+        p_prazo: data.prazo ? formatarDiaParaDB(data.prazo) : null,
+        p_data_inicio: data.data_inicio ? formatarDiaParaDB(data.data_inicio) : null,
+        p_status: data.status,
+        p_eficacia: data.eficacia || null,
+      });
+      if (error) throw error;
 
-      if (tratamento) {
-        const { error } = await supabase
-          .from('riscos_tratamentos')
-          .update(submitData)
-          .eq('id', tratamento.id);
-
-        if (error) throw error;
-        toast.success(t('cardsKpi.sweep.riscos.tratamentoAtualizado'));
-      } else {
-        const { error } = await supabase
-          .from('riscos_tratamentos')
-          .insert(submitData);
-
-        if (error) throw error;
-        toast.success(t('cardsKpi.sweep.riscos.tratamentoCriado'));
-
-        /*
-           O plano nasce com o tratamento, sem opção de o dispensar.
-
-           Era uma caixa ligada por omissão, e o painel do risco tinha ao
-           lado um botão próprio para criar planos. Quem desligasse a caixa
-           ficava com um tratamento sem forma de o acompanhar; quem a
-           deixasse ligada e usasse também o botão do lado ficava com dois
-           planos para o mesmo trabalho. Agora há um caminho só: tratar o
-           risco cria a ação que o acompanha.
-        */
-        if (profile.empresa_id) {
-          try {
-            const sev = severidadeRisco(riscoData ?? {});
-            const prioridade = sev === 'critico' ? 'alta' : sev === 'alto' ? 'alta' : sev === 'medio' ? 'media' : 'baixa';
-            const tituloRisco = riscoData?.nome || 'Risco';
-            const { error: planoError } = await supabase.from('planos_acao').insert({
-              empresa_id: profile.empresa_id,
-              titulo: `Tratar risco: ${tituloRisco}`,
-              descricao: data.descricao,
-              modulo_origem: 'riscos',
-              registro_origem_id: riscoId,
-              registro_origem_titulo: tituloRisco,
-              responsavel_id: data.responsavel || null,
-              prazo: data.prazo ? formatarDiaParaDB(data.prazo) : null,
-              prioridade,
-              status: 'pendente',
-              created_by: profile.user_id,
-            });
-            if (planoError) throw planoError;
-            /*
-               O painel dos planos fica logo por baixo deste formulário.
-               Sem esta invalidação continuava a dizer que não havia
-               nenhum plano até alguém recarregar a página — medido no
-               R-0005: o plano estava na base e o painel dizia que não.
-            */
-            queryClient.invalidateQueries({ queryKey: ['planos-acao-vinculados'] });
-            queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
-            toast.success(t('fin.riscos.tratForm.planoCriado'));
-          } catch (planoErr: any) {
-            // Não bloqueia o tratamento se o plano falhar
-            toast.error(t('fin.riscos.tratForm.erroPlano', { mensagem: planoErr.message }));
-          }
-        }
-      }
+      queryClient.invalidateQueries({ queryKey: ['planos-acao-vinculados'] });
+      queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
+      queryClient.invalidateQueries({ queryKey: ['risco-detail', riscoId] });
+      queryClient.invalidateQueries({ queryKey: ['riscos'] });
+      toast.success(tratamento
+        ? t('cardsKpi.sweep.riscos.tratamentoAtualizado')
+        : 'Tratamento e plano de ação criados com sucesso.');
 
       onSuccess();
     } catch (error: any) {
@@ -264,7 +225,9 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
             <SelectContent>
               <SelectItem value="mitigar">{t('campos.enums.tratamentoEstrategia.mitigar')}</SelectItem>
               <SelectItem value="transferir">{t('campos.enums.tratamentoEstrategia.transferir')}</SelectItem>
-              <SelectItem value="aceitar">{t('campos.enums.tratamentoEstrategia.aceitar')}</SelectItem>
+              {tratamento?.tipo_tratamento === 'aceitar' && (
+                <SelectItem value="aceitar" disabled>Legado: aceite de risco</SelectItem>
+              )}
               <SelectItem value="evitar">{t('campos.enums.tratamentoEstrategia.evitar')}</SelectItem>
             </SelectContent>
           </Select>
@@ -289,6 +252,9 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               <SelectItem value="cancelado">{t('campos.opcoes.cancelado')}</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            Para aceitar o risco residual, use o fluxo de aceite formal no perfil do risco; ele exige justificativa, aprovador e validade.
+          </p>
         </div>
       </div>
 
@@ -339,6 +305,9 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
             onValueChange={(value) => form.setValue('responsavel', value, { shouldDirty: true })}
             placeholder={t('fin.comum.selecioneResponsavel')}
           />
+          {form.formState.errors.responsavel && (
+            <p className="text-sm text-destructive">{form.formState.errors.responsavel.message}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -378,6 +347,9 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               />
             </PopoverContent>
           </Popover>
+          {form.formState.errors.prazo && (
+            <p className="text-sm text-destructive">{form.formState.errors.prazo.message}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -548,4 +520,3 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
     </form>
   );
 });
-

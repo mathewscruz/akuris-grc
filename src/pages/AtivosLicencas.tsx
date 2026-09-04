@@ -243,10 +243,11 @@ export default function AtivosLicencas() {
       key: 'nome',
       label: t('sweepDados.ativos.colNomeLicenca'),
       sortable: true,
+      className: 'w-72 max-w-72',
       render: (_: any, licenca: Licenca) => (
-        <div>
-          <div className="font-medium">{licenca.nome}</div>
-          <div className="text-sm text-muted-foreground">{licenca.fornecedor}</div>
+        <div className="min-w-0 max-w-72">
+          <div className="truncate font-medium" title={licenca.nome}>{licenca.nome}</div>
+          <div className="truncate text-sm text-muted-foreground" title={licenca.fornecedor}>{licenca.fornecedor}</div>
         </div>
       )
     },

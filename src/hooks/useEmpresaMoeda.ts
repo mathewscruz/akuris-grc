@@ -53,9 +53,18 @@ export function formatMoedasSomadas(
   porMoeda: Record<string, number> | null | undefined,
   moedaDaEmpresa: MoedaCodigo = 'EUR',
   compact = false,
+  referenciaQuandoZero?: Record<string, number> | null,
 ): string {
   const entradas = Object.entries(porMoeda ?? {}).filter(([, v]) => v !== 0);
-  if (entradas.length === 0) return formatMoeda(0, moedaDaEmpresa, compact);
+  if (entradas.length === 0) {
+    // Um KPI zerado deve conservar a unidade dos demais KPIs da mesma tela.
+    // Ex.: contratos em BRL não podem mostrar “R$ 692 mil” ao lado de “0 €”.
+    const moedaDeReferencia = Object.entries(referenciaQuandoZero ?? {})
+      .filter(([m]) => MOEDAS.includes(m.toUpperCase() as MoedaCodigo))
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0]?.[0]
+      ?.toUpperCase() as MoedaCodigo | undefined;
+    return formatMoeda(0, moedaDeReferencia || moedaDaEmpresa, compact);
+  }
   return entradas
     // A maior primeiro: é a que interessa a quem olha de relance.
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
@@ -106,7 +115,10 @@ export function useEmpresaMoeda() {
       return formatMoeda(value, MOEDAS.includes(m) ? m : moeda, compact);
     },
     /** Total sem misturar moedas — ver `formatMoedasSomadas`. */
-    formatSoma: (porMoeda?: Record<string, number> | null, compact = false) =>
-      formatMoedasSomadas(porMoeda, moeda, compact),
+    formatSoma: (
+      porMoeda?: Record<string, number> | null,
+      compact = false,
+      referenciaQuandoZero?: Record<string, number> | null,
+    ) => formatMoedasSomadas(porMoeda, moeda, compact, referenciaQuandoZero),
   };
 }

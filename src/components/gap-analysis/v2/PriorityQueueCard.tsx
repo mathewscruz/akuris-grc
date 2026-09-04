@@ -18,6 +18,7 @@ import { reqTitulo } from "@/lib/gap-i18n";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isGapCritico, isGapAtrasado } from '@/lib/gap-criticality';
 import { IconWarning, IconArrowRight, IconCalendarClock } from '@/components/icons';
+import { fetchFrameworkRequirements } from '@/lib/framework-requirements';
 
 interface PriorityRequirement {
   id: string;
@@ -87,11 +88,8 @@ export function PriorityQueueCard({
     (async () => {
       setLoading(true);
       try {
-        const [reqsRes, evalsRes] = await Promise.all([
-          supabase
-            .from('gap_analysis_requirements')
-            .select('id, codigo, titulo, categoria, peso, area_responsavel, titulo_en, categoria_en')
-            .eq('framework_id', frameworkId),
+        const [requirements, evalsRes] = await Promise.all([
+          fetchFrameworkRequirements(frameworkId),
           supabase
             .from('gap_analysis_evaluations')
             .select('requirement_id, conformity_status, prazo_implementacao')
@@ -106,7 +104,7 @@ export function PriorityQueueCard({
         // Aparecia aqui como prioridade 02, cobrando ação sobre um requisito
         // que a diretoria já tinha dispensado por escrito.
         const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
-        const scored = (reqsRes.data || []).filter(r => !foraDoEscopo.has(r.id)).map(r => {
+        const scored = requirements.filter(r => !foraDoEscopo.has(r.id)).map(r => {
           const ev = evalMap.get(r.id);
           const peso = Number(r.peso || 3);
           const sPen = statusPenalty(ev?.conformity_status);

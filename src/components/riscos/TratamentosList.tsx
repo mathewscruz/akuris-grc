@@ -18,6 +18,8 @@ import { resolveTratamentoTipoTone, resolveTratamentoStatusTone } from '@/lib/st
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { filterUuids } from '@/lib/uuid';
+import { usePermissions } from '@/hooks/usePermissions';
 interface ResponsavelProfile {
   user_id: string;
   nome: string;
@@ -48,10 +50,12 @@ interface TratamentosListProps {
     categoria?: string;
     nivel_risco_inicial?: string;
   };
+  startCreating?: boolean;
 }
 
-export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoData }: TratamentosListProps) {
+export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoData, startCreating = false }: TratamentosListProps) {
   const { t } = useLanguage();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [tratamentoDialogOpen, setTratamentoDialogOpen] = useState(false);
@@ -72,24 +76,17 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
 
       if (error) throw error;
       
-      // Buscar perfis dos responsáveis (que são user_id)
-      const tratamentosComPerfis = await Promise.all(
-        (data || []).map(async (tratamento) => {
-          if (tratamento.responsavel) {
-            // Tentar buscar como UUID (user_id)
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('user_id, nome, foto_url')
-              .eq('user_id', tratamento.responsavel)
-              .single();
-            
-            if (profile) {
-              return { ...tratamento, responsavel_profile: profile };
-            }
-          }
-          return tratamento;
-        })
-      );
+      // Uma consulta em lote substitui o antigo N+1 (uma chamada por linha).
+      const ids = filterUuids((data || []).map((tratamento) => tratamento.responsavel));
+      const { data: perfis, error: perfisError } = ids.length
+        ? await supabase.from('profiles').select('user_id, nome, foto_url').in('user_id', ids)
+        : { data: [], error: null };
+      if (perfisError) throw perfisError;
+      const perfisPorId = new Map((perfis || []).map((perfil) => [perfil.user_id, perfil]));
+      const tratamentosComPerfis = (data || []).map((tratamento) => ({
+        ...tratamento,
+        responsavel_profile: tratamento.responsavel ? perfisPorId.get(tratamento.responsavel) : undefined,
+      }));
       
       setTratamentos(tratamentosComPerfis);
     } catch (error: any) {
@@ -102,6 +99,13 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
   useEffect(() => {
     fetchTratamentos();
   }, [riscoId]);
+
+  useEffect(() => {
+    if (startCreating && riscoId && canCreate('riscos')) {
+      setEditingTratamento(null);
+      setTratamentoDialogOpen(true);
+    }
+  }, [startCreating, riscoId, canCreate]);
 
   const handleEdit = (tratamento: Tratamento) => {
     setEditingTratamento(tratamento);
@@ -197,8 +201,9 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
           {count} {count === 1 ? 'tratamento cadastrado' : 'tratamentos cadastrados'}
         </span>
       </div>
-      <Button onClick={openCreateDialog} size="sm">
+      {canCreate('riscos') && <Button onClick={openCreateDialog} size="sm">
         <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('fin.riscos.tratamentos.novo')}</Button>
+      }
     </div>
   );
 
@@ -211,10 +216,10 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
           icon={<RiscosIcon className="h-7 w-7" />}
           title={t('fin.riscos.tratamentos.vazioTitle')}
           description={t('fin.riscos.tratamentos.vazioDesc')}
-          action={{
+          action={canCreate('riscos') ? {
             label: 'Cadastrar Primeiro Tratamento',
             onClick: openCreateDialog,
-          }}
+          } : undefined}
         />
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -290,17 +295,17 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-end">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(tratamento)}>
+                      {canUpdate('riscos') && <Button variant="ghost" size="icon" onClick={() => handleEdit(tratamento)}>
                         <IconEdit className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      </Button>
-                      <Button
+                      </Button>}
+                      {canDelete('riscos') && <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openDeleteDialog(tratamento)}
                         className="text-destructive hover:text-destructive"
                       >
                         <IconDelete className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      </Button>
+                      </Button>}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -341,4 +346,3 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
     </Card>
   );
 }
-

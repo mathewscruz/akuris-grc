@@ -1,29 +1,28 @@
 /**
- * Ligação risco ↔ controlos reais (requisitos dos frameworks) e justificação
- * de risco na SoA. Português de Portugal no PT.
+ * Ligação risco ↔ requisitos dos frameworks e justificação de risco na SoA.
  */
 export const riscosControles = {
   pt: {
     riscosControles: {
       vincular: {
-        titulo: 'Vincular controlos ao risco',
+        titulo: 'Relacionar requisitos ao risco',
         buscar: 'Pesquisar por código ou nome (ex.: A.5.1, políticas)',
-        selecionados: '{count} requisito(s) seleccionado(s)',
+        selecionados: '{count} requisito(s) selecionado(s)',
         todosFrameworks: 'Todos os frameworks',
-        semFrameworks: 'Ainda não existe nenhum framework activo no Gap Analysis desta empresa.',
+        semFrameworks: 'Ainda não existe nenhum framework ativo no Gap Analysis desta empresa.',
         semResultados: 'Nenhum requisito encontrado para esta pesquisa.',
         salvar: 'Salvar ligações',
-        sucessoTitulo: 'Controlos vinculados',
+        sucessoTitulo: 'Requisitos relacionados',
         sucessoDesc: '{count} requisito(s) ligado(s) a este risco.',
         erroTitulo: 'Não foi possível salvar as ligações',
         erroDesc: 'Tente novamente.',
       },
       aba: {
-        vinculados: '{count} controlo(s) vinculado(s)',
-        vincular: 'Vincular controlo',
-        vazio: 'Ainda não há controlos vinculados. Ligue este risco aos requisitos dos frameworks activos.',
+        vinculados: '{count} requisito(s) relacionado(s)',
+        vincular: 'Relacionar requisito',
+        vazio: 'Ainda não há requisitos relacionados a este risco.',
         abrirNoGap: 'Abrir no Gap Analysis',
-        notaTexto: 'Nota descritiva (texto livre). A fonte de verdade do cálculo são os requisitos vinculados.',
+        notaTexto: 'Nota descritiva (texto livre). A avaliação residual deve ser sustentada por controles internos vinculados e evidências.',
       },
       residual: {
         titulo: 'Residual sugerido pelos controlos',

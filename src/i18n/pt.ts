@@ -475,7 +475,7 @@ export const pt = {
   },
   notFoundPage: {
     title: '404',
-    subtitle: 'Oops! Página não encontrada',
+    subtitle: 'Ops! Página não encontrada',
     returnHome: 'Voltar ao início',
   },
   filterBar: {

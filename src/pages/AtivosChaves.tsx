@@ -246,11 +246,12 @@ export default function AtivosChaves() {
       key: 'nome',
       label: t('sweepDados.ativos.colNomeChave'),
       sortable: true,
+      className: 'w-72 max-w-72',
       render: (_: any, chave: ChaveCriptografica) => (
-        <div>
-          <div className="font-medium">{chave.nome}</div>
+        <div className="min-w-0 max-w-72">
+          <div className="truncate font-medium" title={chave.nome}>{chave.nome}</div>
           {chave.sistema_aplicacao && (
-            <div className="text-sm text-muted-foreground">{chave.sistema_aplicacao}</div>
+            <div className="truncate text-sm text-muted-foreground" title={chave.sistema_aplicacao}>{chave.sistema_aplicacao}</div>
           )}
         </div>
       )

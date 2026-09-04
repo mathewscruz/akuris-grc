@@ -34,6 +34,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useRequisitoRiscos } from "@/hooks/useRiscoRequisitos";
 import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { datePattern } from '@/lib/date-utils';
+import { fetchFrameworkRequirements } from '@/lib/framework-requirements';
 
 interface Requirement {
   id: string;
@@ -204,19 +205,10 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     if (!empresaId) return;
     try {
       setLoading(true);
-      // Paginação: frameworks grandes (PCI DSS 4.0 ~288, CIS ~153) podem ultrapassar
-      // o teto padrão de 1000 do PostgREST ao unir com evaluations; usamos o helper
-      // para evitar truncamento silencioso.
+      // O catálogo vem do cache partilhado da página; avaliações continuam
+      // isoladas por empresa e são recarregadas após cada alteração.
       const { fetchAllPaginated } = await import('@/lib/supabase-paginate');
-
-      const { data: reqs, error: reqError } = await fetchAllPaginated<any>(() =>
-        supabase
-          .from('gap_analysis_requirements')
-          .select('*')
-          .eq('framework_id', frameworkId)
-          .order('ordem', { ascending: true }),
-      );
-      if (reqError) throw reqError;
+      const reqs = await fetchFrameworkRequirements(frameworkId);
 
       const { data: evals, error: evalError } = await fetchAllPaginated<any>(() =>
         supabase

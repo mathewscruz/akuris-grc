@@ -9,9 +9,10 @@ interface TratamentosDialogProps {
   onOpenChange: (open: boolean) => void;
   risco: any;
   onSuccess: () => void;
+  startCreating?: boolean;
 }
 
-export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: TratamentosDialogProps) {
+export function TratamentosDialog({ open, onOpenChange, risco, onSuccess, startCreating = false }: TratamentosDialogProps) {
   const { t } = useLanguage();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -35,17 +36,20 @@ export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: Trat
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
-          <TratamentosList
-            embedded
-            riscoId={risco?.id}
-            riscoNome={risco?.nome}
-            riscoData={{
-              nome: risco?.nome,
-              descricao: risco?.descricao || '',
-              categoria: risco?.categoria?.nome,
-              nivel_risco_inicial: risco?.nivel_risco_inicial,
-            }}
-          />
+          {open && (
+            <TratamentosList
+              embedded
+              riscoId={risco?.id}
+              riscoNome={risco?.nome}
+              riscoData={{
+                nome: risco?.nome,
+                descricao: risco?.descricao || '',
+                categoria: risco?.categoria?.nome,
+                nivel_risco_inicial: risco?.nivel_risco_inicial,
+              }}
+              startCreating={startCreating}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>

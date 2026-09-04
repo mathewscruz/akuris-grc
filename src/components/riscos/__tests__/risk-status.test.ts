@@ -16,6 +16,11 @@ describe('QA-065 coerência de status', () => {
     expect(podeMarcarTratado([{ status: 'concluido' }, { status: 'cancelado' }])).toBe(true);
     expect(deriveRiscoStatus('tratado', [{ status: 'finalizado' }]).ajustado).toBe(false);
   });
+  it('deriva o ciclo de vida a partir dos tratamentos', () => {
+    expect(deriveRiscoStatus('analisado', [{ status: 'pendente' }]).status).toBe('em_tratamento');
+    expect(deriveRiscoStatus('em_tratamento', [{ status: 'concluído' }]).status).toBe('tratado');
+    expect(deriveRiscoStatus('em_revisao', [{ status: 'pendente' }]).status).toBe('em_revisao');
+  });
   it('interrompe a derivação quando a consulta de tratamentos falha', () => {
     expect(() => assertTratamentosLookup({ message: 'timeout' })).toThrow(/Não foi possível verificar.*Tente novamente.*timeout/i);
     expect(() => assertTratamentosLookup(null)).not.toThrow();

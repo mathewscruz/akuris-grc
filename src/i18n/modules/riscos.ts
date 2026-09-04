@@ -24,7 +24,7 @@ const riscosRaw = {
       status: 'Status',
       responsible: 'Resp.',
       updated: 'Atualizado',
-      sla: 'SLA',
+      sla: 'Revisão',
       actions: 'Ações',
     },
     actions: {
@@ -83,7 +83,7 @@ const riscosRaw = {
       awaitingAssignment: 'Aguardando atribuição',
       assignNow: 'Atribuir agora',
       overdueReview: 'Revisão vencida',
-      slaExpired: 'SLA estourado',
+      slaExpired: 'Revisão vencida',
       reassess: 'Reavaliar',
       inTreatment: 'Em tratamento',
       planInProgress: 'Plano em execução',
@@ -205,7 +205,7 @@ const riscosRaw = {
       status: 'Status',
       responsible: 'Owner',
       updated: 'Updated',
-      sla: 'SLA',
+      sla: 'Review',
       actions: 'Actions',
     },
     actions: {

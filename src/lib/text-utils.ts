@@ -401,6 +401,18 @@ export const getStatusLabel = (status: string, locale: 'pt' | 'en' = 'pt'): stri
   return formatStatus(status);
 };
 
+/** Rótulo feminino para prioridade (não confundir com severidade/nível de risco). */
+export const formatPrioridade = (prioridade?: string | null): string => {
+  if (!prioridade) return '';
+  const key = prioridade.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (getAppLocale() === 'en') {
+    return ({ baixa: 'Low', media: 'Medium', alta: 'High', critica: 'Critical' } as Record<string, string>)[key]
+      ?? formatStatus(prioridade);
+  }
+  return ({ baixa: 'Baixa', media: 'Média', alta: 'Alta', critica: 'Crítica' } as Record<string, string>)[key]
+    ?? formatStatus(prioridade);
+};
+
 // Palavras que devem permanecer em maiúsculas
 const UPPERCASE_WORDS = new Set(['ti', 'erp', 'crm', 'bi', 'siem', 'iam', 'vpn', 'api', 'saas', 'paas', 'iaas', 'rls', 'jwt', 'sql', 'css', 'html', 'url', 'uri', 'xml', 'json', 'http', 'https', 'ftp', 'ssh', 'ssl', 'tls', 'dns', 'ip', 'tcp', 'udp', 'smtp', 'imap', 'pop', 'ldap', 'oauth', 'sso', 'mfa', 'otp', 'pdf', 'csv', 'xlsx', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'mp3', 'mp4', 'avi', 'mov', 'iso', 'nist', 'lgpd', 'gdpr', 'ccpa', 'hipaa', 'sox', 'soc', 'pci', 'dss', 'cobit', 'coso', 'itil', 'cis']);
 

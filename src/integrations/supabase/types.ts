@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -1450,9 +1470,9 @@ export type Database = {
         ]
       }
       auditorias: {
-          Row: {
-            auditor_equipe: string[] | null
-            auditor_responsavel: string | null
+        Row: {
+          auditor_equipe: string[] | null
+          auditor_responsavel: string | null
           conclusao_forcada: boolean
           conclusao_justificativa: string | null
           created_at: string | null
@@ -1461,11 +1481,11 @@ export type Database = {
           data_fim_real: string | null
           data_inicio: string | null
           descricao: string | null
-            empresa_id: string
-            escopo: string | null
-            framework: string | null
-            framework_id: string | null
-            id: string
+          empresa_id: string
+          escopo: string | null
+          framework: string | null
+          framework_id: string | null
+          id: string
           metodologia: string | null
           nome: string
           objetivos: string | null
@@ -1485,11 +1505,11 @@ export type Database = {
           data_fim_real?: string | null
           data_inicio?: string | null
           descricao?: string | null
-            empresa_id: string
-            escopo?: string | null
-            framework?: string | null
-            framework_id?: string | null
-            id?: string
+          empresa_id: string
+          escopo?: string | null
+          framework?: string | null
+          framework_id?: string | null
+          id?: string
           metodologia?: string | null
           nome: string
           objetivos?: string | null
@@ -1509,11 +1529,11 @@ export type Database = {
           data_fim_real?: string | null
           data_inicio?: string | null
           descricao?: string | null
-            empresa_id?: string
-            escopo?: string | null
-            framework?: string | null
-            framework_id?: string | null
-            id?: string
+          empresa_id?: string
+          escopo?: string | null
+          framework?: string | null
+          framework_id?: string | null
+          id?: string
           metodologia?: string | null
           nome?: string
           objetivos?: string | null
@@ -1522,15 +1542,15 @@ export type Database = {
           tipo?: string
           updated_at?: string | null
         }
-          Relationships: [
-            {
-              foreignKeyName: "auditorias_framework_id_fkey"
-              columns: ["framework_id"]
-              isOneToOne: false
-              referencedRelation: "gap_analysis_frameworks"
-              referencedColumns: ["id"]
-            },
-          ]
+        Relationships: [
+          {
+            foreignKeyName: "auditorias_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blog_posts: {
         Row: {
@@ -6930,6 +6950,7 @@ export type Database = {
           status: string
           tags: string[] | null
           titulo: string
+          tratamento_risco_id: string | null
           updated_at: string
         }
         Insert: {
@@ -6949,6 +6970,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           titulo: string
+          tratamento_risco_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -6968,6 +6990,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           titulo?: string
+          tratamento_risco_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -6976,6 +6999,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_acao_tratamento_risco_id_fkey"
+            columns: ["tratamento_risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos_tratamentos"
             referencedColumns: ["id"]
           },
         ]
@@ -8185,10 +8215,14 @@ export type Database = {
           aceito: boolean | null
           aprovador_aceite: string | null
           aprovador_id: string | null
+          arquivado_em: string | null
+          arquivado_por: string | null
+          avaliacao_finalizada_em: string | null
           biblioteca_codigo: string | null
           categoria_id: string | null
           causas: string | null
           codigo: string | null
+          comentarios_aceite: string | null
           comentarios_aprovacao: string | null
           consequencias: string | null
           controles_existentes: string | null
@@ -8206,15 +8240,16 @@ export type Database = {
           historico_aprovacao: Json | null
           id: string
           impacto_financeiro: number | null
-          impacto_inicial: number
+          impacto_inicial: number | null
           impacto_residual: number | null
           justificativa_aceite: string | null
           matriz_id: string | null
           mitigacao_snapshot: Json | null
+          motivo_arquivamento: string | null
           nivel_risco_inicial: string | null
           nivel_risco_residual: string | null
           nome: string
-          probabilidade_inicial: number
+          probabilidade_inicial: number | null
           probabilidade_residual: number | null
           responsavel: string | null
           score_efetivo: number | null
@@ -8226,6 +8261,7 @@ export type Database = {
           status: string
           status_aceite: string | null
           status_aprovacao: string | null
+          ultima_observacao_avaliacao: string | null
           updated_at: string
         }
         Insert: {
@@ -8233,10 +8269,14 @@ export type Database = {
           aceito?: boolean | null
           aprovador_aceite?: string | null
           aprovador_id?: string | null
+          arquivado_em?: string | null
+          arquivado_por?: string | null
+          avaliacao_finalizada_em?: string | null
           biblioteca_codigo?: string | null
           categoria_id?: string | null
           causas?: string | null
           codigo?: string | null
+          comentarios_aceite?: string | null
           comentarios_aprovacao?: string | null
           consequencias?: string | null
           controles_existentes?: string | null
@@ -8254,15 +8294,16 @@ export type Database = {
           historico_aprovacao?: Json | null
           id?: string
           impacto_financeiro?: number | null
-          impacto_inicial: number
+          impacto_inicial?: number | null
           impacto_residual?: number | null
           justificativa_aceite?: string | null
           matriz_id?: string | null
           mitigacao_snapshot?: Json | null
+          motivo_arquivamento?: string | null
           nivel_risco_inicial?: string | null
           nivel_risco_residual?: string | null
           nome: string
-          probabilidade_inicial: number
+          probabilidade_inicial?: number | null
           probabilidade_residual?: number | null
           responsavel?: string | null
           score_efetivo?: number | null
@@ -8274,6 +8315,7 @@ export type Database = {
           status?: string
           status_aceite?: string | null
           status_aprovacao?: string | null
+          ultima_observacao_avaliacao?: string | null
           updated_at?: string
         }
         Update: {
@@ -8281,10 +8323,14 @@ export type Database = {
           aceito?: boolean | null
           aprovador_aceite?: string | null
           aprovador_id?: string | null
+          arquivado_em?: string | null
+          arquivado_por?: string | null
+          avaliacao_finalizada_em?: string | null
           biblioteca_codigo?: string | null
           categoria_id?: string | null
           causas?: string | null
           codigo?: string | null
+          comentarios_aceite?: string | null
           comentarios_aprovacao?: string | null
           consequencias?: string | null
           controles_existentes?: string | null
@@ -8302,15 +8348,16 @@ export type Database = {
           historico_aprovacao?: Json | null
           id?: string
           impacto_financeiro?: number | null
-          impacto_inicial?: number
+          impacto_inicial?: number | null
           impacto_residual?: number | null
           justificativa_aceite?: string | null
           matriz_id?: string | null
           mitigacao_snapshot?: Json | null
+          motivo_arquivamento?: string | null
           nivel_risco_inicial?: string | null
           nivel_risco_residual?: string | null
           nome?: string
-          probabilidade_inicial?: number
+          probabilidade_inicial?: number | null
           probabilidade_residual?: number | null
           responsavel?: string | null
           score_efetivo?: number | null
@@ -8322,6 +8369,7 @@ export type Database = {
           status?: string
           status_aceite?: string | null
           status_aprovacao?: string | null
+          ultima_observacao_avaliacao?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -8345,6 +8393,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "riscos_categorias"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_created_by_profiles_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "riscos_empresa_id_fkey"
@@ -8636,6 +8691,7 @@ export type Database = {
           empresa_id: string
           id: string
           impacto: number
+          matriz_id: string | null
           nivel_risco: string
           observacoes: string | null
           probabilidade: number
@@ -8650,6 +8706,7 @@ export type Database = {
           empresa_id: string
           id?: string
           impacto: number
+          matriz_id?: string | null
           nivel_risco: string
           observacoes?: string | null
           probabilidade: number
@@ -8664,6 +8721,7 @@ export type Database = {
           empresa_id?: string
           id?: string
           impacto?: number
+          matriz_id?: string | null
           nivel_risco?: string
           observacoes?: string | null
           probabilidade?: number
@@ -8688,7 +8746,137 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "riscos_historico_avaliacoes_matriz_id_fkey"
+            columns: ["matriz_id"]
+            isOneToOne: false
+            referencedRelation: "riscos_matrizes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "riscos_historico_avaliacoes_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riscos_kri_medicoes: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          kri_id: string
+          medido_em: string
+          medido_por: string | null
+          observacao: string | null
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          kri_id: string
+          medido_em?: string
+          medido_por?: string | null
+          observacao?: string | null
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          kri_id?: string
+          medido_em?: string
+          medido_por?: string | null
+          observacao?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_kri_medicoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_kri_medicoes_kri_id_fkey"
+            columns: ["kri_id"]
+            isOneToOne: false
+            referencedRelation: "riscos_kris"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riscos_kris: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          direcao: string
+          empresa_id: string
+          id: string
+          limite: number
+          nome: string
+          periodicidade: string
+          proxima_medicao: string | null
+          responsavel_id: string | null
+          risco_id: string
+          ultima_medicao_em: string | null
+          unidade: string | null
+          updated_at: string
+          valor_atual: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          direcao?: string
+          empresa_id: string
+          id?: string
+          limite: number
+          nome: string
+          periodicidade?: string
+          proxima_medicao?: string | null
+          responsavel_id?: string | null
+          risco_id: string
+          ultima_medicao_em?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_atual?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          direcao?: string
+          empresa_id?: string
+          id?: string
+          limite?: number
+          nome?: string
+          periodicidade?: string
+          proxima_medicao?: string | null
+          responsavel_id?: string | null
+          risco_id?: string
+          ultima_medicao_em?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_atual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_kris_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_kris_risco_id_fkey"
             columns: ["risco_id"]
             isOneToOne: false
             referencedRelation: "riscos"
@@ -8748,7 +8936,10 @@ export type Database = {
           empresa_id: string
           id: string
           nome: string
+          publicada_em: string | null
+          substitui_matriz_id: string | null
           updated_at: string
+          versao: number
         }
         Insert: {
           ativa?: boolean
@@ -8757,7 +8948,10 @@ export type Database = {
           empresa_id: string
           id?: string
           nome: string
+          publicada_em?: string | null
+          substitui_matriz_id?: string | null
           updated_at?: string
+          versao?: number
         }
         Update: {
           ativa?: boolean
@@ -8766,7 +8960,10 @@ export type Database = {
           empresa_id?: string
           id?: string
           nome?: string
+          publicada_em?: string | null
+          substitui_matriz_id?: string | null
           updated_at?: string
+          versao?: number
         }
         Relationships: [
           {
@@ -8774,6 +8971,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_matrizes_substitui_matriz_id_fkey"
+            columns: ["substitui_matriz_id"]
+            isOneToOne: false
+            referencedRelation: "riscos_matrizes"
             referencedColumns: ["id"]
           },
         ]
@@ -9668,6 +9872,10 @@ export type Database = {
         Args: { _profile_id: string; _user_id: string }
         Returns: undefined
       }
+      arquivar_risco: {
+        Args: { p_motivo?: string; p_risco_id: string }
+        Returns: undefined
+      }
       assessment_pertence_empresa: {
         Args: { assessment_id: string }
         Returns: boolean
@@ -10180,6 +10388,18 @@ export type Database = {
           severidade: string
         }[]
       }
+      risco_avaliar_na_matriz: {
+        Args: {
+          p_impacto: number
+          p_matriz_id: string
+          p_probabilidade: number
+        }
+        Returns: {
+          nivel: string
+          score: number
+          severidade: string
+        }[]
+      }
       risco_escala_numero: { Args: { p_valor: string }; Returns: number }
       risco_matriz_vigente: {
         Args: { p_empresa_id: string }
@@ -10214,6 +10434,21 @@ export type Database = {
       }
       ropa_chave_da_base_legal: { Args: { p_texto: string }; Returns: string }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
+      salvar_tratamento_risco: {
+        Args: {
+          p_custo: number
+          p_data_inicio: string
+          p_descricao: string
+          p_eficacia: string
+          p_prazo: string
+          p_responsavel: string
+          p_risco_id: string
+          p_status: string
+          p_tipo_tratamento: string
+          p_tratamento_id: string
+        }
+        Returns: string
+      }
       semear_comite_denuncias: {
         Args: { p_empresa_id: string }
         Returns: number
@@ -10233,6 +10468,10 @@ export type Database = {
         Returns: Json
       }
       unaccent_immutable_fallback: { Args: { p_text: string }; Returns: string }
+      usuario_tem_permissao_modulo: {
+        Args: { p_acao?: string; p_modulo: string }
+        Returns: boolean
+      }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }
       verify_mfa_code_attempt: {
         Args: { p_code_hash: string; p_user_id: string }
@@ -10274,6 +10513,563 @@ export type Database = {
       [_ in never]: never
     }
   }
+  storage: {
+    Tables: {
+      buckets: {
+        Row: {
+          allowed_mime_types: string[] | null
+          avif_autodetection: boolean | null
+          created_at: string | null
+          file_size_limit: number | null
+          id: string
+          name: string
+          owner: string | null
+          owner_id: string | null
+          public: boolean | null
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string | null
+          versioning_status: string
+        }
+        Insert: {
+          allowed_mime_types?: string[] | null
+          avif_autodetection?: boolean | null
+          created_at?: string | null
+          file_size_limit?: number | null
+          id: string
+          name: string
+          owner?: string | null
+          owner_id?: string | null
+          public?: boolean | null
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string | null
+          versioning_status?: string
+        }
+        Update: {
+          allowed_mime_types?: string[] | null
+          avif_autodetection?: boolean | null
+          created_at?: string | null
+          file_size_limit?: number | null
+          id?: string
+          name?: string
+          owner?: string | null
+          owner_id?: string | null
+          public?: boolean | null
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string | null
+          versioning_status?: string
+        }
+        Relationships: []
+      }
+      buckets_analytics: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          format: string
+          id: string
+          name: string
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          format?: string
+          id?: string
+          name: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          format?: string
+          id?: string
+          name?: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      buckets_vectors: {
+        Row: {
+          created_at: string
+          id: string
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      iceberg_namespaces: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iceberg_tables: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id: string | null
+          shard_id: string | null
+          shard_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          location?: string
+          name?: string
+          namespace_id?: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_tables_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iceberg_tables_namespace_id_fkey"
+            columns: ["namespace_id"]
+            isOneToOne: false
+            referencedRelation: "iceberg_namespaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      migrations: {
+        Row: {
+          executed_at: string | null
+          hash: string
+          id: number
+          name: string
+        }
+        Insert: {
+          executed_at?: string | null
+          hash: string
+          id: number
+          name: string
+        }
+        Update: {
+          executed_at?: string | null
+          hash?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      objects: {
+        Row: {
+          archived_at: string | null
+          bucket_id: string | null
+          created_at: string | null
+          id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
+          last_accessed_at: string | null
+          metadata: Json | null
+          name: string | null
+          owner: string | null
+          owner_id: string | null
+          path_tokens: string[] | null
+          updated_at: string | null
+          user_metadata: Json | null
+          version: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          bucket_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
+          last_accessed_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          owner?: string | null
+          owner_id?: string | null
+          path_tokens?: string[] | null
+          updated_at?: string | null
+          user_metadata?: Json | null
+          version?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          bucket_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
+          last_accessed_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          owner?: string | null
+          owner_id?: string | null
+          path_tokens?: string[] | null
+          updated_at?: string | null
+          user_metadata?: Json | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objects_bucketId_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      s3_multipart_uploads: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          id: string
+          in_progress_size: number
+          key: string
+          metadata: Json | null
+          owner_id: string | null
+          upload_signature: string
+          user_metadata: Json | null
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          id: string
+          in_progress_size?: number
+          key: string
+          metadata?: Json | null
+          owner_id?: string | null
+          upload_signature: string
+          user_metadata?: Json | null
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          id?: string
+          in_progress_size?: number
+          key?: string
+          metadata?: Json | null
+          owner_id?: string | null
+          upload_signature?: string
+          user_metadata?: Json | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      s3_multipart_uploads_parts: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          etag: string
+          id: string
+          key: string
+          owner_id: string | null
+          part_number: number
+          size: number
+          upload_id: string
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          etag: string
+          id?: string
+          key: string
+          owner_id?: string | null
+          part_number: number
+          size?: number
+          upload_id: string
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          etag?: string
+          id?: string
+          key?: string
+          owner_id?: string | null
+          part_number?: number
+          size?: number
+          upload_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "s3_multipart_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vector_indexes: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          data_type: string
+          dimension: number
+          distance_metric: string
+          id: string
+          metadata_configuration: Json | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          data_type: string
+          dimension: number
+          distance_metric: string
+          id?: string
+          metadata_configuration?: Json | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          data_type?: string
+          dimension?: number
+          distance_metric?: string
+          id?: string
+          metadata_configuration?: Json | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vector_indexes_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_vectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      allow_any_operation: {
+        Args: { expected_operations: string[] }
+        Returns: boolean
+      }
+      allow_only_operation: {
+        Args: { expected_operation: string }
+        Returns: boolean
+      }
+      can_insert_object: {
+        Args: { bucketid: string; metadata: Json; name: string; owner: string }
+        Returns: undefined
+      }
+      extension: { Args: { name: string }; Returns: string }
+      filename: { Args: { name: string }; Returns: string }
+      foldername: { Args: { name: string }; Returns: string[] }
+      get_common_prefix: {
+        Args: { p_delimiter: string; p_key: string; p_prefix: string }
+        Returns: string
+      }
+      get_size_by_bucket: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          size: number
+        }[]
+      }
+      list_multipart_uploads_with_delimiter: {
+        Args: {
+          bucket_id: string
+          delimiter_param: string
+          max_keys?: number
+          next_key_token?: string
+          next_upload_token?: string
+          prefix_param: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+        }[]
+      }
+      list_objects_with_delimiter: {
+        Args: {
+          _bucket_id: string
+          delimiter_param: string
+          max_keys?: number
+          next_token?: string
+          prefix_param: string
+          sort_order?: string
+          start_after?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      operation: { Args: never; Returns: string }
+      search: {
+        Args: {
+          bucketname: string
+          levels?: number
+          limits?: number
+          offsets?: number
+          prefix: string
+          search?: string
+          sortcolumn?: string
+          sortorder?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_by_timestamp: {
+        Args: {
+          p_bucket_id: string
+          p_level: number
+          p_limit: number
+          p_prefix: string
+          p_sort_column: string
+          p_sort_column_after: string
+          p_sort_order: string
+          p_start_after: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_v2: {
+        Args: {
+          bucket_name: string
+          levels?: number
+          limits?: number
+          prefix: string
+          sort_column?: string
+          sort_column_after?: string
+          sort_order?: string
+          start_after?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+    }
+    Enums: {
+      buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
@@ -10284,12 +11080,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10313,11 +11109,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10338,11 +11134,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10363,11 +11159,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10380,11 +11176,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10394,6 +11190,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["user", "admin", "super_admin"],
@@ -10421,6 +11220,11 @@ export const Constants = {
         "continuidade",
       ],
       user_role: ["super_admin", "admin", "user", "readonly"],
+    },
+  },
+  storage: {
+    Enums: {
+      buckettype: ["STANDARD", "ANALYTICS", "VECTOR"],
     },
   },
 } as const

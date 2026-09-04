@@ -233,7 +233,7 @@ export const projetos = {
         fieldDescricao: 'Descrição',
         fieldStatus: 'Status',
         fieldCor: 'Cor',
-        fieldOwner: 'Responsável (owner) *',
+        fieldOwner: 'Responsável pelo projeto *',
         fieldInicio: 'Início',
         fieldFimPrevisto: 'Fim previsto',
       },

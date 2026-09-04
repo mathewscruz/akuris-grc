@@ -135,7 +135,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                   <FormItem className="col-span-2">
                     <FormLabel>{t('contratosAtivos.chaveDialog.labelName')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('contratosAtivos.chaveDialog.namePlaceholder')} />
+                      <Input {...field} maxLength={160} placeholder={t('contratosAtivos.chaveDialog.namePlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

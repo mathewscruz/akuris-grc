@@ -30,7 +30,7 @@ interface ItemAuditoriaDetalheDialogProps {
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveItemAuditoriaStatusTone, resolvePrioridadeTone } from "@/lib/status-tone";
-import { formatStatus } from "@/lib/text-utils";
+import { formatPrioridade, formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { notificarVarios } from "@/lib/notificar";
 import { intlLocale } from '@/lib/date-utils';
@@ -346,7 +346,7 @@ export function ItemAuditoriaDetalheDialog({
                 {item.codigo}
               </StatusBadge>
               <StatusBadge {...resolvePrioridadeTone(item.prioridade)}>
-                {formatStatus(item.prioridade)}
+                {formatPrioridade(item.prioridade)}
               </StatusBadge>
               <StatusBadge {...resolveItemAuditoriaStatusTone(item.status)}>
                 {formatStatus(item.status)}

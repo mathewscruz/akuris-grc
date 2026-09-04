@@ -160,7 +160,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                   <FormItem className="col-span-2">
                     <FormLabel>{t('contratosAtivos.licencaDialog.labelName')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={t('contratosAtivos.licencaDialog.namePlaceholder')} />
+                      <Input {...field} maxLength={160} placeholder={t('contratosAtivos.licencaDialog.namePlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

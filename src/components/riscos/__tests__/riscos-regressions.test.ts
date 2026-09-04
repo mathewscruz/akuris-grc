@@ -71,6 +71,13 @@ describe('regressões do módulo de riscos', () => {
     expect(mensagemErroComentarios({ code: 'PGRST205' }, tPt)).toMatch(/aplique a migração/i);
     expect(mensagemErroComentarios({ message: 'permission denied' }, tPt)).toMatch(/verifique sua sessão/i);
   });
+
+  it('mantém as abas do perfil legíveis, sem compressão ou abreviações', () => {
+    const drawer = source('src/components/riscos/RiscoDetailDrawer.tsx');
+    expect(drawer).not.toMatch(/<TabsTrigger[^>]+className="[^"]*flex-1/i);
+    expect(drawer).toContain("t('riscosDetalhe.drawer.comentarios')");
+    expect(tPt('riscosDetalhe.drawer.comentarios')).toBe('Comentários');
+  });
 });
 
 describe('invariantes estruturais da migração QA-061 (sem Postgres/Supabase local disponível)', () => {

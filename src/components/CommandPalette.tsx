@@ -92,6 +92,9 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   }, [handleSelect]);
 
   const semResultados = ativo && !isSearching && groups.length === 0;
+  const searchShortcut = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
+    ? '⌘K'
+    : 'Ctrl+K';
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} shouldFilter={false}>
@@ -171,7 +174,7 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                   <IconGrid className="h-4 w-4 text-muted-foreground" />
                   <span>{t('commandPalette.quickSearch')}</span>
                 </div>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-micro font-medium text-muted-foreground">⌘K</kbd>
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-micro font-medium text-muted-foreground">{searchShortcut}</kbd>
               </CommandItem>
               <CommandItem className="flex items-center justify-between cursor-default" value="atalho-sidebar">
                 <div className="flex items-center gap-3">

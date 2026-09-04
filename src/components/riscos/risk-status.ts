@@ -98,18 +98,18 @@ export interface StatusCoerente {
 }
 
 /**
- * Status coerente para exibição. Só interfere quando o valor gravado é
- * 'tratado' e a evidência (tratamentos) não sustenta isso:
- * - nenhum tratamento exigido → 'analisado' (o risco foi avaliado, nada foi feito);
- * - tratamentos exigidos em aberto → 'em_tratamento'.
- * Qualquer outro status é devolvido sem alteração.
+ * Status coerente para exibição. Rascunho, revisão e arquivo são estados
+ * explícitos. Nos demais casos, a evidência de tratamento governa o fluxo:
+ * em aberto → em tratamento; todos concluídos → tratado; sem tratamento não
+ * pode permanecer em tratamento/tratado.
  */
 export function deriveRiscoStatus(
   statusArmazenado: string | null | undefined,
   tratamentos: readonly TratamentoStatusLike[] | TratamentoResumo | null | undefined,
 ): StatusCoerente {
   const original = (statusArmazenado ?? '').trim();
-  if (norm(original) !== STATUS_TRATADO) {
+  const normalizado = norm(original);
+  if (['rascunho', 'em_revisao', 'arquivado'].includes(normalizado)) {
     return { status: original, ajustado: false, motivo: null };
   }
 
@@ -117,16 +117,23 @@ export function deriveRiscoStatus(
     ? resumirTratamentos(tratamentos)
     : ((tratamentos as TratamentoResumo | null | undefined) ?? { requeridos: 0, concluidos: 0 });
 
-  if (podeMarcarTratado(resumo)) {
+  const esperado = podeMarcarTratado(resumo)
+    ? STATUS_TRATADO
+    : resumo.requeridos > 0
+      ? 'em_tratamento'
+      : ['tratado', 'em_tratamento'].includes(normalizado)
+        ? 'analisado'
+        : original;
+
+  if (esperado === original) {
     return { status: original, ajustado: false, motivo: null };
   }
 
   return {
-    status: resumo.requeridos === 0 ? 'analisado' : 'em_tratamento',
+    status: esperado,
     ajustado: true,
-    motivo:
-      resumo.requeridos === 0
-        ? 'Registro gravado como "Tratado" sem nenhum tratamento cadastrado; exibindo o status coerente com a evidência.'
-        : `Registro gravado como "Tratado" com ${resumo.concluidos} de ${resumo.requeridos} tratamentos concluídos; exibindo o status coerente com a evidência.`,
+    motivo: resumo.requeridos === 0
+      ? 'O risco não possui tratamento ativo; exibindo o status coerente com a evidência.'
+      : `O risco possui ${resumo.concluidos} de ${resumo.requeridos} tratamentos concluídos; exibindo o status coerente com a evidência.`,
   };
 }

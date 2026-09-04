@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { filterUuids } from '@/lib/uuid';
 import { IconView, IconMore, IconSuccess, IconWarning, IconError, IconTime, IconCalendarClock, IconTimer, IconBan } from '@/components/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
+import { usePermissions } from '@/hooks/usePermissions';
 interface RiscoAceito {
   id: string;
   nome: string;
@@ -37,6 +38,7 @@ interface RiscoAceito {
   created_at: string;
   created_by?: string;
   status_aceite?: string;
+  historico_aceite?: Array<Record<string, unknown>>;
   aprovador_nome?: string;
   responsavel_nome?: string;
 }
@@ -48,12 +50,14 @@ const rotuloNivel = (v?: string | null) =>
 const SELECT_ACEITE = `
   id, nome, nivel_risco_inicial, nivel_risco_residual, severidade_efetiva, score_efetivo,
   justificativa_aceite, data_aceite, aprovador_aceite, aceite_valido_ate,
-  data_proxima_revisao, responsavel, created_at, created_by, status_aceite
+  data_proxima_revisao, responsavel, created_at, created_by, status_aceite, historico_aceite
 `;
 
 export default function RiscosAceite({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: matriz } = useMatrizConfigEmpresa();
   const { profile } = useAuth();
+  const { canUpdate } = usePermissions();
+  const podeAtualizar = canUpdate('riscos');
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -66,24 +70,14 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const [aprovacaoOpen, setAprovacaoOpen] = useState(false);
   const [aprovacaoRisco, setAprovacaoRisco] = useState<any>(null);
 
-  // Rede de segurança: além da rotina diária no servidor, reavalia expirações ao carregar.
-  useEffect(() => {
-    if (!profile?.empresa_id) return;
-    supabase.rpc('expirar_aceites_riscos').then(({ error }) => {
-      if (error) return;
-      queryClient.invalidateQueries({ queryKey: ['riscos-aceitos'] });
-      queryClient.invalidateQueries({ queryKey: ['riscos-aceites-expirados'] });
-    });
-  }, [profile?.empresa_id]);
-
   // Riscos aceitos (aprovados)
   const { data: riscos = [], isLoading } = useQuery({
     queryKey: ['riscos-aceitos', profile?.empresa_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('riscos')
+      const { data, error } = await (supabase.from('riscos') as any)
         .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
+        .is('arquivado_em', null)
         .eq('aceito', true)
         .order('data_aceite', { ascending: false });
 
@@ -97,10 +91,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const { data: riscosPendentes = [], isLoading: isLoadingPendentes } = useQuery({
     queryKey: ['riscos-aceite-pendentes', profile?.empresa_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('riscos')
+      const { data, error } = await (supabase.from('riscos') as any)
         .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
+        .is('arquivado_em', null)
         .eq('status_aceite', 'pendente')
         .order('created_at', { ascending: false });
 
@@ -114,10 +108,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const { data: riscosExpirados = [], isLoading: isLoadingExpirados } = useQuery({
     queryKey: ['riscos-aceites-expirados', profile?.empresa_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('riscos')
+      const { data, error } = await (supabase.from('riscos') as any)
         .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
+        .is('arquivado_em', null)
         .in('status_aceite', ['expirado', 'invalidado'])
         .order('aceite_valido_ate', { ascending: false });
 
@@ -210,10 +204,25 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   };
 
   const handleRevogarAceite = async (risco: RiscoAceito) => {
+    if (!podeAtualizar) return;
     try {
       const { error } = await supabase
         .from('riscos')
-        .update({ aceito: false, justificativa_aceite: null, data_aceite: null, aprovador_aceite: null, status_aceite: null })
+        .update({
+          aceito: false,
+          status: 'em_revisao',
+          status_aceite: 'invalidado',
+          historico_aceite: [
+            ...(risco.historico_aceite || []),
+            {
+              evento: 'revogado',
+              em: new Date().toISOString(),
+              por: profile?.user_id,
+              justificativa: risco.justificativa_aceite || null,
+              valido_ate: risco.aceite_valido_ate || null,
+            },
+          ],
+        } as any)
         .eq('id', risco.id)
         .eq('empresa_id', profile!.empresa_id);
 
@@ -226,6 +235,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   };
 
   const handleAgendarRevisao = async (risco: RiscoAceito, dias: number) => {
+    if (!podeAtualizar) return;
     const novaData = new Date();
     novaData.setDate(novaData.getDate() + dias);
     try {
@@ -276,15 +286,19 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
             <DropdownMenuItem onClick={() => { setSelectedRisco(risco); setDetalheOpen(true); }}>
               <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.viewDetails')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 30)}>
-              <IconCalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview30')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 90)}>
-              <IconCalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview90')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleRevogarAceite(risco)} className="text-destructive focus:text-destructive">
-              <IconError className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.revoke')}
-            </DropdownMenuItem>
+            {podeAtualizar && (
+              <>
+                <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 30)}>
+                  <IconCalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview30')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 90)}>
+                  <IconCalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview90')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleRevogarAceite(risco)} className="text-destructive focus:text-destructive">
+                  <IconError className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.revoke')}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -302,7 +316,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     {
       key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',
       render: (_: any, risco: RiscoAceito) => (
-        <Button variant="outline" size="sm" onClick={() => { setAprovacaoRisco(risco); setAprovacaoOpen(true); }}>
+        <Button variant="outline" size="sm" disabled={!podeAtualizar} title={!podeAtualizar ? 'Sem permissão para decidir este aceite' : undefined} onClick={() => { setAprovacaoRisco(risco); setAprovacaoOpen(true); }}>
           <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.review')}
         </Button>
       ),
@@ -403,8 +417,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 onSearchChange={setSearchTermPendente}
                 emptyState={{
                   icon: <IconTime className="h-8 w-8" />,
-                  title: t('riscos.aceite.empty.pendingTitle'),
-                  description: t('riscos.aceite.empty.pendingDesc'),
+                  title: searchTermPendente ? 'Nenhuma solicitação encontrada' : t('riscos.aceite.empty.pendingTitle'),
+                  description: searchTermPendente
+                    ? 'Nenhuma solicitação de aceite corresponde à busca atual.'
+                    : 'Quando alguém solicitar um aceite formal, ele aparecerá aqui para decisão do aprovador designado.',
                 }}
               />
             </CardContent>
@@ -428,8 +444,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 filters={filters}
                 emptyState={{
                   icon: <IconSuccess className="h-8 w-8" />,
-                  title: t('riscos.aceite.empty.acceptedTitle'),
-                  description: t('riscos.aceite.empty.acceptedDesc'),
+                  title: searchTerm || nivelFilter || revisaoFilter ? 'Nenhum aceite encontrado' : t('riscos.aceite.empty.acceptedTitle'),
+                  description: searchTerm || nivelFilter || revisaoFilter
+                    ? 'Nenhum risco aceito corresponde aos filtros atuais.'
+                    : 'Aceites aprovados aparecem aqui com responsável, validade e próxima revisão.',
                 }}
               />
             </CardContent>

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { IconAdd, IconClose, IconEdit, IconDelete, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconUserOff, IconCalendarClock } from '@/components/icons';
+import { IconAdd, IconClose, IconEdit, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconUserOff, IconCalendarClock, IconArchive } from '@/components/icons';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { StatStrip } from '@/components/ui/stat-strip';
 
@@ -76,6 +76,7 @@ import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
 import { exportRiscosPDF, exportRiscosCSV } from '@/components/riscos/ExportRiscosPDF';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Risco {
   id: string;
@@ -120,10 +121,16 @@ interface Risco {
   aprovador_id?: string;
   historico_aprovacao?: any;
   created_by?: string;
+  status_aceite?: string;
+  aprovador_aceite?: string;
+  aceite_valido_ate?: string;
+  data_aceite?: string;
+  historico_aceite?: any[];
 }
 
 export function Riscos() {
   const { profile } = useAuth();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const { t } = useLanguage();
   const { toast } = useToast();
   const location = useLocation();
@@ -139,10 +146,12 @@ export function Riscos() {
   const [aceitoFilter, setAceitoFilter] = useState<string>('');
   const [idsFilter, setIdsFilter] = useState<string[]>([]);
   const [riscoDialogOpen, setRiscoDialogOpen] = useState(false);
+  const [riscoDialogInitialTab, setRiscoDialogInitialTab] = useState<'identificacao' | 'avaliacao' | 'acompanhamento'>('identificacao');
   const [matrizDialogOpen, setMatrizDialogOpen] = useState(false);
   const [editingRisco, setEditingRisco] = useState<Risco | null>(null);
   const [tratamentosDialogOpen, setTratamentosDialogOpen] = useState(false);
   const [tratamentosRisco, setTratamentosRisco] = useState<Risco | null>(null);
+  const [tratamentoDireto, setTratamentoDireto] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [riscoToDelete, setRiscoToDelete] = useState<Risco | null>(null);
   const [categoriasDialogOpen, setCategoriasDialogOpen] = useState(false);
@@ -171,8 +180,7 @@ export function Riscos() {
   } = useQuery<Risco[]>({
     queryKey: ['riscos', profile?.empresa_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('riscos')
+      const { data, error } = await (supabase.from('riscos') as any)
         .select(`
           id, codigo, nome, descricao, matriz_id, categoria_id,
           probabilidade_inicial, impacto_inicial,
@@ -183,12 +191,14 @@ export function Riscos() {
           impacto_financeiro,
           status, responsavel, controles_existentes, mitigacao_snapshot,
           causas, consequencias, aceito, justificativa_aceite,
+          status_aceite, aprovador_aceite, aceite_valido_ate, data_aceite, historico_aceite,
           created_at, updated_at, data_proxima_revisao,
-          status_aprovacao, aprovador_id, historico_aprovacao,
+          status_aprovacao, aprovador_id, historico_aprovacao, created_by,
           categoria:riscos_categorias(nome, cor),
           matriz:riscos_matrizes(nome)
         `)
         .eq('empresa_id', profile!.empresa_id)
+        .is('arquivado_em', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -340,6 +350,7 @@ export function Riscos() {
     if (itemId && riscos.length > 0) {
       const risco = riscos.find(r => r.id === itemId);
       if (risco) {
+        setRiscoDialogInitialTab('identificacao');
         setEditingRisco(risco as Risco);
         setRiscoDialogOpen(true);
         window.history.replaceState({}, document.title);
@@ -356,6 +367,7 @@ export function Riscos() {
 
   useEffect(() => {
     if (searchParams.get('action') !== 'new') return;
+    setRiscoDialogInitialTab('identificacao');
     setEditingRisco(null);
     setRiscoDialogOpen(true);
     const next = new URLSearchParams(searchParams);
@@ -419,12 +431,14 @@ export function Riscos() {
   };
 
   const handleEdit = (risco: Risco) => {
+    setRiscoDialogInitialTab('identificacao');
     setEditingRisco(risco);
     setRiscoDialogOpen(true);
   };
 
-  const openTratamentosDialog = (risco: Risco) => {
+  const openTratamentosDialog = (risco: Risco, criar = false) => {
     setTratamentosRisco(risco);
+    setTratamentoDireto(criar);
     setTratamentosDialogOpen(true);
   };
 
@@ -437,17 +451,16 @@ export function Riscos() {
     if (!riscoToDelete) return;
 
     try {
-      const { error } = await supabase
-        .from('riscos')
-        .delete()
-        .eq('id', riscoToDelete.id)
-        .eq('empresa_id', profile!.empresa_id);
+      const { error } = await (supabase as any).rpc('arquivar_risco', {
+        p_risco_id: riscoToDelete.id,
+        p_motivo: 'Arquivado pelo usuário no registro de riscos',
+      });
 
       if (error) throw error;
 
       toast({
         title: t('riscos.page.toast.successTitle'),
-        description: t('riscos.page.toast.deleteSuccess'),
+        description: 'Risco arquivado com sucesso. O histórico foi preservado.',
       });
       await invalidateRiscos();
       setDeleteDialogOpen(false);
@@ -455,13 +468,14 @@ export function Riscos() {
     } catch (error: any) {
       toast({
         title: t('riscos.page.toast.errorTitle'),
-        description: t('riscos.page.toast.deleteError') + error.message,
+        description: `Não foi possível arquivar o risco. ${error.message}`,
         variant: "destructive",
       });
     }
   };
 
   const openCreateDialog = () => {
+    setRiscoDialogInitialTab('identificacao');
     setEditingRisco(null);
     setRiscoDialogOpen(true);
   };
@@ -544,10 +558,11 @@ export function Riscos() {
   const apetiteScore: number | null = apetiteScoreDaConfig(matrizConfig);
   const viewFilters: Record<SavedView, (r: Risco) => boolean> = useMemo(() => ({
     todos: () => true,
+    rascunhos: (r) => r.status === 'rascunho',
     acima_apetite: (r) => isAcimaDoApetite(r, apetiteScore),
     sem_responsavel: (r) => !r.responsavel_nome && !(r as any).responsavel_por_resolver,
     revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
-    meus_riscos: (r) => !!profile?.user_id && r.responsavel === profile.user_id,
+    meus_riscos: (r) => !!profile?.user_id && splitResponsavel(r.responsavel).userId === profile.user_id,
   }), [apetiteScore, profile?.user_id]);
   const viewedRiscos = sortedRiscos.filter(viewFilters[savedView]);
 
@@ -569,7 +584,7 @@ export function Riscos() {
       altos: porSeveridade('alto'),
       medios: porSeveridade('medio'),
       baixos: porSeveridade('baixo'),
-      aceitos: viewedRiscos.filter((r) => efetivo(r) === 'aceito').length,
+      aceitos: viewedRiscos.filter((r) => r.aceito).length,
       tratados: viewedRiscos.filter((r) => efetivo(r) === 'tratado').length,
     } as RiscosStats;
   }, [viewedRiscos, stats, matrizConfig]);
@@ -747,29 +762,29 @@ export function Riscos() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleEdit(risco)}>
+            {canUpdate('riscos') && <DropdownMenuItem onClick={() => handleEdit(risco)}>
               <IconEdit className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.edit')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openTratamentosDialog(risco)}>
+            </DropdownMenuItem>}
+            {canUpdate('riscos') && <DropdownMenuItem onClick={() => openTratamentosDialog(risco)}>
               <IconShield className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.treatments')} ({risco.tratamentos_count || 0})
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setAprovacaoRisco(risco)}>
+            </DropdownMenuItem>}
+            {canUpdate('riscos') && <DropdownMenuItem onClick={() => setAprovacaoRisco(risco)}>
               <IconShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.approval')}
-            </DropdownMenuItem>
+            </DropdownMenuItem>}
             <DropdownMenuItem onClick={() => setHistoricoRisco(risco)}>
               <IconTime className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.evaluationHistory')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAuditRisco(risco)}>
               <IconHistory className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.auditTrail')}
             </DropdownMenuItem>
-            <CriarTarefaMenuItem
+            {canUpdate('riscos') && <CriarTarefaMenuItem
               entidadeTipo="risco"
               entidadeId={risco.id}
               tituloSugerido={`${t('riscos.page.actions.treatRiskPrefix')} ${risco.nome ?? ''}`}
-            />
-            <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
-              <IconDelete className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.delete')}
-            </DropdownMenuItem>
+            />}
+            {canDelete('riscos') && <DropdownMenuItem onClick={() => openDeleteDialog(risco)}>
+              <IconArchive className="mr-2 h-4 w-4" strokeWidth={1.5} /> Arquivar
+            </DropdownMenuItem>}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -783,12 +798,13 @@ export function Riscos() {
       type: 'select' as const,
       options: [
         { value: 'all', label: t('riscos.page.filters.all') },
+        { value: 'rascunho', label: 'Rascunho' },
         { value: 'identificado', label: t('riscos.page.status.identificado') },
         { value: 'analisado', label: t('riscos.page.status.analisado') },
         { value: 'em_tratamento', label: t('riscos.page.status.em_tratamento') },
         { value: 'tratado', label: t('riscos.page.status.tratado') },
         { value: 'monitorado', label: t('riscos.page.status.monitorado') },
-        { value: 'aceito', label: t('riscos.page.status.aceito') }
+        { value: 'em_revisao', label: 'Em revisão' }
       ],
       value: statusFilter,
       onChange: (value: string) => setStatusFilter(value === 'all' ? '' : value)
@@ -834,17 +850,19 @@ export function Riscos() {
           title={t('modules.riscos.title')}
           description={t('modules.riscos.description')}
           actions={
-            <Button size="sm" onClick={openCreateDialog} aria-label={t('riscos.page.newRiskAria')}>
+            canCreate('riscos') ? <Button size="sm" onClick={openCreateDialog} aria-label={t('riscos.page.newRiskAria')}>
               <IconAdd className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">{t('riscos.page.newRisk')}</span>
-            </Button>
+            </Button> : undefined
           }
           secondaryActions={[
             { label: t('riscos.page.export.csv'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(viewedRiscos) },
             { label: t('riscos.page.export.pdf'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(viewedRiscos, statsDaExportacao) },
-            { label: t('riscosBiblioteca.botao'), icon: <IconBook className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true },
-            { label: t('riscos.page.categories'), icon: <IconTag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
-            { label: t('riscos.page.configMatrix'), icon: <IconSettings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
+            ...(canCreate('riscos') ? [{ label: t('riscosBiblioteca.botao'), icon: <IconBook className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true }] : []),
+            ...(['admin', 'super_admin'].includes(String(profile?.role)) ? [
+              { label: t('riscos.page.categories'), icon: <IconTag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
+              { label: t('riscos.page.configMatrix'), icon: <IconSettings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
+            ] : []),
           ]}
         />
 
@@ -1014,6 +1032,7 @@ export function Riscos() {
           // `viewFilters` e `viewedRiscos` vivem no escopo do componente.
           const viewItems = [
             { id: 'todos' as SavedView, label: t('riscos.page.filters.all'), count: sortedRiscos.length },
+            { id: 'rascunhos' as SavedView, label: 'Rascunhos', count: sortedRiscos.filter(viewFilters.rascunhos).length },
             { id: 'acima_apetite' as SavedView, label: t('riscos.page.kpi.aboveAppetite'), count: sortedRiscos.filter(viewFilters.acima_apetite).length },
             { id: 'sem_responsavel' as SavedView, label: t('riscos.page.kpi.noResponsible'), count: sortedRiscos.filter(viewFilters.sem_responsavel).length },
             { id: 'revisao_vencida' as SavedView, label: t('riscos.page.kpi.overdueReview'), count: sortedRiscos.filter(viewFilters.revisao_vencida).length },
@@ -1050,7 +1069,7 @@ export function Riscos() {
                       description: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
                         ? t('riscos.page.empty.foundDesc')
                         : t('riscosBiblioteca.vazioDesc'),
-                      action: !searchTerm && !statusFilter && !nivelFilter && !aceitoFilter && savedView === 'todos' ? {
+                      action: canCreate('riscos') && !searchTerm && !statusFilter && !nivelFilter && !aceitoFilter && savedView === 'todos' ? {
                         label: t('riscosBiblioteca.vazioCta'),
                         onClick: () => setBibliotecaDialogOpen(true),
                       } : undefined,
@@ -1069,6 +1088,7 @@ export function Riscos() {
           open={riscoDialogOpen}
           onOpenChange={setRiscoDialogOpen}
           risco={editingRisco}
+          initialTab={riscoDialogInitialTab}
           onSuccess={handleDialogSuccess}
         />
 
@@ -1077,6 +1097,7 @@ export function Riscos() {
           onOpenChange={setTratamentosDialogOpen}
           risco={tratamentosRisco}
           onSuccess={invalidateRiscos}
+          startCreating={tratamentoDireto}
         />
 
         <MatrizDialog
@@ -1100,10 +1121,9 @@ export function Riscos() {
         <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
-          title={t('riscos.page.deleteDialog.title')}
-          description={t('riscos.page.deleteDialog.description', { nome: riscoToDelete?.nome ?? '' })}
-          variant="destructive"
-          confirmText={t('riscos.page.deleteDialog.confirm')}
+          title="Arquivar risco"
+          description={`O risco “${riscoToDelete?.nome ?? ''}” sairá da carteira ativa, mas seu histórico, aprovações e evidências serão preservados.`}
+          confirmText="Arquivar"
           onConfirm={handleDelete}
         />
 
@@ -1144,8 +1164,17 @@ export function Riscos() {
               open={!!drawerRiscoId}
               onOpenChange={(o) => !o && setDrawerRiscoId(null)}
               onEdit={(r) => { setDrawerRiscoId(null); handleEdit(r); }}
-              onAccept={(r) => { setDrawerRiscoId(null); setAprovacaoRisco(r); }}
-              onOpenTratamentos={(r) => { setDrawerRiscoId(null); openTratamentosDialog(r); }}
+              onAccept={(r) => {
+                setDrawerRiscoId(null);
+                if (r.status_aceite === 'pendente' || r.aceito) {
+                  setAprovacaoRisco(r);
+                } else {
+                  setRiscoDialogInitialTab('acompanhamento');
+                  setEditingRisco(r);
+                  setRiscoDialogOpen(true);
+                }
+              }}
+              onOpenTratamentos={(r) => { setDrawerRiscoId(null); openTratamentosDialog(r, true); }}
               nav={idx >= 0 ? {
                 current: idx + 1,
                 total: sortedRiscos.length,

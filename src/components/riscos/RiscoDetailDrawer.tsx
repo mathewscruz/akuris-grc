@@ -1,6 +1,5 @@
 /**
- * RiscoDetailDrawer — Sheet 540px (fullscreen mobile) com 4 abas: Visão · Tratamentos · Histórico · Controles.
- * Footer fixo com CTAs "Aceitar formalmente" e "Editar risco".
+ * Detalhe canônico do risco, em tela cheia no mobile.
  */
 import { useMemo, useState } from 'react';
 import {
@@ -15,7 +14,7 @@ import { PlanosAcaoVinculados } from '@/components/riscos/PlanosAcaoVinculados';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
   resolveNivelRiscoTone,
   resolveRiscoStatusTone,
@@ -23,9 +22,6 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   initials,
   shortRiskId,
@@ -35,29 +31,22 @@ import {
   type Severity,
 } from '@/components/riscos/risk-utils';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
-import { tGlobal } from '@/lib/i18n-global';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import {
   deriveRiscoStatus,
   isTratamentoConcluido,
-  motivoBloqueioTratado,
-  podeMarcarTratado,
-  resumirTratamentos,
-  STATUS_TRATADO,
 } from '@/components/riscos/risk-status';
 import { VincularRequisitoDialog } from '@/components/riscos/VincularRequisitoDialog';
-import { ResidualSugeridoCard } from '@/components/riscos/ResidualSugeridoCard';
 import { useRiscoRequisitos } from '@/hooks/useRiscoRequisitos';
-import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { resolveConformityTone } from '@/lib/status-tone';
 import { Link as RouterLink } from 'react-router-dom';
-;
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
-import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconChevron, IconEdit, IconClose, IconView, IconWarning, IconAdd, IconExternal, IconShieldCheck, IconShield, IconHistory, IconArrowRight, IconChevronLeft, IconMoney, IconLayers, IconTag, IconPerson, IconCalendarClock, IconTimer, IconChevronDown, IconMessage, IconExpand } from '@/components/icons';
+import { IconChevron, IconClose, IconView, IconWarning, IconAdd, IconExternal, IconShieldCheck, IconShield, IconHistory, IconArrowRight, IconChevronLeft, IconMoney, IconLayers, IconTag, IconPerson, IconCalendarClock, IconTimer, IconMessage, IconRefresh, IconActivity } from '@/components/icons';
 import { severidadeRisco } from '@/lib/metrics/riscos';
+import { usePermissions } from '@/hooks/usePermissions';
+import { RiscoKris } from '@/components/riscos/RiscoKris';
 
 interface Risco {
   id: string;
@@ -82,6 +71,7 @@ interface Risco {
   controles_existentes?: string;
   mitigacao_snapshot?: unknown;
   aceito: boolean;
+  status_aceite?: string | null;
   justificativa_aceite?: string;
   responsavel_nome?: string | null;
   responsavel_foto?: string | null;
@@ -100,15 +90,6 @@ interface Props {
   /** Navegação entre riscos (‹ N de M ›) sem fechar o drawer. */
   nav?: { current: number; total: number; onPrev?: () => void; onNext?: () => void };
 }
-
-const getStatusOptions = () => [
-  { value: 'identificado', label: tGlobal('campos.enums.riscoStatus.identificado') },
-  { value: 'analisado', label: tGlobal('campos.enums.riscoStatus.analisado') },
-  { value: 'em_tratamento', label: tGlobal('sweepRiscos.riscos.detail.emTratamento') },
-  { value: 'tratado', label: tGlobal('campos.enums.riscoStatus.tratado') },
-  { value: 'monitorado', label: tGlobal('campos.enums.riscoStatus.monitorado') },
-  { value: 'aceito', label: tGlobal('sweepRiscos.riscos.detail.aceito') },
-];
 
 export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; onActivate: () => void }) {
   const { t } = useLanguage();
@@ -142,43 +123,8 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   // Controlos reais = requisitos dos frameworks do Gap Analysis vinculados a este risco.
   const { data: requisitos = [], isLoading: reqLoading, isError: reqError } = useRiscoRequisitos(risco?.id ?? null);
-  const { data: matrizConfig } = useMatrizConfigEmpresa();
   const [vincularOpen, setVincularOpen] = useState(false);
-  const [perfilOpen, setPerfilOpen] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [statusSaving, setStatusSaving] = useState(false);
-
-  const handleStatusChange = async (novoStatus: string) => {
-    if (!risco || novoStatus === risco.status) return;
-
-    // AKURIS QA-065: "Tratado" exige ao menos um tratamento e todos concluídos.
-    // Bloqueia ANTES do UPDATE — nada é gravado quando a regra não é atendida.
-    if (novoStatus === STATUS_TRATADO) {
-      const resumo = resumirTratamentos(detail?.tratamentos);
-      if (!podeMarcarTratado(resumo)) {
-        toast({
-          title: t('fin.riscos.statusNaoPermitido'),
-          description: motivoBloqueioTratado(resumo),
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    setStatusSaving(true);
-    try {
-      const { error } = await supabase.from('riscos').update({ status: novoStatus }).eq('id', risco.id);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['riscos'] });
-      queryClient.invalidateQueries({ queryKey: ['riscos-stats'] });
-      toast({ title: 'Status atualizado', description: `Agora: ${formatStatus(novoStatus)}` });
-    } catch (e: any) {
-      toast({ title: t('fin.comum.erro'), description: e.message, variant: 'destructive' });
-    } finally {
-      setStatusSaving(false);
-    }
-  };
+  const { canCreate, canUpdate } = usePermissions();
 
   const inicialScore = useMemo(
     () => risco?.score_inicial ?? 0,
@@ -206,7 +152,6 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
   const statusCoerente = detailUnavailable
     ? { status: risco.status, ajustado: false, motivo: null as string | null }
     : deriveRiscoStatus(risco.status, detail?.tratamentos ?? []);
-  const tratadoBloqueado = !detailUnavailable && !podeMarcarTratado(detail?.tratamentos ?? []);
   const sevCanonica = severidadeRisco(risco);
   const sevAtual = sevCanonica === 'indefinido' ? 'baixo' : sevCanonica;
   const scoreAtual = residualScore || inicialScore;
@@ -220,7 +165,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[540px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden"
+        className="w-full sm:max-w-[680px] lg:max-w-[720px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden"
       >
         {/* Header (hero) */}
         <SheetHeader className="px-6 pt-5 pb-5 border-b border-border space-y-4 relative overflow-hidden">
@@ -250,14 +195,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   </Button>
                 </div>
               )}
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setPerfilOpen(true)}>
-                <IconExpand className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
-                Perfil
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(risco)}>
-                <IconEdit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
-                Editar
-              </Button>
+              {canUpdate('riscos') && <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(risco)}>
+                <IconRefresh className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                Reavaliar agora
+              </Button>}
               <SheetClose asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label={t('fin.comum.fechar')}>
                   <IconClose className="h-4 w-4" strokeWidth={1.5} />
@@ -273,35 +214,9 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
-                {/* Status editável */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-0.5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50" disabled={statusSaving || isError}>
-                      <StatusBadge {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
-                        {statusSaving ? '…' : isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
-                        <IconChevronDown className="h-3 w-3 ml-0.5 -mr-0.5 opacity-70" strokeWidth={2} />
-                      </StatusBadge>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-44">
-                    {getStatusOptions().filter((opt) => !(opt.value === STATUS_TRATADO && tratadoBloqueado)).map((opt) => (
-                      <DropdownMenuItem
-                        key={opt.value}
-                        onClick={() => handleStatusChange(opt.value)}
-                        className={opt.value === statusCoerente.status ? 'font-semibold' : ''}
-                      >
-                        {opt.label}
-                        {opt.value === statusCoerente.status && <span className="ml-auto text-primary">✓</span>}
-                      </DropdownMenuItem>
-                    ))}
-                    {tratadoBloqueado && (
-                      <TratadoBlockedOption
-                        motivo={motivoBloqueioTratado(resumirTratamentos(detail?.tratamentos))}
-                        onActivate={() => handleStatusChange(STATUS_TRATADO)}
-                      />
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <StatusBadge {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
+                  {isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
+                </StatusBadge>
                 {statusCoerente.ajustado && <span className="sr-only" role="status">{statusCoerente.motivo}</span>}
                 {risco.aceito && (
                   <StatusBadge tone="info" variant="outline">{t('sweepRiscos.riscos.detail.aceito')}</StatusBadge>
@@ -333,7 +248,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <HeaderMeta icon={<IconCalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
             <HeaderMeta
               icon={<IconTimer />}
-              label="SLA"
+              label="Prazo da revisão"
               value={<StatusBadge {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>}
             />
           </div>
@@ -342,12 +257,13 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         {/* Tabs */}
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
-            <TabsList className="w-full">
-              <TabsTrigger value="visao" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconView className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('residuos.risco.visao')}</span></TabsTrigger>
-              <TabsTrigger value="tratamentos" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconShield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.tratamento')}</span></TabsTrigger>
-              <TabsTrigger value="historico" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconHistory className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('fin.comum.historico')}</span></TabsTrigger>
-              <TabsTrigger value="controles" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
-              <TabsTrigger value="comentarios" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconMessage className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
+            <TabsList className="w-full justify-start gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsTrigger value="visao" className="shrink-0 gap-1.5 px-1.5 text-xs"><IconView strokeWidth={1.5} /><span>{t('riscosDetalhe.drawer.visao')}</span></TabsTrigger>
+              <TabsTrigger value="tratamentos" className="shrink-0 gap-1.5 px-1.5 text-xs"><IconShield strokeWidth={1.5} /><span>{t('riscosDetalhe.drawer.tratamento')}</span></TabsTrigger>
+              <TabsTrigger value="historico" className="shrink-0 gap-1.5 px-1.5 text-xs"><IconHistory strokeWidth={1.5} /><span>{t('riscosDetalhe.drawer.historico')}</span></TabsTrigger>
+              <TabsTrigger value="controles" className="shrink-0 gap-1.5 px-1.5 text-xs"><IconShieldCheck strokeWidth={1.5} /><span>{t('riscosDetalhe.drawer.controles')}</span></TabsTrigger>
+              <TabsTrigger value="kris" className="shrink-0 gap-1.5 px-1.5 text-xs"><IconActivity strokeWidth={1.5} /><span>KRIs</span></TabsTrigger>
+              <TabsTrigger value="comentarios" className="shrink-0 gap-1.5 px-1.5 text-xs"><IconMessage strokeWidth={1.5} /><span>{t('riscosDetalhe.drawer.comentarios')}</span></TabsTrigger>
             </TabsList>
           </div>
 
@@ -391,7 +307,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <StatTile icon={<IconMoney />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
                 <StatTile icon={<IconShield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
-                <StatTile icon={<IconLayers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(requisitos.length)} />
+                <StatTile icon={<IconLayers />} label="Controles mitigadores" value={String(detail?.controles.length ?? 0)} />
               </section>
 
               {/* Exposição financeira + evolução do risco */}
@@ -461,6 +377,26 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   {risco.justificativa_aceite && (
                     <p className="text-xs text-foreground/80 mt-1.5">{risco.justificativa_aceite}</p>
                   )}
+                </section>
+              )}
+              {!!detail?.incidentes.length && (
+                <section>
+                  <SectionLabel>Incidentes relacionados</SectionLabel>
+                  <div className="space-y-2">
+                    {detail.incidentes.map((incidente) => (
+                      <RouterLink
+                        key={incidente.id}
+                        to="/incidentes"
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-accent"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium">{incidente.titulo}</div>
+                          <div className="mt-1 text-micro text-muted-foreground">{formatDateOnly(incidente.data_ocorrencia)}</div>
+                        </div>
+                        <StatusBadge {...resolveRiscoStatusTone(incidente.status)}>{formatStatus(incidente.status)}</StatusBadge>
+                      </RouterLink>
+                    ))}
+                  </div>
                 </section>
               )}
             </TabsContent>
@@ -568,17 +504,50 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               )}
             </TabsContent>
 
-            {/* Controles = requisitos dos frameworks activos vinculados ao risco */}
+            {/* Controles mitigadores e requisitos de compliance são objetos distintos. */}
             <TabsContent value="controles" className="m-0 space-y-2">
+              <div className="mb-4 space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  Controles mitigadores ({detail?.controles.length ?? 0})
+                </div>
+                <p className="text-micro text-muted-foreground">
+                  Controles internos efetivamente ligados ao risco. A eficácia deles sustenta a avaliação residual.
+                </p>
+                {isLoading ? (
+                  <div className="flex justify-center py-6"><AkurisPulse size={24} /></div>
+                ) : !detail?.controles.length ? (
+                  <EmptyHint text="Nenhum controle mitigador vinculado. Use Editar/Reavaliar para selecionar controles implantados." />
+                ) : detail.controles.map((vinculo) => (
+                  <div key={vinculo.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium">{vinculo.controle?.nome || 'Controle removido'}</div>
+                        <div className="mt-1 text-micro text-muted-foreground">
+                          {formatStatus(vinculo.controle?.tipo)} · {formatStatus(vinculo.tipo_vinculacao)}
+                        </div>
+                      </div>
+                      <StatusBadge {...resolveRiscoStatusTone(vinculo.controle?.status || '')}>
+                        {formatStatus(vinculo.controle?.status || 'sem status')}
+                      </StatusBadge>
+                    </div>
+                    {vinculo.eficacia_estimada && (
+                      <div className="mt-2 text-xs text-muted-foreground">Eficácia estimada: {formatStatus(vinculo.eficacia_estimada)}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-border/60 pt-4">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-xs font-semibold text-muted-foreground">
-                  {t('riscosControles.aba.vinculados', { count: requisitos.length })}
+                  Requisitos de compliance relacionados ({requisitos.length})
                 </span>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
+                {canUpdate('riscos') && <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
                   <IconAdd className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                   {t('riscosControles.aba.vincular')}
-                </Button>
+                </Button>}
               </div>
+              <p className="mb-3 text-micro text-muted-foreground">Referências do Gap Analysis ajudam a provar conformidade, mas não reduzem o risco por si só.</p>
 
               {reqLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
@@ -587,25 +556,13 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               ) : requisitos.length === 0 ? (
                 <div className="py-8 text-center space-y-3">
                   <p className="text-sm text-muted-foreground">{t('riscosControles.aba.vazio')}</p>
-                  <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
+                  {canUpdate('riscos') && <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
                     <IconAdd className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
                     {t('riscosControles.aba.vincular')}
-                  </Button>
+                  </Button>}
                 </div>
               ) : (
                 <>
-                  <ResidualSugeridoCard
-                    riscoId={risco.id}
-                    vinculados={requisitos}
-                    probabilidadeInicial={risco.probabilidade_inicial}
-                    impactoInicial={risco.impacto_inicial}
-                    probabilidadeResidual={risco.probabilidade_residual}
-                    impactoResidual={risco.impacto_residual}
-                    snapshot={risco.mitigacao_snapshot}
-                    aceito={risco.aceito}
-                    config={matrizConfig}
-                  />
-
                   {requisitos.map((r) => (
                     <div key={r.id} className="bg-card border border-border rounded-lg p-3 flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -634,6 +591,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   ))}
                 </>
               )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="kris" className="m-0">
+              <RiscoKris riscoId={risco.id} />
             </TabsContent>
 
             {/* Comentários */}
@@ -653,14 +615,18 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               : t('fin.riscos.semRevisoes')}
           </div>
           <div className="flex items-center gap-3 sm:ml-auto">
-            <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
+            {canUpdate('riscos') && <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
               <IconShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-              Aceitar formalmente
-            </Button>
-            <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
+              {risco.status_aceite === 'pendente'
+                ? 'Ver solicitação de aceite'
+                : risco.aceito
+                  ? 'Ver aceite formal'
+                  : 'Solicitar aceite formal'}
+            </Button>}
+            {canCreate('riscos') && <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
               <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
               {t('riscosDetalhe.drawer.novoTratamento')}
-            </Button>
+            </Button>}
           </div>
         </div>
 
@@ -671,14 +637,6 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           riscoNome={risco.nome}
         />
 
-        <RiscoPerfilCompleto
-          risco={risco as any}
-          open={perfilOpen}
-          onOpenChange={setPerfilOpen}
-          onEdit={(r) => { setPerfilOpen(false); onEdit(r as any); }}
-          onAccept={(r) => { setPerfilOpen(false); onAccept(r as any); }}
-          onOpenTratamentos={(r) => { setPerfilOpen(false); onOpenTratamentos(r as any); }}
-        />
       </SheetContent>
     </Sheet>
   );
@@ -744,19 +702,5 @@ function treatmentPct(status: string): number {
   const s = (status || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (s.includes('conclu')) return 100;
   if (s.includes('andamento') || s.includes('em_andamento') || s.includes('progress')) return 60;
-  return 0;
-}
-
-function coberturaPct(eficacia?: string | null): number {
-  if (!eficacia) return 0;
-  const s = eficacia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  // Vocabul\u00e1rio alta/media/baixa gravado pelos dialogs de v\u00ednculo de controle
-  if (s === 'alta') return 100;
-  if (s === 'media') return 60;
-  if (s === 'baixa') return 30;
-  if (s.includes('eficaz') && !s.includes('parcial') && !s.includes('inef')) return 100;
-  if (s.includes('parcial')) return 60;
-  if (s.includes('implant') || s.includes('implement')) return 30;
-  if (s.includes('inef')) return 10;
   return 0;
 }

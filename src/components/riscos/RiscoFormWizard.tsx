@@ -34,6 +34,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
 import { notificar } from '@/lib/notificar';
 import { exigirEscrita } from '@/lib/supabase-write';
+import { formatStatus } from '@/lib/text-utils';
 
 const makeRiscoSchema = (t: (k: string) => string) => z.object({
   nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
@@ -41,8 +42,8 @@ const makeRiscoSchema = (t: (k: string) => string) => z.object({
   categoria_id: z.string().optional(),
   descricao: z.string().optional(),
   responsavel: z.string().optional(),
-  probabilidade_inicial: z.string().min(1, t('fin.validacao.probabilidadeObrigatoria')),
-  impacto_inicial: z.string().min(1, t('fin.validacao.impactoObrigatorio')),
+  probabilidade_inicial: z.string().optional(),
+  impacto_inicial: z.string().optional(),
   impacto_financeiro: z.string().optional(),
   causas: z.string().optional(),
   consequencias: z.string().optional(),
@@ -66,7 +67,8 @@ const makeRiscoSchema = (t: (k: string) => string) => z.object({
   aprovador_aceite: z.string().optional(),
   aceite_valido_ate: z.string().optional(),
   ativos_vinculados: z.array(z.string()).default([]),
-  data_proxima_revisao: z.string().optional()
+  data_proxima_revisao: z.string().optional(),
+  ultima_observacao_avaliacao: z.string().optional()
 });
 
 type RiscoForm = z.infer<ReturnType<typeof makeRiscoSchema>>;
@@ -97,9 +99,10 @@ interface Ativo {
 interface Props {
   risco?: any;
   onSuccess: () => void;
+  initialTab?: 'identificacao' | 'avaliacao' | 'acompanhamento';
 }
 
-export function RiscoFormWizard({ risco, onSuccess }: Props) {
+export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao' }: Props) {
   const { t } = useLanguage();
   // A matriz é a vigente da empresa. Era um campo obrigatório do formulário
   // com uma única opção para escolher, e o utilizador tinha de a seleccionar
@@ -115,10 +118,15 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const [anexosAceite, setAnexosAceite] = useState<any[]>([]);
   const [invalidarAceiteOpen, setInvalidarAceiteOpen] = useState(false);
   const [pendingData, setPendingData] = useState<RiscoForm | null>(null);
+  const [pendingFinalizar, setPendingFinalizar] = useState(true);
   
   const TABS = ['identificacao', 'avaliacao', 'acompanhamento'] as const;
   type TabKey = typeof TABS[number];
-  const [activeTab, setActiveTab] = useState<TabKey>('identificacao');
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab, risco?.id]);
 
   /** DEFECT 5 — campos obrigatórios por etapa (validação inline via RHF/zod). */
   const REQUIRED_FIELDS_BY_TAB: Record<TabKey, (keyof RiscoForm)[]> = {
@@ -182,7 +190,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       impacto_financeiro: '',
       probabilidade_residual: '',
       impacto_residual: '',
-      status: 'identificado',
+      status: 'rascunho',
       controles_existentes: '',
       controles_vinculados: [],
       causas: '',
@@ -192,7 +200,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       aprovador_aceite: '',
       aceite_valido_ate: '',
       ativos_vinculados: [],
-      data_proxima_revisao: ''
+      data_proxima_revisao: '',
+      ultima_observacao_avaliacao: ''
     }
   });
 
@@ -235,7 +244,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         aprovador_aceite: risco.aprovador_aceite || '',
         aceite_valido_ate: (risco as any).aceite_valido_ate || '',
         ativos_vinculados: [],
-        data_proxima_revisao: risco.data_proxima_revisao || ''
+        data_proxima_revisao: risco.data_proxima_revisao || '',
+        ultima_observacao_avaliacao: ''
       });
 
       if (risco.id) {
@@ -339,6 +349,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   };
   const scoreInicial = scoreDe(watchProbabilidade, watchImpacto);
   const scoreResidual = scoreDe(watchProbabilidadeResidual, watchImpactoResidual);
+  const scoreEfetivo = scoreResidual ?? scoreInicial;
+  const riscoAcimaApetite = scoreEfetivo !== null && apetiteScore !== null && scoreEfetivo > apetiteScore;
 
   /**
    * Reavaliar (probabilidade, impacto ou controlos) invalida o aceite vigente.
@@ -355,12 +367,13 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     );
   };
 
-  const onSubmit = async (data: RiscoForm, confirmadoInvalidar = false) => {
+  const onSubmit = async (data: RiscoForm, confirmadoInvalidar = false, finalizar = true) => {
     logger.debug('🚀 onSubmit chamado com dados:', { data: data });
 
     // (g) Reavaliar um risco com aceite vigente invalida o aceite: avisar antes de guardar.
     if (!confirmadoInvalidar && risco?.id && risco?.aceito && reavaliacaoInvalidaAceite(data)) {
       setPendingData(data);
+      setPendingFinalizar(finalizar);
       setInvalidarAceiteOpen(true);
       return;
     }
@@ -372,8 +385,20 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     }
     
     // Validar campos obrigatórios
-    if (!configMatriz) {
+    if (finalizar && !configMatriz) {
       toast.error(t('fin.riscos.wizard.erroMatriz'));
+      return;
+    }
+
+    const finalizandoRascunho = finalizar && (!risco || risco.status === 'rascunho');
+    if (finalizandoRascunho && (!data.categoria_id || !data.responsavel || !data.probabilidade_inicial || !data.impacto_inicial)) {
+      setActiveTab(!data.categoria_id || !data.responsavel ? 'identificacao' : 'avaliacao');
+      toast.error('Para finalizar, informe categoria, responsável, probabilidade e impacto. Você ainda pode salvar como rascunho.');
+      return;
+    }
+    if (finalizar && risco?.id && reavaliacaoInvalidaAceite(data) && !data.ultima_observacao_avaliacao?.trim()) {
+      setActiveTab('avaliacao');
+      toast.error('Explique brevemente o motivo da reavaliação para manter a trilha de auditoria compreensível.');
       return;
     }
     
@@ -430,7 +455,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       const nivelInicial = nivelRiscoFromConfig(
         data.probabilidade_inicial, data.impacto_inicial, configMatriz,
       );
-      if (!nivelInicial) {
+      if (finalizar && !nivelInicial) {
         toast.error(t('fin.riscos.wizard.erroCalculoNivel'));
         setLoading(false);
         return;
@@ -440,7 +465,17 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       );
 
       // Se aceite marcado: NÃO marcar aceito=true, enviar para aprovação
-      const isNovoAceite = data.aceito && (!risco?.status_aceite || risco?.status_aceite === 'rejeitado');
+      const isNovoAceite = finalizar && data.aceito && (!risco?.status_aceite || risco?.status_aceite === 'rejeitado');
+
+      const dataRevisao = (() => {
+        if (data.data_proxima_revisao) return data.data_proxima_revisao;
+        if (!finalizar) return null;
+        const severidade = severidadeDeFaixas(nivelInicial, configMatriz?.niveis_risco ?? []);
+        const dias = severidade === 'critico' ? 30 : severidade === 'alto' ? 90 : severidade === 'medio' ? 180 : 365;
+        const proxima = new Date();
+        proxima.setDate(proxima.getDate() + dias);
+        return formatarDiaParaDB(proxima);
+      })();
 
       const codigoManual = (data.codigo || '').trim();
       const riscoData: any = {
@@ -451,23 +486,27 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         empresa_id: profile.empresa_id,
         // `matriz_id` e os níveis são preenchidos pelo trigger.
         categoria_id: data.categoria_id || null,
-        probabilidade_inicial: Number(data.probabilidade_inicial),
-        impacto_inicial: Number(data.impacto_inicial),
+        probabilidade_inicial: data.probabilidade_inicial ? Number(data.probabilidade_inicial) : null,
+        impacto_inicial: data.impacto_inicial ? Number(data.impacto_inicial) : null,
         probabilidade_residual: data.probabilidade_residual ? Number(data.probabilidade_residual) : null,
         impacto_residual: data.impacto_residual ? Number(data.impacto_residual) : null,
-        status: invalidarAceite ? 'em_revisao' : data.status,
+        status: invalidarAceite ? 'em_revisao' : finalizar
+          ? (data.status === 'rascunho' ? 'analisado' : data.status)
+          : 'rascunho',
         responsavel: data.responsavel || null,
         controles_existentes: data.controles_existentes || null,
         causas: data.causas || null,
         consequencias: data.consequencias || null,
-        aceito: invalidarAceite ? false : (isNovoAceite ? false : (data.aceito && risco?.status_aceite === 'aprovado')),
+        aceito: invalidarAceite ? false : (isNovoAceite ? false : (finalizar && data.aceito && risco?.status_aceite === 'aprovado')),
         justificativa_aceite: data.justificativa_aceite || null,
         aprovador_aceite: data.aprovador_aceite || null,
         aceite_valido_ate: data.aceite_valido_ate || null,
-        data_proxima_revisao: data.data_proxima_revisao || null,
+        data_proxima_revisao: dataRevisao,
+        avaliacao_finalizada_em: finalizar ? ((risco as any)?.avaliacao_finalizada_em || new Date().toISOString()) : null,
+        ultima_observacao_avaliacao: data.ultima_observacao_avaliacao?.trim() || null,
         status_aceite: invalidarAceite
           ? 'invalidado'
-          : (isNovoAceite ? 'pendente' : (data.aceito ? (risco?.status_aceite || null) : null)),
+          : (isNovoAceite ? 'pendente' : (finalizar && data.aceito ? (risco?.status_aceite || null) : null)),
         ...(invalidarAceite
           ? {
               historico_aceite: [
@@ -513,12 +552,12 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           'critico': 'critica'
         };
         
-        await notify('risco_identificado', {
+        if (finalizar) await notify('risco_identificado', {
           titulo: t('sweepRiscos.riscos.wizard.novoRiscoTitulo', { nome: data.nome }),
           descricao: data.descricao || t('sweepRiscos.riscos.wizard.descricaoDefault', { nivel: nivelInicial }),
           link: `${window.location.origin}/riscos`,
-          gravidade: nivelGravidadeMap[nivelInicial?.toLowerCase()] || 'media',
-          dados: { nivel: nivelInicial, status: data.status }
+          gravidade: nivelGravidadeMap[nivelInicial?.toLowerCase() || ''] || 'media',
+          dados: { nivel: nivelInicial, status: riscoData.status }
         });
         
         for (const anexo of anexosAceite) {
@@ -625,7 +664,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       }
 
       toast.success(
-        isNovoAceite 
+        !finalizar
+          ? 'Rascunho salvo. Você pode concluir a avaliação quando tiver as informações restantes.'
+          : isNovoAceite
           ? t('fin.riscos.wizard.salvoEnviado') 
           : (risco?.id ? 'Risco atualizado com sucesso!' : 'Risco cadastrado com sucesso!')
       );
@@ -782,7 +823,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   <Separator />
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">Status</div>
-                    <Badge variant="outline" className="capitalize">{watchStatus || '—'}</Badge>
+                    <Badge variant="outline">{watchStatus ? formatStatus(watchStatus) : '—'}</Badge>
                   </div>
                   {risco?.status_aceite && (
                     <div>
@@ -796,7 +837,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                           risco.status_aceite === 'rejeitado' && "border-destructive text-destructive"
                         )}
                       >
-                        {risco.status_aceite}
+                        {formatStatus(risco.status_aceite)}
                       </Badge>
                     </div>
                   )}
@@ -1295,34 +1336,38 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 <p className="text-sm text-muted-foreground">{t('cardsKpi.sweep.riscos.detalhesAdicionaisDesc')}</p>
               </div>
 
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('campos.risco.status')}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <FormLabel>Status</FormLabel>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      O status acompanha automaticamente a avaliação, os tratamentos, o monitoramento e o aceite formal.
+                    </p>
+                  </div>
+                  <Badge variant="outline">{formatStatus(watchStatus)}</Badge>
+                </div>
+              </div>
+
+              {risco?.id && (
+                <FormField
+                  control={form.control}
+                  name="ultima_observacao_avaliacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Motivo e evidências da reavaliação</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('fin.comum.selecioneStatus')} />
-                        </SelectTrigger>
+                        <Textarea
+                          placeholder="Ex.: novo controle implantado, teste realizado e evidência analisada…"
+                          className="min-h-[88px]"
+                          {...field}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="identificado">{t('campos.enums.riscoStatus.identificado')}</SelectItem>
-                        <SelectItem value="analisado">{t('campos.enums.riscoStatus.analisado')}</SelectItem>
-                        {/* `em_tratamento` existia na gaveta do risco e no
-                            filtro da tabela, mas não aqui: não havia como
-                            colocar um risco nesse estado pelo formulário. */}
-                        <SelectItem value="em_tratamento">{t('sweepRiscos.riscos.detail.emTratamento')}</SelectItem>
-                        <SelectItem value="tratado">{t('campos.enums.riscoStatus.tratado')}</SelectItem>
-                        <SelectItem value="monitorado">{t('campos.enums.riscoStatus.monitorado')}</SelectItem>
-                        <SelectItem value="aceito">{t('campos.enums.riscoStatus.aceito')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormDescription>Obrigatório quando probabilidade, impacto ou controles forem alterados.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -1427,10 +1472,14 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                             value={field.value || ''}
                             onValueChange={field.onChange}
                             placeholder={t('fin.riscos.wizard.selecioneAprovador')}
+                            excludedUserIds={profile?.user_id ? [profile.user_id] : []}
+                            requiredRoles={riscoAcimaApetite ? ['admin', 'super_admin'] : undefined}
                           />
                         </FormControl>
                         <FormDescription>
-                          {t('campos.risco.aprovadorAceiteDesc')}
+                          {riscoAcimaApetite
+                            ? 'Como este risco está acima do apetite, o aceite deve ser aprovado por um administrador diferente do solicitante.'
+                            : t('campos.risco.aprovadorAceiteDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1551,26 +1600,42 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 {t('sweepRiscos.riscos.wizard.proxima')} <IconChevron className="h-4 w-4 ml-1" />
               </Button>
             )}
-            {(risco || isLastTab) && (() => {
+            {(() => {
               const missing: string[] = [];
               if (!watchNome?.trim()) missing.push(t('p7Wizard.riscos.missingFieldName'));
               if (!watchProbabilidade) missing.push(t('p7Wizard.riscos.missingFieldProbabilidade'));
               if (!watchImpacto) missing.push(t('p7Wizard.riscos.missingFieldImpacto'));
               const reason = missing.length > 0 ? `${t('p7Wizard.missingFieldsPrefix')}: ${missing.join(', ')}` : undefined;
               return (
-                <span title={reason} className="inline-flex flex-col items-end gap-1">
-                  <Button type="submit" disabled={loading} size="sm">
-                    <IconSave className="h-4 w-4 mr-1.5" />
-                    {loading
-                      ? t('fin.comum.salvando')
-                      : risco
-                        ? t('riscosDetalhe.dialog.saveChanges')
-                        : t('riscosDetalhe.dialog.finishCreate')}
-                  </Button>
-                  {reason && (
-                    <span className="text-micro text-destructive">{reason}</span>
+                <div className="flex items-start gap-2">
+                  {(!risco || risco.status === 'rascunho') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={loading}
+                      onClick={form.handleSubmit((d) => onSubmit(d, false, false))}
+                    >
+                      <IconSave className="h-4 w-4 mr-1.5" />
+                      Salvar rascunho
+                    </Button>
                   )}
-                </span>
+                  {(risco || isLastTab) && (
+                    <span title={reason} className="inline-flex flex-col items-end gap-1">
+                      <Button type="submit" disabled={loading} size="sm">
+                        <IconSave className="h-4 w-4 mr-1.5" />
+                        {loading
+                          ? t('fin.comum.salvando')
+                          : risco
+                            ? (risco.status === 'rascunho' ? 'Finalizar avaliação' : t('riscosDetalhe.dialog.saveChanges'))
+                            : 'Finalizar avaliação'}
+                      </Button>
+                      {reason && (
+                        <span className="text-micro text-destructive">{reason}</span>
+                      )}
+                    </span>
+                  )}
+                </div>
               );
             })()}
           </div>
@@ -1585,7 +1650,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           cancelText={t('fin.comum.cancelar')}
           onConfirm={() => {
             setInvalidarAceiteOpen(false);
-            if (pendingData) onSubmit(pendingData, true);
+            if (pendingData) onSubmit(pendingData, true, pendingFinalizar);
             setPendingData(null);
           }}
           variant="destructive"

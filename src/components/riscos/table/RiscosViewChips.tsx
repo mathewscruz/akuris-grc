@@ -5,7 +5,7 @@
  */
 import { cn } from '@/lib/utils';
 
-export type SavedView = 'todos' | 'acima_apetite' | 'sem_responsavel' | 'revisao_vencida' | 'meus_riscos';
+export type SavedView = 'todos' | 'rascunhos' | 'acima_apetite' | 'sem_responsavel' | 'revisao_vencida' | 'meus_riscos';
 
 interface ViewItem {
   id: SavedView;
@@ -58,4 +58,3 @@ export function RiscosViewChips({ active, onChange, items }: Props) {
     </div>
   );
 }
-

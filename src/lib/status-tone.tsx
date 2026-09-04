@@ -363,18 +363,28 @@ const _resolveAuditoriaTipoTone = (raw?: string | null): ToneResult => {
 export const resolveRiscoStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
+    case 'rascunho':
+      return { tone: 'neutral' };
     case 'identificado':
       return { tone: 'neutral' };
     case 'analisado':
     case 'em analise':
     case 'em_analise':
       return { tone: 'info' };
+    case 'em tratamento':
+    case 'em_tratamento':
+      return { tone: 'primary' };
+    case 'em revisao':
+    case 'em_revisao':
+      return { tone: 'warning' };
     case 'tratado':
       return { tone: 'success' };
     case 'monitorado':
       return { tone: 'success' };
     case 'aceito':
       return { tone: 'warning' };
+    case 'arquivado':
+      return { tone: 'neutral' };
     default:
       return { tone: 'neutral' };
   }

@@ -1,8 +1,7 @@
 /**
- * VincularRequisitoDialog — liga um risco a controlos REAIS, ou seja, aos
- * requisitos dos frameworks activos da empresa no Gap Analysis (A.5.1, A.5.2, …).
- *
- * Substitui a antiga ligação à tabela `controles` (vazia na maioria das contas).
+ * Relaciona um risco aos requisitos dos frameworks ativos da empresa no Gap
+ * Analysis (A.5.1, A.5.2, …). Requisitos e controles mitigadores são objetos
+ * diferentes e aparecem separados no detalhe do risco.
  * Pesquisa por código e por nome, agrupa por framework e secção e mostra o
  * estado de conformidade actual de cada requisito.
  */
@@ -105,7 +104,7 @@ export function VincularRequisitoDialog({ open, onOpenChange, riscoId, riscoNome
     const payload = Array.from(selecionados)
       .map((id) => byId.get(id))
       .filter(Boolean)
-      .map((r) => ({ requirement_id: r!.id, framework_id: r!.framework_id, tipo_vinculacao: 'mitiga' }));
+      .map((r) => ({ requirement_id: r!.id, framework_id: r!.framework_id, tipo_vinculacao: 'relacionado' }));
     try {
       await salvar.mutateAsync(payload);
       await queryClient.invalidateQueries({ queryKey: ['risco-detail', riscoId] });

@@ -496,7 +496,11 @@ export default function Contratos() {
             {
               key: 'valorVencido',
               label: t('cardsKpi.contratos.valorVencido'),
-              value: formatSoma(statsContratos?.valorVencidoPorMoeda, true),
+              value: formatSoma(
+                statsContratos?.valorVencidoPorMoeda,
+                true,
+                statsContratos?.valorTotalPorMoeda,
+              ),
               tone: (statsContratos?.valorVencido || 0) > 0 ? 'destructive' : undefined,
               hint: t('cardsKpi.contratos.valorVencidoHint'),
               drillDown: 'contratos_vencidos',

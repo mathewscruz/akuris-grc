@@ -19,6 +19,7 @@ interface Categoria {
   nome: string;
   descricao?: string;
   cor?: string;
+  riscos_count?: number;
 }
 
 interface CategoriasDialogProps {
@@ -51,7 +52,16 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
         .order('nome');
 
       if (error) throw error;
-      setCategorias(data || []);
+      const ids = (data || []).map((categoria) => categoria.id);
+      const { data: riscos, error: riscosError } = ids.length
+        ? await supabase.from('riscos').select('categoria_id').in('categoria_id', ids)
+        : { data: [], error: null };
+      if (riscosError) throw riscosError;
+      const contagem = (riscos || []).reduce<Record<string, number>>((acc, risco) => {
+        if (risco.categoria_id) acc[risco.categoria_id] = (acc[risco.categoria_id] || 0) + 1;
+        return acc;
+      }, {});
+      setCategorias((data || []).map((categoria) => ({ ...categoria, riscos_count: contagem[categoria.id] || 0 })));
     } catch (error: any) {
       toast.error(t('riscosDialogs.categorias.erroCarregar', { mensagem: error.message }));
     } finally {
@@ -165,6 +175,10 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
   };
 
   const openDeleteDialog = (categoria: Categoria) => {
+    if (categoria.riscos_count) {
+      toast.error(`Esta categoria está em uso por ${categoria.riscos_count} risco(s). Reclassifique esses riscos antes de excluí-la.`);
+      return;
+    }
     setCategoriaToDelete(categoria);
     setDeleteDialogOpen(true);
   };
@@ -313,19 +327,20 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                     <TableHead>{t('riscosDialogs.categorias.nome')}</TableHead>
                     <TableHead>{t('riscosDialogs.categorias.cor')}</TableHead>
                     <TableHead>{t('riscosDialogs.categorias.descricao')}</TableHead>
+                    <TableHead>Riscos</TableHead>
                     <TableHead>{t('riscosDialogs.categorias.acoes')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8">
                         {t('riscosDialogs.categorias.carregandoCategorias')}
                       </TableCell>
                     </TableRow>
                   ) : categorias.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8">
                         {t('riscosDialogs.categorias.nenhumaCategoria')}
                       </TableCell>
                     </TableRow>
@@ -345,6 +360,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                           </div>
                         </TableCell>
                         <TableCell>{categoria.descricao || '-'}</TableCell>
+                        <TableCell className="tabular-nums">{categoria.riscos_count || 0}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
@@ -358,6 +374,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                               variant="outline"
                               size="sm"
                               onClick={() => openDeleteDialog(categoria)}
+                              disabled={!!categoria.riscos_count}
+                              title={categoria.riscos_count ? 'Reclassifique os riscos antes de excluir esta categoria.' : undefined}
                             >
                               <IconDelete className="h-4 w-4" />
                             </Button>

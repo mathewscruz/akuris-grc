@@ -517,7 +517,7 @@ export const finalI18n = {
           excluirDesc: 'Tem certeza que deseja excluir este tratamento? Esta ação não pode ser desfeita.',
           excluirTitle: 'Excluir Tratamento',
           novo: 'Novo Tratamento',
-          vazioDesc: 'Comece definindo a primeira ação para mitigar, transferir, aceitar ou evitar este risco.',
+          vazioDesc: 'Comece definindo a primeira ação para mitigar, transferir ou eliminar este risco.',
           vazioTitle: 'Nenhum tratamento cadastrado',
         },
         trilha: {
