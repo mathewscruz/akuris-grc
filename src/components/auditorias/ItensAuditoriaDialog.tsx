@@ -230,6 +230,8 @@ export function ItensAuditoriaDialog({
     // gatilho. Sem invalidar esse cache, o filtro "Auditoria" da tabela de
     // controles continuava usando os vínculos anteriores até recarregar.
     queryClient.invalidateQueries({ queryKey: ["controles-auditorias-vinculos"] });
+    queryClient.invalidateQueries({ queryKey: ["controles"] });
+    queryClient.invalidateQueries({ queryKey: ["controles-stats"] });
     queryClient.invalidateQueries({ queryKey: ["auditorias-counts"] });
     setIsFormOpen(false);
   };
@@ -238,6 +240,8 @@ export function ItensAuditoriaDialog({
     queryClient.invalidateQueries({ queryKey: ["auditoria-itens", auditoriaId] });
     queryClient.invalidateQueries({ queryKey: ["auditoria-itens-contagens", auditoriaId] });
     queryClient.invalidateQueries({ queryKey: ["controles-auditorias-vinculos"] });
+    queryClient.invalidateQueries({ queryKey: ["controles"] });
+    queryClient.invalidateQueries({ queryKey: ["controles-stats"] });
     queryClient.invalidateQueries({ queryKey: ["auditorias-counts"] });
   };
 

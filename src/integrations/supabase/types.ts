@@ -1177,6 +1177,7 @@ export type Database = {
           area_sistema_id: string | null
           auditoria_id: string
           codigo: string
+          controle_gerado_automaticamente: boolean
           controle_vinculado_id: string | null
           created_at: string
           created_by: string | null
@@ -1197,6 +1198,7 @@ export type Database = {
           area_sistema_id?: string | null
           auditoria_id: string
           codigo: string
+          controle_gerado_automaticamente?: boolean
           controle_vinculado_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1217,6 +1219,7 @@ export type Database = {
           area_sistema_id?: string | null
           auditoria_id?: string
           codigo?: string
+          controle_gerado_automaticamente?: boolean
           controle_vinculado_id?: string | null
           created_at?: string
           created_by?: string | null
