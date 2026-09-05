@@ -331,6 +331,7 @@ export function RequirementDrawer({
               */}
               <section>
                 <SectionHead title={t('gapUi.drawer.comoCumprir')} />
+                <p className="text-micro text-muted-foreground">{t('experience.guidanceIncluded')}</p>
                 {orientacao.estado === 'gerando' ? (
                   <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                     <AkurisPulse size={14} />
@@ -345,13 +346,9 @@ export function RequirementDrawer({
                 ) : (
                   <div className="rounded-lg border border-dashed border-border bg-card p-4">
                     <p className="text-sm leading-6 text-muted-foreground">
-                      {orientacao.estado === 'creditos'
-                        ? t('gapUi.detail.guidanceSemCreditos')
-                        : orientacao.estado === 'falha'
-                          ? t('gapUi.detail.guidanceFalhou')
-                          : t('gapUi.detail.guidanceIndisponivel')}
+                      {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
                     </p>
-                    {orientacao.estado !== 'creditos' && (
+                    {
                       <Button
                         variant="outline"
                         size="sm"
@@ -360,7 +357,7 @@ export function RequirementDrawer({
                       >
                         {t('gapUi.detail.guidanceTentarDeNovo')}
                       </Button>
-                    )}
+                    }
                   </div>
                 )}
               </section>

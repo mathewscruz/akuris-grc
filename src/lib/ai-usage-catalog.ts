@@ -95,6 +95,8 @@ export interface AiFeature {
   /** Modelo alternativo usado em caso de falha transitória. */
   fallbackModel?: AiModelId;
   edgeFunction: string;
+  /** Platform-funded content stays catalogued for historical cost attribution. */
+  billing?: 'customer' | 'platform';
 }
 
 export const AI_FEATURES: AiFeature[] = [
@@ -146,6 +148,7 @@ export const AI_FEATURES: AiFeature[] = [
   },
   {
     key: 'populate-requirement-guidance',
+    billing: 'platform',
     labelPt: 'Orientação de requisito (individual)',
     labelEn: 'Requirement guidance (single)',
     modulePt: 'Gap Analysis',
@@ -155,6 +158,7 @@ export const AI_FEATURES: AiFeature[] = [
   },
   {
     key: 'populate-requirement-guidance-batch',
+    billing: 'platform',
     labelPt: 'Orientação de requisitos (lote)',
     labelEn: 'Requirement guidance (batch)',
     modulePt: 'Gap Analysis',

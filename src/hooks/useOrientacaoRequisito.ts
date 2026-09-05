@@ -1,136 +1,100 @@
-/**
- * A orientação de um requisito, igual nos dois sítios onde ela aparece.
- *
- * O produto tem duas superfícies para trabalhar um requisito: a gaveta lateral
- * (triagem rápida, que é para onde a fila de prioridades manda toda a gente) e
- * o diálogo completo. Só o diálogo pedia a orientação ao servidor. A gaveta
- * mostrava o que já estivesse gravado e, não estando, caía no texto da norma
- * sob o rótulo "O QUE A NORMA EXIGE" — sem nunca tentar buscar coisa melhor.
- *
- * Como 98% dos requisitos não têm orientação gravada, quem seguia o caminho
- * recomendado pelo produto nunca via orientação nenhuma. O caminho principal
- * era o único sem a peça principal.
- *
- * Este hook é a conta única. Ambas as superfícies passam a pedir, a gerar, a
- * falhar e a explicar-se da mesma maneira.
- */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { statusDeErroDeFuncao } from '@/lib/edge-function-utils';
-import { localizeRequirement } from '@/lib/gap-i18n';
-import { getAppLocale } from '@/lib/i18n-locale';
-import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-export interface PerguntaDiagnostico {
-  pergunta: string;
-  peso: number;
-}
-
-/** Em que pé está a orientação deste requisito. */
-export type EstadoOrientacao =
-  /** Há texto para mostrar. */
-  | 'ok'
-  /** A pedir ao servidor; mostra esqueleto. */
-  | 'gerando'
-  /** Não há, e não houve erro — simplesmente ainda não foi escrita. */
-  | 'indisponivel'
-  /** A geração falhou por uma razão qualquer que não crédito. */
-  | 'falha'
-  /** A conta ficou sem créditos de IA. */
-  | 'creditos';
-
+export interface PerguntaDiagnostico { pergunta: string; peso: number; }
+export type EstadoOrientacao = 'ok' | 'gerando' | 'indisponivel' | 'falha';
 export interface Orientacao {
   texto: string | null;
   evidencias: string | null;
   perguntas: PerguntaDiagnostico[];
   estado: EstadoOrientacao;
-  /** Pede de novo. `forcar` só é permitido a super-admin pelo lado do servidor. */
   gerar: (forcar?: boolean) => Promise<void>;
 }
-
-const perguntasDe = (bruto: string | null | undefined): PerguntaDiagnostico[] => {
-  if (!bruto) return [];
+interface GuidanceData {
+  texto: string | null; evidencias: string | null; perguntas: PerguntaDiagnostico[];
+  pending: boolean; attempts: number;
+}
+const perguntasDe = (raw: unknown): PerguntaDiagnostico[] => {
   try {
-    const parsed = JSON.parse(bruto);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+    const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed.filter((p): p is PerguntaDiagnostico =>
+      !!p && typeof p.pergunta === 'string' && [1, 2, 3].includes(p.peso)) : [];
+  } catch { return []; }
 };
+const empty: GuidanceData = { texto: null, evidencias: null, perguntas: [], pending: false, attempts: 0 };
 
+// Both requirement surfaces share this query. Persistence belongs to the server;
+// query caching only avoids duplicate reads while switching panels.
 export function useOrientacaoRequisito(requirementId: string | null, ativo = true): Orientacao {
-  const [texto, setTexto] = useState<string | null>(null);
-  const [evidencias, setEvidencias] = useState<string | null>(null);
-  const [perguntas, setPerguntas] = useState<PerguntaDiagnostico[]>([]);
-  const [estado, setEstado] = useState<EstadoOrientacao>('indisponivel');
-  // Uma geração automática por requisito e por montagem: sem isto, um requisito
-  // sem orientação dispara a função a cada render que mude a dependência.
-  const jaPediu = useRef<string | null>(null);
-
-  const gerar = useCallback(async (forcar = false) => {
-    if (!requirementId) return;
-    setEstado('gerando');
-    try {
-      const { data, error } = await supabase.functions.invoke('populate-requirement-guidance', {
-        // O conteúdo é global e por idioma: a função devolve o texto já gravado
-        // quando existir, sem consumir crédito.
-        body: { requirement_id: requirementId, locale: getAppLocale(), force: forcar },
-      });
-      if (error) throw error;
-      if (data?.orientacao_implementacao) {
-        setTexto(data.orientacao_implementacao);
-        setEvidencias(data.exemplos_evidencias || null);
-        setPerguntas(perguntasDe(data.perguntas_diagnostico));
-        setEstado('ok');
-      } else {
-        setEstado('indisponivel');
-      }
-    } catch (error: unknown) {
-      logger.error('Erro ao gerar orientação de requisito', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      // O 402 chega em `error.context.status`, não em `error.status`: o
-      // supabase-js embrulha a resposta num FunctionsHttpError.
-      const status = statusDeErroDeFuncao(error);
-      const semCredito = status === 402 || (error as any)?.message?.includes('402');
-      setEstado(semCredito ? 'creditos' : 'falha');
+  const { locale: appLocale } = useLanguage();
+  const locale = appLocale.startsWith('en') ? 'en' : 'pt';
+  const client = useQueryClient();
+  const key = ['requirement-guidance', requirementId, locale] as const;
+  const [manual, setManual] = useState<{ key: string; state: 'gerando' | 'falha' } | null>(null);
+  const identity = `${requirementId}:${locale}`;
+  const invoke = async (force: boolean, fallback = empty): Promise<GuidanceData> => {
+    const { data, error } = await supabase.functions.invoke('populate-requirement-guidance', {
+      body: { requirement_id: requirementId, locale, force },
+    });
+    if (error) throw error;
+    if (data?.pending) {
+      const attempts = (client.getQueryData<GuidanceData>(key)?.attempts || 0) + 1;
+      if (attempts > 15) throw new Error('guidance_temporarily_unavailable');
+      return { ...fallback, pending: true, attempts };
     }
-  }, [requirementId]);
-
-  useEffect(() => {
-    if (!requirementId || !ativo) return;
-    let cancelado = false;
-
-    (async () => {
-      const { data, error } = await supabase
-        .from('gap_analysis_requirements')
+    if (!data?.orientacao_implementacao?.trim()) throw new Error('guidance_unavailable');
+    return {
+      texto: data.orientacao_implementacao,
+      evidencias: data.exemplos_evidencias || null,
+      perguntas: perguntasDe(data.perguntas_diagnostico), pending: false, attempts: 0,
+    };
+  };
+  const query = useQuery<GuidanceData>({
+    queryKey: key,
+    enabled: !!requirementId && ativo,
+    staleTime: Infinity,
+    retry: false,
+    refetchInterval: (q) => q.state.data?.pending && !q.state.error ? 10_000 : false,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await supabase.from('gap_analysis_requirements')
         .select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico, orientacao_implementacao_en, exemplos_evidencias_en, perguntas_diagnostico_en')
-        .eq('id', requirementId)
-        .single();
-      if (cancelado) return;
-      if (error) {
-        setEstado('falha');
-        return;
+        .eq('id', requirementId!).abortSignal(signal).single();
+      if (error) throw error;
+      const row = (data || {}) as Record<string, string | null>;
+      const suffix = locale === 'en' ? '_en' : '';
+      const native = row[`orientacao_implementacao${suffix}` as keyof typeof row];
+      const fallback: GuidanceData = {
+        texto: native || row.orientacao_implementacao || null,
+        evidencias: row[`exemplos_evidencias${suffix}` as keyof typeof row] || row.exemplos_evidencias || null,
+        perguntas: perguntasDe(row[`perguntas_diagnostico${suffix}` as keyof typeof row] || row.perguntas_diagnostico),
+        pending: false, attempts: 0,
+      };
+      if (native?.trim()) return fallback;
+      if (signal.aborted) throw new Error('cancelled');
+      return invoke(false, fallback);
+    },
+  });
+  const gerar = async (forcar = false) => {
+    if (!requirementId || !ativo) return;
+    setManual({ key: identity, state: 'gerando' });
+    try {
+      if (forcar) {
+        const result = await invoke(true, client.getQueryData<GuidanceData>(key) || empty);
+        client.setQueryData(key, result);
+      } else {
+        client.setQueryData<GuidanceData>(key, previous => previous ? { ...previous, attempts: 0 } : previous);
+        const result = await query.refetch();
+        if (result.error) throw result.error;
       }
-
-      const bruto = (data || {}) as Record<string, string | null>;
-      // Conteúdo bilíngue: mostra a versão do idioma actual e, não havendo,
-      // a portuguesa, enquanto a do idioma é gerada em segundo plano.
-      const local = localizeRequirement(bruto as any) as Record<string, string | null>;
-      setTexto(local.orientacao_implementacao || null);
-      setEvidencias(local.exemplos_evidencias || null);
-      setPerguntas(perguntasDe(local.perguntas_diagnostico));
-      setEstado(local.orientacao_implementacao ? 'ok' : 'indisponivel');
-
-      const colunaDoIdioma = getAppLocale() === 'en' ? 'orientacao_implementacao_en' : 'orientacao_implementacao';
-      if (!(bruto[colunaDoIdioma] || '').trim() && jaPediu.current !== requirementId) {
-        jaPediu.current = requirementId;
-        void gerar(false);
-      }
-    })();
-
-    return () => { cancelado = true; };
-  }, [requirementId, ativo, gerar]);
-
-  return { texto, evidencias, perguntas, estado, gerar };
+      setManual(null);
+    } catch { setManual({ key: identity, state: 'falha' }); }
+  };
+  const data = query.data || empty;
+  const manualState = manual?.key === identity ? manual.state : null;
+  return {
+    texto: data.texto, evidencias: data.evidencias, perguntas: data.perguntas, gerar,
+    estado: manualState || (query.isError ? 'falha' : query.isLoading || data.pending ? 'gerando' : data.texto ? 'ok' : 'indisponivel'),
+  };
 }

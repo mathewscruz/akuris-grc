@@ -53,7 +53,7 @@ let avisar: (() => void) | null = null;
    A lista vem do mesmo catálogo que o painel Financeiro IA usa — uma
    funcionalidade nova entra lá uma vez e fica avisada aqui também.
 */
-const FUNCOES_DE_IA: ReadonlySet<string> = new Set(AI_FEATURES.map((f) => f.edgeFunction));
+const FUNCOES_DE_IA: ReadonlySet<string> = new Set(AI_FEATURES.filter((f) => f.billing !== 'platform').map((f) => f.edgeFunction));
 
 function chamadaDeFuncao(url: string): string | null {
   const m = /\/functions\/v1\/([a-z0-9-]+)/i.exec(url);

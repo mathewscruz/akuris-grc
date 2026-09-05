@@ -166,7 +166,7 @@ export function DialogShell({
                     {eyebrow}
                   </span>
                 )}
-                <span className="block truncate leading-tight">{title}</span>
+                <span className="block break-words leading-tight">{title}</span>
               </span>
             </DialogTitle>
             {/*
@@ -191,12 +191,12 @@ export function DialogShell({
               item de flex o filho é medido, não estimado. */}
           {/* Tudo medido por flex, nada por percentagem — ver a nota no
               `scroll-area.tsx`, que é onde estava a raiz do rodapé cortado. */}
-          <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+          <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden">
             {noScroll ? (
-              <div className="flex flex-1 min-h-0 flex-col">{children}</div>
+              <div className="flex flex-1 min-h-0 min-w-0 flex-col">{children}</div>
             ) : (
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="px-5 py-5 sm:px-7 sm:py-6">{children}</div>
+              <ScrollArea className="flex-1 min-h-0 min-w-0">
+                <div className="min-w-0 max-w-full px-5 py-5 sm:px-7 sm:py-6">{children}</div>
               </ScrollArea>
             )}
           </div>

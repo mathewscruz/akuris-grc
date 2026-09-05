@@ -552,18 +552,16 @@ export function TemplatesManager() {
 
         <Card className="rounded-lg border overflow-hidden">
           <CardContent className="p-0">
-            <div className="p-6 pb-4">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <div className="relative flex-1 max-w-sm">
+            <div className="flex min-w-0 flex-col gap-3 p-4 sm:p-5 lg:flex-row lg:items-center" data-testid="template-toolbar">
+                <div className="relative min-w-0 flex-1 lg:max-w-md">
                   <Input
                     placeholder={t('dueDiligence.templatesManager.searchPlaceholder')}
+                    aria-label={t('dueDiligence.templatesManager.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-              </div>
-              
-                <div className="flex flex-wrap items-center gap-4" role="group" aria-label={t('dueDiligence.templatesManager.filters')}>
+                <div className="flex flex-wrap items-center gap-3 lg:ml-auto" role="group" aria-label={t('dueDiligence.templatesManager.filters')}>
                   <div className="flex items-center gap-2">
                     <Label className="text-sm">{t('dueDiligence.templatesManager.categoryLabel')}</Label>
                     <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>

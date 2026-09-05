@@ -1,6 +1,10 @@
 export const experience = {
   pt: {
     experience: {
+      guidanceBatchIncomplete: 'Algumas orientações ainda não foram salvas. As já concluídas estão preservadas; tente novamente mais tarde.',
+      requirementLabel: 'Requisito', requirementNavigation: 'Ir para uma seção da avaliação',
+      requirementGuidance: 'Orientações', requirementDiagnosis: 'Diagnóstico', requirementEvidence: 'Evidências', requirementDetails: 'Responsável e prazo',
+      guidanceIncluded: 'Orientação incluída no Akuris, sem descontar créditos de IA. O conteúdo gerado é salvo para as próximas consultas.',
       drawerPages: 'Paginação do painel', tabsPrevious: 'Mostrar abas anteriores', tabsNext: 'Mostrar próximas abas',
       reviewFinishedTitle: 'Revisão de acesso finalizada', reviewFinishedMessage: 'A revisão "{{name}}" foi concluída.',
       noOtherNotifications: 'Nenhum aviso adicional', noOtherNotificationsHint: 'Consulte também os alertas críticos e a aba Pendências.',
@@ -92,6 +96,10 @@ export const experience = {
   },
   en: {
     experience: {
+      guidanceBatchIncomplete: 'Some guidance is not saved yet. Completed content has been kept; please try again later.',
+      requirementLabel: 'Requirement', requirementNavigation: 'Go to an assessment section',
+      requirementGuidance: 'Guidance', requirementDiagnosis: 'Diagnosis', requirementEvidence: 'Evidence', requirementDetails: 'Owner and deadline',
+      guidanceIncluded: 'Guidance is included in Akuris without using AI credits. Generated content is saved for future visits.',
       drawerPages: 'Panel pagination', tabsPrevious: 'Show previous tabs', tabsNext: 'Show next tabs',
       reviewFinishedTitle: 'Access review completed', reviewFinishedMessage: 'The review "{{name}}" has been completed.',
       noOtherNotifications: 'No additional notices', noOtherNotificationsHint: 'Also check critical alerts and the My tasks tab.',

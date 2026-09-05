@@ -37,7 +37,7 @@ const Tabs = React.forwardRef<
          * que a página os monte, e colapsa com a margem da barra em vez de
          * somar, portanto a distância é a mesma em todos os pares.
          */
-        className={cn("space-y-4", className)}
+        className={cn("min-w-0 max-w-full space-y-4", className)}
         {...props}
       />
     </TabsValueContext.Provider>
@@ -175,7 +175,7 @@ const TabsList = React.forwardRef<
     data-scrollable={horizontal ? "true" : undefined}
     style={{ maskImage: mascara, WebkitMaskImage: mascara, ...style }}
     className={cn(
-      "akuris-tabs-list relative flex w-full items-center gap-4 overflow-x-auto overflow-y-hidden border-b border-border text-muted-foreground",
+      "akuris-tabs-list relative flex min-w-0 w-full items-center gap-4 overflow-x-auto overflow-y-hidden border-b border-border text-muted-foreground",
       // Uma só linha, com rótulos integrais e controles explícitos de rolagem.
       "flex-nowrap gap-y-0",
       "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",

@@ -119,6 +119,14 @@ describe('crédito de IA', () => {
     for (const { nome, fonte } of funcoesComIA()) {
       // A `docgen-chat` tem cobrança idempotente e estorno próprios.
       if (nome === 'docgen-chat') continue;
+      // Explicit product policy: guidance is funded by Akuris. All other
+      // customer AI features still require their existing credit checks.
+      if (nome === 'populate-requirement-guidance') {
+        expect(AI_FEATURES.filter(f => f.edgeFunction === nome).every(f => f.billing === 'platform')).toBe(true);
+        expect(fonte).not.toContain('consume_ai_credit');
+        expect(fonte).toContain('consume_security_rate_limit');
+        continue;
+      }
       if (!fonte.includes('temCreditoIA')) falhas.push(nome);
     }
     expect(

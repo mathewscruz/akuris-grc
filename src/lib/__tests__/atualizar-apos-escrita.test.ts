@@ -92,4 +92,22 @@ describe('o aviso', () => {
     expect(resposta.status).toBe(200);
     expect(fetchOriginal).toHaveBeenCalled();
   });
+
+  it('orientação incluída não anuncia débito de franquia na interface', async () => {
+    const debit = vi.fn();
+    window.addEventListener('ai-credit-consumed', debit);
+    try {
+      await fetch('http://127.0.0.1:54321/functions/v1/populate-requirement-guidance', { method: 'POST' });
+      expect(debit).not.toHaveBeenCalled();
+    } finally { window.removeEventListener('ai-credit-consumed', debit); }
+  });
+
+  it('demais funcionalidades continuam anunciando consumo de IA', async () => {
+    const debit = vi.fn();
+    window.addEventListener('ai-credit-consumed', debit);
+    try {
+      await fetch('http://127.0.0.1:54321/functions/v1/suggest-risk-treatment', { method: 'POST' });
+      expect(debit).toHaveBeenCalledTimes(1);
+    } finally { window.removeEventListener('ai-credit-consumed', debit); }
+  });
 });

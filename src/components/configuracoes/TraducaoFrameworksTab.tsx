@@ -135,6 +135,7 @@ export function TraducaoFrameworksTab() {
    */
   const traduzirOrientacoes = async (fw: FrameworkRow) => {
     setRunningId(`guidance-${fw.id}`);
+    let complete = true;
     try {
       for (const locale of ['pt', 'en'] as const) {
         let guard = 0;
@@ -142,9 +143,9 @@ export function TraducaoFrameworksTab() {
           guard++;
           const res = await invokeEdgeFunction<{ processed: number; remaining: number }>(
             'populate-requirement-guidance',
-            { body: { framework_id: fw.id, locale, batch_size: 5 }, isAiCall: true },
+            { body: { framework_id: fw.id, locale, batch_size: 5 } },
           );
-          if (res.error || !res.data) break;
+          if (res.error || !res.data) { complete = false; break; }
           const feitos = Math.max(fw.total - (res.data.remaining ?? 0), 0);
           setRows((prev) =>
             prev.map((r) =>
@@ -153,10 +154,12 @@ export function TraducaoFrameworksTab() {
                 : r,
             ),
           );
-          if ((res.data.remaining ?? 0) === 0 || res.data.processed === 0) break;
+          if ((res.data.remaining ?? 0) === 0) break;
+          if (res.data.processed === 0 || guard === 80) { complete = false; break; }
         }
       }
-      toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceDone', { nome: fw.nome }));
+      if (complete) toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceDone', { nome: fw.nome }));
+      else toast.error(t('experience.guidanceBatchIncomplete'));
     } finally {
       setRunningId(null);
       load();
@@ -233,4 +236,3 @@ export function TraducaoFrameworksTab() {
     </div>
   );
 }
-

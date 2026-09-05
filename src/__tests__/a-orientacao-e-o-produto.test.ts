@@ -51,7 +51,7 @@ describe('o aquecimento cobre as duas línguas', () => {
     */
     const chamada = painel.slice(
       painel.indexOf("'populate-requirement-guidance'"),
-      painel.indexOf('isAiCall: true', painel.indexOf("'populate-requirement-guidance'")),
+      painel.indexOf(');', painel.indexOf("'populate-requirement-guidance'")),
     );
     expect(chamada.length).toBeGreaterThan(0);
     expect(chamada, 'idioma cravado deixa o português por escrever').not.toMatch(/locale:\s*['"]en['"]/);
@@ -107,20 +107,20 @@ describe('o caminho sob demanda continua a existir', () => {
     /* Três razões diferentes para não haver texto, três frases diferentes:
        «acabaram os créditos» não é «falhou» nem é «ainda não foi escrita», e
        quem lê precisa de saber qual delas é para saber o que fazer. */
-    for (const chave of ['guidanceSemCreditos', 'guidanceFalhou', 'guidanceIndisponivel']) {
+    for (const chave of ['guidanceFalhou', 'guidanceIndisponivel']) {
       expect(s, `estado sem mensagem própria: ${chave}`).toContain(chave);
     }
     expect(s).toContain('guidanceTentarDeNovo');
   });
 
-  it('gerar não é gratuito, e o produto sabe disso', () => {
+  it('orientação é conteúdo incluído na plataforma, sem cobrança ao cliente', () => {
     /* Um crédito por requisito e por empresa. Se a chamada deixasse de passar
        pelo consumo, o custo desaparecia da conta do cliente sem desaparecer
        da nossa. */
     const fn = readFileSync(FUNCAO, 'utf8');
-    expect(fn).toContain('consume_ai_credit');
-    expect(fn).toContain('temCreditoIA');
-    // E só debita quando entregou: falha do modelo não custa ao cliente.
-    expect(fn).toMatch(/Só debita o crédito quando a IA entregou/);
+    expect(fn).not.toContain('consume_ai_credit');
+    expect(fn).not.toContain('temCreditoIA');
+    expect(fn).toContain('consume_security_rate_limit');
+    expect(fn).toContain('getOrCreateGuidance');
   });
 });

@@ -232,3 +232,32 @@ Permanecem os limites de homologação com clientes, matriz integral de acessibi
 - O histórico de publicação permanece na versão anterior `664df366`, identificada como publicada às 09:28 de 05/09/2026. A opção “Publicar alterações” continua desabilitada. O sucesso do push/build local não foi apresentado como implantação da interface.
 - Não foi desconectada a integração, criado outro repositório, alterado DNS, migrado provedor ou revertido código de produção para tentar contornar a falha. A documentação do Lovable informa que desconectar e reconectar cria outro repositório; essa ação não é uma tentativa segura de atualização do mesmo vínculo.
 - Próximo passo: assim que o Lovable voltar a sincronizar, conferir a versão recebida, executar “Publicar alterações” e validar o domínio e o novo logotipo. Banco e função de compatibilidade já estão publicados; não reaplicar as migrações ou executar campanhas reais como teste.
+
+## Anexo 23 — refinamento e orientação incluída na plataforma
+
+Pedido: melhorar o popup de requisitos, não cobrar créditos dos clientes pela orientação, persistir e reutilizar esse conteúdo, corrigir o corte das abas de Controles e alinhar busca/filtros dos templates. O texto do DOCX e suas três imagens originais foram conferidos. O renderizador de Word não estava disponível; o documento original não foi alterado.
+
+### Implementação
+
+- Popup de requisitos com título completo, atalhos para orientação/diagnóstico/evidências/responsável, rodapé fixo e critérios de conclusão recolhíveis. Orientação sem caixas aninhadas; perguntas com separadores discretos e alternativas maiores com estado acessível. No desktop os painéis rolam independentemente; no celular há uma única sequência vertical com atalhos e foco na seção escolhida.
+- Corrigida a causa do corte das abas: o elemento de medição interno do ScrollArea expandia a largura intrínseca e empurrava inclusive o botão Editar para fora. Conteúdo e abas agora respeitam a largura disponível; detalhe de Controles ampliado. Nomes completos em linha única, com setas de rolagem quando necessário.
+- Busca, categoria e status dos templates compartilham uma faixa. Em telas menores, reorganizam-se sem overflow. Busca, filtro combinado, estado vazio e limpeza de filtros foram exercitados sem alterar templates.
+- Orientação de requisitos classificada como custo da plataforma, tanto na geração individual quanto no lote. Removida a dedução de créditos no servidor e os eventos/mensagens de cobrança dessa operação no cliente. Outras funcionalidades de IA continuam com sua política de cobrança; o catálogo histórico de custos foi preservado. Não houve estorno ou alteração retroativa de lançamentos.
+- Conteúdo persistido no catálogo de requisitos, separado por idioma, é lido antes de consultar o modelo. Geração só é considerada concluída após confirmação da gravação. As duas interfaces compartilham cache de consulta; alternar requisito/idioma não reutiliza indevidamente o texto anterior.
+- Autenticação e perfil ativo continuam obrigatórios. Regeneração forçada e geração em lote ficam restritas ao superadministrador. Ausência de cache tem limitação de frequência por conteúdo e usuário no banco, sem usar a franquia de IA do cliente. Essa janela limita concorrência, mas não é uma garantia de execução exatamente uma vez.
+- Falhas de leitura, geração ou gravação não são apresentadas como sucesso. Requisição pendente pode ser consultada novamente com intervalo e limite; lote incompleto não recebe confirmação de conclusão integral. Conteúdo já salvo permanece disponível mesmo se o provedor de IA estiver indisponível.
+
+### Verificação
+
+- **152 arquivos / 841 testes aprovados**, incluindo persistência e reutilização, falha de gravação/modelo, geração concorrente limitada, consultas compartilhadas, troca de idioma/requisito e ausência de eventos de cobrança para orientação. Testes das demais operações de IA mantidos.
+- TypeScript sem erros; testes/hook novos sem avisos de lint. O diálogo possui avisos preexistentes de tipagem/dependências, sem erros; não foram declarados resolvidos. `git diff --check` aprovado.
+- Build de produção concluído: 4.870 módulos, 16,59 s, sitemap de 16 URLs sem erro de permissão. Aviso conhecido de chunks grandes permanece.
+- Navegador local real: orientação 4.1 já salva carregada; atalhos com foco correto; popup a 390×844 ocupa a tela sem overflow horizontal e mantém Cancelar/Salvar rascunho visíveis. Não foram gravadas respostas de avaliação.
+- Controles: sete rótulos completos no desktop, largura interna 1.150/1.150 px e Editar dentro dos limites. No celular, largura 388/388 px, setas operantes e acesso à última aba. Templates: busca/filtros com a mesma coordenada vertical também a 1.024 px; a 390 px reorganizam-se sem transbordamento.
+- O runtime local de Edge Functions não foi iniciado: a instância local existente usa outro identificador de projeto. O fluxo completo HTTP autenticado com geração real não foi executado, evitando chamadas pagas ou mudanças em avaliações de clientes. Serviço de geração/cache exercitado por testes isolados; compilação/publicação remota e teste anônimo devem ser registrados abaixo após execução.
+
+### Publicação desta complementação
+
+Preparada para a função `populate-requirement-guidance` no projeto Supabase existente, mantendo JWT, sem nova migração. O estado final do backend, sincronização e publicação da interface será registrado após cada operação; a falha anterior do Lovable não autoriza trocar repositório ou provedor.
+
+- Função `populate-requirement-guidance` publicada com sucesso em `lnlkahtugwmkznasapfd`, incluindo o serviço compartilhado de geração/cache. Verificação JWT preservada; POST sem autenticação confirmado com HTTP 401. Nenhuma migração ou configuração de login foi alterada nesta complementação.

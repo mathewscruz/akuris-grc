@@ -484,11 +484,11 @@ export function ControleDetalheDialog({
         title={controle.nome}
         eyebrow={`${t('controlesAuditorias.cddEyebrow')}${controle.codigo ? ` · ${controle.codigo}` : ''}`}
         icon={ControlesIcon}
-        size="lg"
+        size="xl"
         hideFooter
         disableShortcuts
       >
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <section className="overflow-hidden rounded-lg border border-border/80 bg-popover shadow-sm">
             <div className="flex flex-col gap-3 bg-surface-1/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>

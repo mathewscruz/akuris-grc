@@ -1,269 +1,142 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 import { MODELOS } from '../_shared/modelos.ts';
+import { getOrCreateGuidance, GuidanceError, type GuidanceResult } from './guidance-service.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
 type Locale = "pt" | "en";
-
-/** Colunas de orientação por idioma. O conteúdo é global (compartilhado por todas as empresas). */
 const COLS = {
-  pt: {
-    orientacao: "orientacao_implementacao",
-    evidencias: "exemplos_evidencias",
-    perguntas: "perguntas_diagnostico",
-  },
-  en: {
-    orientacao: "orientacao_implementacao_en",
-    evidencias: "exemplos_evidencias_en",
-    perguntas: "perguntas_diagnostico_en",
-  },
+  pt: { orientacao: "orientacao_implementacao", evidencias: "exemplos_evidencias", perguntas: "perguntas_diagnostico" },
+  en: { orientacao: "orientacao_implementacao_en", evidencias: "exemplos_evidencias_en", perguntas: "perguntas_diagnostico_en" },
 } as const;
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { ...corsHeaders, "Content-Type": "application/json", ...(status === 202 ? { "Retry-After": "10" } : {}) },
+});
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function fingerprint(value: string) {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+}
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY") || supabaseKey;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!lovableKey) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Authenticate user (mandatory)
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
     const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } }
     });
     const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (claimsError || !userData?.user?.id) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const userId: string = userData.user.id;
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('empresa_id')
-      .eq('user_id', userId)
-      .eq('ativo', true)
-      .single();
-    const empresaId: string | null = profile?.empresa_id || null;
-    if (!empresaId) {
-      return new Response(JSON.stringify({ error: 'Forbidden: empresa not found' }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (claimsError || !userData?.user?.id) return json({ error: 'Unauthorized' }, 401);
+    const userId = userData.user.id;
+    const { data: profile, error: profileError } = await supabase.from('profiles')
+      .select('empresa_id').eq('user_id', userId).eq('ativo', true).single();
+    if (profileError || !profile?.empresa_id) return json({ error: 'Forbidden' }, 403);
 
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') return json({ error: 'invalid_request' }, 400);
     const requirementId = typeof body.requirement_id === 'string' ? body.requirement_id : null;
     const frameworkId = typeof body.framework_id === 'string' ? body.framework_id : null;
+    if ((requirementId && !uuid.test(requirementId)) || (frameworkId && !uuid.test(frameworkId))) return json({ error: 'invalid_id' }, 400);
     const rawBatch = Number(body.batch_size);
     const batchSize = Number.isFinite(rawBatch) ? Math.min(Math.max(Math.trunc(rawBatch), 1), 25) : 10;
     const locale: Locale = body.locale === 'en' ? 'en' : 'pt';
     const force = body.force === true;
     const cols = COLS[locale];
 
-    // Regenerar sobrescreve conteúdo GLOBAL (visto por todas as empresas) → só super-admin.
-    if (force) {
-      const { data: isSuper } = await userClient.rpc('has_super_admin_role');
-      if (isSuper !== true) {
-        return new Response(JSON.stringify({ error: 'Forbidden: super admin required to regenerate' }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // Shared catalogue: only the platform administrator can overwrite or
+    // warm a whole framework. A customer can request missing individual guidance.
+    if (force || !requirementId) {
+      const { data: isSuper, error: roleError } = await userClient.rpc('has_super_admin_role');
+      if (roleError || isSuper !== true) return json({ error: 'Forbidden: super admin required' }, 403);
     }
-
     const selectCols = `id, codigo, titulo, descricao, categoria, ${cols.orientacao}, ${cols.evidencias}, ${cols.perguntas}` +
       (locale === 'en' ? `, ${COLS.pt.orientacao}, ${COLS.pt.evidencias}, ${COLS.pt.perguntas}` : '');
-
-    // Single requirement mode
-    if (requirementId) {
-      const { data: req_data, error: fetchError } = await supabase
-        .from("gap_analysis_requirements")
-        .select(selectCols)
-        .eq("id", requirementId)
-        .single();
-
-      if (fetchError || !req_data) {
-        return new Response(JSON.stringify({ error: "Requisito não encontrado" }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const row = req_data as unknown as Record<string, string | null>;
-
-      // Cache global: conteúdo já existe nesse idioma → devolve sem IA e sem consumir crédito.
-      const cachedOrientacao = (row[cols.orientacao] || '').trim();
-      if (!force && cachedOrientacao) {
-        return new Response(JSON.stringify({
-          message: "Guidance served from cache",
-          cached: true,
-          locale,
-          orientacao_implementacao: row[cols.orientacao],
-          exemplos_evidencias: row[cols.evidencias],
-          perguntas_diagnostico: row[cols.perguntas],
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const guidance = await generateGuidance(row as any, lovableKey, locale, basePt(row, locale));
-      if (!guidance) {
-        // AI falhou — NÃO consumir crédito
-        return new Response(JSON.stringify({ error: "Failed to generate guidance" }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Só debita o crédito quando a IA entregou conteúdo
-      // Sem franquia, nem se chama o modelo: a chamada custa no instante
-      // em que sai. Ver `_shared/creditos.ts`.
-      if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
-
-      const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresaId,
-        p_user_id: userId,
-        p_funcionalidade: 'populate-requirement-guidance',
-        p_descricao: `Orientação (${locale}) para requisito ${row.codigo || row.titulo}`
-      });
-      if (creditResult === false) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { error: updateError } = await supabase
-        .from("gap_analysis_requirements")
-        .update({
-          [cols.orientacao]: guidance.orientacao_implementacao,
-          [cols.evidencias]: guidance.exemplos_evidencias,
-          [cols.perguntas]: guidance.perguntas_diagnostico,
-        })
-        .eq("id", requirementId);
-
-      if (updateError) throw updateError;
-
-      return new Response(JSON.stringify({
-        message: "Guidance generated successfully",
-        cached: false,
-        locale,
-        orientacao_implementacao: guidance.orientacao_implementacao,
-        exemplos_evidencias: guidance.exemplos_evidencias,
-        perguntas_diagnostico: guidance.perguntas_diagnostico,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const cached = (row: Record<string, string | null>): GuidanceResult | null => {
+      if (!row[cols.orientacao]?.trim()) return null;
+      return { orientacao_implementacao: row[cols.orientacao]!, exemplos_evidencias: row[cols.evidencias] || '', perguntas_diagnostico: row[cols.perguntas] || null };
+    };
+    async function readRow(id: string) {
+      const { data, error } = await supabase.from('gap_analysis_requirements').select(selectCols).eq('id', id).single();
+      if (error || !data) throw new GuidanceError('requirement_unavailable', 404);
+      return data as unknown as Record<string, string | null>;
     }
-
-    // Batch mode — só requisitos sem conteúdo no idioma pedido
-    let query = supabase
-      .from("gap_analysis_requirements")
-      .select(selectCols)
-      .is(cols.orientacao, null)
-      .order("ordem", { ascending: true })
-      .limit(batchSize);
-
-    if (frameworkId) {
-      query = query.eq("framework_id", frameworkId);
-    }
-
-    const { data: requirements, error: fetchError } = await query;
-    if (fetchError) throw fetchError;
-
-    if (!requirements || requirements.length === 0) {
-      return new Response(JSON.stringify({ message: "All requirements already have guidance", processed: 0, remaining: 0, locale }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    let processed = 0;
-    for (const raw of requirements) {
-      const r = raw as unknown as Record<string, string | null>;
-      // Gera primeiro; só cobra se a IA entregar conteúdo válido
-      let guidance: GuidanceResult | null = null;
-      try {
-        guidance = await generateGuidance(r as any, lovableKey, locale, basePt(r, locale));
-      } catch (e) {
-        console.error(`Error processing ${r.codigo}:`, e);
-        continue;
-      }
-      if (!guidance) continue;
-
-      const { data: batchCredit } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresaId,
-        p_user_id: userId,
-        p_funcionalidade: 'populate-requirement-guidance-batch',
-        p_descricao: `Orientação (${locale}) requisito ${r.codigo || r.titulo}`
-      });
-      if (batchCredit === false) break;
-
-      try {
-        const { error: updateError } = await supabase
-          .from("gap_analysis_requirements")
-          .update({
+    async function generateAndSave(row: Record<string, string | null>) {
+      return getOrCreateGuidance({
+        cached: cached(row), force,
+        readCached: async () => cached(await readRow(row.id!)),
+        claim: async () => {
+          // Cache reads work even while the AI provider is unavailable.
+          if (!Deno.env.get('LOVABLE_API_KEY')) throw new GuidanceError('guidance_temporarily_unavailable');
+          const { data: allowed, error } = await supabase.rpc('consume_security_rate_limit', {
+            p_scope: 'requirement-guidance:content',
+            p_fingerprint_hash: await fingerprint(`${row.id}:${locale}`),
+            p_max_requests: 1, p_window_seconds: 120,
+          });
+          if (error) throw new GuidanceError('guidance_temporarily_unavailable');
+          if (allowed !== true) return false;
+          const { data: userAllowed, error: userLimitError } = await supabase.rpc('consume_security_rate_limit', {
+            p_scope: 'requirement-guidance:user',
+            p_fingerprint_hash: await fingerprint(userId),
+            p_max_requests: 60, p_window_seconds: 60,
+          });
+          if (userLimitError) throw new GuidanceError('guidance_temporarily_unavailable');
+          if (userAllowed !== true) throw new GuidanceError('guidance_rate_limited', 429);
+          return true;
+        },
+        generate: () => generateGuidance(row as any, Deno.env.get('LOVABLE_API_KEY')!, locale, basePt(row, locale)),
+        save: async (guidance) => {
+          const { data, error } = await supabase.from('gap_analysis_requirements').update({
             [cols.orientacao]: guidance.orientacao_implementacao,
             [cols.evidencias]: guidance.exemplos_evidencias,
             [cols.perguntas]: guidance.perguntas_diagnostico,
-          })
-          .eq("id", r.id);
-
-        if (updateError) {
-          console.error(`Update error for ${r.codigo}:`, updateError);
-          continue;
-        }
-        processed++;
-      } catch (e) {
-        console.error(`Error processing ${r.codigo}:`, e);
-      }
+          }).eq('id', row.id!).select(selectCols).single();
+          if (error || !data) throw new GuidanceError('guidance_save_failed');
+          return cached(data as unknown as Record<string, string | null>)!;
+        },
+      });
     }
 
-    // Quantos ainda faltam nesse idioma (para a UI mostrar progresso do lote)
-    let remainingQuery = supabase
-      .from("gap_analysis_requirements")
-      .select("id", { count: "exact", head: true })
-      .is(cols.orientacao, null);
-    if (frameworkId) remainingQuery = remainingQuery.eq("framework_id", frameworkId);
-    const { count: remaining } = await remainingQuery;
+    if (requirementId) {
+      const result = await generateAndSave(await readRow(requirementId));
+      return json({ ...result, locale }, result.pending ? 202 : 200);
+    }
 
-    return new Response(JSON.stringify({
-      message: `Processed ${processed} of ${requirements.length} requirements`,
-      processed,
-      total: requirements.length,
-      remaining: remaining ?? 0,
-      locale,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Missing guidance only; both null and legacy blank values need preparation.
+    let query = supabase.from('gap_analysis_requirements').select(selectCols)
+      .or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`).order('ordem').order('id').limit(batchSize);
+    if (frameworkId) query = query.eq('framework_id', frameworkId);
+    const { data: requirements, error: fetchError } = await query;
+    if (fetchError) throw new GuidanceError('guidance_read_failed');
+    let processed = 0, failed = 0, pending = 0;
+    for (const raw of requirements || []) {
+      try {
+        const result = await generateAndSave(raw as unknown as Record<string, string | null>);
+        if (result.pending) pending++; else processed++;
+      } catch (error) {
+        failed++;
+        console.error('Requirement guidance batch item failed', error instanceof GuidanceError ? error.code : 'internal_error');
+      }
+    }
+    let remainingQuery = supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
+      .or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`);
+    if (frameworkId) remainingQuery = remainingQuery.eq('framework_id', frameworkId);
+    const { count: remaining, error: countError } = await remainingQuery;
+    if (countError) throw new GuidanceError('guidance_read_failed');
+    return json({ processed, failed, pending, remaining: remaining ?? 0, total: requirements?.length || 0, locale });
   } catch (error) {
-    console.error("Error:", error);
-    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error('Requirement guidance failed', error instanceof GuidanceError ? error.code : 'internal_error');
+    return json({ error: error instanceof GuidanceError ? error.code : 'guidance_temporarily_unavailable' }, error instanceof GuidanceError ? error.status : 500);
   }
 });
-
-interface GuidanceResult {
-  orientacao_implementacao: string;
-  exemplos_evidencias: string;
-  perguntas_diagnostico: string | null;
-}
 
 interface BasePt {
   orientacao: string;
@@ -296,6 +169,7 @@ async function generateGuidance(
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
+      signal: AbortSignal.timeout(60_000),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",

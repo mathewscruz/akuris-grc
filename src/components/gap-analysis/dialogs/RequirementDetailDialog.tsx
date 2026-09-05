@@ -28,6 +28,7 @@ import { logger } from '@/lib/logger';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useMotionAllowed } from '@/lib/motion-preferences';
 import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -146,6 +147,7 @@ type StepState = 'complete' | 'active' | 'pending';
 
 const JourneyStep: React.FC<{
   number: number;
+  id?: string;
   title: string;
   description?: string;
   state: StepState;
@@ -153,7 +155,7 @@ const JourneyStep: React.FC<{
   defaultOpen?: boolean;
   collapsible?: boolean;
   children: React.ReactNode;
-}> = ({ number, title, description, state, badge, defaultOpen = true, collapsible = false, children }) => {
+}> = ({ number, id, title, description, state, badge, defaultOpen = true, collapsible = false, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   const numberClass =
     state === 'complete' ? 'bg-success text-success-foreground border-success' :
@@ -179,7 +181,7 @@ const JourneyStep: React.FC<{
   );
 
   return (
-    <section className="rounded-lg border bg-card overflow-hidden">
+    <section id={id} tabIndex={-1} className="min-w-0 scroll-mt-4 rounded-lg border bg-popover overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
       {collapsible ? (
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger asChild>
@@ -188,13 +190,13 @@ const JourneyStep: React.FC<{
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 pb-4 pt-1 ml-10">{children}</div>
+            <div className="px-4 pb-4 pt-1 sm:ml-8">{children}</div>
           </CollapsibleContent>
         </Collapsible>
       ) : (
         <>
           <div className="p-3">{headerContent}</div>
-          <div className="px-4 pb-4 ml-10">{children}</div>
+          <div className="px-4 pb-4 sm:ml-8">{children}</div>
         </>
       )}
     </section>
@@ -344,17 +346,17 @@ const MarkdownContent = ({ content }: { content: string }) => {
 
         const { icon: SectionIcon, color } = getSectionIcon(section.title);
         return (
-          <div key={idx} className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <section key={idx} className="space-y-2 border-b border-border/60 pb-5 last:border-0 last:pb-0">
             <div className="flex items-center gap-2.5">
-              <div className={cn('flex items-center justify-center h-7 w-7 rounded-md bg-background border border-border', color)}>
+              <div className={cn('flex shrink-0 items-center justify-center', color)}>
                 <SectionIcon className="h-4 w-4" strokeWidth={1.5} />
               </div>
-              <h3 className="text-sm font-bold text-foreground">{section.title}</h3>
+              <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
             </div>
-            <div className="space-y-2.5 pl-[38px]">
+            <div className="space-y-2 break-words">
               {renderContentLines(section.lines)}
             </div>
-          </div>
+          </section>
         );
       })}
     </div>
@@ -407,10 +409,15 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const evidenciasText = orientacao.evidencias;
   const diagnosticQuestions = orientacao.perguntas;
   const generatingGuidance = orientacao.estado === 'gerando';
-  const guidanceErro = orientacao.estado === 'creditos' ? 'creditos'
-    : orientacao.estado === 'falha' ? 'falha'
-    : null;
+  const guidanceErro = orientacao.estado === 'falha' ? 'falha' : null;
   const [guidanceOpen, setGuidanceOpen] = useState(true);
+  const motionAllowed = useMotionAllowed();
+  const requirementBody = useRef<HTMLDivElement>(null);
+  const goToSection = (id: string) => {
+    const section = requirementBody.current?.querySelector<HTMLElement>(`#${id}`);
+    section?.scrollIntoView({ behavior: motionAllowed ? 'smooth' : 'instant', block: 'start' });
+    section?.focus({ preventScroll: true });
+  };
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<number, 'sim' | 'parcial' | 'nao' | null>>({});
   const { openDocGen } = useDocGen();
   const [validatingUrl, setValidatingUrl] = useState<string | null>(null);
@@ -846,7 +853,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        title={`${requirement.codigo} — ${requirement.titulo}`}
+        title={requirement.titulo}
+        eyebrow={`${t('experience.requirementLabel')} · ${requirement.codigo}`}
         icon={GapAnalysisIcon}
         size="2xl"
         noScroll
@@ -854,9 +862,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         submitLabel={footerLabel}
         isSubmitting={saving}
         submitDisabled={loading}
-        className="h-[100dvh] sm:h-[88vh] sm:max-h-[900px]"
+        className="akuris-requirement-dialog h-[100dvh] sm:h-[90vh] sm:max-h-[960px]"
       >
-        <div className="flex flex-col h-full min-h-0 overflow-hidden">
+        <div ref={requirementBody} className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden">
+          <nav aria-label={t('experience.requirementNavigation')} className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b px-5 py-2 sm:px-7">
+            {[['requirement-guidance', 'experience.requirementGuidance'], ['requirement-diagnosis', 'experience.requirementDiagnosis'], ['requirement-evidence', 'experience.requirementEvidence'], ['requirement-details', 'experience.requirementDetails']].map(([id, key]) => (
+              <button key={id} type="button" className="rounded px-1 py-1.5 text-xs font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onClick={() => goToSection(id)}>{t(key)}</button>
+            ))}
+          </nav>
           {/* Status agora vive dentro do Step 1 "Avaliar Conformidade" (painel
               direito), evitando duplicar a ação em dois lugares. */}
           {loading ? (
@@ -864,13 +877,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               <AkurisPulse size={32} className="text-primary" />
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
               {/* ============================================ */}
               {/* LEFT PANEL — Apenas leitura/educação        */}
               {/* ============================================ */}
-              <div className="h-full min-h-0 flex-1 overflow-y-auto border-r border-border/80 bg-gradient-to-b from-muted/35 via-background to-background md:w-[39%] md:flex-none">
+              <div id="requirement-guidance" tabIndex={-1} className="min-w-0 shrink-0 border-b border-border/70 bg-surface-1/40 focus-visible:outline-none lg:min-h-0 lg:w-[36%] lg:overflow-y-auto lg:border-b-0 lg:border-r">
                 <div className="space-y-4 p-5 lg:p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => setGuidanceOpen(o => !o)}
@@ -895,6 +908,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     )}
                   </div>
 
+                  <p className="text-micro leading-5 text-muted-foreground">{t('experience.guidanceIncluded')}</p>
                   {guidanceOpen && (generatingGuidance && !guidanceText ? (
                     <GuidanceSkeleton />
                   ) : guidanceText ? (
@@ -936,14 +950,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         <div className="flex items-start gap-2">
                           <IconIdea className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" strokeWidth={1.5} />
                           <p className="text-xs text-muted-foreground leading-6">
-                            {guidanceErro === 'creditos'
-                              ? t('gapUi.detail.guidanceSemCreditos')
-                              : guidanceErro === 'falha'
-                                ? t('gapUi.detail.guidanceFalhou')
-                                : t('gapUi.detail.guidanceIndisponivel')}
+                            {guidanceErro === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
                           </p>
                         </div>
-                        {guidanceErro !== 'creditos' && (
+                        {
                           <Button
                             variant="outline"
                             size="sm"
@@ -956,7 +966,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               : <IconRefresh className="h-3 w-3 mr-1.5" strokeWidth={1.5} />}
                             {t('gapUi.detail.guidanceTentarDeNovo')}
                           </Button>
-                        )}
+                        }
                       </div>
                     </div>
                   ))}
@@ -991,11 +1001,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               {/* ============================================ */}
               {/* RIGHT PANEL — Jornada numerada              */}
               {/* ============================================ */}
-              <div className="h-full min-h-0 flex-1 overflow-y-auto bg-background md:w-[61%] md:flex-none">
+              <div className="min-w-0 shrink-0 bg-popover lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
                 <div className="space-y-3 p-5 lg:p-6">
 
-                  <section className="rounded-lg border border-primary/20 bg-primary/5 p-4" aria-labelledby="completion-title">
-                    <div className="flex items-center justify-between gap-3">
+                  <details className="group rounded-lg border border-border/80 bg-surface-1/30 p-3" aria-labelledby="completion-title">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                       <div>
                         <p id="completion-title" className="text-sm font-semibold text-foreground">
                           {t('gapUi.detail.completion.title')}
@@ -1006,10 +1016,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             : t('gapUi.detail.completion.hint')}
                         </p>
                       </div>
-                      <Badge variant={allCompletionDone ? 'success' : 'outline'} className="shrink-0 tabular-nums">
+                      <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-muted-foreground">
                         {t('gapUi.detail.completion.progress', { done: completionDone, total: completionCriteria.length })}
-                      </Badge>
-                    </div>
+                        <IconChevronDown className="h-4 w-4 group-open:rotate-180" />
+                      </span>
+                    </summary>
                     <div
                       className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
                       role="progressbar"
@@ -1040,10 +1051,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         </li>
                       ))}
                     </ul>
-                  </section>
+                  </details>
 
                   {/* ===== STEP 1: Avaliar Conformidade ===== */}
                   <JourneyStep
+                    id="requirement-diagnosis"
                     number={1}
                     title={t('gapUi.detail.step1Title')}
                     description={t('gapUi.detail.step1Description')}
@@ -1072,24 +1084,25 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           {effectiveDiagnosticQuestions.map((q, idx) => {
                             const answer = diagnosticAnswers[idx] || null;
                             return (
-                              <div key={idx} className="p-3 rounded-md bg-card border space-y-2">
+                              <div key={idx} className="space-y-3 border-b border-border/70 py-4 first:pt-0 last:border-0">
                                 {/* `div`, não `p`: o `Badge` é uma `div`, e uma
                                     `div` dentro de `p` é HTML inválido — o React
                                     avisava-o em consola a cada abertura do
                                     diálogo («validateDOMNesting»). O browser
                                     fecha o `p` sozinho, o que parte o espaçamento. */}
                                 <div className="text-sm text-foreground leading-relaxed">
-                                  {q.peso >= 2 && <Badge variant="outline" className="text-micro mr-1.5">{t('gapUi.detail.weight', { peso: q.peso })}</Badge>}
+                                  <span className="mr-2 text-muted-foreground tabular-nums">{idx + 1}.</span>
                                   {q.pergunta}
                                 </div>
-                                <div className="flex gap-1.5">
+                                <div role="group" aria-label={q.pergunta} className="flex flex-wrap gap-2">
                                   {(['sim', 'parcial', 'nao'] as const).map(opt => (
                                     <Button
                                       key={opt}
+                                      aria-pressed={answer === opt}
                                       size="sm"
                                       variant={answer === opt ? 'default' : 'outline'}
                                       className={cn(
-                                        'text-xs h-7 px-3',
+                                        'text-xs h-9 min-w-16 px-3',
                                         answer === opt && opt === 'sim' && 'bg-success hover:bg-success/90 text-success-foreground border-success',
                                         answer === opt && opt === 'parcial' && 'bg-warning hover:bg-warning/90 text-warning-foreground border-warning',
                                         answer === opt && opt === 'nao' && 'bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive',
@@ -1142,6 +1155,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
                   {/* ===== STEP 2: Evidências ===== */}
                   <JourneyStep
+                    id="requirement-evidence"
                     number={2}
                     title={t('gapUi.detail.step2Title')}
                     description={t('gapUi.detail.step2Description')}
@@ -1406,6 +1420,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
                   {/* ===== STEP 4: Detalhes da Avaliação ===== */}
                   <JourneyStep
+                    id="requirement-details"
                     number={requiresPlanoStep ? 4 : 3}
                     title={t('gapUi.detail.step4Title')}
                     description={t('gapUi.detail.step4Description')}

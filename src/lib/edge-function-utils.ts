@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
+import { aiFeatureByEdgeFunction } from '@/lib/ai-usage-catalog';
 
 interface InvokeOptions {
   body?: Record<string, unknown>;
@@ -62,6 +63,7 @@ export async function invokeEdgeFunction<T = unknown>(
   options: InvokeOptions = {},
 ): Promise<InvokeResult<T>> {
   const { body, errorMessages = {}, showToast = true, isAiCall = false } = options;
+  const platformFunded = aiFeatureByEdgeFunction(functionName)?.billing === 'platform';
 
   try {
     const { data, error } = await supabase.functions.invoke(functionName, {
@@ -74,7 +76,7 @@ export async function invokeEdgeFunction<T = unknown>(
       const message = messages[statusCode] || `Erro ao executar ${functionName}.`;
 
       // Emite evento global de créditos esgotados para o banner / hook
-      if (statusCode === 402 && typeof window !== 'undefined') {
+      if (!platformFunded && statusCode === 402 && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('ai-credits-exhausted', { detail: { functionName } }));
       }
 
@@ -83,7 +85,7 @@ export async function invokeEdgeFunction<T = unknown>(
     }
 
     // Sucesso: se foi chamada de IA, decrementa o saldo localmente
-    if (isAiCall && typeof window !== 'undefined') {
+    if (isAiCall && !platformFunded && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ai-credit-consumed', { detail: { functionName } }));
     }
 
