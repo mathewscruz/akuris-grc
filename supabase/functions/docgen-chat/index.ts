@@ -543,8 +543,8 @@ serve(async (req) => {
     const {
       message, 
       conversation_id, 
-      user_id, 
-      empresa_id,
+      user_id: requested_user_id,
+      empresa_id: requested_empresa_id,
       action = 'chat',
       doc_type_hint,
       framework_context,
@@ -564,6 +564,8 @@ serve(async (req) => {
       run_quality_gate,    // P1: quality gate roda em invocação própria
 
     } = await req.json();
+    let user_id = requested_user_id;
+    let empresa_id = requested_empresa_id;
 
     /**
      * O DIA de quem pediu — não o do servidor.
@@ -661,7 +663,7 @@ serve(async (req) => {
         });
       }
       const { data: callerProfile } = await supabase
-        .from('profiles').select('empresa_id, role').eq('user_id', userData.user.id).maybeSingle();
+        .from('profiles').select('empresa_id, role').eq('user_id', userData.user.id).eq('ativo', true).maybeSingle();
       // Override body empresa_id with the authenticated user's empresa (super_admin can pass any).
       const effectiveEmpresaId = callerProfile?.role === 'super_admin'
         ? (empresa_id ?? callerProfile?.empresa_id)
@@ -700,7 +702,7 @@ serve(async (req) => {
     }
     const authedUserId = authUserData.user.id;
     const { data: callerProfile } = await supabase
-      .from('profiles').select('empresa_id, role').eq('user_id', authedUserId).maybeSingle();
+      .from('profiles').select('empresa_id, role').eq('user_id', authedUserId).eq('ativo', true).maybeSingle();
     const authedEmpresaId = callerProfile?.role === 'super_admin'
       ? (empresa_id ?? callerProfile?.empresa_id)
       : callerProfile?.empresa_id;
@@ -986,7 +988,7 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       const cleanMessage = aiMessage
         .replace(/\[DOCGEN_READY\]/gi, '')
         .replace(/```json[\s\S]*?```/g, '')
-        .replace(/```[\s\S]*?```/g, (block) => block)
+        .replace(/```[\s\S]*?```/g, (block: string) => block)
         .trim() || aiMessage.trim();
 
       const messageText = cleanMessage.toLowerCase();
@@ -1760,7 +1762,7 @@ Responda EXATAMENTE neste JSON:
       // preserva itens mantidos com evidência atualizada; remove os informados em removed_coverage.
       const removedCodesArr: string[] = (parsedRefine?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || ''));
       const removedCodes = new Set(removedCodesArr);
-      const keptCodes = new Set((parsedRefine?.coverage_kept || []).map((c: any) => String(c)));
+      const keptCodes = new Set<string>((parsedRefine?.coverage_kept || []).map((c: any) => String(c)));
       const evidenceUpdatesArr: [string, string][] = (parsedRefine?.coverage_updated_evidence || [])
         .map((e: any) => [String(e?.requirement_codigo || ''), String(e?.evidencia || '')] as [string, string]);
       const nextCoverage = applyRefineCoverage({
@@ -2106,11 +2108,12 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
   } catch (error) {
     console.error('Error in docgen-chat function:', error);
     // Falhou, expirou ou foi abortada => estorna o crédito eventualmente debitado.
-    if (chargeState) {
+    const failedCharge = chargeState as { client: any; empresaId: string; key: string } | null;
+    if (failedCharge) {
       try {
-        await chargeState.client.rpc('estornar_ai_credit', {
-          p_empresa_id: chargeState.empresaId,
-          p_idempotency_key: chargeState.key,
+        await failedCharge.client.rpc('estornar_ai_credit', {
+          p_empresa_id: failedCharge.empresaId,
+          p_idempotency_key: failedCharge.key,
         });
       } catch (e) { console.warn('estornar_ai_credit falhou:', e); }
       chargeState = null;

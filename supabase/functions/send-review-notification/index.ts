@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
     const { data: callerProfile } = await supabaseClient
-      .from('profiles').select('empresa_id').eq('user_id', userData.user.id).maybeSingle();
+      .from('profiles').select('empresa_id').eq('user_id', userData.user.id).eq('ativo', true).maybeSingle();
     const callerEmpresaId = callerProfile?.empresa_id;
     if (!callerEmpresaId) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
 
     const { reviewId }: SendNotificationRequest = await req.json();
 
-    const { data: review, error: reviewError } = await supabaseClient.from('access_reviews').select(`*, sistema:sistemas_privilegiados(nome_sistema), responsavel:profiles!access_reviews_responsavel_revisao_fkey(nome, email, empresa_id, notificar_por_email)`).eq('id', reviewId).single();
+    const { data: review, error: reviewError } = await supabaseClient.from('access_reviews').select(`*, sistema:sistemas_privilegiados(nome_sistema), responsavel:profiles!access_reviews_responsavel_revisao_fkey(nome, email, empresa_id, ativo, notificar_por_email)`).eq('id', reviewId).single();
     if (reviewError) throw reviewError;
-    if (!review.responsavel?.email) return new Response(JSON.stringify({ error: 'Responsável não possui e-mail cadastrado' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    if (!review.responsavel?.email || !review.responsavel?.ativo) return new Response(JSON.stringify({ error: 'Responsável não possui e-mail cadastrado ou está inativo' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     /*
        Quem dispensou o aviso por e-mail nao o recebe.
 
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const aceitaEmail = review.responsavel?.notificar_por_email !== false;
 
     // Isolamento por tenant: caller e responsável devem estar na mesma empresa
-    if (review.responsavel.empresa_id !== callerEmpresaId) {
+    if (review.empresa_id !== callerEmpresaId || review.responsavel.empresa_id !== callerEmpresaId) {
       return new Response(JSON.stringify({ error: 'Forbidden: revisão de outro tenant' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 

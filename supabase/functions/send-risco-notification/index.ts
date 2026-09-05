@@ -33,17 +33,28 @@ const handler = async (req: Request): Promise<Response> => {
     */
     const ctx = await requireUserContext(req);
 
-    const { risco_id, titulo, descricao, probabilidade, impacto, categoria, responsavel_id }: NotificationRequest = await req.json();
+    const { risco_id, responsavel_id }: NotificationRequest = await req.json();
 
     // A empresa é sempre a da sessão; o corpo do pedido não a escolhe.
     const empresa_id = ctx.empresaId;
     if (!empresa_id) return new Response(JSON.stringify({ error: "Sem empresa associada" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
-    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
+    const { data: responsavelData, error: responsavelError } = await supabase.from("profiles").select("nome, email, empresa_id")
+      .eq('notificar_por_email', true).eq('ativo', true).eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavelData?.email) return new Response(JSON.stringify({ error: "Responsável não encontrado ou sem email" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     // E o destinatário tem de ser do mesmo inquilino de quem manda.
     if (responsavelData.empresa_id !== empresa_id) return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    const { data: risco } = await supabase.from('riscos')
+      .select('nome, descricao, probabilidade_inicial, impacto_inicial, categoria_id')
+      .eq('id', risco_id).eq('empresa_id', empresa_id).maybeSingle();
+    if (!risco) return new Response(JSON.stringify({ error: 'Risco não encontrado' }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    const titulo = risco.nome;
+    const descricao = risco.descricao || undefined;
+    const probabilidade = risco.probabilidade_inicial || 0;
+    const impacto = risco.impacto_inicial || 0;
+    const categoria = risco.categoria_id || undefined;
 
     let companyName = "Akuris";
     const { data: empresaData } = await supabase.from("empresas").select("nome").eq("id", empresa_id).single();

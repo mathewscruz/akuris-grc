@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
     let profile: { empresa_id: string | null; role: string | null } | null = null;
     if (!chamadaInterna) {
       const { data } = await supabase
-        .from('profiles').select('empresa_id, role').eq('user_id', userData!.user.id).maybeSingle();
+        .from('profiles').select('empresa_id, role').eq('user_id', userData!.user.id).eq('ativo', true).maybeSingle();
       profile = data as any;
       if (!profile?.empresa_id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {

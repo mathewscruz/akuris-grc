@@ -36,9 +36,9 @@ const handler = async (req: Request): Promise<Response> => {
     */
     const ctx = await requireUserContext(req);
 
-    const { controle_id, controle_nome, controle_descricao, proxima_avaliacao, responsavel_id }: NotificationRequest = await req.json();
+    const { controle_id, responsavel_id }: NotificationRequest = await req.json();
 
-    if (!controle_id || !responsavel_id || !controle_nome) return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    if (!controle_id || !responsavel_id) return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -46,9 +46,18 @@ const handler = async (req: Request): Promise<Response> => {
       .from("profiles")
       .select("nome, email, empresa_id, notificar_por_email, notificar_na_aplicacao")
       .eq("user_id", responsavel_id)
+      .eq('ativo', true)
       .single();
     if (responsavelError || !responsavelData) return new Response(JSON.stringify({ error: "Responsible user not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
     if (!ctx.empresaId || responsavelData.empresa_id !== ctx.empresaId) return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    const { data: controle } = await supabase.from('controles')
+      .select('nome, descricao, proxima_avaliacao')
+      .eq('id', controle_id).eq('empresa_id', ctx.empresaId).maybeSingle();
+    if (!controle) return new Response(JSON.stringify({ error: 'Controle não encontrado' }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    const controle_nome = controle.nome;
+    const controle_descricao = controle.descricao || undefined;
+    const proxima_avaliacao = controle.proxima_avaliacao || undefined;
 
     // O aviso dentro do Akuris não depende do provedor de e-mail. Antes, uma
     // chave ausente ou uma rejeição do Resend impedia também esta notificação.

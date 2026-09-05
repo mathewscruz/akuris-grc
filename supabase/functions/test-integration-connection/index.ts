@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validarUrlExterno } from '../_shared/ssrf.ts';
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireUserContext, requireValidMfa, authErrorResponse } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,24 +28,46 @@ serve(async (req) => {
   }
 
   try {
-    // === AUTH ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const ctx = await requireUserContext(req);
+    await requireValidMfa(ctx);
+    if (!['admin', 'super_admin'].includes(ctx.role || '')) {
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const verifier = createClient(supabaseUrl, anonKey);
-    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const { tipo, webhook_url, email, api_token, instance_url, project_key, headers, utilizador, senha, tabela } = await req.json();
+    const declaredLength = Number(req.headers.get('content-length') || 0);
+    if (declaredLength > 32 * 1024) {
+      return new Response(JSON.stringify({ success: false, error: 'Payload muito grande' }), {
+        status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const raw = await req.text();
+    if (new TextEncoder().encode(raw).byteLength > 32 * 1024) {
+      return new Response(JSON.stringify({ success: false, error: 'Payload muito grande' }), {
+        status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Payload inválido');
+
+    const { data: withinLimit, error: rateError } = await ctx.supabase.rpc('consume_security_rate_limit', {
+      p_scope: 'test-integration-connection',
+      p_fingerprint_hash: await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ctx.userId))
+        .then((digest) => Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')),
+      p_max_requests: 20,
+      p_window_seconds: 600,
+    });
+    if (rateError || withinLimit !== true) {
+      return new Response(JSON.stringify({ success: false, error: rateError ? 'Serviço indisponível' : 'Muitas tentativas' }), {
+        status: rateError ? 503 : 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { tipo, webhook_url, email, api_token, instance_url, project_key, headers, utilizador, senha, tabela } = parsed;
+    if (!['slack', 'teams', 'webhook', 'jira', 'servicenow'].includes(tipo)) {
+      throw new Error('Tipo de integração não suportado');
+    }
 
     /*
       SSRF: o que se valida é o URL para onde vamos sair.
@@ -99,6 +121,7 @@ serve(async (req) => {
 
         const slackResponse = await fetch(webhook_url, {
           method: 'POST',
+          redirect: 'error',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(slackPayload)
         });
@@ -131,6 +154,7 @@ serve(async (req) => {
 
         const teamsResponse = await fetch(webhook_url, {
           method: 'POST',
+          redirect: 'error',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(teamsPayload)
         });
@@ -162,6 +186,7 @@ serve(async (req) => {
 
         const webhookResponse = await fetch(webhook_url, {
           method: 'POST',
+          redirect: 'error',
           headers: webhookHeaders,
           body: JSON.stringify(testPayload)
         });
@@ -196,6 +221,7 @@ serve(async (req) => {
 
         const jiraResponse = await fetch(`${instance_url}/rest/api/3/myself`, {
           method: 'GET',
+          redirect: 'error',
           headers: cabecalhos
         });
 
@@ -209,7 +235,7 @@ serve(async (req) => {
 
         const projRes = await fetch(
           `${instance_url}/rest/api/3/project/search?maxResults=100&orderBy=name`,
-          { method: 'GET', headers: cabecalhos }
+          { method: 'GET', redirect: 'error', headers: cabecalhos }
         );
         if (projRes.ok) {
           const corpoProj = await projRes.json();
@@ -237,7 +263,7 @@ serve(async (req) => {
              ecra cai na lista de sempre e a pessoa escolhe a mao. */
           const tiposRes = await fetch(
             `${instance_url}/rest/api/3/issue/createmeta/${project_key}/issuetypes`,
-            { method: 'GET', headers: cabecalhos }
+            { method: 'GET', redirect: 'error', headers: cabecalhos }
           );
           if (tiposRes.ok) {
             const corpoTipos = await tiposRes.json();
@@ -266,6 +292,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    if ((error as any)?.status) return authErrorResponse(error, corsHeaders);
     console.error('Error testing connection:', error);
     
     return new Response(

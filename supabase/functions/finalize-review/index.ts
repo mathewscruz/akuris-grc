@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
       .from('profiles')
       .select('empresa_id')
       .eq('user_id', user.id)
+      .eq('ativo', true)
       .single();
 
     if (profileError || !profile?.empresa_id) {

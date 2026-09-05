@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { MODELOS } from '../_shared/modelos.ts';
+import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +45,7 @@ serve(async (req) => {
       .from('profiles')
       .select('empresa_id')
       .eq('user_id', userId)
+      .eq('ativo', true)
       .single();
     const empresaId: string | null = profile?.empresa_id || null;
     if (!empresaId) {

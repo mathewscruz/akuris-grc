@@ -43,6 +43,12 @@ Deno.serve(async (req) => {
       (um utilizador com sessão). Estava aberta a qualquer pessoa na internet.
     */
     const chamador = await exigeInternaOuUtilizador(req)
+    if (!chamador.interna && !['admin', 'super_admin'].includes(chamador.role ?? '')) {
+      throw new AcessoNegado('Apenas administradores podem processar convites', 403)
+    }
+    if (!chamador.interna && !chamador.mfaValida) {
+      throw new AcessoNegado('Confirmação MFA necessária', 403)
+    }
 
     const { user_id, empresa_id: empresaPedida }: ReminderRequest = await req.json().catch(() => ({}))
 

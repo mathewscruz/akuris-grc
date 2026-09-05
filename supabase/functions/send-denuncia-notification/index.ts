@@ -51,7 +51,7 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
       const callerId = userData.user.id as string;
-      const { data: callerProfile } = await supabaseClient.from('profiles').select('empresa_id').eq('user_id', callerId).single();
+      const { data: callerProfile } = await supabaseClient.from('profiles').select('empresa_id').eq('user_id', callerId).eq('ativo', true).single();
       const body = await req.clone().json();
       if (!callerProfile?.empresa_id || callerProfile.empresa_id !== body.empresa_id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
@@ -75,6 +75,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Nao foi possivel ler a denuncia: ${denunciaError.message}`);
     }
     if (!denuncia) throw new Error('Denúncia não encontrada');
+    if (denuncia.empresa_id !== empresa_id) {
+      return new Response(JSON.stringify({ error: 'Denúncia de outra empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const { data: config } = await supabaseClient.from('denuncias_configuracoes').select('*').eq('empresa_id', empresa_id).single();
     if (!config || !config.notificar_administradores) return new Response(JSON.stringify({ success: true, message: 'Notificações desabilitadas' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -95,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const comiteIds = (membros ?? []).map((m: { user_id: string }) => m.user_id);
     const { data: perfisComite } = comiteIds.length
-      ? await supabaseClient.from('profiles').select('user_id, email, nome').eq('notificar_por_email', true).in('user_id', comiteIds)
+      ? await supabaseClient.from('profiles').select('user_id, email, nome').eq('notificar_por_email', true).eq('ativo', true).in('user_id', comiteIds)
       : { data: [] as { user_id: string; email: string | null; nome: string | null }[] };
 
     const emailList = new Set<string>();

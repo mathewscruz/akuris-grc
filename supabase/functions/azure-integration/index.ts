@@ -260,6 +260,7 @@ serve(async (req) => {
       .from('profiles')
       .select('empresa_id, role')
       .eq('user_id', userData.user.id)
+      .eq('ativo', true)
       .maybeSingle();
 
     if (!profile?.empresa_id) {

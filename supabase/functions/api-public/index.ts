@@ -4,7 +4,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
+
+const MAX_BODY_BYTES = 256 * 1024;
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
 
 // Tabelas permitidas por módulo
 const MODULE_TABLES: Record<string, string> = {
@@ -53,9 +61,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Método não suportado. Use GET ou POST.' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const apiKey = req.headers.get('x-api-key');
-    if (!apiKey) {
+    if (!apiKey || !/^gai_[A-Za-z0-9]{20,128}$/.test(apiKey)) {
       return new Response(
         JSON.stringify({ error: 'Header X-API-Key é obrigatório' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -69,8 +84,8 @@ serve(async (req) => {
     // Validar API Key
     const { data: keyData, error: keyError } = await supabase
       .from('api_keys')
-      .select('id, empresa_id, permissoes, rate_limit_por_minuto, ativo, total_requisicoes, ip_whitelist, expires_at')
-      .eq('api_key', apiKey)
+      .select('id, empresa_id, permissoes, rate_limit_por_minuto, ativo, ip_whitelist, expires_at')
+      .eq('api_key_hash', await sha256Hex(apiKey))
       .single();
 
     if (keyError || !keyData) {
@@ -99,8 +114,8 @@ serve(async (req) => {
     const ipWhitelist = Array.isArray(keyData.ip_whitelist) ? keyData.ip_whitelist : [];
     if (ipWhitelist.length > 0) {
       const forwarded = req.headers.get('x-forwarded-for') || '';
-      const callerIp = (forwarded.split(',')[0] || '').trim() ||
-        req.headers.get('cf-connecting-ip') ||
+      const callerIp = req.headers.get('cf-connecting-ip') ||
+        (forwarded.split(',')[0] || '').trim() ||
         req.headers.get('x-real-ip') || '';
       const allowed = ipWhitelist.some((entry: string) => {
         const e = String(entry || '').trim();
@@ -114,15 +129,22 @@ serve(async (req) => {
       }
     }
 
-    // Rate limiting simples (baseado em janela de 1 minuto)
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-    const { count: recentRequests } = await supabase
-      .from('api_request_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('api_key_id', keyData.id)
-      .gte('created_at', oneMinuteAgo);
-
-    if ((recentRequests || 0) >= (keyData.rate_limit_por_minuto || 60)) {
+    // Janela atómica no banco: pedidos paralelos não conseguem ultrapassar o
+    // limite fazendo todos o COUNT antes de qualquer um gravar o log.
+    const { data: withinLimit, error: limitError } = await supabase.rpc('consume_security_rate_limit', {
+      p_scope: 'api-public',
+      p_fingerprint_hash: await sha256Hex(keyData.id),
+      p_max_requests: Math.max(1, Math.min(Number(keyData.rate_limit_por_minuto) || 60, 300)),
+      p_window_seconds: 60,
+    });
+    if (limitError) {
+      console.error('API Public rate limiter unavailable:', limitError);
+      return new Response(JSON.stringify({ error: 'Serviço temporariamente indisponível.' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (withinLimit !== true) {
       return new Response(
         JSON.stringify({ error: 'Rate limit excedido. Tente novamente em instantes.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -137,7 +159,28 @@ serve(async (req) => {
 
     let requestBody: any = {};
     if (req.method !== 'GET') {
-      try { requestBody = await req.json(); } catch { requestBody = {}; }
+      const declaredLength = Number(req.headers.get('content-length') || 0);
+      if (declaredLength > MAX_BODY_BYTES) {
+        return new Response(JSON.stringify({ error: 'Payload excede 256 KB.' }), {
+          status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+        return new Response(JSON.stringify({ error: 'Payload excede 256 KB.' }), {
+          status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      try { requestBody = JSON.parse(rawBody); } catch {
+        return new Response(JSON.stringify({ error: 'JSON inválido.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
+        return new Response(JSON.stringify({ error: 'O payload deve ser um objeto JSON.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Se não veio no path, tentar do body
@@ -195,8 +238,10 @@ serve(async (req) => {
 
     if (req.method === 'GET') {
       // Listar registros do módulo (com paginação)
-      const page = parseInt(url.searchParams.get('page') || '1');
-      const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+      const rawPage = Number.parseInt(url.searchParams.get('page') || '1', 10);
+      const rawLimit = Number.parseInt(url.searchParams.get('limit') || '50', 10);
+      const page = Number.isFinite(rawPage) ? Math.max(1, rawPage) : 1;
+      const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(rawLimit, 100)) : 50;
       const offset = (page - 1) * limit;
 
       const fields = SAFE_FIELDS[targetModule] || '*';
@@ -248,7 +293,7 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from(table)
         .insert(safeInsert)
-        .select()
+        .select(SAFE_FIELDS[targetModule])
         .single();
 
       if (error) throw error;
@@ -293,13 +338,7 @@ async function logRequest(supabase: any, keyData: any, req: Request, statusCode:
       user_agent: req.headers.get('user-agent'),
     });
 
-    await supabase
-      .from('api_keys')
-      .update({
-        ultimo_uso: new Date().toISOString(),
-        total_requisicoes: (keyData.total_requisicoes || 0) + 1,
-      })
-      .eq('id', keyData.id);
+    await supabase.rpc('touch_api_key_usage', { p_key_id: keyData.id });
   } catch (e) {
     console.error('Error logging request:', e);
   }

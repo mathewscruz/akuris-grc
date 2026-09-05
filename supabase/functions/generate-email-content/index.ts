@@ -4,6 +4,12 @@ import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 import { MODELOS } from "../_shared/modelos.ts";
 import { authCorsHeaders } from "../_shared/cors.ts";
 import { sanitizeEmailHtml } from "../_shared/email.ts";
+import {
+  authErrorResponse,
+  AuthError,
+  requireUserContext,
+  requireValidMfa,
+} from "../_shared/auth.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -26,18 +32,6 @@ REGRAS OBRIGATÓRIAS:
 - Tamanho: entre 250 e 500 palavras.
 
 RETORNE APENAS O HTML, SEM MARKDOWN, SEM EXPLICAÇÕES.`;
-
-async function isSuperAdmin(token: string): Promise<{ ok: boolean; userId?: string }> {
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const { data: { user } } = await supabase.auth.getUser(token);
-  if (!user) return { ok: false };
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  return { ok: data?.role === "super_admin", userId: user.id };
-}
 
 async function generateText(prompt: string): Promise<string> {
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -103,31 +97,44 @@ serve(async (req) => {
   const corsHeaders = authCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const token = authHeader.replace("Bearer ", "");
-    const auth = await isSuperAdmin(token);
-    if (!auth.ok) return new Response(JSON.stringify({ error: "Apenas super admins" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (req.method !== "POST") throw new AuthError("Método não permitido", 405);
+    const contentLength = Number(req.headers.get("content-length") || "0");
+    if (contentLength > 16_384) throw new AuthError("Corpo da requisição muito grande", 413);
+
+    const ctx = await requireUserContext(req);
+    await requireValidMfa(ctx);
+    if (ctx.role !== "super_admin") throw new AuthError("Acesso negado", 403);
+
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ctx.userId));
+    const fingerprint = Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const { data: allowed, error: limitError } = await ctx.supabase.rpc("consume_security_rate_limit", {
+      p_scope: "generate-email-content:user",
+      p_fingerprint_hash: fingerprint,
+      p_max_requests: 12,
+      p_window_seconds: 600,
+    });
+    if (limitError) throw new Error("rate_limit_unavailable");
+    if (!allowed) throw new AuthError("Muitas solicitações. Aguarde alguns minutos.", 429);
 
     const body = await req.json().catch(() => ({}));
     const prompt = String(body.prompt || "").trim();
     const includeImage = Boolean(body.includeImage);
     const includeSubject = Boolean(body.includeSubject);
     const empresaId: string | null = body.empresa_id || null;
-    if (!prompt || prompt.length < 5) {
+    if (!prompt || prompt.length < 5 || prompt.length > 4_000) {
       return new Response(JSON.stringify({ error: "Descreva melhor o conteúdo do e-mail" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Consome 1 crédito de IA (somente quando há empresa associada — chamadas internas do super-admin sem empresa pulam o débito)
-    if (empresaId && auth.userId) {
-      const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+    if (empresaId) {
+      const supabase = ctx.supabase;
       // Sem franquia, nem se chama o modelo: a chamada custa no instante
       // em que sai. Ver `_shared/creditos.ts`.
       if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
       const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresaId,
-        p_user_id: auth.userId,
+        p_user_id: ctx.userId,
         p_funcionalidade: 'generate_email_content',
         p_descricao: 'Geração de conteúdo de campanha por IA',
       });
@@ -170,9 +177,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({ html, imageUrl, subject }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e: any) {
-    const status = e?.httpStatus || 500;
-    const msg = e?.message || (e instanceof Error ? e.message : String(e));
+  } catch (e: unknown) {
+    if (e instanceof AuthError) return authErrorResponse(e, corsHeaders);
+    const typed = e as { httpStatus?: number; message?: string };
+    const status = typed?.httpStatus || 500;
+    const msg = typed?.message || (e instanceof Error ? e.message : String(e));
     console.error("generate-email-content error:", msg);
     return new Response(JSON.stringify({ error: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }

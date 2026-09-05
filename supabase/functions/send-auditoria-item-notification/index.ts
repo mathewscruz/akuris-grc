@@ -40,7 +40,7 @@ serve(async (req) => {
     }
     const callerId = userData.user.id;
     const { data: callerProfile } = await supabase
-      .from('profiles').select('empresa_id').eq('user_id', callerId).maybeSingle();
+      .from('profiles').select('empresa_id').eq('user_id', callerId).eq('ativo', true).maybeSingle();
     const callerEmpresaId = callerProfile?.empresa_id;
     if (!callerEmpresaId) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
@@ -90,6 +90,7 @@ serve(async (req) => {
       .from("profiles")
       .select("nome, email, empresa_id, notificar_por_email, notificar_na_aplicacao")
       .eq("user_id", responsavel_id)
+      .eq('ativo', true)
       .single();
     if (responsavelError || !responsavel) throw new Error("Responsável não encontrado");
 

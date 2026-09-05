@@ -72,23 +72,26 @@ export default function SolicitacaoPrivacidadePublica() {
     }
     setEnviando(true);
     try {
-      const { data, error } = await (supabase as any).rpc(
-        "criar_solicitacao_privacidade_publica",
+      const { data, error } = await supabase.functions.invoke(
+        "privacy-public",
         {
-          p_slug: slug,
-          p_tipo: tipo,
-          p_dados_titular: {
+          body: {
+            action: "create",
+            slug,
+            tipo,
+            dadosTitular: {
             nome: nome.trim(),
             email: email.trim().toLowerCase(),
             telefone: telefone.trim() || undefined,
             documento: documento.trim() || undefined,
           },
-          p_dados_solicitados: detalhes.trim(),
-          p_justificativa: justificativa.trim() || null,
+            dadosSolicitados: detalhes.trim(),
+            justificativa: justificativa.trim() || null,
+          },
         },
       );
       if (error) throw error;
-      setProtocolo(String(data));
+      setProtocolo(String(data?.protocolo || ""));
     } catch (cause: any) {
       setErro(cause?.message || t("privacidadePrograma.publico.erro"));
     } finally {
@@ -110,16 +113,19 @@ export default function SolicitacaoPrivacidadePublica() {
     }
     setConsultando(true);
     try {
-      const { data, error } = await (supabase as any).rpc(
-        "consultar_solicitacao_privacidade_publica",
+      const { data, error } = await supabase.functions.invoke(
+        "privacy-public",
         {
-          p_slug: slug,
-          p_protocolo: consultaProtocolo.trim(),
-          p_email: consultaEmail.trim().toLowerCase(),
+          body: {
+            action: "consult",
+            slug,
+            protocolo: consultaProtocolo.trim(),
+            email: consultaEmail.trim().toLowerCase(),
+          },
         },
       );
       if (error) throw error;
-      const resultado = data?.[0] || null;
+      const resultado = data?.solicitacao || null;
       if (!resultado) {
         setErroConsulta(t("privacidadePrograma.publico.naoEncontrada"));
         return;

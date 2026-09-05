@@ -9,7 +9,9 @@ const saveSchema = z.object({
   action: z.literal('save'),
   token: tokenSchema,
   questionId: uuidSchema,
-  field: z.enum(['resposta', 'pontuacao', 'evidencia', 'justificativa', 'arquivo_url']),
+  // Caminho de arquivo só nasce no fluxo multipart, depois de validar conteúdo,
+  // tamanho, pergunta e assessment. JSON nunca escolhe um objeto do bucket.
+  field: z.enum(['resposta', 'pontuacao', 'evidencia', 'justificativa']),
   value: z.union([z.string().max(20_000), z.number().finite()]).nullable(),
 });
 const requestSchema = z.discriminatedUnion('action', [
@@ -28,6 +30,51 @@ const respond = (body: unknown, status = 200) =>
 const sanitizeFileName = (name: string) =>
   name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-180);
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function consumeRateLimit(
+  // O cliente não carrega os tipos gerados do banco dentro do runtime Edge.
+  // Mantê-lo estrutural aqui evita que versões distintas do SDK infiram
+  // `never` para todas as tabelas, sem afrouxar a validação dos pedidos.
+  admin: any,
+  token: string,
+  req: Request,
+  maxRequests: number,
+  windowSeconds: number,
+) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const { data, error } = await admin.rpc('consume_security_rate_limit', {
+    p_scope: 'public-assessment',
+    p_fingerprint_hash: await sha256Hex(`${token}:${ip}`),
+    p_max_requests: maxRequests,
+    p_window_seconds: windowSeconds,
+  });
+  return !error && data === true;
+}
+
+function matchesFileSignature(bytes: Uint8Array, mime: string): boolean {
+  const startsWith = (...signature: number[]) => signature.every((byte, index) => bytes[index] === byte);
+  if (mime === 'application/pdf') return startsWith(0x25, 0x50, 0x44, 0x46);
+  if (mime === 'image/png') return startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+  if (mime === 'image/jpeg') return startsWith(0xff, 0xd8, 0xff);
+  if (mime === 'application/msword' || mime === 'application/vnd.ms-excel') {
+    return startsWith(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1);
+  }
+  if (
+    mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    || mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ) {
+    return startsWith(0x50, 0x4b, 0x03, 0x04);
+  }
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return respond({ error: 'Método não permitido', code: 'METHOD_NOT_ALLOWED' }, 405);
@@ -41,6 +88,10 @@ Deno.serve(async (req) => {
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('multipart/form-data')) {
+      const declaredLength = Number(req.headers.get('content-length') || 0);
+      if (declaredLength > 11 * 1024 * 1024) {
+        return respond({ error: 'O arquivo deve ter no máximo 10 MB', code: 'INVALID_FILE_SIZE' }, 413);
+      }
       const form = await req.formData();
       const tokenResult = tokenSchema.safeParse(form.get('token'));
       const questionResult = uuidSchema.safeParse(form.get('questionId'));
@@ -57,6 +108,9 @@ Deno.serve(async (req) => {
         'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ]);
       if (!allowedTypes.has(file.type)) return respond({ error: 'Tipo de arquivo não permitido', code: 'INVALID_FILE_TYPE' }, 400);
+      if (!await consumeRateLimit(admin, tokenResult.data, req, 20, 3600)) {
+        return respond({ error: 'Muitos uploads. Tente novamente mais tarde.', code: 'RATE_LIMITED' }, 429);
+      }
 
       const assessment = await getAssessment(admin, tokenResult.data);
       if ('error' in assessment) return respond(assessment.error, assessment.status);
@@ -68,6 +122,9 @@ Deno.serve(async (req) => {
 
       const path = `${assessment.data.id}/${question.id}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
       const bytes = new Uint8Array(await file.arrayBuffer());
+      if (!matchesFileSignature(bytes, file.type)) {
+        return respond({ error: 'O conteúdo não corresponde ao tipo de arquivo', code: 'INVALID_FILE_TYPE' }, 400);
+      }
       const { error: uploadError } = await admin.storage.from('due-diligence-evidencias')
         .upload(path, bytes, { contentType: file.type, upsert: false });
       if (uploadError) throw uploadError;
@@ -88,9 +145,24 @@ Deno.serve(async (req) => {
       return respond({ path, fileName: file.name, signedUrl: signed?.signedUrl || null });
     }
 
-    const parsed = requestSchema.safeParse(await req.json());
+    const declaredLength = Number(req.headers.get('content-length') || 0);
+    if (declaredLength > 512 * 1024) return respond({ error: 'Requisição muito grande', code: 'PAYLOAD_TOO_LARGE' }, 413);
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 512 * 1024) {
+      return respond({ error: 'Requisição muito grande', code: 'PAYLOAD_TOO_LARGE' }, 413);
+    }
+    let jsonBody: unknown;
+    try {
+      jsonBody = JSON.parse(rawBody);
+    } catch {
+      return respond({ error: 'Requisição inválida', code: 'INVALID_REQUEST' }, 400);
+    }
+    const parsed = requestSchema.safeParse(jsonBody);
     if (!parsed.success) return respond({ error: 'Requisição inválida', code: 'INVALID_REQUEST' }, 400);
     const input = parsed.data;
+    if (!await consumeRateLimit(admin, input.token, req, 240, 60)) {
+      return respond({ error: 'Muitas requisições. Aguarde um instante.', code: 'RATE_LIMITED' }, 429);
+    }
     const assessment = await getAssessment(admin, input.token);
     if ('error' in assessment) return respond(assessment.error, assessment.status);
 
@@ -114,6 +186,9 @@ Deno.serve(async (req) => {
       const enrichedResponses = await Promise.all((responses || []).map(async (response) => {
         if (!response.arquivo_url) return { ...response, arquivo_signed_url: null };
         const storagePath = normalizeStoragePath(response.arquivo_url);
+        if (!storagePath.startsWith(`${current.id}/`)) {
+          return { ...response, arquivo_url: null, arquivo_signed_url: null };
+        }
         const { data: signed } = await admin.storage.from('due-diligence-evidencias').createSignedUrl(storagePath, 3600);
         return { ...response, arquivo_url: storagePath, arquivo_signed_url: signed?.signedUrl || null };
       }));
@@ -160,7 +235,11 @@ Deno.serve(async (req) => {
     for (const [key, value] of Object.entries(input.responses)) {
       const match = key.match(/^([0-9a-f-]{36})(?:_(evidencia|justificativa|arquivo))?$/i);
       if (!match || !questionMap.has(match[1])) continue;
-      const field = match[2] === 'evidencia' ? 'evidencia' : match[2] === 'justificativa' ? 'justificativa' : match[2] === 'arquivo' ? 'arquivo_url' : questionMap.get(match[1])?.tipo === 'numerico' ? 'pontuacao' : 'resposta';
+      // `_arquivo` é apenas estado de UI. O caminho já foi persistido pelo
+      // upload autenticado acima; aceitar o valor do JSON permitiria apontar
+      // para o arquivo de outro assessment.
+      if (match[2] === 'arquivo') continue;
+      const field = match[2] === 'evidencia' ? 'evidencia' : match[2] === 'justificativa' ? 'justificativa' : questionMap.get(match[1])?.tipo === 'numerico' ? 'pontuacao' : 'resposta';
       grouped.set(match[1], { ...(grouped.get(match[1]) || {}), [field]: value });
     }
     const missing = (questions || []).filter((q) => q.obrigatoria && !isAnswered(grouped.get(q.id), q.tipo));
@@ -212,7 +291,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function getAssessment(admin: ReturnType<typeof createClient>, token: string) {
+async function getAssessment(admin: any, token: string) {
   const { data, error } = await admin.from('due_diligence_assessments')
     .select('id,empresa_id,template_id,fornecedor_nome,status,data_envio,data_inicio,data_conclusao,data_expiracao')
     .eq('link_token', token).maybeSingle();

@@ -1,4 +1,9 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import {
+  authErrorResponse,
+  AuthError,
+  requireUserContext,
+  requireValidMfa,
+} from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,35 +13,29 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Método não permitido' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    })
+  }
+
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const contentLength = Number(req.headers.get('content-length') || '0')
+    if (contentLength > 4096) throw new AuthError('Corpo da requisição muito grande', 413)
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } }
-    )
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) throw new Error('Não autenticado')
-
-    const { data: caller } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (caller?.role !== 'super_admin') {
-      return new Response(JSON.stringify({ error: 'Apenas super_admin pode excluir empresas' }), {
-        status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
+    const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
+    if (ctx.role !== 'super_admin') throw new AuthError('Acesso negado', 403)
+    const supabaseAdmin = ctx.supabase
 
     const { empresa_id, confirm_name } = await req.json()
-    if (!empresa_id) throw new Error('empresa_id obrigatório')
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(empresa_id || ''))) {
+      throw new AuthError('Empresa inválida', 400)
+    }
+    if (typeof confirm_name !== 'string' || !confirm_name.trim() || confirm_name.length > 200) {
+      throw new AuthError('Digite o nome da empresa para confirmar', 400)
+    }
 
     const { data: empresa, error: empresaErr } = await supabaseAdmin
       .from('empresas')
@@ -46,7 +45,7 @@ Deno.serve(async (req) => {
 
     if (empresaErr || !empresa) throw new Error('Empresa não encontrada')
 
-    if (confirm_name && confirm_name.trim() !== empresa.nome.trim()) {
+    if (confirm_name.trim() !== empresa.nome.trim()) {
       return new Response(JSON.stringify({ error: 'Nome de confirmação não confere' }), {
         status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
@@ -79,7 +78,7 @@ Deno.serve(async (req) => {
     if (delErr) {
       return new Response(JSON.stringify({
         error: 'DELETE_FAILED',
-        message: `Não foi possível excluir: ${delErr.message}. Verifique se há dados vinculados.`,
+        message: 'Não foi possível excluir a empresa porque ainda há dados vinculados.',
       }), { status: 409, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
     }
 
@@ -87,8 +86,8 @@ Deno.serve(async (req) => {
     let deletedUsers = 0
     for (const uid of userIds) {
       try {
-        await supabaseAdmin.auth.admin.deleteUser(uid)
-        deletedUsers++
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(uid)
+        if (!error) deletedUsers++
       } catch (e) {
         console.warn('Falha ao deletar auth user', uid, e)
       }
@@ -99,10 +98,12 @@ Deno.serve(async (req) => {
       empresa_id,
       deleted_users: deletedUsers,
     }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[delete-empresa-safe]', error)
-    return new Response(JSON.stringify({ error: error.message || 'Erro interno' }), {
-      status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    if (error instanceof AuthError) return authErrorResponse(error, corsHeaders)
+    return new Response(JSON.stringify({ error: 'Não foi possível concluir a exclusão.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

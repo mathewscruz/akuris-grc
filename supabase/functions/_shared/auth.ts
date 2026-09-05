@@ -49,12 +49,15 @@ export async function requireUserContext(req: Request): Promise<AuthContext> {
 
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
-    .select("empresa_id, role")
+    .select("empresa_id, role, ativo")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (profileErr) {
     throw new AuthError("Failed to load user profile", 500);
+  }
+  if (!profile?.ativo) {
+    throw new AuthError("Account disabled", 403);
   }
 
   return {

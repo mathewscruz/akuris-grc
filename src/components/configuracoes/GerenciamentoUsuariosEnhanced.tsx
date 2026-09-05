@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { IconAdd, IconEdit, IconDelete, IconMore, IconTime, IconUserCheck, IconPerson, IconShield, IconMail, IconUsers, IconShieldCheck, IconKey, IconCopy } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconMore, IconTime, IconUserCheck, IconPerson, IconShield, IconMail, IconUsers, IconShieldCheck, IconKey } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -75,7 +75,6 @@ interface Usuario {
   created_at: string;
   permission_profile_id?: string;
   invitation_sent_at?: string | null;
-  invitation_link?: string | null;
   empresas?: {
     nome: string;
   };
@@ -182,7 +181,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         created_at: usuario.created_at,
         permission_profile_id: usuario.permission_profile_id,
         invitation_sent_at: usuario.invitation_sent_at ?? null,
-        invitation_link: null,
         empresas: usuario.empresas,
         permission_profiles: usuario.permission_profiles,
       }));
@@ -536,13 +534,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
       if (error) throw error;
 
-      const link = (data as any)?.setupPasswordUrl;
-      if (link) {
-        try { await navigator.clipboard.writeText(link); } catch { /* A área de transferência pode estar bloqueada pelo navegador. */ }
-        toast.success(t('admin.usuarios.toastInviteResent', { nome: usuario.nome }));
-      } else {
-        toast.success(t('admin.usuarios.toastInviteResentSimple', { nome: usuario.nome }));
-      }
+      toast.success(t('admin.usuarios.toastInviteResentSimple', { nome: usuario.nome }));
 
       const userIds = usuarios.map(u => u.user_id);
       await fetchUsersAccessInfo(userIds);
@@ -845,27 +837,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   <IconMail className="h-4 w-4 mr-2" />
                 )}
                 {t('admin.usuarios.actionReenviarConvite')}
-              </DropdownMenuItem>
-            )}
-            {shouldShowResendButton(usuario) && (
-              <DropdownMenuItem
-                onClick={async () => {
-                  try {
-                    const { data: link, error } = await supabase
-                      .rpc('get_user_invitation_link', { _user_id: usuario.user_id });
-                    if (error || !link) {
-                      toast.error(t('admin.usuarios.toastInviteLinkUnavailable'));
-                      return;
-                    }
-                    await navigator.clipboard.writeText(link as string);
-                    toast.success(t('admin.usuarios.toastInviteLinkCopied'));
-                  } catch {
-                    toast.error(t('admin.usuarios.toastErrorCopyLink'));
-                  }
-                }}
-              >
-                <IconCopy className="h-4 w-4 mr-2" />
-                {t('admin.usuarios.actionCopiarLinkConvite')}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

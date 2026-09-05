@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  authErrorResponse,
+  AuthError,
+  requireUserContext,
+  requireValidMfa,
+} from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,42 +17,15 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (req.method !== 'POST') throw new AuthError('Método não permitido', 405)
+    const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
+    if (!['admin', 'super_admin'].includes(ctx.role || '')) {
+      throw new AuthError('Acesso de administrador necessário', 403)
     }
-    const token = authHeader.replace('Bearer ', '')
+    const supabase = ctx.supabase
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, empresa_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileError || !profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return new Response(
-        JSON.stringify({ error: 'Forbidden: Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const isSuperAdmin = profile.role === 'super_admin'
+    const isSuperAdmin = ctx.role === 'super_admin'
 
     // Regular company admins can only reset permissions for users of their own empresa.
     // Only super_admins may operate across every tenant.
@@ -57,13 +35,13 @@ serve(async (req) => {
       .eq('ativo', true)
 
     if (!isSuperAdmin) {
-      if (!profile.empresa_id) {
+      if (!ctx.empresaId) {
         return new Response(
           JSON.stringify({ error: 'Admin sem empresa associada' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      usersQuery = usersQuery.eq('empresa_id', profile.empresa_id)
+      usersQuery = usersQuery.eq('empresa_id', ctx.empresaId)
     }
 
     const { data: users, error: usersError } = await usersQuery
@@ -120,8 +98,9 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in apply-default-permissions-all-users:', error)
+    if (error instanceof AuthError) return authErrorResponse(error, corsHeaders)
     return new Response(
       JSON.stringify({ error: 'Erro interno. Por favor, tente novamente.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { IconAdd, IconDelete, IconView, IconKey, IconCopy, IconHide, IconUndo } from '@/components/icons';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconAdd, IconDelete, IconKey, IconCopy } from '@/components/icons';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,23 +53,6 @@ const PERMISSOES_DISPONIVEIS: { value: string; labelKey: string }[] = [
  */
 const API_BASE = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://lnlkahtugwmkznasapfd.supabase.co'}/functions/v1`;
 
-const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-/**
- * `Math.random` não é criptográfico: o estado do gerador é recuperável a partir
- * de saídas observadas, e estas chaves dão acesso de leitura e escrita a riscos,
- * incidentes e documentos. Entropia tem de vir do `crypto` do navegador.
- */
-function generateApiKey(): { key: string; prefix: string } {
-  const bytes = new Uint8Array(40);
-  crypto.getRandomValues(bytes);
-  let key = 'gai_';
-  for (const b of bytes) {
-    key += ALFABETO.charAt(b % ALFABETO.length);
-  }
-  return { key, prefix: key.substring(0, 12) };
-}
-
 export function ApiKeysManager() {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
@@ -77,7 +60,6 @@ export function ApiKeysManager() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [revealedKeys, setRevealedKeys] = useState<Map<string, string>>(new Map());
   const [newKeyRevealed, setNewKeyRevealed] = useState<string | null>(null);
 
   // Form state
@@ -93,10 +75,8 @@ export function ApiKeysManager() {
   const fetchKeys = async () => {
     if (!empresaId) return;
     try {
-      // A chave em claro NÃO desce na listagem: quem quiser vê-la pede-a
-      // explicitamente pelo RPC `get_api_key_full`. Com `select('*')` a chave
-      // de todas as integrações da empresa ficava na memória do navegador só
-      // por abrir a aba.
+      // O segredo nunca desce na listagem. O servidor só o devolve uma vez,
+      // no instante da criação; no banco permanece apenas o SHA-256.
       const { data, error } = await supabase
         .from('api_keys')
         .select('id, nome, prefixo, permissoes, rate_limit_por_minuto, ativo, ultimo_uso, total_requisicoes, created_at, expires_at')
@@ -115,20 +95,16 @@ export function ApiKeysManager() {
     if (!empresaId || !nome.trim()) return;
     setSaving(true);
     try {
-      const { key, prefix } = generateApiKey();
-      const { data: userData } = await supabase.auth.getUser();
-
-      const { error } = await supabase.from('api_keys').insert({
-        empresa_id: empresaId,
-        nome: nome.trim(),
-        api_key: key,
-        prefixo: prefix,
-        permissoes,
-        rate_limit_por_minuto: parseInt(rateLimit) || 60,
-        created_by: userData.user?.id,
+      const { data, error } = await supabase.rpc('create_api_key_secure', {
+        p_nome: nome.trim(),
+        p_permissoes: permissoes,
+        p_rate_limit: parseInt(rateLimit, 10) || 60,
       });
 
       if (error) throw error;
+      const created = Array.isArray(data) ? data[0] : data;
+      const key = created?.api_key;
+      if (!key) throw new Error('A chave não foi devolvida pelo servidor.');
 
       setNewKeyRevealed(key);
       toast.success(t('configPlanos.apiKeys.toastCreatedTitle'), { description: t('configPlanos.apiKeys.toastCreatedDesc') });
@@ -181,8 +157,6 @@ export function ApiKeysManager() {
     setPermissoes(prev => prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]);
   };
 
-  const maskKey = (key: string) => key.substring(0, 12) + '••••••••••••••••••••';
-
   return (
     <div className="space-y-6">
       {/* New key revealed banner */}
@@ -220,7 +194,7 @@ curl -H "X-API-Key: gai_sua_chave_aqui" \\
 # Criar incidente
 curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
   -H "Content-Type: application/json" \\
-  -d '{"titulo":"Teste","tipo":"seguranca","gravidade":"medio"}' \\
+  -d '{"titulo":"Teste","tipo_incidente":"seguranca","criticidade":"media"}' \\
   "${API_BASE}/api-public/incidentes"`}</div>
             <p>{t('configPlanos.apiKeys.docModulos').split('{modulos}')[0]}<code className="bg-muted px-1 rounded">riscos</code>, <code className="bg-muted px-1 rounded">controles</code>, <code className="bg-muted px-1 rounded">incidentes</code>, <code className="bg-muted px-1 rounded">auditorias</code>, <code className="bg-muted px-1 rounded">documentos</code>, <code className="bg-muted px-1 rounded">ativos</code></p>
             <p>{t('configPlanos.apiKeys.docPaginacao').split('{exemplo}')[0]}<code className="bg-muted px-1 rounded">?page=1&limit=50</code>{t('configPlanos.apiKeys.docPaginacao').split('{exemplo}')[1]}</p>
@@ -266,38 +240,9 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                 <TableRow key={key.id}>
                   <TableCell className="font-medium">{key.nome}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                        {revealedKeys.get(key.id) ? revealedKeys.get(key.id) : `${key.prefixo}••••••••••••••••••••`}
-                      </code>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={revealedKeys.has(key.id) ? t('common.close') : t('common.view')} title={revealedKeys.has(key.id) ? t('common.close') : t('common.view')} onClick={async () => {
-                        if (revealedKeys.has(key.id)) {
-                          setRevealedKeys(prev => {
-                            const next = new Map(prev);
-                            next.delete(key.id);
-                            return next;
-                          });
-                          return;
-                        }
-                        const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });
-                        if (error || !data) {
-                          toast.error(t('configPlanos.apiKeys.revealError'));
-                          return;
-                        }
-                        setRevealedKeys(prev => new Map(prev).set(key.id, data as string));
-                      }}>
-                        {revealedKeys.has(key.id) ? <IconHide className="h-3 w-3" /> : <IconView className="h-3 w-3" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={t('common.copy')} title={t('common.copy')} onClick={async () => {
-                        const cached = revealedKeys.get(key.id);
-                        if (cached) { copyKey(cached); return; }
-                        const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });
-                        if (error || !data) { toast.error(t('configPlanos.apiKeys.copyError')); return; }
-                        copyKey(data as string);
-                      }}>
-                        <IconCopy className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded" title="O segredo só é exibido na criação">
+                      {`${key.prefixo}••••••••••••••••••••`}
+                    </code>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">

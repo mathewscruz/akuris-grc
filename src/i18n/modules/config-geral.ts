@@ -196,6 +196,9 @@ export const configGeral = {
           "Qualquer sistema que envie dados para este webhook deixará de funcionar.",
         toastCreated: "Webhook criado",
         toastCreatedDescription: "Use a URL gerada para enviar eventos.",
+        secureUrlTitle: "URL segura do webhook",
+        secureUrlDescription:
+          "Copie esta URL agora. Por segurança, o token não poderá ser exibido novamente.",
         toastCreateError: "Erro ao criar webhook",
         toastActivated: "Webhook ativado",
         toastDeactivated: "Webhook desativado",
@@ -451,6 +454,9 @@ export const configGeral = {
           "Any system sending data to this webhook will stop working.",
         toastCreated: "Webhook created",
         toastCreatedDescription: "Use the generated URL to send events.",
+        secureUrlTitle: "Secure webhook URL",
+        secureUrlDescription:
+          "Copy this URL now. For security, the token cannot be displayed again.",
         toastCreateError: "Error creating webhook",
         toastActivated: "Webhook activated",
         toastDeactivated: "Webhook deactivated",

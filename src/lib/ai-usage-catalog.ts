@@ -206,9 +206,8 @@ export const AI_FEATURES: AiFeature[] = [
     edgeFunction: 'avaliar-fornecedor-ia',
   },
   {
-    /* Função que vive SÓ em produção, sem código no repositório — já tem
-       consumo registado. Fica aqui para o custo dela ser contado; o
-       modelo é o que a passagem usa por omissão. */
+    /* Endpoint retirado, mantido no catálogo para valorar corretamente o
+       consumo histórico que já foi registado. */
     key: 'dashboard_ai_summary',
     labelPt: 'Resumo do painel (IA)',
     labelEn: 'Dashboard summary (AI)',

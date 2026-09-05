@@ -2,21 +2,18 @@ import React from 'npm:react@18.3.1'
 import { Resend } from 'npm:resend@4.0.0'
 import { htmlToText } from '../_shared/email.ts'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { WelcomeEmail } from './_templates/welcome-email.tsx'
+import { authCorsHeaders } from '../_shared/cors.ts'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 // Domínios permitidos para setupPasswordUrl (previne phishing em cima do domínio Akuris).
 // Adicione novos ambientes aqui se surgirem.
 const ALLOWED_URL_HOSTS = new Set<string>([
   'akuris.com.br',
   'www.akuris.com.br',
+  'akuris.pt',
+  'www.akuris.pt',
   'akuris-grc.lovable.app',
   'localhost',
 ])
@@ -40,6 +37,7 @@ interface WelcomeEmailRequest {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = authCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -52,35 +50,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ============ AUTH: caller precisa ser service-role interno OU usuário autenticado admin ============
-    // Bloqueia disparo anônimo de e-mails pelo domínio Akuris (phishing/spam).
+    // Esta função é um transportador interno. Autorização de admin, inquilino,
+    // MFA e destinatário ocorre nas funções de negócio que a invocam.
+    // Aceitar payload arbitrário de um admin faria do domínio Akuris um relay
+    // de phishing contra qualquer endereço da internet.
     const authHeader = req.headers.get('Authorization') || ''
     const token = authHeader.replace('Bearer ', '').trim()
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
-
-    let authorized = false
-    // 1) Chamada de outra edge function (create-user, check-trial-expiration, resend-welcome-email) usa service-role.
-    if (token && token === SERVICE_ROLE) {
-      authorized = true
-    } else if (token) {
-      // 2) Chamada do frontend por um admin/super_admin autenticado.
-      try {
-        const verifier = createClient(SUPABASE_URL, ANON_KEY || SERVICE_ROLE)
-        const { data: userData } = await verifier.auth.getUser(token)
-        if (userData?.user) {
-          const admin = createClient(SUPABASE_URL, SERVICE_ROLE)
-          const { data: prof } = await admin
-            .from('profiles').select('role').eq('user_id', userData.user.id).maybeSingle()
-          if (prof?.role === 'admin' || prof?.role === 'super_admin') authorized = true
-        }
-      } catch (e) {
-        console.error('welcome-email auth check failed', e)
-      }
-    }
-
-    if (!authorized) {
+    if (!token || token !== SERVICE_ROLE) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -91,6 +68,13 @@ Deno.serve(async (req) => {
 
     if (!userEmail || !userName || !setupPasswordUrl) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    if (userEmail.length > 254 || userName.length > 160 || (companyName?.length ?? 0) > 160) {
+      return new Response(JSON.stringify({ error: 'Invalid field length' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })

@@ -17,9 +17,11 @@ interface CreateUserRequest {
 
 function generateRandomPassword(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
+  const bytes = new Uint8Array(24)
+  crypto.getRandomValues(bytes)
   let result = ''
-  for (let i = 0; i < 24; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  for (const byte of bytes) {
+    result += chars.charAt(byte % chars.length)
   }
   return result
 }
@@ -51,6 +53,8 @@ Deno.serve(async (req) => {
     const user = { id: ctx.userId }
     const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
 
+    const declaredLength = Number(req.headers.get('content-length') || 0)
+    if (declaredLength > 32 * 1024) throw new Error('Requisição muito grande')
     const { nome, email: emailBruto, role, empresa_id, permission_profile_id }: CreateUserRequest = await req.json()
 
     // O endereço é normalizado uma única vez, à entrada, e é esta forma que
@@ -58,6 +62,9 @@ Deno.serve(async (req) => {
     // tal como foi digitado deixava perfis com maiúsculas que a recuperação de
     // senha — que procura em minúsculas — nunca encontrava.
     const email = (emailBruto ?? '').trim().toLowerCase()
+    if (!email || email.length > 254 || nome.trim().length > 160) {
+      throw new Error('Nome ou e-mail inválido')
+    }
 
     // Validação de enum (item Onda 2 #13 antecipado)
     const allowedRoles = ['super_admin', 'admin', 'user', 'readonly']
@@ -76,7 +83,7 @@ Deno.serve(async (req) => {
       throw new Error('Apenas super admins podem criar outros super admins')
     }
 
-    let finalEmpresaId = empresa_id
+    let finalEmpresaId: string | null | undefined = empresa_id
     if (!isSuperAdmin) {
       finalEmpresaId = currentUserProfile.empresa_id
     } else if (role !== 'super_admin' && !empresa_id) {
@@ -142,19 +149,7 @@ Deno.serve(async (req) => {
     if (existingProfile) {
       return new Response(JSON.stringify({
         error: 'DUPLICATE_USER',
-        message: 'Usuário já existe no sistema',
-        details: {
-          user_id: existingProfile.user_id,
-          profile_id: existingProfile.id,
-          email: email,
-          nome: existingProfile.nome,
-          created_at: existingProfile.created_at
-        },
-        suggestions: [
-          'Verifique se o email está correto',
-          'Use a opção "Reenviar Email de Boas-vindas" se necessário',
-          'Edite o usuário existente se precisar fazer alterações'
-        ]
+        message: 'Não foi possível criar o usuário com este e-mail.',
       }), {
         status: 409,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -174,10 +169,14 @@ Deno.serve(async (req) => {
     }
 
     if (existingAuthUser) {
-      console.log('Usuário órfão detectado - recriando profile para:', email)
-      authData = { user: existingAuthUser }
-      await supabaseAdmin.auth.admin.updateUserById(existingAuthUser.id, {
-        password: internalPassword
+      // Nunca assumir uma identidade que já existe no Auth: trocar a senha e
+      // anexá-la à empresa do admin seria sequestro de uma conta órfã.
+      return new Response(JSON.stringify({
+        error: 'DUPLICATE_USER',
+        message: 'Não foi possível criar o usuário com este e-mail.',
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     } else {
       const { data: newAuthData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
@@ -340,13 +339,13 @@ Deno.serve(async (req) => {
       console.error('Exceção ao enviar e-mail:', emailError)
     }
 
-    // Persistir metadata do convite (link manual + data de envio)
+    // Registar apenas o instante. O URL contém um token de recuperação e não
+    // pode ser persistido nem devolvido ao administrador.
     try {
       await supabaseAdmin
         .from('profiles')
         .update({
           invitation_sent_at: new Date().toISOString(),
-          invitation_link: setupPasswordUrl,
         })
         .eq('user_id', authData.user.id)
     } catch (e) {
@@ -361,8 +360,9 @@ Deno.serve(async (req) => {
         nome: nome
       },
       emailSent,
-      setupPasswordUrl,
-      message: emailSent ? 'Usuário criado com sucesso! E-mail com link para definir senha enviado.' : 'Usuário criado com sucesso! Falha no envio do e-mail — copie o link manual.'
+      message: emailSent
+        ? 'Usuário criado com sucesso! E-mail com link para definir senha enviado.'
+        : 'Usuário criado com sucesso. O convite pode ser reenviado pela gestão de usuários.'
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

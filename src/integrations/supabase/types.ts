@@ -319,7 +319,9 @@ export type Database = {
           total_recebidos: number | null
           ultimo_recebimento: string | null
           updated_at: string | null
-          webhook_token: string
+          token_prefix: string
+          webhook_token: string | null
+          webhook_token_hash: string
         }
         Insert: {
           ativo?: boolean | null
@@ -336,7 +338,9 @@ export type Database = {
           total_recebidos?: number | null
           ultimo_recebimento?: string | null
           updated_at?: string | null
-          webhook_token: string
+          token_prefix: string
+          webhook_token?: string | null
+          webhook_token_hash: string
         }
         Update: {
           ativo?: boolean | null
@@ -353,7 +357,9 @@ export type Database = {
           total_recebidos?: number | null
           ultimo_recebimento?: string | null
           updated_at?: string | null
+          token_prefix?: string
           webhook_token?: string
+          webhook_token_hash?: string
         }
         Relationships: [
           {
@@ -367,7 +373,8 @@ export type Database = {
       }
       api_keys: {
         Row: {
-          api_key: string
+          api_key: string | null
+          api_key_hash: string | null
           ativo: boolean | null
           created_at: string | null
           created_by: string | null
@@ -384,7 +391,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          api_key: string
+          api_key?: string | null
+          api_key_hash?: string | null
           ativo?: boolean | null
           created_at?: string | null
           created_by?: string | null
@@ -401,7 +409,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          api_key?: string
+          api_key?: string | null
+          api_key_hash?: string | null
           ativo?: boolean | null
           created_at?: string | null
           created_by?: string | null
@@ -10142,7 +10151,6 @@ export type Database = {
         }
         Returns: number
       }
-      debug_user_context: { Args: never; Returns: Json }
       denuncia_pertence_empresa: {
         Args: { denuncia_id: string }
         Returns: boolean
@@ -10263,8 +10271,31 @@ export type Database = {
       gerar_protocolo_denuncia: { Args: never; Returns: string }
       gerar_token_publico: { Args: never; Returns: string }
       gerar_token_revisao: { Args: never; Returns: string }
-      get_agent_token: { Args: { _id: string }; Returns: string }
-      get_api_key_full: { Args: { _id: string }; Returns: string }
+      create_api_key_secure: {
+        Args: {
+          p_nome: string
+          p_permissoes?: string[]
+          p_rate_limit?: number
+        }
+        Returns: {
+          api_key: string
+          id: string
+          prefixo: string
+        }[]
+      }
+      create_inbound_webhook_secure: {
+        Args: {
+          p_descricao: string
+          p_modulo_destino: string
+          p_nome: string
+          p_tipo_evento: string
+        }
+        Returns: {
+          id: string
+          token_prefix: string
+          webhook_token: string
+        }[]
+      }
       get_assessment_empresa_info: {
         Args: { p_token: string }
         Returns: {
@@ -10346,7 +10377,6 @@ export type Database = {
       get_user_empresa_id:
         | { Args: never; Returns: string }
         | { Args: { _user_id: string }; Returns: string }
-      get_user_invitation_link: { Args: { _user_id: string }; Returns: string }
       has_admin_role: { Args: never; Returns: boolean }
       has_role: {
         Args: {

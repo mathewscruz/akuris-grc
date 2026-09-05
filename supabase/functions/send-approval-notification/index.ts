@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Verify caller belongs to the same empresa as the document
     const { data: callerProfile } = await supabase
-      .from('profiles').select('empresa_id').eq('user_id', callerId).single();
+      .from('profiles').select('empresa_id').eq('user_id', callerId).eq('ativo', true).single();
     const { data: docCheck } = await supabase
       .from('documentos').select('empresa_id').eq('id', documento_id).single();
     if (!callerProfile?.empresa_id || !docCheck?.empresa_id || callerProfile.empresa_id !== docCheck.empresa_id) {
@@ -66,11 +66,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Enviando notificação de aprovação:", { documento_id, aprovador_id, solicitante_id });
 
     const { data: solicitante, error: solicitanteError } = await supabase
-      .from('profiles').select('nome').eq('user_id', solicitante_id).single();
+      .from('profiles').select('nome').eq('user_id', solicitante_id)
+      .eq('empresa_id', callerProfile.empresa_id).eq('ativo', true).single();
     if (solicitanteError || !solicitante) throw new Error("Solicitante não encontrado");
 
     const { data: aprovador, error: aprovadorError } = await supabase
-      .from('profiles').select('nome, email').eq('notificar_por_email', true).eq('user_id', aprovador_id).single();
+      .from('profiles').select('nome, email').eq('notificar_por_email', true)
+      .eq('user_id', aprovador_id).eq('empresa_id', callerProfile.empresa_id).eq('ativo', true).single();
     if (aprovadorError || !aprovador) throw new Error("Aprovador não encontrado");
 
     const { data: document, error: docError } = await supabase

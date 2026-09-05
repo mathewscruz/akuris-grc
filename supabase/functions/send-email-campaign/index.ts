@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
-import { Resend } from "npm:resend@4.0.0";
+import { Resend } from "npm:resend@6.26.0";
 import React from "npm:react@18.3.1";
 import { Link, renderAsync } from "npm:@react-email/components@0.0.22";
 import { BaseEmailTemplate } from "../_shared/email-templates/BaseEmailTemplate.tsx";
 import { authCorsHeaders } from "../_shared/cors.ts";
 import { APP_URL, EMAIL_FROM, htmlToText, sanitizeEmailHtml } from "../_shared/email.ts";
+import { requireUserContext, requireValidMfa, authErrorResponse } from "../_shared/auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -17,13 +18,6 @@ const json = (req: Request, body: unknown, status = 200) => new Response(JSON.st
   status,
   headers: { ...authCorsHeaders(req), "Content-Type": "application/json" },
 });
-
-async function checkSuperAdmin(token: string) {
-  const { data: { user } } = await supabase.auth.getUser(token);
-  if (!user) return null;
-  const { data } = await supabase.from("profiles").select("role").eq("user_id", user.id).maybeSingle();
-  return data?.role === "super_admin" ? user.id : null;
-}
 
 function content(imageUrl: string | null, safeHtml: string) {
   return React.createElement("div", null,
@@ -96,10 +90,14 @@ serve(async (req) => {
   let campaignId: string | undefined;
   let isTest = false;
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json(req, { error: "Não autorizado" }, 401);
-    const userId = await checkSuperAdmin(authHeader.replace("Bearer ", ""));
-    if (!userId) return json(req, { error: "Apenas super admins" }, 403);
+    const ctx = await requireUserContext(req);
+    await requireValidMfa(ctx);
+    if (ctx.role !== 'super_admin') return json(req, { error: "Apenas super admins" }, 403);
+    const userId = ctx.userId;
+
+    if (Number(req.headers.get('content-length') || 0) > 32 * 1024) {
+      return json(req, { error: 'Payload muito grande' }, 413);
+    }
 
     const body = await req.json();
     campaignId = body.campanha_id;
@@ -157,6 +155,7 @@ serve(async (req) => {
 
     return json(req, { success: true, sent, failed, total: recipients.length, mode: isTest ? "test" : "broadcast" });
   } catch (error: any) {
+    if (error?.status) return authErrorResponse(error, authCorsHeaders(req));
     console.error("send-email-campaign:", error?.message || error);
     if (campaignId && !isTest) await supabase.from("email_campanhas").update({ status: "falhou", erro: error?.message || String(error) }).eq("id", campaignId);
     return json(req, { error: error?.message || "Erro ao enviar campanha" }, 500);

@@ -60,6 +60,7 @@ serve(async (req) => {
       .from('profiles')
       .select('empresa_id, role')
       .eq('user_id', user.id)
+      .eq('ativo', true)
       .maybeSingle();
 
     const isSuperAdmin = callerProfile?.role === 'super_admin';
@@ -147,6 +148,7 @@ serve(async (req) => {
         .from('profiles')
         .select('user_id, nome')
         .eq('empresa_id', documentoAtual.empresa_id)
+        .eq('ativo', true)
         .in('role', ['admin', 'super_admin']);
 
       if (profiles && profiles.length > 0) {

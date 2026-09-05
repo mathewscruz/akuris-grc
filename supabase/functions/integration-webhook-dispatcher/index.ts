@@ -442,7 +442,7 @@ serve(async (req) => {
         let responseStatus = 0;
 
         const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
-          const response = await fetch(url, options);
+          const response = await fetch(url, { ...options, redirect: 'error' });
           if (!response.ok && response.status >= 500 && retries > 0) {
             console.log(`Retrying ${url} after ${response.status}...`);
             await new Promise(r => setTimeout(r, 2000));
@@ -515,6 +515,7 @@ serve(async (req) => {
             const jiraAuth = btoa(`${jiraEmail}:${jiraToken}`);
             const jiraResponse = await fetch(`${jiraInstanceUrl}/rest/api/3/issue`, {
               method: 'POST',
+              redirect: 'error',
               headers: {
                 'Authorization': `Basic ${jiraAuth}`,
                 'Content-Type': 'application/json',
@@ -558,6 +559,7 @@ serve(async (req) => {
 
             const snResponse = await fetch(`${snInstancia}/api/now/table/${snTabela}`, {
               method: 'POST',
+              redirect: 'error',
               headers: {
                 'Authorization': `Basic ${snAuth}`,
                 'Content-Type': 'application/json',

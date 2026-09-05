@@ -3,19 +3,50 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-token, x-webhook-signature, x-hub-signature-256',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+const MAX_BODY_BYTES = 256 * 1024;
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function text(value: unknown, fallback = '', max = 10_000): string {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  return (normalized || fallback).slice(0, max);
+}
+
+function scale(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(5, Math.round(parsed))) : fallback;
+}
+
+function requestIp(req: Request): string | null {
+  const candidate = req.headers.get('cf-connecting-ip')?.trim()
+    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')?.trim()
+    || '';
+  return candidate.length <= 45 && /^[0-9a-f:.]+$/i.test(candidate) ? candidate : null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     const url = new URL(req.url);
-    const token = url.searchParams.get('token');
+    const token = req.headers.get('x-webhook-token') || url.searchParams.get('token');
 
-    if (!token) {
+    if (!token || !/^wh_[A-Za-z0-9]{24,128}$/.test(token)) {
       return new Response(JSON.stringify({ error: 'Missing token parameter' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -25,11 +56,14 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Lookup webhook config
+    const tokenHash = await sha256Hex(token);
+
+    // Lookup webhook config by a one-way digest. The original token is shown
+    // once at creation and is never stored or returned by the data API.
     const { data: webhook, error: whError } = await supabase
       .from('api_inbound_webhooks')
-      .select('*')
-      .eq('webhook_token', token)
+      .select('id,empresa_id,nome,tipo_evento,modulo_destino,signing_secret,ativo')
+      .eq('webhook_token_hash', tokenHash)
       .eq('ativo', true)
       .single();
 
@@ -39,8 +73,38 @@ serve(async (req) => {
       });
     }
 
+    const { data: withinLimit, error: limitError } = await supabase.rpc('consume_security_rate_limit', {
+      p_scope: 'api-inbound-webhook',
+      p_fingerprint_hash: await sha256Hex(webhook.id),
+      p_max_requests: 120,
+      p_window_seconds: 60,
+    });
+    if (limitError) {
+      console.error('Webhook rate limiter unavailable:', limitError);
+      return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (withinLimit !== true) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' },
+      });
+    }
+
     // Ler body como texto para validação de assinatura antes de parsear JSON
+    const declaredLength = Number(req.headers.get('content-length') || 0);
+    if (declaredLength > MAX_BODY_BYTES) {
+      return new Response(JSON.stringify({ error: 'Payload exceeds 256 KB' }), {
+        status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+      return new Response(JSON.stringify({ error: 'Payload exceeds 256 KB' }), {
+        status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Validação HMAC-SHA256 (opcional — só exige se signing_secret estiver configurado)
     if (webhook.signing_secret) {
@@ -100,6 +164,11 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return new Response(JSON.stringify({ error: 'Body must be a JSON object' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Route to appropriate module
     let insertError = null;
@@ -109,12 +178,12 @@ serve(async (req) => {
       case 'incidentes': {
         const { error } = await supabase.from('incidentes').insert({
           empresa_id: empresaId,
-          titulo: body.title || body.titulo || body.alert_name || `Alerta via ${webhook.nome}`,
-          descricao: body.description || body.descricao || body.message || JSON.stringify(body),
-          tipo: body.type || body.tipo || 'seguranca',
+          titulo: text(body.title || body.titulo || body.alert_name, `Alerta via ${webhook.nome}`, 240),
+          descricao: text(body.description || body.descricao || body.message, JSON.stringify(body), 20_000),
+          tipo_incidente: text(body.type || body.tipo, 'seguranca', 80),
           criticidade: mapCriticidade(body.severity || body.criticidade || body.priority),
           status: 'aberto',
-          origem: `webhook:${webhook.nome}`,
+          origem_deteccao: `webhook:${webhook.nome}`.slice(0, 160),
         });
         insertError = error;
         break;
@@ -132,10 +201,10 @@ serve(async (req) => {
         const posicao = mapEscala(body.severity || body.level);
         const { error } = await supabase.from('riscos').insert({
           empresa_id: empresaId,
-          nome: body.title || body.nome || body.risk_name || `Risco via ${webhook.nome}`,
-          descricao: body.description || body.descricao || JSON.stringify(body),
-          probabilidade_inicial: Number(body.probability ?? body.probabilidade) || posicao,
-          impacto_inicial: Number(body.impact ?? body.impacto) || posicao,
+          nome: text(body.title || body.nome || body.risk_name, `Risco via ${webhook.nome}`, 240),
+          descricao: text(body.description || body.descricao, JSON.stringify(body), 20_000),
+          probabilidade_inicial: scale(body.probability ?? body.probabilidade, posicao),
+          impacto_inicial: scale(body.impact ?? body.impacto, posicao),
           status: 'identificado',
         });
         insertError = error;
@@ -144,9 +213,9 @@ serve(async (req) => {
       case 'ativos': {
         const { error } = await supabase.from('ativos').insert({
           empresa_id: empresaId,
-          nome: body.name || body.nome || body.hostname || `Ativo via ${webhook.nome}`,
-          tipo: body.type || body.tipo || 'Servidor',
-          descricao: body.description || body.descricao || JSON.stringify(body),
+          nome: text(body.name || body.nome || body.hostname, `Ativo via ${webhook.nome}`, 240),
+          tipo: text(body.type || body.tipo, 'Servidor', 80),
+          descricao: text(body.description || body.descricao, JSON.stringify(body), 20_000),
           status: 'ativo',
         });
         insertError = error;
@@ -155,12 +224,12 @@ serve(async (req) => {
       case 'controles': {
         const { error } = await supabase.from('controles').insert({
           empresa_id: empresaId,
-          nome: body.title || body.nome || body.control_name || `Controle via ${webhook.nome}`,
-          descricao: body.description || body.descricao || JSON.stringify(body),
-          tipo: body.type || body.tipo || 'preventivo',
-          status: body.status || 'ativo',
+          nome: text(body.title || body.nome || body.control_name, `Controle via ${webhook.nome}`, 240),
+          descricao: text(body.description || body.descricao, JSON.stringify(body), 20_000),
+          tipo: text(body.type || body.tipo, 'preventivo', 80),
+          status: text(body.status, 'ativo', 40),
           criticidade: mapCriticidade(body.severity || body.criticidade || body.priority),
-          frequencia_teste: body.frequency || body.frequencia || 'mensal',
+          frequencia: text(body.frequency || body.frequencia, 'mensal', 80),
         });
         insertError = error;
         break;
@@ -168,19 +237,23 @@ serve(async (req) => {
       case 'denuncias': {
         const { error } = await supabase.from('denuncias').insert({
           empresa_id: empresaId,
-          titulo: body.title || body.titulo || `Denúncia via ${webhook.nome}`,
-          descricao: body.description || body.descricao || body.message || JSON.stringify(body),
+          token_publico: crypto.randomUUID().replaceAll('-', ''),
+          titulo: text(body.title || body.titulo, `Denúncia via ${webhook.nome}`, 240),
+          descricao: text(body.description || body.descricao || body.message, JSON.stringify(body), 20_000),
           gravidade: mapCriticidade(body.severity || body.gravidade || body.priority),
           status: 'nova',
           anonima: body.anonymous !== undefined ? body.anonymous : true,
-          origem: body.source || body.origem || `webhook:${webhook.nome}`,
-          protocolo: `DEN${Date.now().toString().slice(-10)}`,
+          protocolo: `DEN-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${crypto.randomUUID().slice(0, 16).toUpperCase()}`,
+          nivel_identificacao: 'anonima',
+          politica_aceita: true,
         });
         insertError = error;
         break;
       }
       default: {
-        console.log(`Unsupported module: ${webhook.modulo_destino}, logging event only`);
+        return new Response(JSON.stringify({ error: 'Unsupported destination module' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 
@@ -192,10 +265,7 @@ serve(async (req) => {
     }
 
     // Update webhook stats
-    await supabase.from('api_inbound_webhooks').update({
-      ultimo_recebimento: new Date().toISOString(),
-      total_recebidos: (webhook.total_recebidos || 0) + 1,
-    }).eq('id', webhook.id);
+    await supabase.rpc('touch_inbound_webhook_usage', { p_webhook_id: webhook.id });
 
     // Log the request
     await supabase.from('api_request_logs').insert({
@@ -203,7 +273,7 @@ serve(async (req) => {
       metodo: req.method,
       endpoint: `/api-inbound-webhook/${webhook.tipo_evento}`,
       status_code: 200,
-      ip_address: req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip'),
+      ip_address: requestIp(req),
       request_body: body,
     });
 
@@ -213,7 +283,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Webhook error:', error);
-    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) || 'Internal error' }), {
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }

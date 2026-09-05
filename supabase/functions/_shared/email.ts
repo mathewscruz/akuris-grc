@@ -20,7 +20,10 @@ export function sanitizeEmailHtml(value: unknown): string {
     allowedAttributes: { a: ["href", "title", "target", "rel"] },
     allowedSchemes: ["https", "mailto"],
     transformTags: {
-      a: (_tagName, attribs) => ({ tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } }),
+      a: (_tagName: string, attribs: Record<string, string>) => ({
+        tagName: "a",
+        attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" },
+      }),
     },
   });
 }

@@ -89,15 +89,14 @@ describe('crédito de IA', () => {
     const tudo = fontes.join('\n');
 
     /*
-       `dashboard-ai-summary` corre em produção e NÃO tem código neste
-       repositório -- foi publicada por fora. Fica no catálogo de propósito:
-       enquanto cobrar, o painel tem de saber o modelo dela, senão o custo vira
-       palpite. Sai daqui quando for removida da implantação.
+       `dashboard-ai-summary` foi retirada do produto, mas fica no catálogo
+       para que o custo do consumo histórico continue correto. O endpoint é
+       uma resposta 410 controlada enquanto clientes antigos são drenados.
     */
-    const SEM_CODIGO_NO_REPO = new Set(['dashboard-ai-summary']);
+    const ENDPOINTS_RETIRADOS_COM_HISTORICO = new Set(['dashboard-ai-summary']);
 
     const orfas = AI_FEATURES.filter((f) => {
-      if (SEM_CODIGO_NO_REPO.has(f.edgeFunction)) return false;
+      if (ENDPOINTS_RETIRADOS_COM_HISTORICO.has(f.edgeFunction)) return false;
       /* O nome pode vir na linha do `invoke(`, na linha seguinte (é o que o
          `invokeEdgeFunction` faz com três das funções), ou dentro de um URL
          `/functions/v1/...` -- a `akuria-chat` responde em fluxo e é chamada

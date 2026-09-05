@@ -549,12 +549,11 @@ export default function Assessment() {
       setSaving(true);
       const isEvidencia = questionId.endsWith('_evidencia');
       const isJustificativa = questionId.endsWith('_justificativa');
-      const isArquivo = questionId.endsWith('_arquivo');
-      const baseQuestionId = isEvidencia || isJustificativa || isArquivo ? 
-        questionId.replace(/_evidencia|_justificativa|_arquivo$/, '') : questionId;
+      const baseQuestionId = isEvidencia || isJustificativa ?
+        questionId.replace(/_evidencia|_justificativa$/, '') : questionId;
 
       const question = questions.find(q => q.id === baseQuestionId);
-      const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : isArquivo ? 'arquivo_url' : tipoDeCampo(question?.tipo) === 'numerico' ? 'pontuacao' : 'resposta';
+      const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : tipoDeCampo(question?.tipo) === 'numerico' ? 'pontuacao' : 'resposta';
       const normalizedValue = field === 'pontuacao' ? (parseFloat(value) || 0) : value;
       await invokePublicAssessment({ action: 'save', token, questionId: baseQuestionId, field, value: normalizedValue });
       setSavedAt(new Date());

@@ -304,6 +304,7 @@ serve(async (req) => {
       .from('profiles')
       .select('empresa_id, nome')
       .eq('user_id', user.id)
+      .eq('ativo', true)
       .single();
 
     if (!profile?.empresa_id) throw new Error('Empresa not found');

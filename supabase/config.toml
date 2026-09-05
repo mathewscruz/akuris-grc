@@ -54,10 +54,9 @@ enabled = true
 # ATENCAO: em projeto hospedado isto NAO se aplica sozinho. E preciso
 # `supabase config push`, ou definir o mesmo em Authentication > Policies no
 # painel. Enquanto isso nao for feito, produção continua a aceitar 6 caracteres.
-password_min_length = 8
-password_required_characters = "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789"
-password_hibp_enabled = true
-site_url = "http://127.0.0.1:8081"
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits"
+site_url = "https://akuris.pt"
 additional_redirect_urls = ["http://127.0.0.1:8081/definir-senha", "http://localhost:8081/definir-senha", "https://akuris.pt/definir-senha", "https://www.akuris.pt/definir-senha", "https://akuris.com.br/definir-senha", "https://www.akuris.com.br/definir-senha", "https://lnlkahtugwmkznasapfd.supabase.co/auth/v1/callback"]
 jwt_expiry = 3600
 refresh_token_rotation_enabled = true
@@ -81,8 +80,10 @@ enroll_enabled = true
 verify_enabled = true
 
 [auth.mfa.web_authn]
-enroll_enabled = true
-verify_enabled = true
+# O projeto usa o MFA por sessão do Akuris. O provedor remoto não oferece
+# WebAuthn neste plano; mantê-lo ligado faz o push inteiro de Auth falhar.
+enroll_enabled = false
+verify_enabled = false
 
 
 [edge-functions]
@@ -92,13 +93,13 @@ enabled = true
 verify_jwt = true
 
 [functions.get-user-access-info]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-welcome-email]
 verify_jwt = false
 
 [functions.resend-welcome-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-password-reset]
 verify_jwt = false
@@ -153,6 +154,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.apply-default-permissions-all-users]
+verify_jwt = true
+
+[functions.delete-empresa-safe]
+verify_jwt = true
+
+[functions.generate-email-content]
 verify_jwt = true
 
 [functions.suggest-risk-treatment]
@@ -242,7 +249,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.provision-new-account]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-mfa-code]
 verify_jwt = true
@@ -269,3 +276,23 @@ verify_jwt = true
 # Trabalho agendado. Sem JWT de utilizador; a porta fecha-se no codigo, com
 # `exigeChamadaInterna` (chave de servico).
 verify_jwt = false
+
+[functions.privacy-public]
+# Portal do titular: não há sessão, mas corpo, entrada e frequência são
+# validados na própria função antes das RPCs de serviço.
+verify_jwt = false
+
+[functions.calculate-assessment-score]
+verify_jwt = true
+
+[functions.dashboard-ai-summary]
+verify_jwt = true
+
+[functions.agent-heartbeat]
+verify_jwt = true
+
+[functions.agent-sync-assets]
+verify_jwt = true
+
+[functions.generate-agent-installer]
+verify_jwt = true

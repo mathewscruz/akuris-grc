@@ -53,13 +53,25 @@ export function exigeChamadaInterna(req: Request): void {
  */
 export async function exigeInternaOuUtilizador(
   req: Request,
-): Promise<{ interna: boolean; userId: string | null; empresaId: string | null }> {
+): Promise<{
+  interna: boolean;
+  userId: string | null;
+  empresaId: string | null;
+  role: string | null;
+  mfaValida: boolean;
+}> {
   const recebido = tokenDoPedido(req);
   if (!recebido) throw new AcessoNegado("Falta o token");
 
   const servico = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (servico && comparaEmTempoConstante(recebido, servico)) {
-    return { interna: true, userId: null, empresaId: null };
+    return {
+      interna: true,
+      userId: null,
+      empresaId: null,
+      role: null,
+      mfaValida: true,
+    };
   }
 
   const url = Deno.env.get("SUPABASE_URL")!;
@@ -69,13 +81,29 @@ export async function exigeInternaOuUtilizador(
   if (error || !data?.user) throw new AcessoNegado("Sessão inválida");
 
   const admin = createClient(url, servico!);
-  const { data: perfil } = await admin
+  const { data: perfil, error: perfilErro } = await admin
     .from("profiles")
-    .select("empresa_id")
+    .select("empresa_id, role, ativo")
     .eq("user_id", data.user.id)
     .single();
 
-  return { interna: false, userId: data.user.id, empresaId: perfil?.empresa_id ?? null };
+  if (perfilErro || !perfil?.empresa_id || perfil.ativo !== true) {
+    throw new AcessoNegado("Perfil inativo ou sem empresa", 403);
+  }
+
+  const clienteDaSessao = createClient(url, anon, {
+    global: { headers: { Authorization: `Bearer ${recebido}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: mfaValida } = await clienteDaSessao.rpc("has_valid_mfa_session");
+
+  return {
+    interna: false,
+    userId: data.user.id,
+    empresaId: perfil.empresa_id,
+    role: perfil.role ?? null,
+    mfaValida: mfaValida === true,
+  };
 }
 
 /** Resposta uniforme, sem detalhe interno para quem não devia ter passado. */

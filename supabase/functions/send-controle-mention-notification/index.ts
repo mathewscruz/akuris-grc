@@ -38,15 +38,28 @@ serve(async (req) => {
     */
     const ctx = await requireUserContext(req);
 
-    const { user_id, controle_id, controle_nome, mencionado_por, comentario }: MentionNotificationRequest = await req.json();
+    const { user_id, controle_id, comentario }: MentionNotificationRequest = await req.json();
 
-    const { data: usuario, error: usuarioError } = await supabase.from("profiles").select("nome, email, empresa_id").eq('notificar_por_email', true).eq("user_id", user_id).single();
+    if (!user_id || !controle_id || typeof comentario !== 'string' || comentario.length > 2_000) {
+      return new Response(JSON.stringify({ error: 'Payload inválido' }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    const { data: controle } = await supabase.from('controles').select('nome, empresa_id')
+      .eq('id', controle_id).eq('empresa_id', ctx.empresaId).maybeSingle();
+    if (!controle) {
+      return new Response(JSON.stringify({ error: 'Controle não encontrado' }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    const controle_nome = controle.nome;
+
+    const { data: usuario, error: usuarioError } = await supabase.from("profiles").select("nome, email, empresa_id")
+      .eq('notificar_por_email', true).eq('ativo', true).eq("user_id", user_id).single();
     if (usuarioError || !usuario) throw new Error("Usuário não encontrado");
     if (!ctx.empresaId || usuario.empresa_id !== ctx.empresaId) {
       return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    const { data: autorMencao } = await supabase.from("profiles").select("nome").eq("user_id", mencionado_por).single();
+    const { data: autorMencao } = await supabase.from("profiles").select("nome")
+      .eq('empresa_id', ctx.empresaId).eq('ativo', true).eq("user_id", ctx.userId).single();
     const autorNome = autorMencao?.nome || "Um usuário";
 
     const { data: empresa } = await supabase.from("empresas").select("nome, logo_url").eq("id", usuario.empresa_id).single();

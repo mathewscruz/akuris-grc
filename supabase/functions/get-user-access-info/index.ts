@@ -1,6 +1,6 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { requireUserContext } from '../_shared/auth.ts'
+import { requireUserContext, requireValidMfa, authErrorResponse } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,11 +20,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Esta é uma consulta somente leitura. A função continua protegida pelo
-    // JWT e pela validação de papel/tenant abaixo, mas não deve depender de uma
-    // sessão MFA separada: além de impedir o diagnóstico do primeiro acesso,
-    // isso quebrava o painel local e instalações sem o segundo fator habilitado.
     const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
 
     console.log('Recebendo requisição para obter informações de acesso dos usuários')
 
@@ -46,9 +43,17 @@ Deno.serve(async (req) => {
     }
 
     // Obter lista de user_ids para buscar informações
+    const declaredLength = Number(req.headers.get('content-length') || 0)
+    if (declaredLength > 32 * 1024) {
+      return new Response(JSON.stringify({ error: 'Payload muito grande' }), {
+        status: 413,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
     const { user_ids } = await req.json()
     
-    if (!Array.isArray(user_ids) || user_ids.length === 0) {
+    if (!Array.isArray(user_ids) || user_ids.length === 0 || user_ids.length > 250
+      || user_ids.some((id) => typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id))) {
       throw new Error('Lista de IDs de usuários inválida')
     }
 
@@ -73,7 +78,7 @@ Deno.serve(async (req) => {
 
     // Buscar informações de acesso dos usuários
     const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin
-      .listUsers()
+      .listUsers({ page: 1, perPage: 1000 })
 
     if (usersError) {
       throw new Error('Erro ao buscar informações de usuários')
@@ -129,6 +134,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error: any) {
+    if (error?.status) return authErrorResponse(error, corsHeaders)
     console.error('Erro na função get-user-access-info:', error)
     return new Response(
       JSON.stringify({

@@ -12,11 +12,9 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROVISION] ${step}${detailsStr}`);
 };
 
-// O limite vive na base, em `consume_public_registration_attempt`. O que estava
-// aqui era um `Map` em memoria, que nao serve: as Edge Functions correm em
-// isolados do Deno criados e destruidos a vontade, cada um com o seu contador,
-// portanto o teto real era 5 vezes o numero de isolados vivos. Este e o unico
-// caminho para criar conta a partir do site, por isso o teto tem de valer.
+// Provisionamento interno. A interface pública de cadastro foi removida do
+// produto; manter esta função anônima permitia criar uma empresa/admin usando
+// o e-mail de outra pessoa já marcado como confirmado.
 
 /** SHA-256 em hexadecimal — formato exigido pelo limitador da base. */
 async function sha256Hex(valor: string): Promise<string> {
@@ -39,6 +37,21 @@ function slugify(text: string): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Metodo nao permitido" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405,
+    });
+  }
+
+  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!serviceRole || bearer !== serviceRole) {
+    return new Response(JSON.stringify({ error: "Nao autorizado" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+    });
   }
 
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -142,7 +155,7 @@ serve(async (req) => {
         .eq("slug", slug)
         .maybeSingle();
       if (!collision) break;
-      slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+      slug = `${baseSlug}-${crypto.randomUUID().replaceAll('-', '').slice(0, 6)}`;
     }
 
     // 4. Create empresa in trial mode

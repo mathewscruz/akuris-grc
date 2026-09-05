@@ -91,7 +91,8 @@ describe('autenticação coesa e MFA vinculado à sessão', () => {
     expect(recovery).toMatch(/Deno\.env\.get\('APP_URL'\).*Deno\.env\.get\('SITE_URL'\)/);
     const requestShape = /interface PasswordResetRequest\s*\{([^}]*)\}/.exec(recovery)?.[1] ?? '';
     expect(requestShape).not.toContain('companyLogoUrl');
-    expect(recovery).toContain('companyLogoUrl: profile.empresa?.logo_url');
+    expect(recovery).toContain('const company = Array.isArray(profile.empresa)');
+    expect(recovery).toContain('companyLogoUrl: company?.logo_url');
   });
 
   it('permite encerrar outras sessões sem derrubar o dispositivo atual', () => {

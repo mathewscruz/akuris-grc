@@ -35,25 +35,37 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const callerId = userData.user.id as string;
 
-    const { incidente_id, titulo, descricao, gravidade, tipo, responsavel_id, empresa_id }: NotificationRequest = await req.json();
+    const { incidente_id, responsavel_id, empresa_id }: NotificationRequest = await req.json();
 
     // Verify caller belongs to the same empresa
-    const { data: callerProfile } = await supabase.from('profiles').select('empresa_id').eq('user_id', callerId).single();
+    const { data: callerProfile } = await supabase.from('profiles').select('empresa_id').eq('user_id', callerId).eq('ativo', true).single();
     if (!callerProfile?.empresa_id || callerProfile.empresa_id !== empresa_id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
+
+    const { data: incidente } = await supabase.from('incidentes')
+      .select('titulo, descricao, criticidade, tipo_incidente')
+      .eq('id', incidente_id).eq('empresa_id', empresa_id).maybeSingle();
+    if (!incidente) {
+      return new Response(JSON.stringify({ error: 'Incidente não encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const titulo = incidente.titulo;
+    const descricao = incidente.descricao || undefined;
+    const gravidade = incidente.criticidade;
+    const tipo = incidente.tipo_incidente;
 
     let companyName = "Akuris";
     const { data: empresaData } = await supabase.from("empresas").select("nome").eq("id", empresa_id).single();
     if (empresaData) { companyName = empresaData.nome || companyName; }
 
     const emailList = new Set<string>();
-    const { data: admins } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true).eq("empresa_id", empresa_id).in("role", ["admin", "super_admin"]);
+    const { data: admins } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true).eq('ativo', true).eq("empresa_id", empresa_id).in("role", ["admin", "super_admin"]);
     admins?.forEach(admin => { if (admin.email) emailList.add(admin.email); });
 
     let responsavelNome = "";
     if (responsavel_id) {
-      const { data: responsavel } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true).eq("user_id", responsavel_id).single();
+      const { data: responsavel } = await supabase.from("profiles").select("email, nome").eq('notificar_por_email', true)
+        .eq('ativo', true).eq('empresa_id', empresa_id).eq("user_id", responsavel_id).single();
       if (responsavel?.email) { emailList.add(responsavel.email); responsavelNome = responsavel.nome || ""; }
     }
 

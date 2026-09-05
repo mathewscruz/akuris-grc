@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { MODELOS } from '../_shared/modelos.ts';
+import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,7 +47,7 @@ serve(async (req) => {
       });
     }
     const userId = userData.user.id;
-    const { data: profile } = await supabase.from('profiles').select('empresa_id').eq('user_id', userId).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('empresa_id').eq('user_id', userId).eq('ativo', true).maybeSingle();
     const empresaId = profile?.empresa_id;
     if (!empresaId) {
       return new Response(JSON.stringify({ error: 'Empresa não encontrada' }), {

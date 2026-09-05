@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { requireUserContext, requireValidMfa, authErrorResponse } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,37 +25,10 @@ Deno.serve(async (req) => {
     console.log('Recebendo requisição para reenviar e-mail de boas-vindas')
 
     const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      SERVICE_ROLE
-    )
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: req.headers.get('Authorization') ?? '',
-          },
-        },
-      }
-    )
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      throw new Error('Usuário não autenticado')
-    }
-
-    const { data: currentUserProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, empresa_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileError || !currentUserProfile) {
-      throw new Error('Perfil do usuário não encontrado')
-    }
+    const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
+    const supabaseAdmin = ctx.supabase
+    const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
 
     const isSuperAdmin = currentUserProfile.role === 'super_admin'
     const isAdmin = currentUserProfile.role === 'admin' || isSuperAdmin
@@ -142,26 +115,27 @@ Deno.serve(async (req) => {
 
     console.log('E-mail reenviado com sucesso')
 
-    // Atualiza metadata do convite
+    // O URL contém uma credencial de recuperação. Guardamos somente o instante
+    // do envio; o administrador nunca recebe nem consulta o token.
     try {
       await supabaseAdmin
         .from('profiles')
-        .update({ invitation_sent_at: new Date().toISOString(), invitation_link: setupPasswordUrl })
+        .update({ invitation_sent_at: new Date().toISOString() })
         .eq('user_id', userProfile.user_id)
     } catch (e) {
       console.error('Falha ao atualizar invitation metadata:', e)
     }
 
-    return new Response(JSON.stringify({ success: true, setupPasswordUrl }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (error: any) {
+    if (error?.status) return authErrorResponse(error, corsHeaders)
     console.error('Erro na função resend-welcome-email:', error)
     return new Response(
       JSON.stringify({
-        error: (error instanceof Error ? error.message : String(error)),
-        details: 'Falha ao reenviar e-mail de boas-vindas',
+        error: 'Falha ao reenviar e-mail de boas-vindas',
       }),
       {
         status: 500,

@@ -12,6 +12,18 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
+const MAX_BODY_BYTES = 128 * 1024;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const FILE_TYPES: Record<string, { extension: string; signature: number[] }> = {
+  'application/pdf': { extension: 'pdf', signature: [0x25, 0x50, 0x44, 0x46] },
+  'image/jpeg': { extension: 'jpg', signature: [0xff, 0xd8, 0xff] },
+  'image/png': { extension: 'png', signature: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
+  'application/msword': { extension: 'doc', signature: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1] },
+  'application/vnd.ms-excel': { extension: 'xls', signature: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1] },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { extension: 'docx', signature: [0x50, 0x4b, 0x03, 0x04] },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { extension: 'xlsx', signature: [0x50, 0x4b, 0x03, 0x04] },
+};
+
 async function sha256(value: string) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -27,8 +39,24 @@ function randomCode() {
     .join('');
 }
 
+function fileMatches(bytes: Uint8Array, mime: string): boolean {
+  const expected = FILE_TYPES[mime]?.signature;
+  return !!expected && expected.every((value, index) => bytes[index] === value);
+}
+
+function safeFileName(value: string): string {
+  return Array.from(value)
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || code === 127 ? '_' : char;
+    })
+    .join('')
+    .slice(0, 255);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -36,8 +64,37 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const body = await req.json();
+    const declaredLength = Number(req.headers.get('content-length') || 0);
+    if (declaredLength > MAX_BODY_BYTES) return json({ error: 'payload_too_large' }, 413);
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+      return json({ error: 'payload_too_large' }, 413);
+    }
+    let body: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(rawBody);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid');
+      body = parsed;
+    } catch {
+      return json({ error: 'invalid_json' }, 400);
+    }
     const action = body.action ?? 'create';
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('cf-connecting-ip')
+      || req.headers.get('x-real-ip')
+      || 'unknown';
+
+    const rateFingerprint = action === 'consult'
+      ? `${String(body.empresa_slug || '')}:${clientIp}`
+      : `${String(body.denuncia_id || body.empresa_slug || '')}:${clientIp}`;
+    const { data: withinLimit, error: rateError } = await supabase.rpc('consume_security_rate_limit', {
+      p_scope: `create-denuncia:${String(action).slice(0, 80)}`,
+      p_fingerprint_hash: await sha256(rateFingerprint),
+      p_max_requests: action === 'create' ? 10 : action === 'consult' ? 30 : 120,
+      p_window_seconds: action === 'create' ? 3600 : action === 'consult' ? 600 : 60,
+    });
+    if (rateError) return json({ error: 'service_unavailable' }, 503);
+    if (withinLimit !== true) return json({ error: 'rate_limited' }, 429);
 
     if (action === 'consult') {
       const { empresa_slug, protocolo, codigo } = body;
@@ -54,6 +111,22 @@ Deno.serve(async (req) => {
       });
       if (error) return json({ error: error.message }, 400);
       if (!data) return json({ error: 'not_found' }, 404);
+      if (!codigoLimpo) {
+        // Compatibilidade segura para denúncias antigas, que nunca receberam
+        // código: mantém o acompanhamento básico sem expor relato, mensagens,
+        // deliberações, identidade ou resultado a quem só adivinhou protocolo.
+        return json({ denuncia: {
+          protocolo: data.protocolo,
+          status: data.status,
+          created_at: data.created_at,
+          prazo_acusacao: data.prazo_acusacao,
+          prazo_retorno: data.prazo_retorno,
+          data_acusacao_recebimento: data.data_acusacao_recebimento,
+          data_conclusao: data.data_conclusao,
+          categoria: data.categoria,
+          acesso_legado_limitado: true,
+        } });
+      }
       return json({ denuncia: data });
     }
 
@@ -93,9 +166,14 @@ Deno.serve(async (req) => {
       if (!denuncia) return json({ error: 'nao_autorizado' }, 403);
 
       if (!nome || typeof nome !== 'string') return json({ error: 'nome_invalido' }, 400);
-      if (Number(tamanho) > 10 * 1024 * 1024) return json({ error: 'arquivo_grande' }, 413);
+      const mime = typeof tipo === 'string' ? tipo.toLowerCase() : '';
+      const fileType = FILE_TYPES[mime];
+      if (!fileType) return json({ error: 'tipo_arquivo_invalido' }, 400);
+      if (!Number.isFinite(Number(tamanho)) || Number(tamanho) <= 0 || Number(tamanho) > MAX_FILE_BYTES) {
+        return json({ error: 'arquivo_grande' }, 413);
+      }
 
-      const ext = String(nome).split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? 'bin';
+      const ext = fileType.extension;
       const caminho = `${denuncia.empresa_id}/${denuncia.id}/${crypto.randomUUID()}.${ext}`;
 
       const { data: assinado, error: erroUrl } = await supabase.storage
@@ -107,8 +185,8 @@ Deno.serve(async (req) => {
         .from('denuncias_anexos')
         .insert({
           denuncia_id: denuncia.id,
-          nome_arquivo: String(nome).slice(0, 255),
-          tipo_arquivo: tipo ?? null,
+          nome_arquivo: safeFileName(String(nome)),
+          tipo_arquivo: mime,
           tamanho_arquivo: Number(tamanho) || null,
           arquivo_url: caminho,
           /* 'denuncia' = veio com o registo. Os outros valores do CHECK são
@@ -131,9 +209,33 @@ Deno.serve(async (req) => {
       const denuncia = await denunciaPeloCodigo(String(denuncia_id ?? ''), String(codigo ?? ''));
       if (!denuncia) return json({ error: 'nao_autorizado' }, 403);
 
+      const { data: anexo } = await supabase
+        .from('denuncias_anexos')
+        .select('id,arquivo_url,tipo_arquivo,tamanho_arquivo')
+        .eq('id', String(anexo_id))
+        .eq('denuncia_id', denuncia.id)
+        .eq('upload_status', 'pendente')
+        .maybeSingle();
+      if (!anexo?.arquivo_url) return json({ error: 'anexo_invalido' }, 400);
+
+      const { data: arquivo, error: downloadError } = await supabase.storage
+        .from('denuncias-anexos')
+        .download(anexo.arquivo_url);
+      if (downloadError || !arquivo || arquivo.size <= 0 || arquivo.size > MAX_FILE_BYTES) {
+        await supabase.storage.from('denuncias-anexos').remove([anexo.arquivo_url]);
+        await supabase.from('denuncias_anexos').delete().eq('id', anexo.id);
+        return json({ error: 'arquivo_invalido' }, 400);
+      }
+      const bytes = new Uint8Array(await arquivo.arrayBuffer());
+      if (!fileMatches(bytes, anexo.tipo_arquivo)) {
+        await supabase.storage.from('denuncias-anexos').remove([anexo.arquivo_url]);
+        await supabase.from('denuncias_anexos').delete().eq('id', anexo.id);
+        return json({ error: 'conteudo_arquivo_invalido' }, 400);
+      }
+
       const { error } = await supabase
         .from('denuncias_anexos')
-        .update({ upload_status: 'concluido' })
+        .update({ upload_status: 'concluido', tamanho_arquivo: arquivo.size })
         .eq('id', String(anexo_id))
         .eq('denuncia_id', denuncia.id);
       if (error) return json({ error: error.message }, 400);
@@ -224,11 +326,8 @@ Deno.serve(async (req) => {
     const codigo = randomCode();
     const trackingHash = await sha256(codigo);
 
-    const clientIp =
-      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
-
     const fingerprintHash = await sha256(
-      `${empresa_slug}|${clientIp ?? 'sem-ip'}|${req.headers.get('user-agent') ?? 'sem-ua'}`,
+      `${empresa_slug}|${clientIp}|${req.headers.get('user-agent') ?? 'sem-ua'}`,
     );
 
     const { data, error } = await supabase.rpc('create_denuncia_publica', {
@@ -247,7 +346,7 @@ Deno.serve(async (req) => {
       p_evidencias_descricao: evidencias_descricao ?? null,
       p_tracking_hash: trackingHash,
       p_fingerprint_hash: fingerprintHash,
-      p_client_ip: clientIp,
+      p_client_ip: clientIp === 'unknown' ? null : clientIp,
       p_user_agent: req.headers.get('user-agent') ?? null,
       /* Três níveis, não um booleano: identificar-se e pedir reserva são
          coisas diferentes, e a Diretiva trata-as em artigos diferentes. */

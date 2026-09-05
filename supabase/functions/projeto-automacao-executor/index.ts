@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: perfil } = await supabase
-      .from('profiles').select('empresa_id').eq('user_id', sessao.user.id).maybeSingle();
+      .from('profiles').select('empresa_id').eq('user_id', sessao.user.id).eq('ativo', true).maybeSingle();
     const { data: projeto } = await supabase
       .from('projetos').select('empresa_id').eq('id', projeto_id).maybeSingle();
 

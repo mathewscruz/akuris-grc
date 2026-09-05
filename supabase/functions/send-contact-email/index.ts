@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "npm:resend@6.26.0";
 import { authCorsHeaders } from "../_shared/cors.ts";
 import { EMAIL_FROM, emailDocument, escapeHtml, htmlToText } from "../_shared/email.ts";
 
@@ -66,7 +66,7 @@ function validar(d: ContactFormData): string | null {
   if (!nome || !email || !empresa || !tamanho) return "Nome, e-mail, empresa e porte são obrigatórios";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "E-mail invalido";
   for (const [campo, max] of Object.entries(LIMITES)) {
-    const v = (d as Record<string, string | undefined>)[campo];
+    const v = (d as unknown as Record<string, string | undefined>)[campo];
     if (v && v.length > max) return `Campo ${campo} excede ${max} caracteres`;
   }
   return null;
@@ -85,7 +85,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const contactData: ContactFormData = await req.json().catch(() => ({}));
+    const declaredLength = Number(req.headers.get('content-length') || 0);
+    if (declaredLength > 32 * 1024) {
+      return new Response(JSON.stringify({ success: false, error: 'Payload muito grande' }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
+      });
+    }
+    const raw = await req.text();
+    if (new TextEncoder().encode(raw).byteLength > 32 * 1024) {
+      return new Response(JSON.stringify({ success: false, error: 'Payload muito grande' }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
+      });
+    }
+    const contactData: ContactFormData = JSON.parse(raw || '{}');
 
     const problema = validar(contactData);
     if (problema) {

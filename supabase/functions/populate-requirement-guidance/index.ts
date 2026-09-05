@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
       .from('profiles')
       .select('empresa_id')
       .eq('user_id', userId)
+      .eq('ativo', true)
       .single();
     const empresaId: string | null = profile?.empresa_id || null;
     if (!empresaId) {
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const row = req_data as Record<string, string | null>;
+      const row = req_data as unknown as Record<string, string | null>;
 
       // Cache global: conteúdo já existe nesse idioma → devolve sem IA e sem consumir crédito.
       const cachedOrientacao = (row[cols.orientacao] || '').trim();
@@ -194,7 +195,7 @@ Deno.serve(async (req) => {
 
     let processed = 0;
     for (const raw of requirements) {
-      const r = raw as Record<string, string | null>;
+      const r = raw as unknown as Record<string, string | null>;
       // Gera primeiro; só cobra se a IA entregar conteúdo válido
       let guidance: GuidanceResult | null = null;
       try {

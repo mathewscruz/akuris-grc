@@ -5,6 +5,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { PasswordResetEmail } from './_templates/password-reset-email.tsx'
 import { authCorsHeaders } from '../_shared/cors.ts'
+import { requireUserContext, requireValidMfa, AuthError, authErrorResponse } from '../_shared/auth.ts'
 
 const DEFAULT_APP_URL = 'https://akuris.pt'
 
@@ -22,6 +23,16 @@ async function sha256Hex(value: string): Promise<string> {
 interface PasswordResetRequest {
   email?: unknown
   userId?: unknown
+}
+
+interface PasswordResetProfile {
+  user_id: string
+  nome: string
+  email: string
+  empresa_id: string | null
+  empresa?: { nome?: string; logo_url?: string | null }
+    | Array<{ nome?: string; logo_url?: string | null }>
+    | null
 }
 
 const applicationUrl = (): string => {
@@ -56,7 +67,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
-    const body = await req.json().catch(() => ({})) as PasswordResetRequest
+    const declaredLength = Number(req.headers.get('content-length') || 0)
+    if (declaredLength > 32 * 1024) return json({ success: false, error_code: 'payload_too_large' }, 413)
+    const raw = await req.text()
+    if (new TextEncoder().encode(raw).byteLength > 32 * 1024) {
+      return json({ success: false, error_code: 'payload_too_large' }, 413)
+    }
+    const body = JSON.parse(raw || '{}') as PasswordResetRequest
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const userId = typeof body.userId === 'string' ? body.userId : ''
 
@@ -76,6 +93,10 @@ Deno.serve(async (req) => {
 
     const isAdminRequest = Boolean(adminProfile)
     adminRequest = isAdminRequest
+    if (isAdminRequest) {
+      const ctx = await requireUserContext(req)
+      await requireValidMfa(ctx)
+    }
     const failure = (errorCode: string, status = 400) =>
       isAdminRequest ? json({ success: false, error_code: errorCode }, status) : uniformSuccess()
 
@@ -107,13 +128,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    let profile: {
-      user_id: string
-      nome: string
-      email: string
-      empresa_id: string | null
-      empresa?: { nome?: string; logo_url?: string | null } | null
-    } | null = null
+    let profile: PasswordResetProfile | null = null
 
     if (userId) {
       const { data } = await supabase
@@ -121,7 +136,7 @@ Deno.serve(async (req) => {
         .select('user_id, nome, email, empresa_id, empresa:empresas(nome, logo_url)')
         .eq('user_id', userId)
         .maybeSingle()
-      profile = data as typeof profile
+      profile = data as unknown as PasswordResetProfile | null
       if (profile && adminProfile!.role !== 'super_admin' && profile.empresa_id !== adminProfile!.empresa_id) {
         return failure('forbidden', 403)
       }
@@ -134,10 +149,20 @@ Deno.serve(async (req) => {
         .limit(10)
       profile = (candidates ?? []).find(
         (candidate) => (candidate.email ?? '').trim().toLowerCase() === email,
-      ) as typeof profile
+      ) as unknown as PasswordResetProfile | null
+      if (
+        profile
+        && isAdminRequest
+        && adminProfile!.role !== 'super_admin'
+        && profile.empresa_id !== adminProfile!.empresa_id
+      ) {
+        return failure('forbidden', 403)
+      }
     }
 
     if (!profile) return failure('profile_missing', 404)
+
+    const company = Array.isArray(profile.empresa) ? profile.empresa[0] : profile.empresa
 
     const siteUrl = applicationUrl()
     const redirectTo = `${siteUrl}/definir-senha`
@@ -155,9 +180,9 @@ Deno.serve(async (req) => {
     const html = await renderAsync(React.createElement(PasswordResetEmail, {
       userName: profile.nome,
       resetUrl,
-      companyName: profile.empresa?.nome,
+      companyName: company?.nome,
       // A personalização vem exclusivamente do registo confiável da empresa.
-      companyLogoUrl: profile.empresa?.logo_url,
+      companyLogoUrl: company?.logo_url || undefined,
     }))
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
@@ -189,6 +214,7 @@ Deno.serve(async (req) => {
 
     return uniformSuccess()
   } catch (error) {
+    if (error instanceof AuthError) return authErrorResponse(error, corsHeaders)
     console.error('send-password-reset: unexpected failure', error)
     // O fluxo público continua uniforme para não revelar se o email existe.
     return adminRequest

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IconAdd, IconDelete, IconSend, IconLink, IconCopy, IconCode } from '@/components/icons';
+import { IconAdd, IconDelete, IconLink, IconCopy, IconCode } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ interface InboundWebhook {
   id: string;
   nome: string;
   descricao: string | null;
-  webhook_token: string;
+  token_prefix: string;
   tipo_evento: string;
   modulo_destino: string;
   mapeamento_campos: Record<string, string>;
@@ -88,15 +88,6 @@ function getPayloadExamples(t: (key: string) => string): Record<string, object> 
   };
 }
 
-function generateToken(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = 'wh_';
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
-}
-
 export function InboundWebhooksManager() {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
@@ -108,7 +99,7 @@ export function InboundWebhooksManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [payloadDialogOpen, setPayloadDialogOpen] = useState<string | null>(null);
-  const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
 
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -127,7 +118,7 @@ export function InboundWebhooksManager() {
     try {
       const { data, error } = await supabase
         .from('api_inbound_webhooks')
-        .select('*')
+        .select('id,nome,descricao,tipo_evento,modulo_destino,mapeamento_campos,ativo,total_recebidos,ultimo_recebimento,created_at,token_prefix')
         .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -143,20 +134,17 @@ export function InboundWebhooksManager() {
     if (!empresaId || !nome.trim() || !tipoEvento || !moduloDestino) return;
     setSaving(true);
     try {
-      const token = generateToken();
-      const { data: userData } = await supabase.auth.getUser();
-
-      const { error } = await supabase.from('api_inbound_webhooks').insert({
-        empresa_id: empresaId,
-        nome: nome.trim(),
-        descricao: descricao.trim() || null,
-        webhook_token: token,
-        tipo_evento: tipoEvento,
-        modulo_destino: moduloDestino,
-        created_by: userData.user?.id,
+      const { data, error } = await supabase.rpc('create_inbound_webhook_secure', {
+        p_nome: nome.trim(),
+        p_descricao: descricao.trim(),
+        p_tipo_evento: tipoEvento,
+        p_modulo_destino: moduloDestino,
       });
 
       if (error) throw error;
+      const secret = data?.[0]?.webhook_token;
+      if (!secret) throw new Error('A URL segura não foi retornada.');
+      setCreatedUrl(`${baseUrl}?token=${secret}`);
       toast.success(t('configGeral.inboundWebhooks.toastCreated'), { description: t('configGeral.inboundWebhooks.toastCreatedDescription') });
       setDialogOpen(false);
       setNome('');
@@ -188,34 +176,9 @@ export function InboundWebhooksManager() {
     toast.success(t('configGeral.inboundWebhooks.toastDeleted'));
   };
 
-  const copyUrl = (token: string) => {
-    navigator.clipboard.writeText(`${baseUrl}?token=${token}`);
+  const copyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
     toast.info(t('configGeral.inboundWebhooks.toastUrlCopied'));
-  };
-
-  const handleTestWebhook = async (wh: InboundWebhook) => {
-    setTestingWebhook(wh.id);
-    try {
-      const payload = PAYLOAD_EXAMPLES[wh.modulo_destino] || { title: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.default.title'), description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.default.description') };
-      
-      const response = await fetch(`${baseUrl}?token=${wh.webhook_token}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        toast.success(t('configGeral.inboundWebhooks.toastTestSuccess'), { description: t('configGeral.inboundWebhooks.toastTestSuccessDescription').replace('{modulo}', wh.modulo_destino) });
-        fetchWebhooks();
-      } else {
-        const err = await response.json();
-        toast.error(t('configGeral.inboundWebhooks.toastTestError'), { description: err.error || t('configGeral.inboundWebhooks.toastTestErrorDescriptionDefault') });
-      }
-    } catch (err: any) {
-      toast.error(t('configGeral.inboundWebhooks.toastError'), { description: err.message });
-    } finally {
-      setTestingWebhook(null);
-    }
   };
 
   const getPayloadForModule = (modulo: string) => {
@@ -279,11 +242,8 @@ export function InboundWebhooksManager() {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <code className="text-micro bg-muted px-1 py-0.5 rounded max-w-[200px] truncate">
-                        {baseUrl}?token={wh.webhook_token.substring(0, 8)}...
+                        {baseUrl}?token={wh.token_prefix}…
                       </code>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyUrl(wh.webhook_token)} aria-label={t('common.copy')} title={t('common.copy')}>
-                        <IconCopy className="h-3 w-3" />
-                      </Button>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{wh.total_recebidos?.toLocaleString()}</TableCell>
@@ -301,21 +261,6 @@ export function InboundWebhooksManager() {
                         onClick={() => setPayloadDialogOpen(wh.modulo_destino)}
                       >
                         <IconCode className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        title={t('configGeral.inboundWebhooks.actionSendTest')}
-                        aria-label={t('configGeral.inboundWebhooks.actionSendTest')}
-                        disabled={testingWebhook === wh.id || !wh.ativo}
-                        onClick={() => handleTestWebhook(wh)}
-                      >
-                        {testingWebhook === wh.id ? (
-                          <AkurisPulse size={14} />
-                        ) : (
-                          <IconSend className="h-3.5 w-3.5" />
-                        )}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm(wh.id)} aria-label={t('common.delete')} title={t('common.delete')}>
                         <IconDelete className="h-3.5 w-3.5" />
@@ -383,6 +328,27 @@ export function InboundWebhooksManager() {
             </div>
           )}
         </div>
+      </DialogShell>
+
+      <DialogShell
+        open={!!createdUrl}
+        onOpenChange={(open) => !open && setCreatedUrl(null)}
+        title={t('configGeral.inboundWebhooks.secureUrlTitle')}
+        icon={IconLink}
+        size="md"
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button variant="outline" onClick={() => setCreatedUrl(null)}>{t('common.close')}</Button>
+            <Button onClick={() => createdUrl && copyUrl(createdUrl)}>
+              <IconCopy className="mr-2 h-4 w-4" /> {t('common.copy')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="mb-3 text-sm text-muted-foreground">
+          {t('configGeral.inboundWebhooks.secureUrlDescription')}
+        </p>
+        <Input readOnly value={createdUrl || ''} className="font-mono text-xs" onFocus={(event) => event.currentTarget.select()} />
       </DialogShell>
 
       {/* Payload Example Dialog */}
