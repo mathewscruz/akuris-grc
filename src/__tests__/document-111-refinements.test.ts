@@ -26,8 +26,10 @@ describe('ajustes solicitados no documento 111', () => {
   it('o logotipo fornecido é preservado byte a byte e não substitui marcas de clientes', () => {
     const layout = source('src/components/denuncia/CanalLayout.tsx');
     expect(layout).toContain("import akurisLogoLight from '@/assets/akuris-logo-light.png'");
-    expect(layout).toContain("empresa.slug === 'akuris'");
-    expect(layout).toContain('src={empresa.logo_url}');
+    expect(layout).toContain('logoUrl={empresa?.logo_url}');
+    const brand = source('src/components/denuncia/CanalBrand.tsx');
+    expect(brand).toContain('src={customUrl}');
+    expect(brand).toContain('src={akurisLogoDarkText}');
     const png = readFileSync(resolve(process.cwd(), 'src/assets/akuris-logo-light.png'));
     expect(createHash('sha256').update(png).digest('hex')).toBe('8af0a89ebf59f23600a465556b8af32bf5d843fe48cb8860c001b0412cfc329e');
     expect(png.subarray(1, 4).toString()).toBe('PNG');

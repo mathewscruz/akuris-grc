@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Fingerprint, CalendarCheck2, Signpost, Languages } from 'lucide-react';
@@ -7,6 +7,7 @@ import { LOCALE_OPTIONS } from '@/components/LanguageSelector';
 import type { ConfigCanal } from '@/hooks/useCanalDenuncia';
 import type { EmpresaPublica } from '@/lib/denuncia-publica';
 import akurisLogoLight from '@/assets/akuris-logo-light.png';
+import { CanalBrand } from './CanalBrand';
 import './canal-public.css';
 
 interface Props {
@@ -24,7 +25,6 @@ interface Props {
 export function CanalLayout({ empresa, config, nomeDoCanal, estiloDaMarca, etapa, children, onNavigate }: Props) {
   const { t, locale, setLocale } = useLanguage();
   const { pathname } = useLocation();
-  const [failedLogo, setFailedLogo] = useState<string | null>(null);
   const base = empresa ? `/${empresa.slug}/denuncia` : '/denuncia';
   const links = [
     { to: base, label: t('canalExperience.about'), end: true },
@@ -43,11 +43,7 @@ export function CanalLayout({ empresa, config, nomeDoCanal, estiloDaMarca, etapa
       <header className="canal-header">
         <div className="canal-width canal-header-inner">
           <Link to={base} className="canal-brand" aria-label={`${nomeDoCanal} — ${t('canalExperience.about')}`}>
-            {(!empresa || empresa.slug === 'akuris') ? (
-              <img src={akurisLogoLight} width={650} height={195} alt="Akuris" />
-            ) : empresa.logo_url && failedLogo !== empresa.logo_url ? (
-              <img src={empresa.logo_url} alt={nomeDoCanal} onError={() => setFailedLogo(empresa.logo_url)} referrerPolicy="no-referrer" />
-            ) : <span>{nomeDoCanal || 'Akuris'}</span>}
+            <CanalBrand key={empresa?.id ?? 'akuris'} logoUrl={empresa?.logo_url} name={nomeDoCanal} />
           </Link>
           <span className="canal-header-label">{t('publicPortal.canal.titulo')}</span>
           <label className="canal-language">

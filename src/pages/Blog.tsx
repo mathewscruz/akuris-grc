@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { SEO } from '@/components/SEO';
-import { PublicShell } from '@/components/public/PublicShell';
+import { PublicShell, DemoButton } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
 import { frameworksSeo } from '@/data/frameworks-seo';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,18 +24,26 @@ export default function Blog() {
   const { t, locale } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    setLoading(true); setFailed(false);
     (async () => {
-      const { data } = await supabase
+      try {
+      const { data, error } = await supabase
         .from('blog_posts')
         .select('id, slug, titulo, resumo, capa_url, autor, published_at, tags')
         .eq('published', true)
         .order('published_at', { ascending: false });
-      setPosts((data ?? []) as Post[]);
-      setLoading(false);
+      if (error) throw error;
+      if (active) setPosts((data ?? []) as Post[]);
+      } catch { if (active) setFailed(true); }
+      finally { if (active) setLoading(false); }
     })();
-  }, []);
+    return () => { active = false; };
+  }, [retry]);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -67,7 +75,7 @@ export default function Blog() {
 
         {loading ? (
           <p className="text-center text-white/50 py-20">{t('publico.blog.carregando')}</p>
-        ) : posts.length === 0 ? (
+        ) : failed ? <div role="alert" className="site-state"><p>{t('site.loadError')}</p><button className="site-text-link" onClick={() => setRetry(n => n + 1)}>{t('site.retry')}</button></div> : posts.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-white/60 mb-8">{t('publico.blog.vazio')}</p>
             <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
@@ -101,7 +109,7 @@ export default function Blog() {
                   )}
                   <h2 className="text-lg font-semibold mb-2 group-hover:text-[hsl(252,100%,80%)] transition">{post.titulo}</h2>
                   <p className="text-sm text-white/65 mb-4 flex-1 line-clamp-3">{post.resumo}</p>
-                  <div className="flex items-center justify-between text-xs text-white/45">
+                  <div className="flex items-center justify-between text-xs text-white/65">
                     <span>{post.autor}</span>
                     {post.published_at && (
                       <time dateTime={post.published_at}>{format(new Date(post.published_at), locale === 'en' ? 'MMM d, yyyy' : "d 'de' MMM yyyy", locale === 'en' ? undefined : { locale: dateFnsLocale() })}</time>
@@ -120,12 +128,11 @@ export default function Blog() {
           <p className="text-white/70 mb-6 max-w-xl mx-auto">
             {t('publico.blog.ctaSub')}
           </p>
-          <Link
-            to="/"
+          <DemoButton interest="general"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[hsl(252,100%,66%)] hover:bg-[hsl(252,100%,60%)] text-white font-medium transition"
           >
-            {t('publico.blog.ctaBotao')} <IconArrowRight className="w-4 h-4" />
-          </Link>
+            {t('publico.blog.ctaBotao')}
+          </DemoButton>
         </div>
       </section>
     </PublicShell>

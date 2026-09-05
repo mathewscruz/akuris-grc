@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SEO } from '@/components/SEO';
-import { PublicShell } from '@/components/public/PublicShell';
+import { PublicShell, DemoButton } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dateFnsLocale } from '@/lib/date-utils';
@@ -26,26 +26,35 @@ interface PostFull {
 }
 
 export default function BlogPost() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<PostFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
+    let active = true;
+    setLoading(true); setNotFound(false); setFailed(false);
     (async () => {
+      try {
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
         .eq('slug', slug)
         .eq('published', true)
         .maybeSingle();
-      if (error || !data) setNotFound(true);
-      else setPost(data as PostFull);
-      setLoading(false);
+      if (error) throw error;
+      if (active) { if (!data) setNotFound(true); else setPost(data as PostFull); }
+      } catch { if (active) setFailed(true); }
+      finally { if (active) setLoading(false); }
     })();
-  }, [slug]);
+    return () => { active = false; };
+  }, [slug, retry]);
+
+  if (failed) return <PublicShell><div className="site-section lp-container" role="alert"><p>{t('site.loadError')}</p><button className="site-text-link" onClick={() => setRetry(n => n + 1)}>{t('site.retry')}</button></div></PublicShell>;
 
   if (notFound) return <Navigate to="/404" replace />;
 
@@ -93,7 +102,7 @@ export default function BlogPost() {
 
   return (
     <PublicShell>
-      <SEO
+      <SEO contentLanguage="pt-BR"
         title={title}
         description={description}
         canonical={url}
@@ -139,6 +148,7 @@ export default function BlogPost() {
           </Link>
         </div>
       </article>
+      <section className="site-cta lp-container"><div><h2>{t('site.ctaTitle')}</h2><p>{t('site.ctaBody')}</p></div><DemoButton /></section>
     </PublicShell>
   );
 }

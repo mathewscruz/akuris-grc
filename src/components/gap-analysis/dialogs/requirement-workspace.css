@@ -1,0 +1,34 @@
+.requirement-workspace { display:flex; flex:1; flex-direction:column; min-height:0; min-width:0; }
+.requirement-step-nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); padding:12px 24px; border-bottom:1px solid hsl(var(--border)); gap:8px; }
+.requirement-step-nav button { display:flex; align-items:center; text-align:left; gap:10px; padding:10px 12px; border-radius:9px; color:hsl(var(--muted-foreground)); transition:background 180ms,color 180ms; }
+.requirement-step-nav button:hover { background:hsl(var(--muted)/.6); }
+.requirement-step-nav button[aria-current=step] { background:hsl(var(--primary)/.07); color:hsl(var(--primary)); }
+.requirement-step-number { display:grid; place-items:center; flex:none; width:28px; height:28px; border:1px solid hsl(var(--border)); border-radius:8px; font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; }
+button[aria-current=step] .requirement-step-number { background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); border-color:transparent; }
+.requirement-step-nav strong { display:block; font-size:13px; font-weight:600; }
+.requirement-step-nav small { display:block; font-size:11px; color:hsl(var(--muted-foreground)); line-height:1.4; margin-top:3px; }
+.requirement-next-action { display:flex; align-items:baseline; gap:10px; flex-shrink:0; padding:10px 28px; border-bottom:1px solid hsl(var(--border)/.6); font-size:12px; line-height:1.5; }
+.requirement-next-action>span { color:hsl(var(--muted-foreground)); flex:none; }
+.requirement-next-action button { text-align:left; font-weight:500; }
+.requirement-next-action button:hover { color:hsl(var(--primary)); }
+.requirement-next-action small { margin-left:auto; white-space:nowrap; color:hsl(var(--muted-foreground)); font-variant-numeric:tabular-nums; }
+.requirement-workspace-scroll { min-height:0; flex:1; overflow-y:auto; overscroll-behavior:contain; padding:24px 28px; }
+.requirement-panel { max-width:920px; margin-inline:auto; outline:none; animation:requirement-step-in 180ms ease-out; }
+.requirement-panel[hidden] { display:none!important; }
+.requirement-brief { padding-bottom:20px; border-bottom:1px solid hsl(var(--border)); }
+.requirement-section-label { font-size:12px; color:hsl(var(--primary)); font-weight:600; }
+.requirement-brief h3 { margin-block:8px 12px; font-size:22px; letter-spacing:-.02em; line-height:1.3; font-weight:600; }
+.requirement-brief p { font-size:14px; line-height:1.8; color:hsl(var(--muted-foreground)); white-space:pre-line; }
+.requirement-work h3,.requirement-implementation>h3 { font-size:14px; font-weight:600; margin-bottom:14px; }
+.requirement-work ol { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+.requirement-work li { display:flex; align-items:flex-start; gap:10px; }
+.requirement-work li>span { flex:none; min-width:18px; white-space:nowrap; font-size:11px; color:hsl(var(--primary)); padding-top:3px; font-variant-numeric:tabular-nums; }
+.requirement-work strong { font-size:13px; font-weight:600; }
+.requirement-work p { font-size:12px; line-height:1.7; color:hsl(var(--muted-foreground)); margin-top:5px; }
+.requirement-footer { display:flex; align-items:center; gap:8px; }
+.requirement-footer-step { margin-right:auto; font-size:12px; color:hsl(var(--muted-foreground)); }
+.requirement-step-nav button:focus-visible,.requirement-next-action button:focus-visible { outline:2px solid hsl(var(--primary)); outline-offset:2px; }
+@keyframes requirement-step-in { from { opacity:.4; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:700px) { .requirement-step-nav { padding:10px; gap:2px; } .requirement-step-nav button { flex-direction:column; text-align:center; gap:6px; padding:8px 2px; } .requirement-step-nav small { display:none; } .requirement-step-nav strong { font-size:11px; } .requirement-next-action { padding:10px 16px; flex-wrap:wrap; gap:4px 8px; } .requirement-next-action>span { display:none; } .requirement-next-action button { flex:1; } .requirement-workspace-scroll { padding:20px 16px; } .requirement-work ol { grid-template-columns:1fr; gap:14px; } .requirement-brief h3 { font-size:18px; } .requirement-footer { flex-wrap:wrap; } .requirement-footer-step { display:none; } .requirement-footer>button:first-child { margin-right:auto; } }
+@media(prefers-reduced-motion:reduce) { .requirement-panel { animation:none; } .requirement-step-nav button { transition:none; } }
+[data-reduce-motion=true] .requirement-panel { animation:none; }

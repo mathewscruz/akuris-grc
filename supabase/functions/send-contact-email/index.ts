@@ -4,6 +4,9 @@ import { Resend } from "npm:resend@6.26.0";
 import { authCorsHeaders } from "../_shared/cors.ts";
 import { EMAIL_FROM, emailDocument, escapeHtml, htmlToText } from "../_shared/email.ts";
 
+import { validar, type ContactFormData } from "../_shared/contact-input.ts";
+import { deliverContact } from "../_shared/contact-delivery.ts";
+
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Para onde vai o contacto do site.
@@ -35,19 +38,9 @@ function destinatarios(): string[] {
   return lista;
 }
 
-interface ContactFormData {
-  name: string;
-  email: string;
-  company?: string;
-  phone?: string;
-  role?: string;
-  companySize?: string;
-  message?: string;
-}
-
 // Tetos de tamanho. A tabela nao tinha nenhum e aceitava mensagem de qualquer
 // dimensao vinda de quem nao esta autenticado.
-const LIMITES = { name: 120, email: 254, company: 160, phone: 40, role: 120, companySize: 80, message: 1000 };
+
 
 /** SHA-256 em hexadecimal — e o formato que `consume_contact_form_attempt` exige. */
 async function sha256Hex(valor: string): Promise<string> {
@@ -55,21 +48,6 @@ async function sha256Hex(valor: string): Promise<string> {
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-/** Devolve a primeira falha de validacao, ou null se estiver tudo bem. */
-function validar(d: ContactFormData): string | null {
-  const nome = (d?.name ?? "").trim();
-  const email = (d?.email ?? "").trim();
-  const empresa = (d?.company ?? "").trim();
-  const tamanho = (d?.companySize ?? "").trim();
-  if (!nome || !email || !empresa || !tamanho) return "Nome, e-mail, empresa e porte são obrigatórios";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "E-mail invalido";
-  for (const [campo, max] of Object.entries(LIMITES)) {
-    const v = (d as unknown as Record<string, string | undefined>)[campo];
-    if (v && v.length > max) return `Campo ${campo} excede ${max} caracteres`;
-  }
-  return null;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -99,7 +77,9 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
       });
     }
-    const contactData: ContactFormData = JSON.parse(raw || '{}');
+    let contactData: ContactFormData;
+    try { contactData = JSON.parse(raw || '{}'); }
+    catch { return new Response(JSON.stringify({ success: false, error: 'Invalid JSON' }), { status: 400, headers: { "Content-Type": "application/json", ...authCorsHeaders(req) } }); }
 
     const problema = validar(contactData);
     if (problema) {
@@ -137,6 +117,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Idempotency is bound to the complete validated payload, not just a user-supplied UUID.
+    const requestHash = await sha256Hex(JSON.stringify([
+      contactData.name.trim(), contactData.email.trim(), contactData.company?.trim(),
+      contactData.phone?.trim() || '', contactData.role?.trim() || '', contactData.companySize,
+      contactData.message?.trim() || '', contactData.locale || 'pt-BR', contactData.interest || 'general',
+      contactData.plan || '', contactData.source || '/',
+    ]));
     // `select().single()` para termos o id: a marcacao de processado usava
     // `.eq(email).eq(name)`, que casa com qualquer envio anterior da mesma
     // pessoa — e corria com a chave anon, cuja politica de UPDATE exige
@@ -144,6 +131,12 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: submissao, error: dbError } = await supabase
       .from("contact_form_submissions")
       .insert({
+        request_id: contactData.requestId || crypto.randomUUID(),
+        request_hash: requestHash,
+        locale: contactData.locale || 'pt-BR',
+        interest: contactData.interest || 'general',
+        plan_code: contactData.plan || null,
+        source_path: contactData.source || '/',
         name: contactData.name.trim(),
         email: contactData.email.trim(),
         company: contactData.company?.trim() || null,
@@ -155,8 +148,16 @@ const handler = async (req: Request): Promise<Response> => {
       .select("id")
       .single();
 
+    if (dbError?.code === '23505' && contactData.requestId) {
+      const { data: prior, error: readError } = await supabase.from("contact_form_submissions")
+        .select("request_hash").eq("request_id", contactData.requestId).maybeSingle();
+      if (!readError && prior?.request_hash === requestHash) {
+        return new Response(JSON.stringify({ success: true, registered: true }), { status: 200, headers: { "Content-Type": "application/json", ...authCorsHeaders(req) } });
+      }
+      return new Response(JSON.stringify({ success: false, error: 'Request conflict' }), { status: 409, headers: { "Content-Type": "application/json", ...authCorsHeaders(req) } });
+    }
     if (dbError) {
-      console.error("Database error:", dbError);
+      console.error("Contact database write failed", { code: dbError.code });
       throw new Error("Failed to save contact form data");
     }
 
@@ -168,23 +169,30 @@ const handler = async (req: Request): Promise<Response> => {
         <tr><td style="padding:10px 0;color:#687589">Empresa</td><td style="padding:10px 0">${escapeHtml(contactData.company)}</td></tr>
         <tr><td style="padding:10px 0;color:#687589">Porte</td><td style="padding:10px 0">${escapeHtml(contactData.companySize)}</td></tr>
         ${contactData.role ? `<tr><td style="padding:10px 0;color:#687589">Cargo</td><td style="padding:10px 0">${escapeHtml(contactData.role)}</td></tr>` : ""}
+        <tr><td style="padding:10px 0;color:#687589">Contexto</td><td style="padding:10px 0">${escapeHtml(contactData.interest || 'general')} · ${escapeHtml(contactData.plan || '')} · ${escapeHtml(contactData.locale || 'pt-BR')} · ${escapeHtml(contactData.source || '/')}</td></tr>
       </table>
       ${contactData.message ? `<div style="margin-top:22px;padding-top:20px;border-top:1px solid #e7ebf0"><p style="margin:0 0 8px;color:#687589;font-size:13px">Desafio informado</p><p style="margin:0;white-space:pre-line">${escapeHtml(contactData.message)}</p></div>` : ""}`;
     const emailHtml = emailDocument("Nova solicitação de demonstração", emailBody, { eyebrow: "Contato comercial" });
-    const emailResponse = await resend.emails.send({
+    const delivery = await deliverContact(() => resend.emails.send({
       from: EMAIL_FROM,
       to: destinatarios(),
       replyTo: contactData.email.trim(),
       subject: `[Novo contato] ${contactData.company?.trim()} — ${contactData.name.trim()}`,
       html: emailHtml,
       text: htmlToText(emailHtml),
-    });
-
-    console.log("Contact email sent successfully:", emailResponse);
+    }, { idempotencyKey: 'contact/' + submissao.id }));
+    // Persist the lead even when the notification fails; never ask the visitor to submit again.
+    if (!delivery.accepted) console.error('Contact notification failed', { submissionId: submissao.id, code: delivery.errorCode });
 
     const { error: marcarError } = await supabase
       .from("contact_form_submissions")
-      .update({ status: "processed", processed_at: new Date().toISOString() })
+      .update({
+        status: delivery.accepted ? "processed" : "failed",
+        processed_at: delivery.accepted ? new Date().toISOString() : null,
+        notification_provider_id: delivery.providerId,
+        notification_attempts: delivery.attempts,
+        notification_error: delivery.errorCode,
+      })
       .eq("id", submissao.id);
 
     if (marcarError) {
@@ -196,15 +204,17 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Mensagem enviada com sucesso!" 
+        registered: true,
+        notificationAccepted: delivery.accepted,
+        message: "Solicitação registrada"
       }), {
-        status: 200,
+        status: delivery.accepted ? 200 : 202,
         headers: { "Content-Type": "application/json", ...authCorsHeaders(req) },
       }
     );
 
   } catch (error: any) {
-    console.error("Error in send-contact-email function:", error);
+    console.error("Error in send-contact-email function", { code: "contact_internal_error" });
     
     return new Response(
       JSON.stringify({ 

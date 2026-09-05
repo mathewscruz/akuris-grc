@@ -1,0 +1,2 @@
+export const DEMO_INTERESTS = ['general', 'grc', 'privacy', 'thirdParties', 'channel', 'migration', 'trust', 'plans', 'guides', 'gap', 'dashboard', 'actions', 'projects', 'controls', 'audits', 'assets', 'licenses', 'keys', 'contracts', 'documents', 'systems', 'privileged', 'reviews', 'incidents', 'continuity', 'reports', 'settings'] as const;
+export type DemoInterest = typeof DEMO_INTERESTS[number];

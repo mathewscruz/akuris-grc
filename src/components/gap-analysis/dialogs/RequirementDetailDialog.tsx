@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ConformitySelect } from '../ConformitySelect';
+import './requirement-workspace.css';
+import { implementationExcerpt } from '@/lib/requirement-guidance-summary';
 // (Skeleton removido — substituído por AkurisPulse)
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/toast";
@@ -28,7 +30,6 @@ import { logger } from '@/lib/logger';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useMotionAllowed } from '@/lib/motion-preferences';
 import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -87,58 +88,15 @@ const emptyEvaluationData = (): EvaluationData => ({
 });
 
 // ---------------------------------------------------------------------------
-// Status Segmented Control — barra inline para mudar conformity_status
+// Rótulos para confirmar a atualização de conformity_status
 // ---------------------------------------------------------------------------
-const getStatusOptions = (t: (key: string) => string): Array<{ value: ConformityStatus; label: string; activeClass: string }> => [
-  { value: 'conforme', label: t('gapUi.status.conforme'), activeClass: 'bg-success text-success-foreground hover:bg-success/90 border-success' },
-  { value: 'parcial', label: t('gapUi.status.parcial'), activeClass: 'bg-warning text-warning-foreground hover:bg-warning/90 border-warning' },
-  { value: 'nao_conforme', label: t('gapUi.status.naoConforme'), activeClass: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' },
-  { value: 'nao_aplicavel', label: t('gapUi.status.na'), activeClass: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary' },
+const getStatusOptions = (t: (key: string) => string): Array<{ value: ConformityStatus; label: string }> => [
+  { value: 'nao_avaliado', label: t('gapUi.status.naoAvaliado') },
+  { value: 'conforme', label: t('gapUi.status.conforme') },
+  { value: 'parcial', label: t('gapUi.status.parcial') },
+  { value: 'nao_conforme', label: t('gapUi.status.naoConforme') },
+  { value: 'nao_aplicavel', label: t('gapUi.status.na') },
 ];
-
-const StatusSegmentedControl: React.FC<{
-  value: string | null | undefined;
-  onChange: (next: ConformityStatus) => void;
-  disabled?: boolean;
-}> = ({ value, onChange, disabled }) => {
-  const { t } = useLanguage();
-  const STATUS_OPTIONS = getStatusOptions(t);
-  return (
-  /*
-    `role="radiogroup"` e `aria-checked`: quatro estados, um só escolhido.
-
-    Medido na árvore de acessibilidade: os quatro botões não tinham
-    `aria-pressed` nem `aria-checked` nenhum. A escolha era comunicada só
-    pela COR de fundo — quem usa leitor de ecrã ouvia «Conforme, Parcial,
-    Não Conforme, N/A» sem saber qual estava marcado, e é esta a decisão
-    central de todo o módulo.
-  */
-  <div role="radiogroup" aria-label={t('gapUi.detail.statusLabel')} className="inline-flex flex-wrap gap-1.5 rounded-lg bg-card p-1 border">
-    {STATUS_OPTIONS.map(opt => {
-      const isActive = value === opt.value;
-      return (
-        <button
-          key={opt.value}
-          type="button"
-          role="radio"
-          aria-checked={isActive}
-          disabled={disabled}
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            'h-8 px-3 text-xs font-medium rounded-md border transition-ui',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            isActive
-              ? opt.activeClass + ' shadow-sm'
-              : 'bg-background text-muted-foreground border-transparent hover:bg-background hover:text-foreground hover:border-border'
-          )}
-        >
-          {opt.label}
-        </button>
-      );
-    })}
-  </div>
-  );
-};
 
 // ---------------------------------------------------------------------------
 // Journey Step — passo numerado da jornada de avaliação
@@ -146,7 +104,7 @@ const StatusSegmentedControl: React.FC<{
 type StepState = 'complete' | 'active' | 'pending';
 
 const JourneyStep: React.FC<{
-  number: number;
+  number?: number;
   id?: string;
   title: string;
   description?: string;
@@ -164,9 +122,9 @@ const JourneyStep: React.FC<{
 
   const headerContent = (
     <div className="flex items-start gap-3 w-full">
-      <div className={cn('flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold shrink-0 mt-0.5', numberClass)}>
+      {number !== undefined && <div aria-hidden="true" className={cn('flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold shrink-0 mt-0.5', numberClass)}>
         {state === 'complete' ? <IconCheck className="h-3.5 w-3.5" strokeWidth={2.5} /> : number}
-      </div>
+      </div>}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>
@@ -190,13 +148,13 @@ const JourneyStep: React.FC<{
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 pb-4 pt-1 sm:ml-8">{children}</div>
+            <div className={cn("px-4 pb-4 pt-1", number !== undefined && "sm:ml-8")}>{children}</div>
           </CollapsibleContent>
         </Collapsible>
       ) : (
         <>
           <div className="p-3">{headerContent}</div>
-          <div className="px-4 pb-4 sm:ml-8">{children}</div>
+          <div className={cn("px-4 pb-4", number !== undefined && "sm:ml-8")}>{children}</div>
         </>
       )}
     </section>
@@ -324,7 +282,7 @@ const MarkdownContent = ({ content }: { content: string }) => {
     const h2Match = line.trim().match(/^##\s+(.+)/);
     if (h2Match) {
       if (current.lines.length > 0 || current.title) sections.push(current);
-      current = { title: h2Match[1], lines: [] };
+      current = { title: h2Match[1].replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, ''), lines: [] };
     } else {
       current.lines.push(line);
     }
@@ -406,18 +364,30 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   */
   const orientacao = useOrientacaoRequisito(open ? requirement.id : null, open);
   const guidanceText = orientacao.texto;
+  const implementationText = implementationExcerpt(guidanceText || requirement.orientacao_implementacao);
   const evidenciasText = orientacao.evidencias;
   const diagnosticQuestions = orientacao.perguntas;
   const generatingGuidance = orientacao.estado === 'gerando';
   const guidanceErro = orientacao.estado === 'falha' ? 'falha' : null;
-  const [guidanceOpen, setGuidanceOpen] = useState(true);
-  const motionAllowed = useMotionAllowed();
+  const [guidanceOpen, setGuidanceOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const workspaceSteps = ['understand', 'evaluate', 'prove', 'review'] as const;
+  useEffect(() => { if (open) { setActiveStep(0); setGuidanceOpen(false); } }, [open, requirement.id]);
   const requirementBody = useRef<HTMLDivElement>(null);
   const goToSection = (id: string) => {
-    const section = requirementBody.current?.querySelector<HTMLElement>(`#${id}`);
-    section?.scrollIntoView({ behavior: motionAllowed ? 'smooth' : 'instant', block: 'start' });
-    section?.focus({ preventScroll: true });
+    const index = id === 'requirement-guidance' ? 0 : id === 'requirement-diagnosis' ? 1 : id === 'requirement-evidence' ? 2 : 3;
+    setActiveStep(index);
+    requestAnimationFrame(() => {
+      const section = requirementBody.current?.querySelector<HTMLElement>('#' + id);
+      section?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      section?.focus({ preventScroll: true });
+    });
   };
+  useEffect(() => {
+    if (!open || loading) return;
+    requirementBody.current?.scrollTo({ top: 0 });
+    requirementBody.current?.querySelector<HTMLElement>('#requirement-panel-' + activeStep)?.focus({ preventScroll: true });
+  }, [activeStep, open, loading]);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<number, 'sim' | 'parcial' | 'nao' | null>>({});
   const { openDocGen } = useDocGen();
   const [validatingUrl, setValidatingUrl] = useState<string | null>(null);
@@ -435,6 +405,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [linkedEvidenceCount, setLinkedEvidenceCount] = useState(0);
 
   const [formData, setFormData] = useState<EvaluationData>(emptyEvaluationData);
+  const savedDraftRef = useRef<string | null>(null);
+  // An ID created by an inline status save is not an unsaved draft edit.
+  const draftSnapshot = JSON.stringify({ formData: { ...formData, id: undefined }, diagnosticAnswers });
+  useEffect(() => {
+    if (loading) savedDraftRef.current = null;
+    else if (savedDraftRef.current === null) savedDraftRef.current = draftSnapshot;
+  }, [loading, draftSnapshot]);
+  const isDirty = !loading && savedDraftRef.current !== null && savedDraftRef.current !== draftSnapshot;
 
   const fallbackDiagnosticQuestions = useMemo<PerguntaDiagnostico[]>(() => [
     { pergunta: t('gapUi.detail.fallbackDiagnostic.q1'), peso: 3 },
@@ -686,6 +664,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   };
 
   const handleSave = async () => {
+    if (loading || saving || savingStatus || uploading || !empresaId) return;
     setSaving(true);
     try {
       let evaluationId = formData.id || requirement.evaluation_id;
@@ -822,10 +801,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     justification: t('gapUi.detail.completion.justification'),
   };
 
+  const completionSections: Record<RequirementCompletionKey, string> = {
+    diagnostic: 'requirement-diagnosis', status: 'requirement-diagnosis',
+    evidence: 'requirement-evidence', plan: 'requirement-plan',
+    ownerDeadline: 'requirement-details', justification: 'requirement-details',
+  };
+  const nextCriterion = completionCriteria.find(criterion => !criterion.done);
+
   // CTA contextual no footer
   const footerLabel = useMemo(() => {
     if (saving) return t('gapUi.detail.footer.saving');
-    if (allCompletionDone) return t('gapUi.detail.footer.finishEvaluation');
+    if (allCompletionDone) return t('gapUi.workspace.save');
     return t('gapUi.detail.footer.saveDraft');
   }, [saving, allCompletionDone, t]);
 
@@ -859,30 +845,43 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         size="2xl"
         noScroll
         onSubmit={handleSave}
+        isDirty={isDirty}
+        description={t('gapUi.workspace.reviewHintFull')}
+        descriptionSrOnly
+        footer={<div className="requirement-footer">
+          <Button variant="ghost" size="sm" disabled={activeStep === 0 || loading} onClick={() => setActiveStep(step => step - 1)}>{t('gapUi.workspace.back')}</Button>
+          <span className="requirement-footer-step">{t('gapUi.workspace.stepOf', { step: activeStep + 1 })}</span>
+          <Button variant={activeStep === 3 ? 'default' : 'outline'} size="sm" disabled={loading || saving || savingStatus || uploading} onClick={handleSave}>{footerLabel}</Button>
+          {activeStep < 3 && <Button size="sm" disabled={loading} onClick={() => setActiveStep(step => step + 1)}>{t('gapUi.workspace.next')} <span aria-hidden="true">→</span></Button>}
+        </div>}
         submitLabel={footerLabel}
         isSubmitting={saving}
         submitDisabled={loading}
         className="akuris-requirement-dialog h-[100dvh] sm:h-[90vh] sm:max-h-[960px]"
       >
-        <div ref={requirementBody} className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden">
-          <nav aria-label={t('experience.requirementNavigation')} className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b px-5 py-2 sm:px-7">
-            {[['requirement-guidance', 'experience.requirementGuidance'], ['requirement-diagnosis', 'experience.requirementDiagnosis'], ['requirement-evidence', 'experience.requirementEvidence'], ['requirement-details', 'experience.requirementDetails']].map(([id, key]) => (
-              <button key={id} type="button" className="rounded px-1 py-1.5 text-xs font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onClick={() => goToSection(id)}>{t(key)}</button>
-            ))}
+        <div className="requirement-workspace">
+          <nav className="requirement-step-nav" aria-label={t('experience.requirementNavigation')}>
+            {workspaceSteps.map((step, index) => <button key={step} type="button" disabled={loading} aria-current={activeStep === index ? 'step' : undefined} aria-controls={'requirement-panel-' + index} onClick={() => setActiveStep(index)}>
+              <span className="requirement-step-number" aria-hidden="true">0{index + 1}</span>
+              <span><strong>{t('gapUi.workspace.' + step)}</strong><small>{t('gapUi.workspace.' + step + 'Hint')}</small></span>
+            </button>)}
           </nav>
-          {/* Status agora vive dentro do Step 1 "Avaliar Conformidade" (painel
-              direito), evitando duplicar a ação em dois lugares. */}
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <AkurisPulse size={32} className="text-primary" />
-            </div>
-          ) : (
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-              {/* ============================================ */}
-              {/* LEFT PANEL — Apenas leitura/educação        */}
-              {/* ============================================ */}
-              <div id="requirement-guidance" tabIndex={-1} className="min-w-0 shrink-0 border-b border-border/70 bg-surface-1/40 focus-visible:outline-none lg:min-h-0 lg:w-[36%] lg:overflow-y-auto lg:border-b-0 lg:border-r">
-                <div className="space-y-4 p-5 lg:p-6">
+          {!loading && <div className="requirement-next-action"><span>{t('gapUi.workspace.nextAction')}</span><button type="button" onClick={() => goToSection(nextCriterion ? completionSections[nextCriterion.key] : 'requirement-details')}>{nextCriterion ? completionLabels[nextCriterion.key] : t('gapUi.workspace.ready')} <span aria-hidden="true">→</span></button><small>{t('gapUi.detail.completion.progress', { done: completionDone, total: completionCriteria.length })}</small></div>}
+          <div ref={requirementBody} className="requirement-workspace-scroll">
+            {loading ? <div className="flex justify-center py-16"><AkurisPulse size={32} className="text-primary" /></div> : <>
+              <div id="requirement-panel-0" className="requirement-panel" hidden={activeStep !== 0} tabIndex={-1} aria-label={t('gapUi.workspace.understand')}>
+                <div id="requirement-guidance" tabIndex={-1} className="requirement-understand">
+                <div className="space-y-5">
+                  <div className="requirement-brief">
+                    <span className="requirement-section-label">{t('gapUi.workspace.overview')}</span>
+                    <h3>{requirement.titulo}</h3>
+                    <p>{requirement.descricao || t('gapUi.workspace.noDescription')}</p>
+                  </div>
+                  <div className="requirement-work">
+                    <h3>{t('gapUi.workspace.workTitle')}</h3>
+                    <ol>{[1, 2, 3].map(n => <li key={n}><span aria-hidden="true">0{n}</span><div><strong>{t(`gapUi.workspace.work${n}`)}</strong><p>{t(`gapUi.workspace.work${n}Body`)}</p></div></li>)}</ol>
+                  </div>
+                  {implementationText && <div className="requirement-implementation"><h3>{t('gapUi.workspace.implementation')}</h3><MarkdownContent content={implementationText} /></div>}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
@@ -891,7 +890,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       aria-expanded={guidanceOpen}
                     >
                       <IconBook className="h-4 w-4 text-primary" strokeWidth={1.5} />
-                      <h4 className="text-sm font-semibold text-foreground">{t('gapUi.detail.guidanceTitle')}</h4>
+                      <h4 className="text-sm font-semibold text-foreground">{t('gapUi.workspace.readGuidance')}</h4>
                       <IconChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
                     </button>
                     {isSuperAdmin && (
@@ -908,35 +907,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     )}
                   </div>
 
-                  <p className="text-micro leading-5 text-muted-foreground">{t('experience.guidanceIncluded')}</p>
+                  {guidanceOpen && <p className="text-micro leading-5 text-muted-foreground">{t('experience.guidanceIncluded')}</p>}
                   {guidanceOpen && (generatingGuidance && !guidanceText ? (
                     <GuidanceSkeleton />
                   ) : guidanceText ? (
                     <>
                       <MarkdownContent content={guidanceText} />
 
-                      {evidenciasText && (
-                        <div className="mt-5 pt-5 border-t border-border/50">
-                          <div className="flex items-center gap-1.5 mb-3">
-                            <IconSuccess className="h-4 w-4 text-success" strokeWidth={1.5} />
-                            <h4 className="text-sm font-bold text-foreground">{t('gapUi.detail.acceptedEvidenceExamples')}</h4>
-                          </div>
-                          <ul className="space-y-2">
-                            {evidenciasText.split('\n').filter(l => l.trim()).map((ex, i) => (
-                              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground leading-6">
-                                <IconSuccess className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
-                                <span>{ex.replace(/^[-•*]\s*/, '').trim()}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+
                     </>
                   ) : (
                     <div className="space-y-3">
-                      {requirement.descricao && (
-                        <p className="text-sm text-muted-foreground leading-7">{requirement.descricao}</p>
-                      )}
                       {/*
                         Dizer a verdade sobre o estado, e oferecer a saída certa.
 
@@ -973,7 +954,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                 </div>
 
                 {/* Controlos internos que implementam este requisito (N para N) */}
-                <div className="px-5 pb-5">
+                <div className="mt-6 border-t pt-5">
                   <div className="flex items-center gap-1.5 mb-2">
                     <IconShield className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                     <h4 className="text-sm font-bold text-foreground">{t('vinculoReq.controlosLigados')}</h4>
@@ -996,67 +977,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* ============================================ */}
-              {/* RIGHT PANEL — Jornada numerada              */}
-              {/* ============================================ */}
-              <div className="min-w-0 shrink-0 bg-popover lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-                <div className="space-y-3 p-5 lg:p-6">
-
-                  <details className="group rounded-lg border border-border/80 bg-surface-1/30 p-3" aria-labelledby="completion-title">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                      <div>
-                        <p id="completion-title" className="text-sm font-semibold text-foreground">
-                          {t('gapUi.detail.completion.title')}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {allCompletionDone
-                            ? t('gapUi.detail.completion.ready')
-                            : t('gapUi.detail.completion.hint')}
-                        </p>
-                      </div>
-                      <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-muted-foreground">
-                        {t('gapUi.detail.completion.progress', { done: completionDone, total: completionCriteria.length })}
-                        <IconChevronDown className="h-4 w-4 group-open:rotate-180" />
-                      </span>
-                    </summary>
-                    <div
-                      className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
-                      role="progressbar"
-                      aria-label={t('gapUi.detail.completion.title')}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={completionProgress}
-                    >
-                      <div
-                        className={cn('akuris-motion-data h-full rounded-full transition-[width] motion-reduce:transition-none', allCompletionDone ? 'bg-success' : 'bg-primary')}
-                        style={{ width: `${completionProgress}%` }}
-                      />
-                    </div>
-                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {completionCriteria.map((criterion) => (
-                        <li key={criterion.key} className="flex items-start gap-2 text-xs">
-                          <span className={cn(
-                            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                            criterion.done
-                              ? 'border-success bg-success text-success-foreground'
-                              : 'border-muted-foreground/40 text-transparent',
-                          )}>
-                            <IconCheck className="h-2.5 w-2.5" strokeWidth={2.5} />
-                          </span>
-                          <span className={criterion.done ? 'text-foreground' : 'text-muted-foreground'}>
-                            {completionLabels[criterion.key]}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-
-                  {/* ===== STEP 1: Avaliar Conformidade ===== */}
+              </div></div>
+              <div id="requirement-panel-1" className="requirement-panel" hidden={activeStep !== 1} tabIndex={-1} aria-label={t('gapUi.workspace.evaluate')}>                  {/* ===== STEP 1: Avaliar Conformidade ===== */}
                   <JourneyStep
                     id="requirement-diagnosis"
-                    number={1}
+                    number={2}
                     title={t('gapUi.detail.step1Title')}
                     description={t('gapUi.detail.step1Description')}
                     state={isStatusDefined && diagnosticDone ? 'complete' : 'active'}
@@ -1131,7 +1056,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               size="sm"
                               variant="default"
                               className="h-7 text-xs shrink-0"
-                              disabled={savingStatus || currentStatus === diagnosticSuggestion.suggested}
+                              disabled={!diagnosticDone || savingStatus || currentStatus === diagnosticSuggestion.suggested}
                               onClick={() => handleStatusChange(diagnosticSuggestion.suggested)}
                             >
                               <IconCheck className="h-3 w-3 mr-1" strokeWidth={2} />
@@ -1142,21 +1067,20 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
                         <div className="space-y-2 border-t border-border/50 pt-3">
                           <Label className="text-xs">{t('gapUi.detail.finalDecision')}</Label>
-                          <StatusSegmentedControl
-                            value={currentStatus}
-                            onChange={handleStatusChange}
-                            disabled={savingStatus || loading}
-                          />
+                          <div className="max-w-sm"><ConformitySelect value={currentStatus} onValueChange={value => handleStatusChange(value as ConformityStatus)} disabled={savingStatus || loading} /></div>
+                          <p className="text-xs leading-5 text-muted-foreground">{t('gapUi.workspace.suggestionHint')}</p>
+                          <p className="text-xs leading-5 text-muted-foreground">{t('gapUi.workspace.savedStatus')}</p>
                           {savingStatus && <AkurisPulse size={14} className="text-muted-foreground" />}
                         </div>
                       </div>
                     </div>
                   </JourneyStep>
 
-                  {/* ===== STEP 2: Evidências ===== */}
+</div>
+              <div id="requirement-panel-2" className="requirement-panel" hidden={activeStep !== 2} tabIndex={-1} aria-label={t('gapUi.workspace.prove')}>                  {/* ===== STEP 2: Evidências ===== */}
                   <JourneyStep
                     id="requirement-evidence"
-                    number={2}
+                    number={3}
                     title={t('gapUi.detail.step2Title')}
                     description={t('gapUi.detail.step2Description')}
                     state={evidenciasCount > 0 ? 'complete' : (isStatusDefined ? 'active' : 'pending')}
@@ -1167,6 +1091,22 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     }
                   >
                     <div className="space-y-3">
+                      {(evidenciasText || requirement.exemplos_evidencias) && (
+                        <div className="requirement-evidence-examples mb-5 rounded-lg bg-surface-1/50 p-4">
+                          <div className="flex items-center gap-1.5 mb-3">
+                            <IconSuccess className="h-4 w-4 text-success" strokeWidth={1.5} />
+                            <h4 className="text-sm font-bold text-foreground">{t('gapUi.detail.acceptedEvidenceExamples')}</h4>
+                          </div>
+                          <ul className="space-y-2">
+                            {(evidenciasText || requirement.exemplos_evidencias || '').split('\n').filter(l => l.trim()).map((ex, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground leading-6">
+                                <IconSuccess className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
+                                <span>{ex.replace(/^[-•*]\s*/, '').trim()}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}<p className="text-xs leading-5 text-muted-foreground">{t('gapUi.workspace.evidenceHint')}</p>
                       {/*
                         Um documento aprovado vale por muitos ficheiros soltos.
 
@@ -1261,7 +1201,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       </div>
 
                       <p className="text-micro text-muted-foreground flex items-start gap-1.5">
-                        {t('gapUi.detail.afterAttachHint').split('Validar com IA')[0]}<strong className="mx-0.5 text-foreground">{t('gapUi.detail.validateWithAi')}</strong>{t('gapUi.detail.afterAttachHint').split('Validar com IA')[1]}
+                        {t('gapUi.detail.afterAttachHint')}
                       </p>
 
                       {/* Drop zone */}
@@ -1367,10 +1307,62 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     </div>
                   </JourneyStep>
 
+</div>
+              <div id="requirement-panel-3" className="requirement-panel space-y-5" hidden={activeStep !== 3} tabIndex={-1} aria-label={t('gapUi.workspace.review')}>
+                <p className="text-sm leading-6 text-muted-foreground">{t('gapUi.workspace.reviewHintFull')}</p>
+                                  <details open className="group rounded-lg border border-border/80 bg-surface-1/30 p-3" aria-labelledby="completion-title">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      <div>
+                        <p id="completion-title" className="text-sm font-semibold text-foreground">
+                          {t('gapUi.detail.completion.title')}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {allCompletionDone
+                            ? t('gapUi.detail.completion.ready')
+                            : t('gapUi.detail.completion.hint')}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-muted-foreground">
+                        {t('gapUi.detail.completion.progress', { done: completionDone, total: completionCriteria.length })}
+                        <IconChevronDown className="h-4 w-4 group-open:rotate-180" />
+                      </span>
+                    </summary>
+                    <div
+                      className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
+                      role="progressbar"
+                      aria-label={t('gapUi.detail.completion.title')}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={completionProgress}
+                    >
+                      <div
+                        className={cn('akuris-motion-data h-full rounded-full transition-[width] motion-reduce:transition-none', allCompletionDone ? 'bg-success' : 'bg-primary')}
+                        style={{ width: `${completionProgress}%` }}
+                      />
+                    </div>
+                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {completionCriteria.map((criterion) => (
+                        <li key={criterion.key} className="flex items-start gap-2 text-xs">
+                          <span className={cn(
+                            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            criterion.done
+                              ? 'border-success bg-success text-success-foreground'
+                              : 'border-muted-foreground/40 text-transparent',
+                          )}>
+                            <IconCheck className="h-2.5 w-2.5" strokeWidth={2.5} />
+                          </span>
+                          <button type="button" onClick={() => goToSection(completionSections[criterion.key])} className="text-left text-foreground underline-offset-4 hover:text-primary hover:underline">
+                            {completionLabels[criterion.key]}<span className="sr-only"> — {t(criterion.done ? 'gapUi.workspace.completionDone' : 'gapUi.workspace.completionPending')}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+
                   {/* ===== STEP 3: Plano de Ação (condicional) ===== */}
                   {requiresPlanoStep && (
                     <JourneyStep
-                      number={3}
+                      id="requirement-plan"
                       title={t('gapUi.detail.step3Title')}
                       description={t('gapUi.detail.step3Description')}
                       state={planoStepDone ? 'complete' : 'active'}
@@ -1421,11 +1413,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {/* ===== STEP 4: Detalhes da Avaliação ===== */}
                   <JourneyStep
                     id="requirement-details"
-                    number={requiresPlanoStep ? 4 : 3}
                     title={t('gapUi.detail.step4Title')}
                     description={t('gapUi.detail.step4Description')}
                     state={detalhesDone ? 'complete' : 'pending'}
-                    badge={detalhesDone ? <Badge variant="success" className="text-micro">{t('gapUi.detail.complete')}</Badge> : <Badge variant="outline" className="text-micro">{t('gapUi.detail.optional')}</Badge>}
+                    badge={<span className="text-xs text-muted-foreground">{t(isNonCompliant ? 'gapUi.workspace.required' : 'gapUi.detail.optional')}</span>}
                   >
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1468,7 +1459,6 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
                   {/* ===== STEP 5: Vínculos & Histórico (colapsado) ===== */}
                   <JourneyStep
-                    number={requiresPlanoStep ? 5 : 4}
                     title={t('gapUi.detail.step5Title')}
                     description={t('gapUi.detail.step5Description')}
                     state="pending"
@@ -1509,10 +1499,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     </div>
                   </JourneyStep>
 
-                </div>
               </div>
-            </div>
-          )}
+            </>}
+          </div>
         </div>
       </DialogShell>
 

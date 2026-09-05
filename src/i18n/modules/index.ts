@@ -189,12 +189,14 @@ const modules: Record<string, ModuleDict> = {
   pwa,
 };
 
+import { site } from './site';
+
 function collect(locale: "pt" | "en"): Record<string, unknown> {
   let out: Record<string, unknown> = {};
   for (const mod of Object.values(modules)) {
     out = mergeDictionaries(out, mod[locale]);
   }
-  return out;
+  return mergeDictionaries(out, site[locale]);
 }
 
 export const modulesPt = collect("pt");

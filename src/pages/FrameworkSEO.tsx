@@ -1,10 +1,13 @@
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { IconSuccess, IconArrowRight } from '@/components/icons';
 import { SEO } from '@/components/SEO';
-import { PublicShell } from '@/components/public/PublicShell';
+import { PublicShell, DemoButton } from '@/components/public/PublicShell';
 import { frameworksSeoMap, frameworksSeo } from '@/data/frameworks-seo';
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
 export default function FrameworkSEO() {
+  const { t, locale } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const fw = slug ? frameworksSeoMap[slug] : undefined;
 
@@ -52,13 +55,13 @@ export default function FrameworkSEO() {
 
   return (
     <PublicShell>
-      <SEO title={title} description={description} canonical={url} ogType="article" jsonLd={jsonLd} />
+      <SEO contentLanguage="pt-BR" title={title} description={description} canonical={url} ogType="article" jsonLd={jsonLd} />
 
-      <article className="max-w-4xl mx-auto px-6 py-16">
-        <nav className="text-xs text-white/50 mb-6 flex items-center gap-2" aria-label="Breadcrumb">
+      <article className="max-w-4xl mx-auto px-6 py-16" lang="pt-BR">
+        <nav className="text-xs text-white/70 mb-6 flex items-center gap-2" aria-label="Breadcrumb">
           <Link to="/" className="hover:text-white">Home</Link>
           <span>/</span>
-          <span className="text-white/40">Frameworks</span>
+          <Link to="/frameworks">{t('site.guides')}</Link>
           <span>/</span>
           <span className="text-white/80">{fw.nome}</span>
         </nav>
@@ -72,14 +75,15 @@ export default function FrameworkSEO() {
         </h1>
         <p className="text-xl text-white/70 mb-10 leading-relaxed">{fw.tagline}</p>
 
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">O que é a {fw.nome}</h2>
+        {locale === 'en' && <p className="site-notice">{t('site.portugueseContent')}</p>}
+        <section className="mb-12" lang="pt-BR">
+          <h2 className="text-2xl font-semibold mb-4">{t('site.guideWhat', { name: fw.nome })}</h2>
           <p className="text-white/75 leading-relaxed mb-4">{fw.oQueE}</p>
           <p className="text-white/75 leading-relaxed">{fw.resumo}</p>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Por que importa</h2>
+          <h2 className="text-2xl font-semibold mb-4">{t('site.guideWhy')}</h2>
           <ul className="space-y-3">
             {fw.porQueImporta.map((p, i) => (
               <li key={i} className="flex gap-3 text-white/80">
@@ -91,7 +95,7 @@ export default function FrameworkSEO() {
         </section>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6">Requisitos principais</h2>
+          <h2 className="text-2xl font-semibold mb-6">{t('site.guideRequirements')}</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {fw.requisitosPrincipais.map((r, i) => (
               <div key={i} className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
@@ -103,7 +107,7 @@ export default function FrameworkSEO() {
         </section>
 
         <section className="mb-12 rounded-lg border border-[hsl(252,100%,66%)]/30 bg-gradient-to-br from-[hsl(252,100%,66%)]/10 to-transparent p-8">
-          <h2 className="text-2xl font-semibold mb-4">Como o Akuris ajuda na {fw.nome}</h2>
+          <h2 className="text-2xl font-semibold mb-4">{t('site.guideHelp', { name: fw.nome })}</h2>
           <ul className="space-y-2 mb-6">
             {fw.comoAkurisAjuda.map((c, i) => (
               <li key={i} className="flex gap-3 text-white/85">
@@ -112,16 +116,15 @@ export default function FrameworkSEO() {
               </li>
             ))}
           </ul>
-          <Link
-            to="/"
+          <DemoButton interest="guides"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[hsl(252,100%,66%)] hover:bg-[hsl(252,100%,60%)] text-white font-medium transition"
           >
-            Solicitar demonstração <IconArrowRight className="w-4 h-4" />
-          </Link>
+            {t('site.demo')}
+          </DemoButton>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6">Perguntas frequentes</h2>
+          <h2 className="text-2xl font-semibold mb-6">{t('publico.landing.faq.eyebrow')}</h2>
           <div className="space-y-4">
             {fw.faq.map((f, i) => (
               <details key={i} className="rounded-lg border border-white/10 bg-white/[0.03] p-5 group">
@@ -136,7 +139,7 @@ export default function FrameworkSEO() {
         </section>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Outros frameworks</h2>
+          <h2 className="text-2xl font-semibold mb-4">{t('site.guideOthers')}</h2>
           <div className="flex flex-wrap gap-2">
             {frameworksSeo.filter((f) => f.slug !== fw.slug).map((f) => (
               <Link

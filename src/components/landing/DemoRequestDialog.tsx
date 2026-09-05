@@ -1,206 +1,117 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from 'react';
 import { IconCheck } from '@/components/icons';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AkurisPulse } from "@/components/ui/AkurisPulse";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/lib/toast";
-;
-import { z } from "zod";
-import { logger } from "@/lib/logger";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { emitDemoEvent, type DemoInterest } from '@/lib/public-demo';
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  interest?: DemoInterest;
+  plan?: string;
+  source?: string;
+  onCloseAutoFocus?: () => void;
 }
+const initial = { name: '', role: '', email: '', company: '', companySize: '', message: '' };
+type FieldName = keyof typeof initial;
 
-type Translate = (key: string) => string;
-
-const makeSchema = (d: Translate) =>
-  z.object({
-    name: z.string().trim().min(2, d("errNome")).max(120),
-    role: z.string().trim().max(120).optional().or(z.literal("")),
-    email: z.string().trim().email(d("errEmail")).max(200),
-    company: z.string().trim().min(2, d("errEmpresa")).max(160),
-    companySize: z.string().min(1, d("errTamanho")),
-    message: z.string().trim().max(1000).optional().or(z.literal("")),
-  });
-
-export function DemoRequestDialog({ open, onOpenChange }: Props) {
-  const { t } = useLanguage();
-  const d = useMemo<Translate>(() => (key: string) => t(`publico.demo.${key}`), [t]);
-
-  const [phase, setPhase] = useState<"idle" | "submitting" | "success">("idle");
-  const [data, setData] = useState({ name: "", role: "", email: "", company: "", companySize: "", message: "" });
-  const [honeypot, setHoneypot] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [firstName, setFirstName] = useState("");
-
-  const sizes = useMemo(
-    () => [
-      { v: "", l: d("selecione") },
-      { v: "1-50", l: d("tam1") },
-      { v: "51-250", l: "51–250" },
-      { v: "251-1000", l: "251–1.000" },
-      { v: "1000+", l: d("tam4") },
-    ],
-    [d],
-  );
-
-  const reset = () => {
-    setPhase("idle");
-    setData({ name: "", role: "", email: "", company: "", companySize: "", message: "" });
-    setErrors({});
-    setHoneypot("");
+export function DemoRequestDialog({ open, onOpenChange, interest = 'general', plan, source = '/', onCloseAutoFocus }: Props) {
+  const { t, locale } = useLanguage();
+  const d = (key: string) => t('publico.demo.' + key);
+  const [phase, setPhase] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const [data, setData] = useState(initial);
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
+  const [sendError, setSendError] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+  const busy = useRef(false);
+  const requestId = useRef<string>(crypto.randomUUID());
+  const submittedPayload = useRef<string | null>(null);
+  const [honeypot, setHoneypot] = useState('');
+  const schema = useMemo(() => z.object({
+    name: z.string().trim().min(2, t('publico.demo.errNome')).max(120),
+    email: z.string().trim().email(t('publico.demo.errEmail')).max(200),
+    company: z.string().trim().min(2, t('publico.demo.errEmpresa')).max(160),
+    companySize: z.enum(['1-50', '51-250', '251-1000', '1000+'], { errorMap: () => ({ message: t('publico.demo.errTamanho') }) }),
+    role: z.string().trim().max(120),
+    message: z.string().trim().max(1000),
+  }), [t]);
+  const change = (key: FieldName, value: string) => {
+    setData(previous => ({ ...previous, [key]: value }));
+    setErrors(previous => ({ ...previous, [key]: undefined }));
   };
-
-  const handleClose = (v: boolean) => {
-    if (!v && phase === "success") setTimeout(reset, 250);
-    onOpenChange(v);
-  };
-
-  const onChange = (k: string, v: string) => {
-    setData((prev) => ({ ...prev, [k]: v }));
-    if (errors[k]) setErrors((e) => ({ ...e, [k]: "" }));
-  };
-
+  const invalid = (key: FieldName) => ({ 'aria-invalid': !!errors[key], 'aria-describedby': errors[key] ? 'demo-error-' + key : undefined });
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (honeypot) return;
-    const result = makeSchema(d).safeParse(data);
+    if (busy.current || honeypot) return;
+    const result = schema.safeParse(data);
     if (!result.success) {
-      const errs: Record<string, string> = {};
-      result.error.errors.forEach((er) => { errs[er.path[0] as string] = er.message; });
-      setErrors(errs);
+      const next: Partial<Record<FieldName, string>> = {};
+      result.error.errors.forEach(error => { next[error.path[0] as FieldName] = error.message; });
+      setErrors(next);
+      requestAnimationFrame(() => form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
       return;
     }
-    setPhase("submitting");
+    const fingerprint = JSON.stringify([result.data, locale, interest, plan, source]);
+    if (submittedPayload.current && submittedPayload.current !== fingerprint) requestId.current = crypto.randomUUID();
+    submittedPayload.current = fingerprint;
+    busy.current = true;
+    setPhase('submitting');
+    setSendError(false);
     try {
-      const { error } = await supabase.functions.invoke("send-contact-email", {
-        body: {
-          name: data.name,
-          email: data.email,
-          company: data.company,
-          phone: "",
-          role: data.role,
-          companySize: data.companySize,
-          message: data.message,
-        },
+      const { data: response, error } = await supabase.functions.invoke('send-contact-email', {
+        body: { ...result.data, phone: '', locale, interest, plan, source, requestId: requestId.current },
       });
-      if (error) throw error;
-      setFirstName(data.name.split(" ")[0]);
-      setPhase("success");
-    } catch (err: any) {
-      logger.error("Falha ao enviar solicitação de demo", { error: err?.message, module: "Landing" });
-      toast.error(d("errEnvio"));
-      setPhase("idle");
-    }
+      if (error || response?.success !== true) throw new Error('contact_not_registered');
+      setPhase('success');
+      emitDemoEvent('demo_submit_success', interest);
+    } catch {
+      setSendError(true);
+      setPhase('idle');
+      emitDemoEvent('demo_submit_error', interest);
+    } finally { busy.current = false; }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="lp-demo-dialog sm:max-w-[640px] sm:max-h-[92dvh]">
-        <DialogTitle className="sr-only">{d("titulo")}</DialogTitle>
-        <DialogDescription className="sr-only">{d("descricao")}</DialogDescription>
-
-        <div className="lp-demo-head">
-          <span className="lp-eyebrow">{d("eyebrow")}</span>
-          <h2 className="lp-demo-title">
-            {d("tituloModal")} <em>{d("tituloModalEm")}</em>
-          </h2>
-          <p className="lp-demo-sub">{d("sub")}</p>
-        </div>
-
-        {phase !== "success" ? (
-          <form onSubmit={submit} className="lp-demo-form" autoComplete="on" noValidate>
-            <input
-              type="text" tabIndex={-1} autoComplete="off" aria-hidden
-              value={honeypot} onChange={(e) => setHoneypot(e.target.value)}
-              style={{ position: "absolute", left: "-9999px", opacity: 0 }}
-            />
-
+  const close = (value: boolean) => {
+    if (!value && phase === 'success') {
+      setPhase('idle'); setData(initial); setErrors({}); setHoneypot(''); requestId.current = crypto.randomUUID();
+    }
+    onOpenChange(value);
+  };
+  const field = (key: FieldName, label: string, input: React.ReactNode) => <div className="lp-modal-field">
+    <label htmlFor={'demo-' + key} className="lp-modal-label">{label}</label>
+    {input}
+    {errors[key] && <span id={'demo-error-' + key} className="lp-modal-error">{errors[key]}</span>}
+  </div>;
+  return <Dialog open={open} onOpenChange={close}>
+    <DialogContent className="lp-demo-dialog sm:max-w-[640px] sm:max-h-[92dvh]" onCloseAutoFocus={e => { if (onCloseAutoFocus) { e.preventDefault(); onCloseAutoFocus(); } }}>
+      <DialogTitle className="lp-demo-title">{phase === 'success' ? t('site.saved') : d('titulo')}</DialogTitle>
+      <DialogDescription className="lp-demo-sub">{phase === 'success' ? t('site.savedBody') : t('site.formIntro')}</DialogDescription>
+      {phase === 'success' ? <div className="lp-demo-success" role="status"><div className="lp-demo-check"><IconCheck size={28} /></div><button className="lp-btn-pill lp-btn-pill-block" onClick={() => close(false)}>{t('common.close')}</button></div> :
+        <form ref={form} onSubmit={submit} className="lp-demo-form" autoComplete="on" noValidate aria-busy={phase === 'submitting'}>
+          <p className="site-form-note">{t('site.requiredNote')}</p>
+          {interest !== 'general' && <p className="site-form-note">{t('site.contextLabel')}: {t('site.' + interest)}{plan ? ' · ' + plan : ''}</p>}
+          <input hidden type="text" tabIndex={-1} autoComplete="off" aria-hidden value={honeypot} onChange={e => setHoneypot(e.target.value)} />
+          {Object.values(errors).some(Boolean) && <p role="alert" className="site-form-error">{t('site.errorSummary')}</p>}
+          {sendError && <p role="alert" className="site-form-error">{t('site.sendError')}</p>}
+          <fieldset disabled={phase === 'submitting'} className="space-y-4">
             <div className="lp-demo-row">
-              <Field label={d("nome")} id="d-name" error={errors.name}>
-                <input id="d-name" name="name" autoComplete="name" className="lp-modal-input" placeholder={d("nomePlaceholder")}
-                  value={data.name} onChange={(e) => onChange("name", e.target.value)} />
-              </Field>
-              <Field label={d("cargo")} id="d-role" error={errors.role}>
-                <input id="d-role" name="organization-title" autoComplete="organization-title" className="lp-modal-input" placeholder={d("cargoPlaceholder")}
-                  value={data.role} onChange={(e) => onChange("role", e.target.value)} />
-              </Field>
+              {field('name', d('nome'), <input {...invalid('name')} id="demo-name" name="name" autoComplete="name" required maxLength={120} className="lp-modal-input" value={data.name} onChange={e => change('name', e.target.value)} />)}
+              {field('role', d('cargo') + ' ' + t('site.optional'), <input {...invalid('role')} id="demo-role" name="organization-title" autoComplete="organization-title" maxLength={120} className="lp-modal-input" value={data.role} onChange={e => change('role', e.target.value)} />)}
             </div>
-
-            <Field label={d("emailCorporativo")} id="d-email" error={errors.email}>
-              <input id="d-email" name="email" autoComplete="email" type="email" className="lp-modal-input" placeholder={d("emailPlaceholder")}
-                value={data.email} onChange={(e) => onChange("email", e.target.value)} />
-            </Field>
-
+            {field('email', d('emailCorporativo'), <input {...invalid('email')} id="demo-email" name="email" type="email" autoComplete="email" required maxLength={200} className="lp-modal-input" placeholder={d('emailPlaceholder')} value={data.email} onChange={e => change('email', e.target.value)} />)}
             <div className="lp-demo-row">
-              <Field label={d("empresa")} id="d-company" error={errors.company}>
-                <input id="d-company" name="organization" autoComplete="organization" className="lp-modal-input" placeholder={d("razaoSocial")}
-                  value={data.company} onChange={(e) => onChange("company", e.target.value)} />
-              </Field>
-              <Field label={d("tamanho")} id="d-size" error={errors.companySize}>
-                <select id="d-size" name="company-size" className="lp-modal-input lp-modal-select"
-                  value={data.companySize} onChange={(e) => onChange("companySize", e.target.value)}>
-                  {sizes.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
-                </select>
-              </Field>
+              {field('company', d('empresa'), <input {...invalid('company')} id="demo-company" name="organization" autoComplete="organization" required maxLength={160} className="lp-modal-input" value={data.company} onChange={e => change('company', e.target.value)} />)}
+              {field('companySize', d('tamanho'), <select {...invalid('companySize')} id="demo-companySize" name="company-size" required className="lp-modal-input lp-modal-select" value={data.companySize} onChange={e => change('companySize', e.target.value)}>
+                <option value="">{d('selecione')}</option><option value="1-50">{d('tam1')}</option><option value="51-250">51–250</option><option value="251-1000">251–1.000</option><option value="1000+">{d('tam4')}</option>
+              </select>)}
             </div>
-
-            <Field label={d("desafio")} id="d-msg">
-              <textarea id="d-msg" name="message" rows={3} className="lp-modal-input lp-modal-textarea"
-                placeholder={d("desafioPlaceholder")}
-                value={data.message} onChange={(e) => onChange("message", e.target.value)} />
-            </Field>
-
-            <button type="submit" className="lp-btn-pill lp-btn-pill-block" disabled={phase === "submitting"}>
-              {phase === "submitting"
-                ? (<><AkurisPulse size={18} /> {d("enviando")}</>)
-                : (<>{d("enviar")} <span className="arr">→</span></>)}
-            </button>
-
-            <p className="lp-demo-fineprint">
-              {d("fineprintPre")}{" "}
-              <a href="/politica-privacidade" target="_blank" rel="noreferrer">{d("fineprintLink")}</a>
-              {d("fineprintPos")}
-            </p>
-          </form>
-        ) : (
-          <div className="lp-demo-success">
-            <div className="lp-demo-check"><IconCheck size={28} strokeWidth={2.2} /></div>
-            <span className="lp-eyebrow lp-demo-eyebrow-center">{d("recebido")}</span>
-            <h3 className="lp-demo-thanks">{d("obrigado")} <em>{firstName}.</em></h3>
-            <p className="lp-demo-sub">{d("successSub")}</p>
-
-            <div className="lp-demo-steps">
-              {([
-                ["01", d("st1Title"), d("st1Desc")],
-                ["02", d("st2Title"), d("st2Desc")],
-                ["03", d("st3Title"), d("st3Desc")],
-              ] as [string, string, string][]).map(([n, title, desc]) => (
-                <div key={n} className="lp-step-card">
-                  <span className="lp-step-card-num">{n}</span>
-                  <div>
-                    <strong>{title}</strong>
-                    <p>{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function Field({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div className="lp-modal-field">
-      <label htmlFor={id} className="lp-modal-label">{label}</label>
-      {children}
-      {error && <span className="lp-modal-error">{error}</span>}
-    </div>
-  );
+            {field('message', d('desafio'), <textarea {...invalid('message')} id="demo-message" name="message" rows={3} maxLength={1000} className="lp-modal-input lp-modal-textarea" placeholder={d('desafioPlaceholder')} value={data.message} onChange={e => change('message', e.target.value)} />)}
+            <button type="submit" className="lp-btn-pill lp-btn-pill-block" disabled={phase === 'submitting'}>{phase === 'submitting' ? <><AkurisPulse size={18} /> {d('enviando')}</> : d('enviar')}</button>
+          </fieldset>
+          <p className="lp-demo-fineprint">{t('site.privacyPre')} <a href="/politica-privacidade" target="_blank" rel="noreferrer">{d('fineprintLink')}</a>{t('site.privacyPost')}</p>
+        </form>}
+    </DialogContent>
+  </Dialog>;
 }

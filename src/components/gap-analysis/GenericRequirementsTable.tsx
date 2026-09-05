@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SortableTableHead, compareSortValues } from "@/components/ui/sortable-table-head";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConformitySelect } from "./ConformitySelect";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -613,22 +614,6 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     });
   }, []);
 
-  const statusTriggerClass: Record<string, string> = {
-    conforme: 'border-success/30 bg-success/5 text-success hover:bg-success/10',
-    parcial: 'border-warning/35 bg-warning/5 text-warning hover:bg-warning/10',
-    nao_conforme: 'border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10',
-    nao_aplicavel: 'border-info/30 bg-info/5 text-info hover:bg-info/10',
-    nao_avaliado: 'border-border bg-muted/30 text-muted-foreground hover:bg-accent',
-  };
-
-  const statusLabel: Record<string, string> = {
-    conforme: t('gapUi.status.conforme'),
-    parcial: t('gapUi.status.parcial'),
-    nao_conforme: t('gapUi.status.naoConforme'),
-    nao_aplicavel: t('gapUi.status.na'),
-    nao_avaliado: t('gapUi.status.naoAvaliado'),
-  };
-
   const getPriorityBadge = (peso: number | null, obrigatorio?: boolean | null) => {
     if (obrigatorio) return <Badge variant="destructive" className="text-xs">{t('gapUi.table.priorityMandatory')}</Badge>;
     if ((peso || 0) >= 3) return <Badge variant="warning" className="text-xs">{t('gapUi.table.priorityHigh')}</Badge>;
@@ -991,25 +976,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                   <TableCell>{renderDueDate(req.prazo_implementacao)}</TableCell>
                   <TableCell>{renderOwner(req.responsavel_avaliacao)}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={req.conformity_status || 'nao_avaliado'}
-                      onValueChange={(value) => handleStatusChange(req.id, value)}
-                      disabled={loadingEmpresa || !empresaId}
-                    >
-                      <SelectTrigger
-                        aria-label={`${t('gapUi.table.colStatus')}: ${statusLabel[req.conformity_status || 'nao_avaliado']}`}
-                        className={`h-9 min-w-[10.5rem] px-2 text-sm font-medium ${statusTriggerClass[req.conformity_status || 'nao_avaliado']}`}
-                      >
-                        <SelectValue placeholder={loadingEmpresa ? t('gapUi.table.loadingShort') : t('gapUi.table.selectShort')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="nao_avaliado">{t('gapUi.status.naoAvaliado')}</SelectItem>
-                        <SelectItem value="conforme">{t('gapUi.status.conforme')}</SelectItem>
-                        <SelectItem value="parcial">{t('gapUi.status.parcial')}</SelectItem>
-                        <SelectItem value="nao_conforme">{t('gapUi.status.naoConforme')}</SelectItem>
-                        <SelectItem value="nao_aplicavel">{t('gapUi.status.na')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <ConformitySelect value={req.conformity_status} onValueChange={value => handleStatusChange(req.id, value)} disabled={loadingEmpresa || !empresaId} />
                   </TableCell>
                   <TableCell>
                     {(req.evidence_files?.length || 0) > 0 ? (

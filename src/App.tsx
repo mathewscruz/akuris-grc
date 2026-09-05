@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast";
 import { logger } from "@/lib/logger";
 import { avisoDeConsultaFalhada, descreveErro } from "@/lib/erro-de-consulta";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { RouteDictionaryGate } from '@/components/public/RouteDictionaryGate';
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -70,6 +71,8 @@ const DenunciaConsulta = React.lazy(() => import("@/pages/DenunciaConsulta"));
 const Configuracoes = React.lazy(() => import("@/pages/Configuracoes"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 const LandingPage = React.lazy(() => import("@/pages/LandingPage"));
+const PublicResource = React.lazy(() => import("@/pages/PublicResource"));
+const FrameworkGuides = React.lazy(() => import("@/pages/FrameworkGuides"));
 const PoliticaPrivacidade = React.lazy(
   () => import("@/pages/PoliticaPrivacidade"),
 );
@@ -181,6 +184,7 @@ function App() {
           <AuthProvider>
             <Router>
                 <ErrorBoundary>
+                  <Suspense fallback={<RouteFallback />}><RouteDictionaryGate>
                   <Routes>
                     {/* Rotas públicas com Suspense individual (não tem sidebar para preservar) */}
                     <Route
@@ -290,6 +294,8 @@ function App() {
                         </Suspense>
                       }
                     />
+                    {['/migracao', '/seguranca', '/solucoes/canal-de-denuncias'].map(path => <Route key={path} path={path} element={<Suspense fallback={<RouteFallback />}><PublicResource /></Suspense>} />)}
+                    <Route path="/frameworks" element={<Suspense fallback={<RouteFallback />}><FrameworkGuides /></Suspense>} />
                     <Route
                       path="/frameworks/:slug"
                       element={
@@ -648,6 +654,7 @@ function App() {
                       }
                     />
                   </Routes>
+                  </RouteDictionaryGate></Suspense>
                 </ErrorBoundary>
             </Router>
 

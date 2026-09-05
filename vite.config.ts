@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { politicaCspParaMeta } from "./src/lib/seguranca/politica-csp";
+import { publicPrerender } from './scripts/public-prerender';
 
 /**
  * Injeta o `<meta>` de CSP APENAS no build de produção.
@@ -41,6 +42,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
     cspNoBuild(),
+    publicPrerender(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -53,7 +55,9 @@ export default defineConfig(({ mode }) => ({
         // Pure dictionaries change less often than operational code. Keep their
         // cache separate; this does not pretend to reduce total download bytes.
         manualChunks(id) {
-          if (id.replace(/\\/g, '/').includes('/src/i18n/')) return 'translations';
+          const normalized = id.replace(/\\/g, '/');
+          if (/\/src\/i18n\/modules\/(publico|site)\.ts$/.test(normalized)) return 'public-translations';
+          if (normalized.includes('/src/i18n/')) return 'app-translations';
         },
       },
     },

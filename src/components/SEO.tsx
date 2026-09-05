@@ -10,6 +10,7 @@ interface SEOProps {
   ogType?: 'website' | 'article';
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
+  contentLanguage?: 'pt-BR' | 'en-US';
 }
 
 const BASE_URL = 'https://akuris.pt';
@@ -23,6 +24,7 @@ export function SEO({
   ogType = 'website',
   jsonLd,
   noindex = false,
+  contentLanguage,
 }: SEOProps) {
   const url = canonical
     ? canonical.startsWith('http') ? canonical : `${BASE_URL}${canonical}`
@@ -36,7 +38,7 @@ export function SEO({
     no Open Graph. Afeta leitor de ecrã, oferta de tradução do browser e
     indexação.
   */
-  const htmlLang = intlLocale();
+  const htmlLang = contentLanguage || intlLocale();
   const ogLocale = htmlLang.replace('-', '_');
 
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
@@ -47,7 +49,7 @@ export function SEO({
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
-      {noindex && <meta name="robots" content="noindex,nofollow" />}
+      <meta name="robots" content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large"} />
 
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
@@ -56,7 +58,7 @@ export function SEO({
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="Akuris — governança, riscos e conformidade conectados" />
+      <meta property="og:image:alt" content={locale === 'en' ? 'Akuris — connected governance, risk and compliance' : 'Akuris — governança, riscos e conformidade conectados'} />
       <meta property="og:site_name" content="Akuris" />
       <meta property="og:locale" content={ogLocale} />
 
@@ -64,7 +66,7 @@ export function SEO({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
-      <meta name="twitter:image:alt" content="Akuris — governança, riscos e conformidade conectados" />
+      <meta name="twitter:image:alt" content={locale === 'en' ? 'Akuris — connected governance, risk and compliance' : 'Akuris — governança, riscos e conformidade conectados'} />
 
       {schemas.map((schema, i) => (
         <script key={i} type="application/ld+json">

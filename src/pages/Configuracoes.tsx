@@ -22,6 +22,7 @@ import GerenciamentoChangelog from '@/components/configuracoes/GerenciamentoChan
 import NoticiasTab from '@/components/configuracoes/NoticiasTab';
 import BlogManager from '@/components/configuracoes/BlogManager';
 import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
+import { ContactRequests } from '@/components/configuracoes/ContactRequests';
 
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { useEffect, useState } from 'react';
@@ -36,7 +37,7 @@ const Configuracoes = () => {
   const isSuperAdmin = userRole === 'super_admin';
   const isAdmin = userRole === 'admin' || isSuperAdmin;
   const customerTabs = ['usuarios', 'organizacao', 'integracoes', 'denuncia', 'assinatura'];
-  const platformTabs = ['empresas', 'planos', 'financeiro-ia', 'novidades', 'noticias', 'traducoes', 'blog'];
+  const platformTabs = ['empresas', 'planos', 'financeiro-ia', 'novidades', 'noticias', 'traducoes', 'blog', 'solicitacoes-site'];
   const allowedTabs = isSuperAdmin
     ? [...customerTabs, ...platformTabs]
     : isAdmin
@@ -77,6 +78,7 @@ const Configuracoes = () => {
     noticias: t('configGeral.page.tabNoticias'),
     traducoes: t('configGeral.page.tabTraducoes'),
     blog: t('configGeral.page.tabBlog'),
+    'solicitacoes-site': t('site.leads'),
   };
 
   return (
@@ -130,12 +132,14 @@ const Configuracoes = () => {
                 <TabsTrigger className={navTriggerClass} value="noticias"><IconFileText />{t('configGeral.page.tabNoticias')}</TabsTrigger>
                 <TabsTrigger className={navTriggerClass} value="traducoes"><IconGlobe />{t('configGeral.page.tabTraducoes')}</TabsTrigger>
                 <TabsTrigger className={navTriggerClass} value="blog"><IconBook />{t('configGeral.page.tabBlog')}</TabsTrigger>
+                <TabsTrigger className={navTriggerClass} value="solicitacoes-site"><IconMessage />{t('site.leads')}</TabsTrigger>
               </TabsList>
             </section>
           )}
         </aside>
 
         <div className="min-w-0">
+        {isSuperAdmin && <TabsContent value="solicitacoes-site"><ContactRequests /></TabsContent>}
 
         {isSuperAdmin && (
           <TabsContent value="empresas">

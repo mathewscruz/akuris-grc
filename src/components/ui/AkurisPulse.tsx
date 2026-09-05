@@ -15,7 +15,7 @@ export interface AkurisPulseProps {
   className?: string;
 }
 
-const AKURIS_PATH =
+export const AKURIS_PATH =
   "M43.7,13.1 L72.3,66.9 Q76,74 68,74 L61,74 Q56,74 53.4,69.7 L42.6,52.3 Q40,48 37.4,52.3 L26.6,69.7 Q24,74 19,74 L12,74 Q4,74 7.7,66.9 L36.3,13.1 Q40,6 43.7,13.1 Z";
 
 const BRAND_COLOR = "#8B78E8";
@@ -59,4 +59,3 @@ export function AkurisPulse({ size = 80, className }: AkurisPulseProps) {
     </div>
   );
 }
-

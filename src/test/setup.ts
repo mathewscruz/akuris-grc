@@ -31,3 +31,6 @@ if (typeof window !== "undefined") {
     }),
   });
 }
+// Component tests start after the same dictionary readiness gate as app routes.
+import { loadFullDictionaries } from '@/lib/dictionary-registry';
+await loadFullDictionaries();

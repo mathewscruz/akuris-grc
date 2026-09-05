@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { pt } from '@/i18n/pt';
-import { en } from '@/i18n/en';
-import { modulesPt, modulesEn, mergeDictionaries } from '@/i18n/modules';
+import { dictionaryFor } from '@/lib/dictionary-registry';
 import { supabase } from '@/integrations/supabase/client';
 import { setAppLocale, getInitialLocale, persistExplicitLocale, isSupportedLocale } from '@/lib/i18n-locale';
-import { localizePtDictionary } from '@/lib/pt-variants';
 
 /** `pt` = português de Portugal, `pt-BR` = português do Brasil, `en` = inglês. */
 export type Locale = 'pt' | 'pt-BR' | 'en';
@@ -15,19 +12,7 @@ type Dictionary = Record<string, any>;
  * `lib/pt-variants.ts`), garantindo que "utilizador/ficheiro/eliminar" e
  * "usuário/arquivo/excluir" nunca aparecem misturados no mesmo ecrã.
  */
-// Normalize only the requested locale. Previously every launch built both
-// Portuguese variants and English, even when the user never switched language.
-let ptBase: Dictionary | undefined;
-const dictionaries = new Map<Locale, Dictionary>();
-function dictionaryFor(locale: Locale): Dictionary {
-  const cached = dictionaries.get(locale);
-  if (cached) return cached;
-  const dictionary = locale === 'en'
-    ? mergeDictionaries(en, modulesEn)
-    : localizePtDictionary(ptBase ??= mergeDictionaries(pt, modulesPt), locale);
-  dictionaries.set(locale, dictionary);
-  return dictionary;
-}
+// Public pages start with their small dictionary; operational routes load the full registry before rendering.
 
 
 interface LanguageContextType {

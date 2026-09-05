@@ -6,31 +6,21 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { IconArrowLeft, IconShield, IconMail, IconPin } from '@/components/icons';
 import { SEO } from '@/components/SEO';
 
+import { PublicShell } from '@/components/public/PublicShell';
+
 const PoliticaPrivacidade = () => {
   const { t, locale } = useLanguage();
   const p = (key: string) => t(`publico.privacidade.${key}`);
 
   return (
-    <div className="min-h-screen bg-[#0A1628] text-white">
+    <PublicShell>
       <SEO title={`${p("titulo")} | Akuris`} description="Conheça como a Akuris trata dados pessoais, atende direitos de titulares e protege informações." canonical="/politica-privacidade" />
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A1628]/90 backdrop-blur-xl border-b border-white/5 py-4">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex min-h-[44px] min-w-0 items-center gap-2 text-muted-foreground hover:text-white transition-colors">
-              <IconArrowLeft className="h-5 w-5 shrink-0" />
-              <span className="truncate">{p("voltar")}</span>
-            </Link>
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <LanguageSelector variant="dark" />
-              <img src={akurisLogo} alt="Akuris" className="h-8 w-auto sm:h-10" />
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Unified public header is provided by PublicShell. */}
+      {/* Header removed */}
+
 
       {/* Content */}
-      <main className="pt-24 pb-16">
+      <div className="site-section">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Title */}
           <div className="text-center mb-12">
@@ -202,17 +192,9 @@ const PoliticaPrivacidade = () => {
             </Link>
           </div>
         </div>
-      </main>
+      </div>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} Akuris. {p("direitosReservados")}
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PublicShell>
   );
 };
 
