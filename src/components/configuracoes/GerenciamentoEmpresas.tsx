@@ -434,11 +434,11 @@ const GerenciamentoEmpresasInner = () => {
             <img
               src={empresa.logo_url}
               alt={empresa.nome}
-              className="h-8 w-8 object-contain rounded"
+              className="h-9 w-9 rounded-lg border border-border bg-card object-contain p-1 shadow-sm"
             />
           ) : (
-            <div className="h-8 w-8 flex items-center justify-center">
-              <IconOrg className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted/30">
+              <IconOrg className="h-4 w-4 text-primary/75" />
             </div>
           )}
         </div>
@@ -599,8 +599,12 @@ const GerenciamentoEmpresasInner = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{t('configGeral.page.empresasCardTitle')}</p>
+          <p className="text-xs text-muted-foreground">{t('admin.empresas.tableSummary', { shown: filteredEmpresas.length, total: empresas.length })}</p>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} className="flex items-center gap-2">

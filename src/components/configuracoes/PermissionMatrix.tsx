@@ -52,9 +52,10 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
   }
 
   return (
-    <div>
+    <div className="rounded-lg border border-border/80 bg-card p-4 shadow-sm sm:p-5">
       <Tabs defaultValue={selectedUserId ? 'usuarios' : 'perfis'}>
-        <TabsList>
+        <div className="mb-5 flex items-center justify-between gap-4 border-b border-border/70">
+        <TabsList className="mb-0 w-auto border-0">
           <TabsTrigger value="perfis" className="flex items-center gap-2">
             <IconShield className="h-4 w-4" />
             {t('configPerms.matrix.tabProfiles')}
@@ -64,6 +65,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
             {t('configPerms.matrix.tabUsers')}
           </TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="perfis">
           <PermissionProfilesList empresaId={empresaId} />
@@ -76,4 +78,3 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
     </div>
   );
 };
-

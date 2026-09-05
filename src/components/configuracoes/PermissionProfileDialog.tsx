@@ -241,7 +241,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
       isDirty={!!name}
     >
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 rounded-lg border border-border/70 bg-muted/20 p-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">{t('configPerms.profileDialog.fieldName')}</Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={t('configPerms.profileDialog.fieldNamePlaceholder')} />
@@ -254,14 +254,14 @@ export const PermissionProfileDialog: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-lg border border-border/70 bg-card p-4">
           <Label htmlFor="description">{t('configPerms.profileDialog.fieldDescription')}</Label>
           <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('configPerms.profileDialog.fieldDescriptionPlaceholder')} rows={2} />
         </div>
 
         <Separator />
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 rounded-lg border border-border/70 bg-muted/20 p-3">
           <Button type="button" variant="outline" size="sm" onClick={() => setAllPermissions(true)}>
             <IconCheckbox className="h-3.5 w-3.5 mr-1" />
             {t('configPerms.profileDialog.markAll')}
@@ -292,11 +292,11 @@ export const PermissionProfileDialog: React.FC<Props> = ({
             excluir. O `<main>` da aplicação também esconde o transbordo, por
             isso nem o gesto de rolar a página salvava.
           */
-            className="border rounded-lg overflow-x-auto"
+            className="overflow-x-auto rounded-lg border border-border/80 bg-card"
           >
             <table className="akuris-table w-full text-sm">
               <thead>
-                <tr className="border-b bg-card">
+                <tr className="border-b bg-gradient-to-b from-muted/55 via-muted/25 to-background">
                   <th className="text-left px-3 py-2 font-medium">{t('configPerms.profileDialog.colModule')}</th>
                   {PERM_LABELS.map(p => (
                     <th key={p.key} className="text-center px-2 py-2 font-medium">{p.label}</th>
@@ -307,7 +307,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
                 {modules.map(module => {
                   const perm = getPermission(module.id);
                   return (
-                    <tr key={module.id} className="border-b last:border-0 hover:bg-accent">
+                    <tr key={module.id} className="border-b transition-colors last:border-0 hover:bg-gradient-to-r hover:from-primary/[0.055] hover:via-primary/[0.025] hover:to-transparent">
                       <td className="px-3 py-2 font-medium">{module.display_name}</td>
                       {PERM_LABELS.map(({ key }) => (
                         <td key={key} className="text-center px-2 py-2">

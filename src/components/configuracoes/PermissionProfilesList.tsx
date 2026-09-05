@@ -113,7 +113,11 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{t('configPerms.profilesList.sectionTitle')}</p>
+          <p className="text-xs text-muted-foreground">{t('configPerms.profilesList.sectionSummary', { count: profiles.length })}</p>
+        </div>
         <Button onClick={() => { setEditingProfile(null); setDialogOpen(true); }}>
           <IconAdd className="h-4 w-4 mr-2" />
           {t('configPerms.profilesList.newProfile')}
@@ -129,11 +133,14 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {profiles.map(profile => (
-            <Card key={profile.id} className="hover:shadow-sm transition-shadow">
-              <CardContent className="pt-6">
+            <Card key={profile.id} className="group overflow-hidden border-border/80 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-sm">
+              <div className="h-1 bg-gradient-to-r from-primary/70 via-primary/25 to-transparent" />
+              <CardContent className="pt-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <IconShield className="h-5 w-5 text-primary" />
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/8 text-primary">
+                      <IconShield className="h-4 w-4" />
+                    </span>
                     <h3 className="font-semibold">{profile.name}</h3>
                   </div>
                   <div className="flex gap-1">
@@ -146,9 +153,9 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                   </div>
                 </div>
 
-                {profile.description && (
-                  <p className="text-sm text-muted-foreground mb-3">{profile.description}</p>
-                )}
+                <p className="mb-4 min-h-10 text-sm leading-relaxed text-muted-foreground">
+                  {profile.description || t('configPerms.profilesList.noDescription')}
+                </p>
 
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-xs">
@@ -157,7 +164,7 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                   </Badge>
 
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(profile)} aria-label={t('configPerms.profilesList.edit')}>
                       <IconEdit className="h-4 w-4" />
                     </Button>
                     <Button
@@ -165,6 +172,7 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                       size="sm"
                       onClick={() => { setProfileToDelete(profile); setDeleteDialogOpen(true); }}
                       className="text-destructive hover:text-destructive"
+                      aria-label={t('configPerms.profilesList.deleteAction')}
                     >
                       <IconDelete className="h-4 w-4" />
                     </Button>

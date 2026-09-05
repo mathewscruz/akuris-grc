@@ -107,14 +107,20 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={t('configPerms.usersList.searchPlaceholder')}
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold">{t('configPerms.usersList.sectionTitle')}</p>
+          <p className="text-xs text-muted-foreground">{t('configPerms.usersList.sectionSummary', { shown: filteredUsers.length, total: users.length })}</p>
+        </div>
+        <div className="relative w-full sm:max-w-sm">
+          <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={t('configPerms.usersList.searchPlaceholder')}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="bg-background pl-9"
+          />
+        </div>
       </div>
 
       {filteredUsers.length === 0 ? (
@@ -123,15 +129,20 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
           <p>{t('configPerms.usersList.emptyState')}</p>
         </div>
       ) : (
-        <div className="border rounded-lg divide-y">
+        <div className="overflow-hidden rounded-lg border border-border/80 bg-card divide-y divide-border/70">
           {filteredUsers.map(user => (
-            <div key={user.user_id} className="flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors">
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{user.nome}</div>
-                <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+            <div key={user.user_id} className="flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-gradient-to-r hover:from-primary/[0.055] hover:via-primary/[0.025] hover:to-transparent sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-primary/15 bg-primary/10 text-xs font-semibold text-primary">
+                  {user.nome.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{user.nome}</div>
+                  <div className="truncate text-sm text-muted-foreground">{user.email}</div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 ml-4 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 sm:ml-4 sm:shrink-0">
                 <Badge variant="outline" className="text-xs hidden sm:flex">
                   {getRoleLabel(user.role)}
                 </Badge>

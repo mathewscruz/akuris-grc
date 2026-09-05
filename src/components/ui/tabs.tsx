@@ -103,8 +103,8 @@ const ESBATIMENTO: Record<string, string | undefined> = {
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, style, children, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { showIndicator?: boolean }
+>(({ className, style, children, showIndicator = true, ...props }, ref) => {
   const interna = React.useRef<HTMLDivElement>(null)
   const lado = useTransbordo(interna)
   const mascara = ESBATIMENTO[lado]
@@ -163,7 +163,7 @@ const TabsList = React.forwardRef<
     data-transbordo={lado}
     style={{ maskImage: mascara, WebkitMaskImage: mascara, ...style }}
     className={cn(
-      "relative flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
+      "relative flex w-full items-center gap-6 overflow-x-auto overflow-y-hidden border-b border-border text-muted-foreground",
       /*
          A barra passa para a linha de baixo em vez de esconder uma aba.
 
@@ -198,15 +198,17 @@ const TabsList = React.forwardRef<
     {...props}
   >
     {children}
-    <span
-      aria-hidden="true"
-      className="akuris-tab-indicator"
-      style={{
-        width: indicator.width,
-        opacity: indicator.visible ? 1 : 0,
-        transform: `translate3d(${indicator.left}px, ${indicator.top}px, 0)`,
-      }}
-    />
+    {showIndicator && (
+      <span
+        aria-hidden="true"
+        className="akuris-tab-indicator"
+        style={{
+          width: indicator.width,
+          opacity: indicator.visible ? 1 : 0,
+          transform: `translate3d(${indicator.left}px, ${indicator.top}px, 0)`,
+        }}
+      />
+    )}
   </TabsPrimitive.List>
   )
 })

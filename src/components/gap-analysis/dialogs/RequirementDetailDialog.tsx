@@ -854,7 +854,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         submitLabel={footerLabel}
         isSubmitting={saving}
         submitDisabled={loading}
-        className="h-[100dvh] sm:h-[92vh]"
+        className="h-[100dvh] sm:h-[88vh] sm:max-h-[900px]"
       >
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
           {/* Status agora vive dentro do Step 1 "Avaliar Conformidade" (painel
@@ -864,12 +864,12 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               <AkurisPulse size={32} className="text-primary" />
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row min-h-0 flex-1 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
               {/* ============================================ */}
               {/* LEFT PANEL — Apenas leitura/educação        */}
               {/* ============================================ */}
-              <div className="h-full md:w-[42%] border-r bg-card flex-1 md:flex-none min-h-0 overflow-y-auto">
-                <div className="p-5 space-y-4">
+              <div className="h-full min-h-0 flex-1 overflow-y-auto border-r border-border/80 bg-gradient-to-b from-muted/35 via-background to-background md:w-[39%] md:flex-none">
+                <div className="space-y-4 p-5 lg:p-6">
                   <div className="flex items-center justify-between">
                     <button
                       type="button"
@@ -975,7 +975,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       {controlosLigados.map((c) => (
                         <div
                           key={c.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5"
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-2.5 shadow-sm transition-colors hover:border-primary/20 hover:bg-primary/[0.035]"
                         >
                           <span className="text-sm font-medium truncate">{c.nome}</span>
                           <StatusBadge {...resolveControleStatusTone(c.status)}>
@@ -991,8 +991,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               {/* ============================================ */}
               {/* RIGHT PANEL — Jornada numerada              */}
               {/* ============================================ */}
-              <div className="h-full md:w-[58%] flex-1 md:flex-none min-h-0 overflow-y-auto">
-                <div className="p-5 space-y-3">
+              <div className="h-full min-h-0 flex-1 overflow-y-auto bg-background md:w-[61%] md:flex-none">
+                <div className="space-y-3 p-5 lg:p-6">
 
                   <section className="rounded-lg border border-primary/20 bg-primary/5 p-4" aria-labelledby="completion-title">
                     <div className="flex items-center justify-between gap-3">

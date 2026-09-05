@@ -8,6 +8,7 @@ const ptDict = {
      Diretiva (UE) 2019/1937 obriga a informar. */
   canal: {
     titulo: 'Canal de Denúncias',
+    ambienteSeguro: 'Ambiente seguro e confidencial',
     voltar: 'Voltar',
     direitosTitulo: 'Os seus direitos',
     direitoSigilo: 'Sigilo',
@@ -434,6 +435,7 @@ const ptDict = {
 const enDict: typeof ptDict = {
   canal: {
     titulo: 'Whistleblowing Channel',
+    ambienteSeguro: 'Secure and confidential environment',
     voltar: 'Back',
     direitosTitulo: 'Your rights',
     direitoSigilo: 'Confidentiality',

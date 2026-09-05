@@ -103,7 +103,7 @@ const Configuracoes = () => {
             <p id="config-company-tabs" className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t('configGeral.page.groupCompany')}
             </p>
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
+            <TabsList showIndicator={false} className="grid h-auto w-full grid-cols-2 gap-1 overflow-visible border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
               <TabsTrigger className={navTriggerClass} value="usuarios"><IconUsers />{t('configGeral.page.tabUsuarios')}</TabsTrigger>
               {isAdmin && <TabsTrigger className={navTriggerClass} value="organizacao"><IconOrg />{t('configGeral.page.tabOrganizacao')}</TabsTrigger>}
               {isAdmin && <TabsTrigger className={navTriggerClass} value="integracoes"><IconPlug />{t('configGeral.page.tabIntegracoes')}</TabsTrigger>}
@@ -117,7 +117,7 @@ const Configuracoes = () => {
               <p id="config-platform-tabs" className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {t('configGeral.page.groupPlatform')}
               </p>
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
+              <TabsList showIndicator={false} className="grid h-auto w-full grid-cols-2 gap-1 overflow-visible border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
                 <TabsTrigger className={navTriggerClass} value="empresas"><IconOrg />{t('configGeral.page.tabEmpresas')}</TabsTrigger>
                 <TabsTrigger className={navTriggerClass} value="planos"><IconPackage />{t('configGeral.page.tabPlanos')}</TabsTrigger>
                 <TabsTrigger className={navTriggerClass} value="financeiro-ia"><IconMoney />{t('configGeral.page.tabFinanceiroIA')}</TabsTrigger>
@@ -134,17 +134,7 @@ const Configuracoes = () => {
 
         {isSuperAdmin && (
           <TabsContent value="empresas">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconOrg className="h-5 w-5" />
-                  {t('configGeral.page.empresasCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <GerenciamentoEmpresas />
-              </CardContent>
-            </Card>
+            <GerenciamentoEmpresas />
           </TabsContent>
         )}
 

@@ -48,6 +48,11 @@ export const configPerms = {
         deleteDescription: 'Tem certeza que deseja excluir o perfil "{name}"? Usuários vinculados perderão a associação, mas manterão suas permissões individuais.',
         deleteConfirm: 'Excluir',
         deleteCancel: 'Cancelar',
+        deleteAction: 'Excluir perfil',
+        edit: 'Editar perfil',
+        noDescription: 'Sem descrição adicional.',
+        sectionSummary: '{count} perfil(is) configurado(s) para a organização',
+        sectionTitle: 'Perfis configurados',
       },
       userDialog: {
         perm: {
@@ -76,6 +81,8 @@ export const configPerms = {
         noProfileBadge: 'Sem perfil',
         roleFallbackBadge: 'Padrão do papel: {role}',
         manage: 'Gerenciar',
+        sectionSummary: 'Exibindo {shown} de {total} usuários ativos',
+        sectionTitle: 'Acesso por pessoa',
         role: {
           super_admin: 'Super Admin',
           admin: 'Admin',
@@ -177,6 +184,11 @@ export const configPerms = {
         deleteDescription: 'Are you sure you want to delete the profile "{name}"? Linked users will lose the association but keep their individual permissions.',
         deleteConfirm: 'Delete',
         deleteCancel: 'Cancel',
+        deleteAction: 'Delete profile',
+        edit: 'Edit profile',
+        noDescription: 'No additional description.',
+        sectionSummary: '{count} profile(s) configured for the organisation',
+        sectionTitle: 'Configured profiles',
       },
       userDialog: {
         perm: {
@@ -205,6 +217,8 @@ export const configPerms = {
         noProfileBadge: 'No profile',
         roleFallbackBadge: 'Role default: {role}',
         manage: 'Manage',
+        sectionSummary: 'Showing {shown} of {total} active users',
+        sectionTitle: 'Access by person',
         role: {
           super_admin: 'Super Admin',
           admin: 'Admin',

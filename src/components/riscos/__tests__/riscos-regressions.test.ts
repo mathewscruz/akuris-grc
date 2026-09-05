@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { filterUuids, splitResponsavel } from '@/lib/uuid';
-import { mensagemErroComentarios } from '../RiscoComentarios';
+import { extrairIdsMencionados, mensagemErroComentarios } from '../RiscoComentarios';
 import { pt } from '@/i18n/pt';
 import { modulesPt } from '@/i18n/modules';
 
@@ -70,6 +70,15 @@ describe('regressões do módulo de riscos', () => {
   it('traduz falhas conhecidas de comentários em ações úteis', () => {
     expect(mensagemErroComentarios({ code: 'PGRST205' }, tPt)).toMatch(/aplique a migração/i);
     expect(mensagemErroComentarios({ message: 'permission denied' }, tPt)).toMatch(/verifique sua sessão/i);
+  });
+
+  it('reconhece menções com nomes compostos sem duplicar destinatários', () => {
+    const usuarios = [
+      { user_id: 'u-1', nome: 'Ana Paula', email: 'ana@akuris.test', foto_url: null },
+      { user_id: 'u-2', nome: 'João Lima', email: null, foto_url: null },
+    ];
+    expect(extrairIdsMencionados('@Ana Paula revise com @João Lima. @Ana Paula', usuarios)).toEqual(['u-1', 'u-2']);
+    expect(extrairIdsMencionados('@Ana não é a Ana Paula completa', usuarios)).toEqual([]);
   });
 
   it('mantém as abas do perfil legíveis, sem compressão ou abreviações', () => {

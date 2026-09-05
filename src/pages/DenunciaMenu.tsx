@@ -111,17 +111,18 @@ export default function DenunciaMenu() {
       )}
 
       {/* A ação principal ocupa o espaço de uma ação principal. */}
-      <Link to={`/${empresaSlug}/denuncia/registrar`} className="group block">
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-6 transition-ui hover:border-primary/50 hover:bg-primary/10">
+      <Link to={`/${empresaSlug}/denuncia/registrar`} className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+        <div className="relative overflow-hidden rounded-lg border border-primary/30 bg-gradient-to-br from-primary/[0.11] via-primary/[0.055] to-card p-6 shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/55">
+          <span className="absolute inset-y-0 left-0 w-1 bg-primary" aria-hidden="true" />
           <div className="flex items-center gap-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-card/80 shadow-sm">
               <IconFile className="h-5 w-5 text-primary" strokeWidth={1.5} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-base font-semibold text-foreground">
                 {t('publicPortal.denunciaMenu.registerTitle')}
               </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                 {t('publicPortal.denunciaMenu.registerDescription')}
               </span>
             </span>
@@ -135,7 +136,7 @@ export default function DenunciaMenu() {
 
       {/* Quem vem consultar já esteve aqui: reconhece a linha sem precisar de tamanho. */}
       <Link to={`/${empresaSlug}/denuncia/consulta`} className="group mt-3 block">
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4 transition-ui hover:bg-accent">
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4 shadow-sm transition-[border-color,background-color] hover:border-primary/20 hover:bg-primary/[0.035]">
           <IconSearch className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-medium text-foreground">
@@ -150,15 +151,15 @@ export default function DenunciaMenu() {
       </Link>
 
       {categorias.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-8 rounded-lg border border-border/80 bg-card/70 p-5 shadow-sm">
           <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
             {t('publicPortal.denunciaMenu.oQueRelatar')}
           </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-2">
             {categorias.map((c) => (
               <span
                 key={c}
-                className="rounded-md border border-border bg-card px-2.5 py-1 text-micro text-muted-foreground"
+                className="rounded-md border border-primary/15 bg-primary/[0.045] px-3 py-1.5 text-micro font-medium text-foreground/80"
               >
                 {c}
               </span>

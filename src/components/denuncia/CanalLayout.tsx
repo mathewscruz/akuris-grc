@@ -60,7 +60,10 @@ export function CanalLayout({
   const { t, locale, setLocale } = useLanguage();
 
   return (
-    <div style={estiloDaMarca} className="min-h-screen bg-background">
+    <div
+      style={estiloDaMarca}
+      className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_88%_0%,hsl(var(--primary)/0.09),transparent_30rem),linear-gradient(to_bottom,hsl(var(--muted)/0.32),hsl(var(--background))_24rem)]"
+    >
       {/*
         Cabeçalho de produto, não faixa vazia.
 
@@ -69,14 +72,15 @@ export function CanalLayout({
         logótipo passa a ancorar a barra — como em qualquer sítio da empresa —
         e a página fica com um título em vez de dois blocos de identidade.
       */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3">
+      <div className="h-0.5 bg-gradient-to-r from-primary/30 via-primary to-primary/30" aria-hidden="true" />
+      <header className="border-b border-border/80 bg-card/90 shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center gap-4 px-4 py-3.5">
           <span className="flex min-w-0 items-center gap-2.5">
             {empresa?.logo_url ? (
               <img
                 src={empresa.logo_url}
                 alt={nomeDoCanal}
-                className="max-h-8 max-w-[150px] object-contain"
+              className="max-h-9 max-w-[160px] object-contain"
               />
             ) : (
               <span className="truncate text-sm font-semibold text-foreground">{nomeDoCanal}</span>
@@ -104,7 +108,7 @@ export function CanalLayout({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
         {voltarPara && (
           <Link
             to={voltarPara}
@@ -115,11 +119,19 @@ export function CanalLayout({
           </Link>
         )}
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {t('publicPortal.canal.titulo')}
-          </h1>
-          {etapa && <p className="mt-0.5 text-sm text-muted-foreground">{etapa}</p>}
+        <div className="mb-7 flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-primary/20 bg-primary/10 text-primary shadow-sm">
+            <IconShieldCheck className="h-5 w-5" strokeWidth={1.6} />
+          </span>
+          <div className="min-w-0">
+            <p className="mb-0.5 text-micro font-semibold uppercase tracking-[0.14em] text-primary">
+              {t('publicPortal.canal.ambienteSeguro')}
+            </p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {t('publicPortal.canal.titulo')}
+            </h1>
+            {etapa && <p className="mt-0.5 text-sm text-muted-foreground">{etapa}</p>}
+          </div>
         </div>
 
         {children}
@@ -135,7 +147,8 @@ export function CanalLayout({
           {t('publicPortal.canal.direitosTitulo')}
         </p>
         <section className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="group relative overflow-hidden rounded-lg border border-border bg-card p-4 shadow-sm transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/25">
+            <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent" />
             <IconShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.5} />
             <p className="mt-2 text-xs font-semibold text-foreground">
               {t('publicPortal.canal.direitoSigilo')}
@@ -147,7 +160,8 @@ export function CanalLayout({
             </p>
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="group relative overflow-hidden rounded-lg border border-border bg-card p-4 shadow-sm transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/25">
+            <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent" />
             <IconTime className="h-4 w-4 text-primary" strokeWidth={1.5} />
             <p className="mt-2 text-xs font-semibold text-foreground">
               {t('publicPortal.canal.direitoPrazo')}
@@ -160,7 +174,8 @@ export function CanalLayout({
             </p>
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="group relative overflow-hidden rounded-lg border border-border bg-card p-4 shadow-sm transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/25">
+            <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent" />
             <IconExternal className="h-4 w-4 text-primary" strokeWidth={1.5} />
             <p className="mt-2 text-xs font-semibold text-foreground">
               {t('publicPortal.canal.direitoExterno')}

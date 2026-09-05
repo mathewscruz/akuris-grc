@@ -98,6 +98,15 @@ describe('a barra de abas nunca esconde uma aba', () => {
     ).toBe(true);
   });
 
+  it('não cria scroll vertical nem desenha o indicador em menus laterais', () => {
+    expect(lista).toContain('overflow-y-hidden');
+    expect(lista).toContain('showIndicator = true');
+    expect(lista).toContain('{showIndicator && (');
+
+    const configuracoes = readFileSync(resolve(__dirname, '../pages/Configuracoes.tsx'), 'utf8');
+    expect(configuracoes.match(/<TabsList showIndicator=\{false\}/g)).toHaveLength(2);
+  });
+
   it('a barra vertical do assistente não quebra', () => {
     const falhas: string[] = [];
     for (const ficheiro of arquivos) {

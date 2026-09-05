@@ -218,6 +218,9 @@ verify_jwt = true
 [functions.send-controle-mention-notification]
 verify_jwt = true
 
+[functions.send-risco-mention-notification]
+verify_jwt = true
+
 [functions.api-inbound-webhook]
 verify_jwt = false
 

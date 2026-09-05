@@ -29,6 +29,7 @@ const AVISOS = [
   'send-risco-notification',
   'send-controle-notification',
   'send-controle-mention-notification',
+  'send-risco-mention-notification',
   'send-incidente-notification',
   'send-approval-notification',
   'send-auditoria-item-notification',
