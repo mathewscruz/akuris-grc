@@ -49,7 +49,8 @@ export const DIRETIVAS_CSP: Array<[string, string]> = [
   ['media-src', "'self' blob:"],
   // Clickjacking: ninguém embute o Akuris num iframe. Só vale como header —
   // o navegador ignora `frame-ancestors` vindo de `<meta>` —, por isso há
-  // também o `X-Frame-Options` nos ficheiros de header e o frame-buster em JS.
+  // também o `X-Frame-Options` nos ficheiros de header e a proteção complementar
+  // no cliente, limitada ao domínio público.
   ['frame-ancestors', "'none'"],
   // Nada de plugins, nada de `<base>` a reescrever URLs relativos, e formulários
   // só para a própria origem.
@@ -66,8 +67,8 @@ export function politicaCsp(): string {
 
 /**
  * `frame-ancestors` não vale em `<meta>`. Para a versão do `<meta>`, servimos a
- * política sem essa directiva — o clickjacking fica coberto pelo header e pelo
- * frame-buster, e não deixamos o navegador a queixar-se de uma directiva que
+ * política sem essa directiva — o clickjacking fica coberto pelo header e pela
+ * proteção complementar no cliente, e não deixamos o navegador a queixar-se de uma directiva que
  * ignora.
  */
 export function politicaCspParaMeta(): string {

@@ -6,12 +6,12 @@ import { createRoot } from 'react-dom/client'
 import { HelmetProvider } from 'react-helmet-async'
 import App from './App.tsx'
 import { installGlobalPointerEventsGuard } from './lib/radix-pointer-events'
+import { protegerContraEnquadramento } from './lib/seguranca/clickjacking'
 import './index.css'
 
-// Clickjacking é bloqueado no servidor (X-Frame-Options / CSP frame-ancestors).
-// Um frame-buster em JS aqui apagaria a página dentro de iframes legítimos
-// (ex.: janela de pré-visualização do editor), por isso não existe guard de
-// enquadramento no cliente.
+// Executa antes do primeiro render. No domínio público complementa os
+// cabeçalhos anti-clickjacking; em desenvolvimento/preview não interfere.
+protegerContraEnquadramento();
 
 // Impede que overlays empilhados deixem o body bloqueado (primeiro clique engolido).
 installGlobalPointerEventsGuard();
