@@ -261,3 +261,16 @@ Pedido: melhorar o popup de requisitos, não cobrar créditos dos clientes pela 
 Preparada para a função `populate-requirement-guidance` no projeto Supabase existente, mantendo JWT, sem nova migração. O estado final do backend, sincronização e publicação da interface será registrado após cada operação; a falha anterior do Lovable não autoriza trocar repositório ou provedor.
 
 - Função `populate-requirement-guidance` publicada com sucesso em `lnlkahtugwmkznasapfd`, incluindo o serviço compartilhado de geração/cache. Verificação JWT preservada; POST sem autenticação confirmado com HTTP 401. Nenhuma migração ou configuração de login foi alterada nesta complementação.
+
+### Publicação confirmada — fechamento do anexo 23
+
+Esta confirmação substitui o bloqueio de frontend registrado nas tentativas anteriores.
+
+- Código enviado ao `main` no commit `858c89f91a0248c4006e1bbac2defdc3a4ae28cc`, incluindo o conjunto acumulado de `0769cc7b`. [CI Segurança](https://github.com/mathewscruz/akuris-grc/actions/runs/33986306568) concluído com sucesso nos três jobs. Mantida a ressalva de que lint/auditoria de dependências são informativos no pipeline existente.
+- O Lovable voltou a apresentar os novos commits, passou pelo estado “Atualizando projeto…” e marcou **“feat: refine requirement dialogs and include guidance at platform cost” como Publicado**, com “Seu site está atualizado”. Não houve desconexão, migração de provedor ou alteração de DNS.
+- `https://akuris.pt/` respondeu HTTP 200 e passou do asset antigo `index-CQ8tLNGl.js` para **`index-PU4uxMAq.js`**. A versão foi conferida também por elementos reais da aplicação, não apenas pelo nome do arquivo ou status do painel.
+- Canal público `/akuris/denuncia`: cabeçalho e rodapé carregam `akuris-logo-light-B_VAGyfp.png` com dimensões naturais 650×195 e a imagem fornecida, sobre fundo branco.
+- Controles em produção: diálogo com largura interna 1.151/1.151 px, sete abas completas e acesso a “Planos de ação” confirmado. Nenhum plano, comentário, teste ou controle foi criado/alterado nessa conferência.
+- Gap Analysis em produção: requisito 4.1 abriu o novo popup com navegação por seções, largura contida e orientação previamente salva. Mensagem de orientação incluída, sem desconto de créditos, presente. Diálogo fechado por Cancelar; não foram gravadas respostas nem solicitada regeneração.
+- Templates em produção: busca, categoria e status medidos na mesma coordenada vertical, confirmando a nova faixa no domínio publicado.
+- Banco, funções atualizadas e interface estão publicados. Permanecem apenas os limites de validação explicitados acima (sem teste de geração real autenticada nem homologação universal de todas as permissões/temas); não se trata de uma certificação global de segurança ou acessibilidade.
