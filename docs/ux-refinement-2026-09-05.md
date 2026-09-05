@@ -222,3 +222,13 @@ Esta seção substitui o estado histórico de implantação acima. O responsáve
 - O Lovable apresenta um aviso genérico preexistente sobre funções `SECURITY DEFINER` acessíveis publicamente. Não foi ignorado nem corrigido com revogações indiscriminadas: há RPCs públicas intencionais do canal/portal. As novas RPCs de revisão não concedem execução a `anon`. Isso não constitui auditoria integral de todas as funções públicas.
 
 Permanecem os limites de homologação com clientes, matriz integral de acessibilidade, taxonomia do canal, peso inicial do bundle e teste HTTP autenticado integral da função de compatibilidade, já descritos acima.
+
+### Resultado da tentativa de publicação
+
+- Código acumulado enviado ao `main` no commit `0769cc7b0494bc05b1cefa7618ba7cb0510de105`.
+- [CI Segurança dessa versão](https://github.com/mathewscruz/akuris-grc/actions/runs/33984166303) concluído com sucesso: qualidade, varredura de segredos e relatório de dependências. Lint e auditoria de dependências continuam informativos, conforme a política existente do pipeline; “success” não significa ausência de todos os avisos.
+- Smoke tests remotos: leitura pública de posts publicados retorna 200; execução anônima das duas novas RPCs de revisão retorna 401 / SQLSTATE 42501. Histórico remoto confirma as duas migrações aplicadas.
+- **Frontend ainda não publicado.** O Lovable reconhece `mathewscruz/akuris-grc`, branch `main`, como conectado, mas informa “Couldn't check sync status right now” e “Lovable couldn't read this project's history. Try again shortly.” Atualização da página e nova verificação de sincronização não trouxeram o commit novo.
+- O histórico de publicação permanece na versão anterior `664df366`, identificada como publicada às 09:28 de 05/09/2026. A opção “Publicar alterações” continua desabilitada. O sucesso do push/build local não foi apresentado como implantação da interface.
+- Não foi desconectada a integração, criado outro repositório, alterado DNS, migrado provedor ou revertido código de produção para tentar contornar a falha. A documentação do Lovable informa que desconectar e reconectar cria outro repositório; essa ação não é uma tentativa segura de atualização do mesmo vínculo.
+- Próximo passo: assim que o Lovable voltar a sincronizar, conferir a versão recebida, executar “Publicar alterações” e validar o domínio e o novo logotipo. Banco e função de compatibilidade já estão publicados; não reaplicar as migrações ou executar campanhas reais como teste.
