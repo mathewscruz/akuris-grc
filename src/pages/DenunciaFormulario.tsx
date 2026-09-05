@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Paperclip, Download, Check } from 'lucide-react';
+import { CanalState } from '@/components/denuncia/CanalState';
+import { buildDenunciaSchema, canalFileMime } from '@/lib/canal-report-form';
+import { useCanalUnsavedChanges } from '@/hooks/useCanalUnsavedChanges';
 import { IconClose, IconUpload, IconExternal, IconShield, IconArrowLeft, IconCopy, IconSuccess } from '@/components/icons';
 import { useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { formatDateOnly } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/lib/toast';
@@ -28,64 +32,6 @@ interface Categoria {
   descricao?: string;
   ativo: boolean;
 }
-
-/**
- * `permitirAnonimas` decide se identificar-se é opcional ou obrigatório.
- *
- * Antes o bloco de identificação inteiro só existia quando a empresa PERMITIA
- * denúncias anónimas — o inverso da intenção. Desligar "Permitir Denúncias
- * Anónimas" escondia nome, e-mail e telefone, `anonima` passava a ser sempre
- * true (era inferido do nome vazio) e o RPC recusava tudo: o canal público
- * ficava inutilizável, com um toast genérico e nada a explicar porquê.
- */
-const buildDenunciaSchema = (
-  t: (key: string) => string,
-  permitirAnonimas: boolean,
-  exigirPolitica: boolean,
-) => z.object({
-  categoria_id: z.string().min(1, t('publicPortal.denunciaForm.validation.category')),
-  titulo: z.string().min(5, t('publicPortal.denunciaForm.validation.title')),
-  descricao: z.string().min(20, t('publicPortal.denunciaForm.validation.description')),
-  local_ocorrencia: z.string().optional(),
-  data_ocorrencia: z.string().optional(),
-  /**
-   * Identificar-se e pedir reserva são coisas diferentes.
-   *
-   * O anonimato era inferido de um campo vazio: `anonima: !denunciante_nome`.
-   * Quem quisesse identificar-se ao comité mas exigir que o nome não saísse
-   * dali não tinha como o dizer — e o sistema também não tinha como o
-   * registar. É a diferença entre o art. 16.º (confidencialidade, obrigatória)
-   * e o art. 6.º/2 (anonimato, opcional) da Diretiva (UE) 2019/1937.
-   */
-  nivel_identificacao: z.enum(['identificada', 'confidencial', 'anonima']),
-  denunciante_nome: permitirAnonimas
-    ? z.string().optional()
-    : z.string().trim().min(3, t('publicPortal.denunciaForm.validation.nameRequired')),
-  denunciante_email: z.string().email(t('publicPortal.denunciaForm.validation.email')).optional().or(z.literal('')),
-  denunciante_telefone: z.string().optional(),
-  testemunhas: z.string().optional(),
-  evidencias_descricao: z.string().optional(),
-  /**
-   * O consentimento era literal: `politica_aceita: true` ia no envio sem que
-   * o denunciante visse o texto — a política só aparecia DEPOIS, na tela de
-   * sucesso. O sistema registava um consentimento que nunca foi dado, num
-   * canal onde esse registo é justamente a prova legal.
-   */
-  politica_aceita: exigirPolitica
-    ? z.literal(true, { errorMap: () => ({ message: t('publicPortal.denunciaForm.validation.policyRequired') }) })
-    : z.boolean().optional(),
-}).superRefine((dados, ctx) => {
-  /* Quem escolhe identificar-se — mesmo pedindo reserva — tem de deixar nome.
-     A regra é a mesma no banco; aqui o erro aparece no campo certo em vez de
-     voltar como "denúncia inválida" no fim do formulário. */
-  if (dados.nivel_identificacao !== 'anonima' && (dados.denunciante_nome ?? '').trim().length < 3) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['denunciante_nome'],
-      message: t('publicPortal.denunciaForm.validation.nameRequired'),
-    });
-  }
-});
 
 type DenunciaFormData = z.infer<ReturnType<typeof buildDenunciaSchema>>;
 
@@ -105,18 +51,6 @@ const ETAPA_DO_CAMPO: Record<string, number> = Object.fromEntries(
   ),
 );
 
-/**
- * A regra que o `superRefine` do esquema exprime, isolada para poder ser
- * verificada TAMBÉM por etapa.
- *
- * O `superRefine` vive no objecto inteiro, e o zod não chega a executá-lo
- * quando a análise base já falhou — e falha sempre enquanto a política de
- * privacidade não estiver aceite, o que só acontece na etapa 4. Resultado
- * medido: a etapa 2 deixava avançar com o «Nome *» vazio.
- */
-const faltaONome = (nivel: unknown, nome: unknown) =>
-  nivel !== 'anonima' && String(nome ?? '').trim().length < 3;
-
 /** Os três níveis, na ordem em que a pessoa os pondera. */
 const NIVEIS = ['identificada', 'confidencial', 'anonima'] as const;
 
@@ -129,6 +63,7 @@ const NIVEIS = ['identificada', 'confidencial', 'anonima'] as const;
  * onde se entrega a única credencial da pessoa, é pior do que não haver botão.
  */
 function BotaoCopiar({ texto, rotulo, rotuloFeito }: { texto: string; rotulo: string; rotuloFeito: string }) {
+  const { t } = useLanguage();
   const [feito, setFeito] = useState(false);
   const podeCopiar = typeof navigator !== 'undefined' && !!navigator.clipboard?.writeText;
   if (!podeCopiar) return null;
@@ -143,8 +78,7 @@ function BotaoCopiar({ texto, rotulo, rotuloFeito }: { texto: string; rotulo: st
           setFeito(true);
           window.setTimeout(() => setFeito(false), 2000);
         } catch {
-          /* Recusado pelo navegador: o valor continua na tela para copiar à
-             mão, e dizer «falhou» aqui só assustaria. */
+          toast.error(t('canalExperience.copyFailed'));
         }
       }}
     >
@@ -212,12 +146,17 @@ export default function DenunciaFormulario() {
     Os campos e a validação são os mesmos; muda quantos se veem de cada vez.
   */
   const [etapa, setEtapa] = useState(1);
+  const [furthestStep, setFurthestStep] = useState(1);
+  const [categoriasLoading, setCategoriasLoading] = useState(true);
+  const submitLock = useRef(false);
+  const nextLock = useRef(false);
+  const stageHeading = useRef<HTMLHeadingElement>(null);
   /** Com denúncias anónimas desligadas, identificar-se deixa de ser opcional. */
-  const identificacaoObrigatoria = config ? !config.permitir_anonimas : false;
+  const identificacaoObrigatoria = config ? !config.permitir_anonimas || config.requerer_email : false;
 
   const denunciaSchema = useMemo(
-    () => buildDenunciaSchema(t, config?.permitir_anonimas ?? true, !!config?.politica_privacidade),
-    [t, config?.permitir_anonimas, config?.politica_privacidade],
+    () => buildDenunciaSchema(t, config?.permitir_anonimas ?? true, !!config?.politica_privacidade, config?.requerer_email ?? false),
+    [t, config?.permitir_anonimas, config?.politica_privacidade, config?.requerer_email],
   );
 
   const form = useForm<DenunciaFormData>({
@@ -236,20 +175,59 @@ export default function DenunciaFormulario() {
       denunciante_telefone: '',
       testemunhas: '',
       evidencias_descricao: '',
+      politica_aceita: false,
     },
   });
 
+  const unsaved = useCanalUnsavedChanges(!showSuccess && (form.formState.isDirty || anexos.length > 0));
+
   useEffect(() => {
-    if (!empresa?.id || !config) {
+    if (!loading) stageHeading.current?.focus({ preventScroll: true });
+  }, [etapa, loading]);
+
+  const goNext = async () => {
+    if (nextLock.current || submitting) return;
+    nextLock.current = true;
+    try {
+      // An empty field list must not trigger validation of the entire form.
+      const fields = CAMPOS_POR_ETAPA[etapa];
+      const valid = fields.length === 0 || await form.trigger(fields, { shouldFocus: true });
+      if (valid) {
+        setEtapa((value) => Math.min(TOTAL_ETAPAS, value + 1));
+        setFurthestStep((value) => Math.max(value, Math.min(TOTAL_ETAPAS, etapa + 1)));
+      }
+    } finally { nextLock.current = false; }
+  };
+
+  const downloadReceipt = () => {
+    const text = [
+      t('canalExperience.receiptTitle'), canal.nomeDoCanal,
+      t('publicPortal.denunciaForm.yourProtocol') + ' ' + protocolo,
+      t('publicPortal.denunciaForm.yourTrackingCode') + ' ' + codigoAcompanhamento,
+      t('canalExperience.receiptUrl') + ': ' + window.location.origin + '/' + empresaSlug + '/denuncia/consulta',
+      '', t('canalExperience.receiptHint'),
+    ].join('\n');
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'acesso-' + protocolo.replace(/[^a-zA-Z0-9-]/g, '') + '.txt';
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  useEffect(() => {
+    if (!empresa?.id || !config?.id) {
       setCategorias([]);
       return;
     }
 
     let ativo = true;
+    setCategoriasLoading(true);
     supabase
       .rpc('get_denuncias_categorias_publicas' as never, { p_empresa_id: empresa.id } as never)
       .then(({ data, error }) => {
         if (!ativo) return;
+        setCategoriasLoading(false);
         if (error) {
           logger.error('Erro ao carregar categorias públicas', {
             module: 'DenunciaFormulario',
@@ -268,12 +246,18 @@ export default function DenunciaFormulario() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
+    event.target.value = '';
     if (anexos.length + files.length > 5) {
       toast.error(t('publicPortal.denunciaForm.maxFiles'));
       return;
     }
     
     const validFiles = files.filter(file => {
+      if (!file.size || !canalFileMime(file)) {
+        toast.error(t('canalExperience.invalidFile', { name: file.name }));
+        return false;
+      }
+      if (anexos.some((current) => current.name === file.name && current.size === file.size && current.lastModified === file.lastModified)) return false;
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
         toast.error(t('publicPortal.denunciaForm.fileTooLarge', { name: file.name }));
@@ -290,8 +274,8 @@ export default function DenunciaFormulario() {
   };
 
   const onSubmit = async (data: DenunciaFormData) => {
-    if (!empresa) return;
-    
+    if (!empresa || submitLock.current) return;
+    submitLock.current = true;
     setSubmitting(true);
     
     try {
@@ -308,8 +292,8 @@ export default function DenunciaFormulario() {
           nivel_identificacao: data.nivel_identificacao,
           anonima: data.nivel_identificacao === 'anonima',
           politica_aceita: data.politica_aceita === true,
-          denunciante_email: data.denunciante_email || null,
-          denunciante_nome: data.denunciante_nome || null,
+          denunciante_email: data.nivel_identificacao === 'anonima' ? null : data.denunciante_email?.trim() || null,
+          denunciante_nome: data.nivel_identificacao === 'anonima' ? null : data.denunciante_nome?.trim() || null,
           /*
             Estes cinco eram recolhidos e deitados fora.
 
@@ -319,7 +303,7 @@ export default function DenunciaFormulario() {
             essencial de qualquer apuração — e ninguém percebia, porque a
             pessoa tinha mesmo preenchido.
           */
-          denunciante_telefone: data.denunciante_telefone || null,
+          denunciante_telefone: data.nivel_identificacao === 'anonima' ? null : data.denunciante_telefone || null,
           local_ocorrencia: data.local_ocorrencia || null,
           data_ocorrencia: data.data_ocorrencia || null,
           testemunhas: data.testemunhas || null,
@@ -372,7 +356,7 @@ export default function DenunciaFormulario() {
                   denuncia_id: denunciaData.id,
                   codigo,
                   nome: file.name,
-                  tipo: file.type,
+                  tipo: canalFileMime(file),
                   tamanho: file.size,
                 },
               },
@@ -386,7 +370,7 @@ export default function DenunciaFormulario() {
               .uploadToSignedUrl(pedido.caminho, pedido.token, file);
             if (erroUpload) throw erroUpload;
 
-            await supabase.functions.invoke('create-denuncia', {
+            const { data: confirmed, error: confirmError } = await supabase.functions.invoke('create-denuncia', {
               body: {
                 action: 'anexo_confirmar',
                 denuncia_id: denunciaData.id,
@@ -394,6 +378,7 @@ export default function DenunciaFormulario() {
                 anexo_id: pedido.anexo_id,
               },
             });
+            if (confirmError || confirmed?.error) throw new Error('attachment_confirmation_failed');
           } catch (erro) {
             logger.error('Falha ao anexar evidência', {
               module: 'DenunciaFormulario',
@@ -413,6 +398,7 @@ export default function DenunciaFormulario() {
       logger.error('Erro geral ao registrar denúncia', { module: 'DenunciaFormulario', error: String(error) });
       toast.error(t('publicPortal.denunciaForm.unexpectedError'));
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };
@@ -424,34 +410,7 @@ export default function DenunciaFormulario() {
     claro e com a cor da empresa — e a do SUCESSO é justamente a que a pessoa
     mais fixa, porque é a que traz o protocolo.
   */
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <AkurisPulse size={32} />
-          <p className="mt-2 text-sm text-muted-foreground">{t('publicPortal.common.loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!empresa || !empresa.canal_ativo || !config) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="mx-auto max-w-md">
-          <CardContent className="py-10 text-center">
-            <IconShield className="mx-auto mb-4 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mb-2 text-base font-semibold text-foreground">
-              {t('publicPortal.denunciaForm.unavailableTitle')}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t('publicPortal.denunciaForm.unavailableDescription')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (canal.estado !== 'pronto' || !empresa || !config) return <CanalState canal={canal} />;
 
   if (showSuccess) {
     return (
@@ -462,11 +421,11 @@ export default function DenunciaFormulario() {
         estiloDaMarca={canal.estiloDaMarca}
         etapa={t('publicPortal.denunciaForm.successTitle')}
       >
-        <div>
-          <Card>
-            <CardContent className="py-10 text-center">
+        <div className="canal-success">
+          <Card className="border-0 shadow-none">
+            <CardContent className="p-0">
               {/* O título já está no cabeçalho da página. */}
-              <IconShield className="mx-auto mb-5 h-8 w-8 text-state-done" strokeWidth={1.5} />
+              <Check className="mb-5 h-8 w-8 text-state-done" aria-hidden="true" />
 
               {/*
                 Protocolo e código lado a lado, com o mesmo peso.
@@ -498,12 +457,13 @@ export default function DenunciaFormulario() {
                 não há recuperação, e é isso que o texto abaixo agora diz.
               */}
               {codigoAcompanhamento && (
-                <div className="mt-3 flex justify-start">
+                <div className="mt-4 flex flex-wrap gap-3">
                   <BotaoCopiar
                     texto={`${t('publicPortal.denunciaForm.yourProtocol')} ${protocolo}\n${t('publicPortal.denunciaForm.yourTrackingCode')} ${codigoAcompanhamento}`}
                     rotulo={t('publicPortal.denunciaForm.copiarTudo')}
                     rotuloFeito={t('publicPortal.denunciaForm.copiado')}
                   />
+                  <Button type="button" variant="outline" onClick={downloadReceipt}><Download className="mr-2 h-4 w-4" />{t('canalExperience.downloadReceipt')}</Button>
                 </div>
               )}
 
@@ -551,19 +511,15 @@ export default function DenunciaFormulario() {
               )}
 
               <div className="space-y-3">
-                <Link to={`/${empresaSlug}/denuncia/consulta`}>
-                  <Button className="w-full">
+                <Button className="canal-cta w-full" asChild><Link to={`/${empresaSlug}/denuncia/consulta`}>
                     <IconExternal className="w-4 h-4 mr-2" />
                     {t('publicPortal.denunciaForm.checkStatus')}
-                  </Button>
-                </Link>
+                </Link></Button>
                 
-                <Link to={`/${empresaSlug}/denuncia`}>
-                  <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" asChild><Link to={`/${empresaSlug}/denuncia`}>
                     <IconArrowLeft className="w-4 h-4 mr-2" />
                     {t('publicPortal.denunciaForm.backHome')}
-                  </Button>
-                </Link>
+                </Link></Button>
               </div>
               
             </CardContent>
@@ -581,36 +537,21 @@ export default function DenunciaFormulario() {
       estiloDaMarca={canal.estiloDaMarca}
       etapa={t('publicPortal.denunciaForm.cardTitle')}
       voltarPara={`/${empresaSlug}/denuncia`}
+      onNavigate={unsaved.onNavigate}
     >
-      <div>
-        {/* O título já está no cabeçalho da página: repeti-lo dentro do cartão
-            gastava a primeira linha do formulário a dizer o mesmo duas vezes. */}
-        <Card>
-          <CardContent className="pt-6">
-            {/* Onde estou, e quanto falta. */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t(`publicPortal.denunciaForm.etapa${etapa}`)}
-                </p>
-                <p className="text-micro tabular-nums text-muted-foreground">
-                  {t('publicPortal.denunciaForm.etapaDe', { atual: etapa, total: TOTAL_ETAPAS })}
-                </p>
-              </div>
-              <div className="mt-2 flex gap-1">
-                {[1, 2, 3, 4].map((n) => (
-                  <span
-                    key={n}
-                    className={
-                      n <= etapa
-                        ? 'h-1 flex-1 rounded-full bg-primary'
-                        : 'h-1 flex-1 rounded-full bg-muted'
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-
+      {unsaved.dialog}
+      <div className="canal-form-grid">
+        <aside className="canal-form-rail" aria-label={t('publicPortal.denunciaForm.cardTitle')}>
+          <ol>{[1, 2, 3, 4].map((number) => <li key={number}>
+            <button type="button" disabled={number > furthestStep || submitting} aria-current={number === etapa ? 'step' : undefined} onClick={() => setEtapa(number)}>
+              <span className="canal-step-number" aria-hidden="true">{number < etapa ? <Check size={14} /> : number}</span>{t(`publicPortal.denunciaForm.etapa${number}`)}
+            </button>
+          </li>)}</ol>
+          <p className="canal-mobile-progress" role="status">{t('publicPortal.denunciaForm.etapaDe', { atual: etapa, total: TOTAL_ETAPAS })}</p>
+          <p className="canal-note">{t('canalExperience.railHint')}</p>
+        </aside>
+        <div className="min-w-0">
+          <div className="canal-form-stage"><h2 ref={stageHeading} tabIndex={-1}>{t(`canalExperience.stage${etapa}`)}</h2><p>{t(`canalExperience.stage${etapa}Hint`)}</p></div>
             <Form {...form}>
               {/*
                 A rede por baixo: se a submissão for travada por um erro
@@ -620,7 +561,10 @@ export default function DenunciaFormulario() {
                 nenhuma — o erro estava atrás, numa etapa que já não se vê.
               */}
               <form
-                onSubmit={form.handleSubmit(onSubmit, (erros) => {
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (etapa < TOTAL_ETAPAS) { void goNext(); return; }
+                  void form.handleSubmit(onSubmit, (erros) => {
                   const primeiro = Object.keys(erros)[0];
                   const destino = ETAPA_DO_CAMPO[primeiro];
                   if (destino && destino !== etapa) setEtapa(destino);
@@ -628,7 +572,8 @@ export default function DenunciaFormulario() {
                     (erros as Record<string, { message?: string }>)[primeiro]?.message ??
                       t('publicPortal.denunciaForm.unexpectedError'),
                   );
-                })}
+                  })(event);
+                }}
                 className="space-y-6"
               >
                 {etapa === 1 && (
@@ -640,20 +585,13 @@ export default function DenunciaFormulario() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('publicPortal.denunciaForm.category')}</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('publicPortal.denunciaForm.categoryPlaceholder')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categorias.map((categoria) => (
-                            <SelectItem key={categoria.id} value={categoria.id}>
-                              {categoria.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <select className="canal-select" {...field} disabled={categoriasLoading}>
+                          <option value="">{t('publicPortal.denunciaForm.categoryPlaceholder')}</option>
+                          {categorias.map((categoria) => <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>)}
+                        </select>
+                      </FormControl>
+                      {!categoriasLoading && categorias.length === 0 && <p className="canal-error" role="alert">{t('canalExperience.categoriesUnavailable')}</p>}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -667,7 +605,7 @@ export default function DenunciaFormulario() {
                     <FormItem>
                       <FormLabel>{t('publicPortal.denunciaForm.title')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={t('publicPortal.denunciaForm.titlePlaceholder')} />
+                        <Input {...field} minLength={8} maxLength={160} placeholder={t('publicPortal.denunciaForm.titlePlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -685,7 +623,7 @@ export default function DenunciaFormulario() {
                         <Textarea 
                           {...field} 
                           placeholder={t('publicPortal.denunciaForm.descriptionPlaceholder')}
-                          className="min-h-[120px]"
+                          className="min-h-[150px]" maxLength={10000}
                         />
                       </FormControl>
                       <FormMessage />
@@ -700,7 +638,7 @@ export default function DenunciaFormulario() {
                     name="local_ocorrencia"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('publicPortal.denunciaForm.place')}</FormLabel>
+                        <FormLabel>{t('publicPortal.denunciaForm.place')} <span className="text-muted-foreground font-normal">({t('canalExperience.optional')})</span></FormLabel>
                         <FormControl>
                           <Input {...field} placeholder={t('publicPortal.denunciaForm.placePlaceholder')} />
                         </FormControl>
@@ -714,7 +652,7 @@ export default function DenunciaFormulario() {
                     name="data_ocorrencia"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('publicPortal.denunciaForm.date')}</FormLabel>
+                        <FormLabel>{t('publicPortal.denunciaForm.date')} <span className="text-muted-foreground font-normal">({t('canalExperience.optional')})</span></FormLabel>
                         <FormControl>
                           <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                         </FormControl>
@@ -762,7 +700,15 @@ export default function DenunciaFormulario() {
                                     name="nivel_identificacao"
                                     value={n}
                                     checked={escolhido}
-                                    onChange={() => field.onChange(n)}
+                                    onChange={() => {
+                                      field.onChange(n);
+                                      if (n === 'anonima') {
+                                        form.setValue('denunciante_nome', '');
+                                        form.setValue('denunciante_email', '');
+                                        form.setValue('denunciante_telefone', '');
+                                        form.clearErrors(['denunciante_nome', 'denunciante_email']);
+                                      }
+                                    }}
                                     className="mt-0.5 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
                                   />
                                   <span className="min-w-0">
@@ -804,7 +750,7 @@ export default function DenunciaFormulario() {
                           name="denunciante_email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('publicPortal.denunciaForm.email')}</FormLabel>
+                              <FormLabel>{t('publicPortal.denunciaForm.email')}{config.requerer_email ? ' *' : ''}</FormLabel>
                               <FormControl>
                                 <Input {...field} type="email" placeholder={t('residuos.placeholders.seuEmail')} />
                               </FormControl>
@@ -820,7 +766,7 @@ export default function DenunciaFormulario() {
                             <FormItem>
                               <FormLabel>{t('publicPortal.denunciaForm.phone')}</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder={t('publicPortal.denunciaForm.phonePlaceholder')} />
+                                <Input {...field} type="tel" autoComplete="off" placeholder={t('publicPortal.denunciaForm.phonePlaceholder')} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -902,22 +848,15 @@ export default function DenunciaFormulario() {
                       </Alert>
                     )}
 
-                    <div className="flex items-center justify-center w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-accent">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <IconUpload className="w-8 h-8 mb-2 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            {t('publicPortal.denunciaForm.attachCta')}
-                          </p>
-                        </div>
-                        <input
-                          type="file"
-                          multiple
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
-                        />
-                      </label>
+                    <div className="canal-upload">
+                      <Paperclip aria-hidden="true" />
+                      <div className="min-w-0 flex-1">
+                        <label htmlFor="canal-evidence-files">{t('publicPortal.denunciaForm.attachCta')}</label>
+                        <p className="canal-note">{t('canalExperience.fileTypes')}</p>
+                      </div>
+                      <input id="canal-evidence-files" type="file" multiple onChange={handleFileUpload}
+                        className="sr-only" aria-label={t('publicPortal.denunciaForm.attach')}
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" />
                     </div>
 
                     {/* Lista de anexos */}
@@ -931,6 +870,7 @@ export default function DenunciaFormulario() {
                               variant="ghost"
                               size="sm"
                               onClick={() => removeFile(index)}
+                              aria-label={t('canalExperience.removeFile', { name: file.name })}
                             >
                               <IconClose className="w-4 h-4" />
                             </Button>
@@ -954,11 +894,11 @@ export default function DenunciaFormulario() {
                   enviado, que é a pergunta de quem está prestes a carregar num
                   botão sem poder voltar atrás.
                 */}
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <p className="border-b border-border bg-muted/30 px-4 py-2 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                <div>
+                  <p className="text-sm font-medium">
                     {t('publicPortal.denunciaForm.revisaoTitulo')}
                   </p>
-                  <dl className="divide-y divide-border">
+                  <dl className="canal-review">
                     {[
                       {
                         /* Rótulos curtos e sem asterisco: numa revisão o `*`
@@ -1000,20 +940,25 @@ export default function DenunciaFormulario() {
                             ? null
                             : form.watch('denunciante_nome'),
                       },
+                      { rotulo: t('publicPortal.denunciaForm.date'), valor: form.watch('data_ocorrencia') ? formatDateOnly(form.watch('data_ocorrencia')!) : null },
+                      { rotulo: t('publicPortal.denunciaForm.email'), valor: form.watch('nivel_identificacao') === 'anonima' ? null : form.watch('denunciante_email') },
+                      { rotulo: t('publicPortal.denunciaForm.phone'), valor: form.watch('nivel_identificacao') === 'anonima' ? null : form.watch('denunciante_telefone') },
+                      { rotulo: t('publicPortal.denunciaForm.witnesses'), valor: form.watch('testemunhas') },
+                      { rotulo: t('publicPortal.denunciaForm.evidence'), valor: form.watch('evidencias_descricao') },
                       {
                         rotulo: t('publicPortal.denunciaForm.attach'),
                         valor: anexos.length
-                          ? t('publicPortal.denunciaForm.revisaoAnexos', { count: anexos.length })
+                          ? anexos.map((file) => file.name).join('\n')
                           : null,
                       },
                     ]
                       .filter((linha) => !!linha.valor)
                       .map((linha) => (
-                        <div key={linha.rotulo} className="flex gap-3 px-4 py-2.5">
-                          <dt className="w-32 shrink-0 text-xs text-muted-foreground">
+                        <div key={linha.rotulo}>
+                          <dt>
                             {linha.rotulo}
                           </dt>
-                          <dd className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-foreground">
+                          <dd>
                             {linha.valor}
                           </dd>
                         </div>
@@ -1059,55 +1004,35 @@ export default function DenunciaFormulario() {
                 {/* Botões de ação */}
                 {/* Avançar só depois de a etapa estar válida: o erro aparece
                     onde o campo está, e não três telas à frente. */}
-                <div className="flex gap-3 pt-4">
+                <div className="canal-actions">
                   {etapa === 1 ? (
-                    <Link to={`/${empresaSlug}/denuncia`} className="flex-1">
-                      <Button type="button" variant="outline" className="w-full">
-                        {t('publicPortal.denunciaForm.cancel')}
-                      </Button>
-                    </Link>
+                    <Button type="button" variant="ghost" asChild><Link to={`/${empresaSlug}/denuncia`}>{t('publicPortal.denunciaForm.cancel')}</Link></Button>
                   ) : (
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex-1"
                       onClick={() => setEtapa((e) => e - 1)}
+                      disabled={submitting}
                     >
                       {t('publicPortal.denunciaForm.voltarEtapa')}
                     </Button>
                   )}
 
                   {etapa < TOTAL_ETAPAS ? (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={async () => {
-                        const ok = await form.trigger(CAMPOS_POR_ETAPA[etapa]);
-                        /* A regra cruzada, verificada aqui porque o
-                           `superRefine` do esquema não corre nesta altura. */
-                        const v = form.getValues();
-                        if (etapa === 2 && faltaONome(v.nivel_identificacao, v.denunciante_nome)) {
-                          form.setError('denunciante_nome', {
-                            type: 'manual',
-                            message: t('publicPortal.denunciaForm.validation.nameRequired'),
-                          });
-                          return;
-                        }
-                        if (ok) setEtapa((e) => e + 1);
-                      }}
-                    >
-                      {t('publicPortal.denunciaForm.avancarEtapa')}
+                    <Button key="next-stage" type="button" className="canal-cta"
+                      disabled={etapa === 1 && (categoriasLoading || categorias.length === 0)}
+                      onClick={(event) => { event.preventDefault(); void goNext(); }}>
+                      {t('publicPortal.denunciaForm.avancarEtapa')}<ArrowRight size={17} aria-hidden="true" />
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={submitting} className="flex-1">
+                    <Button key="submit-report" type="submit" disabled={submitting} className="canal-cta">
                       {submitting ? t('publicPortal.denunciaForm.submitting') : t('publicPortal.denunciaForm.submit')}
                     </Button>
                   )}
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </CanalLayout>
   );

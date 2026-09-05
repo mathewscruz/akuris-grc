@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowRight, Eye, EyeOff, RefreshCw, LogOut } from 'lucide-react';
+import { CanalState } from '@/components/denuncia/CanalState';
+import { CanalEvidenceUpload } from '@/components/denuncia/CanalEvidenceUpload';
 import { IconSearch, IconView, IconSuccess, IconInfo, IconTime, IconFile, IconShield } from '@/components/icons';
 import { useParams } from 'react-router-dom';
 import { logger } from '@/lib/logger';
@@ -21,6 +24,7 @@ import { SolicitarReuniao, type ReuniaoPublica } from '@/components/denuncia/Sol
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Denuncia {
   id: string;
+  acesso_legado_limitado?: boolean;
   protocolo: string;
   titulo: string;
   status: string;
@@ -71,7 +75,7 @@ interface Movimentacao {
  * Cumprido pinta-se de feito; vencido pinta-se de vencido. Não se esconde o
  * atraso da empresa a quem ele prejudica.
  */
-function PrazosDoCaso({ denuncia }: { denuncia: { prazo_acusacao: string | null; prazo_retorno: string | null; data_acusacao_recebimento: string | null; status: string } }) {
+function PrazosDoCaso({ denuncia }: { denuncia: { prazo_acusacao: string | null; prazo_retorno: string | null; data_acusacao_recebimento: string | null; data_conclusao: string | null; status: string } }) {
   const { t } = useLanguage();
   const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
   if (!denuncia.prazo_acusacao && !denuncia.prazo_retorno) return null;
@@ -98,7 +102,7 @@ function PrazosDoCaso({ denuncia }: { denuncia: { prazo_acusacao: string | null;
       rotulo: t('publicPortal.denunciaConsulta.prazoRetorno'),
       data: denuncia.prazo_retorno,
       cumprido: encerrada,
-      feitoEm: null,
+      feitoEm: denuncia.data_conclusao,
     },
   ].filter((l) => !!l.data);
 
@@ -121,9 +125,9 @@ function PrazosDoCaso({ denuncia }: { denuncia: { prazo_acusacao: string | null;
               }
             >
               {l.cumprido
-                ? t('publicPortal.denunciaConsulta.prazoCumpridoEm', {
-                    data: formatDateOnly(l.feitoEm ?? l.data!),
-                  })
+                ? l.feitoEm ? t('publicPortal.denunciaConsulta.prazoCumpridoEm', {
+                    data: formatDateOnly(l.feitoEm),
+                  }) : t('canalExperience.deadlineDone')
                 : vencido
                   ? t('publicPortal.denunciaConsulta.prazoVencidoEm', { data: formatDateOnly(l.data!) })
                   : t('publicPortal.denunciaConsulta.prazoAte', { data: formatDateOnly(l.data!) })}
@@ -142,6 +146,14 @@ export default function DenunciaConsulta() {
   const canal = useCanalDenuncia(empresaSlug);
   const empresa = canal.empresa;
   const [searching, setSearching] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+  const [showCode, setShowCode] = useState(false);
+  const [legacy, setLegacy] = useState(false);
+  const [activeAccess, setActiveAccess] = useState<{ protocolo: string; codigo: string } | null>(null);
+  const requestSequence = useRef(0);
+  const messageLock = useRef(false);
+  const resultHeading = useRef<HTMLHeadingElement>(null);
   const [protocolo, setProtocolo] = useState('');
   const [codigo, setCodigo] = useState('');
   const [denuncia, setDenuncia] = useState<Denuncia | null>(null);
@@ -162,43 +174,49 @@ export default function DenunciaConsulta() {
   const [reunioes, setReunioes] = useState<ReuniaoPublica[]>([]);
   /* Recarrega sem passar pelo formulário — usado depois de pedir reunião ou
      de aceitar a acta, para o ecrã mostrar já o novo estado. */
+  const clearCase = () => {
+    requestSequence.current += 1;
+    setDenuncia(null); setShowDetails(false); setMensagens([]); setMovimentacoes([]); setReunioes([]);
+    setActiveAccess(null); setCodigo(''); setProtocolo(''); setNovaMensagem(''); setLookupError(''); setShowCode(false);
+    setSearching(false); setRefreshing(false);
+  };
+  useEffect(() => { clearCase(); return () => { requestSequence.current += 1; }; }, [empresaSlug]);
+  useEffect(() => { if (showDetails) resultHeading.current?.focus(); }, [showDetails]);
+  const applyCase = (value: RespostaConsulta) => {
+    setDenuncia(value); setMensagens(value.mensagens ?? []); setReunioes(value.reunioes ?? []);
+    setMovimentacoes((value.movimentacoes ?? []).map((mov) => ({ ...mov, observacoes: mov.observacoes ?? null, usuario: null })));
+  };
   const recarregar = async () => {
-    if (!empresa || !protocolo.trim()) return;
-    const { data } = await supabase.functions.invoke('create-denuncia', {
-      body: {
-        action: 'consult',
-        empresa_slug: empresa.slug,
-        protocolo: protocolo.trim().toUpperCase(),
-        codigo: codigo.trim(),
-      },
-    });
-    const atual = (data?.denuncia ?? null) as RespostaConsulta | null;
-    if (!atual) return;
-    setDenuncia(atual);
-    setMensagens(atual.mensagens ?? []);
-    setReunioes(atual.reunioes ?? []);
-    setMovimentacoes(
-      (atual.movimentacoes ?? []).map((mov) => ({
-        ...mov,
-        observacoes: mov.observacoes ?? null,
-        usuario: null,
-      })),
-    );
+    if (!empresa || !activeAccess || refreshing || messageLock.current) return;
+    const sequence = requestSequence.current;
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-denuncia', { body: {
+        action: 'consult', empresa_slug: empresa.slug, protocolo: activeAccess.protocolo, codigo: activeAccess.codigo,
+      } });
+      if (sequence !== requestSequence.current) return;
+      if (error || !data?.denuncia) throw new Error('refresh_failed');
+      applyCase(data.denuncia as RespostaConsulta);
+      toast({ description: t('canalExperience.refreshSuccess') });
+    } catch {
+      if (sequence === requestSequence.current) toast({ description: t('canalExperience.refreshError'), variant: 'destructive' });
+    } finally { if (sequence === requestSequence.current) setRefreshing(false); }
   };
 
   const buscarDenuncia = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!empresa || !protocolo.trim()) {
-      toast({
-        title: t('publicPortal.denunciaConsulta.error'),
-        description: t('publicPortal.denunciaConsulta.typeProtocol'),
-        variant: "destructive"
-      });
+    if (searching) return;
+    setLookupError('');
+    if (!empresa || !protocolo.trim() || (!legacy && !codigo.trim())) {
+      setLookupError(t('canalExperience.codeRequired'));
       return;
     }
 
+    const sequence = ++requestSequence.current;
+    const credentials = { protocolo: protocolo.trim().toUpperCase(), codigo: legacy ? '' : codigo.trim() };
     setSearching(true);
+    setActiveAccess(null);
     setDenuncia(null);
     setMovimentacoes([]);
     setMensagens([]);
@@ -210,43 +228,33 @@ export default function DenunciaConsulta() {
         body: {
           action: 'consult',
           empresa_slug: empresa.slug,
-          protocolo: protocolo.trim().toUpperCase(),
-          codigo: codigo.trim(),
+          protocolo: credentials.protocolo,
+          codigo: credentials.codigo,
         },
       });
 
-      const denunciaData: any = data?.denuncia ?? null;
+      if (sequence !== requestSequence.current) return;
+      const denunciaData = (data?.denuncia ?? null) as RespostaConsulta | null;
 
       if (error || !denunciaData) {
-        toast({
-          title: t('publicPortal.denunciaConsulta.notFoundTitle'),
-          description: t('publicPortal.denunciaConsulta.notFoundDescription'),
-          variant: "destructive"
-        });
+        setLookupError(t('publicPortal.denunciaConsulta.notFoundDescription'));
         return;
       }
 
-      setDenuncia(denunciaData);
-      setMensagens(denunciaData.mensagens ?? []);
-      setReunioes(denunciaData.reunioes ?? []);
-      setMovimentacoes(
-        (denunciaData.movimentacoes ?? []).map((mov: any) => ({
-          ...mov,
-          observacoes: mov.observacoes ?? null,
-          usuario: null,
-        }))
-      );
-
+      applyCase(denunciaData);
+      setActiveAccess(credentials);
       setShowDetails(true);
     } catch (error) {
+      if (sequence !== requestSequence.current) return;
       logger.error('Erro ao buscar denúncia', { module: 'DenunciaConsulta', error: String(error) });
+      setLookupError(t('publicPortal.denunciaConsulta.searchError'));
       toast({
         title: t('publicPortal.denunciaConsulta.error'),
         description: t('publicPortal.denunciaConsulta.searchError'),
         variant: "destructive"
       });
     } finally {
-      setSearching(false);
+      if (sequence === requestSequence.current) setSearching(false);
     }
   };
 
@@ -254,17 +262,20 @@ export default function DenunciaConsulta() {
       quem denunciou tem, porque não tem conta. */
   const enviarMensagem = async () => {
     const texto = novaMensagem.trim();
-    if (!texto || !denuncia) return;
+    if (!texto || !denuncia?.id || !activeAccess?.codigo || messageLock.current || refreshing) return;
+    messageLock.current = true;
+    const sequence = requestSequence.current;
     setEnviandoMensagem(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-denuncia', {
         body: {
           action: 'mensagem',
           denuncia_id: denuncia.id,
-          codigo: codigo.trim(),
+          codigo: activeAccess.codigo,
           mensagem: texto,
         },
       });
+      if (sequence !== requestSequence.current) return;
       if (error || data?.error) throw new Error(String(error ?? data?.error));
 
       setMensagens((atual) => [
@@ -279,6 +290,7 @@ export default function DenunciaConsulta() {
       setNovaMensagem('');
       toast({ title: t('publicPortal.denunciaConsulta.mensagemEnviada') });
     } catch (erro) {
+      if (sequence !== requestSequence.current) return;
       logger.error('Erro ao enviar mensagem', { module: 'DenunciaConsulta', error: String(erro) });
       toast({
         title: t('publicPortal.denunciaConsulta.error'),
@@ -286,22 +298,8 @@ export default function DenunciaConsulta() {
         variant: 'destructive',
       });
     } finally {
+      messageLock.current = false;
       setEnviandoMensagem(false);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'nova':
-        return <IconFile className="w-4 h-4" />;
-      case 'em_analise':
-        return <IconTime className="w-4 h-4" />;
-      case 'em_investigacao':
-        return <IconInfo className="w-4 h-4" />;
-      case 'concluida':
-        return <IconSuccess className="w-4 h-4" />;
-      default:
-        return <IconFile className="w-4 h-4" />;
     }
   };
 
@@ -312,34 +310,8 @@ export default function DenunciaConsulta() {
 
   const formatDate = (dateString: string) => formatDateTime(dateString);
 
-  if (canal.carregando) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <AkurisPulse size={32} />
-          <p className="text-muted-foreground">{t('publicPortal.common.loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!empresa || !empresa.canal_ativo || !canal.config) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="max-w-md">
-          <CardContent className="py-10 text-center">
-            <IconShield className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
-            <h2 className="mb-2 text-base font-semibold text-foreground">
-              {t('publicPortal.denunciaForm.unavailableTitle')}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t('publicPortal.denunciaForm.unavailableDescription')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (canal.estado !== 'pronto' || !empresa || !canal.config) return <CanalState canal={canal} />;
+  const privateAccess = !!denuncia?.id && !!activeAccess?.codigo && !denuncia?.acesso_legado_limitado;
 
   return (
     <CanalLayout
@@ -347,65 +319,49 @@ export default function DenunciaConsulta() {
       config={canal.config}
       nomeDoCanal={canal.nomeDoCanal}
       estiloDaMarca={canal.estiloDaMarca}
-      etapa={t('publicPortal.denunciaConsulta.acompanhar')}
+      etapa={showDetails ? t('publicPortal.denunciaConsulta.acompanhar') : t('canalExperience.lookupHeadline')}
       voltarPara={`/${empresaSlug}/denuncia`}
     >
       <div>
-        {/* Formulário de busca */}
-        <Card className="mb-6 bg-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconSearch className="w-5 h-5" />
-              {t('publicPortal.denunciaConsulta.searchTitle')}
-            </CardTitle>
-            <CardDescription>
-              {t('publicPortal.denunciaConsulta.searchDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={buscarDenuncia} className="flex flex-col gap-4 sm:flex-row">
-              <div className="flex-1">
-                <Label htmlFor="protocolo" className="sr-only">
-                  {t('publicPortal.denunciaConsulta.protocolLabel')}
-                </Label>
-                <Input
-                  id="protocolo"
-                  value={protocolo}
-                  onChange={(e) => setProtocolo(e.target.value.toUpperCase())}
-                  placeholder={t('publicPortal.denunciaConsulta.protocolPlaceholder')}
-                  className="font-mono"
-                  required
-                />
+        {!showDetails && <div className="canal-search-grid">
+          <div>
+            <p className="text-muted-foreground mb-6">{t('canalExperience.lookupHint')}</p>
+            <form onSubmit={buscarDenuncia} className="space-y-5">
+              <div className="space-y-2"><Label htmlFor="protocolo">{t('publicPortal.denunciaConsulta.protocolLabel')}</Label>
+                <Input id="protocolo" value={protocolo} onChange={(event) => setProtocolo(event.target.value.toUpperCase())}
+                  placeholder={t('publicPortal.denunciaConsulta.protocolPlaceholder')} maxLength={100} autoComplete="off" spellCheck={false} required aria-describedby="protocol-help" />
+                <p id="protocol-help" className="text-xs text-muted-foreground">{t('canalExperience.protocolHelp')}</p>
               </div>
-              <div className="flex-1">
-                <Label htmlFor="codigo" className="sr-only">
-                  {t('publicPortal.denunciaConsulta.codeLabel')}
-                </Label>
-                <Input
-                  id="codigo"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value.trim())}
-                  placeholder={t('publicPortal.denunciaConsulta.codePlaceholder')}
-                  className="font-mono"
-                />
-              </div>
-              <Button type="submit" disabled={searching}>
-                <IconSearch className="w-4 h-4 mr-2" />
-                {searching ? t('publicPortal.denunciaConsulta.searching') : t('publicPortal.denunciaConsulta.search')}
-              </Button>
+              {!legacy && <div className="space-y-2"><Label htmlFor="codigo">{t('publicPortal.denunciaConsulta.codeLabel')}</Label>
+                <div className="flex gap-2"><Input id="codigo" type={showCode ? 'text' : 'password'} value={codigo} onChange={(event) => setCodigo(event.target.value.trim())}
+                  placeholder={t('publicPortal.denunciaConsulta.codePlaceholder')} maxLength={128} autoComplete="off" spellCheck={false} required aria-describedby="code-help" />
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0" aria-label={t(showCode ? 'canalExperience.hideCode' : 'canalExperience.showCode')} aria-pressed={showCode} onClick={() => setShowCode((value) => !value)}>{showCode ? <EyeOff size={18} /> : <Eye size={18} />}</Button>
+                </div><p id="code-help" className="text-xs text-muted-foreground">{t('canalExperience.codeHelp')}</p>
+              </div>}
+              <label className="flex items-start gap-3 text-xs text-muted-foreground"><input type="checkbox" className="mt-1 accent-[hsl(var(--primary))]" checked={legacy} onChange={(event) => { setLegacy(event.target.checked); setLookupError(''); }} />{t('canalExperience.legacy')}</label>
+              {legacy && <p className="canal-note">{t('canalExperience.legacyHint')}</p>}
+              {lookupError && <p className="canal-error" role="alert">{lookupError}</p>}
+              <Button type="submit" disabled={searching} className="canal-cta">{searching ? t('publicPortal.denunciaConsulta.searching') : t('publicPortal.denunciaConsulta.search')}<ArrowRight size={18} aria-hidden="true" /></Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+          <aside className="canal-search-help"><h2>{t('canalExperience.accessHelp')}</h2>
+            <details open><summary>{t('canalExperience.whereCodes')}</summary><p>{t('canalExperience.whereCodesHint')}</p></details>
+            {canal.config.permitir_anonimas && !canal.config.requerer_email && <details><summary>{t('canalExperience.anonymousQuestion')}</summary><p>{t('canalExperience.anonymousAnswer')}</p></details>}
+            <details><summary>{t('canalExperience.lostCode')}</summary><p>{t('canalExperience.lostCodeHint')}</p></details>
+          </aside>
+        </div>}
 
         {/* Resultado da busca */}
         {showDetails && denuncia && (
           <div className="space-y-6">
+            <div className="flex flex-wrap gap-3 justify-end"><Button variant="outline" onClick={recarregar} disabled={refreshing}><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{t('canalExperience.refresh')}</Button><Button variant="ghost" onClick={clearCase}><LogOut size={16} />{t('canalExperience.exitCase')}</Button></div>
+            {!privateAccess && <p className="canal-note">{t('canalExperience.legacyHint')}</p>}
             {/* Informações da denúncia */}
             <Card>
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-wrap gap-4 items-start justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2 mb-2">
+                    <CardTitle ref={resultHeading} tabIndex={-1} className="flex flex-wrap items-center gap-2 mb-2 break-all">
                       <IconFile className="w-5 h-5" />
                       {t('publicPortal.denunciaConsulta.protocol')} {denuncia.protocolo}
                     </CardTitle>
@@ -483,8 +439,8 @@ export default function DenunciaConsulta() {
               resposta, quem denunciou não podia acrescentar o que faltou nem
               responder a uma pergunta da apuração.
             */}
-            <Card className="bg-white">
-              <CardHeader>
+            {privateAccess && <Card className="border-0 shadow-none canal-case-section">
+              <CardHeader className="px-0">
                 <CardTitle className="text-base">
                   {t('publicPortal.denunciaConsulta.conversaTitulo')}
                 </CardTitle>
@@ -492,7 +448,7 @@ export default function DenunciaConsulta() {
                   {t('publicPortal.denunciaConsulta.conversaDescricao')}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 px-0">
                 {mensagens.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     {t('publicPortal.denunciaConsulta.conversaVazia')}
@@ -515,7 +471,7 @@ export default function DenunciaConsulta() {
                                 ? t('publicPortal.denunciaConsulta.conversaVoce')
                                 : t('publicPortal.denunciaConsulta.conversaComite')}
                             </p>
-                            <p className="mt-0.5 whitespace-pre-wrap text-sm">{m.mensagem}</p>
+                            <p className="mt-0.5 whitespace-pre-wrap break-words text-sm">{m.mensagem}</p>
                             <p className="mt-1 text-micro tabular-nums text-muted-foreground">
                               {formatDate(m.created_at)}
                             </p>
@@ -526,7 +482,9 @@ export default function DenunciaConsulta() {
                   </div>
                 )}
 
+                <Label htmlFor="canal-new-message">{t('canalExperience.newMessage')}</Label>
                 <Textarea
+                  id="canal-new-message"
                   value={novaMensagem}
                   onChange={(e) => setNovaMensagem(e.target.value)}
                   rows={3}
@@ -543,7 +501,9 @@ export default function DenunciaConsulta() {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card>}
+
+            {privateAccess && <CanalEvidenceUpload denunciaId={denuncia.id} codigo={activeAccess!.codigo} />}
 
             {/*
               A reunião do art. 9.º/2.
@@ -552,16 +512,16 @@ export default function DenunciaConsulta() {
               nenhum — uma opção que ligava e desligava coisa alguma. O pedido
               parte daqui porque é aqui que quem denunciou está autenticado.
             */}
-            <SolicitarReuniao
+            {privateAccess && <SolicitarReuniao
               denunciaId={denuncia.id}
-              codigo={codigo.trim()}
+              codigo={activeAccess!.codigo}
               permitido={canal.config?.permitir_reuniao !== false}
               reunioes={reunioes}
               onMudou={recarregar}
-            />
+            />}
 
             {/* Histórico de movimentações */}
-            <Card>
+            {privateAccess && <Card className="border-0 shadow-none canal-case-section">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <IconTime className="w-5 h-5" />
@@ -577,11 +537,11 @@ export default function DenunciaConsulta() {
                     {movimentacoes.map((movimentacao, index) => (
                       <div key={movimentacao.id} className="relative pl-6 pb-4">
                         {index < movimentacoes.length - 1 && (
-                          <div className="absolute left-2 top-6 w-0.5 h-full bg-muted"></div>
+                          <div className="absolute left-[5px] top-5 bottom-0 w-px bg-border"></div>
                         )}
-                        <div className="absolute left-0 top-1 w-4 h-4 bg-primary rounded-full"></div>
+                        <div className="absolute left-0 top-1.5 w-3 h-3 bg-primary/70 rounded-full"></div>
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-wrap gap-2 items-center justify-between">
                             {/* O nome da acção, traduzido. Estava a sair o
                                 identificador da base com underscores trocados
                                 por espaços — «Recebimento Acusado». */}
@@ -629,7 +589,7 @@ export default function DenunciaConsulta() {
                   </p>
                 )}
               </CardContent>
-            </Card>
+            </Card>}
 
             {/* Informações importantes */}
             <Alert>

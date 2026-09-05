@@ -17,6 +17,7 @@ import { fetchEmpresaPublicaPorSlug, type EmpresaPublica } from '@/lib/denuncia-
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LOCALE_EXPLICIT_KEY, isSupportedLocale } from '@/lib/i18n-locale';
+import { canalBrandColor } from '@/lib/canal-brand';
 
 export interface ConfigCanal {
   id: string;
@@ -36,11 +37,6 @@ export interface ConfigCanal {
   prazo_retorno_dias: number | null;
   /* Para o ecrã de sucesso poder dizer a verdade sobre avisos. */
   avisar_denunciante_por_email: boolean | null;
-}
-
-/** #RRGGBB válido — o resto é ignorado em silêncio, nunca aplicado. */
-function corValida(cor?: string | null): string | null {
-  return cor && /^#[0-9a-fA-F]{6}$/.test(cor.trim()) ? cor.trim() : null;
 }
 
 /**
@@ -86,6 +82,7 @@ export function useCanalDenuncia(slug: string | undefined) {
   const [config, setConfig] = useState<ConfigCanal | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [falhou, setFalhou] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     let vivo = true;
@@ -104,10 +101,11 @@ export function useCanalDenuncia(slug: string | undefined) {
         setEmpresa(emp);
         if (!emp || !emp.canal_ativo) return;
 
-        const { data } = await supabase.rpc(
+        const { data, error } = await supabase.rpc(
           'get_canal_config_publica' as never,
           { p_empresa_id: emp.id } as never,
         );
+        if (error) throw error;
         const linhas = (data ?? []) as ConfigCanal[];
         if (vivo) setConfig(linhas[0] ?? null);
       } catch (erro) {
@@ -120,7 +118,7 @@ export function useCanalDenuncia(slug: string | undefined) {
     return () => {
       vivo = false;
     };
-  }, [slug]);
+  }, [slug, revision]);
 
   /*
     O estilo que a empresa escolheu, pronto a pôr no contentor do canal.
@@ -128,8 +126,7 @@ export function useCanalDenuncia(slug: string | undefined) {
     um `undefined` é melhor do que reescrever o token com o mesmo valor.
   */
   const estiloDaMarca = useMemo(() => {
-    const cor = corValida(config?.cor_destaque);
-    const hsl = cor ? hexParaHsl(cor) : null;
+    const hsl = hexParaHsl(canalBrandColor(config?.cor_destaque));
     return hsl ? ({ ['--primary' as string]: hsl } as React.CSSProperties) : undefined;
   }, [config?.cor_destaque]);
 
@@ -161,5 +158,5 @@ export function useCanalDenuncia(slug: string | undefined) {
           ? 'indisponivel'
           : 'pronto';
 
-  return { empresa, config, carregando, falhou, estado, estiloDaMarca, nomeDoCanal };
+  return { empresa, config, carregando, falhou, estado, estiloDaMarca, nomeDoCanal, recarregar: () => setRevision((value) => value + 1) };
 }

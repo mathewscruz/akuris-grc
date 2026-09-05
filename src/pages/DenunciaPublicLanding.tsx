@@ -1,94 +1,40 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CornerAccent } from '@/components/identity/CornerAccent';
-import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
-import logoImage from '@/assets/akuris-logo.png';
+import { CanalLayout } from '@/components/denuncia/CanalLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconArrowRight, IconShieldCheck } from '@/components/icons';
 
-/**
- * Landing pública para a rota `/denuncia` (sem slug).
- * Usuários que recebem esse link sem o identificador da empresa caem aqui
- * e podem informar manualmente o código para acessar o canal correto.
- */
-const DenunciaPublicLanding: React.FC = () => {
+export default function DenunciaPublicLanding() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [empresa, setEmpresa] = useState('');
   const [error, setError] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
     const slug = empresa.trim().toLowerCase().replace(/\s+/g, '-');
     if (!slug) {
-      setError(t('publicPortal.denunciaLanding.companyCodeRequired'));
-      return;
+      setError(t('publicPortal.denunciaLanding.companyCodeRequired')); return;
     }
     navigate(`/${encodeURIComponent(slug)}/denuncia`);
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(230,25%,7%)] relative overflow-hidden px-6 py-10">
-      <AkurisMarkPattern opacity={0.05} />
-      <CornerAccent position="top-right" />
-      <CornerAccent position="bottom-left" />
-
-      <div className="relative z-10 w-full max-w-md space-y-8">
-        <div className="text-center">
-          <img src={logoImage} alt="Akuris" className="h-9 mx-auto object-contain mb-8" />
-          <div className="inline-flex items-center justify-center w-12 h-12 mb-5">
-            <IconShieldCheck className="w-6 h-6 text-primary" strokeWidth={1.5} />
-          </div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">
-            {t('publicPortal.denunciaLanding.title')}
-          </h1>
-          <p className="text-sm text-white/55 mt-2 leading-relaxed">
-            {t('publicPortal.denunciaLanding.description')}
-          </p>
+  return <CanalLayout empresa={null} config={null} nomeDoCanal="Akuris">
+    <section className="canal-state">
+      <p className="canal-eyebrow">{t('canalExperience.eyebrow')}</p>
+      <h1>{t('publicPortal.denunciaLanding.title')}</h1>
+      <p>{t('publicPortal.denunciaLanding.description')}</p>
+      <form onSubmit={handleSubmit} className="max-w-md space-y-5">
+        <div className="space-y-2"><Label htmlFor="empresa">{t('publicPortal.denunciaLanding.companyCode')}</Label>
+          <Input id="empresa" value={empresa} autoComplete="off" spellCheck={false}
+            onChange={(event) => { setEmpresa(event.target.value); setError(''); }}
+            placeholder={t('publicPortal.denunciaLanding.companyCodePlaceholder')} required aria-describedby={error ? 'company-error' : undefined} aria-invalid={!!error} />
+          {error && <p id="company-error" role="alert" className="canal-error">{error}</p>}
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="empresa" className="text-xs text-white/65 font-medium tracking-wide">
-              {t('publicPortal.denunciaLanding.companyCode')}
-            </Label>
-            <Input
-              id="empresa"
-              value={empresa}
-              onChange={(e) => {
-                setEmpresa(e.target.value);
-                setError('');
-              }}
-              placeholder={t('publicPortal.denunciaLanding.companyCodePlaceholder')}
-              className="h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
-              autoFocus
-            />
-            {error && <p className="text-xs text-destructive mt-1">{error}</p>}
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
-          >
-            {t('publicPortal.denunciaLanding.accessChannel')} <IconArrowRight className="w-4 h-4 ml-1.5" />
-          </Button>
-        </form>
-
-        <p className="text-center text-xs text-white/45">
-          {t('publicPortal.denunciaLanding.noCode')}{' '}
-          <a
-            href="/"
-            className="text-primary hover:text-primary/80 transition-colors"
-          >
-            {t('publicPortal.denunciaLanding.backToSite')}
-          </a>
-        </p>
-      </div>
-    </div>
-  );
-};
-
-export default DenunciaPublicLanding;
+        <Button type="submit" className="canal-cta">{t('publicPortal.denunciaLanding.accessChannel')}<ArrowRight size={18} aria-hidden="true" /></Button>
+      </form>
+      <p className="canal-note">{t('publicPortal.denunciaLanding.noCode')} <Link className="canal-text-link" to="/">{t('publicPortal.denunciaLanding.backToSite')}</Link></p>
+    </section>
+  </CanalLayout>;
+}

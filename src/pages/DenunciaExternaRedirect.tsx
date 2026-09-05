@@ -1,58 +1,41 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { fetchEmpresaPublicaPorToken } from '@/lib/denuncia-publica';
-import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { CanalLayout } from '@/components/denuncia/CanalLayout';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { Button } from '@/components/ui/button';
+
 export default function DenunciaExternaRedirect() {
   const { token } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(true);
-
+  const [state, setState] = useState<'loading' | 'unavailable' | 'error'>('loading');
+  const [revision, setRevision] = useState(0);
   useEffect(() => {
-    const buscarEmpresaPorToken = async () => {
-      if (!token) {
-        logger.debug('Token não encontrado na URL', { module: 'DenunciaExternaRedirect' });
-        navigate('/404', { replace: true });
-        return;
-      }
-
+    let active = true;
+    setState('loading');
+    void (async () => {
       try {
-        logger.debug('Buscando empresa por token', { module: 'DenunciaExternaRedirect', action: token });
-        
-        const empresa = await fetchEmpresaPublicaPorToken(token);
-
-        if (empresa && empresa.canal_ativo) {
-          logger.debug('Empresa encontrada, redirecionando', { module: 'DenunciaExternaRedirect', action: empresa.slug });
-          navigate(`/${empresa.slug}/denuncia`, { replace: true });
-        } else {
-          logger.error('Canal não encontrado para token', { module: 'DenunciaExternaRedirect' });
-          navigate('/404', { replace: true });
-        }
-      } catch (error) {
-        logger.error('Erro ao buscar empresa', { module: 'DenunciaExternaRedirect', error: String(error) });
-        navigate('/404', { replace: true });
-      } finally {
-        setLoading(false);
+        const company = token ? await fetchEmpresaPublicaPorToken(token) : null;
+        if (!active) return;
+        if (company?.canal_ativo) navigate(`/${company.slug}/denuncia`, { replace: true });
+        else setState('unavailable');
+      } catch {
+        if (active) setState('error');
       }
-    };
-
-    buscarEmpresaPorToken();
-  }, [token, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center">
-        <div className="text-center">
-          <AkurisPulse size={32} />
-          <p className="mt-2 text-muted-foreground">{t('publicPortal.common.redirecting')}</p>
+    })();
+    return () => { active = false; };
+  }, [token, navigate, revision]);
+  return <CanalLayout empresa={null} config={null} nomeDoCanal="Akuris">
+    <section className="canal-state" aria-live="polite">
+      {state === 'loading' ? <><AkurisPulse size={32} /><p>{t('publicPortal.common.redirecting')}</p></> : <>
+        <h1>{t(state === 'error' ? 'canalExperience.loadingError' : 'publicPortal.denunciaForm.unavailableTitle')}</h1>
+        <p>{t(state === 'error' ? 'canalExperience.loadingErrorHint' : 'publicPortal.denunciaForm.unavailableDescription')}</p>
+        <div className="flex flex-wrap gap-3">{state === 'error' && <Button onClick={() => setRevision((value) => value + 1)}>{t('canalExperience.retry')}</Button>}
+          <Button variant="outline" asChild><Link to="/denuncia">{t('canalExperience.findChannel')}</Link></Button>
         </div>
-      </div>
-    );
-  }
-
-  return null;
+      </>}
+    </section>
+  </CanalLayout>;
 }

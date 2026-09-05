@@ -109,7 +109,10 @@ export function mergeDictionaries(
   return merged;
 }
 
+import canalExperience from './canal-experience';
+
 const modules: Record<string, ModuleDict> = {
+  canalExperience,
   privacidadePrograma,
   fornecedorStatus,
   detalheRegisto,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconSearch, IconDownload, IconView, IconExternal, IconWarning, IconRefresh, IconSave, IconLink, IconCopy, IconShield, IconSettings, IconMail, IconHide, IconQr } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,13 +10,6 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from '@/lib/toast';
@@ -24,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { CanalReadiness } from './CanalReadiness';
 interface ConfiguracaoDenuncia {
   id?: string;
   empresa_id: string;
@@ -40,13 +35,15 @@ interface ConfiguracaoDenuncia {
 
 export function ConfiguracoesDenuncia() {
   const { t } = useLanguage();
+  const { empresaId, loading: empresaLoading } = useEmpresaId();
+  const loadSequence = useRef(0);
   const navigate = useNavigate();
   const [config, setConfig] = useState<ConfiguracaoDenuncia | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [empresaSlug, setEmpresaSlug] = useState<string>('');
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const { toast } = useToast();
 
   // Endereço público do canal: preferimos o URL amigável com slug, mas o canal
@@ -57,12 +54,12 @@ export function ConfiguracoesDenuncia() {
       ? `${window.location.origin}/denuncia/externa/${config.token_publico}`
       : '';
 
-  const copiarLinkPublico = () => {
+  const copiarLinkPublico = async () => {
     if (!publicChannelUrl) return;
-    navigator.clipboard.writeText(publicChannelUrl);
-    sonnerToast.success(t('p3Denuncia.channel.copied'), {
-      description: t('p3Denuncia.channel.copiedDescription'),
-    });
+    try {
+      await navigator.clipboard.writeText(publicChannelUrl);
+      sonnerToast.success(t('p3Denuncia.channel.copied'), { description: t('p3Denuncia.channel.copiedDescription') });
+    } catch { sonnerToast.error(t('canalExperience.copyFailed')); }
   };
 
   const abrirLinkPublico = () => {
@@ -92,74 +89,44 @@ export function ConfiguracoesDenuncia() {
   });
 
   useEffect(() => {
-    carregarConfiguracao();
-  }, []);
+    setConfig(null);
+    setEmpresaSlug('');
+    if (!empresaLoading) void carregarConfiguracao();
+    return () => { loadSequence.current += 1; };
+    // Locale changes must not discard unsaved settings.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaId, empresaLoading]);
 
   const carregarConfiguracao = async () => {
+    const sequence = ++loadSequence.current;
+    if (!empresaId) { setLoading(false); return; }
+    setLoading(true);
+    setLoadFailed(false);
     try {
-      // Buscar configuração da denúncia
-      const { data, error } = await supabase
-        .from('denuncias_configuracoes')
-        .select('*')
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setConfig(data);
-        setFormData({
-          ativo: data.ativo,
-          permitir_anonimas: data.permitir_anonimas,
-          requerer_email: data.requerer_email,
-          texto_apresentacao: data.texto_apresentacao || '',
-          politica_privacidade: data.politica_privacidade || '',
-          notificar_administradores: data.notificar_administradores,
-          avisar_denunciante_por_email: data.avisar_denunciante_por_email ?? true,
-          emails_notificacao: data.emails_notificacao?.join(', ') || ''
-        });
-      } else {
-        // Sem configuração ainda: cria uma com token público para que o canal
-        // tenha endereço mesmo antes de o identificador da empresa ser definido.
-        const token = await gerarToken();
-        if (token) {
-          const { data: created, error: createError } = await supabase
-            .from('denuncias_configuracoes')
-            .insert([{ token_publico: token }])
-            .select()
-            .single();
-          if (!createError && created) {
-            setConfig(created);
-          }
-        }
-      }
-
-      // Buscar slug da empresa do utilizador (isolamento multi-tenant)
-      const { data: perfil } = await supabase
-        .from('profiles')
-        .select('empresa_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
-        .maybeSingle();
-
-      const { data: empresaData, error: empresaError } = await supabase
-        .from('empresas')
-        .select('slug')
-        .eq('id', perfil?.empresa_id ?? '')
-        .maybeSingle();
-
-      if (!empresaError && empresaData?.slug) {
-        setEmpresaSlug(empresaData.slug);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar configuração:', error);
-      toast({
-        title: t('denunciasAdmin.config.errorLoad'),
-        description: t('denunciasAdmin.config.errorLoad'),
-        variant: "destructive"
+      const [configuration, company] = await Promise.all([
+        supabase.from('denuncias_configuracoes').select('*').eq('empresa_id', empresaId).maybeSingle(),
+        supabase.from('empresas').select('slug').eq('id', empresaId).maybeSingle(),
+      ]);
+      if (configuration.error) throw configuration.error;
+      if (company.error) throw company.error;
+      if (sequence !== loadSequence.current) return;
+      const data = configuration.data;
+      setConfig(data);
+      setEmpresaSlug(company.data?.slug ?? '');
+      setFormData({
+        ativo: data?.ativo ?? true,
+        permitir_anonimas: data?.permitir_anonimas ?? true,
+        requerer_email: data?.requerer_email ?? false,
+        texto_apresentacao: data?.texto_apresentacao ?? '',
+        politica_privacidade: data?.politica_privacidade ?? '',
+        notificar_administradores: data?.notificar_administradores ?? true,
+        avisar_denunciante_por_email: data?.avisar_denunciante_por_email ?? true,
+        emails_notificacao: data?.emails_notificacao?.join(', ') ?? '',
       });
+    } catch {
+      if (sequence === loadSequence.current) { setLoadFailed(true); toast({ title: t('denunciasAdmin.config.errorLoad'), variant: 'destructive' }); }
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
   };
 
@@ -174,6 +141,11 @@ export function ConfiguracoesDenuncia() {
   };
 
   const handleSalvar = async () => {
+    if (!empresaId || saving) return;
+    const configuredEmails = formData.emails_notificacao.split(',').map((email) => email.trim()).filter(Boolean);
+    if (configuredEmails.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+      sonnerToast.error(t('canalExperience.settingsInvalid')); return;
+    }
     setSaving(true);
     try {
       const emailsList = formData.emails_notificacao
@@ -197,7 +169,8 @@ export function ConfiguracoesDenuncia() {
         const { error } = await supabase
           .from('denuncias_configuracoes')
           .update(configData)
-          .eq('id', config.id);
+          .eq('id', config.id)
+          .eq('empresa_id', empresaId!).select('id').single();
 
         if (error) throw error;
       } else {
@@ -211,6 +184,7 @@ export function ConfiguracoesDenuncia() {
           .from('denuncias_configuracoes')
           .insert([{
             token_publico: token,
+            empresa_id: empresaId,
             ...configData
           }])
           .select()
@@ -238,37 +212,12 @@ export function ConfiguracoesDenuncia() {
     }
   };
 
-  const copiarLink = () => {
-    const baseUrl = window.location.origin;
-    const link = empresaSlug 
-      ? `${baseUrl}/${empresaSlug}/denuncia` 
-      : `${baseUrl}/denuncia/externa/${config?.token_publico}`;
-    
-    navigator.clipboard.writeText(link);
-    toast({
-      title: t('denunciasAdmin.config.copied'),
-      description: t('denunciasAdmin.config.linkCopied')
-    });
-  };
-
-  const abrirFormulario = () => {
-    const baseUrl = window.location.origin;
-    const link = empresaSlug 
-      ? `${baseUrl}/${empresaSlug}/denuncia` 
-      : `${baseUrl}/denuncia/externa/${config?.token_publico}`;
-    
-    window.open(link, '_blank');
-  };
-
-  const copiarLinkConsulta = () => {
-    if (empresaSlug) {
-      const link = `${window.location.origin}/${empresaSlug}/denuncia/consulta`;
-      navigator.clipboard.writeText(link);
-      toast({
-        title: t('denunciasAdmin.config.copied'),
-        description: t('denunciasAdmin.config.queryLinkCopied')
-      });
-    }
+  const copiarLinkConsulta = async () => {
+    if (!empresaSlug) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/${empresaSlug}/denuncia/consulta`);
+      toast({ title: t('denunciasAdmin.config.copied'), description: t('denunciasAdmin.config.queryLinkCopied') });
+    } catch { sonnerToast.error(t('canalExperience.copyFailed')); }
   };
 
   const regenerarToken = async () => {
@@ -281,7 +230,8 @@ export function ConfiguracoesDenuncia() {
       const { error } = await supabase
         .from('denuncias_configuracoes')
         .update({ token_publico: novoToken })
-        .eq('id', config.id);
+        .eq('id', config.id)
+          .eq('empresa_id', empresaId!).select('id').single();
 
       if (error) throw error;
 
@@ -301,13 +251,16 @@ export function ConfiguracoesDenuncia() {
     }
   };
 
-  if (loading) {
+  if (loading || empresaLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <AkurisPulse size={32} />
       </div>
     );
   }
+
+  if (loadFailed) return <Alert variant="destructive"><AlertDescription>{t('denunciasAdmin.config.errorLoad')}</AlertDescription><Button className="mt-3" variant="outline" onClick={() => void carregarConfiguracao()}>{t('canalExperience.retry')}</Button></Alert>;
+  if (!empresaId) return <Alert><AlertDescription>{t('denunciasAdmin.config.errorLoad')}</AlertDescription></Alert>;
 
   return (
     <div className="space-y-6">
@@ -346,8 +299,8 @@ export function ConfiguracoesDenuncia() {
             <>
               {/* Estado antes dos endereços: um canal inativo torna-os inúteis. */}
               <div className="flex flex-wrap items-center gap-2">
-                <Chip family="state" tone={formData.ativo ? 'active' : 'rest'}>
-                  {formData.ativo
+                <Chip family="state" tone={config?.ativo ? 'active' : 'rest'}>
+                  {config?.ativo
                     ? t('denunciasAdmin.config.statusActive')
                     : t('denunciasAdmin.config.statusInactive')}
                 </Chip>
@@ -378,10 +331,6 @@ export function ConfiguracoesDenuncia() {
                       <IconExternal className="h-4 w-4 mr-1" />
                       {t('p3Denuncia.channel.open')}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
-                      <IconView className="h-4 w-4 mr-1" />
-                      {t('p3Denuncia.channel.preview')}
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -406,7 +355,7 @@ export function ConfiguracoesDenuncia() {
                         onClick={() =>
                           window.open(
                             `${window.location.origin}/${empresaSlug}/denuncia/consulta`,
-                            '_blank',
+                            '_blank', 'noopener,noreferrer',
                           )
                         }
                       >
@@ -451,6 +400,9 @@ export function ConfiguracoesDenuncia() {
           )}
         </CardContent>
       </Card>
+
+      <CanalReadiness empresaId={empresaId} config={config} />
+      {formData.requerer_email && formData.permitir_anonimas && <Alert><IconWarning className="h-4 w-4" /><AlertDescription>{t('canalExperience.emailConflict')}</AlertDescription></Alert>}
 
       {/* Configurações Gerais */}
       <Card>
@@ -615,29 +567,6 @@ export function ConfiguracoesDenuncia() {
         </Button>
       </div>
 
-      <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
-          <SheetHeader className="p-6 pb-2">
-            <SheetTitle>{t('p3Denuncia.channel.previewTitle')}</SheetTitle>
-            <SheetDescription>{t('p3Denuncia.channel.previewDescription')}</SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
-            {publicChannelUrl && (
-              <iframe
-                src={publicChannelUrl}
-                title="preview-canal-denuncia"
-                className="w-full h-full min-h-[70vh] rounded-lg border"
-              />
-            )}
-          </div>
-          <div className="p-6 pt-0">
-            <Button variant="outline" onClick={abrirLinkPublico} className="w-full">
-              <IconExternal className="h-4 w-4 mr-2" />
-              {t('p3Denuncia.channel.openFull')}
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

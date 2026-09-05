@@ -19,7 +19,7 @@
  * sítio a mostrar o mesmo endereço do canal. Vive agora com os endereços, em
  * `ConfiguracoesDenuncia`.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -34,6 +34,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconDelete, IconAdd } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/lib/toast';
+import { LOCALE_OPTIONS } from '@/components/LanguageSelector';
 
 interface Config {
   id: string;
@@ -88,6 +89,7 @@ export function CanalMarcaEComite() {
   });
 
   const [rascunho, setRascunho] = useState<Partial<Config>>({});
+  useEffect(() => { setRascunho({}); setNovoMembro(''); }, [empresaId]);
   const valor = <K extends keyof Config>(campo: K): Config[K] | undefined =>
     (rascunho[campo] ?? config?.[campo]) as Config[K] | undefined;
 
@@ -129,6 +131,15 @@ export function CanalMarcaEComite() {
 
   const salvar = async () => {
     if (!config?.id) return;
+    const color = valor('cor_destaque')?.trim();
+    const url = valor('orgao_externo_url')?.trim();
+    const validDays = ['prazo_acusacao_dias', 'prazo_retorno_dias', 'retencao_meses'].every((field) => {
+      const value = Number(valor(field as keyof Config));
+      return Number.isInteger(value) && value >= 1 && value <= 36500;
+    });
+    let validUrl = !url;
+    if (url) { try { const parsed = new URL(url); validUrl = ['https:', 'http:'].includes(parsed.protocol) && !parsed.username && !parsed.password; } catch { validUrl = false; } }
+    if ((color && !/^#[\da-f]{6}$/i.test(color)) || !validUrl || !validDays) { toast.error(t('canalExperience.brandInvalid')); return; }
     setSalvando(true);
     try {
       const { error } = await supabase
@@ -145,7 +156,7 @@ export function CanalMarcaEComite() {
           retencao_meses: Number(valor('retencao_meses') ?? 60),
           permitir_reuniao: valor('permitir_reuniao') !== false,
         })
-        .eq('id', config.id);
+        .eq('id', config.id).eq('empresa_id', empresaId!);
       if (error) throw error;
       setRascunho({});
       queryClient.invalidateQueries({ queryKey: ['denuncia-config-marca', empresaId] });
@@ -169,7 +180,7 @@ export function CanalMarcaEComite() {
   };
 
   const removerMembro = async (id: string) => {
-    const { error } = await supabase.from('denuncias_comite').delete().eq('id', id);
+    const { error } = await supabase.from('denuncias_comite').delete().eq('id', id).eq('empresa_id', empresaId!);
     if (error) return toast.error(t('denunciasAdmin.marca.erroComite'));
     queryClient.invalidateQueries({ queryKey: ['denuncia-comite', empresaId] });
     queryClient.invalidateQueries({ queryKey: ['denuncia-candidatos', empresaId] });
@@ -228,9 +239,7 @@ export function CanalMarcaEComite() {
               >
                 <SelectTrigger id="idioma"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pt">Português</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Español</SelectItem>
+                  {LOCALE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -366,7 +375,7 @@ export function CanalMarcaEComite() {
                     <span className="block truncate text-sm text-foreground">{m.nome ?? m.user_id}</span>
                     <span className="block truncate text-micro text-muted-foreground">{m.email ?? ''}</span>
                   </span>
-                  <Button variant="ghost" size="sm" onClick={() => removerMembro(m.id)}>
+                  <Button variant="ghost" size="sm" aria-label={`${t('common.delete')} ${m.nome ?? ''}`} onClick={() => removerMembro(m.id)}>
                     <IconDelete className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </li>
