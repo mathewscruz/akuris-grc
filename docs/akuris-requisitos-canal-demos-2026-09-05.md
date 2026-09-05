@@ -1,6 +1,6 @@
 # Requisitos, identidade do canal e demonstrações do produto
 
-Implementação local em 05/09/2026. Nenhuma publicação em produção nesta rodada.
+Implementação local em 05/09/2026. Publicada posteriormente no mesmo dia; ver [registro da publicação](akuris-release-2026-09-05-landing.md). As verificações abaixo documentam a rodada local anterior ao deploy.
 
 ## Entregas
 
@@ -34,4 +34,4 @@ Implementação local em 05/09/2026. Nenhuma publicação em produção nesta ro
 
 - As demonstrações são interativas e usam elementos reais da interface, mas não são gravações de sessões de clientes.
 - Não houve mudança em RLS, MFA, políticas de autenticação, dados de clientes, certificações ou aprovação automática de compliance.
-- Alterações pendentes de trabalhos anteriores foram preservadas. A publicação continua pendente de uma rodada de deploy.
+- Alterações pendentes de trabalhos anteriores foram preservadas. A publicação, pendente ao encerrar esta rodada local, foi concluída conforme o registro vinculado acima.
