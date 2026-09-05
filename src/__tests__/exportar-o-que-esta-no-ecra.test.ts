@@ -40,6 +40,14 @@ function fontes(): string[] {
  */
 const ISENTOS: string[] = [];
 
+function exportMatchesShown(source: string, exported: string, shown: string[]): boolean {
+  if (shown.includes(exported)) return true;
+  // A screen with two table tabs can choose its export source with a ternary.
+  // BOTH branches must be actual displayed datasets; this is not an exemption.
+  const alias = source.match(new RegExp('const\\s+' + exported + '\\s*=\\s*[^;\\n?]+\\?\\s*(\\w+)\\s*:\\s*(\\w+)\\s*;'));
+  return !!alias && shown.includes(alias[1]) && shown.includes(alias[2]);
+}
+
 describe('exportar o que está no ecrã', () => {
   it('a exportação percorre a mesma lista que a tabela mostra', () => {
     const falhas: string[] = [];
@@ -59,7 +67,7 @@ describe('exportar o que está no ecrã', () => {
       );
 
       for (const lista of percorridas) {
-        if (!mostradas.includes(lista)) {
+        if (!exportMatchesShown(fonte, lista, mostradas)) {
           falhas.push(`${arquivo}: exporta \`${lista}\`, mostra \`${mostradas.join('` ou `')}\``);
         }
       }
@@ -69,6 +77,11 @@ describe('exportar o que está no ecrã', () => {
       falhas,
       'Exporte a lista já filtrada e ordenada — a mesma que a tabela recebe em `data`.',
     ).toEqual([]);
+  });
+
+  it('aceita seleção entre abas, mas rejeita um ramo que exporta dados fora da tela', () => {
+    expect(exportMatchesShown("const selected = tab === 'history' ? history : active;", 'selected', ['history', 'active'])).toBe(true);
+    expect(exportMatchesShown("const selected = tab === 'history' ? allRows : active;", 'selected', ['history', 'active'])).toBe(false);
   });
 
   it('o CSV não escreve valores crus onde o ecrã escreve rótulos', () => {

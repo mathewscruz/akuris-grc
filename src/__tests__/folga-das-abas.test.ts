@@ -84,16 +84,17 @@ describe('folga por baixo das abas', () => {
 describe('a barra de abas nunca esconde uma aba', () => {
   const lista = TABS.slice(TABS.indexOf('const TabsList'), TABS.indexOf('const TabsTrigger'));
 
-  it('quebra para a linha de baixo em vez de cortar', () => {
-    expect(
-      /flex-wrap/.test(lista),
-      'Sem `flex-wrap` a última aba volta a ficar cortada, e no rato não há forma de lá chegar.',
-    ).toBe(true);
+  it('mantém uma linha e permite alcançar as abas com o rato', () => {
+    expect(lista).toContain('flex-nowrap');
+    expect(lista).toContain('scrollTabs(-1)');
+    expect(lista).toContain('scrollTabs(1)');
+    expect(lista).toContain('aria-label={t("experience.tabsNext")}');
+    expect(lista).toContain('aria-label={t("experience.tabsPrevious")}');
   });
 
   it('no telemóvel continua a rolar', () => {
     expect(
-      /max-sm:flex-nowrap/.test(lista),
+      /flex-nowrap/.test(lista),
       'Empilhar seis abas num telemóvel come três linhas de ecrã; ali o gesto de arrastar existe.',
     ).toBe(true);
   });

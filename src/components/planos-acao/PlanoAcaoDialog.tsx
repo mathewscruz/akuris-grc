@@ -15,24 +15,10 @@ import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EntidadeSelect } from '@/components/common/EntidadeSelect';
-import type { EntityKey } from '@/lib/entity-search';
+import { ACTION_PLAN_ENTITIES as MODULO_ENTIDADE } from '@/lib/action-plan-origin';
 import { IconChecklist, IconSettings, IconLink, IconTarget } from '@/components/icons';
 
-/** Módulo de origem → entidade pesquisável (seletor real, sem UUID à mão). */
-const MODULO_ENTIDADE: Record<string, EntityKey> = {
-  riscos: 'risco',
-  controles: 'controle',
-  frameworks: 'gap_requirement',
-  incidentes: 'incidente',
-  auditorias: 'auditoria',
-  contratos: 'contrato',
-  documentos: 'documento',
-  dados: 'dados_pessoais',
-  'due-diligence': 'due_diligence',
-  denuncia: 'denuncia',
-  ativos: 'ativo',
-  'contas-privilegiadas': 'conta_privilegiada',
-};
+
 
 interface PlanoAcaoDialogProps {
   open: boolean;

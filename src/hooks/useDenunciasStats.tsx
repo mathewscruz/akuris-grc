@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -28,12 +29,12 @@ export const useDenunciasStats = (empresaSelecionada?: string | null) => {
     queryKey: ['denuncias-stats', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<DenunciasStats> => {
+    queryFn: async ({ signal }): Promise<DenunciasStats> => {
       try {
-        const { data: denuncias, error } = await supabase
+        const { data: denuncias, error } = await readAllPages((from, to) => supabase
           .from('denuncias')
           .select('id, status, prazo_retorno')
-          .eq('empresa_id', empresaId!);
+          .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
         if (error) {
           console.error('Erro ao buscar estatísticas de denúncias:', error);

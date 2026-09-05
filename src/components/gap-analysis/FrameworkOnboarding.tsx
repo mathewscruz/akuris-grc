@@ -69,7 +69,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
   return (
     <div className="w-full space-y-6">
       <Card>
-        <CardContent className="pt-8 pb-6 text-center">
+        <CardContent className="p-5 text-left">
           <div className="mb-4 inline-flex items-center justify-center">
             <FrameworkBadge
               name={frameworkNome}
@@ -78,15 +78,15 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
               size="lg"
             />
           </div>
-          <h2 className="text-2xl font-bold mb-2">{frameworkNome} {frameworkVersao}</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">{info.description}</p>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <Badge variant="outline" className="gap-1">
+          <h2 className="text-xl font-semibold mb-2">{frameworkNome} {frameworkVersao}</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">{info.description}</p>
+          <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
               <IconBook className="h-3 w-3" strokeWidth={1.5}/> {t('gapExports.onboardingUi.requirementsBadge', { count: String(totalRequirements) })}
-            </Badge>
-            <Badge variant="outline" className="gap-1">
+            </span>
+            <span className="inline-flex items-center gap-1.5">
               <IconTime className="h-3 w-3" strokeWidth={1.5}/> {info.timeEstimate}
-            </Badge>
+            </span>
           </div>
         </CardContent>
       </Card>

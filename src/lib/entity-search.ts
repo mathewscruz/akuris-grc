@@ -197,7 +197,7 @@ export const ENTITY_DEFS: EntityDef[] = [
     select: 'id, titulo, status, prioridade, created_at',
     tituloFields: ['titulo'], prefixo: 'PA', subtituloField: 'status',
     empresaScoped: true, orderBy: 'created_at',
-    route: (r) => focus('/planos-acao', r.id),
+    route: (r) => deepLink('/planos-acao', 'plano', r.id),
   },
   {
     key: 'denuncia', table: 'denuncias', labelKey: 'entidades.denuncia',
@@ -288,29 +288,6 @@ function toRow(def: EntityDef, raw: Record<string, any>): EntityRow {
 }
 
 /**
- * Recorte de candidatos de uma entidade. A filtragem por texto acontece no
- * cliente para permitir comparação sem acentos e várias palavras em AND —
- * o Postgres sem `unaccent` no PostgREST não faz isso de forma fiável.
- */
-export async function fetchEntityRows(
-  key: EntityKey,
-  empresaId: string | null | undefined,
-  limit = 400,
-): Promise<EntityRow[]> {
-  const def = ENTITY_BY_KEY[key];
-  if (!def) return [];
-  if (def.empresaScoped && !empresaId) return [];
-
-  let query = supabase.from(def.table as any).select(def.select).limit(limit);
-  if (def.empresaScoped && empresaId) query = query.eq('empresa_id', empresaId);
-  if (def.orderBy) query = query.order(def.orderBy, { ascending: false });
-
-  const { data, error } = await query;
-  if (error || !data) return [];
-  return (data as any[]).map((raw) => toRow(def, raw));
-}
-
-/**
  * Lê um registo específico pelo id. Devolve `null` quando o registo já não
  * existe (ou a RLS não o expõe ao utilizador atual).
  */
@@ -337,3 +314,66 @@ export function routeForEntity(key: EntityKey, row: EntityRow): string {
 export function entityLabelKey(key: EntityKey): string {
   return ENTITY_BY_KEY[key].labelKey;
 }
+
+/** Quoted PostgREST pattern. Accented letters are candidates; matchesTokens verifies them. */
+export function searchPattern(token: string): string {
+  const literal = token.replace(/[\\%_]/g, '\\$&').replace(/[aeioucn]/gi, '_');
+  return `"%${literal.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}%"`;
+}
+
+export async function searchEntityRows(key: EntityKey, empresaId: string | null | undefined, tokens: string[], limit = 5, signal?: AbortSignal, browse = false): Promise<{ rows: EntityRow[]; hasMore: boolean }> {
+  const def = ENTITY_BY_KEY[key];
+  if (!def || (!tokens.length && !browse) || (def.empresaScoped && !empresaId)) return { rows: [], hasMore: false };
+  const rows: EntityRow[] = [];
+  const fields = [...new Set([...def.tituloFields, ...(def.codigoField ? [def.codigoField] : [])])];
+  const batchSize = 200;
+  for (let offset = 0; ; offset += batchSize) {
+    signal?.throwIfAborted();
+    let query = supabase.from(def.table as any).select(def.select);
+    if (def.empresaScoped && empresaId) query = query.eq('empresa_id', empresaId);
+    for (const token of tokens) {
+      // IDs derivados do UUID não são colunas de texto: percorremos os lotes,
+      // sem o limite silencioso de 400 e sem cast inseguro no PostgREST.
+      const derivedId = !def.codigoField && /^[a-z]+-[a-f0-9]{1,3}$/i.test(token);
+      if (!derivedId) query = query.or(fields.map((field) => `${field}.ilike.${searchPattern(token)}`).join(','));
+    }
+    if (def.orderBy) query = query.order(def.orderBy, { ascending: false });
+    query = query.order('id').range(offset, offset + batchSize - 1);
+    if (signal) query = query.abortSignal(signal);
+    const { data, error } = await query;
+    if (error) throw error;
+    for (const raw of (data ?? []) as unknown as Record<string, any>[]) {
+      const row = toRow(def, raw);
+      if (matchesTokens(`${row.codigo} ${row.titulo}`, tokens)) rows.push(row);
+      if (rows.length > limit) return { rows: rows.slice(0, limit), hasMore: true };
+    }
+    if (!data || data.length < batchSize) return { rows, hasMore: false };
+  }
+}
+
+/** Resolve selected records independently of the current search or page. */
+export async function fetchEntitiesByIds(key: EntityKey, empresaId: string | null | undefined, ids: string[], signal?: AbortSignal): Promise<EntityRow[]> {
+  const def = ENTITY_BY_KEY[key];
+  if (!def || !ids.length || (def.empresaScoped && !empresaId)) return [];
+  const uniqueIds = [...new Set(ids)];
+  const rows: EntityRow[] = [];
+  for (let offset = 0; offset < uniqueIds.length; offset += 100) {
+    signal?.throwIfAborted();
+    let query = supabase.from(def.table as any).select(def.select).in('id', uniqueIds.slice(offset, offset + 100));
+    if (def.empresaScoped && empresaId) query = query.eq('empresa_id', empresaId);
+    if (signal) query = query.abortSignal(signal);
+    const { data, error } = await query;
+    if (error) throw error;
+    rows.push(...((data ?? []) as unknown as Record<string, any>[]).map((raw) => toRow(def, raw)));
+  }
+  return rows;
+}
+
+export const ENTITY_MODULE: Record<EntityKey, string> = {
+  risco: 'riscos', controle: 'controles', gap_requirement: 'gap-analysis',
+  ativo: 'ativos', licenca: 'ativos', chave: 'ativos', documento: 'documentos',
+  contrato: 'contratos', fornecedor: 'contratos', incidente: 'incidentes',
+  auditoria: 'auditorias', auditoria_item: 'auditorias', projeto: 'projetos', tarefa: 'projetos',
+  plano_acao: 'planos-acao', denuncia: 'denuncia', dados_pessoais: 'dados', ropa: 'dados',
+  conta_privilegiada: 'contas-privilegiadas', continuidade: 'continuidade', due_diligence: 'due-diligence',
+};

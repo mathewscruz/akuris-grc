@@ -1,6 +1,9 @@
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
+import { QueryError } from '@/components/ui/query-error';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { IconHistory, IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconInfo, IconFile, IconMoney, IconTrendUp, IconOrg, IconChart, IconFlag } from '@/components/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,14 +73,15 @@ interface Contrato {
 
 export default function Contratos() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { formatNaMoedaDo, formatSoma } = useEmpresaMoeda();
   useFocusRow();
   const [searchParams, setSearchParams] = useSearchParams();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [tipoFilter, setTipoFilter] = useState('todos');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
+  const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [detalheContrato, setDetalheContrato] = useState<Contrato | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -100,27 +104,27 @@ export default function Contratos() {
   // Paginação
   
   // Buscar estatísticas dos contratos
-  const { data: statsContratos } = useContratosStats();
+  const { data: statsContratos, isLoading: statsLoading, isError: statsError } = useContratosStats();
 
   // React Query para contratos
-  const { data: contratos = [], isLoading: loadingContratos } = useQuery({
+  const { data: contratos = [], isLoading: loadingContratos, isError: contractsError, refetch: retryContracts } = useQuery({
     queryKey: ['contratos', empresaId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('contratos')
         .select('*')
         .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       
       if (data && data.length > 0) {
         const fornecedorIds = [...new Set(data.map(c => c.fornecedor_id).filter(Boolean))];
-        const { data: fornecedoresData } = await supabase
+        const { data: fornecedoresData } = await readAllPagesByIds(fornecedorIds, (ids, from, to) => supabase
           .from('fornecedores')
           .select('id, nome, avaliacao_risco')
-          .in('id', fornecedorIds);
+          .eq('empresa_id', empresaId).in('id', ids).order('id').range(from, to).abortSignal(signal), signal);
 
         return data.map(contrato => ({
           ...contrato,
@@ -136,16 +140,16 @@ export default function Contratos() {
   // "Responsável" na gaveta de detalhe mostrava o UUID cru de
   // `gestor_contrato`. O mesmo campo, na tabela do Gap Analysis, resolve para
   // nome — aqui faltava o lookup.
-  const { data: perfis = [] } = useQuery({
+  const { data: perfis = [], isError: profilesError, isLoading: profilesLoading, refetch: retryProfiles } = useQuery({
     queryKey: ['contratos-perfis', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data } = await readAllPages((from, to) => supabase
         .from('profiles')
         .select('user_id, nome, email')
-        .eq('empresa_id', empresaId!);
-      return data || [];
+        .eq('empresa_id', empresaId!).order('user_id').range(from, to).abortSignal(signal), signal);
+      return data;
     },
   });
   const nomePorUsuario = useMemo(
@@ -155,18 +159,18 @@ export default function Contratos() {
 
   const { data: fornecedores = [], isLoading: loadingFornecedores } = useQuery({
     queryKey: ['fornecedores', empresaId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
       const [{ data, error }, { data: avaliacoes, error: avaliacoesError }] = await Promise.all([
-        supabase
+        readAllPages((from, to) => supabase
           .from('fornecedores')
           .select('*')
           .eq('empresa_id', empresaId)
-          .order('nome'),
-        supabase
+          .order('nome').order('id').range(from, to).abortSignal(signal), signal),
+        readAllPages((from, to) => supabase
           .from('due_diligence_assessments')
           .select('fornecedor_id, fornecedor_email')
-          .eq('empresa_id', empresaId),
+          .eq('empresa_id', empresaId).order('id').range(from, to).abortSignal(signal), signal),
       ]);
 
       if (error) throw error;
@@ -338,6 +342,8 @@ export default function Contratos() {
     coluna Valor ordenar 1000 antes de 900.
   */
 
+  if (contractsError || profilesError) return <QueryError onRetry={() => { void retryContracts(); void retryProfiles(); }} />;
+
   if (loading) {
     return <PageSkeleton />;
   }
@@ -372,7 +378,7 @@ export default function Contratos() {
       key: 'fornecedor',
       label: t('fin.comum.fornecedor'),
       sortable: true,
-      render: (_: any, c: any) => c.fornecedores?.nome || '-',
+      render: (_: any, c: any) => c.fornecedores?.nome && c.fornecedor_id ? <button type="button" className="text-left text-muted-foreground hover:text-primary hover:underline" onClick={event => { event.stopPropagation(); navigate(`/due-diligence?fornecedor=${encodeURIComponent(c.fornecedor_id)}`); }}>{c.fornecedores.nome}</button> : '—',
     },
     {
       key: 'status',
@@ -381,11 +387,17 @@ export default function Contratos() {
       render: (_: any, c: any) => getContratoStatusBadge(c),
     },
     {
+      key: 'gestor_contrato',
+      label: t('experience.assignedTo'),
+      mobilePriority: 2,
+      render: (_: any, c: any) => nomePorUsuario.get(c.gestor_contrato) || t('experience.notAssigned'),
+    },
+    {
       key: 'tipo',
       label: t('fin.comum.tipo'),
       sortable: true,
       render: (_: any, c: any) => (
-        <Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(c.tipo)}</Badge>
+        <span className="text-muted-foreground">{formatStatus(c.tipo)}</span>
       ),
     },
     {
@@ -394,7 +406,7 @@ export default function Contratos() {
       sortable: true,
       /* A moeda DO CONTRATO, não a da empresa: os três contratos desta
          base estão gravados em BRL e a coluna mostrava-os com «€». */
-      render: (_: any, c: any) => (c.valor ? formatNaMoedaDo(Number(c.valor), c.moeda) : 'N/A'),
+      render: (_: any, c: any) => (c.valor != null ? formatNaMoedaDo(Number(c.valor), c.moeda) : 'N/A'),
     },
     {
       key: 'data_fim',
@@ -499,7 +511,8 @@ export default function Contratos() {
           </TabsList>
 
         {currentTab === 'contratos' ? <StatStrip
-          loading={!statsContratos}
+          loading={statsLoading}
+          error={statsError}
           items={[
             {
               key: 'total',
@@ -577,7 +590,7 @@ export default function Contratos() {
                   sortField={sortContratos?.field}
                   sortDirection={sortContratos?.direction}
                   onSort={toggleSortContratos}
-                  loading={loadingContratos}
+                  loading={loadingContratos || profilesLoading}
                   onRowClick={(c) => setDetalheContrato(c)}
                   searchValue={searchTerm}
                   onSearchChange={setSearchTerm}

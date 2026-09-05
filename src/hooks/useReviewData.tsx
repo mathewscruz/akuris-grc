@@ -1,9 +1,10 @@
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { tGlobal } from "@/lib/i18n-global";
-import { exigirEscrita } from '@/lib/supabase-write';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { tGlobal } from '@/lib/i18n-global';
+import { exigirLinhas } from '@/lib/supabase-write';
+import { accessReviewErrorKey } from '@/lib/access-review-error';
 
 export const useReviewData = () => {
   const { profile } = useAuth();
@@ -12,177 +13,66 @@ export const useReviewData = () => {
   const queryClient = useQueryClient();
 
   const invalidateCache = () => {
-    queryClient.invalidateQueries({ queryKey: ['review-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['reviews'] });
-    queryClient.invalidateQueries({ queryKey: ['review-items'] });
+    for (const key of ['review-stats', 'reviews', 'review-items', 'reviews-historico', 'review-origin', 'review-detail', 'contas-privilegiadas', 'sistemas-usuarios', 'notifications']) {
+      void queryClient.invalidateQueries({ queryKey: [key] });
+    }
+  };
+  const fail = (error: unknown, titleKey: string): never => {
+    toast({ title: tGlobal(titleKey), description: tGlobal(accessReviewErrorKey(error)), variant: 'destructive' });
+    throw error;
   };
 
   const createReview = async (data: any) => {
     try {
-      const { data: review, error } = await supabase
-        .from("access_reviews")
-        .insert({
-          ...data,
-          empresa_id: empresaId,
-        })
-        .select()
-        .single();
-
+      if (!empresaId) throw new Error('REVIEW_NOT_AVAILABLE');
+      const { data: review, error } = await supabase.rpc('create_access_review', { p_empresa_id: empresaId, p_data: data });
       if (error) throw error;
-
-      // Buscar usuários do sistema (nova tabela sistemas_usuarios)
-      const { data: usuarios, error: usuariosError } = await supabase
-        .from("sistemas_usuarios")
-        .select("*")
-        .eq("sistema_id", data.sistema_id)
-        .eq("ativo", true);
-
-      if (usuariosError) throw usuariosError;
-
-      if (usuarios && usuarios.length > 0) {
-        const items = usuarios.map((usuario) => ({
-          review_id: review.id,
-          conta_id: usuario.id,
-          usuario_beneficiario: usuario.nome_usuario,
-          email_beneficiario: usuario.email_usuario,
-          tipo_acesso: usuario.tipo_acesso,
-          nivel_privilegio: usuario.nivel_privilegio,
-          data_concessao: usuario.data_concessao,
-          data_expiracao: usuario.data_expiracao,
-          justificativa_original: usuario.justificativa,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from("access_review_items")
-          .insert(items);
-
-        if (itemsError) throw itemsError;
-
-        // Atualizar total de contas
-        await exigirEscrita(supabase
-          .from("access_reviews")
-          .update({ total_contas: usuarios.length })
-          .eq("id", review.id));
-      }
-
       invalidateCache();
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
-        description: tGlobal('sweepDenuncias.revisao.toastRevisaoCriada'),
-      });
-
+      toast({ title: tGlobal('sweepDenuncias.revisao.toastSucesso'), description: tGlobal('sweepDenuncias.revisao.toastRevisaoCriada') });
       return review;
-    } catch (error: any) {
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastErroCriar'),
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+    } catch (error) { return fail(error, 'sweepDenuncias.revisao.toastErroCriar'); }
   };
 
   const updateReview = async (id: string, data: any) => {
     try {
-      const { error } = await supabase
-        .from("access_reviews")
-        .update(data)
-        .eq("id", id);
-
-      if (error) throw error;
-
+      if (!empresaId) throw new Error('REVIEW_NOT_AVAILABLE');
+      // Editing metadata must not reopen a closed campaign or replace its scope/creator.
+      const { nome_revisao, descricao, tipo_revisao, data_inicio, data_limite, responsavel_revisao, observacoes } = data;
+      await exigirLinhas(supabase.from('access_reviews').update({ nome_revisao, descricao, tipo_revisao, data_inicio, data_limite, responsavel_revisao, observacoes })
+        .eq('empresa_id', empresaId).eq('id', id).select('id'), 'REVIEW_NOT_AVAILABLE');
       invalidateCache();
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
-        description: tGlobal('sweepDenuncias.revisao.toastRevisaoAtualizada'),
-      });
-    } catch (error: any) {
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastErroAtualizar'),
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+      toast({ title: tGlobal('sweepDenuncias.revisao.toastSucesso'), description: tGlobal('sweepDenuncias.revisao.toastRevisaoAtualizada') });
+    } catch (error) { return fail(error, 'sweepDenuncias.revisao.toastErroAtualizar'); }
   };
 
   const deleteReview = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("access_reviews")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
+      if (!empresaId) throw new Error('REVIEW_NOT_AVAILABLE');
+      await exigirLinhas(supabase.from('access_reviews').delete().eq('empresa_id', empresaId).eq('id', id).select('id'), 'REVIEW_NOT_AVAILABLE');
       invalidateCache();
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
-        description: tGlobal('sweepDenuncias.revisao.toastRevisaoExcluida'),
-      });
-    } catch (error: any) {
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastErroExcluir'),
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+      toast({ title: tGlobal('sweepDenuncias.revisao.toastSucesso'), description: tGlobal('sweepDenuncias.revisao.toastRevisaoExcluida') });
+    } catch (error) { return fail(error, 'sweepDenuncias.revisao.toastErroExcluir'); }
   };
 
   const updateReviewItem = async (itemId: string, data: any) => {
     try {
-      const { error } = await supabase
-        .from("access_review_items")
-        .update({
-          ...data,
-          data_revisao: new Date().toISOString(),
-        })
-        .eq("id", itemId);
-
-      if (error) throw error;
-
+      const { decisao, justificativa_revisor, observacoes_revisor, nova_data_expiracao } = data;
+      // The database stamps reviewer/date and validates the parent/source under RLS.
+      await exigirLinhas(supabase.from('access_review_items').update({ decisao, justificativa_revisor, observacoes_revisor,
+        nova_data_expiracao: decisao === 'modificar' ? nova_data_expiracao : null }).eq('id', itemId).select('id'), 'REVIEW_NOT_AVAILABLE');
       invalidateCache();
-    } catch (error: any) {
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastErroAtualizarItem'),
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+    } catch (error) { return fail(error, 'sweepDenuncias.revisao.toastErroAtualizarItem'); }
   };
 
   const finalizeReview = async (reviewId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke("finalize-review", {
-        body: { reviewId },
-      });
-
+      const { data, error } = await supabase.rpc('finalize_access_review', { p_review_id: reviewId });
       if (error) throw error;
-
       invalidateCache();
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
-        description: tGlobal('sweepDenuncias.revisao.toastRevisaoFinalizada'),
-      });
-
+      toast({ title: tGlobal('sweepDenuncias.revisao.toastSucesso'), description: tGlobal('sweepDenuncias.revisao.toastRevisaoFinalizada') });
       return data;
-    } catch (error: any) {
-      toast({
-        title: tGlobal('sweepDenuncias.revisao.toastErroFinalizar'),
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
+    } catch (error) { return fail(error, 'sweepDenuncias.revisao.toastErroFinalizar'); }
   };
 
-  return {
-    createReview,
-    updateReview,
-    deleteReview,
-    updateReviewItem,
-    finalizeReview,
-  };
+  return { createReview, updateReview, deleteReview, updateReviewItem, finalizeReview };
 };

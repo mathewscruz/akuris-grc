@@ -3,7 +3,7 @@ import { IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconRefresh, Ico
 import { rowOpenProps } from '@/lib/row-interaction';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
+import { SortableTableHead, useTableSort, type SortState } from '@/components/ui/sortable-table-head';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,9 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { StatusBadge } from '@/components/ui/status-badge';
 import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import {
-  resolveClassificacaoTone,
   resolveItemStatusTone,
-  resolveTipoDocumentoTone,
 } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -61,14 +59,12 @@ export interface DocumentosListaProps<T extends DocumentoListaItem = DocumentoLi
   /** Estado vazio compartilhado pelas duas representações */
   emptyState: ReactNode;
   podeRenovar: (documento: T) => boolean;
+  sort?: SortState | null;
+  onSort?: (field: string) => void;
 }
 
-function getTipoBadge(tipo: string) {
-  return (
-    <StatusBadge {...resolveTipoDocumentoTone(tipo)}>
-      {capitalizeText(tipo)}
-    </StatusBadge>
-  );
+function getTipoLabel(tipo: string) {
+  return <span className="text-sm text-muted-foreground">{capitalizeText(tipo)}</span>;
 }
 
 interface DocumentoAcoesMenuProps<T extends DocumentoListaItem>
@@ -194,11 +190,16 @@ export function DocumentosLista<T extends DocumentoListaItem>({
   documentos,
   emptyState,
   podeRenovar,
+  sort: externalSort,
+  onSort,
   ...acoes
 }: DocumentosListaProps<T>) {
   const { t } = useLanguage();
   const vazio = documentos.length === 0;
-  const { sorted: documentosOrdenados, sort, toggleSort } = useTableSort(documentos);
+  const localSort = useTableSort(documentos);
+  const documentosOrdenados = onSort ? documentos : localSort.sorted;
+  const sort = onSort ? externalSort ?? null : localSort.sort;
+  const toggleSort = onSort ?? localSort.toggleSort;
 
   return (
     <>
@@ -208,7 +209,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
           emptyState
         ) : (
           <ul role="list" className="divide-y divide-border">
-            {documentos.map((documento) => (
+            {documentosOrdenados.map((documento) => (
               <li
                 key={documento.id}
                 data-focus-id={documento.id}
@@ -225,7 +226,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                         {documento.descricao}
                       </p>
                     )}
-                    <div className="pt-1">{getTipoBadge(documento.tipo)}</div>
+                    <div className="pt-1">{getTipoLabel(documento.tipo)}</div>
                   </div>
                   <div className="flex-shrink-0">
                     <DocumentoAcoesMenu
@@ -248,17 +249,10 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                     </span>
                   </CampoCard>
                   <CampoCard label={t('documentos.lista.classificacao')}>
-                    {/* Confidencial mantém a saliência do ícone usada na tabela */}
-                    <StatusBadge
-                      icon={
-                        documento.classificacao === 'confidencial' ? (
-                          <IconShield className="h-3 w-3" />
-                        ) : undefined
-                      }
-                      {...resolveClassificacaoTone(documento.classificacao || 'interna')}
-                    >
-                      {capitalizeText(documento.classificacao || 'interna')}
-                    </StatusBadge>
+                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      {documento.classificacao === 'confidencial' && <IconShield className="h-3.5 w-3.5" aria-hidden="true" />}
+                      {documento.classificacao ? capitalizeText(documento.classificacao) : t('experience.unclassified')}
+                    </span>
                   </CampoCard>
                   <CampoCard label={t('documentos.lista.versao')}>
                     <span>{formatVersao(documento.versao)}</span>
@@ -285,7 +279,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
               <SortableTableHead field="classificacao" sort={sort} onSort={toggleSort}>{t('documentos.lista.classificacao')}</SortableTableHead>
               <SortableTableHead field="status" sort={sort} onSort={toggleSort}>{t('documentos.lista.status')}</SortableTableHead>
               <SortableTableHead field="versao" sort={sort} onSort={toggleSort}>{t('documentos.lista.versao')}</SortableTableHead>
-              <SortableTableHead field="data_validade" sort={sort} onSort={toggleSort}>{t('documentos.lista.validade')}</SortableTableHead>
+              <SortableTableHead field="data_vencimento" sort={sort} onSort={toggleSort}>{t('documentos.lista.validade')}</SortableTableHead>
               <SortableTableHead field="responsavel_nome" sort={sort} onSort={toggleSort}>{t('documentos.lista.responsavel')}</SortableTableHead>
               <TableHead className="text-right">{t('documentos.lista.acoes')}</TableHead>
             </TableRow>
@@ -312,13 +306,9 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{getTipoBadge(documento.tipo)}</TableCell>
+                  <TableCell>{getTipoLabel(documento.tipo)}</TableCell>
                   <TableCell>
-                    <StatusBadge
-                      {...resolveClassificacaoTone(documento.classificacao || 'interna')}
-                    >
-                      {capitalizeText(documento.classificacao || 'interna')}
-                    </StatusBadge>
+                    <span className="text-sm text-muted-foreground">{documento.classificacao ? capitalizeText(documento.classificacao) : t('experience.unclassified')}</span>
                   </TableCell>
                   <TableCell>
                     <StatusBadge {...resolveItemStatusTone(documento.status)}>

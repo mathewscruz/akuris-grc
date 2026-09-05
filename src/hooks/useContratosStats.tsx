@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -34,19 +35,19 @@ export const useContratosStats = () => {
     queryKey: ['contratos-stats', empresaId],
     staleTime: 5 * 60 * 1000,
     enabled: !!empresaId,
-    queryFn: async (): Promise<ContratosStats> => {
-      const { data: contratos, error } = await supabase
+    queryFn: async ({ signal }): Promise<ContratosStats> => {
+      const { data: contratos, error } = await readAllPages((from, to) => supabase
         .from('contratos')
         .select('status, valor, moeda, data_fim, renovacao_automatica, fornecedor_id')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
 
-      const { data: fornecedores } = await supabase
+      const { data: fornecedores } = await readAllPages((from, to) => supabase
         .from('fornecedores')
         .select('id')
         .eq('status', 'ativo')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       const base = contarContratos(contratos);
 

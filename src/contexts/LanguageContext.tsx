@@ -15,14 +15,19 @@ type Dictionary = Record<string, any>;
  * `lib/pt-variants.ts`), garantindo que "utilizador/ficheiro/eliminar" e
  * "usuário/arquivo/excluir" nunca aparecem misturados no mesmo ecrã.
  */
-// Construído a partir dos módulos no arranque para que todas as superfícies
-// partilhem a mesma árvore, inclusive checklists aninhados dos fluxos guiados.
-const ptBase = mergeDictionaries(pt, modulesPt);
-const dictionaries: Record<Locale, Dictionary> = {
-  pt: localizePtDictionary(ptBase, 'pt'),
-  'pt-BR': localizePtDictionary(ptBase, 'pt-BR'),
-  en: mergeDictionaries(en, modulesEn),
-};
+// Normalize only the requested locale. Previously every launch built both
+// Portuguese variants and English, even when the user never switched language.
+let ptBase: Dictionary | undefined;
+const dictionaries = new Map<Locale, Dictionary>();
+function dictionaryFor(locale: Locale): Dictionary {
+  const cached = dictionaries.get(locale);
+  if (cached) return cached;
+  const dictionary = locale === 'en'
+    ? mergeDictionaries(en, modulesEn)
+    : localizePtDictionary(ptBase ??= mergeDictionaries(pt, modulesPt), locale);
+  dictionaries.set(locale, dictionary);
+  return dictionary;
+}
 
 
 interface LanguageContextType {
@@ -219,7 +224,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string, params?: Record<string, string | number>): string => {
-    const dict = dictionaries[locale] ?? dictionaries['pt-BR'];
+    const dict = dictionaryFor(locale);
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
@@ -231,7 +236,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return interpolate(result, params);
   }, [locale]);
 
-  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale] ?? dictionaries['pt-BR'], key), [locale]);
+  const tList = useCallback((key: string): string[] => resolveList(dictionaryFor(locale), key), [locale]);
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, setLocaleTransient, t, tList }}>
@@ -248,7 +253,7 @@ const fallbackContext: LanguageContextType = {
   setLocaleTransient: () => {},
   t: (key: string, params?: Record<string, string | number>) => {
     const loc: Locale = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR';
-    const dict = dictionaries[loc] ?? dictionaries['pt-BR'];
+    const dict = dictionaryFor(loc);
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
@@ -261,7 +266,7 @@ const fallbackContext: LanguageContextType = {
   },
   tList: (key: string) => {
     const loc = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR';
-    return resolveList(dictionaries[loc] ?? dictionaries['pt-BR'], key);
+    return resolveList(dictionaryFor(loc), key);
   },
 };
 

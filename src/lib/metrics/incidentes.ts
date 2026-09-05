@@ -51,6 +51,9 @@ export const isIncidenteEmCurso = (i: IncidenteLike) =>
 export const severidadeIncidente = (i: IncidenteLike): Severidade =>
   severidadeDeFaixas(i.criticidade);
 
+export const isIncidenteCriticoEmCurso = (i: IncidenteLike) =>
+  isIncidenteEmCurso(i) && severidadeIncidente(i) === 'critico';
+
 export const contarIncidentes = (incidentes: IncidenteLike[] | null | undefined) => ({
   total: incidentes?.length ?? 0,
   abertos: countBy(incidentes, isIncidenteAberto),
@@ -73,7 +76,7 @@ export const contarIncidentes = (incidentes: IncidenteLike[] | null | undefined)
   */
   criticosEmCurso: countBy(
     incidentes,
-    (i) => isIncidenteEmCurso(i) && severidadeIncidente(i) === 'critico',
+    isIncidenteCriticoEmCurso,
   ),
   altosEmCurso: countBy(
     incidentes,

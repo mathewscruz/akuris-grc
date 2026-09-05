@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -14,6 +15,7 @@ interface DueDiligenceStats {
   totalFornecedores: number;
   assessmentsThisMonth: number;
   averageScore: number;
+  scoredAssessments: number;
 }
 
 export const useDueDiligenceStats = () => {
@@ -24,18 +26,18 @@ export const useDueDiligenceStats = () => {
     queryKey: ['due-diligence-stats', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<DueDiligenceStats> => {
+    queryFn: async ({ signal }): Promise<DueDiligenceStats> => {
       try {
-        const { data: templates, error: templatesError } = await supabase
+        const { data: templates, error: templatesError } = await readAllPages((from, to) => supabase
           .from('due_diligence_templates')
-          .select('id, ativo');
+          .select('id, ativo').order('id').range(from, to).abortSignal(signal), signal);
 
         if (templatesError) throw templatesError;
 
-        const { data: assessments, error } = await supabase
+        const { data: assessments, error } = await readAllPages((from, to) => supabase
           .from('due_diligence_assessments')
           .select('status, created_at, data_expiracao, fornecedor_email, score_final')
-          .eq('empresa_id', empresaId!);
+          .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
         if (error) throw error;
 
@@ -46,6 +48,7 @@ export const useDueDiligenceStats = () => {
         const total = assessments?.length || 0;
 
         const hojeRef = new Date();
+        hojeRef.setHours(0, 0, 0, 0);
         const estaExpirada = (a: any) =>
           a.data_expiracao && parseDataLocal(a.data_expiracao) < hojeRef &&
           !['concluido', 'finalizado'].includes(a.status);
@@ -98,7 +101,8 @@ export const useDueDiligenceStats = () => {
           expiredAssessments: expired,
           totalFornecedores: uniqueFornecedores,
           assessmentsThisMonth: thisMonth,
-          averageScore
+          averageScore,
+          scoredAssessments: completedWithScores.length,
         };
       } catch (error) {
         logger.error('Erro ao buscar estatísticas de due diligence', { error: error instanceof Error ? error.message : String(error) });

@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useReviewData } from "@/hooks/useReviewData";
-import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -28,7 +27,7 @@ const buildDecisionSchema = (t: (key: string) => string) => z.object({
   justificativa_revisor: z.string().min(10, t("acessosDd.revisao.itemDecisionDialog.zodJustificativaMinima")),
   nova_data_expiracao: z.string().optional(),
   observacoes_revisor: z.string().optional(),
-});
+}).refine(data => data.decisao !== 'modificar' || !!data.nova_data_expiracao, { path: ['nova_data_expiracao'], message: t('experience.reviewExpiryRequired') });
 
 type DecisionFormData = z.infer<ReturnType<typeof buildDecisionSchema>>;
 
@@ -74,14 +73,10 @@ export function ReviewItemDecisionDialog({
 
   const onSubmit = async (data: DecisionFormData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(t("revisaoAcessosComp.itemDecisionDialog.toastErrorNaoAutenticado"));
-
       const payload = {
         decisao: data.decisao,
         justificativa_revisor: data.justificativa_revisor,
         observacoes_revisor: data.observacoes_revisor,
-        revisado_por: user.id,
         ...(data.decisao === "modificar" && data.nova_data_expiracao
           ? { nova_data_expiracao: parseDateForDB(data.nova_data_expiracao) }
           : {}),
@@ -104,6 +99,7 @@ export function ReviewItemDecisionDialog({
       onSubmit={form.handleSubmit(onSubmit)}
       submitLabel={t("revisaoAcessosComp.itemDecisionDialog.submitLabel")}
       isDirty={form.formState.isDirty}
+      isSubmitting={form.formState.isSubmitting}
     >
         <div className="space-y-4">
           <Alert>
@@ -134,7 +130,7 @@ export function ReviewItemDecisionDialog({
                       <RadioGroup
                         onValueChange={field.onChange}
                         value={field.value}
-                        className="flex gap-4"
+                        className="flex flex-wrap gap-4"
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="aprovar" id="aprovar" />

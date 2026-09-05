@@ -1,61 +1,51 @@
-/**
- * Busca global de registos reais (Cmd+K).
- *
- * Carrega, uma única vez por sessão de pesquisa, um recorte recente de cada
- * entidade (respeitando RLS e `empresa_id`) e filtra no cliente, permitindo
- * comparação sem acentos, insensível a maiúsculas e com várias palavras em AND
- * por qualquer ordem, sobre identificador amigável e título.
- */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
-import {
-  ENTITY_DEFS,
-  EntityKey,
-  EntityRow,
-  fetchEntityRows,
-  matchesTokens,
-  queryTokens,
-} from '@/lib/entity-search';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ENTITY_DEFS, ENTITY_MODULE, type EntityKey, type EntityRow, searchEntityRows, queryTokens } from '@/lib/entity-search';
 
 export interface GlobalSearchGroup {
   key: EntityKey;
   rows: EntityRow[];
-  total: number;
+  hasMore: boolean;
 }
-
-const MAX_POR_GRUPO = 5;
 
 export function useGlobalSearch(query: string, enabled: boolean) {
   const { profile } = useAuth();
+  const { canAccess } = usePermissions();
   const empresaId = profile?.empresa_id;
-  const tokens = useMemo(() => queryTokens(query), [query]);
-  const ativo = enabled && tokens.join('').length >= 2;
-
-  const { data, isFetching } = useQuery({
-    queryKey: ['global-search-dataset', empresaId],
-    queryFn: async () => {
-      const resultados = await Promise.all(
-        ENTITY_DEFS.map(async (def) => ({
-          key: def.key,
-          rows: await fetchEntityRows(def.key, empresaId),
-        })),
-      );
-      return resultados;
+  const [settledQuery, setSettledQuery] = useState(query);
+  const [limits, setLimits] = useState<Partial<Record<EntityKey, number>>>({});
+  useEffect(() => {
+    const timer = window.setTimeout(() => { setSettledQuery(query); setLimits({}); }, 250);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+  const tokens = useMemo(() => queryTokens(settledQuery), [settledQuery]);
+  const ativo = enabled && query.trim().length >= 2;
+  const allowed = ENTITY_DEFS.filter((def) => canAccess(ENTITY_MODULE[def.key]));
+  const { data, isFetching, isError, refetch } = useQuery({
+    queryKey: ['global-search', empresaId, settledQuery, allowed.map((d) => d.key).join(','), limits],
+    enabled: ativo && tokens.join('').length >= 2,
+    queryFn: async ({ signal }) => {
+      const results = await Promise.all(allowed.map(async (def) => {
+        try {
+          return { key: def.key, ...await searchEntityRows(def.key, empresaId, tokens, limits[def.key] ?? 5, signal), failed: false };
+        } catch (error) {
+          if (signal.aborted) throw error;
+          return { key: def.key, rows: [] as EntityRow[], hasMore: false, failed: true };
+        }
+      }));
+      return results;
     },
-    enabled: ativo,
-    staleTime: 2 * 60_000,
+    staleTime: 60_000,
   });
-
-  const groups = useMemo<GlobalSearchGroup[]>(() => {
-    if (!ativo || !data) return [];
-    return data
-      .map(({ key, rows }) => {
-        const filtradas = rows.filter((r) => matchesTokens(`${r.codigo} ${r.titulo}`, tokens));
-        return { key, rows: filtradas.slice(0, MAX_POR_GRUPO), total: filtradas.length };
-      })
-      .filter((g) => g.total > 0);
-  }, [data, tokens, ativo]);
-
-  return { groups, isSearching: ativo && isFetching && !data, ativo };
+  const waiting = query !== settledQuery;
+  return {
+    groups: ativo && !waiting ? (data ?? []).filter((group) => group.rows.length > 0) : [],
+    isSearching: ativo && (waiting || isFetching),
+    isError: isError || (!waiting && !!data?.some((group) => group.failed)),
+    retry: () => void refetch(),
+    showMore: (key: EntityKey) => setLimits((current) => ({ ...current, [key]: (current[key] ?? 5) + 20 })),
+    ativo,
+  };
 }

@@ -235,7 +235,7 @@ export const useRadarChartData = () => {
         details: { total: controlesData.total, status: getStatus(scoreControles), metrics: [m('active', controlesData.ativos), m('dueAssessment', controlesData.vencendoAvaliacao), m('critical', controlesData.criticos)] },
         // Vencidas e a vencer contam para a mesma decisão: reavaliar.
         acao: acao('avaliarControles', controlesData.vencidos + controlesData.vencendoAvaliacao),
-        link: '/controles'
+        link: '/governanca/controles'
       },
       {
         subject: 'Ativos', score: Math.round(scoreAtivos), fullMark: 100, hasData: ativosData.total > 0, icon: 'Monitor',
@@ -284,7 +284,7 @@ export const useRadarChartData = () => {
       },
       {
         subject: 'Due Diligence', score: Math.round(scoreDueDiligence), fullMark: 100, hasData: dueDiligenceData.totalAssessments > 0, icon: 'ClipboardCheck',
-        details: { total: dueDiligenceData.totalAssessments, status: getStatus(scoreDueDiligence), metrics: [m('completed', dueDiligenceData.completedAssessments), m('avgScore', Math.round(dueDiligenceData.averageScore)), m('expired', dueDiligenceData.expiredAssessments)] },
+        details: { total: dueDiligenceData.totalAssessments, status: getStatus(scoreDueDiligence), metrics: [m('completed', dueDiligenceData.completedAssessments), ...(dueDiligenceData.scoredAssessments > 0 ? [m('avgScore', Math.round(dueDiligenceData.averageScore))] : []), m('expired', dueDiligenceData.expiredAssessments)] },
         /*
           Sem nenhuma avaliação, o próximo passo é começar — e não "0 vencidas",
           que soaria a estado limpo num domínio onde nunca se fez nada.
@@ -316,5 +316,8 @@ export const useRadarChartData = () => {
     gapAnalysis.data, dueDiligence.data, documentos.data, denuncias.data, t
   ]);
 
-  return { data, isLoading };
+  const queries = [ativos, controles, riscos, incidentes, gapAnalysis, dueDiligence, documentos, denuncias];
+  const isError = queries.some(query => query.isError);
+  const refetch = () => Promise.all(queries.map(query => query.refetch()));
+  return { data, isLoading, isError, refetch };
 };

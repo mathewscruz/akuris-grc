@@ -124,7 +124,7 @@ const Auth = () => {
       <AuthShell>
         <div className="flex min-h-56 flex-col items-center justify-center">
           <AkurisPulse size={40} />
-          <p className="mt-4 text-sm text-white/45">{t('common.loading')}</p>
+          <p className="mt-4 text-sm text-white/70">{t('common.loading')}</p>
         </div>
       </AuthShell>
     );
@@ -257,12 +257,12 @@ const Auth = () => {
       <div className="space-y-8">
         <div className="space-y-1.5 text-center lg:text-left">
           <h1 className="text-[1.75rem] font-medium tracking-[-0.02em] text-white">{t('auth.welcomeBack')}</h1>
-          <p className="text-sm text-white/45">{t('auth.signInToContinue')}</p>
+          <p className="text-sm text-white/70">{t('auth.signInToContinue')}</p>
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-5" noValidate>
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-xs font-medium tracking-wide text-white/65">{t('auth.emailLabel')}</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-white/85">{t('auth.emailLabel')}</Label>
             <Input
               id="email"
               type="email"
@@ -276,7 +276,7 @@ const Auth = () => {
               }}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? 'auth-email-error' : undefined}
-              className="h-11 rounded-md border-white/[0.09] bg-white/[0.03] text-white placeholder:text-white/25 focus:border-primary/60 focus:ring-1 focus:ring-primary/25"
+              className="h-11 rounded-md border-white/[0.09] bg-white/[0.03] text-white placeholder:text-white/60 focus:border-primary/60 focus:ring-1 focus:ring-primary/25"
               disabled={isBusy}
               autoComplete="username"
             />
@@ -285,11 +285,11 @@ const Auth = () => {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-xs font-medium tracking-wide text-white/65">{t('auth.passwordLabel')}</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-white/85">{t('auth.passwordLabel')}</Label>
               <button
                 type="button"
                 onClick={() => setSearchParams({ recovery: '1' }, { replace: true })}
-                className="flex min-h-11 items-center px-1 text-xs text-primary transition-colors hover:text-primary/80"
+                className="flex min-h-11 items-center px-1 text-xs text-white/85 underline decoration-primary underline-offset-4 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {t('auth.forgotPassword')}
               </button>
@@ -307,14 +307,14 @@ const Auth = () => {
                 }}
                 aria-invalid={Boolean(errors.password)}
                 aria-describedby={errors.password ? 'auth-password-error' : undefined}
-                className="h-11 rounded-md border-white/[0.09] bg-white/[0.03] pr-12 text-white placeholder:text-white/25 focus:border-primary/60 focus:ring-1 focus:ring-primary/25"
+                className="h-11 rounded-md border-white/[0.09] bg-white/[0.03] pr-12 text-white placeholder:text-white/60 focus:border-primary/60 focus:ring-1 focus:ring-primary/25"
                 disabled={isBusy}
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-white/40 transition-colors hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-white/70 transition-colors hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               >
                 {showPassword ? <IconHide className="h-5 w-5" /> : <IconView className="h-5 w-5" />}
@@ -336,7 +336,7 @@ const Auth = () => {
               onCheckedChange={(checked) => setRememberMe(checked === true)}
               disabled={isBusy}
             />
-            <Label htmlFor="remember" className="cursor-pointer text-xs text-white/55">{t('auth.rememberEmail')}</Label>
+            <Label htmlFor="remember" className="cursor-pointer text-xs text-white/70">{t('auth.rememberEmail')}</Label>
           </div>
 
           <Button type="submit" className="h-11 w-full rounded-md text-sm font-medium" disabled={isBusy}>

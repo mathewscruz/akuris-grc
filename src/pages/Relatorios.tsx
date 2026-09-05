@@ -1,3 +1,7 @@
+import { readAllPages } from '@/lib/read-all-pages';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QueryError } from '@/components/ui/query-error';
+import { useListState } from '@/hooks/useListState';
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconFile, IconChart, IconShield, IconBook, IconOrg, IconPackage, IconUsers, IconFileCheck, IconMessage, IconError, IconFramework, IconLifebuoy } from '@/components/icons';
 import { useState, useMemo } from 'react';
@@ -51,17 +55,19 @@ export default function Relatorios() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('meus');
+  const [activeTab, setActiveTab] = useListState('activeTab', 'meus');
+  const [reportGoal, setReportGoal] = useListState('reportGoal', 'all');
+  const templateGoal = (key: string) => ['executivo_trimestral', 'compliance_geral'].includes(key) ? 'board' : ['iso27001_auditoria', 'auditoria_interna', 'lgpd_anpd', 'documentos_governanca'].includes(key) ? 'audit' : 'operations';
 
-  const { data: relatorios = [], isLoading } = useQuery({
+  const { data: relatorios = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['relatorios-customizados', empresaId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('relatorios_customizados')
         .select('*, relatorio_agendamentos(*)')
         .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return data || [];
     },
@@ -252,13 +258,7 @@ export default function Relatorios() {
         ) : undefined}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="meus">{t('fin.relatorios.meus')}</TabsTrigger>
-          <TabsTrigger value="templates">{t('residuos.geral.templatesPredefinidos')}</TabsTrigger>
-        </TabsList>
-
-      <StatStrip
+      <StatStrip loading={isLoading} error={isError}
         items={[
           { key: 'total', label: t('fin.relatorios.total'), value: stats.total },
           { key: 'publicados', label: t('sweepCore.reports.published'), value: stats.publicados },
@@ -267,8 +267,14 @@ export default function Relatorios() {
         ]}
       />
 
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="meus"><IconFile className="h-4 w-4" />{t('fin.relatorios.meus')}</TabsTrigger>
+          <TabsTrigger value="templates"><IconBook className="h-4 w-4" />{t('residuos.geral.templatesPredefinidos')}</TabsTrigger>
+        </TabsList>
+
         <TabsContent value="meus">
-          {isLoading ? (
+          {isError ? <QueryError onRetry={() => void refetch()} /> : isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3].map(i => (
                 <Card key={i} className="animate-pulse">
@@ -282,8 +288,8 @@ export default function Relatorios() {
                 <IconFile className="h-12 w-12 text-muted-foreground mb-4" />
                 <h2 className="text-lg font-semibold">{t('fin.relatorios.nenhum')}</h2>
                 <p className="text-muted-foreground text-sm mt-1 mb-4">{t('fin.relatorios.vazioDesc')}</p>
-                <Button onClick={() => setDialogOpen(true)}>
-                  <IconAdd className="h-4 w-4 mr-2" />{t('sweepCore.reports.newReport')}
+                <Button onClick={() => setActiveTab('templates')}>
+                  <IconBook className="h-4 w-4 mr-2" />{t('experience.chooseTemplate')}
                 </Button>
               </CardContent>
             </Card>
@@ -310,17 +316,17 @@ export default function Relatorios() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     {rel.template_base && templateConfigs[rel.template_base] && (
-                      <Badge variant="outline" className="mb-3 text-xs">
+                      <p className="mb-3 text-xs text-muted-foreground">
                         {t(templateConfigs[rel.template_base].nome)}
-                      </Badge>
+                      </p>
                     )}
                     <p className="text-xs text-muted-foreground mb-3">
                       {t('sweepCore.reports.createdOn', { date: formatDateOnly(rel.created_at) })}
                     </p>
                     {rel.relatorio_agendamentos?.some((a: any) => a.ativo) && (
-                      <Badge variant="outline" className="mb-3 text-xs">
+                      <p className="mb-3 text-xs text-muted-foreground">
                         {t('relatoriosComp.dialog.scheduleBadge', { frequencia: formatStatus(rel.relatorio_agendamentos[0].frequencia) })}
-                      </Badge>
+                      </p>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -352,21 +358,32 @@ export default function Relatorios() {
           )}
         </TabsContent>
 
-        <TabsContent value="templates">
+        <TabsContent value="templates" className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="report-goal" className="text-sm font-medium">{t('experience.reportGoal')}</label>
+              <Select value={reportGoal} onValueChange={setReportGoal}>
+                <SelectTrigger id="report-goal" className="w-full sm:w-64"><SelectValue /></SelectTrigger>
+                <SelectContent>{['all', 'board', 'operations', 'audit'].map(goal => <SelectItem key={goal} value={goal}>{t(`experience.reportGoals.${goal}`)}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <Button variant="outline" onClick={() => setDialogOpen(true)}>{t('sweepCore.reports.newReport')}</Button>
+          </div>
+          <p className="text-sm text-muted-foreground">{t('experience.reportScope')}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(templateConfigs).map(([key, config]) => {
+            {Object.entries(templateConfigs).filter(([key]) => reportGoal === 'all' || templateGoal(key) === reportGoal).map(([key, config]) => {
               const Icon = config.icon;
               return (
-                <Card key={key} className="hover:shadow-sm transition-shadow cursor-pointer group" onClick={() => handleCreateFromTemplate(key)}>
+                <Card key={key} className="hover:shadow-sm transition-shadow group">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-lg bg-primary/10 ${config.cor}`}>
+                      <div className="p-2 text-muted-foreground">
                         <Icon className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm">{t(config.nome)}</h3>
                         <p className="text-xs text-muted-foreground mt-1">{t(config.descricao)}</p>
-                        <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-xs group-hover:underline">
+                        <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-sm" disabled={saving} onClick={() => handleCreateFromTemplate(key)}>
                           {t('sweepCore.reports.useTemplate')}
                         </Button>
                       </div>

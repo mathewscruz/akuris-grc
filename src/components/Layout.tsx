@@ -36,6 +36,7 @@ import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { KpiDrillDownProvider } from '@/components/dashboard/KpiDrillDownProvider';
 import { DevelopmentCompanySwitcher } from '@/components/DevelopmentCompanySwitcher';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useRouteScroll } from '@/hooks/useRouteScroll';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -69,9 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
      persistente conservava o scroll do módulo anterior e a nova página podia
      aparecer a meio, o que parecia um salto de layout. `useLayoutEffect`
      corrige antes da pintura, portanto não há frame intermédio visível. */
-  React.useLayoutEffect(() => {
-    mainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [location.pathname]);
+  useRouteScroll(mainRef, !loading && !!user);
 
   const openAkuria = () => {
     if (akuriaMounted) {

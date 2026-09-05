@@ -28,7 +28,7 @@ import { useEffect, useState } from 'react';
 const Configuracoes = () => {
   const { t } = useLanguage();
   const { profile, loading } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab') || 'usuarios';
   const selectedUserId = searchParams.get('userId') || undefined;
 
@@ -46,6 +46,11 @@ const Configuracoes = () => {
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => setActiveTab(defaultTab), [defaultTab]);
+  const selectSection = (tab: string) => {
+    if (!allowedTabs.includes(tab)) return;
+    setActiveTab(tab);
+    setSearchParams(current => { const next = new URLSearchParams(current); next.set('tab', tab); next.delete('userId'); return next; });
+  };
 
   if (loading) {
     return (
@@ -81,12 +86,12 @@ const Configuracoes = () => {
         description={t('configGeral.page.headerDescription')}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid gap-6 xl:grid-cols-[224px_minmax(0,1fr)] xl:items-start">
+      <Tabs orientation="vertical" value={activeTab} onValueChange={selectSection} className="grid gap-6 xl:grid-cols-[224px_minmax(0,1fr)] xl:items-start">
         <div className="rounded-lg border bg-card p-3 md:hidden">
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
             {t('configGeral.page.sectionPicker')}
           </label>
-          <Select value={activeTab} onValueChange={setActiveTab}>
+          <Select value={activeTab} onValueChange={selectSection}>
             <SelectTrigger className="w-full" aria-label={t('configGeral.page.sectionPicker')}>
               <SelectValue />
             </SelectTrigger>

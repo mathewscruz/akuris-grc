@@ -17,29 +17,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { routeForEntity, type EntityRow, type EntityKey } from '@/lib/entity-search';
 import { formatStatus } from '@/lib/text-utils';
-import { MODULE_ICON } from '@/lib/module-icons';
+import { getSearchModules } from '@/lib/navigation';
+import { usePermissions } from '@/hooks/usePermissions';
 
-const MODULES = [
-  { key: 'moduleDashboard', path: '/dashboard', icon: MODULE_ICON['/dashboard'], keywords: ['inicio', 'home', 'painel'] },
-  { key: 'moduleRisks', path: '/riscos', icon: MODULE_ICON['/riscos'], keywords: ['risco', 'ameaca', 'vulnerabilidade'] },
-  { key: 'moduleGovernance', path: '/governanca', icon: MODULE_ICON['/governanca'], keywords: ['controle', 'auditoria', 'compliance'] },
-  { key: 'moduleGapAnalysis', path: '/gap-analysis', icon: MODULE_ICON['/gap-analysis'], keywords: ['framework', 'conformidade', 'iso', 'nist', 'lgpd'] },
-  { key: 'moduleFrameworks', path: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis/frameworks'], keywords: ['iso 27001', 'nist', 'lgpd', 'sox'] },
-  { key: 'moduleAssets', path: '/ativos', icon: MODULE_ICON['/ativos'], keywords: ['ativo', 'dispositivo', 'hardware', 'software'] },
-  { key: 'moduleLicenses', path: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], keywords: ['licenca', 'software', 'renovacao'] },
-  { key: 'moduleCryptoKeys', path: '/ativos/chaves', icon: MODULE_ICON['/ativos/chaves'], keywords: ['chave', 'criptografia', 'certificado'] },
-  { key: 'moduleDocuments', path: '/documentos', icon: MODULE_ICON['/documentos'], keywords: ['documento', 'politica', 'procedimento'] },
-  { key: 'moduleContracts', path: '/contratos', icon: MODULE_ICON['/contratos'], keywords: ['contrato', 'fornecedor', 'sla'] },
-  { key: 'moduleIncidents', path: '/incidentes', icon: MODULE_ICON['/incidentes'], keywords: ['incidente', 'seguranca', 'breach'] },
-  { key: 'modulePrivacy', path: '/privacidade', icon: MODULE_ICON['/privacidade'], keywords: ['lgpd', 'dados', 'ropa', 'titular'] },
-  { key: 'modulePrivilegedAccounts', path: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], keywords: ['conta', 'privilegio', 'admin', 'acesso'] },
-  { key: 'moduleAccessReviews', path: '/revisao-acessos', icon: MODULE_ICON['/revisao-acessos'], keywords: ['revisao', 'acesso', 'review'] },
-  { key: 'moduleDueDiligence', path: '/due-diligence', icon: MODULE_ICON['/due-diligence'], keywords: ['due diligence', 'fornecedor', 'terceiro'] },
-  { key: 'moduleWhistleblowing', path: '/denuncia', icon: MODULE_ICON['/denuncia'], keywords: ['denuncia', 'canal', 'ouvidoria'] },
-  { key: 'moduleActionPlans', path: '/planos-acao', icon: MODULE_ICON['/planos-acao'], keywords: ['plano', 'acao', 'tarefa'] },
-  { key: 'moduleReports', path: '/relatorios', icon: MODULE_ICON['/relatorios'], keywords: ['relatorio', 'report', 'exportar'] },
-  { key: 'moduleSettings', path: '/configuracoes', icon: MODULE_ICON['/configuracoes'], keywords: ['config', 'empresa', 'usuario', 'integracao'] },
-];
 
 export function CommandPaletteButton() {
   const [open, setOpen] = useState(false);
@@ -55,6 +35,7 @@ export function CommandPaletteButton() {
       >
         <IconSearch className="h-3.5 w-3.5" />
         <span className="text-xs">{t('commandPalette.searchButton')}</span>
+        <kbd className="ml-auto text-micro text-muted-foreground">Ctrl K</kbd>
       </Button>
       {/* O gémeo de cima tem a palavra «Pesquisar» ao lado do ícone; este,
           que é o único que aparece no telemóvel, não tinha nome nenhum. */}
@@ -76,7 +57,8 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
-  const { groups, isSearching, ativo } = useGlobalSearch(deferredQuery, open);
+  const { groups, isSearching, ativo, isError, retry, showMore } = useGlobalSearch(deferredQuery, open);
+  const { canAccess } = usePermissions();
 
   useEffect(() => {
     if (!open) setQuery('');
@@ -91,7 +73,7 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     handleSelect(routeForEntity(key, row));
   }, [handleSelect]);
 
-  const semResultados = ativo && !isSearching && groups.length === 0;
+  const semResultados = ativo && !isSearching && !isError && groups.length === 0;
   const searchShortcut = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
     ? '⌘K'
     : 'Ctrl+K';
@@ -105,6 +87,7 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         onValueChange={setQuery}
       />
       <CommandList>
+        {isError && <div role="alert" className="px-4 py-3 text-sm text-muted-foreground"><p>{t('experience.searchUnavailable')}</p><Button variant="outline" size="sm" className="mt-2" onClick={retry}>{t('experience.retry')}</Button></div>}
         {isSearching && (
           <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
             <AkurisPulse size={18} /> {t('buscaGlobal.searching')}
@@ -128,13 +111,13 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                 )}
               </CommandItem>
             ))}
-            {group.total > group.rows.length && (
+            {group.hasMore && (
               <CommandItem
                 value={`${group.key}-mais`}
-                disabled
+                onSelect={() => showMore(group.key)}
                 className="text-xs text-muted-foreground"
               >
-                {t('buscaGlobal.moreResults', { count: group.total - group.rows.length })}
+                {t('experience.searchMore')}
               </CommandItem>
             )}
           </CommandGroup>
@@ -143,10 +126,11 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         {groups.length > 0 && <CommandSeparator />}
 
         <CommandGroup heading={t('commandPalette.modules')}>
-          {MODULES.filter((module) => {
+          {getSearchModules(t).filter((module) => {
+            if (module.moduleName && !canAccess(module.moduleName)) return false;
             const q = query.trim().toLowerCase();
             if (!q) return true;
-            const alvo = `${t(`commandPalette.${module.key}`)} ${module.keywords.join(' ')}`
+            const alvo = `${module.title} ${module.url}`
               .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
             return q
               .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -154,13 +138,13 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
               .every((token) => alvo.includes(token));
           }).map((module) => (
             <CommandItem
-              key={module.path}
-              value={`modulo-${module.path}`}
-              onSelect={() => handleSelect(module.path)}
+              key={module.url}
+              value={`modulo-${module.url}`}
+              onSelect={() => handleSelect(module.url!)}
               className="flex items-center gap-3 cursor-pointer"
             >
               <module.icon className="h-4 w-4 text-muted-foreground" />
-              <span>{t(`commandPalette.${module.key}`)}</span>
+              <span>{module.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>

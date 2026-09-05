@@ -6,6 +6,7 @@ import { useLanguage, type Locale } from '@/contexts/LanguageContext';
 import { LOCALE_OPTIONS } from '@/components/LanguageSelector';
 import type { ConfigCanal } from '@/hooks/useCanalDenuncia';
 import type { EmpresaPublica } from '@/lib/denuncia-publica';
+import akurisLogoLight from '@/assets/akuris-logo-light.png';
 import './canal-public.css';
 
 interface Props {
@@ -42,7 +43,9 @@ export function CanalLayout({ empresa, config, nomeDoCanal, estiloDaMarca, etapa
       <header className="canal-header">
         <div className="canal-width canal-header-inner">
           <Link to={base} className="canal-brand" aria-label={`${nomeDoCanal} — ${t('canalExperience.about')}`}>
-            {empresa?.logo_url && failedLogo !== empresa.logo_url ? (
+            {(!empresa || empresa.slug === 'akuris') ? (
+              <img src={akurisLogoLight} width={650} height={195} alt="Akuris" />
+            ) : empresa.logo_url && failedLogo !== empresa.logo_url ? (
               <img src={empresa.logo_url} alt={nomeDoCanal} onError={() => setFailedLogo(empresa.logo_url)} referrerPolicy="no-referrer" />
             ) : <span>{nomeDoCanal || 'Akuris'}</span>}
           </Link>
@@ -69,7 +72,7 @@ export function CanalLayout({ empresa, config, nomeDoCanal, estiloDaMarca, etapa
       </aside>}
       <footer className="canal-footer"><div className="canal-width">
         {config?.texto_retaliacao && <p><strong>{t('publicPortal.canal.retaliacaoTitulo')}</strong> {config.texto_retaliacao}</p>}
-        <div className="canal-footer-line"><span>{nomeDoCanal || 'Akuris'} · {t('publicPortal.canal.titulo')}</span>{config?.retencao_meses ? <span>{t('publicPortal.canal.retencao', { meses: config.retencao_meses })}</span> : null}</div>
+        <div className="canal-footer-line"><img className="canal-platform-logo" src={akurisLogoLight} width={650} height={195} alt="Akuris" loading="lazy" /><span>{nomeDoCanal || 'Akuris'} · {t('publicPortal.canal.titulo')}</span>{config?.retencao_meses ? <span>{t('publicPortal.canal.retencao', { meses: config.retencao_meses })}</span> : null}</div>
       </div></footer>
     </div>
   );

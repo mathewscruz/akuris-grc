@@ -117,8 +117,8 @@ const ptDict = {
     more: '+ {count} outro(s) framework(s) →',
   },
   radar: {
-    title: 'Saúde do GRC',
-    maturitySuffix: '/ 100 · maturidade',
+    title: 'Rotinas de gestão por módulo',
+    maturitySuffix: '/ 100 · índice operacional',
     piorDominio: 'pior domínio: {nome}',
     modulesWithData: '{withData} de {total} módulos com dados',
     modulesShort: '{withData}/{total} módulos',
@@ -133,8 +133,8 @@ const ptDict = {
     statusCritical: 'Crítico',
     statusNoData: 'Sem dados',
     /* Legenda binária do corte único (60): dispensa ler oito barras uma a uma. */
-    prontos: { one: '1 pronto', other: '{count} prontos' },
-    porFazer: { one: '1 precisa de trabalho', other: '{count} precisam de trabalho' },
+    prontos: { one: '1 com 60 pontos ou mais', other: '{count} com 60 pontos ou mais' },
+    porFazer: { one: '1 abaixo de 60 pontos', other: '{count} abaixo de 60 pontos' },
     /*
       O próximo passo de cada domínio. O score diz como está; estas frases
       dizem o que fazer — e quando não há nada, dizem isso também, em vez de
@@ -438,8 +438,8 @@ const enDict = {
     more: '+ {count} more framework(s) →',
   },
   radar: {
-    title: 'GRC health',
-    maturitySuffix: '/ 100 · maturity',
+    title: 'Management routines by module',
+    maturitySuffix: '/ 100 · operational index',
     piorDominio: 'weakest area: {nome}',
     modulesWithData: '{withData} of {total} modules with data',
     modulesShort: '{withData}/{total} modules',
@@ -453,8 +453,8 @@ const enDict = {
     statusWarning: 'Attention',
     statusCritical: 'Critical',
     statusNoData: 'No data',
-    prontos: { one: '1 on track', other: '{count} on track' },
-    porFazer: { one: '1 needs work', other: '{count} need work' },
+    prontos: { one: '1 at 60 points or above', other: '{count} at 60 points or above' },
+    porFazer: { one: '1 below 60 points', other: '{count} below 60 points' },
     acoes: {
       tudoEmDia: 'All clear',
       comecarAgora: 'Get started',

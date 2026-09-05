@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/ui/chip';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +33,6 @@ const UserProfile: React.FC = () => {
     fetchUserProfile();
   }, [user]);
 
-  const { signOut } = useAuth();
   // Show loading state
   if (loading) {
     return (
@@ -65,25 +64,10 @@ const UserProfile: React.FC = () => {
       .slice(0, 2);
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return 'destructive';
-      case 'admin':
-        return 'default';
-      case 'user':
-        return 'secondary';
-      case 'readonly':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'super_admin':
-        return 'Super Admin';
+        return t('experience.superAdmin');
       case 'admin':
         return t('cardsKpi.sweep.sistema.roleAdmin');
       case 'user':
@@ -101,15 +85,15 @@ const UserProfile: React.FC = () => {
         <button className="flex items-center gap-3 hover:bg-accent/50 p-2 rounded-lg transition-colors cursor-pointer">
           <Avatar className="h-10 w-10">
             <AvatarImage src={userProfile?.foto_url} alt={displayName} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
+            <AvatarFallback>
               {getInitials(displayName)}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col items-start">
             <span className="text-sm font-medium text-foreground">{displayName}</span>
-            <Badge variant={getRoleColor(displayRole)} className="text-xs">
+            <Chip family="type">
               {getRoleLabel(displayRole)}
-            </Badge>
+            </Chip>
           </div>
         </button>
       </DialogTrigger>

@@ -1,3 +1,5 @@
+import { QueryError } from '@/components/ui/query-error';
+import { readAllPages } from '@/lib/read-all-pages';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,9 +66,9 @@ export function RiskScoreTimeline() {
   // Mesma chave de query do painel: a composição não custa um pedido extra.
   const { data: stats } = useRiscosStats();
 
-  const { data: livro, isLoading } = useQuery({
+  const { data: livro, isLoading, isError, refetch } = useQuery({
     queryKey: ['riscos-timeline', profile?.empresa_id],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!profile?.empresa_id) return [] as AvaliacaoNoTempo[];
       /*
         A série sai SÓ de `riscos_historico_avaliacoes`.
@@ -80,11 +82,11 @@ export function RiskScoreTimeline() {
         `exclusao` que diz até quando ele contava. Ver a migration
         `20260821140000_historico_de_risco_nao_reescreve.sql`.
       */
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('riscos_historico_avaliacoes')
         .select('risco_id, created_at, score, severidade, tipo')
         .eq('empresa_id', profile.empresa_id)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }).order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data || []) as AvaliacaoNoTempo[];
     },
@@ -247,6 +249,8 @@ export function RiskScoreTimeline() {
       },
     ];
   };
+
+  if (isError) return <QueryError onRetry={() => void refetch()} />;
 
   if (isLoading) {
     return (

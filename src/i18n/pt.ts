@@ -205,8 +205,8 @@ export const pt = {
     confirmLogoutDesc: 'Tem certeza que deseja sair do sistema?',
     signOutFailed: 'Não foi possível encerrar a sessão. Tente novamente.',
     sectionOperation: 'Operação',
-    sectionGrcCore: 'GRC Core',
-    sectionCompliance: 'Compliance & Governança',
+    sectionGrcCore: 'Governança e risco',
+    sectionCompliance: 'Proteção e continuidade',
     sectionInsights: 'Insights',
   },
   theme: {
@@ -1148,7 +1148,7 @@ export const pt = {
     // Revisão de Acessos
     revisaoAcessos: {
       title: 'Revisão de Acessos',
-      description: 'Gerencie revisões periódicas de acessos privilegiados',
+      description: 'Revise usuários dos sistemas e contas privilegiadas em uma mesma campanha',
       newReview: 'Nova Revisão',
       total: 'Total',
       inProgress: 'Em Andamento',

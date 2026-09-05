@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useMotionAllowed } from "@/lib/motion-preferences"
 import { cn } from "@/lib/utils"
 import { useKpiDrillDown } from "@/components/dashboard/KpiDrillDownProvider"
 import type { DrillDownKey } from "@/components/dashboard/KpiDrillDownDrawer"
@@ -43,6 +44,10 @@ export interface StatStripItem {
   hint?: string
   /** Contexto curto que deve permanecer visível, sem depender de hover. */
   context?: string
+  /** Zero só é favorável quando o domínio o declara, nunca por inferência. */
+  zeroState?: { label: string; tone?: StatStripTone }
+  dataState?: 'ready' | 'unavailable'
+  mobilePriority?: number
   /** Valor atual da microbarra. Percentuais em `value` são inferidos. */
   progress?: number
   /** Máximo da microbarra. */
@@ -60,6 +65,7 @@ export interface StatStripItem {
 interface StatStripProps extends React.HTMLAttributes<HTMLDivElement> {
   items: StatStripItem[]
   loading?: boolean
+  error?: boolean
 }
 
 const TONE_TEXT: Record<StatStripTone, string> = {
@@ -134,6 +140,7 @@ const metricParts = (value: number | string): MetricParts | null => {
 }
 
 export function AnimatedMetricValue({ value }: { value: number | string }) {
+  const motionAllowed = useMotionAllowed()
   const parts = React.useMemo(() => metricParts(value), [value])
   const previous = React.useRef(0)
   const [displayed, setDisplayed] = React.useState(parts?.target ?? value)
@@ -144,11 +151,10 @@ export function AnimatedMetricValue({ value }: { value: number | string }) {
       return
     }
 
-    const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const from = previous.current
     const to = parts.target
     previous.current = to
-    if (reduced || from === to || typeof requestAnimationFrame === 'undefined') {
+    if (!motionAllowed || from === to || typeof requestAnimationFrame === 'undefined') {
       setDisplayed(to)
       return
     }
@@ -167,7 +173,7 @@ export function AnimatedMetricValue({ value }: { value: number | string }) {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [parts, value])
+  }, [parts, value, motionAllowed])
 
   if (!parts || typeof displayed !== 'number') return <>{value}</>
   const number = displayed.toFixed(parts.decimals)
@@ -177,15 +183,28 @@ export function AnimatedMetricValue({ value }: { value: number | string }) {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
-export function StatStrip({ items, loading = false, className, ...props }: StatStripProps) {
+export function StatStrip({ items, loading = false, error = false, className, ...props }: StatStripProps) {
   const drill = useKpiDrillDown()
   const { t } = useLanguage()
+  const [mobileExpanded, setMobileExpanded] = React.useState(false)
+  const summaryId = React.useId()
+  const mobileOrder = [...items].sort((a, b) => {
+    const rank = (item: StatStripItem) => {
+      const value = metricNumber(item.value)
+      const missedTarget = value !== null && item.target !== undefined && (
+        item.direction === 'higher-is-better' ? value < item.target : item.direction === 'lower-is-better' && value > item.target
+      )
+      const attention = missedTarget || (value ?? 0) > 0 && ['destructive', 'warning', 'orange'].includes(item.tone ?? '')
+      return item.mobilePriority ?? (item === items[0] ? 0 : attention ? 1 : 10 + items.indexOf(item))
+    }
+    return rank(a) - rank(b)
+  })
 
-  const separatorClasses = (index: number) => {
-    const lMobile = index % 2 !== 0
+  const separatorClasses = (index: number, mobileIndex = index) => {
+    const lMobile = mobileIndex % 2 !== 0
     const lSm = index % 3 !== 0
     const lLg = index > 0
-    const tMobile = index >= 2
+    const tMobile = mobileIndex >= 2
     const tSm = index >= 3
 
     return cn(
@@ -214,7 +233,8 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
             key={index}
             className={cn(
               separatorClasses(index),
-              "min-h-[104px] px-5 py-4",
+              "min-h-[88px] px-4 py-3 sm:min-h-[104px] sm:px-5 sm:py-4",
+              index >= 2 && "hidden sm:block",
               index === skeletonCount - 1 && skeletonCount % 2 === 1 && "col-span-2 sm:col-span-1"
             )}
           >
@@ -231,6 +251,7 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
 
   return (
     <div
+      id={summaryId}
       className={cn(
         "grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.03)] sm:grid-cols-3 lg:flex lg:items-stretch dark:shadow-none",
         className
@@ -240,24 +261,25 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
       {items.map((item, index) => {
         const numeric = metricNumber(item.value)
         const positive = numeric !== null && numeric > 0
-        const isClear = !!item.tone && numeric === 0
+        const unavailable = error || item.dataState === 'unavailable'
+        const zeroState = numeric === 0 ? item.zeroState : undefined
         const hasTarget = item.target !== undefined && item.direction && item.direction !== "neutral" && numeric !== null
         const targetMet = hasTarget && (
           item.direction === "higher-is-better"
             ? numeric >= item.target!
             : numeric <= item.target!
         )
-        const tone: StatStripTone = hasTarget
+        const tone: StatStripTone = unavailable ? "neutral" : hasTarget
           ? targetMet ? "success" : item.tone ?? "warning"
-          : isClear ? "success" : item.tone && positive ? item.tone : "neutral"
-        const interactive = !!item.onClick || !!item.drillDown
+          : zeroState ? zeroState.tone ?? "neutral" : item.tone && positive ? item.tone : "neutral"
+        const interactive = !unavailable && (!!item.onClick || !!item.drillDown)
         const inferredPercent = typeof item.value === "string" && /%\s*$/.test(item.value) ? numeric : null
         const progressValue = item.progress ?? inferredPercent
         const progressMax = item.progressMax ?? 100
-        const progressPercent = progressValue !== null && progressValue !== undefined && progressMax > 0
+        const progressPercent = !unavailable && progressValue !== null && progressValue !== undefined && progressMax > 0
           ? clamp((progressValue / progressMax) * 100, 0, 100)
           : null
-        const context = item.context ?? item.hint ?? (isClear ? t("cardsKpi.metricas.tudoEmDia") : undefined)
+        const context = unavailable ? t('experience.unavailable') : zeroState?.label ?? item.context ?? item.hint
         const targetLabel = item.target !== undefined
           ? t("cardsKpi.metricas.meta", { value: item.target })
           : undefined
@@ -290,12 +312,12 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
                 TONE_TEXT[tone]
               )}
             >
-              <AnimatedMetricValue value={item.value} />
+              {unavailable ? '—' : <AnimatedMetricValue value={item.value} />}
             </span>
-            <span className={cn("mt-1.5 block min-h-4 truncate text-micro leading-4", TONE_CONTEXT[tone])}>
+            <span className={cn("mt-1.5 block min-h-4 line-clamp-2 text-micro leading-4", TONE_CONTEXT[tone])}>
               {supportingText || "\u00a0"}
             </span>
-            {item.trend && (
+            {!unavailable && item.trend && (
               <span
                 className={cn(
                   "mt-1 inline-flex text-micro font-medium leading-none",
@@ -329,10 +351,12 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
         return (
           <div
             key={item.key ?? `${item.label}-${index}`}
+            data-mobile-hidden={!mobileExpanded && mobileOrder.indexOf(item) >= 2}
+            style={{ '--metric-order': mobileOrder.indexOf(item) } as React.CSSProperties}
             className={cn(
-              separatorClasses(index),
-              "relative min-h-[104px]",
-              index === items.length - 1 && items.length % 2 === 1 && "col-span-2 sm:col-span-1"
+              separatorClasses(index, mobileOrder.indexOf(item)),
+              "akuris-stat-item relative min-h-[88px] sm:min-h-[104px]",
+              mobileExpanded && mobileOrder.indexOf(item) === items.length - 1 && items.length % 2 === 1 && "col-span-2 sm:col-span-1"
             )}
           >
             <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-0.5", TONE_ACCENT[tone])} />
@@ -343,18 +367,23 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
                 onClick={activate}
                 title={item.hint ?? item.label}
                 aria-label={`${item.label}: ${item.value}`}
-                className="group h-full w-full cursor-pointer px-5 py-4 text-left transition-colors duration-150 hover:bg-accent/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none"
+                className="group h-full w-full cursor-pointer px-4 py-3 sm:px-5 sm:py-4 text-left transition-colors duration-150 hover:bg-accent/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none"
               >
                 {content}
               </button>
             ) : (
-              <div className="h-full px-5 py-4" title={item.hint ?? item.label}>
+              <div className="h-full px-4 py-3 sm:px-5 sm:py-4" title={item.hint ?? item.label}>
                 {content}
               </div>
             )}
           </div>
         )
       })}
+      {items.length > 2 && (
+        <button type="button" aria-expanded={mobileExpanded} aria-controls={summaryId} onClick={() => setMobileExpanded((value) => !value)} className="order-last col-span-2 min-h-9 border-t px-4 py-2 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:hidden">
+          {t(mobileExpanded ? 'experience.hideMetrics' : 'experience.showMetrics')}
+        </button>
+      )}
     </div>
   )
 }

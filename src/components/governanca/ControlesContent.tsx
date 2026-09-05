@@ -1,3 +1,7 @@
+import { loadControls } from '@/lib/queries/controls';
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { QueryError } from '@/components/ui/query-error';
+import { useListState } from '@/hooks/useListState';
 import { useState, useEffect, useMemo } from "react";
 import { IconAdd, IconFilter, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield, IconChart, IconTest, IconLink, IconTag } from '@/components/icons';
 import { createPortal } from "react-dom";
@@ -40,7 +44,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from '@/lib/status-tone';
-import { resumirTestesPorControlo, resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
+import { resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
 import { criticidadeControle } from '@/lib/metrics/controles';
 import { shortControleId } from '@/lib/controle-id';
 import { formatDateOnly, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
@@ -100,13 +104,13 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     controleId: ''
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [tipoFilter, setTipoFilter] = useState<string>("todos");
-  const [criticidadeFilter, setCriticidadeFilter] = useState<string>("todos");
-  const [auditoriaFilter, setAuditoriaFilter] = useState<string>("todas");
-  const [searchValue, setSearchValue] = useState<string>("");
-  const [sortField, setSortField] = useState<string>("nome");
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [statusFilter, setStatusFilter] = useListState<string>('statusFilter', "todos");
+  const [tipoFilter, setTipoFilter] = useListState<string>('tipoFilter', "todos");
+  const [criticidadeFilter, setCriticidadeFilter] = useListState<string>('criticidadeFilter', "todos");
+  const [auditoriaFilter, setAuditoriaFilter] = useListState<string>('auditoriaFilter', "todas");
+  const [searchValue, setSearchValue] = useListState<string>('searchValue', "");
+  const [sortField, setSortField] = useListState<string>('sortField', "nome");
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
@@ -126,96 +130,39 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   };
   
   // Buscar estatísticas dos controles
-  const { data: stats } = useControlesStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: retryStats } = useControlesStats();
 
   // Buscar auditorias para o filtro
-  const { data: auditorias = [] } = useQuery({
+  const { data: auditorias = [], isError: auditOptionsError, isLoading: auditOptionsLoading, refetch: retryAuditOptions } = useQuery({
     queryKey: ['auditorias-lista', empresaId],
-    queryFn: async () => {
-      const { data } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data } = await readAllPages((from, to) => supabase
         .from('auditorias')
         .select('id, nome')
         .eq('empresa_id', empresaId!)
-        .order('nome');
-      return data || [];
+         .order('nome').order('id').range(from, to).abortSignal(signal), signal);
+      return data;
     },
     enabled: !!empresaId,
   });
 
-  // Buscar controles
-  const { data: controles = [], isLoading } = useQuery({
+  // The loader rejects partial data instead of turning failed tests into "no tests".
+  const { data: controles = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['controles', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('controles')
-        .select(`
-          *,
-          categoria:controles_categorias(nome, cor)
-        `)
-        .eq('empresa_id', empresaId!)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Buscar nomes e fotos dos responsáveis e contagem de testes
-      if (data && data.length > 0) {
-        const responsavelIds = data
-          .map(c => c.responsavel_id)
-          .filter(r => r && r.trim() !== '');
-        
-        // Buscar contagem de testes para cada controle (filtrado por IDs da empresa)
-        const ids = data.map(c => c.id);
-        const { data: testes } = await supabase
-          .from('controles_testes')
-          .select('controle_id, resultado, data_teste, proxima_avaliacao')
-          .in('controle_id', ids);
-
-        const resumoTestes = resumirTestesPorControlo(testes as any[]);
-        
-        let profileMap = new Map<string, { nome: string; foto_url: string | null }>();
-        
-        if (responsavelIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('user_id, nome, foto_url')
-            .in('user_id', responsavelIds);
-          
-          profileMap = new Map(
-            profiles?.map(p => [p.user_id, { nome: p.nome, foto_url: p.foto_url }]) || []
-          );
-        }
-        
-        const mappedData = data.map(controle => {
-          const profileData = (controle.responsavel_id && controle.responsavel_id.trim() !== '') 
-            ? profileMap.get(controle.responsavel_id) 
-            : null;
-          return {
-            ...controle,
-            responsavel_nome: profileData?.nome || null,
-            responsavel_foto: profileData?.foto_url || null,
-            testesCount: resumoTestes.get(controle.id)?.total || 0,
-            ultimoResultado: resumoTestes.get(controle.id)?.ultimoResultado || null
-          };
-        });
-        
-        return mappedData as Controle[];
-      }
-      
-      return data as Controle[];
-    },
+    queryFn: async ({ signal }) => await loadControls(empresaId!, signal) as Controle[],
     enabled: !!empresaId,
   });
 
   // Buscar vínculos controles-auditorias (filtrado pelos controles da empresa)
   const controleIds = useMemo(() => controles.map(c => c.id), [controles]);
-  const { data: vinculos = [] } = useQuery({
+  const { data: vinculos = [], isError: linksError, isLoading: linksLoading, refetch: retryLinks } = useQuery({
     queryKey: ['controles-auditorias-vinculos', empresaId, controleIds],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (controleIds.length === 0) return [];
-      const { data } = await supabase
+      const { data } = await readAllPagesByIds(controleIds, (ids, from, to) => supabase
         .from('controles_auditorias')
         .select('controle_id, auditoria_id')
-        .in('controle_id', controleIds);
+        .in('controle_id', ids).order('id').range(from, to).abortSignal(signal), signal);
       return data || [];
     },
     enabled: !!empresaId && controleIds.length > 0
@@ -254,14 +201,14 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   }, [searchParams, controles, setSearchParams]);
 
   // Buscar categorias filtradas por empresa
-  const { data: categorias = [] } = useQuery({
+  const { data: categorias = [], isError: categoriesError, isLoading: categoriesLoading, refetch: retryCategories } = useQuery({
     queryKey: ['controles_categorias', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('controles_categorias')
         .select('*')
         .eq('empresa_id', empresaId!)
-        .order('nome');
+        .order('nome').order('id').range(from, to).abortSignal(signal), signal);
       
       if (error) throw error;
       return data as Categoria[];
@@ -494,18 +441,21 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     },
     {
       key: 'status' as keyof Controle,
+      mobilePriority: 0,
       label: t("governancaComp.controles.columnStatus"),
       sortable: true,
       render: (value: any, controle: Controle) => getStatusBadge(controle.status)
     },
     {
       key: 'criticidade' as keyof Controle,
+      mobilePriority: 1,
       label: t("governancaComp.controles.columnCriticidade"),
       sortable: true,
       render: (value: any, controle: Controle) => getCriticidadeBadge(controle.criticidade)
     },
     {
       key: 'responsavel' as keyof Controle,
+      mobilePriority: 3,
       label: t("governancaComp.controles.columnResponsavel"),
       sortable: true,
       render: (value: any, controle: Controle) => {
@@ -540,7 +490,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             </TooltipProvider>
           );
         }
-        return <span className="text-muted-foreground">-</span>;
+        return <span className="text-muted-foreground">{t(controle.responsavel_id ? 'experience.ownerUnavailable' : 'experience.notAssigned')}</span>;
       }
     },
     {
@@ -564,6 +514,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     },
     {
       key: 'proxima_avaliacao' as keyof Controle,
+      mobilePriority: 2,
       label: t("governancaComp.controles.columnVencimento"),
       sortable: true,
       render: (value: any, controle: Controle) => {
@@ -638,11 +589,15 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     }
   ];
 
+  const listError = isError || auditOptionsError || linksError || categoriesError;
+  const retry = () => { void refetch(); void retryStats(); void retryAuditOptions(); void retryLinks(); void retryCategories(); };
   return (
     <div className="space-y-6">
+      {statsError && !listError && <QueryError onRetry={retry} />}
       {/* KPIs */}
       <StatStrip
-        loading={isLoading}
+        loading={statsLoading}
+        error={statsError}
         items={[
           { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: IconShield, drillDown: 'controles' },
           { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: IconWarning, tone: 'destructive', drillDown: 'controles_vencidos' },
@@ -743,7 +698,9 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             data={sortedControles}
             columns={controlesColumns}
             onRowClick={(controle) => handleOpenDetail(controle)}
-            loading={isLoading}
+            loading={isLoading || auditOptionsLoading || linksLoading || categoriesLoading}
+            error={listError}
+            onRefresh={retry}
             searchable={true}
             searchPlaceholder={t("governancaComp.controles.searchPlaceholder")}
             searchValue={searchValue}

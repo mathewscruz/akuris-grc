@@ -8,6 +8,9 @@ import App from './App.tsx'
 import { installGlobalPointerEventsGuard } from './lib/radix-pointer-events'
 import { protegerContraEnquadramento } from './lib/seguranca/clickjacking'
 import './index.css'
+import { initializeMotionPreferences } from './lib/motion-preferences'
+
+initializeMotionPreferences();
 
 // Executa antes do primeiro render. No domínio público complementa os
 // cabeçalhos anti-clickjacking; em desenvolvimento/preview não interfere.

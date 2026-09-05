@@ -1,20 +1,17 @@
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
+import { QueryError } from '@/components/ui/query-error';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { PanelAction } from '@/components/ui/panel-action';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOverviewCard';
 import { RecentActivities } from '@/components/dashboard/RecentActivities';
 import { RiskScoreTimeline } from '@/components/dashboard/RiskScoreTimeline';
-import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
 import { GrcHealthBreakdown } from '@/components/dashboard/GrcHealthBreakdown';
-import { MinhasPendencias } from '@/components/dashboard/MinhasPendencias';
 import { DashboardMeta, type KpiKey } from '@/components/dashboard/DashboardMeta';
 import { KpiDrillDownDrawer, type DrillDownKey } from '@/components/dashboard/KpiDrillDownDrawer';
 import { useAtivosStats } from '@/hooks/useAtivosStats';
 import { useControlesStats } from '@/hooks/useControlesStats';
 import { useIncidentesStats } from '@/hooks/useIncidentesStats';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useContratosStats } from '@/hooks/useContratosStats';
 import { useDocumentosStats } from '@/hooks/useDocumentosStats';
 import { useRiscosStats } from '@/hooks/useRiscosStats';
@@ -52,7 +49,6 @@ import { useDashboardLive } from '@/hooks/useDashboardLive';
 export default function Dashboard() {
   const { profile } = useAuth();
   const { t } = useLanguage();
-  const [alertsDialogOpen, setAlertsDialogOpen] = useState(false);
 
   // O toast de boas-vindas é disparado em /auth (Auth.tsx) antes do redirect
   // para o dashboard. Não disparamos aqui para evitar reaparecer ao navegar
@@ -78,7 +74,6 @@ export default function Dashboard() {
   const planosStats = usePlanosAcaoStats();
   const ddStats = useDueDiligenceStats();
   const denunciasStats = useDenunciasStats();
-  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardStats();
 
   // Todos os indicadores exibidos têm de entrar no estado de carregamento —
   // caso contrário a página renderiza `|| 0` para os que ainda não chegaram e
@@ -92,12 +87,14 @@ export default function Dashboard() {
     riscosStats.isLoading ||
     planosStats.isLoading ||
     ddStats.isLoading ||
-    denunciasStats.isLoading ||
-    dashboardLoading;
+    denunciasStats.isLoading;
 
   if (isLoading) {
     return <ModuleLoadingSkeleton statCards={4} />;
   }
+
+  const metricQueries = [ativosStats, controlesStats, incidentesStats, contratosStats, documentosStats, riscosStats, planosStats, ddStats, denunciasStats];
+  if (metricQueries.some(query => query.isError)) return <QueryError onRetry={() => metricQueries.forEach(query => void query.refetch())} />;
 
   /*
      `emCurso`, e não a soma à mão.
@@ -109,7 +106,6 @@ export default function Dashboard() {
      dois por fechar. `isIncidenteEmCurso` já diz exactamente isto.
   */
   const activeIncidents = incidentesStats.data?.emCurso || 0;
-  const criticalAlerts = dashboardData?.criticalAlerts || 0;
 
   return (
     <TooltipProvider>
@@ -155,20 +151,6 @@ export default function Dashboard() {
           />
         </div>
 
-        {/*
-          O único agregado da página que atravessa todos os módulos, e a porta
-          para o detalhe. Estava dentro do banner decorado, como caixa
-          informativa; agora é uma linha e uma acção.
-        */}
-        <PanelAction
-          limpo={criticalAlerts === 0}
-          onClick={() => setAlertsDialogOpen(true)}
-          className="rounded-lg border border-border bg-card"
-        >
-          {criticalAlerts === 0
-            ? t('dashboard_v3.noCritical')
-            : t('dashboard_v3.criticalAction', { count: criticalAlerts })}
-        </PanelAction>
 
         <KpiDrillDownDrawer
           open={!!drillKey}
@@ -176,14 +158,14 @@ export default function Dashboard() {
           kpiKey={drillKey}
         />
 
-        {/* Para onde vai a carteira · o que está por avaliar · o que é meu */}
+
+        {/* Para onde vai a carteira · o que está por avaliar */}
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 lg:gap-5 w-full">
           <div className="min-w-0 xl:col-span-2">
             <RiskScoreTimeline />
           </div>
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <FrameworksOverviewCard />
-            <MinhasPendencias />
           </div>
         </div>
 
@@ -194,21 +176,6 @@ export default function Dashboard() {
             de fundo vazia por baixo. */}
         <RecentActivities className="flex-1 min-h-[16rem]" />
 
-        {/* O diálogo recebe a MESMA estrutura que produz o número do banner —
-            é o que garante que a lista e a contagem não voltam a divergir. */}
-        <AlertsDetailDialog
-          open={alertsDialogOpen}
-          onOpenChange={setAlertsDialogOpen}
-          alertDetails={dashboardData?.alertDetails || []}
-          breakdown={
-            dashboardData?.criticalBreakdown ?? {
-              riscosCriticos: 0,
-              naoConformidadesCriticas: 0,
-              incidentesCriticos: 0,
-              prazosVencidos: 0,
-            }
-          }
-        />
       </div>
     </TooltipProvider>
   );

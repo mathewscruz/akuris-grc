@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { useVisibleMotion } from '@/hooks/useVisibleMotion';
 
 /**
  * Chip Akuris — componente ÚNICO de pílula (Envio 9).
@@ -107,9 +108,12 @@ const SEVERITY_STEPS: Record<SeverityLevel, number> = {
 
 const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
   const activeSteps = SEVERITY_STEPS[level];
+  const meterRef = useVisibleMotion<HTMLSpanElement>();
 
   return (
     <span
+      ref={meterRef}
+      data-motion-visible="false"
       aria-hidden="true"
       className={cn('inline-flex items-end gap-px flex-shrink-0', CHIP_SIZING.mark)}
     >

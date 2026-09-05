@@ -102,7 +102,7 @@ describe('identidade em pessoas e ações', () => {
   it('o avatar tem fotografia enquadrada e fallback de marca', () => {
     expect(avatar).toContain('object-cover');
     expect(avatar).toContain('ring-1 ring-border/80');
-    expect(avatar).toContain('bg-gradient-to-br from-primary/20');
+    expect(avatar).toContain('bg-muted font-semibold tracking-tight text-foreground');
     expect(controles).toContain("controle.responsavel_nome.split(/\\s+/)[0]");
   });
 

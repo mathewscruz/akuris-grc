@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useMotionAllowed } from "@/lib/motion-preferences";
 
 /**
  * Aplica a classe `.lp-in` em todos os elementos `[data-reveal]` quando entram
@@ -6,8 +7,9 @@ import { useEffect, useState } from "react";
  * + stagger). Respeita prefers-reduced-motion.
  */
 export function useLandingReveal() {
+  const motionAllowed = useMotionAllowed();
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = !motionAllowed;
     const els = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (reduced) {
       els.forEach((el) => el.classList.add("lp-in"));
@@ -26,7 +28,7 @@ export function useLandingReveal() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [motionAllowed]);
 }
 
 /**

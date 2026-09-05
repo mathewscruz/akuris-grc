@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/read-all-pages';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInCalendarDays } from "date-fns";
@@ -21,11 +22,11 @@ export const useChavesStats = () => {
 
   return useQuery({
     queryKey: ['chaves-stats', empresaId],
-    queryFn: async (): Promise<ChavesStats> => {
-      const { data: chaves, error } = await supabase
+    queryFn: async ({ signal }): Promise<ChavesStats> => {
+      const { data: chaves, error } = await readAllPages((from, to) => supabase
         .from('ativos_chaves_criptograficas')
         .select('*')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
 

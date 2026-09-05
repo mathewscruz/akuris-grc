@@ -1,3 +1,7 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { useListState } from '@/hooks/useListState';
+import { readAllPages } from '@/lib/read-all-pages';
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconWarning, IconTime, IconRefresh, IconSend, IconFile, IconPerson, IconAward, IconTrendUp, IconUsers, IconSort, IconMail , IconDownload } from '@/components/icons';
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -11,8 +15,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { AssessmentDialog } from './AssessmentDialog';
+import { assessmentCreationDraft, type AssessmentCreationContext } from '@/lib/assessment-draft';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { RelatorioDoFornecedor, type RespostaPontuada } from './RelatorioDoFornecedor';
 import { DataTable, type Column } from '@/components/ui/data-table';
@@ -70,7 +74,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
 
     try {
       setSending(true);
-      
+
       const { data: profileData } = await supabase
         .from('profiles')
         .select('empresa_id')
@@ -86,7 +90,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
           .select('nome, logo_url')
           .eq('id', profileData.empresa_id)
           .single();
-        
+
         if (empresaData) {
           empresaNome = empresaData.nome;
           empresaLogoUrl = empresaData.logo_url;
@@ -94,7 +98,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
       }
 
       const assessmentLink = `${window.location.origin}/assessment/${assessment.link_token}`;
-      
+
       await supabase.functions.invoke('send-due-diligence-email', {
         body: {
           type: 'reminder',
@@ -178,24 +182,22 @@ interface AssessmentsManagerEnhancedProps {
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50];
 
 export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManagerEnhancedProps = {}) {
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoriaFilter, setCategoriaFilter] = useState('all');
+  const { empresaId } = useEmpresaId();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useListState('assessmentSearch', '');
+  const [statusFilter, setStatusFilter] = useListState('assessmentStatus', 'all');
+  const [categoriaFilter, setCategoriaFilter] = useListState('assessmentCategory', 'all');
   const [sortField, setSortField] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [reminderDialog, setReminderDialog] = useState<{ open: boolean; assessment: Assessment | null }>({
     open: false,
     assessment: null
   });
-  const [assessmentDialog, setAssessmentDialog] = useState<{ 
-    open: boolean; 
-    assessment: Assessment | null; 
-    mode: 'create' | 'view' 
+  const [assessmentDialog, setAssessmentDialog] = useState<{
+    open: boolean;
+    assessment: Assessment | null;
+    mode: 'create' | 'view'
   }>({
     open: false,
     assessment: null,
@@ -338,93 +340,35 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     }
   };
 
-  const [scoreDialog, setScoreDialog] = useState<{ 
-    open: boolean; 
-    assessment: Assessment | null; 
-    scoreData: any 
+  const [scoreDialog, setScoreDialog] = useState<{
+    open: boolean;
+    assessment: Assessment | null;
+    scoreData: any
   }>({
     open: false,
     assessment: null,
     scoreData: null
   });
-  const [responsesDialog, setResponsesDialog] = useState<{ 
-    open: boolean; 
-    assessment: Assessment | null; 
+  const [responsesDialog, setResponsesDialog] = useState<{
+    open: boolean;
+    assessment: Assessment | null;
   }>({
     open: false,
     assessment: null
   });
   const { toast } = useToast();
   const { t } = useLanguage();
-  const { data: stats, isLoading: statsLoading } = useDueDiligenceStats();
 
-  useEffect(() => {
-    fetchAssessments();
-  }, []);
-
-  useEffect(() => {
-    if (filter?.fornecedorNome) {
-      setSearchTerm(filter.fornecedorNome);
-    }
-  }, [filter]);
-
-  /*
-    Abre a avaliação pedida pela ligação profunda, uma vez só.
-
-    `assessments` é recarregado a cada ação da lista; sem a marca do que já
-    foi consumido, fechar a ficha e lembrar (por exemplo) fazia-a reabrir
-    sozinha por cima do que a pessoa estivesse a fazer.
-  */
-  const focoConsumido = useRef<string | null>(null);
-  useEffect(() => {
-    if (!focoId || focoId === focoConsumido.current || assessments.length === 0) return;
-    const alvo = assessments.find((a) => a.id === focoId);
-    if (!alvo) return;
-    focoConsumido.current = focoId;
-    setAssessmentDialog({ open: true, assessment: alvo, mode: 'view' });
-  }, [focoId, assessments]);
-
-  useEffect(() => {
-    const handleCreateAssessment = (event: CustomEvent) => {
-      setAssessmentDialog({ 
-        open: true, 
-        assessment: {
-          fornecedor_nome: event.detail.fornecedorNome,
-          fornecedor_id: event.detail.fornecedorId
-        } as any, 
-        mode: 'create' 
-      });
-    };
-    
-    window.addEventListener('createAssessment', handleCreateAssessment as EventListener);
-    
-    return () => {
-      window.removeEventListener('createAssessment', handleCreateAssessment as EventListener);
-    };
-  }, []);
-
-  const fetchAssessments = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
+  const { data: assessments = [], isLoading: loading, isError, refetch } = useQuery({
+    queryKey: ['due-diligence-assessments-list', empresaId, t('experience.linkUnavailable')],
+    enabled: !!empresaId,
+    queryFn: async ({ signal }): Promise<Assessment[]> => {
+      const { data } = await readAllPages((from, to) => supabase
         .from('due_diligence_assessments')
-        .select(`
-          *,
-          templates:template_id(id, nome, categoria)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      /*
-        O status gravado é o status. Aqui reescrevia-se para 'expirado' no
-        cliente sempre que o prazo tivesse passado — e como o cartão ainda
-        acrescenta o seu próprio selo de expirado, saíam dois chips iguais
-        lado a lado. Pior: o painel do topo não faz essa reescrita, portanto a
-        MESMA avaliação aparecia como "Expirado" aqui e "Em Andamento" ali, no
-        mesmo ecrã. A expiração é uma marca sobre o estado, não o estado.
-      */
+        .select('*, templates:template_id(id, nome, categoria)')
+        .eq('empresa_id', empresaId!)
+        .order('created_at', { ascending: false }).order('id')
+        .range(from, to).abortSignal(signal), signal);
       const formattedAssessments: Assessment[] = (data || []).map(assessment => {
         const status = assessment.status;
 
@@ -456,23 +400,68 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
           link_token: assessment.link_token,
           template: {
             id: assessment.template_id,
-            nome: assessment.templates?.nome || 'Template não encontrado',
-            categoria: assessment.templates?.categoria || 'N/A'
+            nome: assessment.templates?.nome || t('experience.linkUnavailable'),
+            categoria: assessment.templates?.categoria || ''
           }
         };
       });
 
-      setAssessments(formattedAssessments);
-    } catch (error: any) {
-      toast({
-        title: t('dueDiligence.assessmentsManagerEnhanced.errorLoadTitle'),
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+      return formattedAssessments;
+    },
+  });
+
+  const fetchAssessments = async () => {
+    await Promise.all([
+      refetch(),
+      ...['due-diligence-dashboard', 'due-diligence-stats', 'fornecedores-with-stats'].map(key =>
+        queryClient.invalidateQueries({ queryKey: [key, empresaId] })),
+    ]);
   };
+
+  useEffect(() => {
+    setAssessmentDialog({ open: false, assessment: null, mode: 'create' });
+    setReminderDialog({ open: false, assessment: null });
+    setDeleteDialog({ open: false, assessment: null });
+    setScoreDialog({ open: false, assessment: null, scoreData: null });
+  }, [empresaId]);
+
+  useEffect(() => {
+    if (filter?.fornecedorNome) {
+      setSearchTerm(filter.fornecedorNome);
+    }
+  }, [filter]);
+
+  /*
+    Abre a avaliação pedida pela ligação profunda, uma vez só.
+
+    `assessments` é recarregado a cada ação da lista; sem a marca do que já
+    foi consumido, fechar a ficha e lembrar (por exemplo) fazia-a reabrir
+    sozinha por cima do que a pessoa estivesse a fazer.
+  */
+  const focoConsumido = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focoId || focoId === focoConsumido.current || assessments.length === 0) return;
+    const alvo = assessments.find((a) => a.id === focoId);
+    if (!alvo) return;
+    focoConsumido.current = focoId;
+    setAssessmentDialog({ open: true, assessment: alvo, mode: 'view' });
+  }, [focoId, assessments]);
+
+  useEffect(() => {
+    const handleCreateAssessment = (event: CustomEvent<AssessmentCreationContext | null>) => {
+      setAssessmentDialog({
+        open: true,
+        assessment: assessmentCreationDraft(event.detail) as any,
+        mode: 'create'
+      });
+    };
+
+    window.addEventListener('createAssessment', handleCreateAssessment as EventListener);
+
+    return () => {
+      window.removeEventListener('createAssessment', handleCreateAssessment as EventListener);
+    };
+  }, []);
 
   // Lista de categorias únicas
   const categorias = useMemo(() => {
@@ -482,7 +471,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
 
   // Filtrar e ordenar assessments
   const filteredAndSortedAssessments = useMemo(() => {
-    let filtered = assessments;
+    let filtered = [...assessments];
 
     if (searchTerm) {
       filtered = filtered.filter(assessment =>
@@ -493,7 +482,9 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     }
 
     if (statusFilter && statusFilter !== 'all') {
-      filtered = filtered.filter(assessment => assessment.status === statusFilter);
+      filtered = filtered.filter(assessment => statusFilter === 'expirado'
+        ? !['concluido', 'finalizado'].includes(assessment.status) && assessment.data_expiracao && parseDataLocal(assessment.data_expiracao) < startOfDay(new Date())
+        : assessment.status === statusFilter);
     }
 
     if (categoriaFilter && categoriaFilter !== 'all') {
@@ -514,8 +505,8 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
 
@@ -553,6 +544,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     },
     {
       key: 'template',
+      mobilePriority: 3,
       label: t('dueDiligence.assessmentsManagerEnhanced.colTemplate'),
       sortAccessor: (a) => a.template?.nome ?? '',
       render: (_v, a) => <span className="text-xs text-foreground/85">{a.template?.nome ?? '—'}</span>,
@@ -565,18 +557,17 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     },
     {
       key: 'data_expiracao',
+      mobilePriority: 1,
       label: t('dueDiligence.assessmentsManagerEnhanced.colDeadline'),
       render: (_v, a) => {
-        const expirou = a.status !== 'concluido' && isExpired(a.data_expiracao);
+        const expirou = !['concluido', 'finalizado'].includes(a.status) && isExpired(a.data_expiracao);
         return (
           <div className="flex items-center gap-1.5">
             <span className={cn('text-xs tabular-nums', expirou ? 'text-destructive font-medium' : 'text-foreground/85')}>
               {formatDateOnly(a.data_expiracao)}
             </span>
             {expirou && (
-              <StatusBadge tone="destructive" variant="soft">
-                {t('dueDiligence.assessmentsManagerEnhanced.expired')}
-              </StatusBadge>
+              <span className="text-xs text-destructive">{t('dueDiligence.assessmentsManagerEnhanced.expired')}</span>
             )}
           </div>
         );
@@ -584,6 +575,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     },
     {
       key: 'score_final',
+      mobilePriority: 2,
       /* `score` era o rotulo do cartao -- "Score:", com dois pontos, porque
          vinha seguido do valor. Num cabecalho de tabela isso le-se mal. */
       label: t('dueDiligence.assessmentsManagerEnhanced.colScore'),
@@ -607,13 +599,14 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
         ) : (
           <span className="text-xs text-muted-foreground">
             {a.status === 'concluido'
-              ? t('dueDiligence.assessmentsManagerEnhanced.calculating')
+              ? t('experience.noAssessment')
               : t('dueDiligence.assessmentsManagerEnhanced.pending')}
           </span>
         ),
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('dueDiligence.assessmentsManagerEnhanced.colStatus'),
       render: (_v, a) => getStatusBadge(a.status),
     },
@@ -665,18 +658,6 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
       ),
     },
   ];
-
-  const paginatedAssessments = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedAssessments.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedAssessments, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredAndSortedAssessments.length / itemsPerPage);
-
-  // Reset page quando filtros mudam
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, categoriaFilter]);
 
   const getStatusBadge = (status: string) => {
     return <StatusBadge {...resolveDueDiligenceStatusTone(status)}>{formatStatus(status)}</StatusBadge>;
@@ -742,7 +723,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
           .select('nome, logo_url')
           .eq('id', profileData.empresa_id)
           .single();
-        
+
         if (empresaData) {
           empresaNome = empresaData.nome;
           empresaLogoUrl = empresaData.logo_url;
@@ -750,7 +731,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
       }
 
       const assessmentLink = `${window.location.origin}/assessment/${assessment.link_token}`;
-      
+
       await supabase.functions.invoke('send-due-diligence-email', {
         body: {
           type: 'send',
@@ -813,21 +794,6 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
 
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || categoriaFilter !== 'all';
 
-  if (loading) {
-    return <div className="text-center p-8">{t('dueDiligence.assessmentsManagerEnhanced.loading')}</div>;
-  }
-
-  const calcularScoreMedio = () => {
-    const concluidas = assessments.filter(a => 
-      a.status === 'concluido' && a.score_final != null && a.score_final > 0
-    );
-    
-    if (concluidas.length === 0) return 0;
-    
-    // `score_final` já é percentagem — ver calculate-assessment-score.
-    return (concluidas.reduce((sum, a) => sum + (a.score_final || 0), 0) / concluidas.length);
-  };
-
   const handleScoreClick = async (assessment: Assessment) => {
     try {
       const { data: scoreData } = await supabase
@@ -835,7 +801,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
         .select('*')
         .eq('assessment_id', assessment.id)
         .single();
-      
+
       if (scoreData) {
         setScoreDialog({
           open: true,
@@ -858,32 +824,26 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     }
   };
 
-  // Função para obter classe de borda baseada na expiração
-  const getExpirationBorderClass = (assessment: Assessment) => {
-    if (assessment.status === 'concluido') return '';
-    if (isExpired(assessment.data_expiracao)) return 'border-l-4 border-l-destructive';
-    if (isExpiringSoon(assessment.data_expiracao)) return 'border-l-4 border-l-amber-500';
-    return '';
-  };
-
   return (
     <TooltipProvider>
       <div className="space-y-6">
         <Card className="rounded-lg border overflow-hidden">
           <CardContent className="p-0">
-            <div className="p-6 pb-4">
-              <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="p-4 pb-3 sm:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="relative flex-1 max-w-sm">
                   <Input
+                    aria-label={t('dueDiligence.assessmentsManagerEnhanced.searchPlaceholder')}
                     placeholder={t('dueDiligence.assessmentsManagerEnhanced.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => void refetch()} aria-label={t('common.refresh')} title={t('common.refresh')}><IconRefresh className="h-4 w-4" /></Button>
                   <ReportsSidebar />
                   <Button
-                    variant="outline" 
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
                   >
@@ -892,9 +852,9 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
                   </Button>
                 </div>
               </div>
-              
+
               {showFilters && (
-                <div className="bg-card rounded-lg p-4 mb-4 flex items-center gap-4 flex-wrap border border-border">
+                <div className="mt-3 bg-card rounded-lg p-3 flex items-center gap-4 flex-wrap border border-border">
                   <div className="flex items-center gap-2">
                     <Label className="text-sm">{t('dueDiligence.assessmentsManagerEnhanced.filterStatusLabel')}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -926,8 +886,8 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
                     </Select>
                   </div>
                   {hasActiveFilters && (
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       onClick={clearFilters}
                     >
@@ -954,14 +914,17 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
               `filtering`, que e o que a faz distinguir "nao ha nada" de "o
               filtro nao achou nada".
             */}
-            <div className="p-6 pt-0">
+            <div>
               <DataTable
                 data={filteredAndSortedAssessments}
                 columns={colunasDeAvaliacao}
                 loading={loading}
+                error={isError}
+                onRefresh={() => void refetch()}
+                showRefresh={false}
                 searchable={false}
                 paginated
-                pageSize={itemsPerPage}
+                pageSize={20}
                 pageSizeOptions={ITEMS_PER_PAGE_OPTIONS}
                 onRowClick={viewAssessment}
                 filtering={{ active: Boolean(hasActiveFilters), onClear: clearFilters }}
@@ -976,20 +939,6 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
         </Card>
 
         <div>
-          {filteredAndSortedAssessments.length === 0 && !loading && (
-            <Card>
-              <CardContent className="text-center py-8">
-                <IconFile className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t('dueDiligence.assessmentsManagerEnhanced.emptyTitle')}</h3>
-                <p className="text-muted-foreground">
-                  {hasActiveFilters 
-                    ? t('dueDiligence.assessmentsManagerEnhanced.emptyFilteredDescription')
-                    : t('dueDiligence.assessmentsManagerEnhanced.emptyDescription')}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
           <ReminderDialog
             assessment={reminderDialog.assessment}
             open={reminderDialog.open}

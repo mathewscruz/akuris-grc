@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/read-all-pages';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInCalendarDays } from "date-fns";
@@ -20,11 +21,11 @@ export const useLicencasStats = () => {
 
   return useQuery({
     queryKey: ['licencas-stats', empresaId],
-    queryFn: async (): Promise<LicencasStats> => {
-      const { data: licencas, error } = await supabase
+    queryFn: async ({ signal }): Promise<LicencasStats> => {
+      const { data: licencas, error } = await readAllPages((from, to) => supabase
         .from('ativos_licencas')
         .select('*')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
 
@@ -44,7 +45,7 @@ export const useLicencasStats = () => {
       }).length || 0;
 
       const custoTotalAnual = licencas?.reduce((sum, l) => {
-        if (l.periodicidade === 'anual') return sum + (l.valor_renovacao || l.valor_aquisicao || 0);
+        if (l.periodicidade === 'anual') return sum + (l.valor_renovacao ?? l.valor_aquisicao ?? 0);
         if (l.periodicidade === 'mensal') return sum + (l.valor_renovacao || 0) * 12;
         return sum;
       }, 0) || 0;

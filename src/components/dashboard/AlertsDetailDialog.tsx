@@ -13,6 +13,7 @@
  * `criticalBreakdown`, a mesma estrutura que produz o total. Um tipo novo de
  * alerta obriga a mexer nas duas pontas ao mesmo tempo.
  */
+import { useEffect, useState } from "react";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { IconExternal, IconWarning, IconShield, IconBolt, IconTime, IconTarget } from '@/components/icons';
 import { useNavigate } from "react-router-dom";
@@ -47,6 +48,8 @@ const AlertsDetailDialog = ({
 }: AlertsDetailDialogProps) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [pages, setPages] = useState<Record<string, number>>({});
+  useEffect(() => { if (!open) setPages({}); }, [open]);
 
   /*
     Uma só tabela para os quatro grupos: o resumo do topo, a lista de baixo e
@@ -131,6 +134,7 @@ const AlertsDetailDialog = ({
           const itens = alertDetails.filter((a) => a.type === g.tipo);
           if (itens.length === 0) return null;
           const Icone = g.icone;
+          const page = Math.min(pages[g.tipo] ?? 0, Math.ceil(itens.length / VISIVEIS) - 1);
           return (
             <div key={g.tipo}>
               <div className="flex items-center justify-between mb-2">
@@ -138,27 +142,23 @@ const AlertsDetailDialog = ({
                   <Icone className={`h-4 w-4 ${g.tinta}`} strokeWidth={1.5} />
                   {g.titulo}
                 </h3>
-                <Button variant="ghost" size="sm" onClick={() => irPara(g.rota)} className="text-xs">
-                  {t('alertsDialog.viewAll')} <IconExternal className="h-3 w-3 ml-1" />
-                </Button>
+<span className="text-xs tabular-nums text-muted-foreground">{g.total}</span>
               </div>
               <div className="space-y-2">
-                {itens.slice(0, VISIVEIS).map((alert) => (
-                  <div key={alert.id} className={`p-3 bg-card rounded-lg border-l-4 ${g.borda}`}>
+                {itens.slice(page * VISIVEIS, (page + 1) * VISIVEIS).map((alert) => (
+                  <button type="button" key={`${alert.type}-${alert.id}`} onClick={() => irPara(alert.href ?? g.rota)} className={`block w-full p-3 text-left bg-card rounded-lg border border-border border-l-4 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${g.borda}`}>
                     <p className="font-medium text-sm">{alert.title}</p>
                     {alert.description && (
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>
                     )}
-                  </div>
+                  </button>
                 ))}
                 {itens.length > VISIVEIS && (
-                  <button
-                    type="button"
-                    onClick={() => irPara(g.rota)}
-                    className="w-full rounded-md py-1.5 text-xs text-muted-foreground transition-ui hover:bg-accent hover:text-accent-foreground"
-                  >
-                    +{itens.length - VISIVEIS} {g.maisLabel}
-                  </button>
+                  <div className="flex items-center justify-between gap-2">
+                    <Button type="button" variant="ghost" size="sm" disabled={page === 0} onClick={() => setPages(p => ({ ...p, [g.tipo]: page - 1 }))}>{t('experience.previous')}</Button>
+                    <span className="text-xs text-muted-foreground tabular-nums">{t('experience.pageRange', { from: page * VISIVEIS + 1, to: Math.min((page + 1) * VISIVEIS, itens.length), total: itens.length })}</span>
+                    <Button type="button" variant="ghost" size="sm" disabled={(page + 1) * VISIVEIS >= itens.length} onClick={() => setPages(p => ({ ...p, [g.tipo]: page + 1 }))}>{t('experience.next')}</Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -169,7 +169,7 @@ const AlertsDetailDialog = ({
           <div className="text-center py-8 text-muted-foreground">
             <IconShield className="h-12 w-12 mx-auto mb-3 opacity-50" strokeWidth={1.5} />
             <p>{t('alertsDialog.noAlerts')}</p>
-            <p className="text-sm">{t('alertsDialog.allGood')}</p>
+            <p className="text-sm">{t('experience.alertScope')}</p>
           </div>
         )}
       </div>

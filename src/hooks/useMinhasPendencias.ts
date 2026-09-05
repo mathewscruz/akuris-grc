@@ -17,6 +17,7 @@
  * o único dos dois campos que não depende de quem preencheu o formulário.
  */
 import { useMemo } from 'react';
+import { readAllPages } from '@/lib/read-all-pages';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -83,7 +84,7 @@ export function useMinhasPendencias() {
     queryKey: ['minhas-pendencias-projeto', userId, empresaId],
     enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       /*
         O inquilino vem pelo PROJETO.
 
@@ -93,11 +94,11 @@ export function useMinhasPendencias() {
         e isola o inquilino na mesma. Era este o defeito que deixava a página
         /projetos/minhas-tarefas sem nenhuma tarefa de projeto.
       */
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('projeto_tarefas' as never)
         .select('id, titulo, prazo, concluida_em, projeto_id, projetos!inner(nome, empresa_id)')
         .eq('projetos.empresa_id', empresaId!)
-        .eq('responsavel_id', userId!);
+        .eq('responsavel_id', userId!).order('id', { ascending: true }).range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return ((data ?? []) as unknown as LinhaTarefa[])
         .filter((t) => !t.concluida_em)
@@ -116,12 +117,12 @@ export function useMinhasPendencias() {
     queryKey: ['minhas-pendencias-planos', userId, empresaId],
     enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('planos_acao')
         .select('id, titulo, status, prazo, data_conclusao, modulo_origem')
         .eq('empresa_id', empresaId!)
-        .eq('responsavel_id', userId!);
+        .eq('responsavel_id', userId!).order('id', { ascending: true }).range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return ((data ?? []) as LinhaPlano[])
         .filter((p) => !p.data_conclusao && !CONCLUIDO.test((p.status ?? '').toLowerCase()))
@@ -131,7 +132,7 @@ export function useMinhasPendencias() {
           origem: 'plano' as const,
           origemRef: p.modulo_origem ?? null,
           prazo: p.prazo ?? null,
-          href: '/planos-acao',
+          href: `/planos-acao?focus=${p.id}`,
         }));
     },
   });
@@ -154,18 +155,19 @@ export function useMinhasPendencias() {
       executou»), nao atribuicao. Entraria como "teu" algo que nao e.
   */
   const aprovacoesDocumento = useQuery({
-    queryKey: ['minhas-pendencias-documentos', userId],
-    enabled: !!userId,
+    queryKey: ['minhas-pendencias-documentos', userId, empresaId],
+    enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       // Sem `empresa_id`: a tabela nao a tem. O inquilino vem da RLS
       // (`documento_pertence_empresa`), e filtrar por ela devolveria 400.
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('documentos_aprovacoes')
-        .select('id, documento_id, created_at, documentos:documento_id(nome)')
+        .select('id, documento_id, created_at, documentos:documento_id!inner(nome, empresa_id)')
         .eq('aprovador_id', userId!)
+        .eq('documentos.empresa_id', empresaId!)
         .eq('status', 'pendente')
-        .eq('tipo_acao', 'solicitacao');
+        .eq('tipo_acao', 'solicitacao').order('id', { ascending: true }).range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data ?? []).map((a: any) => ({
         id: `documento-${a.id}`,
@@ -184,15 +186,15 @@ export function useMinhasPendencias() {
     queryKey: ['minhas-pendencias-riscos', userId, empresaId],
     enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       // Duas filas na mesma tabela: aprovar o risco, e aprovar o seu aceite.
       const [aprovacao, aceite] = await Promise.all([
-        supabase.from('riscos').select('id, nome')
+        readAllPages((from, to) => supabase.from('riscos').select('id, nome')
           .eq('empresa_id', empresaId!).eq('aprovador_id', userId!)
-          .eq('status_aprovacao', 'pendente_aprovacao'),
-        supabase.from('riscos').select('id, nome')
+          .eq('status_aprovacao', 'pendente_aprovacao').order('id').range(from, to).abortSignal(signal), signal),
+        readAllPages((from, to) => supabase.from('riscos').select('id, nome')
           .eq('empresa_id', empresaId!).eq('aprovador_aceite', userId!)
-          .eq('status_aceite', 'pendente'),
+          .eq('status_aceite', 'pendente').order('id').range(from, to).abortSignal(signal), signal),
       ]);
       if (aprovacao.error) throw aprovacao.error;
       if (aceite.error) throw aceite.error;
@@ -213,13 +215,13 @@ export function useMinhasPendencias() {
     queryKey: ['minhas-pendencias-revisoes', userId, empresaId],
     enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('access_reviews')
         .select('id, nome_revisao, data_limite, total_contas, contas_revisadas')
         .eq('empresa_id', empresaId!)
         .eq('responsavel_revisao', userId!)
-        .eq('status', 'em_andamento');
+        .eq('status', 'em_andamento').order('id', { ascending: true }).range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data ?? []).map((r: any) => ({
         id: `revisao-${r.id}`,
@@ -227,7 +229,7 @@ export function useMinhasPendencias() {
         origem: 'revisaoAcessos' as const,
         origemRef: r.total_contas ? `${r.contas_revisadas ?? 0}/${r.total_contas}` : null,
         prazo: r.data_limite ?? null,
-        href: '/revisao-acessos',
+        href: `/revisao-acessos?revisao=${r.id}`,
       }));
     },
   });
@@ -236,19 +238,19 @@ export function useMinhasPendencias() {
     queryKey: ['minhas-pendencias-denuncias', userId, empresaId],
     enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       /*
         So as colunas minimas: a linha carrega nome, e-mail, telefone e IP do
         denunciante. E a RLS (`pode_ver_denuncia`) ja esconde os casos onde
         estou impedido por conflito de interesse -- filtrar por `responsavel_id`
         devolve um subconjunto do que ela permite, nunca mais.
       */
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('denuncias')
         .select('id, titulo, protocolo, prazo_acusacao, prazo_retorno, data_acusacao_recebimento')
         .eq('empresa_id', empresaId!)
         .eq('responsavel_id', userId!)
-        .in('status', ['nova', 'em_analise', 'em_investigacao']);
+        .in('status', ['nova', 'em_analise', 'em_investigacao']).order('id', { ascending: true }).range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data ?? []).map((d: any) => ({
         id: `denuncia-${d.id}`,
@@ -258,7 +260,7 @@ export function useMinhasPendencias() {
         // Regra unica, em `lib/prazo-da-denuncia`: enquanto a acusacao nao foi
         // recebida o relogio e o dela; depois passa a ser o do retorno.
         prazo: prazoActivo(d).data,
-        href: '/denuncia',
+        href: `/denuncia?focus=${d.id}`,
       }));
     },
   });
@@ -267,13 +269,13 @@ export function useMinhasPendencias() {
     queryKey: ['minhas-pendencias-titulares', userId, empresaId],
     enabled: ativo,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('dados_solicitacoes_titular')
         .select('id, tipo_solicitacao, prazo_resposta, status')
         .eq('empresa_id', empresaId!)
         .eq('responsavel_analise', userId!)
-        .not('status', 'in', '(atendida,rejeitada)');
+        .not('status', 'in', '(atendida,rejeitada)').order('id', { ascending: true }).range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data ?? []).map((s: any) => ({
         id: `titular-${s.id}`,
@@ -282,7 +284,7 @@ export function useMinhasPendencias() {
         origemRef: null,
         // Prazo LEGAL (LGPD/RGPD). E o unico desta lista que traz multa.
         prazo: s.prazo_resposta ?? null,
-        href: '/privacidade',
+        href: `/privacidade?tab=solicitacoes&focus=${s.id}`,
       }));
     },
   });
@@ -322,6 +324,8 @@ export function useMinhasPendencias() {
   return {
     itens,
     total: itens.length,
+    isError: [tarefas, planos, aprovacoesDocumento, riscosPendentes, revisoes, denunciasMinhas, titulares].some(query => query.isError),
+    refetch: () => Promise.all([tarefas, planos, aprovacoesDocumento, riscosPendentes, revisoes, denunciasMinhas, titulares].map(query => query.refetch())),
     atrasadas: itens.filter((i) => i.atrasada).length,
     isLoading:
       tarefas.isLoading ||

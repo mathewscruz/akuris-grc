@@ -57,14 +57,16 @@ describe('a faixa de KPIs explica os números', () => {
   it('mantém o contexto visível e sinaliza a ação de drill-down', () => {
     expect(statStrip).toContain('item.context ?? item.hint');
     expect(statStrip).toContain('group-hover:opacity-100');
-    expect(statStrip).toContain('cardsKpi.metricas.tudoEmDia');
+    expect(statStrip).not.toContain('cardsKpi.metricas.tudoEmDia');
+    expect(statStrip).toContain('zeroState?.label');
     expect(statStrip).toContain('col-span-2 sm:col-span-1');
   });
 
   it('conta depressa no início e desacelera até o valor final', () => {
     expect(statStrip).toContain('(now - start) / 560');
     expect(statStrip).toContain('1 - Math.pow(2, -10 * elapsed)');
-    expect(statStrip).toContain('prefers-reduced-motion: reduce');
+    expect(statStrip).toContain('useMotionAllowed()');
+    expect(ler('src/lib/motion-preferences.ts')).toContain('prefers-reduced-motion: reduce');
   });
 
   it('trata cobertura como maior-é-melhor e mostra a composição dos preventivos', () => {

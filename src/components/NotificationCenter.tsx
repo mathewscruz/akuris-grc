@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { IconExternal, IconCheck, IconSuccess, IconBell, IconArrowRight } from '@/components/icons';
+import { NotificationTasks } from '@/components/notifications/NotificationTasks';
+import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useMinhasPendencias } from '@/hooks/useMinhasPendencias';
+import { QueryError } from '@/components/ui/query-error';
+import { IconExternal, IconCheck, IconBell, IconArrowRight } from '@/components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,19 +66,23 @@ const getNotificationDisplay = (
 
 const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [tab, setTab] = useState<'alerts' | 'news'>('alerts');
+  const [tab, setTab] = useState<'alerts' | 'tasks' | 'news'>('alerts');
+  const [criticalOpen, setCriticalOpen] = useState(false);
+  const priorities = useDashboardStats();
+  const tasks = useMinhasPendencias();
   const [detail, setDetail] = useState<Notification | null>(null);
   const changelog = useChangelogFeed();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
+  React.useEffect(() => { setIsOpen(false); setDetail(null); setCriticalOpen(false); setTab('alerts'); }, [user?.id, profile?.empresa_id]);
   const { t, locale } = useLanguage();
   const { lidas: readAutomaticIds, marcarLidas } = useNotificacoesLidas();
 
   // Buscar notificações manuais
-  const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['notifications', user?.id],
+  const { data: notifications = [], isLoading, isError: savedError, refetch: retrySaved } = useQuery({
+    queryKey: ['notifications', user?.id, profile?.empresa_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('notifications')
@@ -90,7 +99,7 @@ const NotificationCenter: React.FC = () => {
   });
 
   // Buscar todas as notificações automáticas do sistema
-  const { data: automaticNotifications = [] } = useQuery({
+  const { data: automaticNotifications = [], isLoading: automaticLoading, isError: automaticError, refetch: retryAutomatic } = useQuery({
     queryKey: ['automatic-notifications', profile?.empresa_id, user?.id, [...readAutomaticIds], locale],
     queryFn: async () => {
       const notificacoes: Notification[] = [];
@@ -130,7 +139,11 @@ const NotificationCenter: React.FC = () => {
           .eq('status', 'ativa').eq('empresa_id', empresaId).not('data_proxima_rotacao', 'is', null),
         supabase.from('riscos').select('id, nome, data_proxima_revisao, nivel_risco_inicial, nivel_risco_residual')
           .eq('empresa_id', empresaId).not('data_proxima_revisao', 'is', null),
-      ]);
+      ]).then(results => {
+        const failed = results.find(result => result.error);
+        if (failed?.error) throw failed.error;
+        return results;
+      });
 
       /*
         O produto grava `em_investigacao`; `investigacao` não existe numa
@@ -355,7 +368,8 @@ const NotificationCenter: React.FC = () => {
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_id', user!.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -375,7 +389,8 @@ const NotificationCenter: React.FC = () => {
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('read', false);
+        .eq('read', false)
+        .eq('user_id', user!.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -389,6 +404,7 @@ const NotificationCenter: React.FC = () => {
   };
 
   const unreadCount = allNotifications.filter(n => !n.read).length;
+  const hasOpenWork = (!priorities.isError && (priorities.data?.criticalAlerts ?? 0) > 0) || (!tasks.isError && tasks.total > 0);
   const previousUnreadCount = React.useRef<number | null>(null);
   const [bellArrival, setBellArrival] = React.useState(false);
 
@@ -580,7 +596,7 @@ const NotificationCenter: React.FC = () => {
             era um sino permanentemente vermelho, que se aprende a ignorar. Ao
             fechar o painel, o que esteve a vista fica lido.
           */
-          if (!next) {
+          if (!next && tab === 'alerts') {
             marcarLidas(allNotifications.filter((n) => n.isAutomatic && !n.read).map((n) => n.id));
             const gravadasPorLer = allNotifications
               .filter((n) => !n.isAutomatic && !n.read)
@@ -596,7 +612,7 @@ const NotificationCenter: React.FC = () => {
             aria-label={t('notifications.title')}
             className={cn(
               'relative h-9 w-9 p-0 rounded-lg transition-ui',
-              (unreadCount > 0 || changelog.hasNew) && 'ring-1 ring-primary/25 bg-primary/[0.04]'
+              (unreadCount > 0 || changelog.hasNew || hasOpenWork) && 'ring-1 ring-primary/25 bg-primary/[0.04]'
             )}
           >
             <IconBell className={cn('h-[18px] w-[18px]', bellArrival && 'akuris-bell-arrival')} strokeWidth={1.5} />
@@ -608,7 +624,7 @@ const NotificationCenter: React.FC = () => {
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
-            {unreadCount === 0 && changelog.hasNew && (
+            {unreadCount === 0 && (changelog.hasNew || hasOpenWork) && (
               <span
                 aria-hidden
                 className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--background))]"
@@ -644,6 +660,9 @@ const NotificationCenter: React.FC = () => {
                 <p className="mt-1.5 text-sm font-semibold text-foreground tracking-tight tabular-nums">
                   {tab === 'news'
                     ? t('changelog.subtitle')
+                    : priorities.isError || tasks.isError ? t('experience.loadError')
+                    : !priorities.isLoading && !tasks.isLoading && hasOpenWork
+                    ? t('experience.notificationSummary', { critical: priorities.data?.criticalAlerts ?? 0, pending: tasks.total })
                     : unreadCount > 0
                     ? `${unreadCount} ${unreadCount === 1 ? t('notifications.unreadOne') : t('notifications.unread')}`
                     : groups.urgent.length > 0
@@ -671,6 +690,7 @@ const NotificationCenter: React.FC = () => {
           <div className="flex items-center gap-1 px-3 py-2 border-b border-border/60 bg-surface-1/40">
             {([
               { key: 'alerts' as const, label: t('changelog.tabAlerts'), dot: unreadCount > 0 },
+              { key: 'tasks' as const, label: t('experience.notificationTasks'), dot: !tasks.isError && tasks.total > 0 },
               { key: 'news' as const, label: t('changelog.tabNews'), dot: changelog.hasNew },
             ]).map((item) => (
               <button
@@ -704,25 +724,38 @@ const NotificationCenter: React.FC = () => {
                 onOpenDetail={() => setIsOpen(false)}
               />
             </ScrollArea>
+          ) : tab === 'tasks' ? (
+            <div className="max-h-[min(460px,60dvh)] overflow-y-auto"><NotificationTasks key={profile?.empresa_id} onNavigate={() => setIsOpen(false)} /></div>
           ) : (
-          <ScrollArea className="max-h-[460px]">
+          <div className="max-h-[min(460px,60dvh)] overflow-y-auto">
+            <div className="border-b border-border/60 px-4 py-3">
+              {priorities.isError ? <QueryError onRetry={() => void priorities.refetch()} /> : priorities.isLoading ? <p className="text-xs text-muted-foreground" role="status">{t('common.loading')}</p> : (
+                <button type="button" onClick={() => { setIsOpen(false); setCriticalOpen(true); }} className="flex w-full items-center gap-3 rounded-md py-1 text-left focus-visible:outline-primary">
+                  <span className={cn("text-xl font-semibold tabular-nums", (priorities.data?.criticalAlerts ?? 0) > 0 ? "text-destructive" : "text-muted-foreground")}>{priorities.data?.criticalAlerts ?? 0}</span>
+                  <span className="flex-1 text-xs font-medium">{t((priorities.data?.criticalAlerts ?? 0) > 0 ? 'experience.notificationCritical' : 'experience.notificationCriticalEmpty')}</span>
+                  <IconArrowRight aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
             {!user ? (
               <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                 {t('notifications.loginToView')}
               </div>
-            ) : isLoading ? (
+            ) : savedError || automaticError ? (
+              <div className="p-4"><QueryError onRetry={() => { void retrySaved(); void retryAutomatic(); }} /></div>
+            ) : isLoading || automaticLoading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <AkurisPulse size={48} />
                 <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
               </div>
             ) : allNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-                <IconSuccess className="h-7 w-7 text-success mb-3" strokeWidth={1.5} />
+                <IconBell className="h-7 w-7 text-muted-foreground mb-3" strokeWidth={1.5} />
                 <p className="text-sm font-semibold text-foreground tracking-tight">
-                  {t('notifications.allCaughtUp')}
+                  {t('experience.noOtherNotifications')}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-1 max-w-[260px]">
-                  {t('notifications.allCaughtUpDesc')}
+                  {t('experience.noOtherNotificationsHint')}
                 </p>
               </div>
             ) : (
@@ -749,10 +782,12 @@ const NotificationCenter: React.FC = () => {
                 })}
               </div>
             )}
-          </ScrollArea>
+          </div>
           )}
         </PopoverContent>
       </Popover>
+
+      <AlertsDetailDialog open={criticalOpen} onOpenChange={setCriticalOpen} alertDetails={priorities.data?.alertDetails ?? []} breakdown={priorities.data?.criticalBreakdown ?? { riscosCriticos: 0, naoConformidadesCriticas: 0, incidentesCriticos: 0, prazosVencidos: 0 }} />
 
       {/* Detalhe completo da notificação */}
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>

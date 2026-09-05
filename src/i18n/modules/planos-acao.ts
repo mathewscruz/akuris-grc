@@ -36,7 +36,7 @@ export const planosAcao = {
       statusUpdateError: 'Não foi possível atualizar o status. Alteração revertida.',
       detailEyebrow: 'Plano de ação',
       close: 'Fechar',
-      tabOverview: 'Visão',
+      tabOverview: 'Visão geral',
       tabHistory: 'Histórico',
       tabComments: 'Comentários',
       detailDescription: 'Descrição',

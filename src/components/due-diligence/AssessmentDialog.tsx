@@ -24,6 +24,7 @@ interface Template {
 
 interface Assessment {
   id: string;
+  template_id?: string;
   fornecedor_id: string | null;
   fornecedor_nome: string;
   fornecedor_email: string;
@@ -72,10 +73,10 @@ export function AssessmentDialog({
       if (mode === 'create') {
         fetchTemplates();
         setFormData({
-          template_id: '',
-          fornecedor_id: null,
-          fornecedor_nome: '',
-          fornecedor_email: '',
+          template_id: assessment?.template_id ?? '',
+          fornecedor_id: assessment?.fornecedor_id ?? null,
+          fornecedor_nome: assessment?.fornecedor_nome ?? '',
+          fornecedor_email: assessment?.fornecedor_email ?? '',
           observacoes: '',
           prazo_dias: '30'
         });

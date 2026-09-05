@@ -6,6 +6,7 @@ import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { loadEnv } from 'vite';
 import { frameworksSeo } from '../src/data/frameworks-seo';
+import { readCachedBlogEntries } from './sitemap-cache';
 
 const BASE_URL = 'https://akuris.pt';
 
@@ -35,8 +36,7 @@ function cachedBlogEntries(): SitemapEntry[] {
   const path = resolve('public/sitemap.xml');
   if (!existsSync(path)) return [];
   const xml = readFileSync(path, 'utf8');
-  return [...xml.matchAll(/<loc>https:\/\/[^<]+\/blog\/([^<]+)<\/loc>[\s\S]*?(?:<lastmod>([^<]+)<\/lastmod>)?/g)]
-    .map(([, slug, lastmod]) => ({ path: `/blog/${slug}`, lastmod, changefreq: 'monthly' as const, priority: '0.7' }));
+  return readCachedBlogEntries(xml);
 }
 
 async function fetchPublishedPosts(): Promise<SitemapEntry[]> {

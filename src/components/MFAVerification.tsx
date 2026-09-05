@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -17,8 +17,9 @@ interface MFAVerificationProps {
 }
 
 const secondsUntil = (iso?: string) => {
-  if (!iso) return 5 * 60;
-  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 1000));
+  if (!iso) return 0;
+  const remaining = Math.ceil((new Date(iso).getTime() - Date.now()) / 1000);
+  return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
 };
 
 const formatTimer = (seconds: number) =>
@@ -38,8 +39,10 @@ export const MFAVerification = ({
   const [semCodigo, setSemCodigo] = useState(envioFalhou);
   const [errorMessage, setErrorMessage] = useState('');
   const [resendCountdown, setResendCountdown] = useState(60);
-  const [expiresAt, setExpiresAt] = useState(codeExpiresAt);
-  const [expiryCountdown, setExpiryCountdown] = useState(() => secondsUntil(codeExpiresAt));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [expiresAt, setExpiresAt] = useState(() => codeExpiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString());
+  const [expiryCountdown, setExpiryCountdown] = useState(() => secondsUntil(expiresAt));
+  useEffect(() => { if (errorMessage && !isVerifying) inputRef.current?.focus(); }, [errorMessage, isVerifying]);
 
   useEffect(() => setSemCodigo(envioFalhou), [envioFalhou]);
   useEffect(() => {
@@ -82,6 +85,7 @@ export const MFAVerification = ({
       if (response.error) throw response.error;
 
       if (response.data?.success === true) {
+        setCode('');
         onVerified(response.data.expires_at);
         return;
       }
@@ -89,6 +93,7 @@ export const MFAVerification = ({
       setErrorMessage(messageForCode(response.data?.error_code, response.data?.remaining_attempts));
       setCode('');
       if (response.data?.error_code === 'expired_code' || response.data?.error_code === 'too_many_attempts') {
+        setExpiresAt(new Date().toISOString());
         setExpiryCountdown(0);
       }
     } catch (error) {
@@ -122,7 +127,7 @@ export const MFAVerification = ({
         setSemCodigo(false);
         setCode('');
         setResendCountdown(Number(response.data.resend_after ?? 60));
-        const nextExpiry = response.data.expires_at as string | undefined;
+        const nextExpiry = (response.data.expires_at as string | undefined) ?? new Date(Date.now() + 5 * 60_000).toISOString();
         setExpiresAt(nextExpiry);
         setExpiryCountdown(secondsUntil(nextExpiry));
         return;
@@ -158,10 +163,10 @@ export const MFAVerification = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
             <span className="text-xs font-medium uppercase tracking-[0.16em] text-primary">{t('mfaScreen.eyebrow')}</span>
-            <span className="text-xs tabular-nums text-white/35">{t('mfaScreen.step')}</span>
+            <span className="text-xs tabular-nums text-white/70">{t('mfaScreen.step')}</span>
           </div>
           <h1 className="text-[1.75rem] font-medium tracking-[-0.02em] text-white">{t('mfaScreen.heading')}</h1>
-          <p className={semCodigo ? 'text-sm leading-6 text-warning' : 'text-sm leading-6 text-white/50'}>
+          <p className={semCodigo ? 'text-sm leading-6 text-warning' : 'text-sm leading-6 text-white/70'}>
             {semCodigo
               ? t('mfaScreen.envioFalhouDescricao', { email: maskedEmail })
               : t('mfaScreen.descriptionWithEmail', { email: maskedEmail })}
@@ -171,7 +176,7 @@ export const MFAVerification = ({
         {!semCodigo && (
           <>
             <div className="flex items-center justify-between border-y border-white/[0.08] py-3 text-xs">
-              <span className="flex items-center gap-2 text-white/45">
+              <span className="flex items-center gap-2 text-white/70">
                 <IconShieldCheck className="h-4 w-4 text-primary" />
                 {t('mfaScreen.codeValidity')}
               </span>
@@ -182,6 +187,10 @@ export const MFAVerification = ({
 
             <div className="flex justify-center">
               <InputOTP
+                ref={inputRef}
+                autoFocus
+                aria-invalid={Boolean(errorMessage) || codeExpired}
+                aria-describedby={errorMessage || codeExpired ? 'mfa-code-error' : undefined}
                 maxLength={6}
                 value={code}
                 onChange={(value) => {
@@ -210,7 +219,7 @@ export const MFAVerification = ({
         )}
 
         {(errorMessage || codeExpired) && (
-          <p role="alert" aria-live="assertive" className="border-l-2 border-destructive pl-3 text-sm leading-5 text-destructive">
+          <p id="mfa-code-error" role="alert" aria-live="assertive" className="border-l-2 border-destructive pl-3 text-sm leading-5 text-destructive">
             {errorMessage || t('mfaScreen.expiredCode')}
           </p>
         )}
@@ -242,7 +251,7 @@ export const MFAVerification = ({
           <button
             type="button"
             onClick={onCancel}
-            className="flex min-h-11 w-full items-center justify-center gap-2 text-xs text-white/45 transition-colors hover:text-white/75"
+            className="flex min-h-11 w-full items-center justify-center gap-2 text-xs text-white/70 transition-colors hover:text-white/75"
           >
             <IconArrowLeft className="h-3.5 w-3.5" />
             {t('mfaScreen.backToLogin')}

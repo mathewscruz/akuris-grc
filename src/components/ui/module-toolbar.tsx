@@ -97,13 +97,13 @@ export function ModuleToolbar({
         A partir de `md` nada muda: os filtros estão sempre à vista, que é onde
         há largura para eles.
       */}
-      <div className="flex w-full flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between xl:w-auto xl:justify-end">
+      <div className="flex w-full flex-row flex-wrap items-end gap-3 md:justify-between xl:w-auto xl:justify-end">
         {hasFilters && (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="md:hidden w-full justify-between"
+            className="md:hidden flex-1 justify-between gap-4"
             aria-expanded={filtrosAbertos}
             onClick={() => setFiltrosAbertos((v) => !v)}
           >
@@ -128,7 +128,7 @@ export function ModuleToolbar({
         )}
         <div
           className={cn(
-            "flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-end md:justify-end",
+            "w-full flex-col gap-3 md:w-auto md:flex md:flex-row md:flex-wrap md:items-end md:justify-end",
             filtrosAbertos ? "flex" : "hidden",
           )}
         >

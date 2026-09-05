@@ -21,6 +21,8 @@ const STATUS_LABELS: Record<string, string> = {
   'aplicacao': 'Aplicação',
   'banco_dados': 'Banco de Dados',
   'sistema_operacional': 'Sistema Operacional',
+  'nao_classificado': 'Não classificado',
+  'equipamento_escritorio': 'Equipamento de escritório',
   'hardware': 'Hardware',
   'software': 'Software',
   'rede': 'Rede',
@@ -297,6 +299,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 // English translations for STATUS_LABELS keys
 const STATUS_LABELS_EN: Record<string, string> = {
+  'nao_classificado': 'Unclassified',
+  'equipamento_escritorio': 'Office equipment',
   servico: 'Service',
   servicos: 'Services',
   produto: 'Product',

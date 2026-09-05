@@ -69,10 +69,9 @@ export function SortableTableHead({ field, sort, onSort, className, children, ..
     <TableHead
       {...props}
       aria-sort={active ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined}
-      onClick={() => onSort(field)}
-      className={cn('group/th cursor-pointer select-none transition-colors hover:bg-accent', className)}
+      className={cn('group/th select-none', className)}
     >
-      <div className="flex items-center gap-1.5">
+      <button type="button" onClick={() => onSort(field)} className="inline-flex w-full items-center gap-1.5 rounded-md py-2 text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
         {children}
         {active ? (
           sort?.direction === 'asc' ? (
@@ -81,9 +80,9 @@ export function SortableTableHead({ field, sort, onSort, className, children, ..
             <IconChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
           )
         ) : (
-          <IconSort className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
+          <IconSort className="h-3.5 w-3.5 opacity-40 transition-opacity group-hover/th:opacity-80 group-focus-within/th:opacity-80" strokeWidth={1.5} />
         )}
-      </div>
+      </button>
     </TableHead>
   );
 }

@@ -47,4 +47,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Pure dictionaries change less often than operational code. Keep their
+        // cache separate; this does not pretend to reduce total download bytes.
+        manualChunks(id) {
+          if (id.replace(/\\/g, '/').includes('/src/i18n/')) return 'translations';
+        },
+      },
+    },
+  },
 }));

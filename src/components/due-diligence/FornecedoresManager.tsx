@@ -1,3 +1,5 @@
+import { readAllPages } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconView, IconMore, IconOrg } from '@/components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -150,7 +152,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detalheFornecedor, setDetalheFornecedor] = useState<any>(null);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useListState('supplierSearch', '');
   /**
    * Sem filtro por omissão.
    *
@@ -159,7 +161,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
    * avaliação — os dois que mais interessam a uma due diligence —
    * simplesmente não existia para quem olhasse a tela.
    */
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useListState('supplierStatus', 'all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; fornecedor: Fornecedor | null }>({
     open: false,
     fornecedor: null
@@ -185,35 +187,37 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
   useImperativeHandle(ref, () => ({ abrirNovo: () => setDialogOpen(true) }), []);
 
   // Fetch fornecedores with assessment stats
-  const { data: fornecedores = [], isLoading } = useQuery({
+  const { data: fornecedores = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['fornecedores-with-stats', empresaId],
     enabled: !!empresaId,
-    queryFn: async () => {
-      const { data: fornecedoresData, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data: fornecedoresData, error } = await readAllPages((from, to) => supabase
         .from('fornecedores')
         .select('*')
         .eq('empresa_id', empresaId!)
-        .order('nome');
+        .order('nome').order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
 
       // Contagem de contratos por fornecedor -- a coluna que a aba de Contratos
       // mostrava e que não se quer perder na unificação.
-      const { data: contratos } = await supabase
+      const { data: contratos, error: contractsError } = await readAllPages((from, to) => supabase
         .from('contratos')
         .select('fornecedor_id')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
+      if (contractsError) throw contractsError;
       const contratosPorForn = new Map<string, number>();
       (contratos || []).forEach((c: any) => {
         if (c.fornecedor_id) contratosPorForn.set(c.fornecedor_id, (contratosPorForn.get(c.fornecedor_id) || 0) + 1);
       });
 
       // Fetch assessment stats for all fornecedores
-      const { data: assessments } = await supabase
+      const { data: assessments, error: assessmentsError } = await readAllPages((from, to) => supabase
         .from('due_diligence_assessments')
         .select('fornecedor_id, fornecedor_email, status, score_final, data_conclusao, created_at')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
+      if (assessmentsError) throw assessmentsError;
       const assessmentMap = new Map<string, { total: number; lastScore: number | null; pending: number }>();
 
       /*
@@ -388,7 +392,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     const alvo = fornecedores.find((f) => f.id === focoId);
     if (alvo) {
       focoTratado.current = focoId;
-      handleEdit(alvo);
+      setDetalheFornecedor(alvo);
     }
   }, [focoId, fornecedores]);
 
@@ -423,7 +427,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
   };
 
   const getRiskBadge = (stats: { total: number; lastScore: number | null; pending: number }) => {
-    if (stats.total === 0) return <StatusBadge tone="neutral">{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</StatusBadge>;
+    if (stats.total === 0) return <span className="text-muted-foreground">{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</span>;
     if (stats.lastScore === null) return <StatusBadge tone="warning">{t('dueDiligence.fornecedoresManager.riskPending')}</StatusBadge>;
     /*
       `score_final` já vem em percentagem: `calculate-assessment-score` calcula
@@ -515,7 +519,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
     {
       key: 'avaliacao_risco',
       mobilePriority: 1,
-      label: t('dueDiligence.fornecedoresManager.colRisco'),
+      label: t('experience.manualClassification'),
       sortable: true,
       render: (_: any, f: any) =>
         f.avaliacao_risco ? (
@@ -523,12 +527,13 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
             {rotuloRisco(f.avaliacao_risco)}
           </StatusBadge>
         ) : (
-          <StatusBadge tone="neutral">{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</StatusBadge>
+          <span className="text-muted-foreground">{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</span>
         ),
     },
     {
       key: 'avaliacao',
       mobilePriority: 2,
+      className: 'min-w-40',
       label: t('dueDiligence.fornecedoresManager.colAvaliacao'),
       render: (_: any, f: any) => getRiskBadge(f._assessmentStats),
     },
@@ -705,9 +710,12 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
           </DialogShell>
           
           <DataTable
+            defaultHiddenColumns={['email', 'telefone', 'cnpj']}
             data={filteredFornecedores}
             columns={colunas}
             loading={isLoading}
+        error={isError}
+        onRefresh={() => void refetch()}
             onRowClick={(f) => setDetalheFornecedor(f)}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}

@@ -9,7 +9,10 @@ describe('continuidade visual da navegação', () => {
     expect(layout).toContain('<PageTransition routeKey={location.pathname}>');
     expect(transicao).toContain('animate-page-enter');
     expect(transicao).toContain('motion-reduce:animate-none');
-    expect(layout).toContain("scrollTo({ top: 0, left: 0, behavior: 'auto' })");
+    expect(layout).toContain('useRouteScroll(mainRef');
+    const scroll = ler('src/hooks/useRouteScroll.ts');
+    expect(scroll).toContain("navigation === 'POP'");
+    expect(scroll).toContain("scrollTo({ top: target, behavior: 'auto' })");
   });
 
   it('usa o mesmo ritmo nos overlays e menus partilhados', () => {

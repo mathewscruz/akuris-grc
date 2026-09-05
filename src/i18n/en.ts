@@ -202,8 +202,8 @@ export const en = {
     confirmLogoutDesc: 'Are you sure you want to logout?',
     signOutFailed: 'Could not end the session. Please try again.',
     sectionOperation: 'Operation',
-    sectionGrcCore: 'GRC Core',
-    sectionCompliance: 'Compliance & Governance',
+    sectionGrcCore: 'Governance & risk',
+    sectionCompliance: 'Protection & continuity',
     sectionInsights: 'Insights',
   },
   theme: {
@@ -1116,7 +1116,7 @@ export const en = {
     // Access Review
     revisaoAcessos: {
       title: 'Access Review',
-      description: 'Manage periodic reviews of privileged access',
+      description: 'Review system users and privileged accounts in the same campaign',
       newReview: 'New Review',
       total: 'Total',
       inProgress: 'In Progress',

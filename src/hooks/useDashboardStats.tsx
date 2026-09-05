@@ -1,8 +1,12 @@
+import { readAllPages } from "@/lib/read-all-pages";
+import { formatarDiaParaDB } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { severidadeRiscoEfetiva } from '@/lib/metrics/riscos';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { isGapCritico } from "@/lib/gap-criticality";
+import { isIncidenteCriticoEmCurso } from '@/lib/metrics/incidentes';
 
 /**
  * Um item que soma para `criticalAlerts`.
@@ -17,6 +21,7 @@ export interface AlertDetail {
   title: string;
   description?: string;
   type: 'risco' | 'gap' | 'incidente' | 'prazo';
+  href?: string;
 }
 
 interface DashboardStats {
@@ -49,14 +54,15 @@ const normalizeStr = (s: string) =>
 
 export const useDashboardStats = () => {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const empresaId = profile?.empresa_id;
 
   return useQuery({
-    queryKey: ['dashboard-stats', empresaId],
+    queryKey: ['dashboard-stats', empresaId, t('experience.linkUnavailable')],
     enabled: !!empresaId,
-    queryFn: async (): Promise<DashboardStats> => {
+    queryFn: async ({ signal }): Promise<DashboardStats> => {
       const alertDetails: AlertDetail[] = [];
-      const hojeIso = new Date().toISOString();
+      const hojeIso = formatarDiaParaDB(new Date());
 
       const [
         riscosResult,
@@ -67,65 +73,65 @@ export const useDashboardStats = () => {
         planosResult,
         avaliacoesResult,
       ] = await Promise.all([
-        supabase
+        readAllPages((from, to) => supabase
           .from('riscos')
           .select('id, nome, descricao, nivel_risco_inicial, nivel_risco_residual')
-          .eq('empresa_id', empresaId!),
+          .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal),
 
-        supabase
+        readAllPages((from, to) => supabase
           .from('denuncias')
           .select('id, titulo, descricao, status')
           .eq('empresa_id', empresaId!)
           // `em_analise` é o estado mais comum de uma denúncia em curso e
           // ficava de fora: a pílula dizia 2 e o diálogo que a explica dizia 1.
           // `nova` não existe numa única linha do produto.
-          .in('status', ['nova', 'em_analise', 'em_investigacao']),
+          .in('status', ['nova', 'em_analise', 'em_investigacao']).order('id').range(from, to).abortSignal(signal), signal),
 
         (() => {
           const dataLimite = new Date();
           dataLimite.setDate(dataLimite.getDate() + 30);
-          return supabase
+          return readAllPages((from, to) => supabase
             .from('controles')
             .select('id, nome, descricao, proxima_avaliacao')
             .eq('empresa_id', empresaId!)
-            .lte('proxima_avaliacao', dataLimite.toISOString())
-            .gte('proxima_avaliacao', hojeIso);
+            .lte('proxima_avaliacao', formatarDiaParaDB(dataLimite))
+            .gte('proxima_avaliacao', hojeIso).order('id').range(from, to).abortSignal(signal), signal);
         })(),
 
-        supabase
+        readAllPages((from, to) => supabase
           .from('controles')
           .select('id, nome, descricao')
           .eq('empresa_id', empresaId!)
           // Um controlo inactivo ou em revisão não tem reavaliação em atraso:
           // dos 88 "prazos vencidos" do banner, 36 eram desses.
           .eq('status', 'ativo')
-          .lt('proxima_avaliacao', hojeIso),
+          .lt('proxima_avaliacao', hojeIso).order('id').range(from, to).abortSignal(signal), signal),
 
-        supabase
+        readAllPages((from, to) => supabase
           .from('incidentes')
           .select('id, titulo, descricao, criticidade, status')
-          .eq('empresa_id', empresaId!)
-          .eq('criticidade', 'critica')
-          // O produto grava `em_investigacao`; `investigacao` não existe numa
-          // única linha. A tooltip dizia "Incidentes críticos 0" com um crítico
-          // em investigação em cada empresa.
-          .in('status', ['aberto', 'em_investigacao', 'contido']),
+          .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal),
 
-        supabase
+        readAllPages((from, to) => supabase
           // `titulo` para o plano poder APARECER no diálogo: entrava no total
           // do banner e não tinha como ser listado.
           .from('planos_acao')
           .select('id, titulo')
           .eq('empresa_id', empresaId!)
           .not('status', 'in', '("concluido","cancelado")')
-          .lt('prazo', hojeIso.slice(0, 10)),
+          .lt('prazo', hojeIso).order('id').range(from, to).abortSignal(signal), signal),
 
-        supabase
+        readAllPages((from, to) => supabase
           .from('gap_analysis_evaluations')
           .select('requirement_id, conformity_status, prazo_implementacao')
           .eq('empresa_id', empresaId!)
-          .eq('conformity_status', 'nao_conforme'),
+          .eq('conformity_status', 'nao_conforme').order('id').range(from, to).abortSignal(signal), signal),
       ]);
+
+      // Uma leitura parcial não pode se apresentar como ausência de alertas.
+      for (const result of [riscosResult, denunciasResult, controlesResult, controlesVencidosResult, incidentesResult, planosResult, avaliacoesResult]) {
+        if (result.error) throw result.error;
+      }
 
       // Riscos — mantemos "altos" (alto/crítico) para os cartões existentes e
       // isolamos os realmente críticos para o contador de alertas.
@@ -163,15 +169,16 @@ export const useDashboardStats = () => {
       );
       const riscosCriticos = riscosCriticosLista.length;
       riscosCriticosLista.forEach((r) => {
-        alertDetails.push({ id: r.id, title: r.nome, description: r.descricao || undefined, type: 'risco' });
+        alertDetails.push({ id: r.id, title: r.nome, description: r.descricao || undefined, type: 'risco', href: `/riscos?risco=${r.id}` });
       });
 
       const denunciasPendentes = denunciasResult.data?.length || 0;
       const controlesVencendo = controlesResult.data?.length || 0;
 
-      const incidentesCriticos = incidentesResult.data?.length || 0;
-      incidentesResult.data?.forEach(i => {
-        alertDetails.push({ id: i.id, title: i.titulo, description: i.descricao || undefined, type: 'incidente' });
+      const incidentesEmAlerta = (incidentesResult.data ?? []).filter(isIncidenteCriticoEmCurso);
+      const incidentesCriticos = incidentesEmAlerta.length;
+      incidentesEmAlerta.forEach(i => {
+        alertDetails.push({ id: i.id, title: i.titulo, description: i.descricao || undefined, type: 'incidente', href: `/incidentes?focus=${i.id}` });
       });
 
       // Não conformidades críticas — mesma definição usada no Gap Analysis.
@@ -185,12 +192,15 @@ export const useDashboardStats = () => {
         // `codigo`/`titulo` para o requisito poder aparecer no diálogo com um
         // nome: sem eles, a maior fatia do banner era uma lista de UUIDs.
         const nomes = new Map<string, { codigo: string | null; titulo: string | null }>();
-        if (requirementIds.length > 0) {
-          const { data: reqs } = await supabase
+        const frameworks = new Map<string, string>();
+        for (let offset = 0; offset < requirementIds.length; offset += 100) {
+          const { data: reqs, error: requirementsError } = await supabase
             .from('gap_analysis_requirements')
-            .select('id, peso, codigo, titulo')
-            .in('id', requirementIds);
+            .select('id, peso, codigo, titulo, framework_id')
+            .in('id', requirementIds.slice(offset, offset + 100)).abortSignal(signal);
+          if (requirementsError) throw requirementsError;
           (reqs || []).forEach(r => {
+            frameworks.set(r.id, r.framework_id);
             pesos.set(r.id, Number(r.peso ?? 3));
             nomes.set(r.id, { codigo: r.codigo ?? null, titulo: r.titulo ?? null });
           });
@@ -210,20 +220,23 @@ export const useDashboardStats = () => {
             id: a.requirement_id ?? `gap-${alertDetails.length}`,
             // Sem código nem título fica o id: é feio, mas é rastreável — e só
             // acontece se o requisito tiver sido apagado sob a avaliação.
-            title: titulo || (a.requirement_id ?? ''),
+            title: titulo || t('experience.linkUnavailable'),
             type: 'gap',
+            href: a.requirement_id && frameworks.get(a.requirement_id)
+              ? `/gap-analysis/framework/${frameworks.get(a.requirement_id)}?req=${a.requirement_id}`
+              : '/gap-analysis',
           });
         });
       }
 
       const planosAtrasados = planosResult.data?.length || 0;
       planosResult.data?.forEach((p) => {
-        alertDetails.push({ id: p.id, title: p.titulo, type: 'prazo' });
+        alertDetails.push({ id: p.id, title: p.titulo, type: 'prazo', href: `/planos-acao?plano=${p.id}` });
       });
 
       const controlesVencidos = controlesVencidosResult.data?.length || 0;
       controlesVencidosResult.data?.forEach((c) => {
-        alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'prazo' });
+        alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'prazo', href: `/governanca/controles?focus=${c.id}` });
       });
 
       const prazosVencidos = planosAtrasados + controlesVencidos;

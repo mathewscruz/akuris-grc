@@ -1,3 +1,5 @@
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
 import React, { useState, useMemo, useEffect } from 'react';
 import { splitResponsavel } from '@/lib/uuid';
 import { corteAltoValor, isAtivoAltoValor, valorNegocioNumerico } from '@/lib/metrics/ativos';
@@ -136,15 +138,15 @@ const Ativos = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: stats, isLoading: statsLoading } = useAtivosStats();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<string>('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useAtivosStats();
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [sortField, setSortField] = useListState<string>('sortField', 'created_at');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'desc');
   
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [criticidadeFilter, setCriticidadeFilter] = useState('todos');
-  const [tipoFilter, setTipoFilter] = useState('todos');
-  const [valorNegocioFilter, setValorNegocioFilter] = useState('todos');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
+  const [criticidadeFilter, setCriticidadeFilter] = useListState('criticidadeFilter', 'todos');
+  const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
+  const [valorNegocioFilter, setValorNegocioFilter] = useListState('valorNegocioFilter', 'todos');
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [importDialog, setImportDialog] = useState(false);
@@ -160,14 +162,14 @@ const Ativos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Fetch ativos with React Query
-  const { data: ativos = [], isLoading: loading } = useQuery<Ativo[]>({
+  const { data: ativos = [], isLoading: loading, isError: assetsError, refetch: retryAssets } = useQuery<Ativo[]>({
     queryKey: ['ativos', profile?.empresa_id],
-    queryFn: async (): Promise<Ativo[]> => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }): Promise<Ativo[]> => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('ativos')
         .select('*')
         .eq('empresa_id', profile!.empresa_id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       
@@ -175,8 +177,8 @@ const Ativos = () => {
         const proprietarioIds = data.map(a => a.proprietario).filter(p => p && p.trim() !== '');
         
         if (proprietarioIds.length > 0) {
-          const { data: profiles } = await supabase
-            .rpc('get_profiles_by_text_ids', { text_ids: proprietarioIds });
+          const { data: profiles } = await readAllPagesByIds(proprietarioIds, (ids, from, to) => supabase
+            .rpc('get_profiles_by_text_ids', { text_ids: ids }).order('user_id').range(from, to).abortSignal(signal), signal);
 
           if (profiles) {
             const profileMap = new Map(
@@ -582,7 +584,8 @@ const Ativos = () => {
       />
 
       {/* Indicadores */}
-      <StatStrip
+        <StatStrip
+          error={assetsError || statsError}
         loading={statsLoading}
         items={[
           { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: IconServer, drillDown: 'ativos' },
@@ -596,6 +599,7 @@ const Ativos = () => {
             icon: IconChecklist,
             tone: ativos.some((ativo) => ativo.tipo === 'nao_classificado') ? 'warning' : undefined,
             hint: t('cardsKpi.sweep.ativos.naoClassificadosHint'),
+            onClick: () => setTipoFilter('nao_classificado'),
           },
         ]}
       />
@@ -604,6 +608,8 @@ const Ativos = () => {
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            error={assetsError}
+            onRefresh={() => void retryAssets()}
             paginated
             pageSize={20}
             data={filteredAndSortedAtivos}

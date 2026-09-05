@@ -1,3 +1,6 @@
+import { environmentLabel } from '@/lib/environment-label';
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
 import { useState, useMemo, useEffect } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconSuccess, IconWarning, IconTime, IconKey, IconBan } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
@@ -55,13 +58,13 @@ export default function AtivosChaves() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedChave, setSelectedChave] = useState<ChaveCriptografica | null>(null);
   const [detalheChave, setDetalheChave] = useState<ChaveCriptografica | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [criticidadeFilter, setCriticidadeFilter] = useState('todos');
-  const [ambienteFilter, setAmbienteFilter] = useState('todos');
-  const [tipoFilter, setTipoFilter] = useState('todos');
-  const [sortField, setSortField] = useState('nome');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
+  const [criticidadeFilter, setCriticidadeFilter] = useListState('criticidadeFilter', 'todos');
+  const [ambienteFilter, setAmbienteFilter] = useListState('ambienteFilter', 'todos');
+  const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
+  const [sortField, setSortField] = useListState('sortField', 'nome');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     id: string;
@@ -71,17 +74,17 @@ export default function AtivosChaves() {
   const { empresaId } = useEmpresaId();
 
   // Buscar estatísticas
-  const { data: stats, isLoading: statsLoading } = useChavesStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useChavesStats();
 
   // Buscar chaves
-  const { data: chaves = [], refetch, isLoading } = useQuery({
+  const { data: chaves = [], refetch, isLoading, isError } = useQuery({
     queryKey: ['ativos-chaves', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('ativos_chaves_criptograficas')
         .select('*')
         .eq('empresa_id', empresaId!)
-        .order('data_proxima_rotacao');
+        .order('data_proxima_rotacao').order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       
@@ -92,10 +95,10 @@ export default function AtivosChaves() {
           .filter(r => r && r.trim() !== '');
         
         if (responsavelIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .rpc('get_profiles_by_text_ids', { text_ids: responsavelIds });
+          const { data: profiles } = await readAllPagesByIds(responsavelIds, (ids, from, to) => supabase
+            .rpc('get_profiles_by_text_ids', { text_ids: ids }).order('user_id').range(from, to).abortSignal(signal), signal);
           
-          if (!profilesError && profiles) {
+          if (profiles) {
             const profileMap = new Map(
               profiles.map((p: any) => [p.user_id.toString(), { nome: p.nome, foto_url: p.foto_url }])
             );
@@ -258,18 +261,20 @@ export default function AtivosChaves() {
     },
     {
       key: 'tipo_chave',
+      mobilePriority: 6,
       label: t('fin.comum.tipo'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => (
-        <Badge variant="outline">{formatStatus(chave.tipo_chave)}</Badge>
+        <span className="text-muted-foreground">{formatStatus(chave.tipo_chave)}</span>
       )
     },
     {
       key: 'ambiente',
+      mobilePriority: 4,
       label: t('fin.comum.ambiente'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => (
-        <Badge variant="secondary">{chave.ambiente}</Badge>
+        <span className="text-muted-foreground">{environmentLabel(chave.ambiente, t)}</span>
       )
     },
     {
@@ -285,24 +290,28 @@ export default function AtivosChaves() {
     },
     {
       key: 'data_proxima_rotacao',
+      mobilePriority: 1,
       label: t('fin.chaves.proximaRotacao'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => formatDateOnly(chave.data_proxima_rotacao)
     },
     {
       key: 'criticidade',
+      mobilePriority: 2,
       label: t('sweepDados.ativos.colCriticidade'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => getCriticidadeBadge(chave.criticidade)
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('sweepDados.ativos.colStatus'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => getStatusBadge(chave.status)
     },
     {
       key: 'responsavel',
+      mobilePriority: 3,
       label: t('fin.comum.responsavel'),
       render: (_: any, chave: ChaveCriptografica) => {
         if (!chave.responsavel_nome) return '-';
@@ -314,7 +323,7 @@ export default function AtivosChaves() {
                 <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
                   <Avatar className="h-7 w-7 shrink-0">
                     {chave.responsavel_avatar && <AvatarImage src={chave.responsavel_avatar} alt={chave.responsavel_nome} />}
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs">{chave.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                    <AvatarFallback className="text-xs">{chave.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <span className="truncate text-sm">{chave.responsavel_nome.split(/\s+/)[0]}</span>
                 </div>
@@ -433,6 +442,7 @@ export default function AtivosChaves() {
       />
 
       <StatStrip
+        error={isError || statsError}
         loading={statsLoading}
         items={[
           { key: 'total', label: t('cardsKpi.chaves.totalChaves'), value: stats?.total ?? 0, drillDown: 'ativos_chaves' },
@@ -452,6 +462,7 @@ export default function AtivosChaves() {
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            error={isError}
             paginated
             pageSize={20}
             data={filteredAndSortedChaves}

@@ -30,7 +30,7 @@ export default function Denuncia() {
   const [empresaSelecionada, setEmpresaSelecionada] = useState<string | null>(null);
   const empresaAtiva = empresaSelecionada ?? empresas[0]?.empresa_id ?? null;
   const ehCliente = empresas.find((e) => e.empresa_id === empresaAtiva)?.propria === false;
-  const { data: stats, isLoading: statsLoading } = useDenunciasStats(empresaAtiva);
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useDenunciasStats(empresaAtiva);
 
   /*
     Duas maneiras de chegar à mesma denúncia.
@@ -102,6 +102,7 @@ export default function Denuncia() {
 
       <StatStrip
         loading={statsLoading}
+        error={statsError}
         items={[
           { key: 'total', label: t('cardsKpi.denuncias.total'), value: stats?.total ?? 0, drillDown: 'denuncias' },
           { key: 'novas', label: t('cardsKpi.denuncias.novas'), value: stats?.novas ?? 0, tone: 'warning', drillDown: 'denuncias_novas' },

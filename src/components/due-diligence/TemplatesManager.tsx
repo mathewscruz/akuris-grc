@@ -2,15 +2,14 @@ import { useEffect, useState, useMemo } from 'react';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveCategoriaTone, resolveAtivoTone } from '@/lib/status-tone';
+import { resolveAtivoTone } from '@/lib/status-tone';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconFile, IconCopy, IconStar, IconShield, IconScale, IconSettings, IconLeaf } from '@/components/icons';
+import { IconAdd, IconClose, IconEdit, IconDelete, IconFile, IconCopy, IconStar, IconShield, IconScale, IconSettings, IconLeaf } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -180,7 +179,6 @@ export function TemplatesManager() {
     template?: Template;
   }>({ open: false });
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [categoriaFilter, setCategoriaFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cloningTemplate, setCloningTemplate] = useState<string | null>(null);
@@ -436,7 +434,6 @@ export function TemplatesManager() {
     }
   };
 
-  // Categoria agora via resolveCategoriaTone (StatusBadge)
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -556,7 +553,7 @@ export function TemplatesManager() {
         <Card className="rounded-lg border overflow-hidden">
           <CardContent className="p-0">
             <div className="p-6 pb-4">
-              <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <div className="relative flex-1 max-w-sm">
                   <Input
                     placeholder={t('dueDiligence.templatesManager.searchPlaceholder')}
@@ -564,24 +561,13 @@ export function TemplatesManager() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    <IconFilter className="h-4 w-4 mr-2" />
-                    {t('dueDiligence.templatesManager.filters')}
-                  </Button>
-                </div>
               </div>
               
-              {showFilters && (
-                <div className="bg-muted/50 rounded-lg p-4 mb-4 flex items-center gap-4 flex-wrap">
+                <div className="flex flex-wrap items-center gap-4" role="group" aria-label={t('dueDiligence.templatesManager.filters')}>
                   <div className="flex items-center gap-2">
                     <Label className="text-sm">{t('dueDiligence.templatesManager.categoryLabel')}</Label>
                     <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-40" aria-label={t('dueDiligence.templatesManager.categoryLabel')}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -595,7 +581,7 @@ export function TemplatesManager() {
                   <div className="flex items-center gap-2">
                     <Label className="text-sm">{t('dueDiligence.templatesManager.statusLabel')}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-32" aria-label={t('dueDiligence.templatesManager.statusLabel')}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -616,7 +602,6 @@ export function TemplatesManager() {
                     </Button>
                   )}
                 </div>
-              )}
             </div>
 
             {filteredTemplates.length > 0 ? (
@@ -644,16 +629,7 @@ export function TemplatesManager() {
                           <div className="flex items-center gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-sm font-medium truncate">{template.nome}</h3>
-                                {/* Selo neutro: «padrao» e uma origem, nao um aviso. */}
-                                {template.padrao && (
-                                  <StatusBadge tone="neutral">
-                                    {t('dueDiligence.templatesManager.defaultBadge')}
-                                  </StatusBadge>
-                                )}
-                                <StatusBadge {...resolveCategoriaTone(template.categoria)}>
-                                  {template.categoria}
-                                </StatusBadge>
+                                <h3 className="text-sm font-semibold break-words">{template.nome}</h3>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {template.descricao || t('dueDiligence.templatesManager.noDescription')}

@@ -2,9 +2,10 @@
  * PlanoAcaoDetailDrawer — painel lateral do plano de ação (mesmo estilo do painel de risco).
  * Abas: Visão · Histórico · Comentários.
  */
+import { QueryError } from '@/components/ui/query-error';
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Chip } from '@/components/ui/chip';
@@ -25,7 +26,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import { PLANO_STATUS_EDITAVEIS } from './PlanosAcaoKanban';
-import { IconEdit, IconClose, IconExternal, IconSend, IconChevronDown } from '@/components/icons';
+import { IconEdit, IconClose, IconExternal, IconSend, IconChevronDown, PlanosAcaoIcon, IconView, IconHistory, IconMessage } from '@/components/icons';
 
 interface Props {
   plano: any | null;
@@ -58,7 +59,7 @@ export function PlanoAcaoDetailDrawer({
   const isExternal = !!plano?._isExternal;
   const planoId = plano?.id as string | undefined;
 
-  const { data: comentarios = [], isLoading: loadingComentarios } = useQuery({
+  const { data: comentarios = [], isLoading: loadingComentarios, isError: commentsError, refetch: retryComments } = useQuery({
     queryKey: ['plano-acao-comentarios', planoId],
     queryFn: async () => {
       if (!planoId) return [];
@@ -80,7 +81,7 @@ export function PlanoAcaoDetailDrawer({
     enabled: open && !!planoId && !isExternal,
   });
 
-  const { data: historico = [], isLoading: loadingHistorico } = useQuery({
+  const { data: historico = [], isLoading: loadingHistorico, isError: historyError, refetch: retryHistory } = useQuery({
     queryKey: ['plano-acao-historico', planoId],
     queryFn: async () => {
       if (!planoId || !profile?.empresa_id) return [];
@@ -123,28 +124,31 @@ export function PlanoAcaoDetailDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[540px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden">
-        <SheetHeader className="px-6 pt-5 pb-5 border-b border-border space-y-4">
+      <SheetContent side="right" className="w-full sm:max-w-[580px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden">
+        <SheetHeader className="px-6 pt-5 pb-5 border-b border-border/70 bg-gradient-to-b from-primary/[0.035] to-background space-y-4 text-left">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-mono text-muted-foreground">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <PlanosAcaoIcon className="h-4 w-4 text-primary" aria-hidden="true" />
               {t('planosAcao.detailEyebrow')}
             </span>
             <div className="flex items-center gap-1">
               {!isExternal && (
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(plano)}>
+                <Button variant="ghost" size="sm" className="h-9 px-3 text-xs" onClick={() => onEdit(plano)}>
                   <IconEdit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                   {t('planosAcao.actionEdit')}
                 </Button>
               )}
               <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label={t('planosAcao.close')}>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" aria-label={t('planosAcao.close')}>
                   <IconClose className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </SheetClose>
             </div>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
+            <SheetTitle className="text-2xl leading-snug font-semibold break-words">{plano.titulo}</SheetTitle>
+            <SheetDescription className="sr-only">{t('experience.detailContext')}</SheetDescription>
             <div className="flex items-center gap-1.5 flex-wrap">
               {isExternal ? (
                 <StatusBadge tone={statusCfg.tone}>{statusCfg.label}</StatusBadge>
@@ -175,29 +179,30 @@ export function PlanoAcaoDetailDrawer({
               <StatusBadge tone={prioCfg.tone} mark={prioCfg.mark}>{prioCfg.label}</StatusBadge>
               <Chip family="category">{moduloLabels[plano.modulo_origem] || plano.modulo_origem || 'Manual'}</Chip>
             </div>
-            <SheetTitle className="text-xl leading-tight font-semibold">{plano.titulo}</SheetTitle>
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-6 mt-4 w-auto self-start">
-            <TabsTrigger value="visao">{t('planosAcao.tabOverview')}</TabsTrigger>
-            <TabsTrigger value="historico">{t('planosAcao.tabHistory')}</TabsTrigger>
-            <TabsTrigger value="comentarios">{t('planosAcao.tabComments')}</TabsTrigger>
+        <Tabs key={planoId} defaultValue="visao" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="px-6 w-full gap-5">
+            <TabsTrigger value="visao"><IconView aria-hidden="true" />{t('planosAcao.tabOverview')}</TabsTrigger>
+            <TabsTrigger value="historico"><IconHistory aria-hidden="true" />{t('planosAcao.tabHistory')}</TabsTrigger>
+            <TabsTrigger value="comentarios"><IconMessage aria-hidden="true" />{t('planosAcao.tabComments')}</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
-            <TabsContent value="visao" className="px-6 py-4 space-y-5 m-0">
-              <Field label={t('planosAcao.detailDescription')} value={plano.descricao} />
-              <Field label={t('planosAcao.detailNotes')} value={plano.observacoes} />
-              <div className="grid grid-cols-2 gap-4">
+            <TabsContent value="visao" className="px-6 py-2 space-y-6 m-0">
+              <section aria-label={t('experience.detailEssentials')} className="rounded-lg border border-border/70 bg-muted/15 p-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-5">
                 <Field label={t('planosAcao.columnDeadline')} value={plano.prazo ? formatDateOnly(plano.prazo) : null} />
                 <Field label={t('planosAcao.columnResponsible')} value={plano.profiles?.nome} />
                 <Field label={t('planosAcao.detailCreatedAt')} value={plano.created_at ? formatDateOnly(plano.created_at) : null} />
-                <Field label={t('planosAcao.detailCompletedAt')} value={plano.data_conclusao ? formatDateOnly(plano.data_conclusao) : null} />
+                {plano.data_conclusao && <Field label={t('planosAcao.detailCompletedAt')} value={formatDateOnly(plano.data_conclusao)} />}
               </div>
+              </section>
+              <Field label={t('planosAcao.detailDescription')} value={plano.descricao} />
+              {plano.observacoes && <Field label={t('planosAcao.detailNotes')} value={plano.observacoes} />}
 
-              <div className="space-y-1.5">
+              <div className="border-t border-border/70 pt-5 space-y-2">
                 <p className="text-xs text-muted-foreground">{t('planosAcao.detailOrigin')}</p>
                 {plano.registro_origem_titulo || plano._isExternal ? (
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
@@ -223,7 +228,7 @@ export function PlanoAcaoDetailDrawer({
             </TabsContent>
 
             <TabsContent value="historico" className="px-6 py-4 m-0">
-              {loadingHistorico ? (
+              {historyError ? <QueryError onRetry={() => void retryHistory()} /> : loadingHistorico ? (
                 <AkurisPulse />
               ) : historico.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('planosAcao.historyEmpty')}</p>
@@ -248,6 +253,7 @@ export function PlanoAcaoDetailDrawer({
                   <Textarea
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
+                    aria-label={t('planosAcao.commentPlaceholder')}
                     placeholder={t('planosAcao.commentPlaceholder')}
                     rows={3}
                   />
@@ -257,7 +263,7 @@ export function PlanoAcaoDetailDrawer({
                   </Button>
                 </div>
               )}
-              {loadingComentarios ? (
+              {commentsError ? <QueryError onRetry={() => void retryComments()} /> : loadingComentarios ? (
                 <AkurisPulse />
               ) : comentarios.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('planosAcao.commentsEmpty')}</p>
@@ -283,9 +289,9 @@ export function PlanoAcaoDetailDrawer({
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="space-y-1">
+    <div className="min-w-0 space-y-1.5">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm whitespace-pre-wrap">{value || '—'}</p>
+      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground">{value || '—'}</p>
     </div>
   );
 }

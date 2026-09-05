@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -19,25 +20,28 @@ export function useProjetoStats() {
   return useQuery({
     queryKey: ['projeto-stats', empresaId],
     enabled: !!empresaId,
-    queryFn: async (): Promise<ProjetoStats> => {
-      const { data: projetos } = await supabase
+    queryFn: async ({ signal }): Promise<ProjetoStats> => {
+      const { data: projetos, error: projectsError } = await readAllPages((from, to) => supabase
         .from('projetos' as any)
         .select('id, status')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
+      if (projectsError) throw projectsError;
       const projetosArr = ((projetos ?? []) as any[]).map((p) => p as { id: string; status: string });
       const projetoIds = projetosArr.map((p) => p.id);
 
       let tar: { id: string; prazo: string | null; concluida_em: string | null }[] = [];
       if (projetoIds.length) {
-        const { data } = await supabase
+        const { data, error } = await readAllPages((from, to) => supabase
           .from('projeto_tarefas' as any)
-          .select('id, prazo, concluida_em')
-          .in('projeto_id', projetoIds);
+          .select('id, prazo, concluida_em, projetos!inner(empresa_id)')
+          .eq('projetos.empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
+        if (error) throw error;
         tar = ((data ?? []) as any[]) as typeof tar;
       }
 
       const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const tarefasAtrasadas = tar.filter(
         (t) => t.prazo && !t.concluida_em && parseDataLocal(t.prazo) < now
       ).length;

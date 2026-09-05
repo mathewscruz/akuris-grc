@@ -40,34 +40,11 @@ export default {
         ui: 'color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow, transform, opacity',
       },
       fontSize: {
-        /**
-         * A escala inteira, e não só o pé dela.
-         *
-         * A primeira tentativa apertou micro/xs/sm e deixou base, lg, xl,
-         * 2xl e 4xl nos valores de fábrica do Tailwind. O resultado foi o
-         * pior dos dois mundos: o corpo do texto a 13px debaixo de títulos
-         * a 24px e de um número a 36px. O salto de 13 para 24 é de 1,85× —
-         * é isso que se lê como "grosso", não o tamanho de cada peça.
-         *
-         * Agora o degrau é de ~1,15 do princípio ao fim, e a escala está em
-         * `rem`, portanto acompanha a raiz — que por sua vez acompanha a
-         * resolução (ver o `html { font-size: clamp(...) }` em `index.css`).
-         * Os números abaixo são o que se vê num ecrã de 1440:
-         *
-         *   micro 11,4 · xs 11,4 · sm 12,4 · base 13,3 · lg 15,2 · xl 17,1
-         *   · 2xl 19 · 3xl 22,8 · 4xl 26,6 · 5xl 32,3
-         *
-         * Num monitor de 2560 o mesmo texto sai ~12% maior, e num portátil
-         * de 1280 ~6% menor. As páginas públicas não vêm por aqui: têm CSS
-         * próprio com `clamp()` em `index.css`.
-         *
-         * O que continua proibido é o tamanho escrito à mão: eram 399, em
-         * quatorze degraus, e voltam sozinhos se ninguém contar.
-         */
+        /** Escala em rem com raiz estável de 16px: leitura preservada também no celular. */
         micro: ['0.75rem', { lineHeight: '1rem' }],
         xs: ['0.75rem', { lineHeight: '1.0625rem' }],
-        sm: ['0.8125rem', { lineHeight: '1.125rem' }],
-        base: ['0.875rem', { lineHeight: '1.25rem' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem' }],
+        base: ['0.9375rem', { lineHeight: '1.5rem' }],
         lg: ['1rem', { lineHeight: '1.375rem' }],
         xl: ['1.125rem', { lineHeight: '1.5rem' }],
         '2xl': ['1.25rem', { lineHeight: '1.625rem' }],

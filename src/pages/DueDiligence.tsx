@@ -1,3 +1,4 @@
+import { useListState } from '@/hooks/useListState';
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -5,7 +6,7 @@ import { TemplatesManager } from '@/components/due-diligence/TemplatesManager';
 import { AssessmentsManagerEnhanced } from '@/components/due-diligence/AssessmentsManagerEnhanced';
 import { FornecedoresManager, type FornecedoresManagerHandle } from '@/components/due-diligence/FornecedoresManager';
 import { Button } from '@/components/ui/button';
-import { IconAdd } from '@/components/icons';
+import { IconAdd, IconOrg, IconChecklist, IconFile } from '@/components/icons';
 import { DueDiligenceDashboard } from '@/components/due-diligence/DueDiligenceDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
@@ -14,12 +15,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 export default function DueDiligence() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('fornecedores');
+  const [activeTab, setActiveTab] = useListState('activeTab', 'fornecedores');
   // O botão de criar vive no cabeçalho, como nos outros módulos; o gestor
   // abre o seu próprio diálogo quando a página lho pede.
   const gestorFornecedores = useRef<FornecedoresManagerHandle>(null);
   const [assessmentFilter, setAssessmentFilter] = useState<{ fornecedorId?: string; fornecedorNome?: string } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [focoFornecedor, setFocoFornecedor] = useState<string | null>(null);
   const [focoAvaliacao, setFocoAvaliacao] = useState<string | null>(null);
 
   /*
@@ -32,6 +34,12 @@ export default function DueDiligence() {
     paginados, e destacar um cartão da página 3 não bastava).
   */
   useEffect(() => {
+    const supplierId = searchParams.get('fornecedor');
+    if (supplierId) {
+      setActiveTab('fornecedores'); setFocoFornecedor(supplierId);
+      setSearchParams(current => { const next = new URLSearchParams(current); next.delete('fornecedor'); return next; }, { replace: true });
+      return;
+    }
     const alvo = searchParams.get('focus');
     if (!alvo) return;
     setActiveTab('assessments');
@@ -86,18 +94,19 @@ export default function DueDiligence() {
       />
 
       {/* Dashboard always visible on top */}
-      <DueDiligenceDashboard />
+      <DueDiligenceDashboard showAttention={activeTab !== 'assessments'} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="fornecedores">{t('modules.dueDiligence.suppliers')}</TabsTrigger>
-          <TabsTrigger value="assessments">{t('modules.dueDiligence.newAssessment')}</TabsTrigger>
-          <TabsTrigger value="templates">{t('modules.dueDiligence.templates')}</TabsTrigger>
+          <TabsTrigger value="fornecedores"><IconOrg className="h-4 w-4" />{t('modules.dueDiligence.suppliers')}</TabsTrigger>
+          <TabsTrigger value="assessments"><IconChecklist className="h-4 w-4" />{t('modules.dueDiligence.newAssessment')}</TabsTrigger>
+          <TabsTrigger value="templates"><IconFile className="h-4 w-4" />{t('modules.dueDiligence.templates')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="fornecedores" className="space-y-6">
           <FornecedoresManager
             ref={gestorFornecedores}
+            focoId={focoFornecedor}
             botaoNovoNoCabecalho
             acoesAvaliacao={{
               ver: (f) => {

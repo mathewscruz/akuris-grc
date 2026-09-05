@@ -26,7 +26,10 @@ describe('navegação coerente', () => {
     for (const f of NAVEGACAO) {
       expect(existsSync(f), `${f} tem de existir`).toBe(true);
       const src = readFileSync(f, 'utf8');
-      expect(src, `${f} tem de importar o mapa de ícones de módulo.`).toContain("from '@/lib/module-icons'");
+      const source = src.includes("from '@/lib/navigation'")
+        ? readFileSync(resolve(__dirname, '../lib/navigation.ts'), 'utf8')
+        : src;
+      expect(source, `${f} deve usar o mapa de ícones diretamente ou pelo catálogo compartilhado.`).toContain("from '@/lib/module-icons'");
     }
   });
 

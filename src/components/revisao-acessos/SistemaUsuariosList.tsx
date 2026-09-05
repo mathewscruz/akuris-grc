@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconAdd, IconEdit, IconDelete, IconMore, IconUsers, IconKey } from '@/components/icons';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
-import { useQueryClient } from "@tanstack/react-query";
+import { readAllPages } from '@/lib/read-all-pages';
+import { QueryError } from '@/components/ui/query-error';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ interface SistemaUsuario {
   sincronizado_em: string | null;
 }
 
-export function SistemaUsuariosList() {
+export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: string | null }) {
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -65,47 +66,38 @@ export function SistemaUsuariosList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [usuarioToDelete, setUsuarioToDelete] = useState<SistemaUsuario | null>(null);
   const [filtroSistema, setFiltroSistema] = useState<string>("todos");
+  const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImportingPrivileged, setIsImportingPrivileged] = useState(false);
 
-  const { data: sistemas } = useOptimizedQuery<Sistema[]>(
-    async () => {
-      const { data, error } = await supabase
-        .from("sistemas_privilegiados")
-        .select("id, nome_sistema")
-        .eq("empresa_id", empresaId)
-        .eq("ativo", true)
-        .order("nome_sistema");
-      return { data: data || [], error };
-    },
-    [empresaId],
-    { cacheKey: `sistemas-privilegiados-${empresaId}` }
-  );
-
-  const { data: usuarios, loading, refetch: refetchUsuarios } = useOptimizedQuery<SistemaUsuario[]>(
-    async () => {
-      let query = supabase
-        .from("sistemas_usuarios")
-        .select(`
-          *,
-          sistema:sistemas_privilegiados(nome_sistema)
-        `)
-        .eq("empresa_id", empresaId)
-        .order("nome_usuario");
-
-      if (filtroSistema !== "todos") {
-        query = query.eq("sistema_id", filtroSistema);
-      }
-
-      const { data, error } = await query;
-      return { data: data || [], error };
-    },
-    [empresaId, filtroSistema],
-    { cacheKey: `sistemas-usuarios-${empresaId}-${filtroSistema}` }
-  );
+  useEffect(() => {
+    setFiltroSistema(sistemaIdInicial || 'todos'); setSearchTerm('');
+    setDialogOpen(false); setDeleteDialogOpen(false); setSelectedUsuario(null); setUsuarioToDelete(null);
+  }, [empresaId, sistemaIdInicial]);
+  const systemsQuery = useQuery({
+    queryKey: ['review-users-systems', empresaId], enabled: !!empresaId,
+    queryFn: async ({ signal }) => (await readAllPages((from, to) => supabase.from('sistemas_privilegiados')
+      .select('id, nome_sistema').eq('empresa_id', empresaId!).eq('ativo', true)
+      .order('nome_sistema').order('id').range(from, to).abortSignal(signal), signal)).data,
+  });
+  const usersQuery = useQuery({
+    queryKey: ['sistemas-usuarios', empresaId, filtroSistema], enabled: !!empresaId,
+    queryFn: async ({ signal }) => (await readAllPages((from, to) => {
+      let query = supabase.from('sistemas_usuarios').select('*, sistema:sistemas_privilegiados(nome_sistema)').eq('empresa_id', empresaId!);
+      if (filtroSistema !== 'todos') query = query.eq('sistema_id', filtroSistema);
+      return query.order('nome_usuario').order('id').range(from, to).abortSignal(signal);
+    }, signal)).data,
+  });
+  const sistemas = systemsQuery.data ?? [];
+  const usuarios = usersQuery.data ?? [];
+  const loading = systemsQuery.isLoading || usersQuery.isLoading;
+  const failed = systemsQuery.isError || usersQuery.isError;
+  const refetchUsuarios = usersQuery.refetch;
+  const filteredUsers = usuarios.filter(item => [item.nome_usuario, item.email_usuario, item.departamento, item.sistema?.nome_sistema]
+    .some(value => value?.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())));
 
   const invalidateCache = () => {
-    queryClient.invalidateQueries({ queryKey: [`sistemas-usuarios-${empresaId}`] });
+    queryClient.invalidateQueries({ queryKey: ['sistemas-usuarios', empresaId] });
     void refetchUsuarios();
   };
 
@@ -114,15 +106,15 @@ export function SistemaUsuariosList() {
     setIsImportingPrivileged(true);
     try {
       const [{ data: contas, error: contasError }, { data: existentes, error: existentesError }] = await Promise.all([
-        supabase
+        readAllPages((from, to) => supabase
           .from('contas_privilegiadas')
           .select('id, sistema_id, usuario_beneficiario, email_beneficiario, tipo_acesso, nivel_privilegio, data_concessao, data_expiracao, justificativa_negocio, observacoes, status')
-          .eq('empresa_id', empresaId),
-        supabase
+          .eq('empresa_id', empresaId).order('id').range(from, to)),
+        readAllPages((from, to) => supabase
           .from('sistemas_usuarios')
           .select('id, origem_id')
           .eq('empresa_id', empresaId)
-          .eq('origem', 'conta_privilegiada'),
+          .eq('origem', 'conta_privilegiada').order('id').range(from, to)),
       ]);
       if (contasError) throw contasError;
       if (existentesError) throw existentesError;
@@ -332,7 +324,9 @@ export function SistemaUsuariosList() {
     },
   ];
 
-  if (!usuarios?.length && !loading) {
+  if (failed) return <QueryError onRetry={() => { void usersQuery.refetch(); void systemsQuery.refetch(); }} />;
+
+  if (!usuarios.length && !loading && filtroSistema === 'todos' && !searchTerm) {
     return (
       <div className="space-y-4">
         {/*
@@ -383,7 +377,7 @@ export function SistemaUsuariosList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap gap-2 justify-between items-center">
         <Select value={filtroSistema} onValueChange={setFiltroSistema}>
           <SelectTrigger className="w-[250px]">
             <SelectValue placeholder={t("revisaoAcessosComp.usuariosList.filterPlaceholder")} />
@@ -403,13 +397,18 @@ export function SistemaUsuariosList() {
       <DataTable
         paginated
         columns={columns}
-        data={usuarios || []}
+        data={filteredUsers}
+        error={failed}
+        onRefresh={() => { void usersQuery.refetch(); void systemsQuery.refetch(); }}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        filtering={{ active: filtroSistema !== 'todos', onClear: () => setFiltroSistema('todos') }}
         /* Sem isto, durante a leitura ficavam cabeçalhos de coluna sobre um
            vazio branco -- sem indicação nenhuma de que algo estava a carregar. */
         loading={loading}
         searchable
         searchPlaceholder={t("revisaoAcessosComp.usuariosList.searchPlaceholder")}
-        pageSize={10}
+        pageSize={20}
       />
 
       <SistemaUsuarioDialog

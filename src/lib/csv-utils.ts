@@ -3,6 +3,12 @@ import { formatarDiaParaDB } from '@/lib/date-utils';/**
  * Utility for CSV export with proper UTF-8 BOM for Excel compatibility
  */
 
+/** Export user-controlled text as text, not a spreadsheet formula. */
+export function spreadsheetText(value: unknown): string {
+  const text = value == null ? '' : String(value);
+  return /^[\s]*[=+@-]/.test(text) || /^[\t\r]/.test(text) ? `'${text}` : text;
+}
+
 export function exportCSV(headers: string[], rows: (string | number | null | undefined)[][], filename: string) {
   const csvContent = [
     headers.join(';'),

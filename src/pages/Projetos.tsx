@@ -1,4 +1,6 @@
+import { rowOpenProps } from '@/lib/row-interaction';
 import React, { useState } from 'react';
+import { QueryError } from '@/components/ui/query-error';
 import { IconAdd, IconSuccess, IconWarning, IconChecklist, IconMail, IconGrid, IconRows } from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,8 +34,8 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'info'> = {
 export default function Projetos() {
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
-  const { data: projetos = [], isLoading } = useProjetos();
-  const { data: stats } = useProjetoStats();
+  const { data: projetos = [], isLoading, isError, refetch } = useProjetos();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useProjetoStats();
   const { empresaId } = useEmpresaId();
 
   /*
@@ -47,7 +49,7 @@ export default function Projetos() {
     Uma consulta agregada para todos os projetos, em vez de uma por cartao:
     com dez projetos seriam dez consultas a fazer a mesma coisa.
   */
-  const { data: tarefasPorProjeto } = useQuery({
+  const { data: tarefasPorProjeto, isError: tasksError, isLoading: tasksLoading, refetch: retryTasks } = useQuery({
     queryKey: ['projetos-progresso', empresaId],
     enabled: !!empresaId,
     staleTime: 60_000,
@@ -98,15 +100,17 @@ export default function Projetos() {
         title={t('projetos.page.title')}
         description={t('projetos.page.subtitle')}
         actions={
-          <Button onClick={openNovo}><IconAdd className="h-4 w-4" /> {t('projetos.page.newProject')}</Button>
+          <>
+            <Button variant="outline" onClick={() => navigate('/projetos/minhas-tarefas')}>{t('projetos.page.myTasks')}</Button>
+            <Button onClick={openNovo}><IconAdd className="h-4 w-4" /> {t('projetos.page.newProject')}</Button>
+          </>
         }
         secondaryActions={[
           { label: t('projetos.page.templates'), icon: <IconRows className="h-4 w-4" />, onClick: () => navigate('/projetos/templates') },
-          { label: t('projetos.page.myTasks'), icon: <IconMail className="h-4 w-4" />, onClick: () => navigate('/projetos/minhas-tarefas') },
         ]}
       />
 
-      <StatStrip
+      <StatStrip loading={statsLoading} error={statsError}
         items={[
           { key: 'ativos', label: t('projetos.page.statActive'), value: stats?.projetosAtivos ?? 0 },
           { key: 'abertas', label: t('projetos.page.statOpenTasks'), value: stats?.tarefasAbertas ?? 0 },
@@ -123,7 +127,8 @@ export default function Projetos() {
         </div>
       )}
 
-      {isLoading ? (
+      {tasksError && <QueryError onRetry={() => void retryTasks()} />}
+      {isError ? <QueryError onRetry={() => void refetch()} /> : isLoading ? (
         <ModuleLoadingSkeleton statCards={4} />
       ) : visiveis.length === 0 ? (
         <EmptyState
@@ -132,7 +137,7 @@ export default function Projetos() {
           title={mostrarArquivados ? t('projetos.page.emptyArchivedTitle') : t('projetos.page.emptyTitle')}
           description={mostrarArquivados
             ? t('projetos.page.emptyArchivedDesc')
-            : t('projetos.page.emptyDesc')}
+            : t('experience.projectFirstRun')}
           action={!mostrarArquivados ? { label: t('projetos.page.createProject'), onClick: openNovo } : undefined}
         />
       ) : (
@@ -146,7 +151,7 @@ export default function Projetos() {
               key={p.id}
               variant="elevated"
               interactive
-              onClick={() => navigate(`/projetos/${p.id}`)}
+              {...rowOpenProps(() => navigate(`/projetos/${p.id}`), p.nome)}
               className="overflow-hidden"
             >
               <div className="h-1.5" style={{ backgroundColor: p.cor ?? '#7552FF' }} />
@@ -161,6 +166,7 @@ export default function Projetos() {
                 {p.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{p.descricao}</p>}
 
                 {(() => {
+                  if (tasksError || tasksLoading) return <p className="text-sm text-muted-foreground">{t(tasksError ? 'experience.unavailable' : 'common.loading')}</p>;
                   const c = tarefasPorProjeto?.get(p.id);
                   const total = c?.total ?? 0;
                   const feitas = c?.feitas ?? 0;

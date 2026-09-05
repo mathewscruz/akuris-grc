@@ -1,3 +1,4 @@
+import { useListState } from '@/hooks/useListState';
 import { useMemo, useState, useEffect } from "react";
 import {
   IconChevron,
@@ -43,6 +44,8 @@ import { RopaTab, type NivelRopa } from "@/components/dados/RopaTab";
 import { SolicitacaoTitularDialog } from "@/components/dados/SolicitacaoTitularDialog";
 import { DescoberDadosTab } from "@/components/dados/DescoberDadosTab";
 import { StatStrip } from "@/components/ui/stat-strip";
+import { QueryError } from "@/components/ui/query-error";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { formatDateOnly, parseDataLocal } from "@/lib/date-utils";
@@ -91,7 +94,7 @@ export default function Privacidade() {
   const podeEditar = canUpdate("dados");
   const podeExcluir = canDelete("dados");
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("jornada");
+  const [activeTab, setActiveTab] = useListState('activeTab', "jornada");
   const [searchParams] = useSearchParams();
   const [showDadosDialog, setShowDadosDialog] = useState(false);
   const [showMapeamentoDialog, setShowMapeamentoDialog] = useState(false);
@@ -130,15 +133,15 @@ export default function Privacidade() {
   const [catalogoSortDirection, setCatalogoSortDirection] = useState<
     "asc" | "desc"
   >("asc");
-  const [searchCatalogoTerm, setSearchCatalogoTerm] = useState("");
-  const [categoriaFilter, setCategoriaFilter] = useState("todos");
-  const [sensibilidadeFilter, setSensibilidadeFilter] = useState("todos");
+  const [searchCatalogoTerm, setSearchCatalogoTerm] = useListState('searchCatalogoTerm', "");
+  const [onlyIncomplete, setOnlyIncomplete] = useListState('onlyIncomplete', false);
+  const [categoriaFilter, setCategoriaFilter] = useListState('categoriaFilter', "todos");
+  const [sensibilidadeFilter, setSensibilidadeFilter] = useListState('sensibilidadeFilter', "todos");
 
   // States for Solicitações tab DataTable
-  const [searchSolicitacoesTerm, setSearchSolicitacoesTerm] = useState("");
-  const [statusSolicitacoesFilter, setStatusSolicitacoesFilter] =
-    useState("todos");
-  const [tipoSolicitacaoFilter, setTipoSolicitacaoFilter] = useState("todos");
+  const [searchSolicitacoesTerm, setSearchSolicitacoesTerm] = useListState('searchSolicitacoesTerm', "");
+  const [statusSolicitacoesFilter, setStatusSolicitacoesFilter] = useListState('statusSolicitacoesFilter', "todos");
+  const [tipoSolicitacaoFilter, setTipoSolicitacaoFilter] = useListState('tipoSolicitacaoFilter', "todos");
   const [sortSolicitacoesField, setSortSolicitacoesField] =
     useState<string>("");
   const [sortSolicitacoesDirection, setSortSolicitacoesDirection] = useState<
@@ -152,7 +155,6 @@ export default function Privacidade() {
     data: privacidadeData,
     isLoading,
     isError,
-    error: erroCarregamento,
     refetch,
   } = useQuery({
     queryKey: ["privacidade", empresaId],
@@ -429,6 +431,7 @@ export default function Privacidade() {
     () =>
       dadosPessoais.filter(
         (d: any) =>
+          (!onlyIncomplete || !String(d.nome ?? "").trim()) &&
           (semFiltro(categoriaFilter) ||
             d.categoria_dados === categoriaFilter) &&
           (semFiltro(sensibilidadeFilter) ||
@@ -436,7 +439,7 @@ export default function Privacidade() {
           (contem(d.nome, searchCatalogoTerm) ||
             contem(d.descricao, searchCatalogoTerm)),
       ),
-    [dadosPessoais, categoriaFilter, sensibilidadeFilter, searchCatalogoTerm],
+    [dadosPessoais, categoriaFilter, sensibilidadeFilter, searchCatalogoTerm, onlyIncomplete],
   );
 
   const solicitacoesFiltradas = useMemo(
@@ -572,7 +575,7 @@ export default function Privacidade() {
         <div>
           <button
             type="button"
-            className="min-h-10 max-w-[280px] text-left"
+            className="min-h-10 w-full min-w-48 text-left"
             onClick={() => {
               setSelectedDado(row);
               setShowDadoSheet(true);
@@ -1068,6 +1071,8 @@ export default function Privacidade() {
     }
   };
 
+  if (isError) return <div className="space-y-6"><PageHeader title={t("modules.privacidade.title")} /><QueryError onRetry={() => void refetch()} /></div>;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -1119,24 +1124,6 @@ export default function Privacidade() {
         }
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="jornada">
-            {t("privacidadePrograma.tabs.jornada")}
-          </TabsTrigger>
-          <TabsTrigger value="catalogo">
-            {t("cardsKpi.privacidade.abaCatalogo")}
-          </TabsTrigger>
-          <TabsTrigger value="ropa">
-            {t("sweepDados.privacidade.abaRopa")}
-          </TabsTrigger>
-          <TabsTrigger value="solicitacoes">
-            {t("cardsKpi.privacidade.abaSolicitacoes")}
-          </TabsTrigger>
-          <TabsTrigger value="descobertas">
-            {t("sweepDados.privacidade.abaDescobertas")}
-          </TabsTrigger>
-        </TabsList>
 
         <StatStrip
           loading={isLoading}
@@ -1182,37 +1169,34 @@ export default function Privacidade() {
           ]}
         />
 
-        {isError && (
-          <div
-            role="alert"
-            className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="font-medium text-destructive">
-                {t("privacidadePrograma.erroCarregamentoTitulo")}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t("privacidadePrograma.erroCarregamentoDescricao")}
-                {erroCarregamento instanceof Error
-                  ? ` ${erroCarregamento.message}`
-                  : ""}
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => void refetch()}>
-              {t("common.retry")}
-            </Button>
-          </div>
-        )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="h-auto flex-wrap justify-start">
+          <TabsTrigger value="jornada"><IconShieldAlert aria-hidden />
+            {t("privacidadePrograma.tabs.jornada")}
+          </TabsTrigger>
+          <TabsTrigger value="catalogo"><IconDatabase aria-hidden />
+            {t("cardsKpi.privacidade.abaCatalogo")}
+          </TabsTrigger>
+          <TabsTrigger value="ropa"><IconFile aria-hidden />
+            {t("sweepDados.privacidade.abaRopa")}
+          </TabsTrigger>
+          <TabsTrigger value="solicitacoes"><IconUsers aria-hidden />
+            {t("cardsKpi.privacidade.abaSolicitacoes")}
+          </TabsTrigger>
+          <TabsTrigger value="descobertas"><IconSearch aria-hidden />
+            {t("sweepDados.privacidade.abaDescobertas")}
+          </TabsTrigger>
+        </TabsList>
 
         {(dadosIncompletos > 0 || incidentesPrivacidade > 0) && (
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
             {dadosIncompletos > 0 && (
-              <span className="flex items-center gap-2 text-foreground">
+              <button type="button" onClick={() => { setActiveTab("catalogo"); setOnlyIncomplete(true); setSearchCatalogoTerm(""); setCategoriaFilter("todos"); setSensibilidadeFilter("todos"); }} className="flex items-center gap-2 text-left text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <IconWarning className="h-4 w-4 shrink-0 text-warning" />
                 {t("sweepDados.privacidade.incompletosAviso", {
                   count: dadosIncompletos,
                 })}
-              </span>
+              </button>
             )}
             {incidentesPrivacidade > 0 && (
               <button
@@ -1229,7 +1213,7 @@ export default function Privacidade() {
         )}
 
         <TabsContent value="jornada" className="space-y-4">
-          <CentroPrivacidadeTab
+          {isLoading ? <Skeleton className="h-80" /> : <CentroPrivacidadeTab
             dadosPessoais={dadosPessoais}
             ropaRegistros={ropaRegistros}
             solicitacoes={solicitacoes}
@@ -1238,10 +1222,11 @@ export default function Privacidade() {
             canCreate={podeCriar}
             canUpdate={podeEditar}
             canDelete={podeExcluir}
-          />
+          />}
         </TabsContent>
 
         <TabsContent value="catalogo" className="space-y-4">
+          {onlyIncomplete && <div className="flex flex-wrap items-center gap-3 text-sm"><span>{t("sweepDados.privacidade.cadastroIncompleto")}</span><Button variant="ghost" size="sm" onClick={() => setOnlyIncomplete(false)}>{t("common.clearFilters")}</Button></div>}
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -1254,6 +1239,7 @@ export default function Privacidade() {
                   setShowDadoSheet(true);
                 }}
                 searchPlaceholder={t("sweepDados.privacidade.buscarDados")}
+                filtering={{ active: onlyIncomplete, onClear: () => setOnlyIncomplete(false) }}
                 searchValue={searchCatalogoTerm}
                 onSearchChange={setSearchCatalogoTerm}
                 filters={catalogoFilters}

@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { IconEdit, IconDelete, IconDownload, IconUpload, IconCalendar, IconSend, IconFile, IconMessage, IconPerson, IconMail, IconShield, IconActivity, IconLink, IconAttach, IconTest, IconChecklist, ControlesIcon } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { QueryError } from "@/components/ui/query-error";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +67,8 @@ export function ControleDetalheDialog({
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [vincularOpen, setVincularOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState('overview');
+  useEffect(() => { if (open) setDetailTab('overview'); }, [open, controle?.id]);
 
   // Requisitos de framework ligados a este controlo (N para N)
   const { data: requisitosLigados } = useControleRequisitos(open ? controle?.id ?? null : null);
@@ -75,7 +78,7 @@ export function ControleDetalheDialog({
   // enchia a cache, e a lista de testes ficava a renderizar registos sem data
   // nem resultado ("Teste de -"). Buscar as linhas completas nas duas resolve a
   // colisão e poupa um pedido.
-  const { data: testesControle } = useQuery({
+  const { data: testesControle, isError: testsError, refetch: retryTests } = useQuery({
     queryKey: ['controles_testes', controle?.id],
     enabled: open && !!controle?.id,
     queryFn: async () => {
@@ -574,8 +577,12 @@ export function ControleDetalheDialog({
           </section>
 
           {/* Tabs */}
-          <Tabs defaultValue="comentarios">
+          <Tabs value={detailTab} onValueChange={setDetailTab}>
             <TabsList className="flex-shrink-0">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <ControlesIcon className="h-4 w-4" />
+                {t('experience.overview')}
+              </TabsTrigger>
               <TabsTrigger value="comentarios" className="flex items-center gap-2">
                 <IconMessage className="h-4 w-4" />
                 {t('controlesAuditorias.cddTabComentarios', { count: comentarios?.length || 0 })}
@@ -611,6 +618,23 @@ export function ControleDetalheDialog({
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="overview" className="space-y-4">
+              <p className="text-sm leading-relaxed text-muted-foreground">{t('experience.controlOverview')}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <section className="rounded-lg border border-border bg-card p-4">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><IconTest className="h-4 w-4 text-muted-foreground" />{t('t4.testes.tab', { count: testesControle?.length ?? '—' })}</h3>
+                  {testsError && <QueryError onRetry={() => void retryTests()} />}
+                  {testesControle?.length === 0 && <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{t('experience.noControlTests')}</p>}
+                  <Button variant="outline" size="sm" onClick={() => setDetailTab('testes')}>{t('experience.viewTests')}</Button>
+                  {canEdit && <Button variant="ghost" size="sm" onClick={() => setDetailTab('planos')}>{t('experience.planTest')}</Button>}
+                </section>
+                <section className="rounded-lg border border-border bg-card p-4">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><IconAttach className="h-4 w-4 text-muted-foreground" />{t('controlesAuditorias.cddTabEvidencias', { count: evidencias?.length ?? '—' })}</h3>
+                  {evidencias?.length === 0 && <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{t('experience.noControlEvidence')}</p>}
+                  <Button variant="outline" size="sm" onClick={() => setDetailTab('evidencias')}>{t('experience.viewEvidence')}</Button>
+                </section>
+              </div>
+            </TabsContent>
             <TabsContent value="comentarios" className="flex flex-col space-y-4">
               {/* Input de novo comentário com menções */}
               <div className="relative flex-shrink-0 rounded-lg border border-border/80 bg-popover shadow-sm focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10">
@@ -828,7 +852,7 @@ export function ControleDetalheDialog({
             <TabsContent value="testes" className="flex-1 min-h-0 overflow-hidden flex flex-col">
               <ScrollArea className="flex-1 min-h-0">
                 <div className="pr-4">
-                  <TestesList controleId={controle.id} controleNome={controle.nome} />
+                  <TestesList controleId={controle.id} controleNome={controle.nome} canEdit={canEdit} />
                 </div>
               </ScrollArea>
             </TabsContent>
@@ -871,7 +895,9 @@ export function ControleDetalheDialog({
             </TabsContent>
 
             <TabsContent value="planos" className="flex flex-col space-y-4">
+              <p className="text-sm text-muted-foreground">{t('experience.planTestHint')}</p>
               <PlanosAcaoVinculados
+                permitirCriar={canEdit}
                 modulo="controles"
                 registroId={controle.id}
                 registroTitulo={controle.nome}

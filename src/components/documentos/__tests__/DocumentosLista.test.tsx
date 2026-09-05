@@ -1,4 +1,4 @@
-import { render, screen, within, cleanup } from '@testing-library/react';
+import { render, screen, within, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DocumentosLista,
@@ -156,8 +156,9 @@ describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
     const mobile = screen.getByTestId('documentos-lista-mobile');
 
     expect(within(mobile).getByText('Documento sem metadados')).toBeInTheDocument();
-    // Classificação ausente cai no padrão "Interna"
-    expect(within(mobile).getByText('Interna')).toBeInTheDocument();
+    // Ausência de classificação não inventa uma classificação aprovada.
+    expect(within(mobile).getByText('Por classificar')).toBeInTheDocument();
+    expect(within(mobile).queryByText('Interna')).toBeNull();
     // Validade e Versão ausentes exibem placeholder, sem "undefined"/"vnull"
     expect(within(mobile).getAllByText('-').length).toBeGreaterThanOrEqual(2);
     expect(mobile.textContent).not.toMatch(/undefined|null|NaN/);
@@ -196,6 +197,22 @@ describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
 
     expect(within(mobile).getByText('Nenhum documento cadastrado')).toBeInTheDocument();
     expect(within(desktop).getByText('Nenhum documento cadastrado')).toBeInTheDocument();
+  });
+
+  it('delegar a ordenação mantém a página recebida e usa o campo real de validade', async () => {
+    const onSort = vi.fn();
+    renderLista({
+      documentos: [{ ...documento, id: 'z', nome: 'Zeta' }, { ...documento, id: 'a', nome: 'Alfa' }],
+      sort: { field: 'nome', direction: 'asc' },
+      onSort,
+    });
+    const desktop = within(screen.getByTestId('documentos-tabela-desktop'));
+    expect(desktop.getByRole('columnheader', { name: 'Nome' })).toHaveAttribute('aria-sort', 'ascending');
+    const rows = desktop.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Zeta');
+    expect(rows[2]).toHaveTextContent('Alfa');
+    fireEvent.click(desktop.getByRole('button', { name: 'Validade' }));
+    expect(onSort).toHaveBeenCalledWith('data_vencimento');
   });
 
 });

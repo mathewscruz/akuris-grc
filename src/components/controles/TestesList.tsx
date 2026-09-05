@@ -1,3 +1,5 @@
+import { QueryError } from "@/components/ui/query-error";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
 import { IconAdd, IconEdit, IconDelete, IconCalendar, IconTest, IconPerson, IconCheck } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,9 +44,13 @@ interface ControleTeste {
 interface TestesListProps {
   controleId: string;
   controleNome: string;
+  canEdit?: boolean;
 }
 
-export default function TestesList({ controleId, controleNome }: TestesListProps) {
+export default function TestesList({ controleId, controleNome, canEdit = true }: TestesListProps) {
+  const permissions = usePermissions();
+  const editable = canEdit && permissions.canUpdate('controles');
+  const deletable = canEdit && permissions.canDelete('controles');
   const [testeDialogOpen, setTesteDialogOpen] = useState(false);
   const [editingTeste, setEditingTeste] = useState<ControleTeste | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
@@ -54,7 +60,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
   const { user } = useAuth();
 
   // Buscar testes do controle
-  const { data: testes = [], isLoading } = useQuery({
+  const { data: testes = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['controles_testes', controleId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -159,6 +165,8 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     </StatusBadge>
   );
 
+  if (isError) return <QueryError onRetry={() => void refetch()} />;
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -179,6 +187,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
           <h3 className="text-lg font-semibold">{t('controlesAuditorias.tlTitle')}</h3>
         </div>
         <Button
+          disabled={!editable}
           onClick={() => {
             setEditingTeste(null);
             setTesteDialogOpen(true);
@@ -198,7 +207,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
             <p className="text-muted-foreground mb-4 text-center">
               {t('controlesAuditorias.tlEmptyDesc')}
             </p>
-            <Button 
+            <Button disabled={!editable}
               onClick={() => {
                 setEditingTeste(null);
                 setTesteDialogOpen(true);
@@ -312,14 +321,14 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                 ) : (
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     {teste.estado !== 'submetido' && (
-                      <Button variant="outline" size="sm" onClick={() => mudarEstado(teste, 'submetido')}>
+                      <Button disabled={!editable} variant="outline" size="sm" onClick={() => mudarEstado(teste, 'submetido')}>
                         {t('t4.testes.submeter')}
                       </Button>
                     )}
                     {teste.estado === 'submetido' && (
                       <Button
                         size="sm"
-                        disabled={souExecutor(teste)}
+                        disabled={!editable || souExecutor(teste)}
                         title={souExecutor(teste) ? t('t4.testes.erroAutoAtestacao') : undefined}
                         onClick={() => mudarEstado(teste, 'atestado')}
                       >
@@ -338,6 +347,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={!editable}
                     onClick={() => handleEdit(teste)}
                   >
                     <IconEdit className="w-3 h-3 mr-1" />
@@ -346,6 +356,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                   <Button
                     variant="destructive"
                     size="sm"
+                    disabled={!deletable}
                     onClick={() => handleDelete(teste.id)}
                   >
                     <IconDelete className="w-3 h-3 mr-1" />

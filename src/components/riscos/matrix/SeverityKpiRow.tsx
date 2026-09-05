@@ -65,7 +65,7 @@ export function SeverityKpiRow({ counts, trends, onSelect }: Props) {
       value: counts[sev] ?? 0,
       tone: SEV_TONE[sev],
       attentionPulse: sev === 'critico' && criticalArrival,
-      context: t('riscosVisoes.matrix.severityKpiRow.vsMesAnterior'),
+      context: delta == null ? t('experience.noHistory') : t('riscosVisoes.matrix.severityKpiRow.vsMesAnterior'),
       hint: `${label} — ${t('riscosVisoes.matrix.severityKpiRow.vsMesAnterior')}: ${trendLabel(delta)}`,
       trend: delta === null || delta === undefined
         ? undefined

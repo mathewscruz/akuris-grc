@@ -1,3 +1,5 @@
+import { readAllPages, readAllPagesByIds } from "@/lib/read-all-pages";
+import { useListState } from "@/hooks/useListState";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { orIlike } from '@/lib/busca-segura';
 import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile, IconEdit, IconDelete, IconChecklist } from '@/components/icons';
@@ -37,9 +39,9 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
   const { toast } = useToast();
   const location = useLocation();
   const { empresaId } = useEmpresaId();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [tipoFilter, setTipoFilter] = useState<string>("todos");
+  const [searchTerm, setSearchTerm] = useListState("searchTerm", "");
+  const [statusFilter, setStatusFilter] = useListState<string>("statusFilter", "todos");
+  const [tipoFilter, setTipoFilter] = useListState<string>("tipoFilter", "todos");
   const [selectedAuditoria, setSelectedAuditoria] = useState<any>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAuditoriaDialog, setShowAuditoriaDialog] = useState(false);
@@ -48,9 +50,10 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
 
   const { data: usuarios } = useUsuariosEmpresa();
 
-  const { data: auditorias, isLoading, refetch } = useQuery({
+  const { data: auditorias, isLoading, isError, refetch } = useQuery({
     queryKey: ['auditorias', empresaId, searchTerm, statusFilter, tipoFilter],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => {
       let query = supabase
         .from('auditorias')
         .select('*')
@@ -74,7 +77,8 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
         query = query.eq('tipo', tipoFilter);
       }
 
-      const { data, error } = await query;
+      return query.order('id').range(from, to).abortSignal(signal);
+      }, signal);
 
       if (error) {
         toast({
@@ -98,23 +102,23 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
    * 3 para 1. Um KPI que muda quando se filtra a lista não é um KPI, é uma
    * segunda contagem da lista com o rótulo errado.
    */
-  const { data: todasAsAuditorias } = useQuery({
+  const { data: todasAsAuditorias, isLoading: statsLoading, isError: statsError, refetch: retryStats } = useQuery({
     queryKey: ['auditorias-kpi', empresaId],
     enabled: !!empresaId,
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('auditorias')
         .select('id, status')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return data ?? [];
     },
   });
 
   // Buscar contagens de itens para todas as auditorias (inclui auditoria_itens + controles_auditorias)
-  const { data: auditoriasCounts } = useQuery({
-    queryKey: ['auditorias-counts', todasAsAuditorias?.map(a => a.id)],
-    queryFn: async () => {
+  const { data: auditoriasCounts, isLoading: countsLoading, isError: countsError, refetch: retryCounts } = useQuery({
+    queryKey: ['auditorias-counts', empresaId, todasAsAuditorias?.map(a => a.id)],
+    queryFn: async ({ signal }) => {
       const auditorias = todasAsAuditorias;
       if (!auditorias || auditorias.length === 0) return {};
 
@@ -123,16 +127,16 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       
       // Buscar TODOS os itens de todas as auditorias de uma vez
       const [itensRes, controlesRes] = await Promise.all([
-        supabase
+        readAllPagesByIds(auditoriaIds, (ids, from, to) => supabase
           .from('auditoria_itens')
           // `controle_vinculado_id` e o que permite deduplicar contra
           // `controles_auditorias`, que e espelhada por gatilho a partir daqui.
           .select('id, status, auditoria_id, controle_vinculado_id')
-          .in('auditoria_id', auditoriaIds),
-        supabase
+          .in('auditoria_id', ids).order('id').range(from, to).abortSignal(signal), signal),
+        readAllPagesByIds(auditoriaIds, (ids, from, to) => supabase
           .from('controles_auditorias')
           .select(`auditoria_id, controle_id, controle:controles(id, status)`)
-          .in('auditoria_id', auditoriaIds)
+          .in('auditoria_id', ids).order('id').range(from, to).abortSignal(signal), signal)
       ]);
       
       /**
@@ -146,6 +150,8 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
        * auditado. A Deloitte-2025 saía "50/50 · 100% concluído" no cartão e no
        * CSV com zero itens de trabalho concluídos e zero testes.
        */
+      if (itensRes.error) throw itensRes.error;
+      if (controlesRes.error) throw controlesRes.error;
       for (const auditoria of auditorias) {
         const itens = itensRes.data?.filter(i => i.auditoria_id === auditoria.id) || [];
         const controles = controlesRes.data?.filter((c: any) => c.auditoria_id === auditoria.id) || [];
@@ -355,11 +361,12 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       label: t("governancaComp.auditorias.columnTipo"),
       sortable: true,
       render: (_v: any, a: any) => (
-        <StatusBadge tone="neutral" variant="outline">{formatStatus(a.tipo)}</StatusBadge>
+        <span className="text-muted-foreground">{formatStatus(a.tipo)}</span>
       ),
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t("governancaComp.auditorias.columnStatus"),
       sortable: true,
       render: (_v: any, a: any) => (
@@ -375,6 +382,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     },
     {
       key: 'prioridade',
+      mobilePriority: 1,
       label: t("governancaComp.auditorias.columnPrioridade"),
       sortable: true,
       render: (_v: any, a: any) => (
@@ -392,7 +400,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
         const pct = Math.round((c.itensConcluidos / c.itens) * 100);
         return (
           <div className="flex items-center gap-2 min-w-[110px]">
-            <span className="text-xs tabular-nums whitespace-nowrap">{c.itensConcluidos}/{c.itens}</span>
+            <span className="text-xs tabular-nums whitespace-nowrap">{t("experience.auditedItems", { completed: c.itensConcluidos, total: c.itens })}</span>
             <Progress value={pct} className="h-1.5 flex-1" />
             <span className="text-micro text-muted-foreground tabular-nums">{pct}%</span>
           </div>
@@ -401,6 +409,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     },
     {
       key: 'auditor_responsavel',
+      mobilePriority: 3,
       label: t("governancaComp.auditorias.columnAuditor"),
       sortable: true,
       render: (_v: any, a: any) => {
@@ -409,6 +418,12 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
           ? <span className="text-xs">{u.nome}</span>
           : <span className="text-muted-foreground">-</span>;
       },
+    },
+    {
+      key: 'data_fim_prevista',
+      label: t('experience.deadline'),
+      mobilePriority: 2,
+      render: (_v: any, a: any) => a.data_fim_prevista ? formatDateOnly(a.data_fim_prevista) : t('experience.noDeadline'),
     },
     {
       key: 'data_inicio',
@@ -458,11 +473,12 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     <div className="space-y-6">
       {/* KPIs */}
       <StatStrip
-        loading={isLoading}
+        loading={statsLoading || countsLoading}
+        error={statsError || countsError}
         items={[
           { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: todasAsAuditorias?.length || 0, drillDown: 'auditorias' },
           { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: todasAsAuditorias?.filter(a => a.status === 'em_andamento').length || 0, drillDown: 'auditorias_andamento' },
-          { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: `${totalConcluidos}/${totalItens}`, drillDown: 'auditorias_itens' },
+          { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: totalItens ? t("experience.auditedItems", { completed: totalConcluidos, total: totalItens }) : t("experience.notStarted"), drillDown: 'auditorias_itens' },
           { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: todasAsAuditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias_pendentes' },
         ]}
       />
@@ -498,7 +514,9 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
             data={auditorias || []}
             columns={auditoriaColumns}
             onRowClick={(a: any) => handleOpenControles(a)}
-            loading={isLoading}
+            loading={isLoading || statsLoading || countsLoading}
+            error={isError || countsError || statsError}
+            onRefresh={() => { void refetch(); void retryStats(); void retryCounts(); }}
             searchable
             searchPlaceholder={t("governancaComp.auditorias.searchPlaceholder")}
             searchValue={searchTerm}

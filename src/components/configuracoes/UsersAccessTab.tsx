@@ -14,7 +14,7 @@ interface UsersAccessTabProps {
 
 export function UsersAccessTab({ userRole, isAdmin, selectedUserId }: UsersAccessTabProps) {
   const { t } = useLanguage();
-  const defaultSubTab = selectedUserId ? 'permissoes' : 'usuarios';
+  const defaultSubTab = selectedUserId && isAdmin ? 'permissoes' : 'usuarios';
 
   return (
     <Card>
@@ -25,7 +25,7 @@ export function UsersAccessTab({ userRole, isAdmin, selectedUserId }: UsersAcces
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue={defaultSubTab}>
+        <Tabs key={defaultSubTab} defaultValue={defaultSubTab}>
           <TabsList>
             <TabsTrigger value="usuarios" className="flex items-center gap-2">
               <IconUsers className="h-4 w-4" />
@@ -51,6 +51,7 @@ export function UsersAccessTab({ userRole, isAdmin, selectedUserId }: UsersAcces
 
           {isAdmin && (
             <TabsContent value="permissoes">
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">{t("experience.permissionGuide")}</p>
               <PermissionMatrix selectedUserId={selectedUserId} />
             </TabsContent>
           )}

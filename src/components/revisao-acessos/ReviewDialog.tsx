@@ -1,4 +1,3 @@
-;
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,25 +22,27 @@ import {
 } from "@/components/ui/select";
 import { useReviewData } from "@/hooks/useReviewData";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
+import { useQuery } from '@tanstack/react-query';
+import { QueryError } from '@/components/ui/query-error';
+import { readAllPages } from '@/lib/read-all-pages';
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateForDB, formatarDiaParaDB} from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconView } from '@/components/icons';
-import { toast } from '@/lib/toast';
 
-const reviewSchema = z.object({
-  nome_revisao: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
+
+const buildReviewSchema = (t: (key: string) => string) => z.object({
+  nome_revisao: z.string().trim().min(3, t('experience.reviewNameRequired')),
   descricao: z.string().optional(),
   tipo_revisao: z.enum(["periodica", "ad_hoc", "recertificacao"]),
-  sistema_id: z.string().min(1, "Selecione um sistema"),
-  responsavel_revisao: z.string().min(1, "Selecione um responsável"),
-  data_inicio: z.string(),
-  data_limite: z.string(),
+  sistema_id: z.string().uuid(t('experience.reviewSystemRequired')),
+  responsavel_revisao: z.string().uuid(t('experience.reviewOwnerUnavailable')),
+  data_inicio: z.string().min(1, t('experience.reviewDateRequired')),
+  data_limite: z.string().min(1, t('experience.reviewDateRequired')),
   observacoes: z.string().optional(),
-});
+}).refine(data => !data.data_limite || data.data_limite >= data.data_inicio, { path: ['data_limite'], message: t('experience.reviewDateOrder') });
 
-type ReviewFormData = z.infer<typeof reviewSchema>;
+type ReviewFormData = z.infer<ReturnType<typeof buildReviewSchema>>;
 
 interface ReviewDialogProps {
   open: boolean;
@@ -56,7 +57,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
   const { createReview, updateReview } = useReviewData();
 
   const form = useForm<ReviewFormData>({
-    resolver: zodResolver(reviewSchema),
+    resolver: zodResolver(buildReviewSchema(t)),
     defaultValues: {
       nome_revisao: "",
       descricao: "",
@@ -69,38 +70,22 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
     },
   });
 
-  const { data: sistemas } = useOptimizedQuery(
-    async () => {
-      if (!empresaId) return { data: [], error: null };
-
-      const { data, error } = await supabase
-        .from("sistemas_privilegiados")
-        .select("id, nome_sistema")
-        .eq("empresa_id", empresaId)
-        .eq("ativo", true)
-        .order("nome_sistema");
-
-      return { data: data || [], error };
-    },
-    [empresaId],
-    { cacheKey: `sistemas-${empresaId}` }
-  );
-
-  const { data: usuarios } = useOptimizedQuery(
-    async () => {
-      if (!empresaId) return { data: [], error: null };
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("user_id, nome")
-        .eq("empresa_id", empresaId)
-        .order("nome");
-
-      return { data: data || [], error };
-    },
-    [empresaId],
-    { cacheKey: `usuarios-${empresaId}` }
-  );
+  const systemsQuery = useQuery({
+    queryKey: ['review-form-systems', empresaId], enabled: open && !!empresaId,
+    queryFn: async ({ signal }) => (await readAllPages((from, to) => supabase.from('sistemas_privilegiados')
+      .select('id, nome_sistema').eq('empresa_id', empresaId!).eq('ativo', true)
+      .order('nome_sistema').order('id').range(from, to).abortSignal(signal), signal)).data,
+  });
+  const ownersQuery = useQuery({
+    queryKey: ['review-form-owners', empresaId], enabled: open && !!empresaId,
+    queryFn: async ({ signal }) => (await readAllPages((from, to) => supabase.from('profiles')
+      .select('user_id, nome').eq('empresa_id', empresaId!).eq('ativo', true)
+      .order('nome').order('user_id').range(from, to).abortSignal(signal), signal)).data,
+  });
+  const sistemas = systemsQuery.data ?? [];
+  const usuarios = ownersQuery.data ?? [];
+  const optionsError = systemsQuery.isError || ownersQuery.isError;
+  const optionsLoading = systemsQuery.isLoading || ownersQuery.isLoading;
 
   useEffect(() => {
     if (review) {
@@ -126,55 +111,47 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
         observacoes: "",
       });
     }
-  }, [review, form]);
+  }, [review, form, empresaId]);
 
   const onSubmit = async (data: ReviewFormData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(t("revisaoAcessosComp.reviewDialog.toastErrorNaoAutenticado"));
-
       const payload = {
         ...data,
         data_inicio: parseDateForDB(data.data_inicio),
         data_limite: parseDateForDB(data.data_limite),
-        created_by: user.id,
-        status: "em_andamento",
       };
 
       if (review) {
         await updateReview(review.id, payload);
       } else {
-        // Gerar link token
-        const { data: tokenData, error: tokenError } = await supabase.rpc("gerar_token_revisao");
-        if (tokenError || !tokenData) {
-          throw new Error(t("revisaoAcessosComp.reviewDialog.toastErrorToken"));
-        }
-        await createReview({
-          ...payload,
-          link_token: tokenData,
-        });
+        await createReview(payload);
       }
 
       onSuccess();
     } catch (error) {
       console.error("Erro ao salvar revisão:", error);
-      toast.error(error instanceof Error ? error.message : t("revisaoAcessosComp.reviewDialog.toastErrorSave"));
+      // The mutation shows a mapped, localized error and keeps this form open.
     }
   };
 
   return (
     <DialogShell
         open={open}
-        onOpenChange={onClose}
+        onOpenChange={(next) => { if (!next) onClose(); }}
         title={review?.id ? t("revisaoAcessosComp.reviewDialog.titleEdit") : t("revisaoAcessosComp.reviewDialog.titleNew")}
         icon={IconView}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
         submitLabel={review ? t("revisaoAcessosComp.reviewDialog.submitUpdate") : t("revisaoAcessosComp.reviewDialog.submitCreate")}
         isDirty={form.formState.isDirty}
+        isSubmitting={form.formState.isSubmitting}
+        submitDisabled={optionsError || optionsLoading || !empresaId || (!review && (!sistemas.length || !usuarios.length))}
+        submitBlockedReason={!optionsLoading && !optionsError && !review && (!sistemas.length || !usuarios.length) ? t('experience.reviewSetupMissing') : undefined}
       >
 <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <p className="text-sm leading-relaxed text-muted-foreground">{t(review ? 'experience.reviewScopeFrozen' : 'experience.reviewPopulation')}</p>
+            {optionsError && <QueryError onRetry={() => { void systemsQuery.refetch(); void ownersQuery.refetch(); }} />}
             <FormField
               control={form.control}
               name="nome_revisao"
@@ -203,7 +180,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="tipo_revisao"
@@ -233,7 +210,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldSistema")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!review}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={t("revisaoAcessosComp.reviewDialog.fieldSistemaPlaceholder")} />

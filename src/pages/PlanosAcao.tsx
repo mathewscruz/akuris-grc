@@ -1,3 +1,9 @@
+import { readAllPages } from '@/lib/read-all-pages';
+import { actionPlanOrigin } from '@/lib/action-plan-origin';
+import { fetchEntityById, routeForEntity } from '@/lib/entity-search';
+import { QueryError } from '@/components/ui/query-error';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useListState } from '@/hooks/useListState';
 import { useState, useMemo, useEffect } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconExternal, IconMore, IconSuccess, IconWarning, IconError, IconTime, IconChecklist, IconGrid, IconList, IconTarget } from '@/components/icons';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
@@ -130,18 +136,18 @@ export default function PlanosAcao() {
   const [detailPlano, setDetailPlano] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [prioridadeFilter, setPrioridadeFilter] = useState('todos');
+  const [search, setSearch] = useListState('search', '');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'abertos');
+  const [prioridadeFilter, setPrioridadeFilter] = useListState('prioridadeFilter', 'todos');
   // A fila abre pela urgência real: prazos mais próximos (inclusive vencidos)
   // primeiro. Itens sem prazo ficam no fim, em vez de disputar o topo com o
   // trabalho que já tem compromisso assumido.
-  const [sortField, setSortField] = useState('prazo');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [viewMode, setViewMode] = useState<'lista' | 'kanban'>('lista');
+  const [sortField, setSortField] = useListState('sortField', 'prazo');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
+  const [viewMode, setViewMode] = useListState<'lista' | 'kanban'>('viewMode', 'lista');
   // Administradores chegam na visão consolidada que o dashboard resume.
   // Usuários comuns continuam começando pelo que está atribuído a eles.
-  const [activeTab, setActiveTab] = useState(() => isAdmin ? 'todos' : 'meus');
+  const [activeTab, setActiveTab] = useListState('activeTab', () => isAdmin ? 'todos' : 'meus');
 
   // Planos de ação nativos
   /*
@@ -155,17 +161,17 @@ export default function PlanosAcao() {
   const [searchParams, setSearchParams] = useSearchParams();
   const planoNoUrl = searchParams.get('plano');
 
-  const { data: planos = [], isLoading } = useQuery({
+  const { data: planos = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['planos-acao', empresaId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
       // Nota: não há FK planos_acao.responsavel_id -> profiles, então o embed do PostgREST
       // falha (PGRST200) e derrubava a lista inteira. Resolvemos o responsável em query separada.
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('planos_acao')
         .select('*')
         .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       const rows = data || [];
       const ids = [...new Set(rows.map((r: any) => r.responsavel_id).filter(Boolean))];
@@ -191,16 +197,16 @@ export default function PlanosAcao() {
   }, [planoNoUrl, planos, searchParams, setSearchParams]);
 
   // Controles pendentes do usuário
-  const { data: controlesExternos = [] } = useQuery({
+  const { data: controlesExternos = [], isError: controlsError, isLoading: controlsLoading } = useQuery({
     queryKey: ['planos-acao-controles', empresaId, user?.id],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId || !user?.id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('controles')
         .select('id, nome, status, criticidade, proxima_avaliacao, responsavel_id, created_at, profiles:responsavel_id(nome)')
         .eq('empresa_id', empresaId)
         .eq('responsavel_id', user.id)
-        .in('status', ['ativo', 'em_revisao']);
+        .in('status', ['ativo', 'em_revisao']).order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data || []).map((c: any) => ({
         id: c.id,
@@ -223,16 +229,16 @@ export default function PlanosAcao() {
   });
 
   // Itens de auditoria pendentes do usuário
-  const { data: auditoriasExternas = [] } = useQuery({
+  const { data: auditoriasExternas = [], isError: auditsError, isLoading: auditsLoading } = useQuery({
     queryKey: ['planos-acao-auditorias', empresaId, user?.id],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId || !user?.id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('auditoria_itens')
         .select('id, titulo, status, prioridade, prazo, responsavel_id, created_at, profiles:responsavel_id(nome), auditorias!inner(empresa_id)')
         .eq('auditorias.empresa_id', empresaId)
         .eq('responsavel_id', user.id)
-        .not('status', 'in', '("concluido","cancelado","nao_aplicavel")');
+        .not('status', 'in', '("concluido","cancelado","nao_aplicavel")').order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data || []).map((a: any) => ({
         id: a.id,
@@ -255,16 +261,16 @@ export default function PlanosAcao() {
   });
 
   // Incidentes pendentes do usuário
-  const { data: incidentesExternos = [] } = useQuery({
+  const { data: incidentesExternos = [], isError: incidentsError, isLoading: incidentsLoading } = useQuery({
     queryKey: ['planos-acao-incidentes', empresaId, user?.id],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId || !user?.id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('incidentes')
         .select('id, titulo, status, criticidade, created_at, responsavel_tratamento')
         .eq('empresa_id', empresaId)
         .eq('responsavel_tratamento', user.id)
-        .not('status', 'in', '("encerrado","cancelado")');
+        .not('status', 'in', '("encerrado","cancelado")').order('id').range(from, to).abortSignal(signal), signal);
       if (error) throw error;
       return (data || []).map((i: any) => ({
         id: i.id,
@@ -324,9 +330,11 @@ export default function PlanosAcao() {
 
   // Filter + search
   const filteredPlanos = useMemo(() => {
-    let result = currentData;
+    let result = [...currentData];
 
-    if (statusFilter !== 'todos') {
+    if (statusFilter === 'abertos') {
+      result = result.filter((p: any) => !['concluido', 'cancelado'].includes(p._displayStatus));
+    } else if (statusFilter !== 'todos') {
       result = result.filter((p: any) => p._displayStatus === statusFilter);
     }
     if (prioridadeFilter !== 'todos') {
@@ -479,6 +487,15 @@ export default function PlanosAcao() {
     queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
   };
 
+  const openOrigin = async (plan: any) => {
+    const origin = actionPlanOrigin(plan);
+    if (!origin || !empresaId) return;
+    const row = await fetchEntityById(origin.key, origin.id, empresaId);
+    if (!row) { toast.error(t('experience.linkUnavailable')); return; }
+    setDetailPlano(null);
+    navigate(routeForEntity(origin.key, row));
+  };
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
@@ -579,7 +596,7 @@ export default function PlanosAcao() {
               <IconExternal className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenDetail')}
             </DropdownMenuItem>
             {item._isExternal ? (
-              <DropdownMenuItem onClick={() => navigate(item._route)}>
+              <DropdownMenuItem onClick={() => void openOrigin(item)}>
                 <IconExternal className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenInModule')}
               </DropdownMenuItem>
             ) : (
@@ -614,6 +631,8 @@ export default function PlanosAcao() {
   ];
 
   const kanbanColumns = ['pendente', 'em_andamento', 'concluido', 'atrasado', 'cancelado'];
+  const listLoading = isLoading || (activeTab === 'meus' && (controlsLoading || auditsLoading || incidentsLoading));
+  const listError = isError || (activeTab === 'meus' && (controlsError || auditsError || incidentsError));
 
   return (
     <div className="space-y-6">
@@ -664,13 +683,9 @@ export default function PlanosAcao() {
       />
 
       {/* Stats — todos os itens abrem a mesma vista filtrada (lista + filtro de estado). */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="meus">{t('planosAcao.tabMyItems')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="todos">{t('planosAcao.tabAll')}</TabsTrigger>}
-        </TabsList>
-
       <StatStrip
+        loading={listLoading}
+        error={listError}
         items={[
           { key: 'total', label: t('planosAcao.statTotal'), value: stats.total, onClick: () => { setStatusFilter('todos'); setViewMode('lista'); } },
           { key: 'pendentes', label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'warning', onClick: () => { setStatusFilter('pendente'); setViewMode('lista'); } },
@@ -681,7 +696,11 @@ export default function PlanosAcao() {
       />
 
       {/* Tabs */}
-
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="meus"><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="todos"><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
+        </TabsList>
         <TabsContent value={activeTab} className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
@@ -698,6 +717,7 @@ export default function PlanosAcao() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="abertos">{t('experience.workQueue')}</SelectItem>
                       <SelectItem value="todos">{t('planosAcao.filterStatusAll')}</SelectItem>
                       <SelectItem value="pendente">{t('planosAcao.statusPendente')}</SelectItem>
                       <SelectItem value="em_andamento">{t('planosAcao.statusEmAndamento')}</SelectItem>
@@ -770,7 +790,9 @@ export default function PlanosAcao() {
                   onClear: () => { setSearch(''); setStatusFilter('todos'); setPrioridadeFilter('todos'); },
                 }}
                 onRowClick={(item) => setDetailPlano(item)}
-                loading={isLoading}
+                loading={listLoading}
+                error={listError}
+                onRefresh={() => { void refetch(); void queryClient.invalidateQueries({ queryKey: ['planos-acao-controles'] }); void queryClient.invalidateQueries({ queryKey: ['planos-acao-auditorias'] }); void queryClient.invalidateQueries({ queryKey: ['planos-acao-incidentes'] }); }}
                 sortField={sortField}
                 sortDirection={sortDirection}
                 onSort={handleSort}
@@ -785,7 +807,7 @@ export default function PlanosAcao() {
               />
           ) : (
             <div className="p-4 sm:p-6 pt-0">
-              <PlanosAcaoKanban
+              {listError ? <QueryError onRetry={() => { void refetch(); void queryClient.invalidateQueries({ queryKey: ['planos-acao-controles'] }); void queryClient.invalidateQueries({ queryKey: ['planos-acao-auditorias'] }); void queryClient.invalidateQueries({ queryKey: ['planos-acao-incidentes'] }); }} /> : listLoading ? <Skeleton className="h-48 w-full" /> : <PlanosAcaoKanban
                 colunas={kanbanColumns}
                 items={filteredPlanos}
                 onOpen={(item) => setDetailPlano(item)}
@@ -793,7 +815,7 @@ export default function PlanosAcao() {
                 statusConfig={statusConfig}
                 prioridadeConfig={prioridadeConfig}
                 moduloLabels={moduloLabels}
-              />
+              />}
             </div>
           )}
             </CardContent>
@@ -815,7 +837,7 @@ export default function PlanosAcao() {
         onOpenChange={(open) => { if (!open) setDetailPlano(null); }}
         onEdit={(p) => { setDetailPlano(null); setEditingPlano(p); setDialogOpen(true); }}
         onStatusChange={handleStatusChange}
-        onOpenOrigin={(p) => { if (p._route) navigate(p._route); }}
+        onOpenOrigin={detailPlano && actionPlanOrigin(detailPlano) ? (p) => void openOrigin(p) : undefined}
         statusConfig={statusConfig}
         prioridadeConfig={prioridadeConfig}
         moduloLabels={moduloLabels}

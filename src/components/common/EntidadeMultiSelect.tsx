@@ -17,18 +17,17 @@
  * Reusa a mesma fonte, o mesmo `matchesTokens` e o mesmo isolamento por empresa
  * do seletor simples — o comportamento de busca é o que a pessoa já conhece.
  */
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useEntityOptions } from '@/hooks/useEntityOptions';
+import { EntitySearchFeedback } from './EntitySearchFeedback';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getEnumLabel, categoryFromFieldName } from '@/lib/enum-labels';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { ENTITY_BY_KEY, EntityKey, EntityRow, fetchEntityRows, matchesTokens, queryTokens } from '@/lib/entity-search';
+import { ENTITY_BY_KEY, EntityKey } from '@/lib/entity-search';
 import { IconCheck, IconSort, IconClose } from '@/components/icons';
 
 interface Props {
@@ -51,29 +50,12 @@ export function EntidadeMultiSelect({
   max,
 }: Props) {
   const { t } = useLanguage();
-  const { profile } = useAuth();
   const [open, setOpen] = useState(false);
-  const [busca, setBusca] = useState('');
-
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['entidade-multiselect', entidade, profile?.empresa_id],
-    queryFn: () => fetchEntityRows(entidade, profile?.empresa_id),
-    staleTime: 60_000,
-    // Carrega quando o painel abre OU quando já há escolhas — sem isto, as
-    // fichas dos itens escolhidos apareciam vazias ao reabrir o formulário.
-    enabled: open || value.length > 0,
-  });
-
-  const filtrados = useMemo(() => {
-    const tokens = queryTokens(busca);
-    if (!tokens.length) return rows.slice(0, 80);
-    return rows.filter((r) => matchesTokens(`${r.codigo} ${r.titulo}`, tokens)).slice(0, 80);
-  }, [rows, busca]);
-
-  const escolhidos = useMemo(
-    () => value.map((id) => rows.find((r) => r.id === id)).filter(Boolean) as EntityRow[],
-    [value, rows],
-  );
+  const options = useEntityOptions(entidade, open, value);
+  // A failed/missing lookup must never silently remove a saved relationship.
+  const escolhidos = value.map((id, index) => options.selectedRows.find((row) => row.id === id)
+    ?? options.rows.find((row) => row.id === id)
+    ?? { id, codigo: '', titulo: options.selectionLoading ? t('common.loading') : t('experience.missingLink', { number: index + 1 }) });
 
   const campoSubtitulo = ENTITY_BY_KEY[entidade]?.subtituloField;
   const subtituloCategory = categoryFromFieldName(
@@ -99,6 +81,7 @@ export function EntidadeMultiSelect({
             type="button"
             variant="outline"
             role="combobox"
+            aria-label={`${t(ENTITY_BY_KEY[entidade].labelKey)}: ${value.length ? t('entidadeSelect.multiEscolhidos', { n: String(value.length) }) : placeholder ?? t('entidadeSelect.placeholder')}`}
             aria-expanded={open}
             disabled={disabled}
             className="w-full justify-between font-normal"
@@ -114,18 +97,16 @@ export function EntidadeMultiSelect({
         <PopoverContent className="w-[min(28rem,90vw)] p-0 bg-popover" align="start">
           <Command shouldFilter={false}>
             <CommandInput
+              aria-label={t('entidadeSelect.search')}
               placeholder={t('entidadeSelect.search')}
-              value={busca}
-              onValueChange={setBusca}
+              value={options.search}
+              onValueChange={options.setSearch}
             />
             <CommandList>
-              {isLoading ? (
-                <div className="flex justify-center py-6"><AkurisPulse size={20} /></div>
-              ) : filtrados.length === 0 ? (
-                <CommandEmpty>{t('entidadeSelect.empty')}</CommandEmpty>
-              ) : (
+              <EntitySearchFeedback loading={options.isLoading} error={options.isError} empty={options.rows.length === 0} retry={options.retry} />
+              {!options.isLoading && !options.isError && (
                 <CommandGroup>
-                  {filtrados.map((row) => {
+                  {options.rows.map((row) => {
                     const marcado = value.includes(row.id);
                     return (
                       <CommandItem
@@ -150,12 +131,14 @@ export function EntidadeMultiSelect({
                       </CommandItem>
                     );
                   })}
+                  {options.hasMore && <CommandItem value="__more__" onSelect={options.showMore} className="justify-center text-primary">{t('experience.searchMore')}</CommandItem>}
                 </CommandGroup>
               )}
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
+      {options.selectionError && <Button type="button" variant="ghost" size="sm" onClick={options.retrySelection}>{t('experience.retryLink')}</Button>}
 
       {/*
         As escolhas ficam à vista, e cada uma sai sozinha. Fechar o painel para

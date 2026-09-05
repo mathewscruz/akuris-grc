@@ -1,3 +1,6 @@
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { norm } from '@/lib/metrics';
+import { useListState } from '@/hooks/useListState';
 import { useState, useMemo } from 'react';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { IconFilter, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconSuccess, IconWarning, IconInfo, IconError, IconTime, IconCalendar, IconFile, IconShield, IconMessage, IconChecklist, IconAttach, IconMegaphone, IncidentesIcon } from '@/components/icons';
@@ -67,6 +70,7 @@ interface Incidente {
   riscos_relacionados?: string[] | null;
   created_at: string;
   tratamentos_count?: number;
+  proximo_prazo?: string | null;
   comunicacoes_count?: number;
   evidencias_count?: number;
 }
@@ -81,7 +85,7 @@ export default function Incidentes() {
   */
   useFocusRow();
   const { t } = useLanguage();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(null);
   const [detalheIncidente, setDetalheIncidente] = useState<Incidente | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -94,31 +98,33 @@ export default function Incidentes() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [tipoFilter, setTipoFilter] = useState<string>("todos");
-  const [criticidadeFilter, setCriticidadeFilter] = useState<string>("todos");
-  const [sortField, setSortField] = useState<string>('data_deteccao');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [statusFilter, setStatusFilter] = useListState<string>('statusFilter', "todos");
+  const [tipoFilter, setTipoFilter] = useListState<string>('tipoFilter', "todos");
+  const [criticidadeFilter, setCriticidadeFilter] = useListState<string>('criticidadeFilter', "todos");
+  const [sortField, setSortField] = useListState<string>('sortField', 'data_deteccao');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'desc');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   
-  const { data: statsIncidentes } = useIncidentesStats();
+  const { data: statsIncidentes, isLoading: statsLoading, isError: statsError } = useIncidentesStats();
 
   // React Query for incidentes
-  const { data: incidentes = [], isLoading: loading } = useQuery({
+  const { data: incidentes = [], isLoading: loading, isError, refetch } = useQuery({
     queryKey: ['incidentes', empresaId],
-    queryFn: async () => {
-      const [incidentesResult, tratamentosResult, comunicacoesResult, evidenciasResult] = await Promise.all([
-        supabase
-          .from('incidentes')
-          .select('*')
-          .eq('empresa_id', empresaId!)
-          .order('created_at', { ascending: false }),
-        supabase.from('incidentes_tratamentos').select('incidente_id'),
-        supabase.from('incidentes_comunicacoes').select('incidente_id'),
-        supabase.from('incidentes_evidencias').select('incidente_id'),
+    queryFn: async ({ signal }) => {
+      const incidentesResult = await readAllPages((from, to) => supabase
+        .from('incidentes').select('*').eq('empresa_id', empresaId!)
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
+      const incidentIds = incidentesResult.data.map(incident => incident.id);
+      const [tratamentosResult, comunicacoesResult, evidenciasResult] = await Promise.all([
+        readAllPagesByIds(incidentIds, (ids, from, to) => supabase.from('incidentes_tratamentos')
+          .select('incidente_id, data_prazo, status').in('incidente_id', ids).order('id').range(from, to).abortSignal(signal), signal),
+        readAllPagesByIds(incidentIds, (ids, from, to) => supabase.from('incidentes_comunicacoes')
+          .select('incidente_id').in('incidente_id', ids).order('id').range(from, to).abortSignal(signal), signal),
+        readAllPagesByIds(incidentIds, (ids, from, to) => supabase.from('incidentes_evidencias')
+          .select('incidente_id').in('incidente_id', ids).order('id').range(from, to).abortSignal(signal), signal),
       ]);
 
       if (incidentesResult.error) throw incidentesResult.error;
@@ -134,9 +140,16 @@ export default function Incidentes() {
       const tratamentos = contar(tratamentosResult.data);
       const comunicacoes = contar(comunicacoesResult.data);
       const evidencias = contar(evidenciasResult.data);
+      const deadlines = new Map<string, string>();
+      for (const treatment of tratamentosResult.data ?? []) {
+        if (!treatment.data_prazo || ['concluido', 'cancelado'].includes(norm(treatment.status))) continue;
+        const previous = deadlines.get(treatment.incidente_id);
+        if (!previous || treatment.data_prazo < previous) deadlines.set(treatment.incidente_id, treatment.data_prazo);
+      }
       return (incidentesResult.data || []).map((incidente) => ({
         ...incidente,
         tratamentos_count: tratamentos.get(incidente.id) || 0,
+        proximo_prazo: deadlines.get(incidente.id) ?? null,
         comunicacoes_count: comunicacoes.get(incidente.id) || 0,
         evidencias_count: evidencias.get(incidente.id) || 0,
       })) as Incidente[];
@@ -300,7 +313,7 @@ export default function Incidentes() {
       label: t('fin.comum.tipo'),
       sortable: true,
       render: (_v: any, item: Incidente) => (
-        <Badge variant="outline" className="whitespace-nowrap">{formatStatus(item.tipo_incidente)}</Badge>
+        <span className="text-muted-foreground">{formatStatus(item.tipo_incidente)}</span>
       )
     },
     {
@@ -326,6 +339,18 @@ export default function Incidentes() {
           </div>
         );
       }
+    },
+    {
+      key: "responsavel_tratamento" as keyof Incidente,
+      label: t("experience.assignedTo"),
+      mobilePriority: 2,
+      render: (_value: any, item: Incidente) => nomeResponsavel(item.responsavel_tratamento) || t("experience.notAssigned"),
+    },
+    {
+      key: "proximo_prazo" as keyof Incidente,
+      label: t("experience.treatmentDeadline"),
+      mobilePriority: 3,
+      render: (_value: any, item: Incidente) => item.proximo_prazo ? formatDateOnly(item.proximo_prazo) : t("experience.noDeadline"),
     },
     {
       key: "data_deteccao" as keyof Incidente,
@@ -499,7 +524,8 @@ export default function Incidentes() {
       />
 
       <StatStrip
-        loading={loading}
+        loading={loading || statsLoading}
+        error={isError || statsError}
         items={[
           { key: 'total', label: statsCards[0].title, value: statsCards[0].value, drillDown: 'incidentes' },
           { key: 'criticosAltos', label: statsCards[1].title, value: statsCards[1].value, tone: 'destructive', drillDown: 'incidentes_criticos' },
@@ -541,6 +567,8 @@ export default function Incidentes() {
             columns={incidentesColumns}
             onRowClick={(item) => setDetalheIncidente(item)}
             loading={loading}
+            error={isError}
+            onRefresh={() => void refetch()}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             searchPlaceholder={t('fin.incidentes.buscar')}
@@ -558,7 +586,7 @@ export default function Incidentes() {
       </Card>
 
       <RecordDetailDrawer
-        open={!!detalheIncidente}
+        open={!!detalheIncidente && !tratamentoDialogOpen && !evidenciaDialogOpen && !comunicacaoDialogOpen}
         onOpenChange={(o) => !o && setDetalheIncidente(null)}
         title={detalheIncidente?.titulo}
         eyebrow={t('sweepRiscos.incidentes.detailEyebrow')}
@@ -635,7 +663,8 @@ export default function Incidentes() {
           { label: t('sweepRiscos.incidentes.origemDeteccao'), value: detalheIncidente.origem_deteccao ? formatStatus(detalheIncidente.origem_deteccao) : null },
           { label: t('sweepRiscos.incidentes.impactoEstimado'), value: detalheIncidente.impacto_estimado },
           { label: t('sweepRiscos.incidentes.responsavelDeteccao'), value: nomeResponsavel(detalheIncidente.responsavel_deteccao) },
-          { label: t('sweepRiscos.incidentes.responsavelTratamento'), value: nomeResponsavel(detalheIncidente.responsavel_tratamento) },
+          { label: t('sweepRiscos.incidentes.responsavelTratamento'), value: nomeResponsavel(detalheIncidente.responsavel_tratamento) || t('experience.notAssigned') },
+          { label: t('experience.treatmentDeadline'), value: detalheIncidente.proximo_prazo ? formatDateOnly(detalheIncidente.proximo_prazo) : t('experience.noDeadline') },
           { label: t('fin.incidentes.dataOcorrencia'), value: detalheIncidente.data_ocorrencia ? formatDateOnly(detalheIncidente.data_ocorrencia) : null },
           { label: t('fin.incidentes.dataDeteccao'), value: detalheIncidente.data_deteccao ? formatDateOnly(detalheIncidente.data_deteccao) : null },
           { label: t('fin.incidentes.dataResolucao'), value: detalheIncidente.data_resolucao ? formatDateOnly(detalheIncidente.data_resolucao) : null },

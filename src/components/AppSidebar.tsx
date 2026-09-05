@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { ComplianceIcon, GestaoAcessosIcon, GestaoAtivosIcon, IconChevronDown, SaidaIcon } from '@/components/icons';
+import { IconChevronDown, SaidaIcon } from '@/components/icons';
 import logoMini from '@/assets/akuris-logo.png';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
@@ -30,88 +30,7 @@ import { prefetchRoute } from '@/lib/route-prefetch';
 import { useAutoFit } from '@/hooks/useSidebarFit';
 import { MODULE_ICON } from '@/lib/module-icons';
 
-type MenuItem = {
-  title: string;
-  url?: string;
-  icon: any;
-  moduleName?: string;
-  subItems?: { title: string; url: string; icon: any; moduleName?: string }[];
-};
-
-type MenuSection = {
-  id: string;
-  label: string;
-  items: MenuItem[];
-};
-
-const getMenuSections = (t: (key: string) => string): MenuSection[] => [
-  {
-    id: 'operation',
-    label: t('sidebar.sectionOperation'),
-    items: [
-      { title: t('sidebar.dashboard'), url: '/dashboard', icon: MODULE_ICON['/dashboard'], moduleName: 'dashboard' },
-      { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: MODULE_ICON['/planos-acao'], moduleName: 'planos-acao' },
-      { title: t('sidebar.projects'), url: '/projetos', icon: MODULE_ICON['/projetos'], moduleName: 'projetos' },
-    ],
-  },
-  {
-    id: 'grc-core',
-    label: t('sidebar.sectionGrcCore'),
-    items: [
-      { title: t('sidebar.riskManagement'), url: '/riscos', icon: MODULE_ICON['/riscos'], moduleName: 'riscos' },
-      {
-        title: t('sidebar.governance'),
-        url: '/governanca', icon: MODULE_ICON['/governanca'],
-        moduleName: 'controles',
-      },
-      { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'], moduleName: 'gap-analysis' },
-      {
-        title: t('sidebar.assetManagement'),
-        icon: GestaoAtivosIcon,
-        subItems: [
-          { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
-          { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
-          { title: t('sidebar.keys'), url: '/ativos/chaves', icon: MODULE_ICON['/ativos/chaves'], moduleName: 'ativos' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'compliance',
-    label: t('sidebar.sectionCompliance'),
-    items: [
-      { title: t('sidebar.contracts'), url: '/contratos', icon: MODULE_ICON['/contratos'], moduleName: 'contratos' },
-      { title: t('sidebar.documents'), url: '/documentos', icon: MODULE_ICON['/documentos'], moduleName: 'documentos' },
-      { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'], moduleName: 'dados' },
-      {
-        title: t('sidebar.accessManagement'),
-        icon: GestaoAcessosIcon,
-        subItems: [
-          { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
-          { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
-          { title: t('sidebar.accessReview'), url: '/revisao-acessos', icon: MODULE_ICON['/revisao-acessos'], moduleName: 'contas-privilegiadas' },
-        ],
-      },
-      { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
-      {
-        title: t('sidebar.compliance'),
-        icon: ComplianceIcon,
-        subItems: [
-          { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
-          { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
-        ],
-      },
-      { title: t('sidebar.businessContinuity'), url: '/continuidade', icon: MODULE_ICON['/continuidade'], moduleName: 'continuidade' },
-    ],
-  },
-  {
-    id: 'insights',
-    label: t('sidebar.sectionInsights'),
-    items: [
-      { title: t('sidebar.reports'), url: '/relatorios', icon: MODULE_ICON['/relatorios'], moduleName: 'relatorios' },
-    ],
-  },
-];
+import { getMenuSections } from '@/lib/navigation';
 
 const ConfiguracoesNavIcon = MODULE_ICON['/configuracoes'];
 
@@ -239,7 +158,7 @@ export function AppSidebar() {
   // Active state em pílula (estilo Linear/Notion)
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? 'bg-primary text-primary-foreground font-semibold rounded-md shadow-sm'
+      ? '!bg-primary !text-primary-foreground font-semibold rounded-md shadow-sm hover:!bg-primary'
       : 'hover:bg-sidebar-accent/60 text-sidebar-foreground rounded-md';
 
   const handleSignOut = () => {
@@ -532,21 +451,21 @@ export function AppSidebar() {
             <SidebarMenu className={itemSpace}>
               {canAccess('configuracoes') && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild className={`transition-colors duration-200 ${itemH}`}>
+                  <SidebarMenuButton asChild isActive={isActive('/configuracoes')} className={`transition-colors duration-200 ${itemH} data-[active=true]:bg-transparent`}>
                     <NavLink
                       to="/configuracoes"
                       onClick={handleNavClick}
-                      className={({ isActive }) => `akuris-nav-link flex items-center w-full px-3 ${getNavCls({ isActive })}`}
+                      className={`akuris-nav-link flex items-center w-full px-3 ${getNavCls({ isActive: isActive('/configuracoes') })}`}
                     >
                       <ConfiguracoesNavIcon
                         className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
-                          isActive('/configuracoes') ? 'text-primary-foreground' : ''
+                          isActive('/configuracoes') ? '!text-primary-foreground' : ''
                         }`}
                       />
                       {!isCollapsed && (
                         <span
                           className={`text-sm font-medium transition-colors duration-200 truncate ${
-                            isActive('/configuracoes') ? 'text-primary-foreground font-semibold' : ''
+                            isActive('/configuracoes') ? '!text-primary-foreground font-semibold' : ''
                           }`}
                         >
                           {t('sidebar.settings')}
@@ -567,9 +486,10 @@ export function AppSidebar() {
             variant="ghost" 
             size="sm" 
             onClick={handleSignOut}
+            aria-expanded={showLogoutConfirm}
             className={`w-full text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-200 ${itemH} px-3 ${
               isCollapsed ? 'justify-center' : 'justify-start'
-            }`}
+            } ${showLogoutConfirm || isSigningOut ? '!bg-primary !text-primary-foreground hover:!bg-primary' : ''}`}
           >
             <SaidaIcon className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
             {!isCollapsed && (

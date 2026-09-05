@@ -1,3 +1,5 @@
+import { readAllPages } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { IconAdd, IconEdit, IconDelete, IconMore, IconServer } from '@/components/icons';
@@ -14,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { formatStatus, capitalizeText } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveCriticidadeTone } from '@/lib/status-tone';
+import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import {
   DropdownMenu,
@@ -45,12 +47,12 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
   const [showSistemaDialog, setShowSistemaDialog] = useState(false);
   const [selectedSistema, setSelectedSistema] = useState<SistemaPrivilegiado | null>(null);
   const [detalheSistema, setDetalheSistema] = useState<SistemaPrivilegiado | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [tipoFilter, setTipoFilter] = useState('todos');
-  const [criticidadeFilter, setCriticidadeFilter] = useState('todos');
-  const [sortField, setSortField] = useState('nome_sistema');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
+  const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
+  const [criticidadeFilter, setCriticidadeFilter] = useListState('criticidadeFilter', 'todos');
+  const [sortField, setSortField] = useListState('sortField', 'nome_sistema');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     id: string;
@@ -58,14 +60,14 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
   }>({ open: false, id: '', nome: '' });
   const { toast } = useToast();
 
-  const { data: sistemas = [], refetch: refetchSistemas, isLoading } = useQuery({
+  const { data: sistemas = [], refetch: refetchSistemas, isLoading, isError } = useQuery({
     queryKey: ['sistemas-privilegiados-governanca', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('sistemas_privilegiados' as any)
         .select('*')
         .eq('empresa_id', empresaId)
-        .order('nome_sistema');
+        .order('nome_sistema').order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       return (data || []) as unknown as SistemaPrivilegiado[];
@@ -208,14 +210,16 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
     },
     {
       key: 'tipo_sistema',
+      mobilePriority: 5,
       label: t("governancaComp.sistemas.columnTipo"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => (
-        <Badge variant="outline">{capitalizeText(sistema.tipo_sistema)}</Badge>
+        <span className="text-muted-foreground">{capitalizeText(sistema.tipo_sistema)}</span>
       )
     },
     {
       key: 'criticidade',
+      mobilePriority: 1,
       label: t("governancaComp.sistemas.columnCriticidade"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => getCriticidadeBadge(sistema.criticidade)
@@ -228,16 +232,24 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
     },
     {
       key: 'ativo',
+      mobilePriority: 0,
       label: t("governancaComp.sistemas.columnStatus"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => (
-        <Badge variant={sistema.ativo ? "default" : "secondary"} className="whitespace-nowrap">
+        <StatusBadge {...resolveItemStatusTone(sistema.ativo ? 'ativo' : 'inativo')} className="whitespace-nowrap">
           {sistema.ativo ? t("governancaComp.sistemas.statusAtivo") : t("governancaComp.sistemas.statusInativo")}
-        </Badge>
+        </StatusBadge>
       )
     },
     {
+      key: 'responsavel_sistema',
+      label: t('experience.assignedTo'),
+      mobilePriority: 2,
+      render: (_: any, sistema: SistemaPrivilegiado) => sistema.responsavel_sistema || t('experience.notAssigned'),
+    },
+    {
       key: 'url_sistema',
+      mobilePriority: 6,
       label: t("governancaComp.sistemas.columnUrl"),
       render: (_: any, sistema: SistemaPrivilegiado) => (
         sistema.url_sistema ? (
@@ -329,6 +341,7 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
   return (
     <div className="space-y-6">
       <StatStrip
+        error={isError}
         loading={isLoading}
         items={[
           { key: 'total', label: t("governancaComp.sistemas.statTotal"), value: sistemas.length, drillDown: 'sistemas' },
@@ -349,6 +362,8 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            error={isError}
+            onRefresh={() => void refetchSistemas()}
             paginated
             pageSize={20}
             data={filteredAndSortedSistemas}

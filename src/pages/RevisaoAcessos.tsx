@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { compareReviewRows } from '@/lib/access-review-sort';
+import { exportCSV, spreadsheetText } from '@/lib/csv-utils';
+import { readAllPages } from '@/lib/read-all-pages';
+import { useSearchParams } from 'react-router-dom';
+import { QueryError } from '@/components/ui/query-error';
+import { useListState } from '@/hooks/useListState';
+import { useState, useEffect } from "react";
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconUserCheck } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,30 +38,37 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function RevisaoAcessos() {
   const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const systemId = searchParams.get('sistema');
+  const linkedId = searchParams.get('revisao');
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
-  const { data: stats, loading: statsLoading } = useReviewStats();
+  const { data: stats, loading: statsLoading, isError: statsError, refetch: retryStats } = useReviewStats();
   const { deleteReview } = useReviewData();
   const { toast } = useToast();
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [itemsDialogOpen, setItemsDialogOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', "");
+  const [statusFilter, setStatusFilter] = useListState<string>('statusFilter', "all");
+  const [activeTab, setActiveTab] = useListState<string>('activeTab', 'ativas');
+  const [historySearch, setHistorySearch] = useListState('historySearch', '');
   const [sortConfig, setSortConfig] = useState<{ field: string; direction: "asc" | "desc" } | null>(null);
 
   const {
     data: reviews = [],
     isLoading: reviewsLoading,
+    isError: reviewsError,
     refetch,
   } = useQuery({
-    queryKey: ['reviews', empresaId, statusFilter],
+    queryKey: ['reviews', empresaId, statusFilter, systemId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
 
+      const { data, error } = await readAllPages((from, to) => {
       let query = supabase
         .from("access_reviews")
         .select(`
@@ -66,11 +79,13 @@ export default function RevisaoAcessos() {
         `)
         .eq("empresa_id", empresaId);
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
-      }
+      query = statusFilter === 'all'
+        ? query.in('status', ['rascunho', 'em_andamento'])
+        : query.eq('status', statusFilter);
 
-      const { data, error } = await query.order("created_at", { ascending: false });
+      if (systemId) query = query.eq("sistema_id", systemId);
+      return query.order("created_at", { ascending: false }).order("id").range(from, to).abortSignal(signal);
+      }, signal);
       if (error) throw error;
       return data || [];
     },
@@ -80,14 +95,17 @@ export default function RevisaoAcessos() {
   const {
     data: historico = [],
     isLoading: historicoLoading,
+    isError: historyError,
+    refetch: retryHistory,
   } = useQuery({
-    queryKey: ['reviews-historico', empresaId],
+    queryKey: ['reviews-historico', empresaId, systemId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => {
+      let query = supabase
         .from("access_reviews")
         .select(`
           *,
@@ -97,11 +115,40 @@ export default function RevisaoAcessos() {
         .eq("empresa_id", empresaId)
         .in("status", ["concluida", "cancelada"])
         .order("data_conclusao", { ascending: false });
+      if (systemId) query = query.eq("sistema_id", systemId);
+      return query.order("id").range(from, to).abortSignal(signal);
+      }, signal);
 
       if (error) throw error;
       return data || [];
     },
   });
+
+  const { data: linkedReview, isError: linkedError, isSuccess: linkedReady, refetch: retryLinked } = useQuery({
+    queryKey: ['review-origin', empresaId, linkedId],
+    enabled: !!empresaId && !!linkedId,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await supabase.from('access_reviews').select('*')
+        .eq('empresa_id', empresaId!).eq('id', linkedId!).abortSignal(signal).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  useEffect(() => {
+    if (!linkedReview) return;
+    setSelectedReview(linkedReview);
+    setItemsDialogOpen(true);
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.delete('revisao');
+      next.set('sistema', linkedReview.sistema_id);
+      return next;
+    }, { replace: true });
+  }, [linkedReview, setSearchParams]);
+
+  const clearSystem = () => setSearchParams(previous => { const next = new URLSearchParams(previous); next.delete('sistema'); return next; });
+
+  useEffect(() => { setItemsDialogOpen(false); setReviewDialogOpen(false); setSelectedReview(null); setDeleteConfirm(null); }, [empresaId]);
 
   const handleEdit = (review: any) => {
     setSelectedReview(review);
@@ -153,6 +200,8 @@ export default function RevisaoAcessos() {
     return formatDateOnly(dataLimite);
   };
 
+  const compareReviews = (a: any, b: any) => compareReviewRows(a, b, sortConfig);
+
   const filteredAndSortedReviews = reviews
     ?.filter((review) =>
       searchTerm
@@ -160,13 +209,12 @@ export default function RevisaoAcessos() {
           review.sistema?.nome_sistema.toLowerCase().includes(searchTerm.toLowerCase())
         : true
     )
-    .sort((a, b) => {
-      if (!sortConfig) return 0;
-      const aVal = a[sortConfig.field];
-      const bVal = b[sortConfig.field];
-      const direction = sortConfig.direction === "asc" ? 1 : -1;
-      return aVal > bVal ? direction : -direction;
-    });
+    .sort(compareReviews);
+
+  const visibleHistory = historico.filter(item => [item.nome_revisao, item.sistema?.nome_sistema]
+    .some(value => value?.toLocaleLowerCase().includes(historySearch.toLocaleLowerCase()))).sort(compareReviews);
+  const exportRows = activeTab === 'historico' ? visibleHistory : filteredAndSortedReviews;
+  const exportFailed = activeTab === 'historico' ? historyError || historicoLoading : reviewsError || reviewsLoading;
 
   const columns: Column<any>[] = [
     {
@@ -304,20 +352,23 @@ export default function RevisaoAcessos() {
           {
             label: t('sweepDenuncias.revisao.exportar'),
             icon: <IconDownload className="h-4 w-4" />,
-            onClick: () => {},
+            disabled: exportFailed || !exportRows.length || activeTab === 'usuarios',
+            onClick: () => exportCSV(
+              [t('sweepDenuncias.revisao.colNomeRevisao'), t('sweepDenuncias.revisao.colSistema'), t('fin.comum.responsavel'), t('sweepDenuncias.revisao.colPrazo'), t('sweepDenuncias.revisao.colStatus'), t('sweepDenuncias.revisao.colProgresso')],
+              exportRows.map(item => [item.nome_revisao, item.sistema?.nome_sistema, item.responsavel?.nome, formatDateOnly(item.data_limite), formatStatus(item.status), item.contas_revisadas + '/' + item.total_contas].map(spreadsheetText)),
+              'campanhas-revisao-acessos',
+            ),
           },
         ]}
       />
 
-      <Tabs defaultValue="ativas">
-        <TabsList>
-          <TabsTrigger value="ativas">{t('fin.revisao.ativas')}</TabsTrigger>
-          <TabsTrigger value="historico">{t('fin.comum.historico')}</TabsTrigger>
-          <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>
-        </TabsList>
-
+      {statsError && <QueryError onRetry={() => void retryStats()} />}
+      {linkedError && <QueryError onRetry={() => void retryLinked()} />}
+      {linkedId && linkedReady && !linkedReview && <p role="status" className="text-sm text-muted-foreground">{t('experience.reviewUnavailable')}</p>}
+      {systemId && <div className="flex items-center gap-3 text-sm text-muted-foreground"><span>{t('experience.systemFilter')}</span><Button variant="ghost" size="sm" onClick={() => setSearchParams(previous => { const next = new URLSearchParams(previous); next.delete('sistema'); return next; })}>{t('common.clear')}</Button></div>}
       <StatStrip
         loading={statsLoading}
+        error={statsError}
         items={[
           { key: 'emAndamento', label: t('residuos.geral.emAndamento'), value: stats?.emAndamento || 0, drillDown: 'revisao_acessos' },
           { key: 'concluidas', label: t('fin.comum.concluidas'), value: stats?.concluidas || 0 },
@@ -326,16 +377,28 @@ export default function RevisaoAcessos() {
         ]}
       />
 
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="ativas">{t('fin.revisao.ativas')}</TabsTrigger>
+          <TabsTrigger value="historico">{t('fin.comum.historico')}</TabsTrigger>
+          <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>
+        </TabsList>
+
+
         <TabsContent value="ativas" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
                 paginated
                 pageSize={20}
-                data={filteredAndSortedReviews || []}
+                data={filteredAndSortedReviews}
+                filtering={{ active: !!systemId, onClear: clearSystem }}
                 columns={columns}
                 onRowClick={(review) => handleViewItems(review)}
                 loading={reviewsLoading}
+                error={reviewsError}
+                onRefresh={() => void refetch()}
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
                 searchPlaceholder={t('fin.revisao.buscar')}
@@ -347,8 +410,7 @@ export default function RevisaoAcessos() {
                       { value: "all", label: t('sweepDenuncias.revisao.filterTodos') },
                       { value: "rascunho", label: t('sweepDenuncias.revisao.filterRascunho') },
                       { value: "em_andamento", label: t('sweepDenuncias.revisao.filterEmAndamento') },
-                      { value: "concluida", label: t('fin.comum.concluidaF') },
-                      { value: "cancelada", label: t('sweepDenuncias.revisao.filterCancelada') },
+
                     ],
                     value: statusFilter,
                     onChange: setStatusFilter,
@@ -360,7 +422,7 @@ export default function RevisaoAcessos() {
                 emptyState={{
                   icon: <IconUserCheck className="h-8 w-8" />,
                   title: t('p3Kpis.revisaoAcessos.emptyTitle'),
-                  description: t('p3Kpis.revisaoAcessos.emptyDescription'),
+                  description: t('experience.reviewFirstRun'),
                   action: {
                     label: t('p3Kpis.revisaoAcessos.emptyAction'),
                     onClick: () => {
@@ -380,9 +442,17 @@ export default function RevisaoAcessos() {
               <DataTable
                 paginated
                 pageSize={20}
-                data={historico || []}
+                data={visibleHistory}
+                searchValue={historySearch}
+                onSearchChange={setHistorySearch}
+                filtering={{ active: !!systemId, onClear: clearSystem }}
                 columns={historicoColumns}
+                sortField={sortConfig?.field}
+                sortDirection={sortConfig?.direction}
+                onSort={handleSort}
                 loading={historicoLoading}
+                error={historyError}
+                onRefresh={() => void retryHistory()}
                 searchPlaceholder={t('fin.revisao.buscarHistorico')}
                 emptyState={{
                   title: t('fin.revisao.nenhumaConcluida'),
@@ -396,7 +466,7 @@ export default function RevisaoAcessos() {
         <TabsContent value="usuarios" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-6">
-              <SistemaUsuariosList />
+              <SistemaUsuariosList sistemaIdInicial={systemId} />
             </CardContent>
           </Card>
         </TabsContent>

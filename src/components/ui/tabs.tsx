@@ -2,6 +2,9 @@ import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
+import { useMotionAllowed } from "@/lib/motion-preferences"
 
 const TabsValueContext = React.createContext<string | undefined>(undefined)
 
@@ -105,16 +108,18 @@ const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { showIndicator?: boolean }
 >(({ className, style, children, showIndicator = true, ...props }, ref) => {
+  const { t } = useLanguage()
+  const motionAllowed = useMotionAllowed()
   const interna = React.useRef<HTMLDivElement>(null)
   const lado = useTransbordo(interna)
-  const mascara = ESBATIMENTO[lado]
+  const horizontal = showIndicator && !className?.includes("flex-col")
+  const mascara = horizontal ? ESBATIMENTO[lado] : undefined
   const activeValue = React.useContext(TabsValueContext)
   const [indicator, setIndicator] = React.useState({ left: 0, top: 0, width: 0, visible: false })
 
   /* Um único indicador desloca-se entre as abas. Antes cada aba desenhava a
      própria borda: uma desaparecia e outra aparecia, sem explicar a mudança
-     de contexto. A posição é medida porque os rótulos são traduzidos, podem
-     quebrar em duas linhas e têm larguras diferentes. */
+     de contexto. A posição é medida porque os rótulos são traduzidos, têm larguras diferentes. */
   React.useLayoutEffect(() => {
     const list = interna.current
     if (!list) return
@@ -153,7 +158,13 @@ const TabsList = React.forwardRef<
     }
   }, [activeValue])
 
+  const scrollTabs = (direction: number) => {
+    const list = interna.current
+    if (list) list.scrollBy({ left: direction * Math.max(160, list.clientWidth * 0.65), behavior: motionAllowed ? "smooth" : "instant" })
+  }
+
   return (
+  <div className="akuris-tabs-viewport relative min-w-0 max-w-full shrink-0 mb-4">
   <TabsPrimitive.List
     ref={(no) => {
       ;(interna as React.MutableRefObject<HTMLDivElement | null>).current = no as HTMLDivElement | null
@@ -161,38 +172,15 @@ const TabsList = React.forwardRef<
       else if (ref) (ref as React.MutableRefObject<unknown>).current = no
     }}
     data-transbordo={lado}
+    data-scrollable={horizontal ? "true" : undefined}
     style={{ maskImage: mascara, WebkitMaskImage: mascara, ...style }}
     className={cn(
-      "relative flex w-full items-center gap-6 overflow-x-auto overflow-y-hidden border-b border-border text-muted-foreground",
-      /*
-         A barra passa para a linha de baixo em vez de esconder uma aba.
-
-         Antes rolava na horizontal, e a última aba ficava cortada a meio
-         da palavra. Medido no detalhe de um controlo, numa janela de 1275
-         px: as seis abas somam 675 px, os cinco intervalos 112, e a barra
-         tem 744 — faltam 43. Encolher o intervalo comprava 37 px, ou seja
-         resolvia aquele caso e voltava a partir com uma aba a mais.
-
-         Com `flex-wrap` nada fica escondido, a qualquer largura e com
-         qualquer número de abas. Onde já cabia, não muda nada: só quebra
-         quando quebraria de qualquer forma. O esbatimento das margens
-         fica para o único caso que sobra — uma aba mais larga do que a
-         barra inteira.
-
-         No telemóvel mantém-se a rolagem: seis abas empilhadas comiam
-         três linhas do ecrã, e arrastar a barra de lado é um gesto que
-         ali se conhece — no rato não há gesto nenhum, e era esse o
-         problema.
-      */
-      "max-sm:flex-nowrap flex-wrap gap-y-0",
+      "akuris-tabs-list relative flex w-full items-center gap-4 overflow-x-auto overflow-y-hidden border-b border-border text-muted-foreground",
+      // Uma só linha, com rótulos integrais e controles explícitos de rolagem.
+      "flex-nowrap gap-y-0",
       "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-      /* A folga por baixo da barra de abas vive AQUI, e não em cada painel.
-         Estava no `TabsContent`, o que só dava espaço a quem fosse um painel:
-         uma faixa de indicadores posta entre a barra e o painel — cinco
-         páginas fazem isso — encostava na barra, porque não herdava margem
-         nenhuma. Pondo a margem na barra, tudo o que vier a seguir respira,
-         seja painel, cartão ou filtro. */
-      "mb-4",
+      /* A margem pertence ao viewport da barra, incluindo os botões de rolagem. */
+      "mb-0",
       className,
     )}
     {...props}
@@ -210,6 +198,9 @@ const TabsList = React.forwardRef<
       />
     )}
   </TabsPrimitive.List>
+  {horizontal && (lado === "inicio" || lado === "ambos") && <button type="button" className="akuris-tabs-scroll left-0" aria-label={t("experience.tabsPrevious")} onClick={() => scrollTabs(-1)}><ChevronLeft aria-hidden="true" className="h-4 w-4" /></button>}
+  {horizontal && (lado === "fim" || lado === "ambos") && <button type="button" className="akuris-tabs-scroll right-0" aria-label={t("experience.tabsNext")} onClick={() => scrollTabs(1)}><ChevronRight aria-hidden="true" className="h-4 w-4" /></button>}
+  </div>
   )
 })
 TabsList.displayName = TabsPrimitive.List.displayName

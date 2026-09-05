@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react';
-import { IconWarning } from '@/components/icons';
+import { readAllPages } from '@/lib/read-all-pages';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { QueryError } from '@/components/ui/query-error';
+import { IconWarning, IconChevronDown } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
@@ -22,8 +26,10 @@ interface DashboardStats {
   totalTemplates: number;
 }
 
-export function DueDiligenceDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
+export function DueDiligenceDashboard({ showAttention = true }: { showAttention?: boolean }) {
+  const { empresaId } = useEmpresaId();
+  const navigate = useNavigate();
+  const emptyStats: DashboardStats = {
     totalFornecedores: 0,
     totalTemplates: 0,
     totalAssessments: 0,
@@ -33,46 +39,33 @@ export function DueDiligenceDashboard() {
     averageScore: 0,
     scoredAssessments: 0,
     recentAssessments: []
-  });
-  const [loading, setLoading] = useState(true);
+  };
   const { t } = useLanguage();
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  const fetchDashboardStats = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('empresa_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.empresa_id) return;
+  const { data: stats = emptyStats, isLoading: loading, isError, refetch } = useQuery({
+    queryKey: ['due-diligence-dashboard', empresaId],
+    enabled: !!empresaId,
+    queryFn: async ({ signal }): Promise<DashboardStats> => {
 
       const [templatesRes, assessmentsRes, fornecedoresRes] = await Promise.all([
-        supabase.from('due_diligence_templates').select('id').eq('ativo', true),
-        supabase.from('due_diligence_assessments').select('id, status, score_final, fornecedor_nome, created_at, data_expiracao').eq('empresa_id', profile.empresa_id),
-        supabase.from('fornecedores').select('id').eq('empresa_id', profile.empresa_id).eq('status', 'ativo')
+        readAllPages((from, to) => supabase.from('due_diligence_templates').select('id').eq('ativo', true).order('id').range(from, to).abortSignal(signal), signal),
+        readAllPages((from, to) => supabase.from('due_diligence_assessments').select('id, status, score_final, fornecedor_nome, created_at, data_expiracao').eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal),
+        readAllPages((from, to) => supabase.from('fornecedores').select('id').eq('empresa_id', empresaId!).eq('status', 'ativo').order('id').range(from, to).abortSignal(signal), signal)
       ]);
 
+      for (const result of [templatesRes, assessmentsRes, fornecedoresRes]) if (result.error) throw result.error;
       const assessments = assessmentsRes.data || [];
-      const now = new Date();
+      const now = startOfDay(new Date());
       
-      const completedAssessments = assessments.filter(a => a.status === 'concluido').length;
+      const completedAssessments = assessments.filter(a => ['concluido', 'finalizado'].includes(a.status)).length;
       const expiredAssessments = assessments.filter(a => 
-        a.data_expiracao && parseDataLocal(a.data_expiracao) < now && a.status !== 'concluido'
+        a.data_expiracao && parseDataLocal(a.data_expiracao) < now && !['concluido', 'finalizado'].includes(a.status)
       ).length;
       const pendingAssessments = assessments.filter(a => 
-        a.status !== 'concluido' && !(a.data_expiracao && parseDataLocal(a.data_expiracao) < now)
+        !['concluido', 'finalizado'].includes(a.status) && !(a.data_expiracao && parseDataLocal(a.data_expiracao) < now)
       ).length;
       
-      const completedWithScores = assessments.filter(a => a.status === 'concluido' && a.score_final != null);
+      const completedWithScores = assessments.filter(a => ['concluido', 'finalizado'].includes(a.status) && a.score_final != null);
       const averageScore = completedWithScores.length > 0 
         // Sem `* 10`: `score_final` já é percentagem. O KPI mostrava 750% para
         // uma avaliação de 75.
@@ -80,11 +73,11 @@ export function DueDiligenceDashboard() {
         : 0;
 
       const recentAssessments = assessments
-        .filter(a => a.status !== 'concluido' || (a.data_expiracao && parseDataLocal(a.data_expiracao) < now))
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .filter(a => !['concluido', 'finalizado'].includes(a.status))
+        .sort((a, b) => (a.data_expiracao ? parseDataLocal(a.data_expiracao).getTime() : Infinity) - (b.data_expiracao ? parseDataLocal(b.data_expiracao).getTime() : Infinity))
         .slice(0, 5);
 
-      setStats({
+      return {
         totalFornecedores: fornecedoresRes.data?.length || 0,
         totalTemplates: templatesRes.data?.length || 0,
         totalAssessments: assessments.length,
@@ -94,13 +87,9 @@ export function DueDiligenceDashboard() {
         averageScore,
         scoredAssessments: completedWithScores.length,
         recentAssessments
-      });
-    } catch (error: any) {
-      console.error('Erro ao buscar estatísticas:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
+    },
+  });
 
   // (status mapping removido — usar resolveDueDiligenceStatusTone + formatStatus)
 
@@ -131,6 +120,7 @@ export function DueDiligenceDashboard() {
     <div className="space-y-4">
       <StatStrip
         loading={loading}
+        error={isError}
         items={[
           { key: 'fornecedores', label: t('dueDiligence.dashboard.statSuppliersTitle'), value: stats.totalFornecedores, drillDown: 'due_diligence_fornecedores' },
           { key: 'concluidos', label: t('dueDiligence.dashboard.statCompletedTitle'), value: stats.completedAssessments, drillDown: 'due_diligence_concluidos' },
@@ -147,25 +137,28 @@ export function DueDiligenceDashboard() {
       />
 
       {/* Assessments que precisam de atenção */}
-      {stats.recentAssessments.length > 0 && (
+      {isError && <QueryError onRetry={() => void refetch()} />}
+      {showAttention && !isError && stats.recentAssessments.length > 0 && (
         <Card className="overflow-hidden border-warning/25">
           <CardContent className="p-0">
-            <div className="flex items-center gap-3 border-b border-warning/20 bg-warning/[0.045] px-4 py-3">
+            <details className="group/attention">
+            <summary className="flex cursor-pointer list-none items-center gap-3 bg-warning/[0.045] px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-warning/25 bg-card text-warning">
                 <IconWarning className="h-4 w-4" />
               </span>
               <h3 className="min-w-0 flex-1 text-sm font-semibold">
                 {t('dueDiligence.dashboard.attentionCardTitle')}
               </h3>
-              <span className="rounded-md bg-warning/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-warning">
+              <span className="text-xs font-medium tabular-nums text-muted-foreground">
                 {stats.recentAssessments.length}
               </span>
-            </div>
+              <IconChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open/attention:rotate-180" aria-hidden="true" />
+            </summary>
             <div className="divide-y divide-border/70">
               {stats.recentAssessments.map((assessment, index) => {
                 const attention = attentionState(assessment);
                 return (
-                <div key={assessment.id ?? index} className="flex flex-col gap-2.5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <button type="button" key={assessment.id ?? index} onClick={() => navigate(`/due-diligence?focus=${encodeURIComponent(assessment.id)}`)} className="flex w-full flex-col gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                       <p className="font-medium text-sm">{assessment.fornecedor_nome}</p>
                       {/*
@@ -181,14 +174,15 @@ export function DueDiligenceDashboard() {
                       </p>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <StatusBadge tone={attention.tone}>{attention.label}</StatusBadge>
+                    <span className={attention.tone === "destructive" ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>{attention.label}</span>
                     <StatusBadge {...resolveDueDiligenceStatusTone(assessment.status)}>
                       {formatStatus(assessment.status)}
                     </StatusBadge>
                   </div>
-                </div>
+                </button>
               )})}
             </div>
+            </details>
           </CardContent>
         </Card>
       )}

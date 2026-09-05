@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from '@tanstack/react-query';
 import { calcularScoreFramework } from '@/lib/gap-score';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,29 +13,29 @@ export const useGapAnalysisStats = () => {
     queryKey: ['gap-analysis-stats', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
         // Filtro multi-tenant: templates globais + frameworks da empresa.
         const fwFilter = `empresa_id.is.null,empresa_id.eq.${empresaId}`;
-        const { data: frameworks, error: frameworksListError } = await supabase
+        const { data: frameworks, error: frameworksListError } = await readAllPages((from, to) => supabase
           .from('gap_analysis_frameworks')
           .select('id')
-          .or(fwFilter);
+          .or(fwFilter).order('id').range(from, to).abortSignal(signal), signal);
 
         if (frameworksListError) throw frameworksListError;
 
-        const { data: evaluations, error: evaluationsError } = await supabase
+        const { data: evaluations, error: evaluationsError } = await readAllPages((from, to) => supabase
           .from('gap_analysis_evaluations')
           .select('conformity_status, evidence_status, framework_id, requirement_id')
           .eq('empresa_id', empresaId!)
-          .limit(5000);
+          .order('id').range(from, to).abortSignal(signal), signal);
 
         if (evaluationsError) throw evaluationsError;
 
-        const { data: soa, error: soaError } = await supabase
+        const { data: soa, error: soaError } = await readAllPages((from, to) => supabase
           .from('gap_analysis_soa')
           .select('requirement_id, aplicavel')
-          .eq('empresa_id', empresaId!);
+          .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
         if (soaError) throw soaError;
         const foraDoEscopo = new Set(
           (soa || []).filter((x: any) => x.aplicavel === false).map((x: any) => x.requirement_id),
@@ -58,7 +59,7 @@ export const useGapAnalysisStats = () => {
             // vezes e outra nenhuma — e este e o DENOMINADOR de toda a
             // conformidade do produto.
             .order('id')
-            .range(from, from + PAGE - 1);
+            .range(from, from + PAGE - 1).abortSignal(signal);
           if (rqErr) throw rqErr;
           (page || []).forEach((r: any) => {
             totalsByFw.set(r.framework_id, (totalsByFw.get(r.framework_id) || 0) + 1);
@@ -125,7 +126,7 @@ export const useGapAnalysisStats = () => {
         };
       } catch (error) {
         logger.error('Gap Analysis Stats Error', { error: error instanceof Error ? error.message : String(error) });
-        return { totalFrameworks: 0, assessmentsInProgress: 0, averageCompliance: 0, pendingItems: 0 };
+        throw error;
       }
     },
   });

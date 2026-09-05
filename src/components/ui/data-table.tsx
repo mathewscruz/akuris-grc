@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { formatStatus } from "@/lib/text-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -14,6 +15,9 @@ import { rowOpenProps } from "@/lib/row-interaction"
 import { IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
 import { compararEscala } from '@/lib/ordem-de-escala'
 import { useRecorteDaUrl } from '@/hooks/useRecorteDaUrl'
+import { useListState } from '@/hooks/useListState'
+import { QueryError } from '@/components/ui/query-error'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
 const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
@@ -80,7 +84,9 @@ export interface Filter {
 interface DataTableProps<T> {
   data: T[]
   columns: Column<T>[]
+  defaultHiddenColumns?: string[]
   loading?: boolean
+  error?: boolean
   searchable?: boolean
   searchPlaceholder?: string
   searchValue?: string
@@ -88,6 +94,8 @@ interface DataTableProps<T> {
   filters?: Filter[]
   onExport?: () => void
   onRefresh?: () => void
+  /** Hide the duplicate toolbar action when the parent already offers refresh. Error retry remains available. */
+  showRefresh?: boolean
   /**
    * Para a página que tem a SUA barra de busca e filtros, fora da tabela.
    *
@@ -121,8 +129,10 @@ interface DataTableProps<T> {
 
 export function DataTable<T extends Record<string, any>>({
   data,
-  columns,
+  columns: allColumns,
+  defaultHiddenColumns = [],
   loading = false,
+  error = false,
   searchable = true,
   searchPlaceholder,
   searchValue = "",
@@ -130,6 +140,7 @@ export function DataTable<T extends Record<string, any>>({
   filters = [],
   onExport,
   onRefresh,
+  showRefresh = true,
   filtering,
   emptyState,
   sortField,
@@ -144,8 +155,13 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const { t } = useLanguage()
   const _searchPlaceholder = searchPlaceholder ?? t('common.searchPlaceholder')
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const [pageSize, setPageSize] = React.useState(initialPageSize)
+  const stateKey = allColumns.map((column) => String(column.key)).join(':')
+  const [hiddenColumns, setHiddenColumns] = useListState<string[]>(`table:${stateKey}:columns`, defaultHiddenColumns)
+  const canHideColumn = (column: Column<T>) => !TITLE_KEYS.has(String(column.key)) && !NON_SORTABLE_KEYS.has(String(column.key)) && column !== allColumns[0]
+  const columns = allColumns.filter((column) => !canHideColumn(column) || !hiddenColumns.includes(String(column.key)))
+  const showColumnPicker = allColumns.length > 7
+  const [currentPage, setCurrentPage] = useListState(`table:${stateKey}:page`, 1)
+  const [pageSize, setPageSize] = useListState(`table:${stateKey}:size`, initialPageSize)
   const [expandedMobileRows, setExpandedMobileRows] = React.useState<Set<string>>(() => new Set())
 
   /**
@@ -219,7 +235,7 @@ export function DataTable<T extends Record<string, any>>({
     : emptyState
 
   // Ordenação interna (A-Z / Z-A) quando a página não controla a ordenação.
-  const [internalSort, setInternalSort] = React.useState<{ field: string; direction: 'asc' | 'desc' } | null>(null)
+  const [internalSort, setInternalSort] = useListState<{ field: string; direction: 'asc' | 'desc' } | null>(`table:${stateKey}:sort`, null)
   const externalSort = typeof onSort === 'function'
   const activeSortField = externalSort ? sortField : internalSort?.field
   const activeSortDirection = externalSort ? sortDirection : internalSort?.direction
@@ -254,15 +270,22 @@ export function DataTable<T extends Record<string, any>>({
     return [...dadosRecortados].sort((a, b) => factor * compareValues(valor(a), valor(b)))
   }, [dadosRecortados, internalSort, externalSort, columns])
 
-  // Reset page when data changes
+  // Voltar à lista conserva a página. Mudar o recorte começa no primeiro resultado.
+  const criteria = [searchValue, pageSize, recorte.ids ? Array.from(recorte.ids).join('|') : '', filters.map((filter) => `${filter.key}:${filter.value}`).join('|')].join('::')
+  const previousCriteria = React.useRef(criteria)
   React.useEffect(() => {
-    setCurrentPage(1)
-  }, [data.length, pageSize, recorte.ids])
+    if (previousCriteria.current !== criteria) setCurrentPage(1)
+    previousCriteria.current = criteria
+  }, [criteria, setCurrentPage])
 
   // Calculate pagination
   const totalPages = Math.ceil(sortedData.length / pageSize)
+  React.useEffect(() => {
+    if (!loading && totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages, loading, setCurrentPage])
+  const safePage = Math.max(1, Math.min(currentPage, totalPages || 1))
   const paginatedData = paginated
-    ? sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    ? sortedData.slice((safePage - 1) * pageSize, safePage * pageSize)
     : sortedData
 
   const rowId = React.useCallback((item: T, index: number) =>
@@ -331,7 +354,9 @@ export function DataTable<T extends Record<string, any>>({
     (searchable && typeof onSearchChange === 'function') ||
     filters.length > 0 ||
     Boolean(onExport) ||
-    Boolean(onRefresh)
+    Boolean(onRefresh && showRefresh) || showColumnPicker
+
+  if (error) return <QueryError onRetry={onRefresh} />
 
   if (loading) {
     return (
@@ -384,11 +409,19 @@ export function DataTable<T extends Record<string, any>>({
             </ToolbarField>
           ))}
         >
+          {showColumnPicker && <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="outline" size="sm">{t('experience.columns')}</Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+              {allColumns.filter(canHideColumn).map((column) => <DropdownMenuCheckboxItem key={String(column.key)} checked={!hiddenColumns.includes(String(column.key))} onSelect={(event) => event.preventDefault()} onCheckedChange={(checked) => setHiddenColumns((hidden) => checked ? hidden.filter((key) => key !== String(column.key)) : [...hidden, String(column.key)])}>{column.label}</DropdownMenuCheckboxItem>)}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setHiddenColumns(defaultHiddenColumns)}>{t('experience.restoreColumns')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>}
           {/* `aria-label`: abaixo de `sm` o rótulo destes dois botões está
               escondido e sobra um ícone sozinho — no telemóvel o leitor de
               ecrã anunciava «botão», sem dizer qual. O nome fica sempre, a
               palavra continua a aparecer só quando há largura para ela. */}
-          {onRefresh && (
+          {onRefresh && showRefresh && (
             <Button variant="outline" size="sm" onClick={onRefresh} aria-label={t('common.refresh')}>
               <IconRefresh className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('common.refresh')}</span>
@@ -466,7 +499,7 @@ export function DataTable<T extends Record<string, any>>({
               const valor = (column: Column<T>) =>
                 column.render
                   ? column.render(item[column.key as keyof T], item)
-                  : String(item[column.key as keyof T] ?? '-')
+                  : column.key === 'status' ? formatStatus(String(item[column.key as keyof T] ?? '')) || '-' : String(item[column.key as keyof T] ?? '-')
               return (
                 <div
                   key={rowId(item, index)}
@@ -620,7 +653,7 @@ export function DataTable<T extends Record<string, any>>({
                            uma ausência. Com `||`, uma licença com 0 postos lia-se
                            "—" na tabela e "0" no cartão do telemóvel -- o mesmo
                            dado com duas verdades conforme o tamanho do ecrã. */
-                        : String(item[column.key as keyof T] ?? '-')
+                        : column.key === 'status' ? formatStatus(String(item[column.key as keyof T] ?? '')) || '-' : String(item[column.key as keyof T] ?? '-')
                       }
                     </TableCell>
                   ))}
@@ -660,7 +693,7 @@ export function DataTable<T extends Record<string, any>>({
               <PaginationItem>
                 <PaginationPrevious 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  disabled={currentPage === 1}
                 />
               </PaginationItem>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -688,7 +721,7 @@ export function DataTable<T extends Record<string, any>>({
               <PaginationItem>
                 <PaginationNext 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  disabled={currentPage === totalPages}
                 />
               </PaginationItem>
             </PaginationContent>

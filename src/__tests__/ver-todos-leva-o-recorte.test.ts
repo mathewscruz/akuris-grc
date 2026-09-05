@@ -57,7 +57,9 @@ describe('ver todos leva o recorte', () => {
   it('a gaveta corta na apresentação, não na leitura', () => {
     const fonte = readFileSync(GAVETA, 'utf8');
     expect(fonte.includes('.limit(LIMITE_DO_RECORTE)')).toBe(true);
-    expect(fonte.includes('.slice(0, LINHAS_NA_GAVETA)')).toBe(true);
+    expect(fonte.includes('.slice(page * LINHAS_NA_GAVETA, (page + 1) * LINHAS_NA_GAVETA)')).toBe(true);
+    expect(fonte).toContain('setPage(page + 1)');
+    expect(fonte).toContain('setPage(page - 1)');
   });
 
   it('o tecto de leitura cabe no endereço', () => {

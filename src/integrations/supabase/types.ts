@@ -37,7 +37,8 @@ export type Database = {
       access_review_history: {
         Row: {
           acao_tomada: string
-          conta_id: string
+          conta_id: string | null
+          sistema_usuario_id: string | null
           created_at: string
           data_revisao: string
           decisao: string
@@ -54,7 +55,8 @@ export type Database = {
         }
         Insert: {
           acao_tomada: string
-          conta_id: string
+          conta_id?: string | null
+          sistema_usuario_id?: string | null
           created_at?: string
           data_revisao: string
           decisao: string
@@ -71,7 +73,8 @@ export type Database = {
         }
         Update: {
           acao_tomada?: string
-          conta_id?: string
+          conta_id?: string | null
+          sistema_usuario_id?: string | null
           created_at?: string
           data_revisao?: string
           decisao?: string
@@ -119,7 +122,8 @@ export type Database = {
       }
       access_review_items: {
         Row: {
-          conta_id: string
+          conta_id: string | null
+          sistema_usuario_id: string | null
           created_at: string
           data_concessao: string | null
           data_expiracao: string | null
@@ -139,7 +143,8 @@ export type Database = {
           usuario_beneficiario: string
         }
         Insert: {
-          conta_id: string
+          conta_id?: string | null
+          sistema_usuario_id?: string | null
           created_at?: string
           data_concessao?: string | null
           data_expiracao?: string | null
@@ -159,7 +164,8 @@ export type Database = {
           usuario_beneficiario: string
         }
         Update: {
-          conta_id?: string
+          conta_id?: string | null
+          sistema_usuario_id?: string | null
           created_at?: string
           data_concessao?: string | null
           data_expiracao?: string | null
@@ -9924,6 +9930,14 @@ export type Database = {
       activate_mfa_code_issue: {
         Args: { p_code_id: string; p_user_id: string }
         Returns: boolean
+      }
+      create_access_review: {
+        Args: { p_empresa_id: string; p_data: Json }
+        Returns: Database['public']['Tables']['access_reviews']['Row']
+      }
+      finalize_access_review: {
+        Args: { p_review_id: string }
+        Returns: Json
       }
       agendar_expurgo_denuncias: { Args: never; Returns: string }
       agendar_lembretes_diarios: { Args: never; Returns: string }

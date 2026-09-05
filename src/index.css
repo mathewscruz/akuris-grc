@@ -477,7 +477,7 @@ input:-webkit-autofill:focus {
    *
    * Um `font-size` em `rem` aqui seria recursivo; tem de ser `px`. */
   html {
-    font-size: clamp(14px, 13px + 0.15vw, 17px);
+    font-size: 16px;
   }
 
   body {
@@ -624,9 +624,9 @@ input:-webkit-autofill:focus {
       hsl(var(--muted) / 0.16) 76%,
       hsl(var(--card)) 100%
     );
-    color: hsl(var(--muted-foreground) / 0.78);
-    font-size: 0.6875rem;
-    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.75rem;
+    font-weight: 600;
     letter-spacing: 0.025em;
     text-transform: uppercase;
   }
@@ -927,6 +927,7 @@ input:-webkit-autofill:focus {
 
 .akuris-tab-indicator {
   position: absolute;
+  top: 0;
   left: 0;
   z-index: 2;
   height: 2px;
@@ -936,6 +937,21 @@ input:-webkit-autofill:focus {
   transition: transform var(--motion-surface) var(--motion-ease),
               width var(--motion-surface) var(--motion-ease),
               opacity var(--motion-micro) ease-out;
+}
+
+/* A densidade adapta o layout, não diminui a letra no celular. */
+.akuris-table .font-mono:not(pre), .akuris-record-id {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+.akuris-table th:first-child:not(:has([role="checkbox"])), .akuris-table td:first-child:not(:has([role="checkbox"])) {
+  min-width: 6rem;
+}
+@media (max-width: 639px) {
+  .akuris-stat-item { order: var(--metric-order, 0); }
+  .akuris-stat-item[data-mobile-hidden="true"] { display: none; }
 }
 
 .akuris-nav-link {
@@ -1107,6 +1123,30 @@ input:-webkit-autofill:focus {
   .animate-scroll-left {
     animation: none !important;
   }
+}
+
+/* Explicit browser preference complements (never overrides) the OS setting. */
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+:root[data-reduce-motion="true"] .akuris-severity-step {
+  animation: none !important;
+  transform: none !important;
+}
+:root[data-reduce-motion="true"] .lp-fade-up {
+  opacity: 1 !important;
+  transform: none !important;
+}
+[data-motion-visible="false"] .akuris-severity-step,
+:root[data-motion-hidden="true"] *,
+:root[data-motion-hidden="true"] *::before,
+:root[data-motion-hidden="true"] *::after {
+  animation-play-state: paused !important;
 }
 
 /* ===== AkurisPulse — loader oficial do sistema ===== */
@@ -2246,3 +2286,14 @@ input:-webkit-autofill:focus {
 @media (prefers-reduced-motion: reduce) {
   .auth-entra { animation: none; }
 }
+/* Full labels stay on one row. Overflow is navigable by touch, keyboard and arrows. */
+.akuris-tabs-list[data-scrollable="true"] { display: flex; flex-wrap: nowrap; }
+.akuris-tabs-list[data-scrollable="true"] [role="tab"] { flex-shrink: 0; white-space: nowrap; }
+.akuris-tabs-scroll {
+  position: absolute; top: 0; bottom: 1px; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  width: 1.75rem; color: hsl(var(--muted-foreground));
+  background: hsl(var(--background)); border-radius: .25rem;
+}
+.akuris-tabs-scroll:hover { color: hsl(var(--primary)); }
+.akuris-tabs-scroll:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }

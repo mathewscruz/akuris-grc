@@ -1,4 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import { loadPrivilegedAccounts } from '@/lib/queries/privileged-accounts';
+import { privilegedAccountStatus } from '@/lib/privileged-review';
+import { readAllPages } from '@/lib/read-all-pages';
+import { useNavigate } from 'react-router-dom';
+import { useListState } from '@/hooks/useListState';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -14,7 +19,7 @@ import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, formatarDiaParaDB } from '@/lib/date-utils';
 import { capitalizeText } from '@/lib/text-utils';
 import { resolveItemStatusTone } from '@/lib/status-tone';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
@@ -27,23 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from '@/contexts/LanguageContext';
 
-interface ContaPrivilegiada {
-  id: string;
-  usuario_beneficiario: string;
-  email_beneficiario?: string;
-  tipo_acesso: string;
-  nivel_privilegio: string;
-  data_concessao: string;
-  data_expiracao: string;
-  status: string;
-  justificativa_negocio: string;
-  sistema_id: string;
-  sistemas_privilegiados?: {
-    nome_sistema: string;
-    tipo_sistema: string;
-    criticidade: string;
-  };
-}
+type ContaPrivilegiada = Awaited<ReturnType<typeof loadPrivilegedAccounts>>[number];
 
 export default function ContasPrivilegiadas() {
   /*
@@ -55,14 +44,15 @@ export default function ContasPrivilegiadas() {
   */
   useFocusRow();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [showContaDialog, setShowContaDialog] = useState(false);
   const [selectedConta, setSelectedConta] = useState<ContaPrivilegiada | null>(null);
   const [detalheConta, setDetalheConta] = useState<ContaPrivilegiada | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [nivelFilter, setNivelFilter] = useState('todos');
-  const [sortField, setSortField] = useState('usuario_beneficiario');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
+  const [nivelFilter, setNivelFilter] = useListState('nivelFilter', 'todos');
+  const [sortField, setSortField] = useListState('sortField', 'usuario_beneficiario');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     id: string;
@@ -73,44 +63,30 @@ export default function ContasPrivilegiadas() {
   const { empresaId } = useEmpresaId();
 
   // Buscar contas privilegiadas
-  const { data: contas = [], isLoading } = useQuery({
+  const { data: contas = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['contas-privilegiadas', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contas_privilegiadas' as any)
-        .select(`
-          *,
-          sistemas_privilegiados (
-            nome_sistema,
-            tipo_sistema,
-            criticidade
-          )
-        `)
-        .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as unknown as ContaPrivilegiada[];
-    },
+    queryFn: ({ signal }) => loadPrivilegedAccounts(empresaId!, signal),
     enabled: !!empresaId,
   });
 
   // Buscar sistemas para o dropdown no dialog
-  const { data: sistemas = [] } = useQuery({
+  const { data: sistemas = [], isError: systemsError, refetch: retrySystems } = useQuery({
     queryKey: ['sistemas-privilegiados', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages<any>((from, to) => supabase
         .from('sistemas_privilegiados' as any)
         .select('*')
         .eq('empresa_id', empresaId)
         .eq('ativo', true)
-        .order('nome_sistema');
+        .order('nome_sistema').order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       return data || [];
     },
     enabled: !!empresaId,
   });
+
+  useEffect(() => { setDetalheConta(null); setSelectedConta(null); setShowContaDialog(false); }, [empresaId]);
 
   // Calcular métricas do dashboard
   const hoje = new Date();
@@ -119,9 +95,8 @@ export default function ContasPrivilegiadas() {
 
   // Uma conta está expirada se o status é 'expirado' OU se a data de expiração já passou
   // (o status armazenado não é atualizado automaticamente quando a data vence)
-  const isExpirada = (c: ContaPrivilegiada) =>
-    c.status === 'expirado' ||
-    (c.status === 'ativo' && new Date(c.data_expiracao + 'T00:00:00') < hoje);
+  const displayStatus = (c: ContaPrivilegiada) => privilegedAccountStatus(c, formatarDiaParaDB(hoje));
+  const isExpirada = (c: ContaPrivilegiada) => displayStatus(c) === 'expirado';
 
   const contasExpiradas = contas.filter(isExpirada).length;
   const contasAtivas = contas.filter(c => c.status === 'ativo' && !isExpirada(c)).length;
@@ -203,7 +178,7 @@ export default function ContasPrivilegiadas() {
         conta.email_beneficiario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         conta.sistemas_privilegiados?.nome_sistema.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesStatus = statusFilter === 'todos' || conta.status === statusFilter;
+      const matchesStatus = statusFilter === 'todos' || displayStatus(conta) === statusFilter;
       const matchesNivel = nivelFilter === 'todos' || conta.nivel_privilegio === nivelFilter;
 
       return matchesSearch && matchesStatus && matchesNivel;
@@ -250,6 +225,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'sistema',
+      mobilePriority: 6,
       label: t('sweepDenuncias.contas.colSistema'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
@@ -263,14 +239,16 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'tipo_acesso',
+      mobilePriority: 5,
       label: t('fin.contas.tipoAcesso'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
-        <Badge variant="secondary">{capitalizeText(conta.tipo_acesso)}</Badge>
+        <span className="text-muted-foreground">{capitalizeText(conta.tipo_acesso)}</span>
       )
     },
     {
       key: 'nivel_privilegio',
+      mobilePriority: 4,
       label: t('fin.comum.nivel'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
@@ -281,6 +259,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'data_expiracao',
+      mobilePriority: 2,
       label: t('fin.contas.dataExpiracao'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => {
@@ -290,14 +269,28 @@ export default function ContasPrivilegiadas() {
         const diffDays = Math.ceil((expiracao.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 
         /* Só a data: o selo repetia o que ela já diz. */
-        return formatDateOnly(conta.data_expiracao);
+        return conta.data_expiracao ? formatDateOnly(conta.data_expiracao) : t('experience.noExpiry');
       }
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('sweepDenuncias.contas.colStatus'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => getStatusBadge(isExpirada(conta) ? 'expirado' : conta.status)
+    },
+    {
+      key: 'system_owner_name', label: t('experience.systemOwner'), mobilePriority: 1, sortable: true,
+      render: (_: unknown, c: ContaPrivilegiada) => c.system_owner_name || t('experience.notAssigned'),
+    },
+    {
+      key: 'review_deadline', label: t('experience.systemReview'), mobilePriority: 3, sortable: true,
+      render: (_: unknown, c: ContaPrivilegiada) => <div className="space-y-1">
+        <span className={c.review_deadline && c.review_deadline < formatarDiaParaDB(hoje) ? 'text-destructive' : ''}>
+          {c.review_deadline ? formatDateOnly(c.review_deadline) : t('experience.noOpenCampaign')}
+        </span>
+        {c.review_name && <p className="text-xs text-muted-foreground">{c.review_name}</p>}
+      </div>,
     },
     {
       key: 'acoes',
@@ -408,11 +401,12 @@ export default function ContasPrivilegiadas() {
 
       <StatStrip
         loading={isLoading}
+        error={isError}
         items={[
-          { key: 'ativas', label: t('sweepDenuncias.contas.cardContasAtivas'), value: contasAtivas, drillDown: 'contas_privilegiadas' },
-          { key: 'pendentes', label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, drillDown: 'contas_pendentes' },
+          { key: 'ativas', label: t('sweepDenuncias.contas.cardContasAtivas'), value: contasAtivas, onClick: () => { setStatusFilter('ativo'); setSearchTerm(''); setNivelFilter('todos'); } },
+          { key: 'pendentes', label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, onClick: () => { setStatusFilter('pendente_aprovacao'); setSearchTerm(''); setNivelFilter('todos'); } },
           { key: 'vencendo', label: t('residuos.geral.vencendo30'), value: contasVencendo, tone: 'warning', drillDown: 'contas_vencendo' },
-          { key: 'expiradas', label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'destructive', drillDown: 'contas_expiradas' },
+          { key: 'expiradas', label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'destructive', onClick: () => { setStatusFilter('expirado'); setSearchTerm(''); setNivelFilter('todos'); } },
         ]}
       />
 
@@ -423,8 +417,11 @@ export default function ContasPrivilegiadas() {
             pageSize={20}
             data={filteredAndSortedContas}
             columns={contasColumns}
+            defaultHiddenColumns={['tipo_acesso']}
             onRowClick={(conta) => setDetalheConta(conta)}
             loading={isLoading}
+            error={isError || systemsError}
+            onRefresh={() => { void refetch(); void retrySystems(); }}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             searchPlaceholder={t('fin.contas.buscar')}
@@ -462,18 +459,26 @@ export default function ContasPrivilegiadas() {
         onOpenChange={(o) => !o && setDetalheConta(null)}
         title={detalheConta?.usuario_beneficiario}
         subtitle={detalheConta?.email_beneficiario}
-        badges={detalheConta ? getStatusBadge(detalheConta.status) : undefined}
+        badges={detalheConta ? getStatusBadge(displayStatus(detalheConta)) : undefined}
         actions={detalheConta ? (
+          <>
+          <Button variant="outline" size="sm" onClick={() => navigate(detalheConta.review_id ? `/revisao-acessos?revisao=${encodeURIComponent(detalheConta.review_id)}` : `/revisao-acessos?sistema=${encodeURIComponent(detalheConta.sistema_id)}`)}>{t('experience.viewSystemReviews')}</Button>
           <Button variant="outline" size="sm" onClick={() => { const c = detalheConta; setDetalheConta(null); handleEditConta(c); }}>
             {t('fin.comum.editar')}
           </Button>
+          </>
         ) : undefined}
         fields={detalheConta ? [
           { label: t('detalheRegisto.sistema'), value: detalheConta.sistemas_privilegiados?.nome_sistema },
+          { label: t('experience.systemOwner'), value: detalheConta.system_owner_name || t('experience.notAssigned') },
+          { label: t('experience.systemReview'), value: detalheConta.review_name || t('experience.noOpenCampaign') },
+          { label: t('experience.deadline'), value: detalheConta.review_deadline ? formatDateOnly(detalheConta.review_deadline) : t('experience.noDeadline') },
+          { label: t('experience.accountLastReview'), value: detalheConta.last_review_at ? formatDateOnly(detalheConta.last_review_at) : t('experience.noAccountReview') },
+          { label: t('experience.reviewScopeLabel'), value: t('experience.reviewScopeHint'), full: true },
           { label: t('detalheRegisto.tipoAcesso'), value: detalheConta.tipo_acesso },
           { label: t('detalheRegisto.nivelPrivilegio'), value: detalheConta.nivel_privilegio },
           { label: t('detalheRegisto.concessao'), value: detalheConta.data_concessao ? formatDateOnly(detalheConta.data_concessao) : null },
-          { label: t('detalheRegisto.expiracao'), value: detalheConta.data_expiracao ? formatDateOnly(detalheConta.data_expiracao) : null },
+          { label: t('detalheRegisto.expiracao'), value: detalheConta.data_expiracao ? formatDateOnly(detalheConta.data_expiracao) : t('experience.noExpiry') },
           { label: t('detalheRegisto.justificativa'), value: detalheConta.justificativa_negocio, full: true },
         ] : []}
       />

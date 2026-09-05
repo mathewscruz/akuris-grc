@@ -14,7 +14,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { resolvePrioridadeTone } from '@/lib/status-tone';
+import { resolveWorkflowStatusTone } from '@/lib/status-tone';
+import { rowOpenProps } from '@/lib/row-interaction';
+import { QueryError } from '@/components/ui/query-error';
 import { formatStatus } from '@/lib/text-utils';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
 import { logger } from '@/lib/logger';
@@ -54,7 +56,7 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { data: planos = [], isLoading } = useQuery({
+  const { data: planos = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['planos-acao-vinculados', modulo, registroId, empresaId],
     queryFn: async () => {
       if (!empresaId) return [];
@@ -109,7 +111,7 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
         )}
       </div>
 
-      {isLoading ? (
+      {isError ? <QueryError onRetry={() => void refetch()} /> : isLoading ? (
         <div className="flex justify-center py-4"><AkurisPulse size={20} /></div>
       ) : planos.length === 0 ? (
         <p className="text-xs text-muted-foreground">{vazioTexto ?? t('planosVinculados.empty')}</p>
@@ -119,10 +121,10 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
             <li
               key={p.id}
               className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm hover:border-primary/40"
-              onClick={() => navigate(`/planos-acao?focus=${p.id}`)}
+              {...rowOpenProps(() => navigate(`/planos-acao?plano=${p.id}`), p.titulo)}
             >
               <span className="min-w-0 flex-1 truncate">{p.titulo}</span>
-              <StatusBadge {...resolvePrioridadeTone(p.prioridade)}>{formatStatus(p.status)}</StatusBadge>
+              <StatusBadge {...resolveWorkflowStatusTone(p.status)}>{formatStatus(p.status)}</StatusBadge>
               <IconExternal className="h-3 w-3 shrink-0 text-muted-foreground" />
             </li>
           ))}

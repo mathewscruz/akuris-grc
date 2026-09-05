@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { IconView, IconSuccess, IconWarning, IconTime, IconCalendar, IconShield, IconUserCheck } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -66,6 +66,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
   const { t } = useLanguage();
   const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const loadSequence = useRef(0);
   const [selectedDenuncia, setSelectedDenuncia] = useState<Denuncia | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,7 +86,9 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
   const empresaId = empresaSelecionada || empresaPropria;
 
   useEffect(() => {
-    if (empresaId) carregarDenuncias();
+    setDenuncias([]); setSelectedDenuncia(null); setDialogOpen(false);
+    if (empresaId) void carregarDenuncias();
+    return () => { loadSequence.current += 1; };
   }, [empresaId, refreshKey]);
 
   // Detectar se veio com itemIdToOpen
@@ -108,6 +112,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
   */
   const carregarDenuncias = async (): Promise<void> => {
     if (!empresaId) return;
+    const sequence = ++loadSequence.current;
+    setLoading(true); setLoadError(false);
     try {
       const { data, error } = await supabase
         .from('denuncias')
@@ -119,6 +125,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      if (sequence !== loadSequence.current) return;
 
       setDenuncias(data || []);
       setSelectedDenuncia((atual) =>
@@ -136,10 +143,12 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         new Set((data ?? []).map((d) => d.responsavel_id).filter(Boolean)),
       ) as string[];
       if (responsaveis.length > 0) {
-        const { data: perfis } = await supabase
+        const { data: perfis, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, nome')
           .in('user_id', responsaveis);
+        if (profilesError) throw profilesError;
+        if (sequence !== loadSequence.current) return;
         setNomes(Object.fromEntries((perfis ?? []).map((p) => [p.user_id, p.nome ?? ''])));
       } else {
         setNomes({});
@@ -153,11 +162,13 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         Uma obrigação que só se vê depois de a procurar não é uma obrigação
         vigiada.
       */
-      const { data: pedidos } = await supabase
+      const { data: pedidos, error: requestsError } = await supabase
         .from('denuncias_reunioes')
         .select('denuncia_id')
         .eq('empresa_id', empresaId)
         .eq('estado', 'solicitada');
+      if (requestsError) throw requestsError;
+      if (sequence !== loadSequence.current) return;
       setComReuniao(new Set((pedidos ?? []).map((r) => r.denuncia_id)));
 
       /*
@@ -168,14 +179,18 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         `trg_mensagem_avisa_o_comite` toca o sino; isto põe a mesma coisa na
         lista, para quem chega ao ecrã sem ter visto o aviso.
       */
-      const { data: porLer } = await supabase
+      const { data: porLer, error: messagesError } = await supabase
         .from('denuncias_mensagens')
         .select('denuncia_id')
         .eq('empresa_id', empresaId)
         .eq('autor_tipo', 'denunciante')
         .is('lida_em', null);
+      if (messagesError) throw messagesError;
+      if (sequence !== loadSequence.current) return;
       setPorResponder(new Set((porLer ?? []).map((m) => m.denuncia_id)));
     } catch (error) {
+      if (sequence !== loadSequence.current) return;
+      setLoadError(true);
       console.error('Erro ao carregar denúncias:', error);
       toast({
         title: t('denunciasAdmin.dashboard.errorLoad'),
@@ -183,7 +198,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
   };
 
@@ -295,6 +310,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('denunciasAdmin.dashboard.colStatus'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
@@ -305,6 +321,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
     },
     {
       key: 'gravidade',
+      mobilePriority: 1,
       label: t('denunciasAdmin.dashboard.colGravidade'),
       sortable: true,
       /* Normaliza antes de comparar — a base tem grafias antigas — e deixa o
@@ -349,6 +366,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
     },
     {
       key: 'responsavel_id',
+      mobilePriority: 3,
+      className: 'min-w-36',
       label: t('denunciasAdmin.dashboard.colResponsavel'),
       sortable: true,
       /* Pelo nome que está no ecrã, não pelo UUID que está por baixo. */
@@ -373,6 +392,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
         estava a vencer era preciso abrir uma denúncia de cada vez.
       */
       key: 'prazo_retorno',
+      mobilePriority: 2,
+      className: 'min-w-40',
       label: t('denunciasAdmin.dashboard.colPrazo'),
       sortable: true,
       /* Ordena pelo prazo que corre, que é o mesmo que se desenha. */
@@ -409,6 +430,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
     },
     {
       key: 'acoes',
+      className: 'w-28 whitespace-nowrap',
       label: t('denunciasAdmin.dashboard.colAcoes'),
       render: (_: any, denuncia: Denuncia) => {
         const prazo = jaEncerrada(denuncia) ? null : prazoActivo(denuncia);
@@ -424,7 +446,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
           aria-label={requerAcao ? t('denunciasAdmin.dashboard.treatPending') : t('common.view')}
           title={requerAcao ? t('denunciasAdmin.dashboard.treatPending') : t('common.view')}
         >
-          {requerAcao ? <><IconWarning className="mr-2 h-4 w-4" />{t('denunciasAdmin.dashboard.treatPending')}</> : <IconView className="h-4 w-4" />}
+          {requerAcao ? <IconWarning className="h-4 w-4" /> : <IconView className="h-4 w-4" />}
+          {requerAcao && <span>{t('experience.treat')}</span>}
         </Button>;
       }
     }
@@ -485,6 +508,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
             columns={columns}
             onRowClick={(denuncia) => handleVisualizarDenuncia(denuncia)}
             loading={loading}
+            error={loadError}
+            onRefresh={() => void carregarDenuncias()}
             searchable
             searchPlaceholder={t('denunciasAdmin.dashboard.searchPlaceholder')}
             searchValue={searchTerm}
@@ -497,7 +522,6 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
                 ? t('denunciasAdmin.dashboard.emptyDescriptionSearch')
                 : t('denunciasAdmin.dashboard.emptyDescription'),
             }}
-            onRefresh={carregarDenuncias}
           />
         </CardContent>
       </Card>

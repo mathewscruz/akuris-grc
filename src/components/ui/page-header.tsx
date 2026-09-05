@@ -86,7 +86,7 @@ export function PageHeader({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-3 min-w-0">
-            <h1 className="truncate text-2xl sm:text-3xl font-bold tracking-tight" title={title}>{title}</h1>
+            <h1 className="text-balance text-2xl sm:text-3xl font-bold tracking-tight" title={title}>{title}</h1>
             {badge && (
               <Badge variant={badge.variant} className="text-xs shrink-0">
                 {badge.label}
@@ -94,13 +94,13 @@ export function PageHeader({
             )}
           </div>
           {description && (
-            <p className="truncate text-sm text-muted-foreground" title={description}>
+            <p className="max-w-3xl text-pretty text-sm leading-relaxed text-muted-foreground">
               {description}
             </p>
           )}
         </div>
         {(actions || hasSecondary) && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {hasSecondary && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

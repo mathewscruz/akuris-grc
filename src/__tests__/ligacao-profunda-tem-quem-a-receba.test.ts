@@ -130,9 +130,10 @@ describe('ligação profunda tem quem a receba', () => {
     // nome para a mesma coisa em ecrãs que já funcionavam.
     expect(nomeDe('risco'), '/riscos abre a gaveta por ?risco=').toBe('risco');
     expect(nomeDe('gap_requirement'), 'o detalhe de framework abre por ?req=').toBe('req');
+    expect(nomeDe('plano_acao'), 'o detalhe abre por ?plano= mesmo quando a lista filtra itens encerrados').toBe('plano');
 
     // Todo o resto fala a grafia comum, a que o `useFocusRow` entende.
-    const excepcoes = new Set<EntityKey>(['risco', 'gap_requirement', 'projeto']);
+    const excepcoes = new Set<EntityKey>(['risco', 'gap_requirement', 'projeto', 'plano_acao']);
     const foragidos = ENTITY_DEFS.filter((d) => !excepcoes.has(d.key))
       .map((d) => [d.key, nomeDe(d.key)] as const)
       .filter(([, nome]) => nome !== 'focus');

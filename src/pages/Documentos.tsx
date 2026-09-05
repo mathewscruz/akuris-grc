@@ -1,3 +1,8 @@
+import { readAllPages } from '@/lib/read-all-pages';
+import { useRef } from 'react';
+import { compareSortValues, type SortState } from '@/components/ui/sortable-table-head';
+import { useListState } from '@/hooks/useListState';
+import { QueryError } from '@/components/ui/query-error';
 import { matchesSearch, normalizeSearch } from '@/lib/search-utils';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -85,10 +90,11 @@ export default function Documentos() {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategoria, setSelectedCategoria] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedTipo, setSelectedTipo] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [selectedCategoria, setSelectedCategoria] = useListState<string>('selectedCategoria', 'all');
+  const [selectedStatus, setSelectedStatus] = useListState<string>('selectedStatus', 'all');
+  const [onlyIncomplete, setOnlyIncomplete] = useListState('onlyIncomplete', false);
+  const [selectedTipo, setSelectedTipo] = useListState<string>('selectedTipo', 'all');
   const [documentoDialog, setDocumentoDialog] = useState<{ open: boolean; documento?: Documento }>({ open: false });
   const [categoriasDialog, setCategoriasDialog] = useState(false);
   const [vinculacoesDialog, setVinculacoesDialog] = useState<{ open: boolean; documento?: Documento }>({ open: false });
@@ -110,22 +116,23 @@ export default function Documentos() {
   const { toast } = useToast();
   
   // Paginação
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [documentSort, setDocumentSort] = useListState<SortState | null>('sort', null);
+  const [currentPage, setCurrentPage] = useListState('currentPage', 1);
+  const [itemsPerPage, setItemsPerPage] = useListState('itemsPerPage', 20);
   
   // Buscar estatísticas dos documentos
-  const { data: statsDocumentos } = useDocumentosStats();
+  const { data: statsDocumentos, isLoading: statsLoading, isError: statsError } = useDocumentosStats();
 
   // React Query para documentos
-  const { data: documentos = SEM_DOCUMENTOS, isLoading: loading } = useQuery({
+  const { data: documentos = SEM_DOCUMENTOS, isLoading: loading, isError: documentsError, refetch: retryDocuments } = useQuery({
     queryKey: ['documentos', empresaId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!empresaId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('documentos')
         .select('*')
         .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       return (data || []) as Documento[];
@@ -187,10 +194,12 @@ export default function Documentos() {
     enabled: !!empresaId,
   });
 
-  // Reset pagination when filters change
+  const filterSignature = JSON.stringify([searchTerm, selectedCategoria, selectedStatus, selectedTipo, filtrosAvancados, onlyIncomplete]);
+  const previousFilters = useRef(filterSignature);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategoria, selectedStatus, selectedTipo, filtrosAvancados]);
+    if (previousFilters.current !== filterSignature) setCurrentPage(1);
+    previousFilters.current = filterSignature;
+  }, [filterSignature, setCurrentPage]);
 
   // Detectar se veio com itemId do dashboard
   useEffect(() => {
@@ -245,6 +254,7 @@ export default function Documentos() {
   */
   const documentosFiltrados = useMemo(() => {
     let filtered = [...documentos];
+    if (onlyIncomplete) filtered = filtered.filter(documento => !documento.classificacao || !documento.categoria_id || !documento.responsavel_id);
 
     // Filtro de busca simples
     if (searchTerm) {
@@ -349,7 +359,7 @@ export default function Documentos() {
     }
 
     return filtered;
-  }, [documentos, searchTerm, selectedCategoria, selectedStatus, selectedTipo, filtrosAvancados]);
+  }, [documentos, searchTerm, selectedCategoria, selectedStatus, selectedTipo, filtrosAvancados, onlyIncomplete]);
 
   const handleDeleteDocumento = (id: string) => {
     setDeleteConfirm({ open: true, documentoId: id });
@@ -400,6 +410,7 @@ export default function Documentos() {
   };
 
   const limparFiltros = () => {
+    setOnlyIncomplete(false);
     setSearchTerm('');
     setSelectedCategoria('all');
     setSelectedStatus('all');
@@ -440,6 +451,7 @@ export default function Documentos() {
   };
 
   const temFiltrosAtivos = Boolean(
+    onlyIncomplete ||
     filtrosAvancados ||
     searchTerm ||
     selectedCategoria !== 'all' ||
@@ -450,10 +462,16 @@ export default function Documentos() {
   // Paginação
   const totalPages = Math.ceil(documentosFiltrados.length / itemsPerPage);
 
+  const orderedDocuments = useMemo(() => {
+    if (!documentSort) return documentosFiltrados;
+    const value = (documento: Documento) => documentSort.field === 'responsavel_nome' ? nomePorUsuario.get(documento.responsavel_id ?? '') : documento[documentSort.field as keyof Documento];
+    return [...documentosFiltrados].sort((a, b) => (documentSort.direction === 'asc' ? 1 : -1) * compareSortValues(value(a), value(b)));
+  }, [documentosFiltrados, documentSort, nomePorUsuario]);
+
   const paginatedDocumentos = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return documentosFiltrados.slice(start, start + itemsPerPage);
-  }, [documentosFiltrados, currentPage, itemsPerPage]);
+    return orderedDocuments.slice(start, start + itemsPerPage);
+  }, [orderedDocuments, currentPage, itemsPerPage]);
 
   const paginadosComResponsavel = useMemo(
     () => paginatedDocumentos.map((d) => ({
@@ -463,6 +481,8 @@ export default function Documentos() {
     [paginatedDocumentos, nomePorUsuario],
   );
 
+
+  if (documentsError) return <QueryError onRetry={() => void retryDocuments()} />;
 
   if (loading) {
     return (
@@ -497,7 +517,8 @@ export default function Documentos() {
         />
 
         <StatStrip
-          loading={!statsDocumentos}
+          loading={statsLoading}
+          error={statsError}
           items={[
             { key: 'total', label: t('documentos.lista.totalDocumentos'), value: statsDocumentos?.total || 0, drillDown: 'documentos' },
             { key: 'vencidos', label: t('documentos.lista.vencidosKpi'), value: statsDocumentos?.vencidos || 0, tone: (statsDocumentos?.vencidos || 0) > 0 ? 'destructive' : undefined, drillDown: 'documentos_vencidos' },
@@ -509,6 +530,7 @@ export default function Documentos() {
               value: documentos.filter((documento) => !documento.classificacao || !documento.categoria_id || !documento.responsavel_id).length,
               tone: documentos.some((documento) => !documento.classificacao || !documento.categoria_id || !documento.responsavel_id) ? 'warning' : undefined,
               hint: t('cardsKpi.documentos.cadastroIncompletoHint'),
+              onClick: () => { setOnlyIncomplete(true); setSearchTerm(''); setSelectedCategoria('all'); setSelectedStatus('all'); setSelectedTipo('all'); setFiltrosAvancados(null); setCurrentPage(1); },
               icon: IconChecklist,
             },
           ]}
@@ -602,19 +624,21 @@ export default function Documentos() {
           )}
         </ModuleToolbar>
 
+        {onlyIncomplete && <p className="mt-3 text-sm text-muted-foreground">{t('cardsKpi.documentos.cadastroIncompleto')}</p>}
+
         {/* Indicador de filtros aplicados */}
         {filtrosAvancados && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <IconFilter className="h-4 w-4" />
             {t('documentos.lista.filtrosAplicados')}
-            <Badge variant="secondary">
-              {t('documentos.lista.filtrosCount', { count: Object.keys(filtrosAvancados).length })}
-            </Badge>
+<span>{t('documentos.lista.filtrosCount', { count: Object.keys(filtrosAvancados).length })}</span>
           </div>
         )}
             </div>
             <DocumentosLista
               documentos={paginadosComResponsavel}
+              sort={documentSort}
+              onSort={field => { setDocumentSort(previous => ({ field, direction: previous?.field === field && previous.direction === 'asc' ? 'desc' : 'asc' })); setCurrentPage(1); }}
               podeRenovar={podeRenovar}
               emptyState={
                 <EmptyState
@@ -644,7 +668,7 @@ export default function Documentos() {
 
             {/* Paginação */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t">
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t">
                 <span className="text-sm text-muted-foreground">
                   {t('documentos.lista.mostrando', { inicio: ((currentPage - 1) * itemsPerPage) + 1, fim: Math.min(currentPage * itemsPerPage, documentosFiltrados.length), total: documentosFiltrados.length })}
                 </span>
@@ -653,7 +677,7 @@ export default function Documentos() {
                     <PaginationItem>
                       <PaginationPrevious 
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        disabled={currentPage === 1}
                       />
                     </PaginationItem>
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -681,7 +705,7 @@ export default function Documentos() {
                     <PaginationItem>
                       <PaginationNext 
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        disabled={currentPage === totalPages}
                       />
                     </PaginationItem>
                   </PaginationContent>

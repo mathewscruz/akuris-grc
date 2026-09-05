@@ -1,32 +1,4 @@
-/**
- * GrcHealthBreakdown — os oito domínios do GRC, do pior para o melhor.
- *
- * Substituiu o radar, por três razões que continuam válidas e que estão
- * medidas: a forma do polígono dependia da ORDEM arbitrária dos eixos; não se
- * conseguia ler um valor sem passar o rato por cima de cada um dos oito; e
- * "zero" desenhava-se igual a "sem dados", que num painel de conformidade é o
- * oposto um do outro.
- *
- * O que muda agora, e porquê:
- *
- *  · **Uma escala de cor, com um corte só.** Havia duas escalas de progresso
- *    no mesmo ecrã que discordavam: quatro faixas no cartão de frameworks,
- *    três aqui. Um framework a 65% saía roxo e um domínio a 65% saía verde —
- *    mesmo número, cores opostas, a quinze pixels de distância. Passa a haver
- *    um corte binário: pronto ou precisa de trabalho. A legenda no topo diz
- *    quantos são de cada, o que dispensa ler oito barras uma a uma.
- *
- *  · **Cada domínio termina num verbo.** O score diz como está; não dizia o
- *    que fazer. O próximo passo vem de `acao`, calculado em `useRadarChartData`
- *    a partir dos mesmos números que já alimentavam as linhas de apoio.
- *
- *  · **O score de maturidade vive aqui.** Estava no gauge do banner E como
- *    título deste cartão — o mesmo 50 duas vezes, a 200px de distância. Fica
- *    onde é explicado: à frente dos oito domínios que o compõem.
- *
- * O ícone identifica o módulo e nada mais: um só cinzento, sem estado. Quem
- * carrega o alarme é o número.
- */
+/** Índice operacional por módulo. Barras representam o valor, não a conclusão do trabalho. */
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -35,6 +7,7 @@ import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { IconTarget, IconShield } from '@/components/icons';
 import { moduleIcon } from '@/lib/module-icons';
 import { cn } from '@/lib/utils';
+import { QueryError } from '@/components/ui/query-error';
 import { useRadarChartData, type AcaoDoDominio } from '@/hooks/useRadarChartData';
 import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -58,7 +31,7 @@ interface Linha {
 }
 
 export function GrcHealthBreakdown() {
-  const { data, isLoading } = useRadarChartData();
+  const { data, isLoading, isError, refetch } = useRadarChartData();
   const maturity = useGrcMaturityScore();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -91,6 +64,8 @@ export function GrcHealthBreakdown() {
   const pior = comDados[0];
   const prontos = comDados.filter((l) => l.score >= PRONTO).length;
   const porFazer = comDados.length - prontos;
+
+  if (isError) return <QueryError onRetry={() => void refetch()} />;
 
   if (isLoading) {
     return (
@@ -127,7 +102,7 @@ export function GrcHealthBreakdown() {
 
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-3xl font-bold leading-none tabular-nums text-foreground">
-          <AnimatedMetricValue value={maturity.score} />
+          {comDados.length ? <AnimatedMetricValue value={maturity.score} /> : '—'}
         </span>
         <span className="text-xs text-muted-foreground">
           {t('dashWidgets.radar.maturitySuffix')}
@@ -200,16 +175,7 @@ export function GrcHealthBreakdown() {
                         {l.hasData ? l.score : '—'}
                       </span>
                     </span>
-
-                    {/*
-                      Um domínio em dia mostra a barra CHEIA e verde.
-
-                      Antes o verde-equivalente era uma barra roxa parada em
-                      73% ou 93% — e uma barra por encher lê-se como trabalho
-                      por fazer, mesmo quando o domínio está em dia. O valor
-                      exacto continua ao lado, em número; a barra responde à
-                      pergunta binária, que é a que a legenda do topo faz.
-                    */}
+                    {/* A largura acompanha o score exato, inclusive zero. */}
                     <span
                       className={cn(
                         'mt-2.5 block h-1.5 overflow-hidden rounded-full',
@@ -220,14 +186,14 @@ export function GrcHealthBreakdown() {
                         <span
                           className={cn(
                             'block h-full rounded-full',
-                            pronto ? 'w-full bg-success' : 'bg-warning',
+                            pronto ? 'bg-success' : 'bg-warning',
                           )}
-                          style={pronto ? undefined : { width: `${Math.max(2, l.score)}%` }}
+                          style={{ width: `${Math.max(0, Math.min(100, l.score))}%` }}
                         />
                       )}
                     </span>
 
-                    <span className="mt-2 block truncate text-micro text-muted-foreground">
+                    <span className="mt-2 block min-h-8 text-xs leading-relaxed text-muted-foreground">
                       {l.hasData
                         ? l.metrics.filter(Boolean).slice(0, 2).join(' · ')
                         : t('dashWidgets.radar.statusNoData')}
@@ -235,7 +201,6 @@ export function GrcHealthBreakdown() {
                   </button>
 
                   <PanelAction
-                    limpo={l.hasData && !l.acao}
                     onClick={() => navigate(l.link)}
                     className="px-3 py-2"
                   >
@@ -243,7 +208,7 @@ export function GrcHealthBreakdown() {
                       ? t('dashWidgets.radar.acoes.comecarAgora')
                       : l.acao
                       ? t(`dashWidgets.radar.acoes.${l.acao.chave}`, { count: l.acao.n })
-                      : t('dashWidgets.radar.acoes.tudoEmDia')}
+                      : t('experience.reviewModule')}
                   </PanelAction>
                 </article>
               </li>

@@ -1,3 +1,5 @@
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
 import { useMemo, useState, useEffect } from 'react';
 import { IconAdd, IconClose, IconEdit, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconArchive } from '@/components/icons';
 import { useSearchParams, useLocation } from 'react-router-dom';
@@ -133,11 +135,11 @@ export function Riscos() {
   const queryClient = useQueryClient();
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [nivelFilter, setNivelFilter] = useState<string>('');
-  const [aceitoFilter, setAceitoFilter] = useState<string>('');
-  const [idsFilter, setIdsFilter] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [statusFilter, setStatusFilter] = useListState<string>('statusFilter', '');
+  const [nivelFilter, setNivelFilter] = useListState<string>('nivelFilter', '');
+  const [aceitoFilter, setAceitoFilter] = useListState<string>('aceitoFilter', '');
+  const [idsFilter, setIdsFilter] = useListState<string[]>('idsFilter', []);
   const [riscoDialogOpen, setRiscoDialogOpen] = useState(false);
   const [riscoDialogInitialTab, setRiscoDialogInitialTab] = useState<'identificacao' | 'avaliacao' | 'acompanhamento'>('identificacao');
   const [matrizDialogOpen, setMatrizDialogOpen] = useState(false);
@@ -163,8 +165,8 @@ export function Riscos() {
   // Saved view chips (apenas para a aba Tabela)
   const [savedView, setSavedView] = useState<SavedView>('todos');
 
-  const [sortField, setSortField] = useState<string>('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useListState<string>('sortField', 'created_at');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'desc');
 
   // React Query for riscos
   const {
@@ -172,8 +174,8 @@ export function Riscos() {
     error: riscosQueryError, refetch: refetchRiscos,
   } = useQuery<Risco[]>({
     queryKey: ['riscos', profile?.empresa_id],
-    queryFn: async () => {
-      const { data, error } = await (supabase.from('riscos') as any)
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages<any>((from, to) => (supabase.from('riscos') as any)
         .select(`
           id, codigo, nome, descricao, matriz_id, categoria_id,
           probabilidade_inicial, impacto_inicial,
@@ -192,7 +194,7 @@ export function Riscos() {
         `)
         .eq('empresa_id', profile!.empresa_id)
         .is('arquivado_em', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       
@@ -204,10 +206,10 @@ export function Riscos() {
       const tratamentosConcluidos: Record<string, number> = {};
 
       if (riscoIds.length > 0) {
-        const { data: tratamentos, error: tratamentosError } = await supabase
+        const { data: tratamentos, error: tratamentosError } = await readAllPagesByIds(riscoIds, (ids, from, to) => supabase
           .from('riscos_tratamentos')
           .select('risco_id, status')
-          .in('risco_id', riscoIds);
+          .in('risco_id', ids).order('id').range(from, to).abortSignal(signal), signal);
 
         assertTratamentosLookup(tratamentosError);
 
@@ -227,14 +229,14 @@ export function Riscos() {
       // suficiente a tabela mostra "sem histórico" (nunca uma linha inventada).
       const historicoMap: Record<string, number[]> = {};
       if (riscoIds.length > 0) {
-        const { data: hist, error: histErr } = await supabase
+        const { data: hist } = await readAllPagesByIds(riscoIds, (ids, from, to) => supabase
           .from('riscos_historico_avaliacoes')
           .select('risco_id, score, created_at')
-          .in('risco_id', riscoIds)
-          .order('created_at', { ascending: true });
-        if (!histErr && hist) {
+          .in('risco_id', ids).eq('empresa_id', profile!.empresa_id)
+          .order('created_at', { ascending: true }).order('id').range(from, to).abortSignal(signal), signal);
+        if (hist) {
           hist.forEach((h) => {
-            if (!h.score) return;
+            if (h.score === null || h.score === undefined) return;
             (historicoMap[h.risco_id] ||= []).push(h.score);
           });
         }
@@ -267,10 +269,10 @@ export function Riscos() {
 
         let profileMap = new Map<string, { nome: string | null; foto_url: string | null }>();
         if (responsavelIds.length > 0) {
-          const { data: profiles } = await supabase
+          const { data: profiles } = await readAllPagesByIds(responsavelIds, (ids, from, to) => supabase
             .from('profiles')
             .select('user_id, nome, foto_url')
-            .in('user_id', responsavelIds);
+            .eq('empresa_id', profile!.empresa_id).in('user_id', ids).order('user_id').range(from, to).abortSignal(signal), signal);
 
           profileMap = new Map(
             profiles?.map(p => [p.user_id, { nome: p.nome, foto_url: p.foto_url }]) || []
@@ -599,7 +601,7 @@ export function Riscos() {
         <IconWarning className="h-4 w-4" />
         <AlertTitle>{t('riscos.page.loadError.title')}</AlertTitle>
         <AlertDescription className="space-y-3">
-          <p>{(riscosQueryError as Error)?.message || t('riscos.page.loadError.fallback')}</p>
+          <p>{t('riscos.page.loadError.fallback')}</p>
           <Button variant="outline" size="sm" onClick={() => refetchRiscos()}>{t('riscos.page.retry')}</Button>
         </AlertDescription>
       </Alert>
@@ -611,12 +613,13 @@ export function Riscos() {
     label: string;
     sortable?: boolean;
     className?: string;
+    mobilePriority?: number;
     render?: (value: any, risco: Risco) => React.ReactNode;
   }> = [
     {
       key: 'id',
       label: t('riscos.page.columns.id'),
-      className: 'w-[72px]',
+      className: 'w-28 whitespace-nowrap',
       render: (_value: any, risco: Risco) => (
         <span className="font-mono text-micro text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
       ),
@@ -650,6 +653,7 @@ export function Riscos() {
     },
     {
       key: 'nivel_risco_inicial',
+      mobilePriority: 1,
       label: t('riscos.page.columns.severity'),
       // Severidade efectiva (residual quando existe), como o ponto ao lado do
       // nome, o detalhe do risco, o mapa de calor e o dashboard. Mostrar aqui a
@@ -678,6 +682,7 @@ export function Riscos() {
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('riscos.page.columns.status'),
       render: (value: string, risco: Risco) => {
         // AKURIS QA-065: "Tratado" sem tratamento concluído é exibido no status
@@ -692,6 +697,7 @@ export function Riscos() {
     },
     {
       key: 'responsavel',
+      mobilePriority: 3,
       label: t('riscos.page.columns.responsible'),
       render: (_value: string, risco: Risco) => {
         if (!risco.responsavel_nome) {
@@ -729,6 +735,7 @@ export function Riscos() {
     },
     {
       key: 'sla',
+      mobilePriority: 2,
       label: t('riscos.page.columns.sla'),
       className: 'w-[90px]',
       render: (_v: any, r: Risco) => <SlaCell dataProximaRevisao={r.data_proxima_revisao} />,

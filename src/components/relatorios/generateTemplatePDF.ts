@@ -1,8 +1,9 @@
+import { readAllPages } from '@/lib/read-all-pages';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getAppLocale } from '@/lib/i18n-locale';
-import { contarRiscosPorSeveridade, severidadeRisco } from '@/lib/metrics';
+import { contarRiscosPorSeveridade, severidadeRisco, norm, contarContratos, isIncidenteResolvido, isContratoAVencer, isAVencer } from '@/lib/metrics';
 import { contarDocumentos } from '@/lib/metrics/documentos';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 
@@ -10,6 +11,10 @@ import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 import { somaPorMoeda } from '@/lib/metrics/contratos';
 import { formatMoedasSomadas, getMoedaAtual } from '@/hooks/useEmpresaMoeda';
 const PDF_LABELS: Record<string, string> = {
+  "Responsavel indisponivel": "Owner unavailable",
+  "Retrato atual e incidentes dos ultimos 90 dias": "Current snapshot and incidents from the last 90 days",
+  "Score Medio (0-100)": "Average score (0–100)",
+  "Avaliacoes com score de 80 ou mais": "Assessments scoring 80 or more",
   "Altos": "High",
   "Anonimas": "Anonymous",
   "Aprovados": "Approved",
@@ -228,26 +233,26 @@ export async function fetchTemplateData(templateBase: string, empresaId: string)
 interface Section { title: string; metrics?: { label: string; value: string | number }[]; tableHeaders?: string[]; tableRows?: string[][]; colWidths?: number[]; }
 
 async function fetchRiscosData(empresaId: string) {
-  const { data: riscos } = await supabase.from('riscos').select('*').eq('empresa_id', empresaId);
+  const { data: riscos } = await readAllPages((from, to) => supabase.from('riscos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const r = riscos || [];
   const riscoIds = r.map(ri => ri.id);
   const { data: tratamentos } = riscoIds.length > 0
-    ? await supabase.from('riscos_tratamentos').select('*').in('risco_id', riscoIds)
+    ? await readAllPages((from, to) => supabase.from('riscos_tratamentos').select('*, riscos!inner(empresa_id)').eq('riscos.empresa_id', empresaId).order('id').range(from, to))
     : { data: [] };
   const t = tratamentos || [];
   // Normaliza (sem acento/minúsculo) porque os dados misturam "Médio" e "medio" etc.
   // Mesma definicao de severidade do modulo de Riscos (camada unica de metricas)
   const { criticos, altos, medios, baixos } = contarRiscosPorSeveridade(r as any[]);
-  const concluidos = t.filter((x: any) => x.status === 'concluido').length;
+  const concluidos = t.filter((x: any) => norm(x.status) === 'concluido').length;
   // Resolve responsáveis gravados como UUID -> nome (dados legados têm ambos)
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const respIds = [...new Set(r.map(x => x.responsavel).filter((v: any) => v && uuidRe.test(v)))] as string[];
   let respMap: Record<string, string> = {};
   if (respIds.length) {
-    const { data: profs } = await supabase.from('profiles').select('user_id, nome').in('user_id', respIds);
+    const { data: profs } = await readAllPages((from, to) => supabase.from('profiles').select('user_id, nome').eq('empresa_id', empresaId).order('id').range(from, to));
     respMap = Object.fromEntries((profs || []).map((p: any) => [p.user_id, p.nome]));
   }
-  const respLabel = (v: any) => (v ? (respMap[v] || v) : '-');
+  const respLabel = (v: any) => (v ? (respMap[v] || (uuidRe.test(v) ? tr('Responsavel indisponivel') : v)) : '-');
   return {
     sections: [
       { title: tr('Resumo Executivo'), metrics: [
@@ -268,11 +273,11 @@ async function fetchRiscosData(empresaId: string) {
 }
 
 async function fetchIncidentesData(empresaId: string) {
-  const { data: inc } = await supabase.from('incidentes').select('*').eq('empresa_id', empresaId).order('data_deteccao', { ascending: false });
+  const { data: inc } = await readAllPages((from, to) => supabase.from('incidentes').select('*').eq('empresa_id', empresaId).order('data_deteccao', { ascending: false }).order('id').range(from, to));
   const i = inc || [];
   const critica = i.filter(x => severidadeDeFaixas(x.criticidade) === 'critico').length;
   const alta = i.filter(x => severidadeDeFaixas(x.criticidade) === 'alto').length;
-  const resolvidos = i.filter(x => x.status === 'resolvido').length;
+  const resolvidos = i.filter(isIncidenteResolvido).length;
   return {
     sections: [
       { title: tr('Resumo de Incidentes'), metrics: [
@@ -290,8 +295,8 @@ async function fetchIncidentesData(empresaId: string) {
 
 async function fetchLGPDData(empresaId: string) {
   const [{ data: dados }, { data: sol }] = await Promise.all([
-    supabase.from('dados_pessoais').select('*').eq('empresa_id', empresaId),
-    supabase.from('dados_solicitacoes_titular').select('*').eq('empresa_id', empresaId),
+    readAllPages((from, to) => supabase.from('dados_pessoais').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
+    readAllPages((from, to) => supabase.from('dados_solicitacoes_titular').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
   ]);
   const d = dados || []; const s = sol || [];
   return {
@@ -312,9 +317,9 @@ async function fetchLGPDData(empresaId: string) {
 
 async function fetchISO27001Data(empresaId: string) {
   // Frameworks are global (empresa_id IS NULL), evaluations are per-company
-  const { data: frameworks } = await (supabase.from('gap_analysis_frameworks').select('id, nome, versao, tipo_framework').ilike('nome', '%ISO%27001%') as any);
-  const { data: evaluations } = await supabase.from('gap_analysis_evaluations').select('framework_id, conformity_status').eq('empresa_id', empresaId);
-  const { data: controles } = await supabase.from('controles').select('*').eq('empresa_id', empresaId);
+  const { data: frameworks } = await readAllPages((from, to) => supabase.from('gap_analysis_frameworks').select('id, nome, versao, tipo_framework').ilike('nome', '%ISO%27001%').or(`empresa_id.is.null,empresa_id.eq.${empresaId}`).order('id').range(from, to));
+  const { data: evaluations } = await readAllPages((from, to) => supabase.from('gap_analysis_evaluations').select('framework_id, conformity_status').eq('empresa_id', empresaId).order('id').range(from, to));
+  const { data: controles } = await readAllPages((from, to) => supabase.from('controles').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const f = (frameworks || []) as any[]; const e = evaluations || []; const c = controles || [];
   const ativos = c.filter(x => x.status === 'ativo').length;
   
@@ -359,10 +364,10 @@ async function fetchISO27001Data(empresaId: string) {
  * acompanha um framework quando o avalia, e e isso que se conta aqui.
  */
 async function frameworksDaEmpresa(empresaId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await readAllPages((from, to) => supabase
     .from('gap_analysis_evaluations')
     .select('framework_id, gap_analysis_frameworks!inner(id, nome, versao, tipo_framework)')
-    .eq('empresa_id', empresaId);
+    .eq('empresa_id', empresaId).order('id').range(from, to));
   if (error) throw error;
 
   const porId = new Map<string, any>();
@@ -375,22 +380,22 @@ async function frameworksDaEmpresa(empresaId: string) {
 
 async function fetchExecutivoData(empresaId: string) {
   const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const { data: riscos } = await supabase.from('riscos').select('*').eq('empresa_id', empresaId);
-  const { data: incidentes } = await (supabase.from('incidentes').select('*').eq('empresa_id', empresaId).gte('data_deteccao', ninetyDaysAgo.toISOString()) as any);
-  const { data: controles } = await supabase.from('controles').select('*').eq('empresa_id', empresaId);
+  const { data: riscos } = await readAllPages((from, to) => supabase.from('riscos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const { data: incidentes } = await readAllPages((from, to) => supabase.from('incidentes').select('*').eq('empresa_id', empresaId).gte('data_deteccao', ninetyDaysAgo.toISOString()).order('id').range(from, to));
+  const { data: controles } = await readAllPages((from, to) => supabase.from('controles').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const frameworks = await frameworksDaEmpresa(empresaId);
   const r = riscos || []; const i = incidentes || []; const c = controles || []; const f = frameworks || [];
   return {
     sections: [
-      { title: tr('Resumo Executivo - Ultimos 90 dias'), metrics: [
-        { label: tr('Riscos Ativos'), value: r.length },
+      { title: tr('Retrato atual e incidentes dos ultimos 90 dias'), metrics: [
+        { label: tr('Total de Riscos'), value: r.length },
         { label: tr('Riscos Criticos'), value: r.filter(x => severidadeRisco(x as any) === 'critico').length },
         { label: tr('Incidentes (90 dias)'), value: i.length },
         { label: tr('Controles Ativos'), value: c.filter(x => x.status === 'ativo').length },
         { label: tr('Frameworks Monitorados'), value: f.length },
       ]},
       { title: tr('Incidentes Recentes'), tableHeaders: [tr('Titulo'), tr('Gravidade'), tr('Status')],
-        tableRows: i.slice(0, 15).map(x => [x.titulo, x.criticidade || '-', x.status || '-']),
+        tableRows: i.map(x => [x.titulo, x.criticidade || '-', x.status || '-']),
         colWidths: [80, 45, 45] },
     ] as Section[]
   };
@@ -398,8 +403,8 @@ async function fetchExecutivoData(empresaId: string) {
 
 async function fetchComplianceData(empresaId: string) {
   const frameworks = await frameworksDaEmpresa(empresaId);
-  const { data: controles } = await supabase.from('controles').select('*').eq('empresa_id', empresaId);
-  const { data: auditorias } = await supabase.from('auditorias').select('*').eq('empresa_id', empresaId);
+  const { data: controles } = await readAllPages((from, to) => supabase.from('controles').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const { data: auditorias } = await readAllPages((from, to) => supabase.from('auditorias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const f = (frameworks || []) as any[]; const c = controles || []; const a = auditorias || [];
   return {
     sections: [
@@ -421,13 +426,13 @@ async function fetchComplianceData(empresaId: string) {
 
 async function fetchContinuidadeData(empresaId: string) {
   const [{ data: planos }, { data: tarefas }, { data: testes }] = await Promise.all([
-    supabase.from('continuidade_planos').select('*').eq('empresa_id', empresaId),
-    supabase.from('continuidade_tarefas').select('*').eq('empresa_id', empresaId),
-    supabase.from('continuidade_testes').select('*').eq('empresa_id', empresaId),
+    readAllPages((from, to) => supabase.from('continuidade_planos').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
+    readAllPages((from, to) => supabase.from('continuidade_tarefas').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
+    readAllPages((from, to) => supabase.from('continuidade_testes').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
   ]);
   const p = planos || []; const t = tarefas || []; const te = testes || [];
   const hoje = new Date();
-  const planosVencendo = p.filter((x: any) => x.proxima_revisao && parseDataLocal(x.proxima_revisao) < new Date(hoje.getTime() + 30 * 86400000)).length;
+  const planosVencendo = p.filter((x: any) => isAVencer(x.proxima_revisao, hoje, 30)).length;
   const tarefasPendentes = t.filter((x: any) => x.status !== 'concluida').length;
   const testesSucesso = te.filter((x: any) => x.resultado === 'sucesso').length;
   return {
@@ -443,7 +448,7 @@ async function fetchContinuidadeData(empresaId: string) {
         { label: tr('Testes com Sucesso'), value: testesSucesso },
       ]},
       { title: tr('Planos de Continuidade'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('RTO/RPO')],
-        tableRows: p.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', `${x.rto_horas || '-'}h / ${x.rpo_horas || '-'}h`]),
+        tableRows: p.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', `${x.rto_horas ?? '-'}h / ${x.rpo_horas ?? '-'}h`]),
         colWidths: [70, 30, 35, 35] },
       ...(te.length > 0 ? [{ title: tr('Historico de Testes'), tableHeaders: [tr('Tipo'), tr('Data'), tr('Resultado')],
         tableRows: te.map((x: any) => [x.tipo_teste || '-', x.data_teste ? parseDataLocal(x.data_teste).toLocaleDateString(intlLocale()) : '-', x.resultado || '-']),
@@ -453,12 +458,13 @@ async function fetchContinuidadeData(empresaId: string) {
 }
 
 async function fetchContratosData(empresaId: string) {
-  const { data: contratos } = await supabase.from('contratos').select('*').eq('empresa_id', empresaId);
+  const { data: contratos } = await readAllPages((from, to) => supabase.from('contratos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const c = contratos || [];
   const hoje = new Date();
-  const ativos = c.filter((x: any) => x.status === 'ativo').length;
-  const vencendo = c.filter((x: any) => x.data_fim && parseDataLocal(x.data_fim) > hoje && parseDataLocal(x.data_fim) < new Date(hoje.getTime() + 90 * 86400000)).length;
-  const vencidos = c.filter((x: any) => x.data_fim && parseDataLocal(x.data_fim) < hoje).length;
+  const contagem = contarContratos(c, hoje);
+  const ativos = contagem.vigentes;
+  const vencendo = c.filter(x => isContratoAVencer(x, hoje, 90)).length;
+  const vencidos = contagem.vencidos;
   /* Somado POR MOEDA, e não num monte só rotulado «(BRL)».
      O relatório é o que se imprime e se manda ao auditor: dizia «Valor
      Total (BRL)» a qualquer carteira, mesmo à que estava toda em euros. */
@@ -481,16 +487,16 @@ async function fetchContratosData(empresaId: string) {
 
 async function fetchAtivosData(empresaId: string) {
   const [{ data: ativos }, { data: licencas }, { data: chaves }] = await Promise.all([
-    supabase.from('ativos').select('*').eq('empresa_id', empresaId),
-    supabase.from('ativos_licencas').select('*').eq('empresa_id', empresaId),
-    supabase.from('ativos_chaves_criptograficas').select('*').eq('empresa_id', empresaId),
+    readAllPages((from, to) => supabase.from('ativos').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
+    readAllPages((from, to) => supabase.from('ativos_licencas').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
+    readAllPages((from, to) => supabase.from('ativos_chaves_criptograficas').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
   ]);
   const a = ativos || []; const l = licencas || []; const k = chaves || [];
   const tipos: Record<string, number> = {};
   a.forEach((x: any) => { tipos[x.tipo] = (tipos[x.tipo] || 0) + 1; });
   const criticos = a.filter((x: any) => ['critico', 'alto'].includes(severidadeDeFaixas(x.criticidade))).length;
   const hoje = new Date();
-  const licencasVencendo = l.filter((x: any) => x.data_vencimento && parseDataLocal(x.data_vencimento) > hoje && parseDataLocal(x.data_vencimento) < new Date(hoje.getTime() + 90 * 86400000)).length;
+  const licencasVencendo = l.filter((x: any) => isAVencer(x.data_vencimento, hoje, 90)).length;
   return {
     sections: [
       { title: tr('Inventario de Ativos'), metrics: [
@@ -511,11 +517,11 @@ async function fetchAtivosData(empresaId: string) {
 }
 
 async function fetchAuditoriaInternaData(empresaId: string) {
-  const { data: auditorias } = await supabase.from('auditorias').select('*').eq('empresa_id', empresaId);
+  const { data: auditorias } = await readAllPages((from, to) => supabase.from('auditorias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const a = auditorias || [];
   const auditoriaIds = a.map((x: any) => x.id);
   const { data: itens } = auditoriaIds.length > 0
-    ? await supabase.from('auditoria_itens').select('*').in('auditoria_id', auditoriaIds)
+    ? await readAllPages((from, to) => supabase.from('auditoria_itens').select('*, auditorias!inner(empresa_id)').eq('auditorias.empresa_id', empresaId).order('id').range(from, to))
     : { data: [] };
   const i = itens || [];
   const concluidas = a.filter((x: any) => x.status === 'concluida').length;
@@ -534,28 +540,28 @@ async function fetchAuditoriaInternaData(empresaId: string) {
         tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', x.data_inicio ? parseDataLocal(x.data_inicio).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
       ...(i.length > 0 ? [{ title: tr('Itens de Auditoria'), tableHeaders: [tr('Codigo'), tr('Titulo'), tr('Prioridade'), tr('Status')],
-        tableRows: i.slice(0, 30).map((x: any) => [x.codigo || '-', (x.titulo || '').substring(0, 40), x.prioridade || '-', x.status || '-']),
+        tableRows: i.map((x: any) => [x.codigo || '-', (x.titulo || '').substring(0, 40), x.prioridade || '-', x.status || '-']),
         colWidths: [25, 80, 30, 35] }] : []),
     ] as Section[]
   };
 }
 
 async function fetchDueDiligenceData(empresaId: string) {
-  const { data: assessments } = await supabase.from('due_diligence_assessments').select('*').eq('empresa_id', empresaId);
+  const { data: assessments } = await readAllPages((from, to) => supabase.from('due_diligence_assessments').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const dd = assessments || [];
-  const concluidos = dd.filter((x: any) => x.status === 'concluido');
-  const pendentes = dd.filter((x: any) => x.status !== 'concluido' && x.status !== 'cancelado').length;
-  const scores = concluidos.map((x: any) => Number(x.score_final) || 0);
-  const scoreMedio = scores.length > 0 ? (scores.reduce((a: number, b: number) => a + b, 0) / scores.length).toFixed(1) : '0';
-  const aprovados = concluidos.filter((x: any) => (Number(x.score_final) || 0) >= 7).length;
+  const concluidos = dd.filter((x: any) => ['concluido', 'finalizado'].includes(x.status));
+  const pendentes = dd.filter((x: any) => !['concluido', 'finalizado', 'cancelado'].includes(x.status)).length;
+  const scores = concluidos.filter((x: any) => x.score_final != null).map((x: any) => Number(x.score_final));
+  const scoreMedio = scores.length > 0 ? (scores.reduce((a: number, b: number) => a + b, 0) / scores.length).toFixed(1) : '—';
+  const aprovados = concluidos.filter((x: any) => x.score_final != null && Number(x.score_final) >= 80).length;
   return {
     sections: [
       { title: tr('Due Diligence de Fornecedores'), metrics: [
         { label: tr('Total de Assessments'), value: dd.length },
         { label: tr('Concluidos'), value: concluidos.length },
         { label: tr('Pendentes'), value: pendentes },
-        { label: tr('Score Medio (0-10)'), value: scoreMedio },
-        { label: tr('Fornecedores Aprovados'), value: aprovados },
+        { label: tr('Score Medio (0-100)'), value: scoreMedio },
+        { label: tr('Avaliacoes com score de 80 ou mais'), value: aprovados },
       ]},
       { title: tr('Assessments'), tableHeaders: [tr('Fornecedor'), tr('Status'), tr('Score'), tr('Conclusao')],
         tableRows: dd.map((x: any) => [
@@ -570,7 +576,7 @@ async function fetchDueDiligenceData(empresaId: string) {
 }
 
 async function fetchDocumentosData(empresaId: string) {
-  const { data: docs } = await supabase.from('documentos').select('*').eq('empresa_id', empresaId);
+  const { data: docs } = await readAllPages((from, to) => supabase.from('documentos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const d = docs || [];
   /*
      As mesmas contas do ecrã, e não as suas.
@@ -606,17 +612,17 @@ async function fetchDocumentosData(empresaId: string) {
         tableRows: Object.entries(tipos).map(([t, q]) => [t, String(q)]),
         colWidths: [120, 50] },
       { title: tr('Documentos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
-        tableRows: d.slice(0, 50).map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? parseDataLocal(x.data_vencimento).toLocaleDateString(intlLocale()) : '-']),
+        tableRows: d.map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? parseDataLocal(x.data_vencimento).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
   };
 }
 
 async function fetchDenunciasData(empresaId: string) {
-  const { data: denuncias } = await supabase.from('denuncias').select('*').eq('empresa_id', empresaId);
+  const { data: denuncias } = await readAllPages((from, to) => supabase.from('denuncias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const d = denuncias || [];
-  const abertas = d.filter((x: any) => x.status === 'aberta' || x.status === 'em_investigacao').length;
-  const concluidas = d.filter((x: any) => x.status === 'concluida').length;
+  const abertas = d.filter((x: any) => ['nova', 'em_analise', 'em_investigacao'].includes(x.status)).length;
+  const concluidas = d.filter((x: any) => ['resolvida', 'arquivada'].includes(x.status)).length;
   const anonimas = d.filter((x: any) => x.anonima === true).length;
   const grav: Record<string, number> = {};
   d.forEach((x: any) => { grav[x.gravidade || 'sem_gravidade'] = (grav[x.gravidade || 'sem_gravidade'] || 0) + 1; });

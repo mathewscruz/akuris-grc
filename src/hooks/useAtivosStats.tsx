@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -26,11 +27,11 @@ export const useAtivosStats = () => {
     queryKey: ['ativos-stats', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<AtivosStats> => {
-      const { data: ativos, error } = await supabase
+    queryFn: async ({ signal }): Promise<AtivosStats> => {
+      const { data: ativos, error } = await readAllPages((from, to) => supabase
         .from('ativos')
         .select('status, criticidade, valor_negocio')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
 

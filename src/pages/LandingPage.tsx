@@ -1,3 +1,4 @@
+import { useMotionAllowed } from "@/lib/motion-preferences";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
@@ -52,6 +53,7 @@ const buildFrameworks = (t: Translate): [string, string][] => {
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const motionAllowed = useMotionAllowed();
   const { t } = useLanguage();
   const [demoOpen, setDemoOpen] = useState(false);
   /* A navegação some abaixo de 1024px e não tinha substituto — numa página de
@@ -77,7 +79,7 @@ const LandingPage = () => {
     /* Fecha a gaveta antes de rolar: deixá-la aberta esconderia justamente o
        sítio para onde a pessoa acabou de pedir para ir. */
     setMenuAberto(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById(id)?.scrollIntoView({ behavior: motionAllowed ? "smooth" : "instant", block: "start" });
   };
 
   /** As secções da página, num sítio só — barra e gaveta dizem o mesmo. */

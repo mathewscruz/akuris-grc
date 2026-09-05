@@ -19,6 +19,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { useFocusRow } from '@/hooks/useFocusRow';
 
 vi.mock('@/hooks/useEmpresaId', () => ({ useEmpresaId: () => ({ empresaId: 'emp-1' }) }));
+vi.mock('@/components/AuthProvider', () => ({ useAuth: () => ({ user: { id: 'u1' }, profile: { empresa_id: 'emp-1' } }) }));
 vi.mock('@/hooks/useJurisdicao', () => ({
   useJurisdicao: () => ({
     lei: 'RGPD',

@@ -1572,7 +1572,8 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
   const config = React.useMemo(() => (kpiKey ? buildConfig(kpiKey, t) : null), [kpiKey, t]);
   /* O «Ver todos» vai buscar o recorte inteiro antes de navegar. É uma leitura
      curta, mas é uma ida à rede: sem isto o botão fica calado durante ela. */
-  const [aLevarRecorte, setALevarRecorte] = React.useState(false);
+  const [page, setPage] = React.useState(0);
+  React.useEffect(() => setPage(0), [kpiKey, empresaId]);
 
   const { data: items, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['drill-down', kpiKey, empresaId],
@@ -1593,18 +1594,19 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
-        <SheetHeader>
+      <SheetContent side="right" className="akuris-insight-drawer w-full sm:max-w-[520px] p-0 gap-0 flex flex-col">
+        <SheetHeader className="shrink-0 border-b border-border/70 bg-gradient-to-b from-primary/[0.035] to-background px-6 pb-5 pt-6 pr-14 text-left">
           <div className="flex items-center gap-3">
-            <Icon as={config.icon as any} size="md" className="shrink-0 text-primary" />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/5"><Icon as={config.icon as any} size="md" className="text-primary" /></span>
             <div className="min-w-0">
-              <SheetTitle className="truncate">{config.title}</SheetTitle>
-              <SheetDescription className="text-xs">{config.description}</SheetDescription>
+              <SheetTitle className="break-words text-xl leading-snug">{config.title}</SheetTitle>
+              <SheetDescription className="mt-1 text-sm leading-relaxed">{config.description}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
 
-        <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6 py-4 space-y-2">
+        {!isLoading && !isError && !!items?.length && <p className="shrink-0 border-b border-border/60 px-6 py-3 text-xs text-muted-foreground tabular-nums">{t(items.length >= LIMITE_DO_RECORTE ? 'experience.drawerScopeLimit' : 'experience.drawerScope', { shown: Math.min(LINHAS_NA_GAVETA, Math.max(0, items.length - page * LINHAS_NA_GAVETA)), total: items.length })}</p>}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2">
           {isLoading && (
             <div className="min-h-[200px] flex flex-col items-center justify-center gap-2">
               <AkurisPulse size={48} />
@@ -1635,17 +1637,18 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
             !isError &&
             /* A gaveta é uma amostra; a lista inteira vive na tabela do módulo,
                e é para lá que o «Ver todos» leva — agora com o recorte. */
-            items?.slice(0, LINHAS_NA_GAVETA).map((item) => (
+            items?.slice(page * LINHAS_NA_GAVETA, (page + 1) * LINHAS_NA_GAVETA).map((item) => (
               <button
                 key={item.id}
                 onClick={() => {
                   onOpenChange(false);
                   navigate(`${config.route}?${config.paramFoco ?? 'focus'}=${item.id}`);
                 }}
-                className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-ui flex items-start justify-between gap-3 group"
+                className="realce-linha w-full text-left py-4 px-2 border-b border-border/60 last:border-0 transition-ui flex items-center justify-between gap-3 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-foreground truncate">{item.title}</div>
+                  <div className="text-sm font-semibold leading-relaxed text-foreground break-words group-hover:text-primary">{item.title}</div>
+                  {item.subtitle && formatStatus(item.subtitle) !== formatStatus(item.status || '') && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground break-words">{formatStatus(item.subtitle)}</p>}
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     {item.status && (
                       <StatusBadge tone={item.tone ?? 'neutral'} mark={item.mark} variant="soft">
@@ -1660,13 +1663,18 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
                 <Icon
                   as={IconExternal}
                   size="sm"
-                  className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
+                  className="text-muted-foreground/60 group-hover:text-primary group-focus-visible:text-primary transition-colors flex-shrink-0"
                 />
               </button>
             ))}
         </div>
 
-        <SheetFooter>
+        {!isLoading && !isError && (items?.length ?? 0) > LINHAS_NA_GAVETA && <nav aria-label={t('experience.drawerPages')} className="flex shrink-0 items-center justify-between gap-2 px-6 py-3 border-t border-border/60">
+          <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>{t('experience.previous')}</Button>
+          <span className="text-xs text-muted-foreground tabular-nums">{page + 1} / {Math.ceil((items?.length ?? 0) / LINHAS_NA_GAVETA)}</span>
+          <Button variant="ghost" size="sm" disabled={(page + 1) * LINHAS_NA_GAVETA >= (items?.length ?? 0)} onClick={() => setPage(page + 1)}>{t('experience.next')}</Button>
+        </nav>}
+        <SheetFooter className="shrink-0 border-t border-border/70 px-6 py-4">
           <Button
             variant="default"
             className="w-full"

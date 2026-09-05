@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -19,12 +20,12 @@ export const usePlanosAcaoStats = () => {
     queryKey: ['planos-acao-stats', empresaId],
     enabled: !!empresaId,
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<PlanosAcaoStats> => {
+    queryFn: async ({ signal }): Promise<PlanosAcaoStats> => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await readAllPages((from, to) => supabase
           .from('planos_acao')
           .select('id, status, prazo, data_conclusao')
-          .eq('empresa_id', empresaId!);
+          .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
         if (error) throw error;
 

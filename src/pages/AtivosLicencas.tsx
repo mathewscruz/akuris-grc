@@ -1,3 +1,5 @@
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { useListState } from '@/hooks/useListState';
 import { useState, useMemo, useEffect } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconSuccess, IconWarning, IconTime, IconFileCheck, IconRefresh, IconBan } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
@@ -54,12 +56,12 @@ export default function AtivosLicencas() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedLicenca, setSelectedLicenca] = useState<Licenca | null>(null);
   const [detalheLicenca, setDetalheLicenca] = useState<Licenca | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [criticidadeFilter, setCriticidadeFilter] = useState('todos');
-  const [tipoFilter, setTipoFilter] = useState('todos');
-  const [sortField, setSortField] = useState('nome');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
+  const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
+  const [criticidadeFilter, setCriticidadeFilter] = useListState('criticidadeFilter', 'todos');
+  const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
+  const [sortField, setSortField] = useListState('sortField', 'nome');
+  const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     id: string;
@@ -69,17 +71,17 @@ export default function AtivosLicencas() {
   const { empresaId } = useEmpresaId();
 
   // Buscar estatísticas
-  const { data: stats, isLoading: statsLoading } = useLicencasStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useLicencasStats();
 
   // Buscar licenças
-  const { data: licencas = [], refetch, isLoading } = useQuery({
+  const { data: licencas = [], refetch, isLoading, isError } = useQuery({
     queryKey: ['ativos-licencas', empresaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readAllPages((from, to) => supabase
         .from('ativos_licencas')
         .select('*')
         .eq('empresa_id', empresaId!)
-        .order('data_vencimento');
+        .order('data_vencimento').order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
       
@@ -90,10 +92,10 @@ export default function AtivosLicencas() {
           .filter(r => r && r.trim() !== '');
         
         if (responsavelIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .rpc('get_profiles_by_text_ids', { text_ids: responsavelIds });
+          const { data: profiles } = await readAllPagesByIds(responsavelIds, (ids, from, to) => supabase
+            .rpc('get_profiles_by_text_ids', { text_ids: ids }).order('user_id').range(from, to).abortSignal(signal), signal);
           
-          if (!profilesError && profiles) {
+          if (profiles) {
             const profileMap = new Map(
               profiles.map((p: any) => [p.user_id.toString(), { nome: p.nome, foto_url: p.foto_url }])
             );
@@ -253,47 +255,54 @@ export default function AtivosLicencas() {
     },
     {
       key: 'tipo_licenca',
+      mobilePriority: 6,
       label: t('fin.comum.tipo'),
       sortable: true,
       render: (_: any, licenca: Licenca) => (
-        <Badge variant="outline">{formatStatus(licenca.tipo_licenca)}</Badge>
+        <span className="text-muted-foreground">{formatStatus(licenca.tipo_licenca)}</span>
       )
     },
     {
       key: 'quantidade_licencas',
+      mobilePriority: 5,
       label: t('sweepDados.ativos.colQuantidade'),
       sortable: true,
     },
     {
       key: 'data_vencimento',
+      mobilePriority: 1,
       label: t('sweepDados.ativos.colDataVencimento'),
       sortable: true,
       render: (_: any, licenca: Licenca) => formatDateOnly(licenca.data_vencimento)
     },
     {
       key: 'valor_renovacao',
+      mobilePriority: 3,
       label: t('fin.licencas.valorRenovacao'),
       sortable: true,
       render: (_: any, licenca: Licenca) => (
-        licenca.valor_renovacao 
+        licenca.valor_renovacao != null
           ? formatMoedaEmpresa(licenca.valor_renovacao)
           : '-'
       )
     },
     {
       key: 'criticidade',
+      mobilePriority: 4,
       label: t('sweepDados.ativos.colCriticidade'),
       sortable: true,
       render: (_: any, licenca: Licenca) => getCriticidadeBadge(licenca.criticidade)
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('sweepDados.ativos.colStatus'),
       sortable: true,
       render: (_: any, licenca: Licenca) => getStatusBadge(licenca.status)
     },
     {
       key: 'responsavel',
+      mobilePriority: 2,
       label: t('fin.comum.responsavel'),
       render: (_: any, licenca: Licenca) => {
         if (!licenca.responsavel_nome) return '-';
@@ -305,7 +314,7 @@ export default function AtivosLicencas() {
                 <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
                   <Avatar className="h-7 w-7 shrink-0">
                     {licenca.responsavel_avatar && <AvatarImage src={licenca.responsavel_avatar} alt={licenca.responsavel_nome} />}
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs">{licenca.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                    <AvatarFallback className="text-xs">{licenca.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <span className="truncate text-sm">{licenca.responsavel_nome.split(/\s+/)[0]}</span>
                 </div>
@@ -410,11 +419,12 @@ export default function AtivosLicencas() {
       />
 
       <StatStrip
+        error={isError || statsError}
         loading={statsLoading}
         items={[
           { key: 'total', label: t('cardsKpi.licencas.totalLicencas'), value: stats?.total ?? 0, drillDown: 'ativos_licencas' },
           { key: 'ativas', label: t('cardsKpi.licencas.licencasAtivas'), value: stats?.ativas ?? 0, drillDown: 'licencas_ativas' },
-          { key: 'aVencer', label: t('sweepDados.ativos.statusAVencer'), value: stats?.vencendo30dias ?? 0, tone: 'warning', drillDown: 'licencas_a_vencer' },
+          { key: 'aVencer', label: t('residuos.geral.vencendo30'), value: stats?.vencendo30dias ?? 0, tone: 'warning', drillDown: 'licencas_a_vencer' },
           { key: 'vencidas', label: t('sweepDados.ativos.kpiVencidasTitle'), value: stats?.vencidas ?? 0, tone: 'destructive', drillDown: 'licencas_vencidas' },
           {
             key: 'incompletas',
@@ -429,6 +439,7 @@ export default function AtivosLicencas() {
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            error={isError}
             paginated
             pageSize={20}
             data={filteredAndSortedLicencas}

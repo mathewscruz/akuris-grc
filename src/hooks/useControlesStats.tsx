@@ -1,3 +1,4 @@
+import { readAllPages } from "@/lib/read-all-pages";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -32,21 +33,19 @@ export const useControlesStats = () => {
     queryKey: ['controles-stats', empresaId],
     staleTime: 5 * 60 * 1000,
     enabled: !!empresaId,
-    queryFn: async (): Promise<ControlesStats> => {
-      const { data: controles, error } = await supabase
+    queryFn: async ({ signal }): Promise<ControlesStats> => {
+      const { data: controles, error } = await readAllPages((from, to) => supabase
         .from('controles')
         .select('id, status, criticidade, tipo, proxima_avaliacao')
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       if (error) throw error;
 
-      const ids = (controles || []).map(c => c.id);
-      const { data: testes } = ids.length
-        ? await supabase
-            .from('controles_testes')
-            .select('controle_id, resultado, data_teste')
-            .in('controle_id', ids)
-        : { data: [] as any[] };
+      const { data: testes } = await readAllPages((from, to) => supabase
+        .from('controles_testes')
+        .select('controle_id, resultado, data_teste, controles!inner(empresa_id)')
+        .eq('controles.empresa_id', empresaId!)
+        .order('id').range(from, to).abortSignal(signal), signal);
 
       const efetividade = efetividadeControles(controles, testes as any[]);
       const preventivos = proporcaoPreventivos(controles);

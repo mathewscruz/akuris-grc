@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useListState } from "@/hooks/useListState";
+import { PrivacyProgramNavigation } from "./PrivacyProgramNavigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -7,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -203,7 +206,7 @@ export function CentroPrivacidadeTab(props: Props) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const qc = useQueryClient();
-  const [subtab, setSubtab] = useState("visao");
+  const [subtab, setSubtab] = useListState("privacyProgramArea", "visao");
   const [dialog, setDialog] = useState<{ area: Area; item: any } | null>(null);
   const [apagar, setApagar] = useState<{ area: Area; id: string } | null>(null);
 
@@ -273,6 +276,12 @@ export function CentroPrivacidadeTab(props: Props) {
   const maturidade = Math.round(
     (pendencias.filter(Boolean).length / pendencias.length) * 100,
   );
+  const temRegistros = [props.dadosPessoais, props.ropaRegistros, props.solicitacoes,
+    d.avaliacoes, d.fluxos, d.terceiros, d.retencoes, d.consentimentos, d.incidentes]
+    .some((items) => items.length > 0) || !!d.portal;
+  const progresso = (completos: number, total: number) => total > 0
+    ? t("experience.completedRecords", { completed: completos, total })
+    : t("experience.notStarted");
 
   const editar = (area: Area, item?: any) =>
     setDialog({ area, item: item ? { ...item } : vazio(area) });
@@ -305,75 +314,48 @@ export function CentroPrivacidadeTab(props: Props) {
         texto={t("privacidadePrograma.erroCarregamentoDescricao")}
       />
     );
+  if (isLoading) return <div role="status" aria-label={t("common.loading")} className="space-y-4"><Skeleton className="h-24" /><Skeleton className="h-64" /></div>;
 
   return (
     <div className="space-y-5">
+      <PrivacyProgramNavigation value={subtab} onValueChange={setSubtab}>
+        <TabsContent value="visao" className="space-y-4">
       <ModuleBanner
         icon={PrivacidadeIcon}
         iconClassName="right-6 lg:right-[18.5rem]"
-        contentClassName="grid gap-5 p-5 lg:grid-cols-[1fr_260px] lg:items-center"
+        contentClassName="grid gap-4 p-4 xl:grid-cols-[1fr_220px] xl:items-center"
       >
           <div>
             <Badge
               variant="outline"
-              className="mb-3 border-primary/30 text-primary"
+              className="mb-2 border-primary/30 text-primary"
             >
               {t("privacidadePrograma.badge")}
             </Badge>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-lg font-semibold">
               {t("privacidadePrograma.titulo")}
             </h2>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              {t("privacidadePrograma.descricao")}
-            </p>
+            <details className="mt-2 max-w-3xl text-sm text-muted-foreground">
+              <summary className="cursor-pointer rounded-sm font-medium text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{t("experience.privacyGuide")}</summary>
+              <p className="mt-2">{t("privacidadePrograma.descricao")}</p>
+              <p className="mt-2">{t("experience.privacyScoreMethod")}</p>
+            </details>
           </div>
-          <div className="rounded-lg border bg-card/80 p-4">
+          <div className="rounded-md border bg-card/90 p-3">
             <div className="flex items-end justify-between">
               <span className="text-sm font-medium">
                 {t("privacidadePrograma.maturidade")}
               </span>
-              <strong className="text-2xl tabular-nums"><AnimatedMetricValue value={`${maturidade}%`} /></strong>
+              <strong className="text-2xl tabular-nums">{temRegistros ? <AnimatedMetricValue value={`${maturidade}%`} /> : "—"}</strong>
             </div>
-            <Progress value={maturidade} className="mt-3" />
+            {temRegistros && <Progress value={maturidade} aria-label={t("privacidadePrograma.maturidade")} className="mt-2" />}
             <p className="mt-2 text-xs text-muted-foreground">
-              {t("privacidadePrograma.maturidadeHint")}
+              {t(temRegistros ? "experience.privacyScoreHint" : "experience.privacyNoEvidence")}
             </p>
           </div>
       </ModuleBanner>
 
-      <Tabs value={subtab} onValueChange={setSubtab}>
-        <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="visao">
-            {t("privacidadePrograma.subtabs.visao")}
-          </TabsTrigger>
-          <TabsTrigger value="avaliacoes">
-            {t("privacidadePrograma.subtabs.avaliacoes")}
-          </TabsTrigger>
-          <TabsTrigger value="fluxos">
-            {t("privacidadePrograma.subtabs.fluxos")}
-          </TabsTrigger>
-          <TabsTrigger value="terceiros">
-            {t("privacidadePrograma.subtabs.terceiros")}
-          </TabsTrigger>
-          <TabsTrigger value="retencao">
-            {t("privacidadePrograma.subtabs.retencao")}
-          </TabsTrigger>
-          <TabsTrigger value="consentimentos">
-            {t("privacidadePrograma.subtabs.consentimentos")}
-          </TabsTrigger>
-          <TabsTrigger value="incidentes">
-            {t("privacidadePrograma.subtabs.incidentes")}
-          </TabsTrigger>
-          <TabsTrigger value="portal">
-            {t("privacidadePrograma.subtabs.portal")}
-          </TabsTrigger>
-          <TabsTrigger value="auditoria">
-            {t("privacidadePrograma.subtabs.auditoria")}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="visao" className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 xl:grid-cols-2">
             <Etapa
               numero={1}
               titulo={t("privacidadePrograma.etapas.inventario")}
@@ -382,7 +364,7 @@ export function CentroPrivacidadeTab(props: Props) {
                 props.dadosPessoais.length > 0 &&
                 completosCatalogo === props.dadosPessoais.length
               }
-              detalhe={`${completosCatalogo}/${props.dadosPessoais.length}`}
+              detalhe={progresso(completosCatalogo, props.dadosPessoais.length)}
               onClick={() => props.onNavigate("catalogo")}
             />
             <Etapa
@@ -401,7 +383,7 @@ export function CentroPrivacidadeTab(props: Props) {
                 props.ropaRegistros.length > 0 &&
                 ropasCompletos === props.ropaRegistros.length
               }
-              detalhe={`${ropasCompletos}/${props.ropaRegistros.length}`}
+              detalhe={progresso(ropasCompletos, props.ropaRegistros.length)}
               onClick={() => props.onNavigate("ropa")}
             />
             <Etapa
@@ -409,7 +391,7 @@ export function CentroPrivacidadeTab(props: Props) {
               titulo={t("privacidadePrograma.etapas.avaliar")}
               descricao={t("privacidadePrograma.etapas.avaliarDesc")}
               completo={avaliacoesAprovadas > 0}
-              detalhe={`${avaliacoesAprovadas}/${d.avaliacoes.length}`}
+              detalhe={progresso(avaliacoesAprovadas, d.avaliacoes.length)}
               onClick={() => abrirArea("avaliacoes")}
             />
             <Etapa
@@ -424,7 +406,7 @@ export function CentroPrivacidadeTab(props: Props) {
               numero={6}
               titulo={t("privacidadePrograma.etapas.monitorar")}
               descricao={t("privacidadePrograma.etapas.monitorarDesc")}
-              completo={props.incidentesPrivacidade === 0 && pendencias[9]}
+              completo={temRegistros && props.incidentesPrivacidade === 0 && pendencias[9]}
               detalhe={String(props.solicitacoes.length + d.incidentes.length)}
               onClick={() => props.onNavigate("solicitacoes")}
             />
@@ -459,7 +441,11 @@ export function CentroPrivacidadeTab(props: Props) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="avaliacoes">
+        <TabsContent value="avaliacoes" className="space-y-4">
+          <details className="rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground">
+            <summary className="cursor-pointer font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{t("experience.privacyGlossary")}</summary>
+            <p className="mt-2 leading-relaxed">{t("experience.privacyGlossaryText")}</p>
+          </details>
           <Lista
             area="avaliacao"
             items={d.avaliacoes}
@@ -627,7 +613,7 @@ export function CentroPrivacidadeTab(props: Props) {
         <TabsContent value="auditoria">
           <Auditoria items={d.auditoria} />
         </TabsContent>
-      </Tabs>
+      </PrivacyProgramNavigation>
 
       {dialog && (
         <RegistroDialog

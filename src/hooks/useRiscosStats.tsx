@@ -1,17 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { logger } from "@/lib/logger";
+import { readAllPages } from "@/lib/read-all-pages";
+import { norm as normalizeStatus } from "@/lib/metrics";
 import { useMatrizConfigEmpresa } from "@/hooks/useMatrizConfigEmpresa";
 import { apetiteScoreDaConfig } from "@/components/riscos/matriz-config";
 import {
   contarRiscosPorSeveridade,
   isAcimaDoApetite,
-  isRiscoCritico,
   isRevisaoVencida,
   isRevisaoProxima,
   estadoRisco,
-  type Severidade,
 } from "@/lib/metrics";
 
 export interface RiscosStats {
@@ -63,13 +62,10 @@ export const useRiscosStats = () => {
 
   return useQuery({
     queryKey: ['riscos-stats', empresaId, apetite],
-    queryFn: async (): Promise<RiscosStats> => {
+    queryFn: async ({ signal }): Promise<RiscosStats> => {
       const hoje = new Date();
-      const seteDiasAtras = new Date(hoje);
-      seteDiasAtras.setDate(hoje.getDate() - 7);
-
       // Buscar riscos atuais
-      const { data: riscos, error: riscosError } = await supabase
+      const { data: riscos, error: riscosError } = await readAllPages((from, to) => supabase
         .from('riscos')
         .select(`
           id,
@@ -82,22 +78,12 @@ export const useRiscosStats = () => {
           updated_at,
           data_proxima_revisao
         `)
-        .eq('empresa_id', empresaId!);
+        .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
 
       if (riscosError) throw riscosError;
 
-      // Buscar riscos que existiam há 7 dias
-      const { data: riscosAntigos, error: riscosAntigosError } = await supabase
-        .from('riscos')
-        .select('nivel_risco_inicial, nivel_risco_residual, severidade_efetiva, score_efetivo')
-        .eq('empresa_id', empresaId!)
-        .lte('created_at', seteDiasAtras.toISOString());
-
-      if (riscosAntigosError) logger.error('Erro ao buscar riscos antigos', { data: riscosAntigosError, module: 'riscos' });
-
-      const antiguosTotal = riscosAntigos?.length || 0;
-      const antiguosCriticos = (riscosAntigos || []).filter(r => isRiscoCritico(r as any)).length;
-
+      // Current rows cannot reconstruct historical states. Trends stay unavailable;
+      // the dashboard timeline reads append-only evaluation history instead.
       const contagem = contarRiscosPorSeveridade(riscos as any[]);
 
       const newStats: RiscosStats = {
@@ -116,10 +102,10 @@ export const useRiscosStats = () => {
         variacao7dias: null,
         revisoes_vencidas: 0,
         revisoes_proximas: 0,
-        total_7d_atras: antiguosTotal > 0 ? antiguosTotal : null,
-        criticos_7d_atras: antiguosTotal > 0 ? antiguosCriticos : null,
+        total_7d_atras: null,
+        criticos_7d_atras: null,
         tratamentos_concluidos_7d_atras: null,
-        aceitos_7d_atras: antiguosTotal > 0 ? (riscosAntigos?.filter(r => (r as any).aceito).length || 0) : null,
+        aceitos_7d_atras: null,
       };
 
       // Revisões vencidas e próximas (predicados da camada de métricas)
@@ -132,27 +118,22 @@ export const useRiscosStats = () => {
         newStats.avaliados = avaliados.length;
         newStats.acimaApetite = avaliados.filter((r) => isAcimaDoApetite(r, apetite)).length;
 
-        if (riscosAntigos && riscosAntigos.length > 0) {
-          const acimaAntes = riscosAntigos.filter((r) => isAcimaDoApetite(r, apetite)).length;
-          // Variação em riscos, não em pontos percentuais de uma média.
-          newStats.variacao7dias = newStats.acimaApetite - acimaAntes;
-        }
       }
 
 
       // Buscar estatísticas de tratamentos
       if (riscos && riscos.length > 0) {
-        const { data: tratamentos, error: tratamentosError } = await supabase
+        const { data: tratamentos, error: tratamentosError } = await readAllPages((from, to) => supabase
           .from('riscos_tratamentos')
-          .select('status, risco_id')
-          .in('risco_id', riscos.map(r => r.id));
+          .select('status, risco_id, riscos!inner(empresa_id)')
+          .eq('riscos.empresa_id', empresaId!)
+          .order('id').range(from, to).abortSignal(signal), signal);
 
-        if (tratamentosError) {
-          logger.error('Erro ao buscar tratamentos', { data: tratamentosError, module: 'riscos' });
-        } else if (tratamentos) {
-          newStats.tratamentos_pendentes = tratamentos.filter(t => t.status === 'pendente').length;
-          newStats.tratamentos_andamento = tratamentos.filter(t => t.status === 'em andamento').length;
-          newStats.tratamentos_concluidos = tratamentos.filter(t => t.status === 'concluído').length;
+        if (tratamentosError) throw tratamentosError;
+        if (tratamentos) {
+          newStats.tratamentos_pendentes = tratamentos.filter(t => normalizeStatus(t.status) === 'pendente').length;
+          newStats.tratamentos_andamento = tratamentos.filter(t => normalizeStatus(t.status) === 'em_andamento').length;
+          newStats.tratamentos_concluidos = tratamentos.filter(t => normalizeStatus(t.status) === 'concluido').length;
         }
       }
 

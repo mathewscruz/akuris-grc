@@ -3,19 +3,17 @@
  * de Governança, mas para qualquer entidade do registo em `entity-search.ts`.
  * Usado nos Vínculos GRC de tarefas e na origem dos planos de ação.
  */
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useEntityOptions } from '@/hooks/useEntityOptions';
+import { EntitySearchFeedback } from './EntitySearchFeedback';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatStatus } from '@/lib/text-utils';
 import { getEnumLabel, categoryFromFieldName } from '@/lib/enum-labels';
-import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { ENTITY_BY_KEY, EntityKey, EntityRow, fetchEntityRows, matchesTokens, queryTokens } from '@/lib/entity-search';
+import { ENTITY_BY_KEY, EntityKey, EntityRow } from '@/lib/entity-search';
 import { IconCheck, IconSort } from '@/components/icons';
 
 interface EntidadeSelectProps {
@@ -36,24 +34,9 @@ export function EntidadeSelect({
   disabled,
 }: EntidadeSelectProps) {
   const { t } = useLanguage();
-  const { profile } = useAuth();
   const [open, setOpen] = useState(false);
-  const [busca, setBusca] = useState('');
-
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['entidade-select', entidade, profile?.empresa_id],
-    queryFn: () => fetchEntityRows(entidade, profile?.empresa_id),
-    staleTime: 60_000,
-    enabled: open || !!value,
-  });
-
-  const filtrados = useMemo(() => {
-    const tokens = queryTokens(busca);
-    if (!tokens.length) return rows.slice(0, 80);
-    return rows.filter((r) => matchesTokens(`${r.codigo} ${r.titulo}`, tokens)).slice(0, 80);
-  }, [rows, busca]);
-
-  const selecionado = rows.find((r) => r.id === value);
+  const options = useEntityOptions(entidade, open, value ? [value] : []);
+  const selecionado = options.selectedRows.find((r) => r.id === value) ?? options.rows.find((r) => r.id === value);
   // `subtituloField` pode ser uma lista de alternativas (o risco usa
   // residual → inerente); a categoria do rótulo sai da primeira.
   const campoSubtitulo = ENTITY_BY_KEY[entidade]?.subtituloField;
@@ -68,6 +51,7 @@ export function EntidadeSelect({
           type="button"
           variant="outline"
           role="combobox"
+          aria-label={`${t(ENTITY_BY_KEY[entidade].labelKey)}: ${selecionado?.titulo ?? (value ? t('experience.linkUnavailable') : placeholder ?? t('entidadeSelect.placeholder'))}`}
           aria-expanded={open}
           disabled={disabled}
           className="w-full justify-between font-normal"
@@ -79,7 +63,7 @@ export function EntidadeSelect({
             </span>
           ) : (
             <span className="text-muted-foreground truncate">
-              {placeholder ?? t('entidadeSelect.placeholder')}
+              {value ? t(options.selectionLoading ? 'common.loading' : 'experience.linkUnavailable') : placeholder ?? t('entidadeSelect.placeholder')}
             </span>
           )}
           <IconSort className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -88,24 +72,21 @@ export function EntidadeSelect({
       <PopoverContent className="w-[min(28rem,90vw)] p-0 bg-popover" align="start">
         <Command shouldFilter={false}>
           <CommandInput
+            aria-label={t('entidadeSelect.search')}
             placeholder={t('entidadeSelect.search')}
-            value={busca}
-            onValueChange={setBusca}
+            value={options.search}
+            onValueChange={options.setSearch}
           />
           <CommandList>
-            {isLoading ? (
-              <div className="flex justify-center py-6"><AkurisPulse size={20} /></div>
-            ) : filtrados.length === 0 ? (
-              <CommandEmpty>{t('entidadeSelect.empty')}</CommandEmpty>
-            ) : (
+            <EntitySearchFeedback loading={options.isLoading} error={options.isError} empty={options.rows.length === 0} retry={options.retry} />
+            {options.selectionError && <CommandGroup><CommandItem value="__retry_selection__" onSelect={options.retrySelection}>{t('experience.retryLink')}</CommandItem></CommandGroup>}
+            {allowClear && <CommandGroup><CommandItem value="__none__" onSelect={() => { onValueChange(''); setOpen(false); }}>
+              <IconCheck className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
+              <span className="text-muted-foreground">{t('entidadeSelect.none')}</span>
+            </CommandItem></CommandGroup>}
+            {!options.isLoading && !options.isError && (
               <CommandGroup>
-                {allowClear && (
-                  <CommandItem value="__none__" onSelect={() => { onValueChange(''); setOpen(false); }}>
-                    <IconCheck className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
-                    <span className="text-muted-foreground">{t('entidadeSelect.none')}</span>
-                  </CommandItem>
-                )}
-                {filtrados.map((row) => (
+                {options.rows.map((row) => (
                   <CommandItem
                     key={row.id}
                     value={row.id}
@@ -121,6 +102,7 @@ export function EntidadeSelect({
                     </div>
                   </CommandItem>
                 ))}
+                {options.hasMore && <CommandItem value="__more__" onSelect={options.showMore} className="justify-center text-primary">{t('experience.searchMore')}</CommandItem>}
               </CommandGroup>
             )}
           </CommandList>

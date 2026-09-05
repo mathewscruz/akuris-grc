@@ -1,3 +1,4 @@
+import { useListState } from '@/hooks/useListState';
 import { useState, useMemo } from 'react';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { matchesSearch } from '@/lib/search-utils';
@@ -49,14 +50,14 @@ export default function Continuidade() {
   const empresaId = profile?.empresa_id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: stats, isLoading: statsLoading } = useContinuidadeStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useContinuidadeStats();
 
   const [planoDialog, setPlanoDialog] = useState<{ open: boolean; plano?: any }>({ open: false });
   const [detalheDialog, setDetalheDialog] = useState<{ open: boolean; plano?: any }>({ open: false });
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
 
-  const { data: planos = [], isLoading } = useQuery({
+  const { data: planos = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['continuidade-planos', empresaId],
     queryFn: async () => {
       if (!empresaId) return [];
@@ -124,10 +125,11 @@ export default function Continuidade() {
     {
       key: 'tipo',
       label: t('fin.comum.tipo'),
-      render: (_val, row) => <Badge variant="outline">{tipoMap[row.tipo] || row.tipo}</Badge>,
+      render: (_val, row) => <span className="text-muted-foreground">{tipoMap[row.tipo] || row.tipo}</span>,
     },
     {
       key: 'status',
+      mobilePriority: 0,
       label: t('fin.comum.status'),
       render: (_val, row) => {
         const st = statusMap[row.status] || statusMap.rascunho;
@@ -136,16 +138,19 @@ export default function Continuidade() {
     },
     {
       key: 'rto_horas',
-      label: 'RTO',
+      mobilePriority: 2,
+      label: 'RTO (h)',
       render: (_val, row) => row.rto_horas != null ? `${row.rto_horas}h` : '—',
     },
     {
       key: 'rpo_horas',
-      label: 'RPO',
+      mobilePriority: 3,
+      label: 'RPO (h)',
       render: (_val, row) => row.rpo_horas != null ? `${row.rpo_horas}h` : '—',
     },
     {
       key: 'proxima_revisao',
+      mobilePriority: 1,
       label: t('fin.comum.proxRevisao'),
       render: (_val, row) => row.proxima_revisao ? formatDateOnly(row.proxima_revisao) : '—',
     },
@@ -213,6 +218,7 @@ export default function Continuidade() {
 
       <StatStrip
         loading={statsLoading}
+        error={statsError || isError}
         items={[
           { key: 'total', label: t('cardsKpi.continuidade.totalPlanos'), value: stats?.total ?? 0, drillDown: 'continuidade' },
           { key: 'ativos', label: t('cardsKpi.sweep.continuidade.planosAtivos'), value: stats?.ativos ?? 0, drillDown: 'continuidade_ativos' },
@@ -223,7 +229,7 @@ export default function Continuidade() {
       />
 
       {/* Insights Executivos */}
-      {planos.length > 0 && (
+      {!isError && !statsError && planos.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-3">
@@ -242,7 +248,7 @@ export default function Continuidade() {
                       <button onClick={() => setDetalheDialog({ open: true, plano: p })} className="text-left hover:text-primary truncate flex-1">
                         {p.nome}
                       </button>
-                      <Badge variant="outline" className="ml-2">{formatDateOnly(p.proxima_revisao)}</Badge>
+                      <span className="ml-3 tabular-nums text-muted-foreground">{formatDateOnly(p.proxima_revisao)}</span>
                     </li>
                   ))}
                 </ul>
@@ -260,22 +266,22 @@ export default function Continuidade() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('fin.continuidade.semResponsavel')}</span>
-                <Badge variant={insights.semResponsavel > 0 ? 'destructive' : 'success'}>{insights.semResponsavel}</Badge>
+                <span className={insights.semResponsavel > 0 ? 'font-medium tabular-nums text-destructive' : 'tabular-nums'}>{insights.semResponsavel}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('cardsKpi.sweep.continuidade.semRto')}</span>
-                <Badge variant={insights.semRTO > 0 ? 'warning' : 'success'}>{insights.semRTO}</Badge>
+                <span className={insights.semRTO > 0 ? 'font-medium tabular-nums text-warning' : 'tabular-nums'}>{insights.semRTO}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('cardsKpi.continuidade.coberturaTestes')}</span>
-                <Badge variant="outline">
+                <span className="tabular-nums">
                   {planos.length === 0
                     ? t('t4.continuidade.semTestes')
                     : t('t4.continuidade.coberturaPlanos', {
                         testados: stats?.planosTestados ?? 0,
                         total: planos.length,
                       })}
-                </Badge>
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -296,11 +302,13 @@ export default function Continuidade() {
             onSearchChange={setSearchTerm}
             searchPlaceholder={t('fin.continuidade.buscar')}
             loading={isLoading}
+            error={isError}
+            onRefresh={() => void refetch()}
             emptyState={{
               icon: <IconShield className="h-8 w-8" />,
               title: t('fin.continuidade.nenhum'),
-              description: t('fin.continuidade.vazioDesc'),
-              action: { label: 'Criar Plano', onClick: () => setPlanoDialog({ open: true }) },
+              description: t('experience.continuityFirstRun'),
+              action: { label: t('sweepDados.continuidade.novoPlano'), onClick: () => setPlanoDialog({ open: true }) },
             }}
           />
         </CardContent>

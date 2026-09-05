@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Chip } from '@/components/ui/chip';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useMotionPreference } from '@/lib/motion-preferences';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { senhaValida } from '@/lib/politica-senha';
@@ -54,6 +55,7 @@ interface UserProfilePopoverProps {
 
 export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
   const { t } = useLanguage();
+  const motion = useMotionPreference();
   const perfilSchema = useMemo(() => buildPerfilSchema(t), [t]);
   const { user, profile, refetchProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
@@ -380,7 +382,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
             >
               <Avatar className="h-20 w-20">
                 <AvatarImage src={fotoUrl || (profile as any)?.foto_url} alt={displayName} />
-                <AvatarFallback className="bg-primary text-xl text-primary-foreground">
+                <AvatarFallback className="text-xl">
                   {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
@@ -474,6 +476,14 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                     de ecrã anuncia o endereço sem dizer o que ele é. */}
                 <Input id="perfil-email" value={user?.email ?? ''} disabled readOnly />
                 <p className="text-xs text-muted-foreground">{t('userProfilePopover.emailHint')}</p>
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="profile-reduce-motion">{t('experience.reduceMotion')}</Label>
+                  <p id="profile-motion-hint" className="text-xs text-muted-foreground">{t('experience.motionHint')} {t('experience.motionScope')}</p>
+                  {motion.systemReduced && <p className="text-xs text-muted-foreground">{t('experience.motionSystem')}</p>}
+                </div>
+                <Switch id="profile-reduce-motion" aria-describedby="profile-motion-hint" checked={motion.selected} onCheckedChange={motion.setSelected} />
               </div>
             </TabsContent>
 

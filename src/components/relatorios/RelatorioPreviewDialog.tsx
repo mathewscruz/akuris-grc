@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { QueryError } from '@/components/ui/query-error';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -16,20 +17,16 @@ interface RelatorioPreviewDialogProps {
 
 export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaId }: RelatorioPreviewDialogProps) {
   const { t } = useLanguage();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const widgets = Array.isArray(relatorio?.configuracao?.widgets) ? relatorio.configuracao.widgets : [];
-    const fontes = widgets.length > 0 ? widgets : relatorio?.template_base ? [relatorio.template_base] : [];
-    if (open && fontes.length > 0 && empresaId) {
-      setLoading(true);
-      Promise.all(fontes.map((fonte: string) => fetchTemplateData(fonte, empresaId)))
-        .then((conjuntos) => setData({ sections: conjuntos.flatMap((conjunto) => conjunto.sections) }))
-        .catch(() => setData({ sections: [] }))
-        .finally(() => setLoading(false));
-    }
-  }, [open, relatorio, empresaId]);
+  const widgets = Array.isArray(relatorio?.configuracao?.widgets) ? relatorio.configuracao.widgets : [];
+  const fontes: string[] = widgets.length ? widgets : relatorio?.template_base ? [relatorio.template_base] : [];
+  const { data, isLoading: loading, isError, refetch } = useQuery({
+    queryKey: ['report-preview', empresaId, relatorio?.id, fontes],
+    enabled: open && !!empresaId && fontes.length > 0,
+    queryFn: async () => {
+      const conjuntos = await Promise.all(fontes.map(fonte => fetchTemplateData(fonte, empresaId)));
+      return { sections: conjuntos.flatMap(conjunto => conjunto.sections) };
+    },
+  });
 
   return (
     <DialogShell
@@ -37,12 +34,13 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
       onOpenChange={onOpenChange}
       icon={IconChart}
       title={t('relatoriosComp.preview.title', { nome: relatorio?.nome ?? '' })}
-      description={relatorio?.descricao || relatorio?.template_base || undefined}
+      description={relatorio?.descricao || undefined}
       size="lg"
       hideFooter
     >
         <div>
-          {loading ? (
+          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t('experience.reportScope')}</p>
+          {isError ? <QueryError onRetry={() => void refetch()} /> : loading ? (
             <div className="flex items-center justify-center py-16">
               <AkurisPulse size={32} />
             </div>
