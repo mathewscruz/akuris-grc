@@ -78,7 +78,8 @@ describe('autenticação coesa e MFA vinculado à sessão', () => {
     const auth = read('src/pages/Auth.tsx');
     const reset = read('src/pages/DefinirSenha.tsx');
 
-    expect(config.match(/enable_signup = false/g)?.length).toBe(2);
+    expect(config).toMatch(/\[auth\][\s\S]*?enable_signup = false/);
+    expect(config).toMatch(/\[auth\.email\][\s\S]*?enable_signup = true/);
     expect(config).toContain('enable_confirmations = true');
     expect(auth).not.toContain('tabIndex={-1}');
     expect(auth).toContain('autoComplete="username"');
