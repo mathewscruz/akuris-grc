@@ -1,3 +1,4 @@
+import { operationalEmail } from "../_shared/operational-email.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
@@ -117,47 +118,9 @@ const handler = async (req: Request): Promise<Response> => {
     const formatCurrency = (val?: number): string => { if (!val) return "Não informado"; return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val); };
     const contratoLink = `https://akuris.pt/contratos?contrato=${contrato_id}`;
 
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
-  <div style="background-color: #ffffff; border-radius: 12px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
-    <div style="background-color: ${urgencyConfig.color}; padding: 16px 32px; text-align: center;">
-      <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${urgencyConfig.icon} Contrato ${isCritical ? 'Vencido' : 'Próximo do Vencimento'}</span>
-    </div>
-    <div style="text-align: center; padding: 24px 32px 16px;">
-      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
-    </div>
-    <div style="padding: 0 32px 32px;">
-      <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">${isCritical ? 'Contrato Vencido!' : 'Contrato Próximo do Vencimento'}</h1>
-      <div style="text-align: center; margin-bottom: 24px;">
-        <span style="display: inline-block; padding: 8px 24px; background-color: ${urgencyConfig.bg}; color: ${urgencyConfig.color}; border-radius: 20px; font-weight: 700; font-size: 16px; border: 2px solid ${urgencyConfig.color};">${urgencyConfig.text}</span>
-      </div>
-      <div style="background-color: #f1f5f9; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #0a1628; margin: 0 0 16px; font-weight: 600;">${nome}</h2>
-        <div style="display: grid; gap: 12px;">
-          <div style="font-size: 14px; color: #475569;"><strong style="color: #64748b;">Nº Contrato:</strong> ${numero_contrato}</div>
-          ${fornecedor_nome ? `<div style="font-size: 14px; color: #475569;"><strong style="color: #64748b;">Fornecedor:</strong> ${fornecedor_nome}</div>` : ''}
-          <div style="font-size: 14px; color: #475569;"><strong style="color: #64748b;">Data de Vencimento:</strong> ${formatDate(data_fim)}</div>
-          <div style="font-size: 14px; color: #475569;"><strong style="color: #64748b;">Valor:</strong> ${formatCurrency(valor)}</div>
-          ${gestorNome ? `<div style="font-size: 14px; color: #475569;"><strong style="color: #64748b;">Gestor:</strong> ${gestorNome}</div>` : ''}
-        </div>
-      </div>
-      <div style="text-align: center; margin-bottom: 24px;">
-        <a href="${contratoLink}" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px;">Ver Contrato</a>
-      </div>
-      <div style="background-color: ${urgencyConfig.bg}; border-radius: 8px; padding: 16px; border-left: 4px solid ${urgencyConfig.color};">
-        <p style="font-size: 13px; color: #475569; margin: 0;"><strong>Ação Recomendada:</strong> ${isCritical ? 'Este contrato está vencido. Verifique a situação e tome as medidas necessárias.' : 'Revise o contrato e inicie o processo de renovação ou encerramento conforme necessário.'}</p>
-      </div>
-    </div>
-    <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
-      <p style="font-size: 12px; color: #94a3b8; margin: 0;">Esta é uma mensagem automática do sistema Akuris.<br>Por favor, não responda a este e-mail.</p>
-      <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+    const htmlContent = operationalEmail("contract", {
+      item: nome, code: numero_contrato, status: urgencyConfig.text, deadline: formatDate(data_fim), supplier: fornecedor_nome, amount: formatCurrency(valor), owner: gestorNome, tone: isCritical ? "danger" : "warning", url: contratoLink
+    });
 
     const emailPromises = Array.from(emailList).map(async (email) => {
       try {

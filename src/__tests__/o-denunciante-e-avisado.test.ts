@@ -28,6 +28,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 
 const FUNCAO = 'supabase/functions/avisar-denunciante/index.ts';
 const MIGRATION = 'supabase/migrations/20260902060000_avisar_quem_denunciou_por_email.sql';
@@ -85,16 +86,33 @@ describe('o e-mail não leva o caso', () => {
        é uma guarda que se contorna apagando o comentário. O que interessa é o
        que o HTML INTERPOLA: cada `${...}` dentro do corpo do e-mail.
     */
-    const corpo = fonte.slice(fonte.indexOf('const html = `'), fonte.indexOf('const resend'));
-    const interpolados = [...corpo.matchAll(/\$\{([^}]+)\}/g)].map((m) => m[1].trim());
-    expect(interpolados.length).toBeGreaterThan(0);
-
-    const PERMITIDO = /^(linha|url|en\s*\?|destino\.(protocolo|empresa_nome))/;
-    const proibidos = interpolados.filter((x) => !PERMITIDO.test(x));
-    expect(
-      proibidos,
-      'só podem entrar no e-mail: a frase do motivo, o link, o protocolo e o nome da empresa',
-    ).toEqual([]);
+    // Parse the initializer, not a particular template-literal spelling. This
+    // also inspects nested interpolations and arguments to the shared renderer.
+    const ast = ts.createSourceFile(FUNCAO, fonte, ts.ScriptTarget.Latest, true);
+    let corpo: ts.Expression | undefined;
+    const find = (node: ts.Node) => {
+      if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'html') corpo = node.initializer;
+      ts.forEachChild(node, find);
+    };
+    find(ast);
+    expect(corpo).toBeDefined();
+    const permitidos = new Set(['emailDocument', 'emailAction', 'escapeHtml', 'linha', 'url', 'en', 'destino']);
+    const campos: string[] = [];
+    const proibidos: string[] = [];
+    const inspect = (node: ts.Node) => {
+      if (ts.isPropertyAccessExpression(node)) {
+        campos.push(node.getText(ast));
+        if (node.expression.getText(ast) !== 'destino' || !['protocolo', 'empresa_nome'].includes(node.name.text)) proibidos.push(node.getText(ast));
+      }
+      if (ts.isIdentifier(node)) {
+        const isPropertyName = (ts.isPropertyAccessExpression(node.parent) || ts.isPropertyAssignment(node.parent)) && node.parent.name === node;
+        if (!isPropertyName && !permitidos.has(node.text)) proibidos.push(node.text);
+      }
+      ts.forEachChild(node, inspect);
+    };
+    inspect(corpo!);
+    expect(campos.length).toBeGreaterThan(0);
+    expect(proibidos, 'o renderer só pode receber frase, link, protocolo e nome da empresa').toEqual([]);
   });
 
   it('só pede à base o que precisa', () => {

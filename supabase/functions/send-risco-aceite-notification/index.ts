@@ -1,3 +1,4 @@
+import { operationalEmail } from "../_shared/operational-email.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
@@ -90,21 +91,21 @@ const handler = async (req: Request): Promise<Response> => {
     let ctaText = "Acessar Risco";
 
     if (tipo === "solicitacao") {
-      subject = `[Akuris] ✋ Solicitação de Aceite de Risco: ${risco_nome}`;
-      heading = "✋ Solicitação de Aceite de Risco";
-      bodyText = `<strong>${solicitante?.nome || "Um usuário"}</strong> solicita sua aprovação para aceitar formalmente o seguinte risco:`;
+      subject = `[Akuris] Solicitação de Aceite de Risco: ${risco_nome}`;
+      heading = "Solicitação de Aceite de Risco";
+      bodyText = `${solicitante?.nome || "Um usuário"} solicita sua aprovação para aceitar formalmente o seguinte risco:`;
       ctaText = "Revisar e Decidir";
     } else if (tipo === "aprovado") {
       destinatario = solicitante!;
       subject = `[Aceite aprovado] ${risco_nome}`;
       heading = "Aceite de risco aprovado";
-      bodyText = `<strong>${aprovador.nome || "O aprovador"}</strong> aprovou o aceite formal do risco abaixo. Ele agora aparece no sub-módulo de Aceite de Risco.`;
+      bodyText = `${aprovador.nome || "O aprovador"} aprovou o aceite formal do risco abaixo. Ele agora aparece no sub-módulo de Aceite de Risco.`;
       ctaText = "Ver Aceite de Risco";
     } else {
       destinatario = solicitante!;
-      subject = `[Akuris] ❌ Aceite de Risco Rejeitado: ${risco_nome}`;
-      heading = "❌ Aceite de Risco Rejeitado";
-      bodyText = `<strong>${aprovador.nome || "O aprovador"}</strong> rejeitou o aceite formal do risco abaixo.${comentario ? ` <br/><strong>Motivo:</strong> ${comentario}` : ""}`;
+      subject = `[Akuris] Aceite de Risco Rejeitado: ${risco_nome}`;
+      heading = "Aceite de Risco Rejeitado";
+      bodyText = `${aprovador.nome || "O aprovador"} rejeitou o aceite formal do risco abaixo.${comentario ? ` Motivo: ${comentario}` : ""}`;
       ctaText = "Ver Risco";
     }
 
@@ -114,35 +115,9 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
-  <div style="background-color: #ffffff; border-radius: 8px; padding: 0; border:1px solid #e2e8f0; overflow: hidden;">
-    <div style="background-color: #0a1628; text-align: left; padding: 26px 32px;">
-      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
-    </div>
-    <div style="height: 2px; background: #7552ff;"></div>
-    <div style="padding: 32px;">
-      <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">${heading}</h1>
-      <p style="font-size: 15px; color: #3c4149; margin: 0 0 20px;">Olá <strong>${destinatario?.nome || "Usuário"}</strong>,</p>
-      <p style="font-size: 15px; color: #3c4149; margin: 0 0 24px;">${bodyText}</p>
-      <div style="background-color: #f0eeff; border-radius: 8px; padding: 20px; margin-bottom: 24px; border-left: 4px solid #7552ff;">
-        <h2 style="font-size: 16px; color: #0a1628; margin: 0 0 8px; font-weight: 600;">${risco_nome}</h2>
-        <p style="font-size: 14px; color: #64748b; margin: 0;">Empresa: ${companyName}</p>
-      </div>
-      <div style="text-align: center; margin-bottom: 24px;">
-        <a href="${riscoLink}" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px;">${ctaText}</a>
-      </div>
-    </div>
-    <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
-      <p style="font-size: 12px; color: #94a3b8; margin: 0;">Esta é uma mensagem automática do sistema Akuris.<br>Por favor, não responda a este e-mail.</p>
-      <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+    const htmlContent = operationalEmail("acceptance", {
+      name: destinatario?.nome || "Usuário", item: risco_nome, heading, intro: bodyText, company: companyName, action: ctaText, url: riscoLink
+    });
 
     await resend.emails.send({
       from: "Akuris <noreply@akuris.com.br>",

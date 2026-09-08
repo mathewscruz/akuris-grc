@@ -1,3 +1,4 @@
+import { operationalEmail } from "../_shared/operational-email.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
@@ -146,46 +147,13 @@ serve(async (req) => {
     }
 
     const resend = new Resend(resendApiKey);
-    const prazoFormatted = prazo ? new Date(prazo).toLocaleDateString('pt-BR') : "Não definido";
+    const prazoFormatted = prazo ? new Date(prazo.length === 10 ? `${prazo}T00:00:00` : prazo).toLocaleDateString('pt-BR') : "Não definido";
     const appUrl = Deno.env.get("APP_URL") || "https://akuris.pt";
     const auditoriaLink = `${appUrl}${itemLink}`;
 
-    const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin: 0; padding: 0; background-color: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f7fa; padding: 40px 20px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-        <tr><td style="padding: 32px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-          <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
-        </td></tr>
-        <tr><td style="padding: 32px;">
-          <h1 style="color: #0a1628; margin: 0 0 24px 0; font-size: 24px;">📋 Novo Item de Auditoria Atribuído</h1>
-          <p style="color: #3c4149; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">Olá <strong>${responsavel.nome}</strong>,</p>
-          <p style="color: #3c4149; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">Você foi designado como responsável por um item de verificação na auditoria <strong>"${auditoria_nome}"</strong>.</p>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0eeff; border-radius: 8px; border-left: 4px solid #7552ff; margin: 24px 0;">
-            <tr><td style="padding: 20px;">
-              <p style="margin: 0 0 8px 0; color: #5a3fd6; font-size: 14px; font-weight: 600;">${item_codigo}</p>
-              <p style="margin: 0 0 12px 0; color: #0a1628; font-size: 18px; font-weight: 600;">${item_titulo}</p>
-              <p style="margin: 0; color: #3c4149; font-size: 14px;"><strong>Prazo:</strong> ${prazoFormatted}</p>
-            </td></tr>
-          </table>
-          <p style="color: #3c4149; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0;">Por favor, acesse o sistema para visualizar os detalhes completos, adicionar comentários e anexar as evidências necessárias.</p>
-          <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-            <a href="${auditoriaLink}" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Acessar Auditoria</a>
-          </td></tr></table>
-        </td></tr>
-        <tr><td style="padding: 24px 32px; background-color: #f5f7fa; border-radius: 0 0 12px 12px; text-align: center;">
-          <p style="margin: 0; color: #8898aa; font-size: 12px;">Esta é uma mensagem automática do sistema Akuris.</p>
-          <p style="margin: 8px 0 0 0; color: #8898aa; font-size: 12px;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+    const emailHtml = operationalEmail("audit", {
+      name: responsavel.nome, item: item_titulo, code: item_codigo, audit: auditoria_nome, deadline: prazoFormatted, url: auditoriaLink
+    });
 
     const { error: emailError } = await resend.emails.send({
       from: 'Akuris <noreply@akuris.com.br>',

@@ -1,4 +1,5 @@
-import { Link, Section, Text } from 'npm:@react-email/components@0.0.22';
+import { EmailAction } from "../../_shared/email-templates/EmailAction.tsx";
+import { Section, Text } from 'npm:@react-email/components@0.0.22';
 import * as React from 'npm:react@18.3.1';
 import { BaseEmailTemplate, emailStyles } from '../../_shared/email-templates/BaseEmailTemplate.tsx';
 
@@ -50,11 +51,7 @@ export const InvitationReminderEmail = ({
       </Text>
     </Section>
 
-    <Section style={emailStyles.buttonSection}>
-      <Link href={loginUrl} style={emailStyles.button}>
-        Completar Cadastro
-      </Link>
-    </Section>
+    <EmailAction href={loginUrl}>Completar Cadastro</EmailAction>
 
     <Section style={emailStyles.infoBox}>
       <Text style={{ ...emailStyles.textSmall, margin: '0' }}>

@@ -1,3 +1,4 @@
+import { operationalEmail } from "../_shared/operational-email.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
@@ -58,34 +59,9 @@ serve(async (req) => {
                 to: [admin.email],
                 subject: diasRestantes < 0 ? `[Ação necessária] Licença vencida: ${licenca.nome}` : `[Ação necessária] Licença próxima do vencimento: ${licenca.nome}`,
                 text: `${mensagem}. Acesse https://akuris.pt/ativos/licencas`,
-                html: sanitizeEmailDocument(`
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
-<div style="background-color: #ffffff; border-radius: 8px; border:1px solid #e2e8f0; overflow: hidden;">
-  <div style="background-color: #0a1628; text-align: left; padding: 26px 32px;">
-    <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
-  </div>
-  <div style="height: 2px; background: #7552ff;"></div>
-  <div style="padding: 32px;">
-    <h2 style="color: #0a1628; margin: 0 0 16px;">Alerta de Vencimento de Licença</h2>
-    <p>Olá ${admin.nome},</p>
-    <p>${mensagem}</p>
-    <div style="background-color: #f0eeff; border-left: 4px solid #7552ff; border-radius: 8px; padding: 20px; margin: 20px 0;">
-      <p style="margin: 0 0 8px;"><strong>Nome:</strong> ${licenca.nome}</p>
-      <p style="margin: 0 0 8px;"><strong>Tipo:</strong> ${licenca.tipo_licenca}</p>
-      <p style="margin: 0 0 8px;"><strong>Data de Vencimento:</strong> ${new Date(licenca.data_vencimento).toLocaleDateString('pt-BR')}</p>
-      <p style="margin: 0;"><strong>Fornecedor:</strong> ${licenca.fornecedor || 'N/A'}</p>
-    </div>
-    <div style="text-align: center; margin: 24px 0;">
-      <a href="https://akuris.pt/ativos/licencas" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600;">Renovar Licença</a>
-    </div>
-  </div>
-  <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
-    <p style="font-size: 12px; color: #8898aa; margin: 0;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>
-  </div>
-</div>
-</body></html>`),
+                html: sanitizeEmailDocument(operationalEmail("license", {
+      name: admin.nome, item: licenca.nome, intro: mensagem, type: licenca.tipo_licenca, deadline: new Date(licenca.data_vencimento).toLocaleDateString("pt-BR"), supplier: licenca.fornecedor || "N/A", tone: diasRestantes < 0 ? "danger" : "warning", url: "https://akuris.pt/ativos/licencas"
+    })),
               });
 
               await supabase.from('ativos_notificacoes_enviadas').insert({ empresa_id: empresa.id, modulo: 'licencas', registro_id: licenca.id, tipo_notificacao: tipoNotificacao, canal: 'email', destinatario_email: admin.email, status: 'enviado' });

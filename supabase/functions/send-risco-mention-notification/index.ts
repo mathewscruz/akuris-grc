@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@6.26.0";
-import { APP_URL, EMAIL_FROM, emailDocument, escapeHtml, htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
+import { APP_URL, EMAIL_FROM, emailAction, emailDetails, emailDocument, escapeHtml, htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 import { authErrorResponse, requireUserContext } from "../_shared/auth.ts";
 
 const corsHeaders = {
@@ -78,8 +78,8 @@ serve(async (req) => {
     const html = emailDocument("Você foi mencionado em um risco", `
       <p style="margin:0 0 18px;color:#3c4657">Olá <strong>${escapeHtml(destinatario.nome || "")}</strong>,</p>
       <p style="margin:0 0 18px;color:#3c4657"><strong>${escapeHtml(autorNome)}</strong> mencionou você em um comentário no risco <strong>${escapeHtml(riscoNome)}</strong>.</p>
-      <div style="margin:22px 0;padding:18px 20px;border-left:3px solid #7552ff;background:#f7f5ff;border-radius:6px;color:#283246">${escapeHtml(textoComentario)}</div>
-      <p style="margin:26px 0 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;border-radius:7px;background:#7552ff;color:#fff;text-decoration:none;font-weight:700">Abrir risco</a></p>
+      ${emailDetails(riscoNome, [], { description: textoComentario })}
+      ${emailAction("Abrir risco", link)}
     `, { eyebrow: "Gestão de riscos" });
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");

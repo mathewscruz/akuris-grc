@@ -1,4 +1,5 @@
-import { Link, Section, Text } from 'npm:@react-email/components@0.0.22';
+import { EmailAction } from "../../_shared/email-templates/EmailAction.tsx";
+import { Section, Text } from 'npm:@react-email/components@0.0.22';
 import * as React from 'npm:react@18.3.1';
 import { BaseEmailTemplate, emailStyles } from '../../_shared/email-templates/BaseEmailTemplate.tsx';
 
@@ -13,7 +14,7 @@ export const TestEmail = ({
 }: TestEmailProps) => (
   <BaseEmailTemplate
     previewText="Teste de e-mail — Akuris"
-    title="E-mail de Teste ✓"
+    title="E-mail de teste"
   >
     <Text style={emailStyles.text}>
       Este é um e-mail de teste enviado pelo sistema <strong>Akuris</strong>.
@@ -36,11 +37,7 @@ export const TestEmail = ({
       </Text>
     </Section>
 
-    <Section style={emailStyles.buttonSection}>
-      <Link href="https://akuris.pt" style={emailStyles.button}>
-        Acessar Plataforma
-      </Link>
-    </Section>
+    <EmailAction href="https://akuris.pt">Acessar Plataforma</EmailAction>
   </BaseEmailTemplate>
 );
 

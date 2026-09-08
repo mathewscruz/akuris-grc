@@ -1,4 +1,5 @@
-import { Link, Section, Text } from 'npm:@react-email/components@0.0.22';
+import { EmailAction } from "../../_shared/email-templates/EmailAction.tsx";
+import { Section, Text } from 'npm:@react-email/components@0.0.22';
 import * as React from 'npm:react@18.3.1';
 import { BaseEmailTemplate, emailStyles } from '../../_shared/email-templates/BaseEmailTemplate.tsx';
 
@@ -36,14 +37,10 @@ export const WelcomeEmail = ({
       </Text>
     </Section>
 
-    <Section style={emailStyles.buttonSection}>
-      <Link href={setupPasswordUrl} style={emailStyles.button}>
-        Definir Minha Senha
-      </Link>
-    </Section>
+    <EmailAction href={setupPasswordUrl}>Definir Minha Senha</EmailAction>
 
     <Text style={emailStyles.textSmall}>
-      ⏳ Este link expira em <strong>24 horas</strong>. Caso expire, peça ao administrador para reenviar o convite.
+      Este link expira em <strong>24 horas</strong>. Caso expire, peça ao administrador para reenviar o convite.
     </Text>
 
     <Text style={emailStyles.textSmall}>

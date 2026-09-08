@@ -1,3 +1,4 @@
+import { operationalEmail } from "../_shared/operational-email.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
@@ -115,33 +116,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const controleLink = `https://akuris.pt/governanca/controles?controle=${controle_id}`;
 
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
-  <div style="background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-    <div style="text-align: center; margin-bottom: 24px;">
-      <img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" width="160" style="display:block;height:auto" />
-    </div>
-    <h1 style="font-size: 22px; color: #0a1628; text-align: center; margin-bottom: 24px; font-weight: 600;">📋 Você foi designado como responsável</h1>
-    <p style="font-size: 15px; margin-bottom: 20px;">Olá <strong>${responsavelData.nome || "Usuário"}</strong>,</p>
-    <p style="font-size: 15px; margin-bottom: 24px;">Você foi designado como responsável pelo seguinte controle interno:</p>
-    <div style="background-color: #f0eeff; border-radius: 8px; padding: 20px; margin-bottom: 24px; border-left: 4px solid #7552ff;">
-      <h2 style="font-size: 16px; color: #0a1628; margin: 0 0 12px 0; font-weight: 600;">${controle_nome}</h2>
-      <p style="font-size: 14px; color: #64748b; margin: 0 0 12px 0; white-space: pre-wrap;">${truncateDescription(controle_descricao)}</p>
-      <div style="font-size: 13px; color: #475569;"><strong>📅 Vencimento da Avaliação:</strong> ${formatDate(proxima_avaliacao)}</div>
-    </div>
-    <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${controleLink}" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px;">Acessar Controle</a>
-    </div>
-    <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 20px;">
-      <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">Esta é uma mensagem automática do sistema Akuris.<br>Por favor, não responda a este e-mail.</p>
-      <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 8px 0 0;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+    const htmlContent = operationalEmail("control", {
+      name: responsavelData.nome || "Usuário", item: controle_nome, description: truncateDescription(controle_descricao), deadline: formatDate(proxima_avaliacao), url: controleLink
+    });
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'Akuris <noreply@akuris.com.br>',

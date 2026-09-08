@@ -1,5 +1,5 @@
 /** Resend can resolve with { error } instead of rejecting. Acceptance is not delivery. */
-export type ContactSendResult = { data?: { id?: string } | null; error?: { name?: string; statusCode?: number } | null };
+export type ContactSendResult = { data?: { id?: string } | null; error?: { name?: string; statusCode?: number | null } | null };
 export async function deliverContact(send: () => Promise<ContactSendResult>, wait: (ms: number) => Promise<void> = ms => new Promise(resolve => setTimeout(resolve, ms))) {
   let errorCode = 'provider_unavailable';
   for (let attempt = 1; attempt <= 3; attempt++) {

@@ -1,4 +1,5 @@
-import { Link, Section, Text } from 'npm:@react-email/components@0.0.22';
+import { EmailAction } from "../../_shared/email-templates/EmailAction.tsx";
+import { Section, Text } from 'npm:@react-email/components@0.0.22';
 import * as React from 'npm:react@18.3.1';
 import { BaseEmailTemplate, emailStyles } from '../../_shared/email-templates/BaseEmailTemplate.tsx';
 
@@ -29,11 +30,7 @@ export const PasswordResetEmail = ({
       Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para criar uma nova senha:
     </Text>
 
-    <Section style={emailStyles.buttonSection}>
-      <Link href={resetUrl} style={emailStyles.button}>
-        Redefinir minha senha
-      </Link>
-    </Section>
+    <EmailAction href={resetUrl}>Redefinir minha senha</EmailAction>
 
     <Text style={emailStyles.textSmall}>
       Validade: <strong>1 hora</strong>. Depois desse prazo, solicite um novo link.

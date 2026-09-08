@@ -1,3 +1,4 @@
+import { emailDocument, emailAction, escapeHtml } from "../_shared/email.ts";
 /**
  * avisar-denunciante — diz a quem denunciou que há novidade, e mais nada.
  *
@@ -141,25 +142,14 @@ serve(async (req: Request): Promise<Response> => {
       ? `Update on your case ${destino.protocolo}`
       : `Atualização no seu processo ${destino.protocolo}`;
 
-    const html = `
-<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
-  <p style="font-size:15px;line-height:1.6;margin:0 0 16px">${linha}</p>
-  <p style="font-size:14px;line-height:1.6;color:#555;margin:0 0 24px">
-    ${en
-      ? `Open the channel of ${destino.empresa_nome} and look it up with your protocol number and the tracking code you received when you submitted it. We do not include either the code or any detail of the case in this email.`
-      : `Abra o canal de ${destino.empresa_nome} e consulte com o número de protocolo e o código de acompanhamento que recebeu ao submeter. Não incluímos aqui nem o código nem qualquer detalhe do caso.`}
-  </p>
-  <p style="margin:0 0 24px">
-    <a href="${url}" style="display:inline-block;background:#7552ff;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px">
-      ${en ? 'Open the channel' : 'Abrir o canal'}
-    </a>
-  </p>
-  <p style="font-size:12px;line-height:1.6;color:#888;margin:0">
-    ${en
-      ? `Protocol ${destino.protocolo}. If you did not submit anything, ignore this message.`
-      : `Protocolo ${destino.protocolo}. Se não submeteu nada, ignore esta mensagem.`}
-  </p>
-</div>`;
+    const html = emailDocument(en ? "Your case has an update" : "Há uma atualização no seu processo", `
+      <p>${escapeHtml(linha)}</p>
+      <p>${en
+        ? `Open the channel of ${escapeHtml(destino.empresa_nome)} using your protocol number and tracking code. This email does not include the tracking code or case details.`
+        : `Abra o canal de ${escapeHtml(destino.empresa_nome)} usando seu protocolo e código de acompanhamento. Este e-mail não inclui o código nem detalhes do caso.`}</p>
+      ${emailAction(en ? "Open the channel" : "Abrir o canal", url, en ? "en" : "pt")}
+      <p style="margin:20px 0 0;font-size:13px">${en ? "Protocol" : "Protocolo"}: ${escapeHtml(destino.protocolo)}. ${en ? "If you did not submit a report, ignore this message." : "Se não enviou um relato, ignore esta mensagem."}</p>
+    `, { locale: en ? "en" : "pt", eyebrow: en ? "Whistleblowing channel" : "Canal de denúncias", preheader: linha });
 
     const resend = new Resend(chaveResend);
     const { error: erroEmail } = await resend.emails.send({

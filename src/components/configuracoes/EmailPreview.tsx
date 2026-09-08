@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DOMPurify from 'dompurify';
+import { brandedEmailDocument, EMAIL_BRAND, escapeHtml, safeEmailUrl } from '../../../supabase/functions/_shared/email-brand';
 
 interface EmailPreviewProps {
   assunto: string;
@@ -8,61 +9,24 @@ interface EmailPreviewProps {
   imagemUrl?: string | null;
 }
 
-/**
- * Pré-visualização WYSIWYG do e-mail com header/footer Akuris padrão
- * idênticos ao BaseEmailTemplate usado nos disparos reais.
- */
+/** Uses the same brand, spacing and responsive shell as the outgoing system emails. */
 export function EmailPreview({ assunto, conteudoHtml, imagemUrl }: EmailPreviewProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const srcDoc = useMemo(() => {
-    const safeUrl = imagemUrl && /^https:\/\//i.test(imagemUrl) ? imagemUrl.replace(/["<>]/g, '') : null;
-    const safeImage = safeUrl
-      ? `<img src="${safeUrl}" alt="" style="display:block;width:100%;max-width:512px;height:auto;border-radius:8px;margin:0 0 24px" />`
-      : '';
+    const safeUrl = imagemUrl ? safeEmailUrl(imagemUrl) : '';
+    const safeImage = safeUrl ? `<img src="${escapeHtml(safeUrl)}" alt="" width="528" style="display:block;width:100%;max-width:528px;height:auto;border-radius:8px;margin:0 0 24px" />` : '';
+    const content = DOMPurify.sanitize(conteudoHtml, { USE_PROFILES: { html: true } }) || `<p>${escapeHtml(t('configGeral.emailPreview.placeholderContent'))}</p>`;
+    return brandedEmailDocument(
+      assunto || t('configGeral.emailPreview.defaultSubject'),
+      safeImage + content,
+      { locale: locale === 'en' ? 'en' : 'pt' },
+    ).split(EMAIL_BRAND.logoUrl).join('/akuris-logo-email-dark-v2.png');
+  }, [assunto, conteudoHtml, imagemUrl, t, locale]);
 
-    const title = (assunto || t('configGeral.emailPreview.defaultSubject')).replace(/[<>]/g, '');
-
-    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
-      body{margin:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 0}
-      .container{background:#ffffff;margin:0 auto;max-width:600px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0}
-      .header{background:#0a1628;padding:28px 40px;text-align:left}
-      .header img{display:block;margin:0;max-width:160px;height:auto}
-      .accent{height:2px;background:#7552ff}
-      .titleSection{padding:36px 44px 0}
-      h1{color:#0a1628;font-size:26px;font-weight:700;line-height:34px;margin:0}
-      .content{padding:24px 44px 8px;color:#2d3748;font-size:15px;line-height:26px}
-      .content h2{color:#0a1628;font-size:20px;margin:16px 0 8px}
-      .content h3{color:#0a1628;font-size:17px;margin:14px 0 6px}
-      .content p{margin:0 0 16px}
-      .content ul,.content ol{padding-left:20px;margin:8px 0 16px}
-      .content li{margin:0 0 6px}
-      .content a{color:#7552ff;text-decoration:underline}
-      .signature{padding:8px 44px 32px}
-      .signature p{margin:0 0 4px;color:#718096;font-size:14px}
-      .signature .name{color:#0a1628;font-weight:600}
-      .footer{background:#edf2f7;border-top:1px solid #e2e8f0;padding:20px 44px;text-align:center;color:#a0aec0;font-size:12px;line-height:20px}
-      .footer a{color:#7552ff;text-decoration:none}
-    </style></head><body>
-      <div class="container">
-        <div class="header"><img src="https://akuris.pt/akuris-logo-email.png" alt="Akuris" /></div>
-        <div class="accent"></div>
-        <div class="titleSection"><h1>${title}</h1></div>
-        <div class="content">${safeImage}${DOMPurify.sanitize(conteudoHtml, { USE_PROFILES: { html: true } }) || `<p style="color:#a0aec0">${t('configGeral.emailPreview.placeholderContent')}</p>`}</div>
-        <div class="signature"><p>${t('configGeral.emailPreview.signatureThanks')}</p><p class="name">${t('configGeral.emailPreview.signatureTeam')}</p></div>
-        <div class="footer">
-          <p>${t('configGeral.emailPreview.footerLine1')}</p>
-          <p>© ${new Date().getFullYear()} Akuris · ${t('configGeral.emailPreview.footerLine2')}</p>
-        </div>
-      </div>
-    </body></html>`;
-  }, [assunto, conteudoHtml, imagemUrl, t]);
-
-  return (
-    <iframe
-      title={t('configGeral.emailPreview.iframeTitle')}
-      srcDoc={srcDoc}
-      sandbox=""
-      className="w-full h-[640px] rounded-md border border-border bg-white"
-    />
-  );
+  return <iframe
+    title={t('configGeral.emailPreview.iframeTitle')}
+    srcDoc={srcDoc}
+    sandbox=""
+    className="w-full h-[640px] rounded-md border border-border bg-white"
+  />;
 }

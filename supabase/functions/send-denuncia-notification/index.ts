@@ -1,3 +1,4 @@
+import { operationalEmail } from "../_shared/operational-email.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { Resend } from "npm:resend@2.0.0";
@@ -149,62 +150,9 @@ const handler = async (req: Request): Promise<Response> => {
     };
     const companyName = denuncia.empresa?.nome || 'Akuris';
 
-    const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
-  <div style="background-color: #ffffff; border-radius: 12px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
-    <div style="background-color: ${severidadeCanonica(denuncia.gravidade) === 'critico' ? '#dc2626' : severidadeCanonica(denuncia.gravidade) === 'alto' ? '#f97316' : '#f59e0b'}; padding: 16px 32px; text-align: center;">
-      <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">🚨 Nova Denúncia - ${gravidadeMap[denuncia.gravidade] || denuncia.gravidade}</span>
-    </div>
-    <div style="text-align: center; padding: 24px 32px 16px;">
-      <!-- Logotipo da EMPRESA. A consulta acima ja traz empresa(nome, logo_url);
-           o template ignorava-o e punha a marca da Akuris fixa. Quem recebe
-           este aviso trabalha na empresa denunciada, e num produto revendido
-           mostrar a marca do fornecedor entrega ao cliente final quem lhe
-           fornece a ferramenta. Sem logotipo, cai no nome em texto. -->
-      ${denuncia.empresa?.logo_url
-        ? `<img src="${denuncia.empresa.logo_url}" alt="${denuncia.empresa?.nome ?? ''}" style="display:block;margin:0 auto;max-height:60px;max-width:200px;" />`
-        : `<div style="text-align:center;font-size:20px;font-weight:600;color:#1f2937;">${denuncia.empresa?.nome ?? 'Canal de Denúncias'}</div>`}
-    </div>
-    <div style="padding: 0 32px 32px;">
-      <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">Nova Denúncia Recebida</h1>
-      <div style="background-color: #f1f5f9; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-        <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
-          <p style="font-size: 12px; color: #64748b; margin: 0 0 4px; text-transform: uppercase;">Protocolo</p>
-          <p style="font-size: 18px; color: #0a1628; margin: 0; font-weight: 700; font-family: Monaco, Consolas, monospace;">${denuncia.protocolo}</p>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Título</p>
-          <p style="font-size: 15px; color: #0a1628; margin: 0; font-weight: 600;">${denuncia.titulo}</p>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-          <div><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Gravidade</p>
-            <span style="display: inline-block; padding: 4px 12px; background-color: ${severidadeCanonica(denuncia.gravidade) === 'critico' ? '#fee2e2' : severidadeCanonica(denuncia.gravidade) === 'alto' ? '#ffedd5' : '#fef3c7'}; color: ${severidadeCanonica(denuncia.gravidade) === 'critico' ? '#991b1b' : severidadeCanonica(denuncia.gravidade) === 'alto' ? '#9a3412' : '#92400e'}; border-radius: 4px; font-size: 12px; font-weight: 600;">${gravidadeMap[denuncia.gravidade] || denuncia.gravidade}</span></div>
-          <div><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Tipo</p><p style="font-size: 14px; color: #0a1628; margin: 0;">${denuncia.anonima ? 'Anônima' : 'Identificada'}</p></div>
-        </div>
-        ${denuncia.categoria ? `<div style="margin-bottom: 12px;"><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Categoria</p><p style="font-size: 14px; color: #0a1628; margin: 0;">${denuncia.categoria.nome}</p></div>` : ''}
-        <div><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Data/Hora</p><p style="font-size: 14px; color: #0a1628; margin: 0;">${new Date(denuncia.created_at).toLocaleString('pt-BR')}</p></div>
-      </div>
-      <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-        <p style="font-size: 12px; color: #64748b; margin: 0 0 8px; text-transform: uppercase;">Descrição</p>
-        <p style="font-size: 14px; color: #475569; margin: 0; white-space: pre-wrap;">${denuncia.descricao}</p>
-      </div>
-      <div style="background-color: #fffbeb; border-radius: 8px; padding: 16px; border-left: 4px solid #f59e0b; margin-bottom: 24px;">
-        <p style="font-size: 13px; color: #92400e; margin: 0;"><strong>Ação Necessária:</strong> Uma nova denúncia foi registrada e requer sua atenção.</p>
-      </div>
-      <div style="text-align: center;">
-        <a href="https://akuris.pt/denuncia" style="display: inline-block; background-color: #7552ff; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px;">Acessar Canal de Denúncias</a>
-      </div>
-    </div>
-    <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
-      <p style="font-size: 12px; color: #94a3b8; margin: 0;">Esta é uma mensagem automática do sistema Akuris.<br>Trate esta informação com confidencialidade.</p>
-      <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+    const emailHtml = operationalEmail("report", {
+      item: denuncia.titulo, code: denuncia.protocolo, description: denuncia.descricao, company: companyName, severity: gravidadeMap[denuncia.gravidade] || denuncia.gravidade, type: denuncia.anonima ? "Anônima" : "Identificada", category: denuncia.categoria?.nome, date: new Date(denuncia.created_at).toLocaleString("pt-BR"), tone: severidadeCanonica(denuncia.gravidade) === "critico" ? "danger" : "warning", url: "https://akuris.pt/denuncia"
+    });
 
     const emailPromises = Array.from(emailList).map(async (email) => {
       try {
