@@ -521,7 +521,7 @@ async function fetchAuditoriaInternaData(empresaId: string) {
   const a = auditorias || [];
   const auditoriaIds = a.map((x: any) => x.id);
   const { data: itens } = auditoriaIds.length > 0
-    ? await readAllPages((from, to) => supabase.from('auditoria_itens').select('*, auditorias!inner(empresa_id)').eq('auditorias.empresa_id', empresaId).order('id').range(from, to))
+    ? await readAllPages((from, to) => supabase.from('auditoria_itens').select('*, auditorias!inner(empresa_id)').eq('auditorias.empresa_id', empresaId).is('controle_excluido_em', null).order('id').range(from, to))
     : { data: [] };
   const i = itens || [];
   const concluidas = a.filter((x: any) => x.status === 'concluida').length;

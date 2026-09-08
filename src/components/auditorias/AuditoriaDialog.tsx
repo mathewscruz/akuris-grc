@@ -178,6 +178,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
       const { data: itens } = await supabase
         .from('auditoria_itens')
         .select('id, status')
+        .is('controle_excluido_em', null)
         .eq('auditoria_id', auditoria.id);
       const { data: achados } = await supabase
         .from('auditoria_achados')

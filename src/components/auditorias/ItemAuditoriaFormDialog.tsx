@@ -293,7 +293,9 @@ export function ItemAuditoriaFormDialog({
       onOpenChange(false);
     } catch (error: any) {
       logger.error("Erro ao salvar item de auditoria", { error: error?.message, module: 'auditorias' });
-      toast.error(error.message || t("govDialogs.itemAuditoriaFormDialog.toastSaveError"));
+      toast.error(error.message?.includes('AUDIT_ITEM_CONTROL_DELETED')
+        ? t('controlesAuditorias.iadDeletedSaveError')
+        : error.message || t("govDialogs.itemAuditoriaFormDialog.toastSaveError"));
     } finally {
       setIsSubmitting(false);
     }

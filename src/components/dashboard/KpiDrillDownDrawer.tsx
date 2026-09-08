@@ -1472,6 +1472,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           const { data, error } = await supabase
             .from('auditoria_itens')
             .select('id, titulo, codigo, status, auditoria_id, prazo')
+            .is('controle_excluido_em', null)
             .in('auditoria_id', ids)
             .neq('status', 'concluido')
             .order('prazo', { ascending: true, nullsFirst: false })

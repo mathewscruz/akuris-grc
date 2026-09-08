@@ -234,6 +234,13 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       queryClient.invalidateQueries({ queryKey: ['controles-stats'] });
       queryClient.invalidateQueries({ queryKey: ['controles-auditorias-vinculos'] });
       queryClient.invalidateQueries({ queryKey: ['auditoria-itens'] });
+      queryClient.invalidateQueries({ queryKey: ['auditorias-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['auditoria-itens-count'] });
+      queryClient.invalidateQueries({ queryKey: ['controles-vinculados'] });
+      queryClient.invalidateQueries({ queryKey: ['planos-acao-auditorias'] });
+      queryClient.invalidateQueries({ queryKey: ['drill-down', 'auditorias_itens'] });
+      queryClient.invalidateQueries({ queryKey: ['entity-options', 'auditoria_item'] });
+      queryClient.invalidateQueries({ queryKey: ['global-search'] });
       toast({
         title: t("governancaComp.controles.toastDeletedTitle"),
         description: t("governancaComp.controles.toastDeletedDesc"),

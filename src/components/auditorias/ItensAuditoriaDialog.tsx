@@ -1,5 +1,8 @@
 import { matchesSearch as matchesText } from '@/lib/search-utils';
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { auditItemSummary, isHistoricalAuditItem } from '@/lib/auditoria-itens';
+import { readAllPages } from '@/lib/read-all-pages';
+import { shortControleId } from '@/lib/controle-id';
 import { IconAdd, IconSearch, IconDownload, IconCalendar, IconFile, IconChevron, IconMessage, IconAttach, IconPerson, IconShield, IconLink } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +67,9 @@ export function ItensAuditoriaDialog({
   const [isDetalheOpen, setIsDetalheOpen] = useState(false);
   const [detalheItem, setDetalheItem] = useState<any>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => { setShowHistory(false); }, [open, auditoriaId]);
 
   const statusOptions = getStatusOptions(t);
 
@@ -74,26 +80,26 @@ export function ItensAuditoriaDialog({
     queryKey: ["auditoria-itens", auditoriaId],
     queryFn: async () => {
       // Buscar itens manuais
-      const { data: itensData, error: itensError } = await supabase
+      const { data: itensData, error: itensError } = await readAllPages((from, to) => supabase
         .from("auditoria_itens")
         .select(`
           *,
           responsavel:profiles!auditoria_itens_responsavel_id_fkey(user_id, nome, email)
         `)
         .eq("auditoria_id", auditoriaId)
-        .order("codigo");
+        .order("codigo").order('id').range(from, to));
 
       if (itensError) throw itensError;
 
       // Buscar controles vinculados via controles_auditorias
-      const { data: controlesData, error: controlesError } = await supabase
+      const { data: controlesData, error: controlesError } = await readAllPages((from, to) => supabase
         .from("controles_auditorias")
         .select(`
           controle_id,
           observacoes,
-          controle:controles(id, nome, descricao, status, criticidade, responsavel_id, tipo)
+          controle:controles(id, codigo, nome, descricao, status, criticidade, responsavel_id, tipo)
         `)
-        .eq("auditoria_id", auditoriaId);
+        .eq("auditoria_id", auditoriaId).order('id').range(from, to));
 
       if (controlesError) throw controlesError;
 
@@ -124,7 +130,9 @@ export function ItensAuditoriaDialog({
         ?.filter((cv: any) => cv.controle?.id && !comItemProprio.has(cv.controle.id))
         .map((cv: any) => ({
         id: cv.controle?.id,
-        codigo: `CTRL-${cv.controle?.id?.slice(0, 6).toUpperCase()}`,
+        codigo: shortControleId(cv.controle.id, cv.controle.codigo),
+        auditoria_id: auditoriaId,
+        controle_excluido_em: null,
         titulo: cv.controle?.nome,
         descricao: cv.controle?.descricao,
         // Estar no âmbito não é estar auditado: o controlo estar "ativo" nada diz
@@ -157,7 +165,7 @@ export function ItensAuditoriaDialog({
 
   // Buscar contagens de evidências e comentários para cada item
   const { data: contagens } = useQuery({
-    queryKey: ["auditoria-itens-contagens", auditoriaId],
+    queryKey: ["auditoria-itens-contagens", auditoriaId, itens?.map(i => i.id)],
     queryFn: async () => {
       if (!itens || itens.length === 0) return {};
 
@@ -190,7 +198,9 @@ export function ItensAuditoriaDialog({
     enabled: !!itens && itens.length > 0,
   });
 
+  const historicalCount = itens?.filter(isHistoricalAuditItem).length || 0;
   const filteredItens = itens?.filter((item) => {
+    if (isHistoricalAuditItem(item) !== showHistory) return false;
     const matchesSearch =
       matchesText(searchTerm, item.codigo, item.titulo);
     const matchesStatus = statusFilter === "todos" || item.status === statusFilter;
@@ -199,12 +209,7 @@ export function ItensAuditoriaDialog({
     return matchesSearch && matchesStatus && matchesResponsavel;
   });
 
-  const stats = {
-    total: itens?.length || 0,
-    pendente: itens?.filter((i) => i.status === "pendente").length || 0,
-    em_andamento: itens?.filter((i) => i.status === "em_andamento").length || 0,
-    concluido: itens?.filter((i) => i.status === "concluido").length || 0,
-  };
+  const stats = auditItemSummary(itens || []);
 
   const progressPercent = stats.total > 0 ? Math.round((stats.concluido / stats.total) * 100) : 0;
 
@@ -214,6 +219,7 @@ export function ItensAuditoriaDialog({
   };
 
   const handleEditItem = (item: any) => {
+    if (isHistoricalAuditItem(item)) return;
     setSelectedItem(item);
     setIsFormOpen(true);
   };
@@ -288,8 +294,19 @@ export function ItensAuditoriaDialog({
             </div>
           </div>
 
+          {(historicalCount > 0 || showHistory) && (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <p className="text-muted-foreground">
+                {t(showHistory ? 'controlesAuditorias.iadHistoryHelp' : 'controlesAuditorias.iadHistoryAvailable')}
+              </p>
+              <Button variant="ghost" size="sm" aria-pressed={showHistory} onClick={() => setShowHistory(value => !value)}>
+                {showHistory ? t('controlesAuditorias.iadOperational') : t('controlesAuditorias.iadHistory', { count: historicalCount })}
+              </Button>
+            </div>
+          )}
+
           {/* Filtros */}
-          <div className="flex gap-3 items-center">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1">
               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -325,14 +342,14 @@ export function ItensAuditoriaDialog({
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            {!showHistory && <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <IconDownload className="h-4 w-4 mr-2" />
               {t("controlesAuditorias.iadBtnImportarControles")}
-            </Button>
-            <Button onClick={handleAddItem}>
+            </Button>}
+            {!showHistory && <Button onClick={handleAddItem}>
               <IconAdd className="h-4 w-4 mr-2" />
               {t("controlesAuditorias.iadBtnAdicionarItem")}
-            </Button>
+            </Button>}
           </div>
 
           {/* Tabela */}
@@ -421,7 +438,9 @@ export function ItensAuditoriaDialog({
                         )}
                       </TableCell>
                       <TableCell>{getPrioridadeBadge(item.prioridade)}</TableCell>
-                      <TableCell>{getStatusBadge(item.status)}</TableCell>
+                      <TableCell>{isHistoricalAuditItem(item)
+                        ? <span className="text-xs text-muted-foreground">{t('controlesAuditorias.iadControlDeleted')}</span>
+                        : getStatusBadge(item.status)}</TableCell>
                       <TableCell className="text-center">
                         <IconChevron className="h-4 w-4 text-muted-foreground mx-auto" />
                       </TableCell>

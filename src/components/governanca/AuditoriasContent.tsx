@@ -1,4 +1,5 @@
 import { readAllPages, readAllPagesByIds } from "@/lib/read-all-pages";
+import { auditItemSummary } from '@/lib/auditoria-itens';
 import { useListState } from "@/hooks/useListState";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { orIlike } from '@/lib/busca-segura';
@@ -132,6 +133,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
           // `controle_vinculado_id` e o que permite deduplicar contra
           // `controles_auditorias`, que e espelhada por gatilho a partir daqui.
           .select('id, status, auditoria_id, controle_vinculado_id')
+          .is('controle_excluido_em', null)
           .in('auditoria_id', ids).order('id').range(from, to).abortSignal(signal), signal),
         readAllPagesByIds(auditoriaIds, (ids, from, to) => supabase
           .from('controles_auditorias')
@@ -163,10 +165,11 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
           (c: any) => c.controle?.id && !comItemProprio.has(c.controle.id),
         );
 
+        const summary = auditItemSummary(itens);
         counts[auditoria.id] = {
-          itens: itens.length + controlesSemItem.length,
+          itens: summary.total + controlesSemItem.length,
           // Só o trabalho de auditoria realmente concluído conta.
-          itensConcluidos: itens.filter(i => i.status === 'concluido').length,
+          itensConcluidos: summary.concluido,
         };
       }
       

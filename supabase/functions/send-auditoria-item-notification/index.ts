@@ -69,6 +69,7 @@ serve(async (req) => {
     const { data: itemSalvo } = await supabase
       .from('auditoria_itens')
       .select('id, auditoria_id, responsavel_id, codigo, titulo, prazo')
+      .is('controle_excluido_em', null)
       .eq('id', item_id)
       .maybeSingle();
     if (

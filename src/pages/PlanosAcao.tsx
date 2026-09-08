@@ -238,6 +238,7 @@ export default function PlanosAcao() {
       const { data, error } = await readAllPages((from, to) => supabase
         .from('auditoria_itens')
         .select('id, titulo, status, prioridade, prazo, responsavel_id, created_at, profiles:responsavel_id(nome), auditorias!inner(empresa_id)')
+        .is('controle_excluido_em', null)
         .eq('auditorias.empresa_id', empresaId)
         .eq('responsavel_id', user.id)
         .not('status', 'in', '("concluido","cancelado","nao_aplicavel")').order('id').range(from, to).abortSignal(signal), signal);

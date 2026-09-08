@@ -1183,6 +1183,8 @@ export type Database = {
       }
       auditoria_itens: {
         Row: {
+          controle_excluido_em: string | null
+          controle_excluido_id: string | null
           area_sistema_id: string | null
           auditoria_id: string
           codigo: string
@@ -1207,6 +1209,8 @@ export type Database = {
           area_sistema_id?: string | null
           auditoria_id: string
           codigo: string
+          controle_excluido_em?: string | null
+          controle_excluido_id?: string | null
           controle_gerado_automaticamente?: boolean
           controle_vinculado_id?: string | null
           created_at?: string
@@ -1228,6 +1232,8 @@ export type Database = {
           area_sistema_id?: string | null
           auditoria_id?: string
           codigo?: string
+          controle_excluido_em?: string | null
+          controle_excluido_id?: string | null
           controle_gerado_automaticamente?: boolean
           controle_vinculado_id?: string | null
           created_at?: string

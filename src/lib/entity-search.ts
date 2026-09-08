@@ -330,6 +330,9 @@ export async function searchEntityRows(key: EntityKey, empresaId: string | null 
   for (let offset = 0; ; offset += batchSize) {
     signal?.throwIfAborted();
     let query = supabase.from(def.table as any).select(def.select);
+    // Historical audit items remain resolvable by ID for existing references,
+    // but cannot be offered as new operational work by search/selectors.
+    if (key === 'auditoria_item') query = query.is('controle_excluido_em', null);
     if (def.empresaScoped && empresaId) query = query.eq('empresa_id', empresaId);
     for (const token of tokens) {
       // IDs derivados do UUID não são colunas de texto: percorremos os lotes,

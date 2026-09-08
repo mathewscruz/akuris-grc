@@ -34,6 +34,7 @@ import { formatPrioridade, formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { notificarVarios } from "@/lib/notificar";
 import { intlLocale } from '@/lib/date-utils';
+import { isHistoricalAuditItem } from '@/lib/auditoria-itens';
 
 export function ItemAuditoriaDetalheDialog({
   open,
@@ -348,16 +349,23 @@ export function ItemAuditoriaDetalheDialog({
               <StatusBadge {...resolvePrioridadeTone(item.prioridade)}>
                 {formatPrioridade(item.prioridade)}
               </StatusBadge>
-              <StatusBadge {...resolveItemAuditoriaStatusTone(item.status)}>
+              {isHistoricalAuditItem(item) ? (
+                <span className="text-sm text-muted-foreground">{t('controlesAuditorias.iadControlDeleted')}</span>
+              ) : <StatusBadge {...resolveItemAuditoriaStatusTone(item.status)}>
                 {formatStatus(item.status)}
-              </StatusBadge>
+              </StatusBadge>}
             </div>
-            <Button variant="outline" size="sm" onClick={onEdit}>
+            {!isHistoricalAuditItem(item) && <Button variant="outline" size="sm" onClick={onEdit}>
               <IconEdit className="h-4 w-4 mr-2" />
               {t("controlesAuditorias.iaddEditar")}
-            </Button>
+            </Button>}
           </div>
 
+          {isHistoricalAuditItem(item) && (
+            <p role="note" className="rounded-md border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              {t('controlesAuditorias.iadHistoryDetail', { date: new Date(item.controle_excluido_em).toLocaleString(intlLocale()) })}
+            </p>
+          )}
           {/* Info do item */}
           <div className="flex-shrink-0 bg-card rounded-lg p-4 space-y-2 border border-border">
             {item.descricao && (
