@@ -39,6 +39,17 @@ type UsuarioForm = z.infer<ReturnType<typeof makeUsuarioSchema>>;
  * Extrai a mensagem de negócio devolvida por uma edge function em vez de
  * mostrar o genérico "Edge Function returned a non-2xx status code".
  */
+const registrationErrorKeys: Record<string, string> = {
+  DUPLICATE_USER: 'admin.usuarios.toastUserExists',
+  USER_ACCOUNT_REVIEW_REQUIRED: 'admin.usuarios.toastAccountReview',
+  USER_LIMIT_REACHED: 'admin.usuarios.toastUserLimit',
+  INVALID_PERMISSION_PROFILE: 'admin.usuarios.erroPerfilOutraEmpresa',
+  INVALID_REGISTRATION: 'admin.usuarios.toastInvalidRegistration',
+  REGISTRATION_UNAVAILABLE: 'admin.usuarios.toastRegistrationUnavailable',
+  FORBIDDEN: 'admin.usuarios.toastPermissionDenied',
+  USER_NOT_FOUND: 'admin.usuarios.toastUserNotFound',
+};
+
 async function extrairMensagemEdge(error: any): Promise<string | null> {
   try {
     const resposta = error?.context as Response | undefined;
@@ -47,7 +58,7 @@ async function extrairMensagemEdge(error: any): Promise<string | null> {
       if (texto) {
         try {
           const json = JSON.parse(texto);
-          return json?.message || json?.error || texto;
+          return registrationErrorKeys[json?.error] ? json.error : json?.message || json?.error || texto;
         } catch {
           return texto;
         }
@@ -409,6 +420,10 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
         if (error) {
           const detalhe = await extrairMensagemEdge(error);
+          if (detalhe && registrationErrorKeys[detalhe]) {
+            toast.error(t(registrationErrorKeys[detalhe], { email: data.email }));
+            return;
+          }
           if (detalhe?.includes('DUPLICATE_USER') || detalhe?.includes('already been registered')) {
             toast.error(t('admin.usuarios.toastUserExists', { email: data.email }));
             return;
@@ -424,7 +439,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           toast.error((resposta as any).message || (resposta as any).error);
           return;
         }
-        toast.success(t('admin.usuarios.toastUserCreated'));
+        toast.success(t(resposta?.restored ? 'admin.usuarios.toastUserRestored' : 'admin.usuarios.toastUserCreated'));
+        if (resposta?.emailSent === false) toast.warning(t('admin.usuarios.toastInvitationNotSent'));
       }
 
       await fetchUsuarios();
@@ -481,7 +497,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     if (!usuarioToDelete) return;
     
     try {
-      const { error: deleteError } = await supabase.functions.invoke('delete-user-complete', {
+      const { data: result, error: deleteError } = await supabase.functions.invoke('delete-user-complete', {
         body: {
           user_id: usuarioToDelete.user_id,
           profile_id: usuarioToDelete.id
@@ -489,24 +505,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       });
 
       if (deleteError) {
-        // `.select()` para saber o que foi de facto apagado: um DELETE barrado
-        // pela RLS não devolve erro nenhum, devolve zero linhas. Sem isto, um
-        // admin a tentar remover outro admin — caso que a policy proíbe — via
-        // "Usuário removido do sistema" e acreditava que o desligamento estava
-        // feito, enquanto o acesso continuava ativo.
-        const { data: apagados, error: profileDeleteError } = await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', usuarioToDelete.id)
-          .select('id');
-
-        if (profileDeleteError) throw profileDeleteError;
-        if (!apagados || apagados.length === 0) {
-          throw new Error(t('admin.usuarios.toastDeleteBlocked'));
-        }
-        toast.success(t('admin.usuarios.toastUserRemoved'));
-      } else {
+        const detail = await extrairMensagemEdge(deleteError);
+        throw new Error(detail && registrationErrorKeys[detail] ? t(registrationErrorKeys[detail]) : t('admin.usuarios.toastErrorDelete'));
+      }
+      if (!result?.success) throw new Error(t('admin.usuarios.toastErrorDelete'));
+      if (result.details?.auth_deleted) {
         toast.success(t('admin.usuarios.toastUserDeletedFully'));
+      } else {
+        toast.warning(t('admin.usuarios.toastUserRemovalPartial'));
       }
       
       await fetchUsuarios();

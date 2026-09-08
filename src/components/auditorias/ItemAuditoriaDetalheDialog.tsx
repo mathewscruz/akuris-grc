@@ -17,7 +17,8 @@ import {
 import { toast } from "@/lib/toast";
 import { formatDateOnly } from "@/lib/date-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { openStorageFile } from "@/lib/storage";
+import { downloadStorageFile } from "@/lib/storage";
+import { evidenceObjectName, EVIDENCE_UPLOAD_OPTIONS } from "@/lib/evidence-files";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ItemAuditoriaDetalheDialogProps {
@@ -235,25 +236,21 @@ export function ItemAuditoriaDetalheDialog({
     setIsUploading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const fileName = `${item.id}/${Date.now()}_${file.name}`;
+      const fileName = `${item.id}/${evidenceObjectName(file.name)}`;
 
       const { error: uploadError } = await supabase.storage
         .from("auditoria-evidencias")
-        .upload(fileName, file);
+        .upload(fileName, file, EVIDENCE_UPLOAD_OPTIONS);
 
       if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("auditoria-evidencias")
-        .getPublicUrl(fileName);
 
       const { error: insertError } = await supabase.from("auditoria_itens_evidencias").insert({
         item_id: item.id,
         nome: file.name,
-        arquivo_url: urlData.publicUrl,
+        arquivo_url: fileName,
         arquivo_nome: file.name,
         arquivo_tamanho: file.size,
-        arquivo_tipo: file.type,
+        arquivo_tipo: file.type || 'application/octet-stream',
         uploaded_by: userData.user?.id,
       });
 
@@ -308,7 +305,7 @@ export function ItemAuditoriaDetalheDialog({
 
   const handleDownload = async (evidencia: any) => {
     if (!evidencia?.arquivo_url) return;
-    const ok = await openStorageFile("auditoria-evidencias", evidencia.arquivo_url);
+    const ok = await downloadStorageFile("auditoria-evidencias", evidencia.arquivo_url, evidencia.arquivo_nome);
     if (!ok) toast.error(t("controlesAuditorias.iaddDownloadError"));
   };
 
@@ -529,6 +526,7 @@ export function ItemAuditoriaDetalheDialog({
                     disabled={isUploading}
                   />
                 </label>
+                <p className="mt-2 text-xs text-muted-foreground">{t('controlesAuditorias.evidenceAnyFileHint')}</p>
               </div>
 
               {/* Lista de evidências */}

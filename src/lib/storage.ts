@@ -19,7 +19,8 @@ export function extractStoragePath(bucket: string, urlOrPath: string | null | un
   for (const m of markers) {
     const idx = raw.indexOf(m);
     if (idx >= 0) {
-      return raw.slice(idx + m.length).split('?')[0];
+      const encodedPath = raw.slice(idx + m.length).split('?')[0];
+      try { return decodeURIComponent(encodedPath); } catch { return encodedPath; }
     }
   }
   return null;
@@ -56,5 +57,20 @@ export async function openStorageFile(
   const url = await resolveStorageUrl(bucket, urlOrPath, expiresIn);
   if (!url) return false;
   window.open(url, '_blank', 'noopener,noreferrer');
+  return true;
+}
+
+/** Download arbitrary evidence without rendering HTML/SVG or other active content inline. */
+export async function downloadStorageFile(
+  bucket: string,
+  urlOrPath: string | null | undefined,
+  originalName?: string | null,
+): Promise<boolean> {
+  const path = extractStoragePath(bucket, urlOrPath);
+  if (!path) return false;
+  const download = originalName?.replace(/[\r\n/\\]/g, '_') || true;
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 300, { download });
+  if (error || !data?.signedUrl) return false;
+  window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   return true;
 }

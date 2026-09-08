@@ -1,384 +1,87 @@
-
-import { createClient } from 'npm:@supabase/supabase-js@2'
-import { requireUserContext, requireValidMfa, authErrorResponse } from '../_shared/auth.ts'
+import { requireUserContext, requireValidMfa, authErrorResponse, AuthError } from '../_shared/auth.ts'
+import { provisionUser, RegistrationError, type RegistrationInput } from '../_shared/provision-user.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
-interface CreateUserRequest {
-  nome: string
-  email: string
-  role: 'super_admin' | 'admin' | 'user' | 'readonly'
-  empresa_id?: string
-  permission_profile_id?: string
-}
-
-function generateRandomPassword(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
-  const bytes = new Uint8Array(24)
-  crypto.getRandomValues(bytes)
-  let result = ''
-  for (const byte of bytes) {
-    result += chars.charAt(byte % chars.length)
-  }
-  return result
-}
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+})
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', {
-      status: 405,
-      headers: corsHeaders
-    })
-  }
-
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+  if (req.method !== 'POST') return json({ error: 'METHOD_NOT_ALLOWED' }, 405)
   try {
-    // ✳️ Auth + MFA obrigatórios
     const ctx = await requireUserContext(req)
     await requireValidMfa(ctx)
-
-    console.log('Recebendo requisição para criar usuário')
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const user = { id: ctx.userId }
-    const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
-
-    const declaredLength = Number(req.headers.get('content-length') || 0)
-    if (declaredLength > 32 * 1024) throw new Error('Requisição muito grande')
-    const { nome, email: emailBruto, role, empresa_id, permission_profile_id }: CreateUserRequest = await req.json()
-
-    // O endereço é normalizado uma única vez, à entrada, e é esta forma que
-    // segue para auth.users, profiles, convites e auditoria. Gravar o e-mail
-    // tal como foi digitado deixava perfis com maiúsculas que a recuperação de
-    // senha — que procura em minúsculas — nunca encontrava.
-    const email = (emailBruto ?? '').trim().toLowerCase()
-    if (!email || email.length > 254 || nome.trim().length > 160) {
-      throw new Error('Nome ou e-mail inválido')
+    if (!['admin', 'super_admin'].includes(ctx.role || '')) throw new AuthError('FORBIDDEN', 403)
+    const raw = await req.text()
+    if (new TextEncoder().encode(raw).length > 32 * 1024) return json({ error: 'INVALID_REGISTRATION' }, 400)
+    let body: Record<string, unknown>
+    try { body = JSON.parse(raw) } catch { return json({ error: 'INVALID_REGISTRATION' }, 400) }
+    if (!body || typeof body !== 'object') return json({ error: 'INVALID_REGISTRATION' }, 400)
+    const nome = typeof body.nome === 'string' ? body.nome.trim() : ''
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const role = body.role as RegistrationInput['role']
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!nome || nome.length > 160 || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      || !['super_admin', 'admin', 'user', 'readonly'].includes(role)
+      || (body.empresa_id && (typeof body.empresa_id !== 'string' || !uuid.test(body.empresa_id)))
+      || (body.permission_profile_id && (typeof body.permission_profile_id !== 'string' || !uuid.test(body.permission_profile_id)))) {
+      return json({ error: 'INVALID_REGISTRATION' }, 400)
     }
-
-    // Validação de enum (item Onda 2 #13 antecipado)
-    const allowedRoles = ['super_admin', 'admin', 'user', 'readonly']
-    if (!allowedRoles.includes(role)) {
-      throw new Error('Role inválido')
+    const empresaId = ctx.role === 'super_admin' ? (body.empresa_id as string || null) : ctx.empresaId
+    if ((role !== 'super_admin' && !empresaId) || (role === 'super_admin' && ctx.role !== 'super_admin')) {
+      return json({ error: 'FORBIDDEN' }, 403)
     }
-
-    const isSuperAdmin = currentUserProfile.role === 'super_admin'
-    const isAdmin = currentUserProfile.role === 'admin'
-
-    if (!isSuperAdmin && !isAdmin) {
-      throw new Error('Usuário não tem permissão para criar outros usuários')
-    }
-
-    if (!isSuperAdmin && role === 'super_admin') {
-      throw new Error('Apenas super admins podem criar outros super admins')
-    }
-
-    let finalEmpresaId: string | null | undefined = empresa_id
-    if (!isSuperAdmin) {
-      finalEmpresaId = currentUserProfile.empresa_id
-    } else if (role !== 'super_admin' && !empresa_id) {
-      throw new Error('A empresa é obrigatória para usuários que não são super administradores')
-    } else if (role === 'super_admin' && !empresa_id) {
-      finalEmpresaId = null
-    }
-
-    // Valida que permission_profile_id pertence à mesma empresa (item Onda 2 #14)
-    if (permission_profile_id) {
-      const { data: profileExists } = await supabaseAdmin
-        .from('permission_profiles')
-        .select('id, empresa_id')
-        .eq('id', permission_profile_id)
-        .maybeSingle()
-      if (!profileExists) {
-        throw new Error('Perfil de permissão não encontrado')
-      }
-      if (profileExists.empresa_id && profileExists.empresa_id !== finalEmpresaId) {
-        throw new Error('Perfil de permissão não pertence à empresa de destino')
-      }
-    }
-
-
-    // Enforcement de limite de usuários do plano da empresa
-    if (finalEmpresaId) {
-      const { data: empresaPlan } = await supabaseAdmin
-        .from('empresas')
-        .select('plano:planos(limite_usuarios, nome)')
-        .eq('id', finalEmpresaId)
-        .maybeSingle()
-
-      const limite = (empresaPlan?.plano as any)?.limite_usuarios as number | null | undefined
-      const planName = (empresaPlan?.plano as any)?.nome || 'atual'
-
-      if (limite && limite > 0) {
-        const { count: currentCount } = await supabaseAdmin
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('empresa_id', finalEmpresaId)
-
-        if ((currentCount || 0) >= limite) {
-          return new Response(JSON.stringify({
-            error: 'USER_LIMIT_REACHED',
-            message: `Limite de ${limite} usuários do plano ${planName} atingido. Faça upgrade do plano para criar mais usuários.`,
-          }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          })
-        }
-      }
-    }
-
-    console.log(`Criando usuário: ${email}`)
-
-    // Verificar se já existe
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('user_id, id, nome, created_at')
-      .eq('email', email)
-      .maybeSingle()
-
-    if (existingProfile) {
-      return new Response(JSON.stringify({
-        error: 'DUPLICATE_USER',
-        message: 'Não foi possível criar o usuário com este e-mail.',
-      }), {
-        status: 409,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
-
-    // Gerar senha aleatória interna (NÃO será enviada ao usuário)
-    const internalPassword = generateRandomPassword()
-
-    let authData: any
-    let existingAuthUser = null
-    try {
-      const allUsers = await supabaseAdmin.auth.admin.listUsers()
-      existingAuthUser = allUsers.data?.users?.find(u => u.email === email) || null
-    } catch (e) {
-      console.warn('Erro ao buscar usuário no Auth:', e)
-    }
-
-    if (existingAuthUser) {
-      // Nunca assumir uma identidade que já existe no Auth: trocar a senha e
-      // anexá-la à empresa do admin seria sequestro de uma conta órfã.
-      return new Response(JSON.stringify({
-        error: 'DUPLICATE_USER',
-        message: 'Não foi possível criar o usuário com este e-mail.',
-      }), {
-        status: 409,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    } else {
-      const { data: newAuthData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        password: internalPassword,
-        email_confirm: true,
-        user_metadata: {
-          nome: nome,
-          admin_created: 'true'
-        }
-      })
-
-      if (createUserError || !newAuthData.user) {
-        console.error('Erro ao criar usuário no Auth:', createUserError)
-        throw new Error(createUserError?.message || 'Erro ao criar usuário')
-      }
-
-      authData = newAuthData
-    }
-
-    console.log('Processando usuário no Auth:', authData.user.id)
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    const profileInsertData: any = {
-      user_id: authData.user.id,
-      nome: nome,
-      email: email,
-      role: role,
-      empresa_id: finalEmpresaId,
-    }
-    if (permission_profile_id) {
-      profileInsertData.permission_profile_id = permission_profile_id
-    }
-
-    const { error: profileInsertError } = await supabaseAdmin
-      .from('profiles')
-      .insert(profileInsertData)
-
-    if (profileInsertError) {
-      console.error('Erro ao criar perfil:', profileInsertError)
-      if (!existingAuthUser) {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-      }
-      throw new Error('Erro ao criar perfil do usuário')
-    }
-
-    console.log('Perfil criado com sucesso')
-
-    // Aplicar permissões
-    try {
-      if (permission_profile_id) {
-        const { error: rpcErr } = await supabaseAdmin.rpc('apply_permission_profile', {
-          _user_id: authData.user.id,
-          _profile_id: permission_profile_id,
-        })
-        if (rpcErr) console.error('Erro ao aplicar perfil de permissão:', rpcErr)
-      } else {
-        const { error: rpcErr } = await supabaseAdmin.rpc('apply_default_permissions_for_user', {
-          user_id_param: authData.user.id,
-        })
-        if (rpcErr) console.error('Erro ao aplicar permissões padrão:', rpcErr)
-      }
-    } catch (permError) {
-      console.error('Exceção ao aplicar permissões:', permError)
-    }
-
-    // Inserir/atualizar role em user_roles (fonte de verdade RBAC)
-    try {
-      // app_role enum aceita: user, admin, super_admin (não tem readonly)
-      const appRole: 'super_admin' | 'admin' | 'user' =
-        role === 'super_admin' ? 'super_admin'
-        : role === 'admin' ? 'admin'
-        : 'user'
-      const { error: roleErr } = await supabaseAdmin
-        .from('user_roles')
-        .upsert({ user_id: authData.user.id, role: appRole }, { onConflict: 'user_id,role' })
-      if (roleErr) console.error('Erro ao inserir user_roles:', roleErr)
-    } catch (e) {
-      console.error('Exceção ao inserir user_roles:', e)
-    }
-
-    // Gerar link de invite para o usuário definir sua senha
-    const siteUrl = (Deno.env.get('APP_URL') || Deno.env.get('SITE_URL') || 'https://akuris.pt').replace(/\/$/, '')
-    let setupPasswordUrl = `${siteUrl}/auth`
-    
-    try {
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'invite',
-        email: email,
-        options: {
-          redirectTo: `${siteUrl}/definir-senha`,
-        }
-      })
-
-      if (linkError || !linkData) {
-        console.error('Erro ao gerar invite link:', linkError)
-        // Fallback: usar recovery link
-        const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'recovery',
-          email: email,
-          options: {
-            redirectTo: `${siteUrl}/definir-senha`,
-          }
-        })
-        
-        if (!recoveryError && recoveryData) {
-          setupPasswordUrl = `${siteUrl}/definir-senha?token_hash=${recoveryData.properties.hashed_token}&type=recovery`
-        }
-      } else {
-        setupPasswordUrl = `${siteUrl}/definir-senha?token_hash=${linkData.properties.hashed_token}&type=invite`
-      }
-    } catch (linkGenError) {
-      console.error('Exceção ao gerar link:', linkGenError)
-    }
-
-    // Buscar dados da empresa para o e-mail
-    let companyName = 'Akuris'
-    let companyLogoUrl = ''
-    
-    try {
-      const { data: empresaData } = await supabaseAdmin
-        .from('empresas')
-        .select('nome, logo_url')
-        .eq('id', finalEmpresaId)
-        .single()
-      
-      if (empresaData) {
-        companyName = empresaData.nome || companyName
-        companyLogoUrl = empresaData.logo_url || companyLogoUrl
-      }
-    } catch (empresaError) {
-      console.log('Não foi possível buscar dados da empresa:', empresaError)
-    }
-
-    // Enviar e-mail de boas-vindas com link
-    let emailSent = false
-    try {
-      console.log('Enviando e-mail de boas-vindas com link para definir senha...')
-      const { error: emailError } = await supabaseAdmin.functions.invoke('send-welcome-email', {
-        headers: {
-          Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        },
-        body: {
-          userName: nome,
-          userEmail: email,
-          setupPasswordUrl,
-          companyName,
-          companyLogoUrl
-        }
-      })
-
-      if (emailError) {
-        console.error('Erro ao enviar e-mail:', emailError)
-      } else {
-        console.log('E-mail de boas-vindas enviado com sucesso')
-        emailSent = true
-      }
-    } catch (emailError) {
-      console.error('Exceção ao enviar e-mail:', emailError)
-    }
-
-    // Registar apenas o instante. O URL contém um token de recuperação e não
-    // pode ser persistido nem devolvido ao administrador.
-    try {
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          invitation_sent_at: new Date().toISOString(),
-        })
-        .eq('user_id', authData.user.id)
-    } catch (e) {
-      console.error('Falha ao gravar metadata do convite:', e)
-    }
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      user: {
-        id: authData.user.id,
-        email: email,
-        nome: nome
-      },
-      emailSent,
-      message: emailSent
-        ? 'Usuário criado com sucesso! E-mail com link para definir senha enviado.'
-        : 'Usuário criado com sucesso. O convite pode ser reenviado pela gestão de usuários.'
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    const client = ctx.supabase
+    const user = await provisionUser(client, {
+      actorId: ctx.userId, sessionId: ctx.sessionId, nome, email, role, empresaId,
+      permissionProfileId: body.permission_profile_id as string || null,
     })
 
-  } catch (error: any) {
-    console.error('Erro na função create-user:', error)
-    return new Response(
-      JSON.stringify({
-        error: (error instanceof Error ? error.message : String(error)),
-        details: 'Falha ao criar usuário'
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    // Links are sent only to the owner of the address, never returned to admins.
+    // Existing passwords and MFA factors remain unchanged until the owner acts.
+    const siteUrl = (Deno.env.get('APP_URL') || Deno.env.get('SITE_URL') || 'https://akuris.pt').replace(/\/$/, '')
+    let setupPasswordUrl: string | null = null
+    try {
+      let linkType: 'invite' | 'recovery' = user.restored ? 'recovery' : 'invite'
+      let link = await client.auth.admin.generateLink({ type: linkType, email, options: { redirectTo: `${siteUrl}/definir-senha` } })
+      if (link.error && linkType === 'invite') {
+        linkType = 'recovery'
+        link = await client.auth.admin.generateLink({ type: linkType, email, options: { redirectTo: `${siteUrl}/definir-senha` } })
       }
-    )
+      if (!link.error && link.data?.properties?.hashed_token) {
+        setupPasswordUrl = `${siteUrl}/definir-senha?token_hash=${encodeURIComponent(link.data.properties.hashed_token)}&type=${linkType}`
+      }
+    } catch { console.error('Could not generate registration email link') }
+
+    let emailSent = false
+    if (setupPasswordUrl) {
+      try {
+        const company = empresaId ? await client.from('empresas').select('nome').eq('id', empresaId).maybeSingle() : null
+        const { data, error } = await client.functions.invoke('send-welcome-email', {
+          headers: { Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+          body: { userName: nome, userEmail: email, setupPasswordUrl, companyName: company?.data?.nome || 'Akuris' },
+        })
+        emailSent = !error && data?.success !== false
+        if (emailSent) {
+          let update = client.from('profiles').update({ invitation_sent_at: new Date().toISOString() }).eq('user_id', user.id)
+          update = empresaId ? update.eq('empresa_id', empresaId) : update.is('empresa_id', null)
+          const { error: updateError } = await update
+          if (updateError) console.error('Could not save invitation timestamp', updateError.code)
+        }
+      } catch { console.error('Could not send registration email') }
+    }
+    return json({ success: true, user: { id: user.id, email, nome }, restored: user.restored, emailSent })
+  } catch (error) {
+    if (error instanceof RegistrationError) {
+      const status = error.code === 'REGISTRATION_UNAVAILABLE' ? 503
+        : ['FORBIDDEN', 'USER_LIMIT_REACHED'].includes(error.code) ? 403
+        : error.code.startsWith('INVALID_') ? 400 : 409
+      return json({ error: error.code }, status)
+    }
+    return authErrorResponse(error, corsHeaders)
   }
 })

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { evidenceObjectName, EVIDENCE_UPLOAD_OPTIONS } from "@/lib/evidence-files";
 import { IconClose, IconChecklist, IconAttach } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
@@ -135,8 +136,8 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
     if (!controle) return;
     setUploading(true);
     try {
-      const path = `${controle.id}/testes/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from('controles-evidencias').upload(path, file);
+      const path = `${controle.id}/testes/${evidenceObjectName(file.name)}`;
+      const { error } = await supabase.storage.from('controles-evidencias').upload(path, file, EVIDENCE_UPLOAD_OPTIONS);
       if (error) throw error;
       update({ evidencia_url: path, evidencia_nome: file.name });
     } catch (error: any) {

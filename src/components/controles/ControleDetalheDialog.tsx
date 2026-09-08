@@ -21,7 +21,8 @@ import { conformidadeRequisito } from "@/lib/metrics/requisitos";
 
 import { useControleRequisitos } from "@/hooks/useControleRequisitos";
 import { VincularRequisitoControleDialog } from "@/components/controles/VincularRequisitoControleDialog";
-import { openStorageFile } from "@/lib/storage";
+import { downloadStorageFile } from "@/lib/storage";
+import { evidenceObjectName, EVIDENCE_UPLOAD_OPTIONS } from "@/lib/evidence-files";
 import { logger } from "@/lib/logger";
 
 /** Bucket da biblioteca partilhada de evidências. */
@@ -315,26 +316,10 @@ export function ControleDetalheDialog({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo de arquivo
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
-      toast.error(t('controlesAuditorias.cddInvalidFileType'));
-      return;
-    }
-
     // Validar tamanho (máx 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error(t('controlesAuditorias.cddFileTooLarge'));
+      event.target.value = "";
       return;
     }
 
@@ -357,11 +342,11 @@ export function ControleDetalheDialog({
 
       if (!evidenceId) {
         // Guarda o caminho dentro do bucket, não uma URL "public": o bucket é
-        // privado e `openStorageFile` reassina a partir do caminho.
-        const fileName = `${empresaId}/${hash.slice(0, 16)}-${Date.now()}_${file.name}`;
+        // privado e o download recebe uma URL assinada temporária.
+        const fileName = `${empresaId}/${evidenceObjectName(file.name)}`;
         const { error: uploadError } = await supabase.storage
           .from(EVIDENCE_BUCKET)
-          .upload(fileName, file);
+          .upload(fileName, file, EVIDENCE_UPLOAD_OPTIONS);
         if (uploadError) throw uploadError;
 
         const { data: nova, error: insertError } = await supabase
@@ -372,7 +357,7 @@ export function ControleDetalheDialog({
             arquivo_url: fileName,
             arquivo_nome: file.name,
             arquivo_tamanho: file.size,
-            arquivo_tipo: file.type,
+            arquivo_tipo: file.type || 'application/octet-stream',
             arquivo_hash: hash,
             bucket: EVIDENCE_BUCKET,
             created_by: userData.user?.id,
@@ -390,6 +375,7 @@ export function ControleDetalheDialog({
           .from("evidence_library_links")
           .select("id")
           .eq("evidence_id", evidenceId)
+          .eq("empresa_id", empresaId)
           .eq("modulo", "controles")
           .eq("registro_id", controle.id)
           .maybeSingle();
@@ -446,7 +432,7 @@ export function ControleDetalheDialog({
   const handleDownload = async (evidencia: any) => {
     if (!evidencia?.arquivo_url) return;
     // Entradas migradas do repositório antigo mantêm o bucket de origem.
-    const ok = await openStorageFile(evidencia.bucket || EVIDENCE_BUCKET, evidencia.arquivo_url);
+    const ok = await downloadStorageFile(evidencia.bucket || EVIDENCE_BUCKET, evidencia.arquivo_url, evidencia.arquivo_nome);
     if (!ok) toast.error(t('controlesAuditorias.cddDownloadError'));
   };
 
@@ -757,7 +743,6 @@ export function ControleDetalheDialog({
                     type="file"
                     className="hidden"
                     onChange={handleUploadEvidencia}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                     disabled={isUploading}
                   />
                   {isUploading ? (
@@ -769,6 +754,7 @@ export function ControleDetalheDialog({
                     {isUploading ? t('controlesAuditorias.cddUploadingLabel') : t('controlesAuditorias.cddUploadLabel')}
                   </span>
                 </label>
+                <p className="mt-2 text-xs text-muted-foreground">{t('controlesAuditorias.cddAnyFileHint')}</p>
               </div>
 
               {/* Lista de evidências */}

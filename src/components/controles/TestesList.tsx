@@ -14,7 +14,7 @@ import { formatDateOnly } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resultadoTesteLabel, resultadoTesteTone } from "@/lib/controle-testes";
-import { openStorageFile } from "@/lib/storage";
+import { downloadStorageFile } from "@/lib/storage";
 import { useAuth } from "@/components/AuthProvider";
 import { useQuery as useProfilesQuery } from "@tanstack/react-query";
 
@@ -270,7 +270,7 @@ export default function TestesList({ controleId, controleNome, canEdit = true }:
                       variant="link"
                       size="sm"
                       className="h-auto p-0 text-primary"
-                      onClick={() => openStorageFile('controles-evidencias', teste.evidencia_url)}
+                      onClick={() => downloadStorageFile('controles-evidencias', teste.evidencia_url, teste.evidencia_nome)}
                     >
                       {teste.evidencia_nome}
                     </Button>

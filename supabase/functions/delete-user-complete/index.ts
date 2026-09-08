@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { requireUserContext, requireValidMfa } from '../_shared/auth.ts'
+import { requireUserContext, requireValidMfa, AuthError, authErrorResponse } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,43 +49,30 @@ Deno.serve(async (req) => {
 
     const { data: targetProfile, error: targetError } = await supabaseAdmin
       .from('profiles')
-      .select('role, empresa_id, nome, email')
+      .select('id, role, empresa_id, nome, email')
       .eq('user_id', user_id)
       .single()
 
-    if (targetError) {
-      console.log('Profile não encontrado, apenas removendo do Auth se necessário')
+    if (targetError || !targetProfile || targetProfile.id !== profile_id) {
+      // Missing tenant provenance is not permission to delete an Auth identity.
+      throw new AuthError('USER_NOT_FOUND', 404)
     }
 
     const isSuperAdmin = currentUserProfile.role === 'super_admin'
     const isAdmin = currentUserProfile.role === 'admin'
 
     if (!isSuperAdmin && !isAdmin) {
-      throw new Error('Usuário não tem permissão para excluir outros usuários')
+      throw new AuthError('FORBIDDEN', 403)
     }
 
     if (!isSuperAdmin && targetProfile) {
       if (targetProfile.empresa_id !== currentUserProfile.empresa_id) {
-        throw new Error('Você só pode excluir usuários da sua empresa')
+        throw new AuthError('FORBIDDEN', 403)
       }
       if (['admin', 'super_admin'].includes(targetProfile.role)) {
-        throw new Error('Você não pode excluir outros administradores')
+        throw new AuthError('FORBIDDEN', 403)
       }
     }
-
-    // 🧹 Cleanup completo de RBAC/MFA/dados relacionados (item Onda 2 #12)
-    try {
-      await Promise.all([
-        supabaseAdmin.from('user_roles').delete().eq('user_id', user_id),
-        supabaseAdmin.from('user_module_permissions').delete().eq('user_id', user_id),
-        supabaseAdmin.from('mfa_sessions').delete().eq('user_id', user_id),
-        supabaseAdmin.from('mfa_codes').delete().eq('user_id', user_id),
-        supabaseAdmin.from('temporary_passwords').delete().eq('user_id', user_id),
-      ])
-    } catch (cleanupErr) {
-      console.warn('Falha parcial em cleanup RBAC/MFA:', cleanupErr)
-    }
-
 
     let deletedProfile = false
     let deletedAuth = false
@@ -93,18 +80,35 @@ Deno.serve(async (req) => {
     // 1. Tentar excluir o profile primeiro
     if (targetProfile) {
       console.log('Excluindo profile...')
-      const { error: profileDeleteError } = await supabaseAdmin
+      let deletion = supabaseAdmin
         .from('profiles')
         .delete()
         .eq('user_id', user_id)
+        .eq('id', profile_id)
+        .eq('role', targetProfile.role)
+      deletion = targetProfile.empresa_id
+        ? deletion.eq('empresa_id', targetProfile.empresa_id)
+        : deletion.is('empresa_id', null)
+      const { data: removed, error: profileDeleteError } = await deletion.select('id')
 
-      if (profileDeleteError) {
+      if (profileDeleteError || removed?.length !== 1) {
         console.error('Erro ao excluir profile:', profileDeleteError)
         throw new Error('Erro ao excluir perfil do usuário')
       }
       deletedProfile = true
       console.log('Profile excluído com sucesso')
     }
+
+    // Only clean permissions once profile removal has succeeded. If a foreign
+    // key blocks removal, the still-active user's permissions remain intact.
+    const cleanup = await Promise.all([
+      supabaseAdmin.from('user_roles').delete().eq('user_id', user_id),
+      supabaseAdmin.from('user_module_permissions').delete().eq('user_id', user_id),
+      supabaseAdmin.from('mfa_sessions').delete().eq('user_id', user_id),
+      supabaseAdmin.from('mfa_codes').delete().eq('user_id', user_id),
+      supabaseAdmin.from('temporary_passwords').delete().eq('user_id', user_id),
+    ])
+    if (cleanup.some(result => result.error)) console.warn('Partial permission/session cleanup')
 
     // 2. Tentar excluir do Auth
     console.log('Excluindo usuário do Auth...')
@@ -146,6 +150,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error: any) {
+    if (error instanceof AuthError) return authErrorResponse(error, corsHeaders)
     console.error('Erro na função delete-user-complete:', error)
     return new Response(
       JSON.stringify({
