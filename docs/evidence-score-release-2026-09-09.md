@@ -30,4 +30,11 @@ Resultados completos em `calculation-and-regression-audit-2026-09-09.md`: 1.019 
 
 ## Interface e encerramento
 
-Backend publicado e homologado. A publicação da interface, a conferência do domínio e a limpeza exclusiva dos dois arquivos/resultados de teste serão registradas no encerramento desta entrega. Em caso de retorno, usar a versão anterior da interface e das funções; preservar tabelas aditivas e registros reais já criados, sem apagar histórico de clientes.
+- Interface publicada pelo Lovable, operação `c5c22bfc-e5bb-4b68-9685-e5a2a90544e7`, fonte `66f3656e539077a7714ab8977c394f0ffe2d3447`. O painel confirmou “Seu site foi atualizado” no domínio `https://akuris.pt`. O domínio serviu `/assets/index-5EgTi9MU.js` e a sessão autenticada exibiu a nova faixa de aderência, cobertura aplicável e a seção de revisão/reaproveitamento.
+- O CI do GitHub dessa fonte concluiu com sucesso (execução `34366255224`).
+- Os dois objetos sintéticos foram removidos pela API de Storage após conferência SHA-256. Os dois trabalhos de teste foram removidos; os dois créditos foram estornados sem apagar os respectivos lançamentos nem restaurar um contador antigo sobre consumos concorrentes. Consulta posterior confirmou zero arquivos/trabalhos de teste e dois lançamentos estornados. Arquivos originais de teste permanecem apenas no diretório temporário local ignorado pelo Git.
+- Nenhuma avaliação foi salva durante a homologação; o requisito original permaneceu parcial e sem anexos de teste. Não foram modificadas sessões MFA, senhas ou contas.
+- A verificação pós-publicação encontrou uma resposta HTTP incorreta no cruzamento de evidências: acesso sem sessão era bloqueado, mas respondia 500 em vez de 401. Corrigido o tratamento de erros de autenticação e republicada a função; quatro testes HTTP no destino passaram, incluindo JWT inválido. Os demais endpoints autenticados conferidos recusaram acesso anônimo com 401.
+- O endpoint de novas integrações permanece em 503/`integrations_coming_soon`, e a tarefa de coleta segue inativa.
+
+Em caso de retorno, usar a versão anterior da interface e das funções; preservar tabelas aditivas e registros reais já criados, sem apagar histórico de clientes. O ajuste pontual de resposta de autenticação e este registro de encerramento são sincronizados em commit complementar, sem alteração adicional da interface.
