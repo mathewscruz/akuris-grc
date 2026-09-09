@@ -61,7 +61,7 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { slaFromRevisao, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure } from '@/components/riscos/risk-utils';
+import { slaFromRevisao, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialImpact } from '@/components/riscos/risk-utils';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTratamentoRequerido } from '@/components/riscos/risk-status';
 import { apetiteScoreDaConfig, apetiteLabelDaConfig } from '@/components/riscos/matriz-config';
@@ -526,8 +526,8 @@ export function Riscos() {
     }
 
     if (sortField === 'exposicao') {
-      aValue = financialExposure(a.impacto_financeiro, a.probabilidade_residual ?? a.probabilidade_inicial) ?? -1;
-      bValue = financialExposure(b.impacto_financeiro, b.probabilidade_residual ?? b.probabilidade_inicial) ?? -1;
+      aValue = financialImpact(a.impacto_financeiro) ?? -1;
+      bValue = financialImpact(b.impacto_financeiro) ?? -1;
     }
 
     if (aValue === null || aValue === undefined) aValue = '';

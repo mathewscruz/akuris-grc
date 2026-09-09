@@ -108,6 +108,6 @@ Deno.test("piso operacional AUDIT_THRESHOLD=80 filtra publicação de docs abaix
   // ≤ 79% via `resolveResultadoGeral` (que classifica ≥ 80 como "conforme").
   assertEquals(AUDIT_THRESHOLD, 80);
   assertEquals(resolveResultadoGeral(79), "parcial");
-  assertEquals(resolveResultadoGeral(80), "conforme");
+  assertEquals(resolveResultadoGeral(80), "parcial");
   assertEquals(resolveResultadoGeral(100), "conforme");
 });

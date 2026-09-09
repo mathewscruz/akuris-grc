@@ -34,7 +34,7 @@ export const useGapAnalysisStats = () => {
 
         const { data: soa, error: soaError } = await readAllPages((from, to) => supabase
           .from('gap_analysis_soa')
-          .select('requirement_id, aplicavel')
+          .select('framework_id, requirement_id, aplicavel')
           .eq('empresa_id', empresaId!).order('id').range(from, to).abortSignal(signal), signal);
         if (soaError) throw soaError;
         const foraDoEscopo = new Set(
@@ -85,28 +85,30 @@ export const useGapAnalysisStats = () => {
         });
         const fwWithEvals = new Set<string>();
         filteredEvaluations.forEach((e: any) => {
-          if (e.conformity_status) fwWithEvals.add(e.framework_id);
+          if (['conforme','parcial','nao_conforme','nao_aplicavel'].includes(e.conformity_status)) fwWithEvals.add(e.framework_id);
         });
+        soa.filter(s => s.aplicavel === false && frameworkIds.has(s.framework_id)).forEach(s => fwWithEvals.add(s.framework_id));
         const scores: number[] = [];
+        let inProgress = 0;
         fwWithEvals.forEach((fid) => {
           const reqs = reqsByFw.get(fid) || [];
           if (reqs.length === 0) return;
-          scores.push(
-            calcularScoreFramework(
+          const result = calcularScoreFramework(
               reqs.map((r) => ({
                 id: r.id,
                 peso: r.peso,
                 conformityStatus: statusPorRequisito.get(r.id) ?? 'nao_avaliado',
                 aplicavel: !foraDoEscopo.has(r.id),
               })),
-            ).score,
-          );
+            );
+          if (result.aplicaveis > 0) scores.push(result.score);
+          if (result.naoAvaliado > 0) inProgress++;
         });
         const averageCompliance =
           scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
         const pendingItems = filteredEvaluations.filter(e =>
-          e.evidence_status === 'pendente'
+          e.evidence_status === 'pendente' && !foraDoEscopo.has(e.requirement_id) && e.conformity_status !== 'nao_aplicavel'
         ).length;
 
         const frameworksWithEvaluations = new Set<string>();
@@ -119,12 +121,13 @@ export const useGapAnalysisStats = () => {
         return {
           // Os frameworks QUE A EMPRESA avalia, não o catálogo global: o radar
           // dizia "Frameworks: 24" ao lado de um cartão a dizer "2 em andamento".
-          totalFrameworks: frameworksWithEvaluations.size,
-          assessmentsInProgress: frameworksWithEvaluations.size,
+          totalFrameworks: fwWithEvals.size,
+          assessmentsInProgress: inProgress,
           averageCompliance: Math.round(averageCompliance),
           pendingItems: pendingItems || 0
         };
       } catch (error) {
+        if (signal.aborted) throw error;
         logger.error('Gap Analysis Stats Error', { error: error instanceof Error ? error.message : String(error) });
         throw error;
       }

@@ -87,7 +87,7 @@ export function ActiveFrameworkRow({
               {nome}
             </div>
             <div className="text-xs text-muted-foreground tabular-nums">
-              {versao} · {t('gapAnalysis.v2.activeFrameworkRow.requirementsCount', { count: totalRequirements })}
+              {versao} · {t('calculationMethod.applicableCount', { count: totalRequirements })}
             </div>
           </div>
         </div>
@@ -95,12 +95,12 @@ export function ActiveFrameworkRow({
         {/* Score + maturidade */}
         <div className="flex items-baseline gap-3">
           <span className={`text-5xl font-semibold tabular-nums tracking-tight ${scoreTone} leading-none`}>
-            {averageScore}
+            {totalRequirements > 0 ? averageScore : '—'}
           </span>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground tabular-nums">/ 100</span>
             <span className="text-xs text-muted-foreground mt-1">
-              {t('gapAnalysis.v2.activeFrameworkRow.level', { id: maturity.id, label: maturity.label })}
+              {totalRequirements > 0 ? `${t('calculationMethod.adherenceBand')} · ${maturity.label}` : t('calculationMethod.noApplicable')}
             </span>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function ActiveFrameworkRow({
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{t('gapAnalysis.v2.activeFrameworkRow.distribution')}</span>
             <span className="tabular-nums">
-              {evaluatedRequirements}/{totalRequirements} · {coverage}%
+              {totalRequirements > 0 ? `${evaluatedRequirements}/${totalRequirements} · ${coverage}%` : '—'}
             </span>
           </div>
           <StackBar segments={segments} height={8} />

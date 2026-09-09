@@ -27,7 +27,7 @@ import {
   shortRiskId,
   slaFromRevisao,
   getSlaLabels,
-  financialExposure,
+  financialImpact,
   type Severity,
 } from '@/components/riscos/risk-utils';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
@@ -155,10 +155,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
   const sevCanonica = severidadeRisco(risco);
   const sevAtual = sevCanonica === 'indefinido' ? 'baixo' : sevCanonica;
   const scoreAtual = residualScore || inicialScore;
-  const exposicao = financialExposure(
-    risco.impacto_financeiro,
-    risco.probabilidade_residual ?? risco.probabilidade_inicial,
-  );
+  const exposicao = financialImpact(risco.impacto_financeiro);
   const reduziu = residualScore > 0 && inicialScore > 0 && residualScore < inicialScore;
 
   return (
@@ -312,10 +309,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
               {/* Exposição financeira + evolução do risco */}
               {(() => {
-                const exp = financialExposure(
-                  risco.impacto_financeiro,
-                  risco.probabilidade_residual ?? risco.probabilidade_inicial,
-                );
+                const exp = financialImpact(risco.impacto_financeiro);
                 const evo = [...(detail?.historico || [])]
                   .reverse()
                   .map((h) => h.score ?? 0)
@@ -330,7 +324,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                           {formatMoedaEmpresa(exp)}
                         </div>
                         <div className="text-micro text-muted-foreground mt-1">
-                          impacto {formatMoedaEmpresa(risco.impacto_financeiro ?? null, true)} × probabilidade
+                          {t('sweepRiscos.riscos.wizard.exposicaoDesc')}
                         </div>
                       </div>
                     )}

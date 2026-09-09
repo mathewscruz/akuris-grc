@@ -89,6 +89,7 @@ export function GrcHealthBreakdown() {
               </div>
             </div>
             <p className="text-xs leading-5 text-muted-foreground">{t('executive.operationalHint')}</p>
+            <p className="text-xs leading-5 text-muted-foreground">{t('calculationMethod.assets')}</p>
           </div>
           <div className="min-w-0 border-t border-border/60 p-5 md:border-l md:border-t-0">
             <p className="executive-label">{t('executive.overview')}</p>

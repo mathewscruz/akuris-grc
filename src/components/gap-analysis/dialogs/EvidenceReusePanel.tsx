@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { useEvidenceLibrary, type EvidenceLibraryItem } from '@/hooks/useEvidenceLibrary';
+import { useEvidenceLibrary, estadoDaValidade, type EvidenceLibraryItem } from '@/hooks/useEvidenceLibrary';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from '@/lib/toast';
 import { akurisToast } from '@/lib/akuris-toast';
@@ -34,10 +34,7 @@ interface SuggestionRow {
 }
 
 function scoreBadge(score: number | null | undefined, t: (key: string) => string) {
-  if (score == null) return null;
-  if (score >= 0.8) return <StatusBadge tone="success">{t('gapAnalysis.evidenceReuse.highAdherence')} · {Math.round(score * 100)}%</StatusBadge>;
-  if (score >= 0.6) return <StatusBadge tone="warning">{t('gapAnalysis.evidenceReuse.possible')} · {Math.round(score * 100)}%</StatusBadge>;
-  return <StatusBadge tone="neutral">{Math.round(score * 100)}%</StatusBadge>;
+  return score == null ? null : <span className="text-xs text-muted-foreground">{t('evidenceIntelligence.pending')}</span>;
 }
 
 export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, onLinked }: Props) {
@@ -46,6 +43,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
   const lib = useEvidenceLibrary(empresaId);
   const [suggestions, setSuggestions] = useState<SuggestionRow[]>([]);
   const [loadingSug, setLoadingSug] = useState(false);
+  const [suggestionError, setSuggestionError] = useState(false);
   const [search, setSearch] = useState('');
 
   const reload = async () => {
@@ -53,7 +51,11 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
     setLoadingSug(true);
     try {
       const data = await lib.fetchSuggestionsForRequirement(requirementId);
+      setSuggestionError(false);
       setSuggestions((data || []) as SuggestionRow[]);
+    } catch {
+      setSuggestions([]);
+      setSuggestionError(true);
     } finally {
       setLoadingSug(false);
     }
@@ -114,13 +116,18 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
               {t('gapAnalysis.evidenceReuse.recommendedTab')}{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
             </TabsTrigger>
             <TabsTrigger value="biblioteca">
-              {t('gapAnalysis.evidenceReuse.libraryTab')} · {lib.items.length}
+              {t('gapAnalysis.evidenceReuse.libraryTab')} · {lib.loadError ? '—' : lib.items.length}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="sugestoes">
             {loadingSug ? (
               <div className="py-6 flex justify-center"><AkurisPulse size={32} /></div>
+            ) : suggestionError ? (
+              <div role="alert" className="py-4 text-sm">
+                <p>{t('evidenceIntelligence.readError')}</p>
+                <Button variant="outline" size="sm" onClick={reload}>{t('common.retry')}</Button>
+              </div>
             ) : suggestions.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center text-xs text-muted-foreground">
                 {t('gapAnalysis.evidenceReuse.noSuggestions')}
@@ -137,13 +144,13 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                             <span className="text-sm font-medium truncate">{s.evidence?.nome || t('sweepRiscos.gap.fallbacks.evidencia')}</span>
                           </div>
                           {s.ia_justificativa && (
-                            <p className="mt-1 text-micro text-muted-foreground line-clamp-2">{s.ia_justificativa}</p>
+                            <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{s.ia_justificativa}</p>
                           )}
                         </div>
                         {scoreBadge(s.ia_score, t)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="default" onClick={() => handleAcceptSuggestion(s.id)} className="gap-1">
+                        <Button size="sm" variant="default" disabled={!!s.evidence && estadoDaValidade(s.evidence.valido_ate).estado==='vencida'} onClick={() => handleAcceptSuggestion(s.id)} className="gap-1">
                           <IconSuccess className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.evidenceReuse.link')}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => handleDismiss(s.id)} className="gap-1 text-muted-foreground">
@@ -169,6 +176,8 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
             </div>
             {lib.loading ? (
               <div className="py-6 flex justify-center"><AkurisPulse size={32} /></div>
+            ) : lib.loadError ? (
+              <p role="alert" className="py-4 text-sm">{t('evidenceIntelligence.readError')}</p>
             ) : filteredLibrary.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center text-xs text-muted-foreground">
                 {lib.items.length === 0
@@ -201,7 +210,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-1" onClick={() => handleManualLink(ev)}>
+                            <Button size="sm" variant="outline" className="gap-1" disabled={estadoDaValidade(ev.valido_ate).estado==='vencida'} onClick={() => handleManualLink(ev)}>
                               <IconLink className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.evidenceReuse.link')}
                             </Button>
                           </TooltipTrigger>

@@ -139,28 +139,22 @@ export function computeAnalyzedScore(
 }
 
 /**
- * Aplica o fallback determinístico sobre o score que a IA reportou. A IA vence
- * quando entrega um valor coerente (dentro de 25 pontos do cálculo). Caso
- * contrário, o determinístico prevalece — evita o bug de "vários conformes com
- * 0%" e o caso oposto (IA inflando score).
+ * A IA recomenda os estados, mas não escolhe a aritmética do relatório.
+ * Uma tolerância de 25 pontos permitia dois scores para os mesmos estados.
  */
 export function reconcileReportedScore(
-  reportedScore: unknown,
+  _reportedScore: unknown,
   deterministic: number,
-  tolerance = 25,
+  _tolerance = 25,
 ): { score: number; source: 'ia' | 'deterministic' } {
-  const reported = Number(reportedScore);
-  const reportedValid = Number.isFinite(reported) && reported > 0 && reported <= 100;
-  if (!reportedValid) return { score: deterministic, source: 'deterministic' };
-  if (Math.abs(deterministic - reported) > tolerance) {
-    return { score: deterministic, source: 'deterministic' };
-  }
-  return { score: Math.round(reported), source: 'ia' };
+  return { score: Number.isFinite(deterministic) ? Math.max(0, Math.min(100, Math.round(deterministic))) : 0, source: 'deterministic' };
 }
 
-/** Reconcilia `resultado_geral` com o percentual final para não haver contradição no relatório. */
-export function resolveResultadoGeral(pct: number): ResultadoGeral {
-  if (pct >= 80) return 'conforme';
+/** The generator's 80-point quality gate is not a compliance verdict.
+ * Counts prevent rounding 99.8 to 100 from hiding a known remaining gap. */
+export function resolveResultadoGeral(pct: number, counts?: AnalyzedScoreResult['contagem']): ResultadoGeral {
+  const complete = !counts || (counts.total > counts.nao_aplicaveis && counts.conformes === counts.total - counts.nao_aplicaveis && counts.silently_missing === 0);
+  if (pct >= 100 && complete) return 'conforme';
   if (pct >= 40) return 'parcial';
   return 'nao_conforme';
 }

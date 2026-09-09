@@ -1,4 +1,6 @@
 import { matchesSearch } from '@/lib/search-utils';
+import { EvidenceImpact } from './EvidenceImpact';
+import { EvidenceProcessingHistory } from './EvidenceProcessingHistory';
 import { useRef, useState } from 'react';
 import { IconSearch, IconExternal, IconSuccess, IconFile, IconChevron, IconBook, IconUpload } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
@@ -109,6 +111,7 @@ export function EvidenceLibraryHub() {
 
   return (
     <div className="space-y-4">
+      <EvidenceProcessingHistory />
       <Card className="border-border/60 bg-card">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -121,7 +124,7 @@ export function EvidenceLibraryHub() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground" style={lib.loadError || lib.loading ? { display: 'none' } : undefined}>
               <span><strong className="text-foreground">{lib.stats.total}</strong> {t('cardsKpi.sweep.gap.evidencias')}</span>
               <span><strong className="text-foreground">{lib.stats.com_links}</strong> {t('cardsKpi.sweep.gap.emUso')}</span>
               {lib.stats.com_sugestoes > 0 && (
@@ -184,6 +187,11 @@ export function EvidenceLibraryHub() {
 
           {lib.loading ? (
             <div className="py-10 flex justify-center"><AkurisPulse /></div>
+          ) : lib.loadError ? (
+            <div role="alert" className="py-6 space-y-3 text-sm">
+              <p>{t('evidenceIntelligence.readError')}</p>
+              <Button variant="outline" onClick={() => lib.fetchAll()}>{t('evidenceIntelligence.refresh')}</Button>
+            </div>
           ) : filtered.length === 0 ? (
             <EmptyState
               title={lib.items.length === 0 ? t('sweepRiscos.gap.evidenceHub.semEvidencias') : t('sweepRiscos.gap.evidenceHub.nenhumResultado')}
@@ -227,6 +235,7 @@ export function EvidenceLibraryHub() {
                       )}
                     </div>
                     <Popover>
+                      <Button size="sm" variant="ghost" onClick={() => { setOpenItem(ev); setMatchResult(null); }}>{t('evidenceIntelligence.evidenceImpact')}</Button>
                       <PopoverTrigger asChild>
                         <Button size="sm" variant="ghost" className="gap-1 shrink-0" aria-label={t('sweepRiscos.gap.evidenceHub.definirValidade')}>
                           <IconCalendarClock className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -302,13 +311,14 @@ export function EvidenceLibraryHub() {
         size="md"
         hideFooter
       >
+          {openItem && <EvidenceImpact evidenceId={openItem.id} />}
           {running === openItem?.id ? (
             <div className="py-10 flex flex-col items-center gap-3">
               <AkurisPulse />
               <p className="text-xs text-muted-foreground">{t('residuos.evidencias.iaComparando')}</p>
             </div>
           ) : !matchResult ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">{t('residuos.evidencias.aguardandoAnalise')}</p>
+            <p className="text-xs text-muted-foreground py-4">{t('evidenceIntelligence.human')}</p>
           ) : matchResult.suggestions.length === 0 ? (
             <EmptyState
               title={t('residuos.evidencias.nenhumCruzamento')}
@@ -329,14 +339,10 @@ export function EvidenceLibraryHub() {
                         </div>
                         <p className="text-sm font-medium mt-0.5">{s.titulo}</p>
                         {s.justificativa && (
-                          <p className="text-micro text-muted-foreground mt-1 line-clamp-2">{s.justificativa}</p>
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{s.justificativa}</p>
                         )}
                       </div>
-                      <StatusBadge
-                        tone={s.score >= 0.8 ? 'success' : s.score >= 0.6 ? 'warning' : 'neutral'}
-                      >
-                        {Math.round(s.score * 100)}%
-                      </StatusBadge>
+                      <span className="text-xs text-muted-foreground">{t('evidenceIntelligence.pending')}</span>
                     </div>
                   </div>
                 ))}

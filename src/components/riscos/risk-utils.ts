@@ -98,26 +98,16 @@ export function shortRiskId(uuid?: string | null, codigo?: string | null): strin
 }
 
 /**
- * Exposição financeira estimada = impacto financeiro × probabilidade da
- * ocorrência, com a probabilidade lida como fracção da escala.
- *
- * Antes existia uma tabela fixa `{1: 0.1 … 5: 0.9}`: numa escala de seis ou
- * sete níveis — que o formulário de matriz sempre permitiu criar — o factor
- * saía `undefined` e a exposição de todos esses riscos era `NaN`.
+ * Impacto financeiro informado, sem inferir frequência ou probabilidade.
+ * Níveis ordinais de uma matriz não são probabilidades calibradas. Multiplicar
+ * um valor por (nível - 0,5)/máximo fabricava uma perda esperada em moeda.
  */
-export function financialExposure(
+export function financialImpact(
   impactoFinanceiro?: number | string | null,
-  probabilidade?: string | number | null,
-  escalaMax = 5,
 ): number | null {
+  if (typeof impactoFinanceiro === 'string' && !impactoFinanceiro.trim()) return null;
   const valor = typeof impactoFinanceiro === 'string' ? Number(impactoFinanceiro) : impactoFinanceiro;
-  if (valor === null || valor === undefined || !Number.isFinite(valor) || valor <= 0) return null;
-  const p = toScaleNumber(probabilidade);
-  if (p === null) return valor;
-  const max = Math.max(escalaMax, p);
-  // Fracção linear com margem: o menor nível não vale 0 nem o maior vale 1.
-  const fator = (p - 0.5) / max;
-  return valor * fator;
+  return valor == null || !Number.isFinite(valor) || valor < 0 ? null : valor;
 }
 
 /**

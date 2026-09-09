@@ -21,7 +21,7 @@ export function fetchFrameworkRequirements(frameworkId: string): Promise<Framewo
       .from('gap_analysis_requirements')
       .select('*')
       .eq('framework_id', frameworkId)
-      .order('ordem', { ascending: true }),
+      .order('ordem', { ascending: true }).order('id'),
   )
     .then(({ data, error }) => {
       if (error) throw error;

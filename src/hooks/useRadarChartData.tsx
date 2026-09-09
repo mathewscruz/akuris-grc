@@ -129,40 +129,10 @@ export const useRadarChartData = () => {
         )
       : 0;
 
-    /**
-     * Ativos: 80 pontos ("Excelente") numa carteira de 3 ativos todos de
-     * criticidade ALTA, porque só `critico` penalizava — e os 20 pontos do
-     * valor de negócio evaporavam em silêncio quando ninguém o classificou.
-     *
-     * Agora `alto` pesa metade de `critico`, e quando não há um único ativo com
-     * valor informado os 20 pontos são redistribuídos pelos dois primeiros
-     * termos em vez de virarem zero: um dado em falta não é uma nota baixa.
-     */
+    // Importance is not insecurity. Measure recorded classification coverage;
+    // a critical asset must not lower the score just for being identified.
     const scoreAtivos = ativosData.total > 0
-      ? (() => {
-          const exposicao = (ativosData.criticos + ativosData.altos * 0.5) / ativosData.total;
-          /*
-            O terceiro termo mede COBERTURA DA CLASSIFICAÇÃO, não quantos
-            ativos são de alto valor.
-
-            Lia `altoValorNegocio > 0`, e por isso não distinguia "ninguém
-            classificou" de "está tudo classificado como valor baixo": as duas
-            situações dão zero, e as duas perdiam os mesmos 20 pontos. Uma
-            empresa que classificou a carteira inteira com rigor era tratada
-            como uma que nunca abriu o campo.
-
-            A redistribuição fica: um dado em falta continua a não ser uma nota
-            baixa — o que muda é passar a saber quando ele não está em falta.
-          */
-          const temValor = ativosData.classificados > 0;
-          const pesoEstado = temValor ? 50 : 62.5;
-          const pesoExposicao = temValor ? 30 : 37.5;
-          return (
-            (ativosData.ativos / ativosData.total) * pesoEstado +
-            Math.max(0, 1 - exposicao) * pesoExposicao +
-            (temValor ? (ativosData.classificados / ativosData.total) * 20 : 0)
-          );
-        })()
+      ? (ativosData.classificados / ativosData.total) * 100
       : 0;
 
     /**

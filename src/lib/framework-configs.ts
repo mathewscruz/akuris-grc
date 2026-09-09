@@ -14,6 +14,7 @@
  * divergência. E o produto passa a oferecer a mesma leitura seja qual for o
  * framework escolhido.
  */
+import { tGlobal } from '@/lib/i18n-global';
 export type ScoreType = 'percentage';
 export type ConformityStatus = 'conforme' | 'parcial' | 'nao_conforme' | 'nao_aplicavel' | 'nao_avaliado';
 
@@ -58,11 +59,11 @@ export interface FrameworkConfig {
 
 // === Shared score label presets ===
 const PERCENTAGE_SCORE_LABELS = {
-  excellent: { label: 'Conforme', min: 80, max: 100, color: 'text-success' },
-  good: { label: 'Parcialmente Conforme', min: 60, max: 79, color: 'text-info' },
-  regular: { label: 'Em Implementação', min: 40, max: 59, color: 'text-warning' },
-  insufficient: { label: 'Não Conforme', min: 20, max: 39, color: 'text-warning' },
-  critical: { label: 'Crítico', min: 0, max: 19, color: 'text-destructive' },
+  excellent: { label: 'Aderência elevada', min: 80, max: 100, color: 'text-success' },
+  good: { label: 'Aderência intermediária', min: 60, max: 79, color: 'text-info' },
+  regular: { label: 'Aderência em desenvolvimento', min: 40, max: 59, color: 'text-warning' },
+  insufficient: { label: 'Aderência baixa', min: 20, max: 39, color: 'text-warning' },
+  critical: { label: 'Aderência inicial', min: 0, max: 19, color: 'text-destructive' },
 };
 
 const PERCENTAGE_STATUS_SCORES: Record<ConformityStatus, number> = {
@@ -398,20 +399,17 @@ export interface MaturityLevel {
 }
 
 const MATURITY_LEVELS: MaturityLevel[] = [
-  { level: 1, name: 'Inicial', description: 'Processos ad-hoc, sem controles formais', color: 'text-destructive', bgColor: 'bg-destructive/15 dark:bg-destructive/30', icon: '🔴' },
-  { level: 2, name: 'Gerenciado', description: 'Controles básicos implementados, mas reativos', color: 'text-warning', bgColor: 'bg-warning/15 dark:bg-warning/30', icon: '🟠' },
-  { level: 3, name: 'Definido', description: 'Processos documentados e padronizados', color: 'text-warning', bgColor: 'bg-warning/15 dark:bg-warning/30', icon: '🟡' },
-  { level: 4, name: 'Otimizado', description: 'Processos medidos e controlados proativamente', color: 'text-info', bgColor: 'bg-info/15 dark:bg-info/30', icon: '🔵' },
-  { level: 5, name: 'Excelência', description: 'Melhoria contínua com inovação e benchmark', color: 'text-success', bgColor: 'bg-success/15 dark:bg-success/30', icon: '🟢' },
+  { level: 1, name: 'initial', description: '0–19%', color: 'text-destructive', bgColor: 'bg-destructive/15 dark:bg-destructive/30', icon: '🔴' },
+  { level: 2, name: 'low', description: '20–39%', color: 'text-warning', bgColor: 'bg-warning/15 dark:bg-warning/30', icon: '🟠' },
+  { level: 3, name: 'developing', description: '40–59%', color: 'text-warning', bgColor: 'bg-warning/15 dark:bg-warning/30', icon: '🟡' },
+  { level: 4, name: 'intermediate', description: '60–79%', color: 'text-info', bgColor: 'bg-info/15 dark:bg-info/30', icon: '🔵' },
+  { level: 5, name: 'high', description: '80–100%', color: 'text-success', bgColor: 'bg-success/15 dark:bg-success/30', icon: '🟢' },
 ];
 
 export function getMaturityLevel(score: number, config: FrameworkConfig): MaturityLevel {
   const normalizedScore = config.scoreType === 'percentage' ? score : (score / 5.0) * 100;
-  if (normalizedScore >= 80) return MATURITY_LEVELS[4];
-  if (normalizedScore >= 60) return MATURITY_LEVELS[3];
-  if (normalizedScore >= 40) return MATURITY_LEVELS[2];
-  if (normalizedScore >= 20) return MATURITY_LEVELS[1];
-  return MATURITY_LEVELS[0];
+  const band = MATURITY_LEVELS[normalizedScore >= 80 ? 4 : normalizedScore >= 60 ? 3 : normalizedScore >= 40 ? 2 : normalizedScore >= 20 ? 1 : 0];
+  return { ...band, name: tGlobal(`calculationMethod.${band.name}`), description: `${tGlobal('calculationMethod.adherenceBand')}: ${band.description}` };
 }
 
 export function getScoreLabel(score: number, config: FrameworkConfig): string {

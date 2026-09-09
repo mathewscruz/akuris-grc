@@ -255,14 +255,14 @@ export function FrameworkHeader({
             <div className="min-w-0">
               <p className="executive-label">{t('gapAnalysis.v2.conformityCard.title')}</p>
               <p className="mt-1.5 text-sm font-medium leading-relaxed">
-                {avaliados > 0 ? t('gapAnalysis.v2.conformityCard.level', { id: maturidade.id, label: maturidade.label }) : t('executive.notAssessed')}
+                {aplicaveis === 0 ? t('calculationMethod.noApplicable') : avaliados > 0 ? `${t('calculationMethod.adherenceBand')} · ${maturidade.label}` : t('executive.notAssessed')}
               </p>
             </div>
           </div>
           <div>
             <div className="mb-2 flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">{t('executive.coverage')}</span>
-              <span className="font-semibold tabular-nums">{cobertura}%</span>
+              <span className="font-semibold tabular-nums">{aplicaveis > 0 ? `${cobertura}%` : '—'}</span>
             </div>
             <ExecutiveBar value={aplicaveis > 0 ? cobertura : null} label={t('executive.coverage')} />
             <p className="mt-2 text-xs text-muted-foreground">{t('gapV2.header.avaliadosDeAplicaveis', { avaliados, aplicaveis })}</p>

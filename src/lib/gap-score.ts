@@ -65,15 +65,23 @@ export interface ResultadoScore {
 export const estaNoEscopo = (r: RequisitoParaScore): boolean =>
   r.aplicavel !== false && r.conformityStatus !== 'nao_aplicavel';
 
+/** Legacy invalid weights cannot create negative or non-finite percentages. */
+export const pesoParaScore = (peso?: number | null): number =>
+  typeof peso === 'number' && Number.isFinite(peso) && peso > 0 ? peso : 1;
+
+const requisitosUnicos = (requisitos: RequisitoParaScore[]) =>
+  [...new Map(requisitos.map(r => [r.id, r])).values()];
+
 export function calcularScoreFramework(requisitos: RequisitoParaScore[]): ResultadoScore {
-  const noEscopo = requisitos.filter(estaNoEscopo);
+  const unicos = requisitosUnicos(requisitos);
+  const noEscopo = unicos.filter(estaNoEscopo);
 
   const contar = (status: string) =>
     noEscopo.filter((r) => r.conformityStatus === status).length;
 
-  const pesoTotal = noEscopo.reduce((s, r) => s + (Number(r.peso) || 1), 0);
+  const pesoTotal = noEscopo.reduce((s, r) => s + pesoParaScore(r.peso), 0);
   const pontos = noEscopo.reduce((s, r) => {
-    const peso = Number(r.peso) || 1;
+    const peso = pesoParaScore(r.peso);
     return s + (PONTOS_POR_STATUS[r.conformityStatus ?? ''] ?? 0) * peso;
   }, 0);
 
@@ -84,7 +92,7 @@ export function calcularScoreFramework(requisitos: RequisitoParaScore[]): Result
   return {
     score: pesoTotal > 0 ? Math.round(pontos / pesoTotal) : 0,
     aplicaveis: noEscopo.length,
-    naoAplicaveis: requisitos.length - noEscopo.length,
+    naoAplicaveis: unicos.length - noEscopo.length,
     avaliados: conforme + parcial + naoConforme,
     conforme,
     parcial,
@@ -105,12 +113,13 @@ export function ganhoPotencial(
   requisitos: RequisitoParaScore[],
   alvos: RequisitoParaScore[],
 ): number {
-  const noEscopo = requisitos.filter(estaNoEscopo);
-  const pesoTotal = noEscopo.reduce((s, r) => s + (Number(r.peso) || 1), 0);
+  const noEscopo = requisitosUnicos(requisitos).filter(estaNoEscopo);
+  const pesoTotal = noEscopo.reduce((s, r) => s + pesoParaScore(r.peso), 0);
   if (pesoTotal === 0) return 0;
 
-  const ganho = alvos.filter(estaNoEscopo).reduce((s, r) => {
-    const peso = Number(r.peso) || 1;
+  const ids = new Set(alvos.map(r => r.id));
+  const ganho = noEscopo.filter(r => ids.has(r.id)).reduce((s, r) => {
+    const peso = pesoParaScore(r.peso);
     const atual = PONTOS_POR_STATUS[r.conformityStatus ?? ''] ?? 0;
     return s + (100 - atual) * peso;
   }, 0);

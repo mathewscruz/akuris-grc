@@ -16,6 +16,7 @@ vi.mock('@/hooks/useOrientacaoRequisito', () => ({ useOrientacaoRequisito: () =>
 vi.mock('@/contexts/DocGenContext', () => ({ useDocGen: () => ({ openDocGen: vi.fn() }) }));
 vi.mock('@/components/gap-analysis/DocumentosDoRequisito', () => ({ DocumentosDoRequisito: () => <div>Documentos vinculados</div> }));
 vi.mock('@/components/gap-analysis/dialogs/EvidenceReusePanel', () => ({ EvidenceReusePanel: () => <div>Biblioteca de evidências</div> }));
+vi.mock('@/components/gap-analysis/RequirementReviewPanel', () => ({ RequirementReviewPanel: () => <div>Revisão e reaproveitamento</div> }));
 vi.mock('@/components/gap-analysis/AuditTrailTimeline', () => ({ AuditTrailTimeline: () => <div>Histórico preservado</div> }));
 vi.mock('@/components/planos-acao/PlanoAcaoDialog', () => ({ PlanoAcaoDialog: () => null }));
 vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));

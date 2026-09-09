@@ -14,6 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
+      evidence_analysis_jobs: {
+        Row: {
+          id: string
+          empresa_id: string
+          requested_by: string
+          requirement_id: string
+          cache_key: string
+          source_hash: string
+          reader_version: string
+          status: string
+          attempt: number
+          attempts_in_window: number
+          attempt_window_started_at: string
+          lease_until: string
+          checkpoint: Json | null
+          result: Json | null
+          error_code: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          empresa_id: string
+          requested_by: string
+          requirement_id: string
+          cache_key: string
+          source_hash: string
+          reader_version: string
+          status: string
+          attempt?: number
+          attempts_in_window?: number
+          attempt_window_started_at?: string
+          lease_until?: string
+          checkpoint?: Json | null
+          result?: Json | null
+          error_code?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          empresa_id?: string
+          requested_by?: string
+          requirement_id?: string
+          cache_key?: string
+          source_hash?: string
+          reader_version?: string
+          status?: string
+          attempt?: number
+          attempts_in_window?: number
+          attempt_window_started_at?: string
+          lease_until?: string
+          checkpoint?: Json | null
+          result?: Json | null
+          error_code?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "evidence_analysis_jobs_empresa_id_fkey"; columns: ["empresa_id"]; isOneToOne: false; referencedRelation: "empresas"; referencedColumns: ["id"] },
+          { foreignKeyName: "evidence_analysis_jobs_requirement_id_fkey"; columns: ["requirement_id"]; isOneToOne: false; referencedRelation: "gap_analysis_requirements"; referencedColumns: ["id"] }
+        ]
+      }
+      compliance_review_events: {
+        Row: {
+          id: string
+          empresa_id: string
+          evaluation_id: string
+          kind: string
+          reason: string
+          actor_id: string
+          request_id: string | null
+          valid_until: string | null
+          snapshot: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          empresa_id: string
+          evaluation_id: string
+          kind: string
+          reason: string
+          actor_id: string
+          request_id?: string | null
+          valid_until?: string | null
+          snapshot?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          empresa_id?: string
+          evaluation_id?: string
+          kind?: string
+          reason?: string
+          actor_id?: string
+          request_id?: string | null
+          valid_until?: string | null
+          snapshot?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "compliance_review_events_empresa_id_fkey"; columns: ["empresa_id"]; isOneToOne: false; referencedRelation: "empresas"; referencedColumns: ["id"] },
+          { foreignKeyName: "compliance_review_events_evaluation_id_fkey"; columns: ["evaluation_id"]; isOneToOne: false; referencedRelation: "gap_analysis_evaluations"; referencedColumns: ["id"] },
+          { foreignKeyName: "compliance_review_events_request_id_fkey"; columns: ["request_id"]; isOneToOne: false; referencedRelation: "compliance_review_events"; referencedColumns: ["id"] }
+        ]
+      }
       access_review_history: {
         Row: {
           acao_tomada: string
@@ -10665,6 +10771,30 @@ export type Database = {
       }
     }
     Functions: {
+      compliance_review_state: {
+        Args: { p_evaluation: string }
+        Returns: Json
+      }
+      compliance_record_review: {
+        Args: { p_evaluation: string; p_kind: string; p_reason: string; p_until?: string | null; p_request?: string | null; p_plan?: string | null }
+        Returns: string
+      }
+      compliance_module_context: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      compliance_evaluation_snapshot: {
+        Args: { p_evaluation: string; p_empresa: string }
+        Returns: Json
+      }
+      evidence_analysis_claim: {
+        Args: { p_empresa: string; p_user: string; p_requirement: string; p_key: string; p_hash: string; p_version: string }
+        Returns: Json
+      }
+      evidence_analysis_finish: {
+        Args: { p_id: string; p_attempt: number; p_status: string; p_result?: Json | null; p_checkpoint?: Json | null; p_error?: string | null }
+        Returns: undefined
+      }
       activate_mfa_code_issue: {
         Args: { p_code_id: string; p_user_id: string }
         Returns: boolean

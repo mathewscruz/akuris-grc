@@ -1,6 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.23.8';
+import { validAssessmentAnswer } from '../_shared/assessment-validation.ts';
+import { readAllPages } from '../_shared/read-all-pages.ts';
 
 const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' };
 const tokenSchema = z.string().regex(/^[a-f0-9]{32}$/i);
@@ -178,8 +180,8 @@ Deno.serve(async (req) => {
       const [{ data: company }, { data: template }, { data: questions, error: questionsError }, { data: responses, error: responsesError }] = await Promise.all([
         admin.from('empresas').select('nome,logo_url').eq('id', current.empresa_id).single(),
         admin.from('due_diligence_templates').select('nome,descricao').eq('id', current.template_id).single(),
-        admin.from('due_diligence_questions').select('id,titulo,descricao,tipo,opcoes,obrigatoria,peso,ordem,secao,configuracoes').eq('template_id', current.template_id).order('ordem'),
-        admin.from('due_diligence_responses').select('question_id,resposta,pontuacao,evidencia,justificativa,arquivo_url,resposta_arquivo_nome').eq('assessment_id', current.id),
+        readAllPages<any>((from, to) => admin.from('due_diligence_questions').select('id,titulo,descricao,tipo,opcoes,obrigatoria,peso,ordem,secao,configuracoes').eq('template_id', current.template_id).order('ordem').order('id').range(from, to)),
+        readAllPages<any>((from, to) => admin.from('due_diligence_responses').select('question_id,resposta,pontuacao,evidencia,justificativa,arquivo_url,resposta_arquivo_nome').eq('assessment_id', current.id).order('id').range(from, to)),
       ]);
       if (questionsError || responsesError) throw questionsError || responsesError;
 
@@ -212,23 +214,36 @@ Deno.serve(async (req) => {
     if (assessment.data.status === 'concluido') return respond({ error: 'Questionário já concluído', code: 'COMPLETED' }, 409);
 
     if (input.action === 'save') {
-      const { data: question } = await admin.from('due_diligence_questions').select('id,tipo')
+      const { data: question } = await admin.from('due_diligence_questions').select('id,tipo,opcoes')
         .eq('id', input.questionId).eq('template_id', assessment.data.template_id).maybeSingle();
       if (!question) return respond({ error: 'Pergunta inválida', code: 'INVALID_QUESTION' }, 400);
-      if (input.field === 'pontuacao' && typeof input.value !== 'number') return respond({ error: 'Pontuação inválida', code: 'INVALID_VALUE' }, 400);
+      if (input.field === 'pontuacao' && input.value != null && typeof input.value !== 'number') return respond({ error: 'Pontuação inválida', code: 'INVALID_VALUE' }, 400);
+
+      let hasStoredFile = false;
+      if (['arquivo','file'].includes(question.tipo) && input.field === 'resposta') {
+        const { data: uploaded, error: uploadError } = await admin.from('due_diligence_responses').select('arquivo_url')
+          .eq('assessment_id', assessment.data.id).eq('question_id', question.id).maybeSingle();
+        if (uploadError) throw uploadError;
+        hasStoredFile = !!uploaded?.arquivo_url && normalizeStoragePath(uploaded.arquivo_url).startsWith(`${assessment.data.id}/${question.id}/`);
+      }
+      if (['resposta','pontuacao'].includes(input.field) && input.value != null && String(input.value).trim() !== '' &&
+          !validAssessmentAnswer(question, input.value, hasStoredFile)) return respond({ error: 'Resposta fora das opções ou da escala de 0 a 10.', code: 'INVALID_VALUE' }, 400);
+      if (input.field === 'pontuacao' && !['score','numerico'].includes(question.tipo)) return respond({ error: 'Campo inválido', code: 'INVALID_VALUE' }, 400);
 
       const { error } = await admin.from('due_diligence_responses').upsert({
         assessment_id: assessment.data.id,
         question_id: question.id,
+        // Persist the raw numeric answer too: pontuacao is recalculated by SQL.
         [input.field]: input.value,
+        ...(input.field === 'pontuacao' ? { resposta: input.value == null ? null : String(input.value) } : {}),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'assessment_id,question_id' });
       if (error) throw error;
       return respond({ success: true, savedAt: new Date().toISOString() });
     }
 
-    const { data: questions, error: questionsError } = await admin.from('due_diligence_questions')
-      .select('id,tipo,obrigatoria').eq('template_id', assessment.data.template_id);
+    const { data: questions, error: questionsError } = await readAllPages<any>((from, to) => admin.from('due_diligence_questions')
+      .select('id,tipo,opcoes,obrigatoria').eq('template_id', assessment.data.template_id).order('id').range(from, to));
     if (questionsError) throw questionsError;
     const questionMap = new Map((questions || []).map((question) => [question.id, question]));
     const grouped = new Map<string, Record<string, string | number | null>>();
@@ -239,11 +254,25 @@ Deno.serve(async (req) => {
       // upload autenticado acima; aceitar o valor do JSON permitiria apontar
       // para o arquivo de outro assessment.
       if (match[2] === 'arquivo') continue;
-      const field = match[2] === 'evidencia' ? 'evidencia' : match[2] === 'justificativa' ? 'justificativa' : questionMap.get(match[1])?.tipo === 'numerico' ? 'pontuacao' : 'resposta';
+      const field = match[2] === 'evidencia' ? 'evidencia' : match[2] === 'justificativa' ? 'justificativa' : 'resposta';
       grouped.set(match[1], { ...(grouped.get(match[1]) || {}), [field]: value });
     }
-    const missing = (questions || []).filter((q) => q.obrigatoria && !isAnswered(grouped.get(q.id), q.tipo));
+    const stored = await readAllPages<any>((from, to) => admin.from('due_diligence_responses')
+      .select('question_id,resposta,pontuacao,arquivo_url,resposta_arquivo_url').eq('assessment_id', assessment.data.id).order('id').range(from, to));
+    if (stored.error) throw stored.error;
+    const storedMap = new Map((stored.data || []).map(r => [r.question_id, r]));
+    const answered = (q: any) => {
+      const previous = storedMap.get(q.id);
+      const raw = grouped.has(q.id) && 'resposta' in grouped.get(q.id)! ? grouped.get(q.id)!.resposta : previous?.resposta ?? previous?.pontuacao;
+      const path = previous?.arquivo_url || previous?.resposta_arquivo_url;
+      return validAssessmentAnswer(q, raw, !!path && normalizeStoragePath(path).startsWith(`${assessment.data.id}/`));
+    };
+    const missing = (questions || []).filter((q) => q.obrigatoria && !answered(q));
     if (missing.length > 0) return respond({ error: `Existem ${missing.length} pergunta(s) obrigatória(s) sem resposta`, code: 'MISSING_REQUIRED' }, 400);
+    if ((questions || []).some(q => {
+      const value = grouped.get(q.id)?.resposta;
+      return value != null && String(value).trim() !== '' && !['file','arquivo'].includes(q.tipo) && !answered(q);
+    })) return respond({ error: 'Há respostas fora das opções ou da escala permitida.', code: 'INVALID_VALUE' }, 400);
 
     for (const [questionId, values] of grouped) {
       const { error } = await admin.from('due_diligence_responses').upsert({
@@ -310,10 +339,4 @@ function normalizeStoragePath(value: string) {
   const marker = '/due-diligence-evidencias/';
   const markerIndex = value.indexOf(marker);
   return markerIndex >= 0 ? decodeURIComponent(value.slice(markerIndex + marker.length).split('?')[0]) : value;
-}
-
-function isAnswered(values: Record<string, string | number | null> | undefined, type: string) {
-  if (!values) return false;
-  const value = type === 'numerico' ? values.pontuacao : values.resposta;
-  return value !== undefined && value !== null && String(value).trim() !== '';
 }

@@ -560,7 +560,7 @@ export default function Assessment() {
 
       const question = questions.find(q => q.id === baseQuestionId);
       const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : tipoDeCampo(question?.tipo) === 'numerico' ? 'pontuacao' : 'resposta';
-      const normalizedValue = field === 'pontuacao' ? (parseFloat(value) || 0) : value;
+      const normalizedValue = field === 'pontuacao' ? (String(value).trim() === '' ? null : Number(value)) : value;
       await invokePublicAssessment({ action: 'save', token, questionId: baseQuestionId, field, value: normalizedValue });
       setSavedAt(new Date());
     } catch (error) {
@@ -1069,7 +1069,9 @@ export default function Assessment() {
                           <Input
                             type="number"
                             min="0"
-                            value={responses[question.id] || ''}
+                            max="10"
+                            step="any"
+                            value={responses[question.id] ?? ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             placeholder={t('publicPortal.assessment.numberPlaceholder')}
                             className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"

@@ -80,8 +80,10 @@ export const efetividadeControles = (
   testes: TesteControleLike[] | null | undefined,
 ): EfetividadeControles => {
   const lista = controles ?? [];
+  const ids = new Set(lista.map(c => c.id).filter(Boolean));
+  const doEscopo = (testes ?? []).filter(t => t.controle_id && ids.has(t.controle_id));
   const ultimos = new Map<string, TesteControleLike>();
-  (testes ?? []).forEach((t) => {
+  doEscopo.forEach((t) => {
     const id = t.controle_id || '';
     if (!id) return;
     const atual = ultimos.get(id);
@@ -96,7 +98,7 @@ export const efetividadeControles = (
       : null,
     controlesTestados: avaliados.length,
     totalControles: lista.length,
-    testes: testes?.length ?? 0,
+    testes: doEscopo.length,
   };
 };
 

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { akurisToast } from '@/lib/akuris-toast';
 import { toast } from '@/lib/toast';
 import { tGlobal } from '@/lib/i18n-global';
+import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
 
 export interface EvidenceLibraryItem {
   id: string;
@@ -89,16 +90,19 @@ async function sha256(buffer: ArrayBuffer): Promise<string> {
 export function useEvidenceLibrary(empresaId: string | null) {
   const [items, setItems] = useState<EvidenceLibraryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const requestVersion = useRef(0);
 
   const fetchAll = useCallback(async () => {
-    if (!empresaId) return;
+    const version = ++requestVersion.current;
+    if (!empresaId) { setItems([]); setLoadError(false); setLoading(false); return; }
     setLoading(true);
     try {
-      const { data: evidences, error } = await supabase
+      const { data: evidences, error } = await readAllPages((from, to) => supabase
         .from('evidence_library')
         .select('*')
         .eq('empresa_id', empresaId)
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false }).order('id').range(from, to));
 
       if (error) throw error;
 
@@ -106,11 +110,11 @@ export function useEvidenceLibrary(empresaId: string | null) {
       const ids = (evidences || []).map((e) => e.id);
       const linkCounts: Record<string, { total: number; sugestoes: number }> = {};
       if (ids.length > 0) {
-        const { data: links } = await supabase
+        const { data: links } = await readAllPagesByIds(ids, (batch, from, to) => supabase
           .from('evidence_library_links')
           .select('evidence_id, vinculo_tipo, aceito_em')
           .eq('empresa_id', empresaId)
-          .in('evidence_id', ids);
+          .in('evidence_id', batch).order('id').range(from, to));
         for (const l of (links || []) as any[]) {
           const slot = linkCounts[l.evidence_id] || { total: 0, sugestoes: 0 };
           if (l.vinculo_tipo === 'sugestao_ia' && !l.aceito_em) slot.sugestoes++;
@@ -119,6 +123,8 @@ export function useEvidenceLibrary(empresaId: string | null) {
         }
       }
 
+      if (version !== requestVersion.current) return;
+      setLoadError(false);
       setItems(
         (evidences || []).map((e: any) => ({
           ...e,
@@ -127,14 +133,17 @@ export function useEvidenceLibrary(empresaId: string | null) {
         })) as EvidenceLibraryItem[],
       );
     } catch (err) {
+      if (version !== requestVersion.current) return;
+      setLoadError(true);
+      setItems([]);
       logger.error('useEvidenceLibrary.fetchAll', err);
       toast.error(tGlobal('cardsKpi.sweep.gap.erroCarregarBiblioteca'));
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }, [empresaId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { setItems([]); void fetchAll(); return () => { requestVersion.current++; }; }, [fetchAll]);
 
   /** Faz upload do arquivo, calcula hash e cria entrada (deduplicando se hash já existe). */
   const uploadAndCreate = useCallback(async (params: {
@@ -178,8 +187,8 @@ export function useEvidenceLibrary(empresaId: string | null) {
         });
         if (upErr) throw upErr;
 
-        const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
-        arquivo_url = signed?.signedUrl || path;
+        // Persist an object key, never a year-long bearer URL.
+        arquivo_url = path;
         arquivo_nome = params.file.name;
         arquivo_tipo = params.file.type || null;
         arquivo_tamanho = params.file.size;
@@ -252,7 +261,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
         .from('evidence_library_links')
         .update({ aceito_em: new Date().toISOString(), aceito_por: user?.id || null })
         .eq('id', linkId)
-        .eq('empresa_id', empresaId);
+        .eq('empresa_id', empresaId).select('id').single();
       if (error) throw error;
       await fetchAll();
       return true;
@@ -302,33 +311,25 @@ export function useEvidenceLibrary(empresaId: string | null) {
   /** Busca os links de uma evidência específica. */
   const fetchLinks = useCallback(async (evidence_id: string): Promise<EvidenceLibraryLink[]> => {
     if (!empresaId) return [];
-    const { data, error } = await supabase
+    const { data } = await readAllPages((from, to) => supabase
       .from('evidence_library_links')
       .select('*')
       .eq('empresa_id', empresaId)
       .eq('evidence_id', evidence_id)
-      .order('created_at', { ascending: false });
-    if (error) {
-      logger.error('useEvidenceLibrary.fetchLinks', error);
-      return [];
-    }
+      .order('created_at', { ascending: false }).order('id').range(from, to));
     return (data || []) as EvidenceLibraryLink[];
   }, [empresaId]);
 
   /** Sugestões IA pendentes para um requisito. */
   const fetchSuggestionsForRequirement = useCallback(async (requirement_id: string) => {
     if (!empresaId) return [];
-    const { data, error } = await supabase
+    const { data } = await readAllPages((from, to) => supabase
       .from('evidence_library_links')
       .select('*, evidence:evidence_library(*)')
       .eq('empresa_id', empresaId)
       .eq('requirement_id', requirement_id)
       .eq('vinculo_tipo', 'sugestao_ia')
-      .is('aceito_em', null);
-    if (error) {
-      logger.error('useEvidenceLibrary.fetchSuggestionsForRequirement', error);
-      return [];
-    }
+      .is('aceito_em', null).order('id').range(from, to));
     return data || [];
   }, [empresaId]);
 
@@ -365,6 +366,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
   return {
     items,
     loading,
+    loadError,
     stats,
     definirValidade,
     fetchAll,

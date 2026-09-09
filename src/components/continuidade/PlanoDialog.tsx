@@ -11,6 +11,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconShieldCheck } from '@/components/icons';
+import { recoveryHours } from '@/lib/recovery-targets';
 
 interface PlanoDialogProps {
   open: boolean;
@@ -64,6 +65,10 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       return;
     }
     if (!empresaId) return;
+    if ([form.rto_horas, form.rpo_horas].some(v => v !== '' && recoveryHours(v) == null)) {
+      toast({ title: t('calculationMethod.recovery'), variant: 'destructive' });
+      return;
+    }
     setLoading(true);
 
     const payload = {
@@ -73,8 +78,8 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       escopo: form.escopo || null,
       objetivos: form.objetivos || null,
       status: form.status,
-      rto_horas: form.rto_horas ? parseInt(form.rto_horas) : null,
-      rpo_horas: form.rpo_horas ? parseInt(form.rpo_horas) : null,
+      rto_horas: form.rto_horas ? Number(form.rto_horas) : null,
+      rpo_horas: form.rpo_horas ? Number(form.rpo_horas) : null,
       proxima_revisao: form.proxima_revisao || null,
       versao: form.versao || '1.0',
       empresa_id: empresaId,
@@ -161,11 +166,11 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
             </div>
             <div className="space-y-2">
               <Label htmlFor="rto_horas">{t('continuidadeComp.planoDialog.fieldRto')}</Label>
-              <Input id="rto_horas" type="number" min="0" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
+              <Input id="rto_horas" type="number" min="0" step="any" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="rpo_horas">{t('continuidadeComp.planoDialog.fieldRpo')}</Label>
-              <Input id="rpo_horas" type="number" min="0" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
+              <Input id="rpo_horas" type="number" min="0" step="any" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
             </div>
           </div>
 

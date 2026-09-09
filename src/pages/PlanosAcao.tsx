@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
 import { ActionRoadmap } from '@/components/planos-acao/ActionRoadmap';
+import { ComplianceContextPanel } from '@/components/planos-acao/ComplianceContextPanel';
 import { PlanosAcaoKanban, PLANO_STATUS_EDITAVEIS } from '@/components/planos-acao/PlanosAcaoKanban';
 import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailDrawer';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -135,6 +136,7 @@ export default function PlanosAcao() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlano, setEditingPlano] = useState<any>(null);
+  const [contextDraft, setContextDraft] = useState<{ origin: { modulo: string; registroId: string; registroTitulo: string }; draft: { titulo: string; descricao: string; prioridade: "alta" | "media" } } | null>(null);
   const [detailPlano, setDetailPlano] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -398,6 +400,7 @@ export default function PlanosAcao() {
       queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
       setDialogOpen(false);
       setEditingPlano(null);
+      setContextDraft(null);
     } catch (error) {
       logger.error('Erro ao salvar plano de ação', error);
       toast.error(t('planosAcao.toastSaveError'));
@@ -696,10 +699,16 @@ export default function PlanosAcao() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          <TabsTrigger value="conexoes">{t('evidenceIntelligence.context')}</TabsTrigger>
           <TabsTrigger value="meus"><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
           {isAdmin && <TabsTrigger value="todos"><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
         </TabsList>
-        <TabsContent value={activeTab} className="space-y-4">
+        <TabsContent value="conexoes"><ComplianceContextPanel onDraft={(origin, draft) => {
+          const existing = planos.find(p => origin.registroId && p.registro_origem_id === origin.registroId && p.modulo_origem === origin.modulo && !['cancelado','concluido'].includes(p.status));
+          if (existing) { setDetailPlano(existing); return; }
+          setEditingPlano(null); setContextDraft({ origin, draft }); setDialogOpen(true);
+        }} /></TabsContent>
+        <TabsContent value={activeTab === 'conexoes' ? '__list' : activeTab} className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <div className="border-b border-border/60 p-4">
@@ -835,9 +844,11 @@ export default function PlanosAcao() {
 
       <PlanoAcaoDialog
         open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingPlano(null); }}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingPlano(null); setContextDraft(null); } }}
         onSave={handleSave}
         plano={editingPlano}
+        origemInicial={!editingPlano ? contextDraft?.origin : undefined}
+        rascunho={!editingPlano ? contextDraft?.draft : undefined}
         loading={saving}
       />
 

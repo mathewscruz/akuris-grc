@@ -370,7 +370,7 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
       if (requirementsInScope.length > reqsForAnalysis.length) {
         analysisResult._requisitos_nao_analisados = requirementsInScope.length - reqsForAnalysis.length;
       }
-      analysisResult.resultado_geral = resolveResultadoGeral(finalPct);
+      analysisResult.resultado_geral = resolveResultadoGeral(finalPct, contagem);
 
       console.log('Parsed:', {
         resultado: analysisResult.resultado_geral,

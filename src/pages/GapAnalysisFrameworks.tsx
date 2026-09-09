@@ -116,6 +116,7 @@ export default function GapAnalysisFrameworks() {
   const [frameworkStatusCounts, setFrameworkStatusCounts] = useState<Record<string, StatusCounts>>({});
   const [frameworkGapSummary, setFrameworkGapSummary] = useState<Record<string, GapSummary>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -130,12 +131,12 @@ export default function GapAnalysisFrameworks() {
   const loadFrameworks = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const { data: fws, error: fwError } = await supabase
         .from('gap_analysis_frameworks')
         .select('*')
-        .is('empresa_id', null)
-        .eq('is_template', true)
-        .order('nome', { ascending: true });
+        .or(`and(empresa_id.is.null,is_template.eq.true),empresa_id.eq.${empresaId}`)
+        .order('nome', { ascending: true }).order('id');
 
       if (fwError) throw fwError;
       setFrameworks(fws || []);
@@ -174,10 +175,11 @@ export default function GapAnalysisFrameworks() {
             supabase
               .from('gap_analysis_requirements')
               .select('id, framework_id, peso')
-              .in('framework_id', frameworkIds) as any,
+              .in('framework_id', frameworkIds).order('id') as any,
         );
 
-        if (!reqError && allRequirements) {
+        if (reqError) throw reqError;
+        if (allRequirements) {
           allRequirements.forEach(req => {
             counts[req.framework_id] = (counts[req.framework_id] || 0) + 1;
           });
@@ -197,20 +199,21 @@ export default function GapAnalysisFrameworks() {
                 .from('gap_analysis_evaluations')
                 .select('conformity_status, framework_id, requirement_id, prazo_implementacao')
                 .in('framework_id', frameworkIds)
-                .eq('empresa_id', empresaId) as any,
+                .eq('empresa_id', empresaId).order('id') as any,
             );
 
             // Declaração de Aplicabilidade: o que a empresa tirou do escopo não
             // é lacuna. Sem isto a lista contava como gap um requisito que a
             // própria aba do SoA já mostrava como fora do escopo.
-            const { data: soaRows } = await fetchAllPaginated<{ requirement_id: string; aplicavel: boolean }>(
+            const { data: soaRows, error: soaError } = await fetchAllPaginated<{ requirement_id: string; aplicavel: boolean }>(
               () =>
                 supabase
                   .from('gap_analysis_soa')
                   .select('requirement_id, aplicavel')
                   .in('framework_id', frameworkIds)
-                  .eq('empresa_id', empresaId) as any,
+                  .eq('empresa_id', empresaId).order('id') as any,
             );
+            if (evalError || soaError) throw evalError || soaError;
             const foraDoEscopo = new Set(
               (soaRows || []).filter(s => s.aplicavel === false).map(s => s.requirement_id),
             );
@@ -264,7 +267,7 @@ export default function GapAnalysisFrameworks() {
                 };
 
                 gapSummaryMap[fwId] = summarizeGaps(
-                  evals.map(e => ({
+                  evals.filter(e => !foraDoEscopo.has(e.requirement_id)).map(e => ({
                     conformity_status: e.conformity_status,
                     peso: pesoPorRequisito.get(e.requirement_id),
                     prazo_implementacao: e.prazo_implementacao,
@@ -295,7 +298,7 @@ export default function GapAnalysisFrameworks() {
                 );
 
                 progress[fwId] = {
-                  totalRequirements: totalReqs,
+                  totalRequirements: resumo.aplicaveis,
                   evaluatedRequirements: resumo.avaliados,
                   conformeCount: resumo.conforme,
                   averageScore: resumo.score,
@@ -312,6 +315,7 @@ export default function GapAnalysisFrameworks() {
       setFrameworkStatusCounts(statusCountsMap);
       setFrameworkGapSummary(gapSummaryMap);
     } catch (error) {
+      setLoadError(true);
       logger.error('Erro ao carregar frameworks', {
         error: error instanceof Error ? error.message : String(error),
       });
@@ -325,11 +329,11 @@ export default function GapAnalysisFrameworks() {
     const available: Framework[] = [];
     frameworks.forEach(fw => {
       const p = frameworkProgress[fw.id];
-      if (p && p.evaluatedRequirements > 0) active.push(fw);
+      if (p && (p.evaluatedRequirements > 0 || (frameworkStatusCounts[fw.id]?.nao_aplicavel ?? 0) > 0)) active.push(fw);
       else available.push(fw);
     });
     return { activeFrameworks: active, availableFrameworks: available };
-  }, [frameworks, frameworkProgress]);
+  }, [frameworks, frameworkProgress, frameworkStatusCounts]);
 
   const matchesFilters = (fw: Framework) => {
     if (categoryFilter !== 'all' && getCategory(fw.tipo_framework) !== categoryFilter) return false;
@@ -368,10 +372,12 @@ export default function GapAnalysisFrameworks() {
     activeFrameworks.forEach(fw => {
       const p = frameworkProgress[fw.id];
       const sc = frameworkStatusCounts[fw.id];
-      if (p && p.evaluatedRequirements > 0) {
-        totalWeightedScore += p.averageScore * p.evaluatedRequirements;
-        totalWeightedSeFechados += p.scoreSeFechadosCriticos * p.evaluatedRequirements;
-        totalWeight += p.evaluatedRequirements;
+      if (p && p.totalRequirements > 0) {
+        // Same portfolio convention as the dashboard: one vote per framework,
+        // never a weight that increases as the user answers more questions.
+        totalWeightedScore += p.averageScore;
+        totalWeightedSeFechados += p.scoreSeFechadosCriticos;
+        totalWeight += 1;
         totalReqs += p.totalRequirements;
         totalEvaluated += p.evaluatedRequirements;
       }
@@ -413,7 +419,10 @@ export default function GapAnalysisFrameworks() {
   // o delta vem do histórico de score (que passou a ser escrito por trigger) e
   // o marco vem de `gap_analysis_marcos`. Sem histórico, o hook devolve `null`
   // e a linha simplesmente não aparece — que é a leitura honesta.
-  const { data: tendencia } = useMaturityTrend(heroData?.overallScore ?? 0);
+  const trendCohort = useMemo(() => activeFrameworks
+    .filter(f => frameworkProgress[f.id]?.totalRequirements > 0)
+    .map(f => ({ id: f.id, score: frameworkProgress[f.id].averageScore })), [activeFrameworks, frameworkProgress]);
+  const { data: tendencia } = useMaturityTrend(trendCohort);
   // O marco pertence ao framework. Aqui mostra-se só o mais próximo entre os
   // frameworks ativos, dizendo de qual é — definir acontece lá dentro.
   const { data: marco } = useProximoMarcoDaEmpresa(empresaId ?? undefined);
@@ -488,6 +497,11 @@ export default function GapAnalysisFrameworks() {
       </ErrorBoundary>
     );
   }
+
+  if (loadError) return <div role="alert" className="space-y-4 p-6">
+    <p>{t('evidenceIntelligence.readError')}</p>
+    <Button variant="outline" onClick={loadFrameworks}>{t('evidenceIntelligence.refresh')}</Button>
+  </div>;
 
   const FilterBar = (
     <ModuleToolbar

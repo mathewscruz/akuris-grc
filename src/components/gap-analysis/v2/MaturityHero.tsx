@@ -114,10 +114,9 @@ export function MaturityHero({
         cta: t('gapV2.maturityHero.insightStartCta'),
       };
     }
-    if (delta > 0 && nextMilestone) {
-      const projected = Math.min(100, Math.round(nextMilestone.frameworkScore + delta));
+    if (nextMilestone) {
       return {
-        body: <>{t('gapV2.maturityHero.insightProjectedPrefix')} <strong className="text-foreground">{projected}%</strong> {t('gapV2.maturityHero.insightProjectedUntil')} {formatDateBR(nextMilestone.date)}, {projected >= nextMilestone.targetScore ? <>{t('gapV2.maturityHero.insightHitsTarget')}</> : <>{t('gapV2.maturityHero.insightBelowTarget', { target: nextMilestone.targetScore })}</>}.</>,
+        body: <>{t('calculationMethod.milestoneGap', { pts: Math.max(0, Math.round(nextMilestone.targetScore - nextMilestone.frameworkScore)), date: formatDateBR(nextMilestone.date) })}</>,
         cta: t('gapV2.maturityHero.insightSeePlanCta'),
       };
     }
@@ -156,12 +155,12 @@ export function MaturityHero({
           <div className="mt-2 flex items-end gap-3 flex-wrap">
             <div className="flex items-baseline">
               <span className="text-6xl font-bold tabular-nums leading-none tracking-tight text-foreground">
-                {score}
+                {totalRequirements > 0 ? score : '—'}
               </span>
               <span className="text-2xl text-muted-foreground ml-0.5">%</span>
             </div>
             <StatusBadge tone="info">
-              {t('gapV2.maturityHero.level', { id: maturity.id, label: maturity.label })}
+              {totalRequirements > 0 ? t('gapV2.maturityHero.level', { id: maturity.id, label: maturity.label }) : t('calculationMethod.noApplicable')}
             </StatusBadge>
           </div>
           {temDelta && (

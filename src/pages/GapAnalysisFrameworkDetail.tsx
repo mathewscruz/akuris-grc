@@ -49,6 +49,8 @@ import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reqTitulo, reqCategoria, fwNome, fwDescricao } from "@/lib/gap-i18n";
 import { fetchFrameworkRequirements } from '@/lib/framework-requirements';
+import { readAllPages } from '@/lib/read-all-pages';
+import { QueryError } from '@/components/ui/query-error';
 
 interface Framework {
   id: string;
@@ -213,7 +215,7 @@ function GapAnalysisFrameworkDetailInner() {
 
   const {
     overallScore, pillarScores, domainScores, areaScores, sectionScores,
-    categoryScores, totalRequirements, evaluatedRequirements, loading: scoreLoading,
+    categoryScores, totalRequirements, catalogRequirements, evaluatedRequirements, loading: scoreLoading, error: scoreError,
   } = useFrameworkScore(frameworkId || '', config || defaultConfig, scoreRefreshKey);
 
   const [autoOnboardingShown, setAutoOnboardingShown] = useState(false);
@@ -242,19 +244,20 @@ function GapAnalysisFrameworkDetailInner() {
    * arquiva isso como evidência.
    */
   const getExportData = async () => {
-    const { data: reqs, error: erroReqs } = await supabase
+    if (scoreError || scoreLoading) throw new Error('Score unavailable');
+    const { data: reqs, error: erroReqs } = await readAllPages((from, to) => supabase
       .from('gap_analysis_requirements')
       .select('id, codigo, titulo, categoria, peso, area_responsavel, titulo_en, categoria_en')
       .eq('framework_id', frameworkId)
-      .order('ordem', { ascending: true });
+      .order('ordem', { ascending: true }).order('id').range(from, to));
 
     if (erroReqs) throw erroReqs;
 
-    const { data: evals, error: erroEvals } = await supabase
+    const { data: evals, error: erroEvals } = await readAllPages((from, to) => supabase
       .from('gap_analysis_evaluations')
       .select('requirement_id, conformity_status')
       .eq('framework_id', frameworkId)
-      .eq('empresa_id', empresaId);
+      .eq('empresa_id', empresaId).order('id').range(from, to));
 
     if (erroEvals) throw erroEvals;
 
@@ -359,12 +362,12 @@ function GapAnalysisFrameworkDetailInner() {
         const linhas = data || [];
         setJaDeclarouEscopo(
           linhas.some((linha) => linha.aplicavel === false)
-          || (totalRequirements > 0 && linhas.length >= totalRequirements),
+          || (catalogRequirements > 0 && linhas.length >= catalogRequirements),
         );
       }
     })();
     return () => { cancelado = true; };
-  }, [empresaId, frameworkId, totalRequirements, scoreRefreshKey]);
+  }, [empresaId, frameworkId, catalogRequirements, scoreRefreshKey]);
 
   /** Filtra a tabela por estado e leva o utilizador até ela. */
   const filtrarPorEstado = useCallback((estado: string) => {
@@ -388,6 +391,7 @@ function GapAnalysisFrameworkDetailInner() {
   // O score também determina se a primeira experiência deve abrir o onboarding.
   // Sem aguardar essa leitura, o utilizador novo vê por alguns instantes a tela
   // avançada vazia ("0 de 0") antes de o guia aparecer.
+  if (scoreError) return <QueryError onRetry={() => setScoreRefreshKey(key => key + 1)} />;
   if (loading || scoreLoading || (empresaId && jaDeclarouEscopo === null) || !framework || !config) {
     return (
       <ErrorBoundary>
@@ -509,7 +513,7 @@ function GapAnalysisFrameworkDetailInner() {
                 frameworkId={frameworkId!}
                 frameworkName={framework.nome}
                 empresaId={empresaId}
-                totalRequisitos={totalRequirements}
+                totalRequisitos={catalogRequirements}
                 onAplicado={() => { setJaDeclarouEscopo(true); handleScoreChange(); }}
               />
             )}
@@ -519,7 +523,7 @@ function GapAnalysisFrameworkDetailInner() {
                 frameworkNome={framework.nome}
                 frameworkVersao={framework.versao}
                 frameworkTipo={framework.tipo_framework}
-                totalRequirements={totalRequirements}
+                totalRequirements={catalogRequirements}
                 onStart={() => setShowOnboarding(false)}
                 /* O caminho recomendado a partir daqui e' recortar o escopo,
                    nao abrir a lista inteira. So aparece se o framework tiver
@@ -539,7 +543,7 @@ function GapAnalysisFrameworkDetailInner() {
                   unevaluated={contagem.naoAvaliado}
                   openGaps={contagem.naoConforme + contagem.parcial}
                   missingEvidence={conformesSemProva}
-                  applicable={Math.max(0, totalRequirements - contagem.naoAplicavel)}
+                  applicable={totalRequirements}
                   evaluated={contagem.conforme + contagem.parcial + contagem.naoConforme}
                   compliant={contagem.conforme}
                   proven={conformesSemProva === null ? null : Math.max(0, contagem.conforme - conformesSemProva)}
@@ -558,7 +562,7 @@ function GapAnalysisFrameworkDetailInner() {
                 <FrameworkHeader
                   frameworkName={framework.nome}
                   overallScore={overallScore}
-                  totalRequirements={totalRequirements}
+                  totalRequirements={catalogRequirements}
                   conforme={contagem.conforme}
                   parcial={contagem.parcial}
                   naoConforme={contagem.naoConforme}

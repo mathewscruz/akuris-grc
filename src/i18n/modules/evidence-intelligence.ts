@@ -1,0 +1,201 @@
+export const evidenceIntelligence = {
+  pt: {
+    evidenceIntelligence: {
+      processing: {
+        title: "Processamento de evidências",
+        hint:
+          "As análises idênticas são reaproveitadas. Em caso de interrupção, analise novamente o mesmo arquivo para retomar a etapa salva. Até duas análises simultâneas por empresa.",
+        empty: "Nenhuma análise registrada.",
+        running: "Em processamento",
+        complete: "Concluída para revisão",
+        error: "Não concluída — tente novamente no requisito",
+        interrupted: "Interrompida — retome pelo requisito",
+      },
+      rules: {
+        contract_assessment:
+          "Contrato próximo ao fim, ou já vencido, sem avaliação de fornecedor concluída entre os registros consultados. Confirme a avaliação antes da renovação.",
+        risk_personal_data:
+          "Este risco e estes dados pessoais compartilham um ativo cadastrado. Considere a sensibilidade dos dados ao revisar o impacto; o vínculo não comprova um vazamento.",
+        access_revocation_pending:
+          "Há decisão de revogação, mas a conta vinculada continua ativa no cadastro. Confirme a execução da retirada de acesso.",
+        recovery_not_demonstrated:
+          "O último teste está ausente, sem resultado aprovado ou tem mais de um ano. Confira a periodicidade definida pela empresa e registre a comprovação de recuperação.",
+      },
+      facts: {
+        contract_end: "Fim do contrato",
+        assessment_deadline: "Prazo da avaliação",
+        assessment_status: "Estado da avaliação",
+        asset: "Ativo vinculado",
+        data: "Dados vinculados",
+        sensitivity: "Sensibilidade",
+        risk: "Nível de risco cadastrado",
+        decision: "Decisão registrada",
+        reviewed_at: "Data da decisão",
+        last_test: "Último teste",
+        result: "Resultado registrado",
+        target_hours: "Objetivo de recuperação (horas)",
+      },
+      analysis: "Análise com fontes",
+      suggestedResult: "Parecer para revisão",
+      kind: {
+        policy: "Material identificado: política ou definição de processo",
+        execution: "Material identificado: registro de execução",
+        mixed: "Material identificado: política e registros de execução",
+        unknown: "Tipo de material não determinado",
+      },
+      original: "Abrir original",
+      sources: "O que sustenta a análise",
+      missing: "O que ainda falta",
+      next: "Próximos passos sugeridos",
+      criteria: "Critérios para concluir",
+      usePlan: "Adicionar às notas do plano",
+      human:
+        "Sugestão para revisão humana. A análise não altera o status de conformidade.",
+      cached: "Resultado reutilizado: arquivo e requisito não mudaram.",
+      saved: "Sugestões adicionadas ao rascunho. Revise antes de salvar.",
+      busy: "Análise em andamento. Aguarde ou consulte novamente.",
+      unreadable: "Não foi possível concluir a análise.",
+      review: "Revisão e reaproveitamento",
+      reviewHint:
+        "Uma mesma ação pode atender vários requisitos. Mudanças nas fontes exigem nova conferência, não uma aprovação automática.",
+      reason: "Justificativa e critérios verificados",
+      confirm: "Registrar revisão",
+      request: "Solicitar exceção temporária",
+      approve: "Aprovar exceção",
+      reject: "Rejeitar exceção",
+      until: "Válida até",
+      plan: "Vincular plano existente",
+      selectPlan: "Selecione um plano da empresa",
+      update: "Atualizar conferência",
+      pending: "Revisão necessária",
+      current: "Revisão registrada",
+      none: "Ainda não há revisão registrada",
+      expired: "Há evidência vencida",
+      changed: "As fontes mudaram desde a revisão",
+      linked: "Vínculos e fontes",
+      history: "Histórico de decisões",
+      success: "Decisão registrada. O status de conformidade foi preservado.",
+      saveFirst: "Salve o requisito para registrar revisões e vínculos.",
+      saveChanges:
+        "Salve as alterações do requisito antes de registrar uma decisão ou vincular um plano.",
+      exceptionActive: "Exceção aprovada, sem alteração nas fontes",
+      exceptionExpired: "Exceção vencida — nova avaliação necessária",
+      exceptionChanged:
+        "Fontes da exceção alteradas — nova avaliação necessária",
+      context: "Conexões entre módulos",
+      contextHint:
+        "Apontamentos baseados nos registros da empresa. Abra as fontes antes de decidir.",
+      refresh: "Atualizar",
+      empty:
+        "Nenhum apontamento encontrado nas regras verificadas. Isso não significa conformidade integral.",
+      source: "Abrir fonte",
+      evidenceImpact: "Onde esta evidência é usada",
+      noLinks: "Nenhum requisito vinculado.",
+      readError: "Não foi possível consultar os dados. Tente novamente.",
+      error:
+        "Não foi possível concluir. Confira sua permissão, a justificativa e o prazo.",
+      requestByOther: "A exceção deve ser aprovada por outro administrador.",
+      partial:
+        "Exibindo um conjunto limitado de registros. Refine a análise no módulo de origem.",
+    },
+  },
+  en: {
+    evidenceIntelligence: {
+      processing: {
+        title: "Evidence processing",
+        hint:
+          "Identical analyses are reused. After an interruption, analyze the same file again to resume the saved stage. Up to two concurrent analyses per company.",
+        empty: "No analyses recorded.",
+        running: "Processing",
+        complete: "Ready for review",
+        error: "Not completed — retry from the requirement",
+        interrupted: "Interrupted — resume from the requirement",
+      },
+      rules: {
+        contract_assessment:
+          "The contract is nearing its end, or has expired, without a completed supplier assessment in the records checked. Confirm the assessment before renewal.",
+        risk_personal_data:
+          "This risk and these personal data share a registered asset. Consider data sensitivity when reviewing impact; this link does not prove a breach.",
+        access_revocation_pending:
+          "A revocation was recorded, but the linked account remains active in the inventory. Confirm that access removal was executed.",
+        recovery_not_demonstrated:
+          "The latest test is missing, has no approved result or is over a year old. Check the company testing schedule and record recovery evidence.",
+      },
+      facts: {
+        contract_end: "Contract end",
+        assessment_deadline: "Assessment deadline",
+        assessment_status: "Assessment status",
+        asset: "Linked asset",
+        data: "Linked data",
+        sensitivity: "Sensitivity",
+        risk: "Recorded risk level",
+        decision: "Recorded decision",
+        reviewed_at: "Decision date",
+        last_test: "Last test",
+        result: "Recorded result",
+        target_hours: "Recovery target (hours)",
+      },
+      analysis: "Source-grounded analysis",
+      suggestedResult: "Assessment for review",
+      kind: {
+        policy: "Material identified: policy or process definition",
+        execution: "Material identified: execution record",
+        mixed: "Material identified: policy and execution records",
+        unknown: "Material type not determined",
+      },
+      original: "Open original",
+      sources: "Supporting sources",
+      missing: "What is still missing",
+      next: "Suggested next steps",
+      criteria: "Completion criteria",
+      usePlan: "Add to plan notes",
+      human:
+        "Suggestion for human review. This analysis does not change compliance status.",
+      cached: "Reused result: the file and requirement have not changed.",
+      saved: "Suggestions added to the draft. Review before saving.",
+      busy: "Analysis in progress. Please wait or check again.",
+      unreadable: "The analysis could not be completed.",
+      review: "Review and reuse",
+      reviewHint:
+        "One action can support multiple requirements. Source changes require another review, not automatic approval.",
+      reason: "Rationale and verified criteria",
+      confirm: "Record review",
+      request: "Request temporary exception",
+      approve: "Approve exception",
+      reject: "Reject exception",
+      until: "Valid until",
+      plan: "Link existing action plan",
+      selectPlan: "Select a company action plan",
+      update: "Refresh review",
+      pending: "Review required",
+      current: "Review recorded",
+      none: "No review recorded yet",
+      expired: "An evidence item has expired",
+      changed: "Sources have changed since the review",
+      linked: "Links and sources",
+      history: "Decision history",
+      success: "Decision recorded. Compliance status was preserved.",
+      saveFirst: "Save the requirement before recording reviews and links.",
+      saveChanges:
+        "Save the requirement changes before recording a decision or linking a plan.",
+      exceptionActive: "Approved exception, sources unchanged",
+      exceptionExpired: "Expired exception — reassessment required",
+      exceptionChanged: "Exception sources changed — reassessment required",
+      context: "Cross-module connections",
+      contextHint:
+        "Findings based on company records. Open the sources before making a decision.",
+      refresh: "Refresh",
+      empty:
+        "No findings for the evaluated rules. This does not mean full compliance.",
+      source: "Open source",
+      evidenceImpact: "Where this evidence is used",
+      noLinks: "No linked requirements.",
+      readError: "Could not load data. Please try again.",
+      error: "Could not complete. Check permissions, rationale and deadline.",
+      requestByOther:
+        "The exception must be approved by another administrator.",
+      partial:
+        "Showing a limited set of records. Refine the analysis in the source module.",
+    },
+  },
+};

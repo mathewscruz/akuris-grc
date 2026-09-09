@@ -269,7 +269,8 @@ export function CentroPrivacidadeTab(props: Props) {
     props.solicitacoes.every(
       (s) =>
         ["atendida", "rejeitada"].includes(s.status) ||
-        parseDataLocal(s.prazo_resposta) >= new Date(),
+        (!!s.prazo_resposta && Number.isFinite(parseDataLocal(s.prazo_resposta).getTime()) &&
+          parseDataLocal(s.prazo_resposta).setHours(23, 59, 59, 999) >= Date.now()),
     ),
     props.incidentesPrivacidade === 0,
   ];

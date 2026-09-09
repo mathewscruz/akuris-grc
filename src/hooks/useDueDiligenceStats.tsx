@@ -105,6 +105,7 @@ export const useDueDiligenceStats = () => {
           scoredAssessments: completedWithScores.length,
         };
       } catch (error) {
+        if (signal.aborted) throw error;
         logger.error('Erro ao buscar estatísticas de due diligence', { error: error instanceof Error ? error.message : String(error) });
         throw error;
       }

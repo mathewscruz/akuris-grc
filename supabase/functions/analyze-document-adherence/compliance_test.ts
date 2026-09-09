@@ -10,7 +10,6 @@
  *   4) score reportado pela IA que diverge do determinístico em mais de 25 pontos é sobrescrito
  *   5) documento vazio devolve score 0 sem quebrar
  */
-import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   computeAnalyzedScore,
@@ -72,12 +71,12 @@ Deno.test("Analisador — reconciliação: score reportado 0% enquanto há vári
   assertEquals(score, det);
 });
 
-Deno.test("Analisador — reconciliação: score reportado coerente (delta<=25) é mantido", () => {
+Deno.test("Analisador — a mesma evidência mantém score determinístico mesmo se IA diverge pouco", () => {
   const analisados = makeAnalisados(8, 2, 0, 0); // determinístico = 90
   const det = computeAnalyzedScore(analisados).score;
   const { score, source } = reconcileReportedScore(85, det); // delta = 5
-  assertEquals(source, "ia");
-  assertEquals(score, 85);
+  assertEquals(source, "deterministic");
+  assertEquals(score, 90);
 });
 
 Deno.test("Analisador — reconciliação: divergência > 25 pontos → determinístico vence (evita IA inflar score)", () => {
@@ -92,6 +91,14 @@ Deno.test("Analisador — nenhum requisito → score 0, sem quebrar", () => {
   const { score, contagem } = computeAnalyzedScore([]);
   assertEquals(score, 0);
   assertEquals(contagem.total, 0);
+});
+
+Deno.test("Analisador — quality gate and rounding cannot conceal known gaps", () => {
+  assertEquals(resolveResultadoGeral(80), "parcial");
+  assertEquals(resolveResultadoGeral(99), "parcial");
+  const r = computeAnalyzedScore(makeAnalisados(499, 1, 0, 0));
+  assertEquals(r.score, 100);
+  assertEquals(resolveResultadoGeral(r.score, r.contagem), "parcial");
 });
 
 Deno.test("Fluxo E2E — DocGen gera 100%, refino remove 1 requisito, análise formal reflete a queda", () => {
@@ -111,6 +118,6 @@ Deno.test("Fluxo E2E — DocGen gera 100%, refino remove 1 requisito, análise f
   const { score } = computeAnalyzedScore(analisadosPosRefino);
   // (4*100 + 0 + 0)/5 = 80
   assertEquals(score, 80);
-  assertEquals(resolveResultadoGeral(score), "conforme");
+  assertEquals(resolveResultadoGeral(score), "parcial");
   assert(score < 100, "análise formal capturou a queda do refino");
 });

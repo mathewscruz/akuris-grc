@@ -1,44 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
+import { readAllPagesByIds } from '@/lib/read-all-pages';
+import { comparableFrameworkTrend } from '@/lib/framework-trend';
 
-interface MaturityTrend {
-  /** Delta in percentage points (current - previous). null when no baseline. */
-  delta: number | null;
-}
-
-/**
- * Trend proxy for the GRC maturity score: compares the latest gap_analysis
- * score snapshot for the company with the latest snapshot from ~30 days ago.
- * Returns null delta when there isn't enough history.
- */
-export function useMaturityTrend(currentScore: number) {
+/** Gap Analysis portfolio trend only; never a proxy for the GRC operational index. */
+export function useMaturityTrend(cohort: { id: string; score: number }[]) {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
-
-  return useQuery<MaturityTrend>({
-    queryKey: ['maturity-trend', empresaId, currentScore],
-    enabled: !!empresaId,
+  return useQuery({
+    queryKey: ['framework-portfolio-trend', empresaId, cohort],
+    enabled: !!empresaId && cohort.length > 0,
     staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 30);
-
-      const { data, error } = await supabase
-        .from('gap_analysis_score_history')
-        .select('score, recorded_at')
-        .eq('empresa_id', empresaId!)
-        .lte('recorded_at', cutoff.toISOString())
-        .order('recorded_at', { ascending: false })
-        .limit(20);
-
-      if (error || !data || data.length === 0) {
-        return { delta: null };
-      }
-
-      const baseline =
-        data.reduce((sum, r) => sum + Number(r.score || 0), 0) / data.length;
-      return { delta: Math.round(currentScore - baseline) };
+      const { data } = await readAllPagesByIds(cohort.map(f => f.id), (ids, from, to) => supabase
+        .from('gap_analysis_score_history').select('framework_id,score,recorded_at')
+        .eq('empresa_id', empresaId!).in('framework_id', ids).lte('recorded_at', cutoff.toISOString())
+        .order('recorded_at', { ascending: false }).order('id').range(from, to).abortSignal(signal), signal);
+      return { delta: comparableFrameworkTrend(cohort, data, cutoff) };
     },
   });
 }

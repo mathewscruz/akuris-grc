@@ -36,7 +36,7 @@ interface PlanoAcaoDialogProps {
    * cria um plano a partir de um grupo de requisitos quer criar, com o texto
    * já preenchido, e continuar a poder mudá-lo.
    */
-  rascunho?: { titulo?: string; descricao?: string };
+  rascunho?: { titulo?: string; descricao?: string; prioridade?: "alta" | "media" };
 }
 
 function buildModulosOrigem(t: (key: string) => string) {
@@ -89,7 +89,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       setTitulo(rascunho?.titulo ?? '');
       setDescricao(rascunho?.descricao ?? '');
       setStatus('pendente');
-      setPrioridade('media');
+      setPrioridade(rascunho?.prioridade ?? 'media');
       setResponsavelId('');
       setPrazo(null);
       setModuloOrigem(origemInicial?.modulo ?? 'manual');
@@ -117,14 +117,14 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
   const isDirty = JSON.stringify(currentValues) !== initialSnapshot;
 
   const { hasDraft, savedAt, loadDraft, clearDraft } = useWizardDraft({
-    storageKey: 'plano-acao',
+    storageKey: origemInicial ? `plano-acao:${origemInicial.modulo}:${origemInicial.registroId}` : rascunho ? 'plano-acao:contexto' : 'plano-acao',
     recordId: plano?.id,
     values: currentValues,
     enabled: open,
   });
 
   useEffect(() => {
-    if (open && !plano && hasDraft) {
+    if (open && !plano && !origemInicial && !rascunho && hasDraft) {
       const d = loadDraft();
       if (d) {
         setTitulo(d.titulo ?? '');

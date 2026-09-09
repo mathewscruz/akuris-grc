@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { recoveryHours, validRecoveryTargets } from '@/lib/recovery-targets';
 
 interface ProcessoCritico {
   id: string;
@@ -62,8 +63,9 @@ export function PreparacaoContinuidade({ plano, onSuccess }: { plano: any; onSuc
   }, [plano?.id]);
 
   const completude = useMemo(() => {
-    const processosValidos = processos.length > 0 && processos.every((p) => p.nome && p.mtpd_horas && p.rto_horas);
-    const itens = [processosValidos, !!estrategia.trim(), !!criterios.trim(), !!comunicacao.trim(), !!runbook.trim(), equipe.length > 0];
+    const processosValidos = processos.length > 0 && processos.every((p) => p.nome.trim() && validRecoveryTargets(p));
+    const equipeValida = equipe.length > 0 && equipe.every(m => m.nome.trim() && m.papel.trim() && m.contato.trim());
+    const itens = [processosValidos, !!estrategia.trim(), !!criterios.trim(), !!comunicacao.trim(), !!runbook.trim(), equipeValida];
     return Math.round((itens.filter(Boolean).length / itens.length) * 100);
   }, [processos, equipe, criterios, estrategia, comunicacao, runbook]);
 
@@ -75,6 +77,11 @@ export function PreparacaoContinuidade({ plano, onSuccess }: { plano: any; onSuc
   const salvar = async () => {
     if (processos.some((p) => !p.nome.trim())) {
       toast({ title: t('continuidadeComp.preparacao.processNameRequired'), variant: 'destructive' });
+      return;
+    }
+    if (processos.some(p => [p.mtpd_horas,p.rto_horas,p.rpo_horas].some(v => v !== '' && recoveryHours(v) == null)
+      || (p.mtpd_horas !== '' && p.rto_horas !== '' && Number(p.rto_horas) > Number(p.mtpd_horas)))) {
+      toast({ title: t('calculationMethod.recovery'), variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -116,6 +123,7 @@ export function PreparacaoContinuidade({ plano, onSuccess }: { plano: any; onSuc
             <span className="text-lg font-semibold tabular-nums">{completude}%</span>
           </div>
           <Progress value={completude} aria-label={t('continuidadeComp.preparacao.readiness')} />
+          <p className="mt-2 text-xs text-muted-foreground">{t('calculationMethod.recoveryChecklist')}</p>
       </ModuleBanner>
 
       <section className="space-y-3">
@@ -142,9 +150,9 @@ export function PreparacaoContinuidade({ plano, onSuccess }: { plano: any; onSuc
               <div className="space-y-1.5 lg:col-span-2"><Label htmlFor={`processo-${processo.id}-nome`}>{t('continuidadeComp.preparacao.processName')}</Label><Input id={`processo-${processo.id}-nome`} value={processo.nome} onChange={(e) => atualizarProcesso(processo.id, 'nome', e.target.value)} /></div>
               <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-responsavel`}>{t('continuidadeComp.preparacao.owner')}</Label><Input id={`processo-${processo.id}-responsavel`} value={processo.responsavel} onChange={(e) => atualizarProcesso(processo.id, 'responsavel', e.target.value)} /></div>
               <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-impacto`}>{t('continuidadeComp.preparacao.impact')}</Label><Select value={processo.impacto} onValueChange={(v) => atualizarProcesso(processo.id, 'impacto', v)}><SelectTrigger id={`processo-${processo.id}-impacto`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="moderado">{t('continuidadeComp.preparacao.impactModerate')}</SelectItem><SelectItem value="alto">{t('continuidadeComp.preparacao.impactHigh')}</SelectItem><SelectItem value="critico">{t('continuidadeComp.preparacao.impactCritical')}</SelectItem></SelectContent></Select></div>
-              <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-mtpd`}>{t('continuidadeComp.preparacao.mtpd')}</Label><Input id={`processo-${processo.id}-mtpd`} type="number" min="0" value={processo.mtpd_horas} onChange={(e) => atualizarProcesso(processo.id, 'mtpd_horas', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-rto`}>{t('continuidadeComp.preparacao.rto')}</Label><Input id={`processo-${processo.id}-rto`} type="number" min="0" value={processo.rto_horas} onChange={(e) => atualizarProcesso(processo.id, 'rto_horas', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-rpo`}>{t('continuidadeComp.preparacao.rpo')}</Label><Input id={`processo-${processo.id}-rpo`} type="number" min="0" value={processo.rpo_horas} onChange={(e) => atualizarProcesso(processo.id, 'rpo_horas', e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-mtpd`}>{t('continuidadeComp.preparacao.mtpd')}</Label><Input id={`processo-${processo.id}-mtpd`} type="number" min="0" step="any" value={processo.mtpd_horas} onChange={(e) => atualizarProcesso(processo.id, 'mtpd_horas', e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-rto`}>{t('continuidadeComp.preparacao.rto')}</Label><Input id={`processo-${processo.id}-rto`} type="number" min="0" step="any" value={processo.rto_horas} onChange={(e) => atualizarProcesso(processo.id, 'rto_horas', e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-rpo`}>{t('continuidadeComp.preparacao.rpo')}</Label><Input id={`processo-${processo.id}-rpo`} type="number" min="0" step="any" value={processo.rpo_horas} onChange={(e) => atualizarProcesso(processo.id, 'rpo_horas', e.target.value)} /></div>
               <div className="space-y-1.5 lg:col-span-2"><Label htmlFor={`processo-${processo.id}-dependencias`}>{t('continuidadeComp.preparacao.dependencies')}</Label><Textarea id={`processo-${processo.id}-dependencias`} rows={2} value={processo.dependencias} onChange={(e) => atualizarProcesso(processo.id, 'dependencias', e.target.value)} /></div>
               <div className="space-y-1.5"><Label htmlFor={`processo-${processo.id}-operacao`}>{t('continuidadeComp.preparacao.minimumOperation')}</Label><Textarea id={`processo-${processo.id}-operacao`} rows={2} value={processo.operacao_minima} onChange={(e) => atualizarProcesso(processo.id, 'operacao_minima', e.target.value)} /></div>
             </CardContent>

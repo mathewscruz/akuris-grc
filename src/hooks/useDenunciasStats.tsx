@@ -70,6 +70,7 @@ export const useDenunciasStats = (empresaSelecionada?: string | null) => {
           prazo_vencido
         };
       } catch (error) {
+        if (signal.aborted) throw error;
         console.error('Erro ao carregar estatísticas de denúncias:', error);
         throw error;
       }

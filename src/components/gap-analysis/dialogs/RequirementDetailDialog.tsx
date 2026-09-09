@@ -34,6 +34,8 @@ import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
+import { EvidenceAnalysisResult, type GroundedAnalysis } from '@/components/gap-analysis/EvidenceAnalysisResult';
+import { RequirementReviewPanel } from '@/components/gap-analysis/RequirementReviewPanel';
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
@@ -391,12 +393,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<number, 'sim' | 'parcial' | 'nao' | null>>({});
   const { openDocGen } = useDocGen();
   const [validatingUrl, setValidatingUrl] = useState<string | null>(null);
-  const [validationByUrl, setValidationByUrl] = useState<Record<string, {
-    verdict: 'conforme' | 'parcial' | 'nao_conforme' | 'indeterminado';
-    score: number;
-    justification: string;
-    missing?: string[];
-  }>>({});
+  const [validationByUrl, setValidationByUrl] = useState<Record<string, GroundedAnalysis>>({});
+  const analysisScope = useRef(requirement.id);
+  analysisScope.current = requirement.id;
+  useEffect(() => {
+    setValidationByUrl({});
+    setValidatingUrl(null);
+  }, [requirement.id]);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkName, setLinkName] = useState('');
@@ -610,7 +613,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   };
 
   const handleValidateEvidence = async (file: any) => {
-    if (!empresaId || !file?.url) return;
+    if (!empresaId || !file?.url || validatingUrl) return;
+    const scope = requirement.id;
     setValidatingUrl(file.url);
     try {
       // Se for arquivo no bucket (não link externo), gera URL assinada temporária
@@ -622,7 +626,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         if (signErr || !signed?.signedUrl) throw signErr || new Error('Signed URL failed');
         fileUrl = signed.signedUrl;
       }
-      const { data, error } = await supabase.functions.invoke('analyze-evidence-against-requirement', {
+      let { data, error } = await supabase.functions.invoke('analyze-evidence-against-requirement', {
         body: {
           requirementId: requirement.id,
           fileUrl,
@@ -630,7 +634,18 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           empresaId,
         },
       });
+      for (let attempt = 0; !error && data?.status === 'running' && !data?.retryable && attempt < 35; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        if (analysisScope.current !== scope) return;
+        ({ data, error } = await supabase.functions.invoke('analyze-evidence-against-requirement', { body: { action: 'status', jobId: data.job_id } }));
+      }
+      if (analysisScope.current !== scope) return;
       if (error) {
+        const response = (error as any)?.context;
+        if (response instanceof Response) {
+          const detail = await response.json().catch(() => null);
+          if (detail?.error) { toast.error(detail.error); return; }
+        }
         const status = (error as any)?.status;
         if (status === 402 || (data as any)?.creditsExhausted) {
           toast.error(t('gapUi.detail.aiCreditsExhaustedShort'));
@@ -642,15 +657,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         toast.error((data as any).error);
         return;
       }
+      if (!data?.verdict) { toast.info(t('evidenceIntelligence.busy')); return; }
       setValidationByUrl(prev => ({ ...prev, [file.url]: data as any }));
       const v = (data as any).verdict;
       const label = v === 'conforme' ? t('gapUi.verdict.conforme') : v === 'parcial' ? t('gapUi.verdict.parcialmenteConforme') : v === 'nao_conforme' ? t('gapUi.verdict.naoConforme') : t('gapUi.verdict.indeterminado');
-      toast.success(t('gapUi.detail.aiVerdict', { label, score: (data as any).score ?? 0 }));
+      toast.success(t('gapUi.detail.aiLabel', { label }));
     } catch (e) {
+      if (analysisScope.current !== scope) return;
       logger.error('Validation error', { error: e instanceof Error ? e.message : String(e) });
       toast.error(t('gapUi.detail.errorValidateEvidence'));
     } finally {
-      setValidatingUrl(null);
+      if (analysisScope.current === scope) setValidatingUrl(null);
     }
   };
 
@@ -1260,7 +1277,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                               variant="ghost"
                                               size="sm"
                                               className="h-7 px-2 text-micro"
-                                              disabled={isValidating}
+                                              disabled={!!validatingUrl}
                                               onClick={() => handleValidateEvidence(file)}
                                             >
                                               {isValidating && <AkurisPulse size={12} />}
@@ -1276,20 +1293,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                     </Button>
                                   </div>
                                 </div>
-                                {validation && (
-                                  <div className={cn('rounded border px-2 py-1.5 text-micro', verdictColor)}>
-                                    <div className="flex items-center justify-between mb-0.5">
-                                      <span className="font-semibold">{t('gapUi.detail.aiLabel', { label: verdictLabel })}</span>
-                                      <span className="font-mono">{validation.score}%</span>
-                                    </div>
-                                    <p className="leading-snug opacity-90">{validation.justification}</p>
-                                    {validation.missing && validation.missing.length > 0 && (
-                                      <ul className="mt-1 list-disc list-inside opacity-80">
-                                        {validation.missing.slice(0, 3).map((m, i) => <li key={i}>{m}</li>)}
-                                      </ul>
-                                    )}
-                                  </div>
-                                )}
+                                {validation && <EvidenceAnalysisResult result={validation} onOpen={async () => {
+                                  const signed = await supabase.storage.from('documentos').createSignedUrl(file.path || file.url, 60);
+                                  if (signed.error || !signed.data) { toast.error(t('evidenceIntelligence.readError')); return; }
+                                  window.open(signed.data.signedUrl, '_blank', 'noopener,noreferrer');
+                                }} onUsePlan={text => {
+                                  setFormData(prev => ({ ...prev, plano_acao: [prev.plano_acao, text].filter(Boolean).join('\n\n') }));
+                                  toast.success(t('evidenceIntelligence.saved'));
+                                }} />}
                               </div>
                             );
                           })}
@@ -1309,6 +1320,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
 </div>
               <div id="requirement-panel-3" className="requirement-panel space-y-5" hidden={activeStep !== 3} tabIndex={-1} aria-label={t('gapUi.workspace.review')}>
+                <RequirementReviewPanel key={requirement.id} hasUnsavedChanges={isDirty} evaluationId={formData.id || requirement.evaluation_id} onPlanLinked={async (id) => {
+                  const scope = requirement.id;
+                  const { data, error } = await supabase.from('planos_acao').select('id,titulo,status,prazo').eq('id', id).eq('empresa_id', empresaId!).single();
+                  if (error) throw error;
+                  const { data: evaluation, error: evaluationError } = await supabase.from('gap_analysis_evaluations').select('updated_at').eq('id', formData.id || requirement.evaluation_id!).single();
+                  if (evaluationError) throw evaluationError;
+                  if (analysisScope.current !== scope) return;
+                  setFormData(prev => ({ ...prev, plano_acao_id: id }));
+                  setPlanoAcaoVinculado(data);
+                  loadedUpdatedAtRef.current = evaluation?.updated_at || null;
+                }} />
                 <p className="text-sm leading-6 text-muted-foreground">{t('gapUi.workspace.reviewHintFull')}</p>
                                   <details open className="group rounded-lg border border-border/80 bg-surface-1/30 p-3" aria-labelledby="completion-title">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">

@@ -3,6 +3,7 @@ import { calcularScoreFramework } from '@/lib/gap-score';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
+import { readAllPages } from '@/lib/read-all-pages';
 
 export type FrameworkStatus = 'em_andamento' | 'concluido' | 'nao_iniciado';
 
@@ -33,28 +34,28 @@ export const useFrameworksOverview = () => {
         // Frameworks são templates globais (empresa_id NULL) + os da empresa.
         // Sem o filtro, dashboards de uma empresa vazavam metadados de frameworks
         // customizados de outras empresas.
-        const { data: frameworks, error: fwErr } = await supabase
+        const { data: frameworks, error: fwErr } = await readAllPages((from, to) => supabase
           .from('gap_analysis_frameworks')
           .select('id, nome, versao, tipo')
-          .or(`empresa_id.is.null,empresa_id.eq.${empresaId}`);
+          .or(`empresa_id.is.null,empresa_id.eq.${empresaId}`).order('id').range(from, to));
         if (fwErr) throw fwErr;
         if (!frameworks?.length) return [];
 
         // Avaliações da empresa.
-        const { data: evals, error: evErr } = await supabase
+        const { data: evals, error: evErr } = await readAllPages((from, to) => supabase
           .from('gap_analysis_evaluations')
           .select('framework_id, requirement_id, conformity_status, updated_at')
           .eq('empresa_id', empresaId!)
-          .limit(5000);
+          .order('id').range(from, to));
         if (evErr) throw evErr;
 
         // A Declaração de Aplicabilidade manda no âmbito. `grep soa` neste
         // ficheiro devolvia zero: o cartão do dashboard ignorava as exclusões
         // que o próprio produto assinou.
-        const { data: soa, error: soaErr } = await supabase
+        const { data: soa, error: soaErr } = await readAllPages((from, to) => supabase
           .from('gap_analysis_soa')
           .select('requirement_id, aplicavel')
-          .eq('empresa_id', empresaId!);
+          .eq('empresa_id', empresaId!).order('id').range(from, to));
         if (soaErr) throw soaErr;
         const foraDoEscopo = new Set(
           (soa || []).filter((x: any) => x.aplicavel === false).map((x: any) => x.requirement_id),
@@ -120,8 +121,8 @@ export const useFrameworksOverview = () => {
           const media = resultado.score;
 
           let status: FrameworkStatus = 'nao_iniciado';
-          if (total > 0 && avaliados >= total) status = 'concluido';
-          else if (avaliados > 0) status = 'em_andamento';
+          if (total > 0 && avaliados + resultado.naoAplicaveis >= total) status = 'concluido';
+          else if (avaliados + resultado.naoAplicaveis > 0) status = 'em_andamento';
 
           const ultima = list
             .map((e) => e.updated_at)
@@ -134,7 +135,7 @@ export const useFrameworksOverview = () => {
             nome: fw.nome,
             versao: fw.versao || null,
             tipo: fw.tipo || null,
-            totalRequisitos: total,
+            totalRequisitos: resultado.aplicaveis,
             requisitosAvaliados: avaliados,
             mediaConformidade: media,
             status,
@@ -150,7 +151,7 @@ export const useFrameworksOverview = () => {
         logger.error('Frameworks Overview Error', {
           error: error instanceof Error ? error.message : String(error),
         });
-        return [];
+        throw error;
       }
     },
   });

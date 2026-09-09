@@ -92,10 +92,13 @@ export function nivelRiscoFromConfig(
 ): string | null {
   const niveis = config?.niveis_risco;
   if (!niveis || niveis.length === 0) return null;
+  if (probabilidade == null || impacto == null || String(probabilidade).trim() === '' || String(impacto).trim() === '') return null;
 
   const p = Number(probabilidade);
   const i = Number(impacto);
-  if (!Number.isFinite(p) || !Number.isFinite(i)) return null;
+  if (!Number.isInteger(p) || !Number.isInteger(i) || p < 1 || i < 1) return null;
+  if (config.escala_probabilidade?.length && !config.escala_probabilidade.some(e => Number(e.valor) === p)) return null;
+  if (config.escala_impacto?.length && !config.escala_impacto.some(e => Number(e.valor) === i)) return null;
 
   const metodo = config?.metodo_calculo === 'soma' ? 'soma' : DEFAULT_METODO_CALCULO;
   const resultado = metodo === 'soma' ? p + i : p * i;

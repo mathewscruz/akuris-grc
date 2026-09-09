@@ -9,7 +9,6 @@
  * Os testes rodam sobre as funções PURAS que a Edge Function usa — mesma
  * fórmula, sem depender do gateway da IA (o que tornaria o teste flaky/caro).
  */
-import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   computeCoverageScore,

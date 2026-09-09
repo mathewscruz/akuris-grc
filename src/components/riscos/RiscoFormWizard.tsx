@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
-import { financialExposure, scoreFromMatriz } from './risk-utils';
+import { financialImpact, scoreFromMatriz } from './risk-utils';
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 import { nivelRiscoFromConfig, apetiteScoreDaConfig, type MatrizConfiguracao } from './matriz-config';
 import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
@@ -1162,7 +1162,7 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
                 control={form.control}
                 name="impacto_financeiro"
                 render={({ field }) => {
-                  const exp = financialExposure(field.value, watchProbabilidade);
+                  const exp = financialImpact(field.value);
                   return (
                     <FormItem>
                       <FormLabel>{t('campos.risco.impactoFinanceiro', { moeda: simboloMoeda })}</FormLabel>

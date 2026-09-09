@@ -1,7 +1,6 @@
 /**
- * MaturityScale — barra horizontal de 5 níveis CMMI-like.
- * 1 Inicial · 2 Gerenciado · 3 Definido · 4 Medido · 5 Otimizado
- * Cores via tokens semânticos. Nível atual derivado de score 0-100.
+ * Historical component name; displays adherence bands, not CMMI maturity.
+ * A percentage of requirements cannot establish measured process capability.
  */
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -16,11 +15,11 @@ interface MaturityScaleProps {
 
 function getLevels(t: (key: string) => string) {
   return [
-    { id: 1, label: t('sweepRiscos.gap.maturity.inicial'), min: 0, color: 'bg-destructive' },
-    { id: 2, label: t('sweepRiscos.gap.maturity.gerenciado'), min: 20, color: 'bg-destructive/70' },
-    { id: 3, label: t('sweepRiscos.gap.maturity.definido'), min: 40, color: 'bg-warning' },
-    { id: 4, label: t('sweepRiscos.gap.maturity.medido'), min: 60, color: 'bg-primary' },
-    { id: 5, label: t('sweepRiscos.gap.maturity.otimizado'), min: 80, color: 'bg-success' },
+    { id: 1, label: t('calculationMethod.initial'), min: 0, color: 'bg-destructive' },
+    { id: 2, label: t('calculationMethod.low'), min: 20, color: 'bg-destructive/70' },
+    { id: 3, label: t('calculationMethod.developing'), min: 40, color: 'bg-warning' },
+    { id: 4, label: t('calculationMethod.intermediate'), min: 60, color: 'bg-primary' },
+    { id: 5, label: t('calculationMethod.high'), min: 80, color: 'bg-success' },
   ];
 }
 
@@ -37,7 +36,7 @@ export function MaturityScale({ score, className, showLabels = true }: MaturityS
   const current = getMaturityLevel(score, t);
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full', className)} title={t('calculationMethod.gap')}>
       <div className="grid grid-cols-5 gap-1">
         {LEVELS.map((l) => {
           const reached = l.id <= current.id;

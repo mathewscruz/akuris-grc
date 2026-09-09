@@ -346,7 +346,7 @@ export function AssessmentDialog({
               )}
             </div>
 
-            {assessment.score_final && (
+            {assessment.score_final != null && (
               <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldFinalScore')}</Label>
                 <p className="text-2xl font-bold text-primary">{assessment.score_final.toFixed(1)}%</p>

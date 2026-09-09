@@ -114,7 +114,11 @@ export function mergeDictionaries(
 
 import canalExperience from './canal-experience';
 
+import { evidenceIntelligence } from './evidence-intelligence';
+import { calculationMethod } from './calculation-method';
 const modules: Record<string, ModuleDict> = {
+  calculationMethod,
+  evidenceIntelligence,
   integrationPlatform,
   experience,
   executive,

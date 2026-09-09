@@ -190,7 +190,7 @@ export function RiskScoreTimeline() {
         existia com esta avaliação.
       */
       for (const linhas of porRisco.values()) {
-        const { existia, avaliacao } = vigenteNoTempo(linhas, end);
+        const { existia, avaliacao } = vigenteNoTempo(linhas, new Date(Math.min(end.getTime(), now.getTime())));
         if (!existia || !avaliacao) continue;
         const score = avaliacao.score;
         const sev = avaliacao.severidade;
@@ -290,9 +290,9 @@ export function RiskScoreTimeline() {
   }
 
   const totalDoPonto = (i: number) => displayData[i]?.total ?? 0;
-  const acimaAtual = displayData.length
-    ? displayData[displayData.length - 1].acima
-    : 0;
+  // An alert about today's portfolio uses current records, never a historical
+  // snapshot that can predate a reassessment or contain deleted legacy risks.
+  const acimaAtual = stats?.acimaApetite ?? null;
 
   const opcoesPeriodo: OpcaoPeriodo<TimeRange>[] = periods.map((p) => ({
     value: p.value,
@@ -400,7 +400,7 @@ export function RiskScoreTimeline() {
           limpo={acimaAtual === 0}
           onClick={() => navigate('/riscos')}
         >
-          {acimaAtual === 0
+          {acimaAtual === null ? t('executive.notAssessed') : acimaAtual === 0
             ? t('dashWidgets.timeline.dentroDoApetite')
             : t('dashWidgets.timeline.acimaDoApetiteAcao', { count: acimaAtual })}
         </PanelAction>
