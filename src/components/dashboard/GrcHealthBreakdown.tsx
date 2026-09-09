@@ -81,7 +81,7 @@ export function GrcHealthBreakdown() {
         <div className="grid md:grid-cols-[minmax(260px,.85fr)_minmax(0,2fr)]">
           <div className="executive-tint flex flex-col justify-center gap-4 p-5">
             <div className="flex items-center gap-4">
-              <ScoreRing value={comDados.length ? maturity.score : null} label={t('executive.operational')} className="h-24 w-24 sm:h-32 sm:w-32" />
+              <ScoreRing value={comDados.length ? maturity.score : null} label={t('executive.operational')} colorScale="operational" className="h-24 w-24 sm:h-32 sm:w-32" />
               <div className="min-w-0">
                 <p className="executive-label">{t('executive.operational')}</p>
                 <p className="mt-1 text-sm font-medium">{maturity.label}</p>

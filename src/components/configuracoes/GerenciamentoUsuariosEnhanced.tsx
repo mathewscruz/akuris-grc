@@ -1,6 +1,7 @@
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { loadAccessInfo, userAccessState } from '@/lib/user-access-info';
+import { resendFirstAccessEmail } from '@/lib/resend-first-access';
 import { IconAdd, IconEdit, IconDelete, IconMore, IconTime, IconUserCheck, IconPerson, IconShield, IconMail, IconUsers, IconShieldCheck, IconKey } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -533,11 +534,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     try {
       setActionLoading(prev => ({ ...prev, [`resend-${usuario.id}`]: true }));
       
-      const { data, error } = await supabase.functions.invoke('resend-welcome-email', {
-        body: { userId: usuario.user_id }
-      });
-
-      if (error) throw error;
+      await resendFirstAccessEmail(usuario.user_id, t('admin.usuarios.toastErrorResendInvite'));
 
       toast.success(t('admin.usuarios.toastInviteResentSimple', { nome: usuario.nome }));
 
@@ -596,10 +593,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
     for (const usuario of pendentes) {
       try {
-        const { error } = await supabase.functions.invoke('resend-welcome-email', {
-          body: { userId: usuario.user_id }
-        });
-        if (error) throw error;
+        await resendFirstAccessEmail(usuario.user_id, t('admin.usuarios.toastErrorResendInvite'));
         enviados++;
       } catch (e) {
         console.error('Falha ao reenviar convite', usuario.email, e);

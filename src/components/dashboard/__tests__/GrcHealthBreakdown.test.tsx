@@ -20,6 +20,7 @@ describe('leitura executiva do dashboard', () => {
   it('mostra o índice operacional uma vez, com sua base explícita', () => {
     render(<GrcHealthBreakdown />);
     expect(screen.getAllByRole('img', { name: 'Índice operacional: 50/100' })).toHaveLength(1);
+    expect(screen.getByRole('img', { name: 'Índice operacional: 50/100' })).toHaveClass('executive-ring--operational');
     expect(screen.getByText('2 de 3 módulos com dados')).toBeInTheDocument();
     expect(screen.getByText(/Não representa uma certificação/)).toBeInTheDocument();
   });

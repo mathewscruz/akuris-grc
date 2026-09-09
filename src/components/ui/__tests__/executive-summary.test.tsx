@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExecutiveBar, ScoreRing } from '../executive-summary';
+import { operationalScoreColor } from '@/lib/operational-score-color';
 
 vi.mock('@/lib/motion-preferences', () => ({ useMotionAllowed: () => false }));
 vi.mock('../stat-strip', () => ({ AnimatedMetricValue: ({ value }: { value: number }) => <>{value}</> }));
@@ -29,5 +30,20 @@ describe('indicadores executivos', () => {
     rerender(<ExecutiveBar value={null} label="Cobertura" />);
     expect(screen.queryByRole('meter')).toBeNull();
     expect(screen.getByRole('img', { name: 'Cobertura: —' })).toBeInTheDocument();
+  });
+  it('o anel operacional acompanha mudanças de pontuação sem mudar o valor ou o rótulo acessível', () => {
+    const { rerender, container } = render(<ScoreRing value={45} label="Índice operacional" colorScale="operational" />);
+    expect(screen.getByRole('img').style.getPropertyValue('--score-color')).toBe(operationalScoreColor(45));
+    expect(container.querySelector('[data-score-value]')).toHaveTextContent('45');
+    rerender(<ScoreRing value={46} label="Índice operacional" colorScale="operational" />);
+    expect(screen.getByRole('img', { name: 'Índice operacional: 46/100' }).style.getPropertyValue('--score-color')).toBe(operationalScoreColor(46));
+    expect(container.querySelector('[data-score-arc]')).toHaveAttribute('stroke-dashoffset', '54');
+  });
+  it('não colore ausência de dados como resultado ruim nem altera a paleta padrão dos outros módulos', () => {
+    const { rerender } = render(<ScoreRing value={null} label="Índice" colorScale="operational" />);
+    expect(screen.getByRole('img').style.getPropertyValue('--score-color')).toBe('hsl(var(--muted-foreground))');
+    rerender(<ScoreRing value={75} label="Aderência" />);
+    expect(screen.getByRole('img')).toHaveClass('text-primary');
+    expect(screen.getByRole('img').style.getPropertyValue('--score-color')).toBe('');
   });
 });
