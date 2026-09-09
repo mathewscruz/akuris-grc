@@ -1,6 +1,6 @@
 # Integrações Akuris — implementação e ativação
 
-Data: 08/09/2026. Estado: código implementado e testes locais; ainda não publicado. Aplicativos GitHub/Google e identidade técnica AWS cadastrados com autorização do titular; oito secrets desses fornecedores guardados no backend de produção. Não houve conexão com contas de clientes nem teste de coleta real. A preparação Microsoft e os requisitos de liberação externa permanecem pendentes.
+Data inicial: 08/09/2026; atualização: 09/09/2026. Estado: catálogo publicado com as oito novas integrações em “Em breve”, bloqueadas no frontend e backend. Aplicativos GitHub/Google e identidade técnica AWS cadastrados com autorização do titular; oito secrets desses fornecedores guardados no backend de produção. Não houve conexão com contas de clientes nem teste de coleta real. A preparação Microsoft e os requisitos de liberação externa permanecem pendentes.
 
 ## Decisão de publicação em 09/09/2026
 
@@ -8,8 +8,8 @@ O usuário solicitou publicar a versão mantendo **as oito novas integrações i
 
 - O frontend usa `src/lib/integration-release.ts` desativado. Renderiza somente catálogo pesquisável, marcas originais e botões desabilitados; não monta consultas de conexões, diálogos ou tratamento de callback, mesmo com parâmetros antigos na URL.
 - O backend exige `INTEGRATION_COLLECTIONS_ENABLED=true` explicitamente. Ausência, `false` ou valores diferentes mantêm `integration-connect` (incluindo retorno OAuth), `integration-worker`, disponibilidade e processamento bloqueados antes de acesso ao banco/fornecedores. A resposta é HTTP 503, `integrations_coming_soon`, sem cache. Credenciais previamente guardadas não ativam a funcionalidade.
-- Não aplicar as duas migrações novas nem configurar Vault/agendador nesta publicação. O catálogo não depende delas. Os conectores legados, API Keys e Webhooks de Entrada permanecem disponíveis; a correção do conector legado `azure-integration` pode ser publicada separadamente, sem ativar a plataforma nova.
-- Liberação futura exige concluir pendências dos fornecedores, aplicar as migrações, validar ponta a ponta e ativar deliberadamente tanto frontend quanto backend. Não ativar apenas porque existem secrets.
+- O plano era não aplicar as duas migrações novas, pois o catálogo não depende delas. O Lovable aplicou-as automaticamente durante a publicação, criando a estrutura vazia e a tarefa `integration-collections`. Não foram configurados secrets do agendador no Vault. A migração complementar `20260909102000_hold_integration_collections_release.sql` desativa somente essa tarefa, preservando sua definição. Os conectores legados, API Keys e Webhooks de Entrada permanecem disponíveis; a correção do conector legado `azure-integration` foi publicada sem ativar a plataforma nova.
+- Liberação futura exige concluir pendências dos fornecedores, conferir as migrações, validar ponta a ponta e ativar deliberadamente tanto frontend quanto backend. Depois de preparar Vault/token, a tarefa pode ser retomada com `cron.alter_job(job_id, active := true)` para o identificador verificado de `integration-collections`. Não ativar apenas porque existem secrets.
 - Conferência local de 09/09: 179 arquivos/1.000 testes frontend aprovados, 11 testes Deno aprovados, tipos/lint/build aprovados. Catálogo autenticado conferido dentro do Akuris com os oito estados “Em breve”; aba dos conectores legados continua acessível. Publicação e conferência do domínio serão registradas no relatório da versão.
 
 ## Experiência entregue
