@@ -1,5 +1,14 @@
 project_id = "lnlkahtugwmkznasapfd"
 
+# OAuth callback authenticates with one-time state; all management POSTs
+# validate JWT, active tenant admin and MFA inside the function.
+[functions.integration-connect]
+verify_jwt = false
+
+# Dedicated scoped scheduler token; never accepts user JWTs.
+[functions.integration-worker]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321

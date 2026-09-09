@@ -14,6 +14,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type EntityKey =
+  | 'sistema'
   | 'risco'
   | 'controle'
   | 'gap_requirement'
@@ -94,6 +95,11 @@ const deepLink = (base: string, param: string, id: string) =>
 const focus = (base: string, id: string) => deepLink(base, 'focus', id);
 
 export const ENTITY_DEFS: EntityDef[] = [
+  {
+    key: 'sistema', table: 'sistemas_privilegiados', labelKey: 'entidades.sistema',
+    select: 'id, nome_sistema, criticidade, created_at', tituloFields: ['nome_sistema'], prefixo: 'SYS', subtituloField: 'criticidade',
+    empresaScoped: true, orderBy: 'created_at', route: (r) => focus('/sistemas', r.id),
+  },
   {
     key: 'risco', table: 'riscos', labelKey: 'entidades.risco',
     select: 'id, nome, status, nivel_risco_inicial, nivel_risco_residual, biblioteca_codigo, created_at',
@@ -373,7 +379,7 @@ export async function fetchEntitiesByIds(key: EntityKey, empresaId: string | nul
 }
 
 export const ENTITY_MODULE: Record<EntityKey, string> = {
-  risco: 'riscos', controle: 'controles', gap_requirement: 'gap-analysis',
+  sistema: 'sistemas', risco: 'riscos', controle: 'controles', gap_requirement: 'gap-analysis',
   ativo: 'ativos', licenca: 'ativos', chave: 'ativos', documento: 'documentos',
   contrato: 'contratos', fornecedor: 'contratos', incidente: 'incidentes',
   auditoria: 'auditorias', auditoria_item: 'auditorias', projeto: 'projetos', tarefa: 'projetos',

@@ -28,9 +28,7 @@ interface AzureConfigDialogProps {
 
 const buildSyncOptions = (t: (k: string) => string) => [
   { id: 'intune_devices', label: t('configIntegrations.azure.syncOptions.intuneDevices.label'), descricao: t('configIntegrations.azure.syncOptions.intuneDevices.descricao') },
-  { id: 'azure_ad_devices', label: t('configIntegrations.azure.syncOptions.azureAdDevices.label'), descricao: t('configIntegrations.azure.syncOptions.azureAdDevices.descricao') },
   { id: 'azure_ad_users', label: t('configIntegrations.azure.syncOptions.azureAdUsers.label'), descricao: t('configIntegrations.azure.syncOptions.azureAdUsers.descricao') },
-  { id: 'azure_ad_groups', label: t('configIntegrations.azure.syncOptions.azureAdGroups.label'), descricao: t('configIntegrations.azure.syncOptions.azureAdGroups.descricao') },
 ];
 
 export function AzureConfigDialog({
@@ -50,10 +48,7 @@ export function AzureConfigDialog({
   );
   const [clientSecret, setClientSecret] = useState('');
   const [selectedSync, setSelectedSync] = useState<string[]>(
-    (existingConfig?.configuracoes?.sync_options as string[]) || ['intune_devices']
-  );
-  const [syncInterval, setSyncInterval] = useState(
-    (existingConfig?.configuracoes?.sync_interval as string) || 'daily'
+    ((existingConfig?.configuracoes?.sync_options as string[]) || ['intune_devices']).filter(value => ['intune_devices','azure_ad_users'].includes(value))
   );
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -120,27 +115,18 @@ export function AzureConfigDialog({
 
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('azure-integration', {
-        body: {
-          action: 'sync',
-          empresa_id: empresaId,
-          sync_options: selectedSync
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        setLastSyncInfo({
-          count: data.devices_synced || 0,
-          date: new Date().toLocaleString(intlLocale())
-        });
-        toast.success(t('configIntegrations.azure.toastSyncOk'), {
-          description: t('configIntegrations.azure.toastSyncOkDesc').replace('{count}', String(data.devices_synced || 0))
-        });
-      } else {
-        throw new Error(data?.error || 'Falha na sincronização');
+      let devices = 0, users = 0;
+      for (const action of [
+        ...(selectedSync.includes('intune_devices') ? ['sync'] : []),
+        ...(selectedSync.includes('azure_ad_users') ? ['sync_usuarios'] : []),
+      ]) {
+        const { data, error } = await supabase.functions.invoke('azure-integration', { body: { action, empresa_id: empresaId } });
+        if (error || !data?.success) throw error || new Error(data?.error || t('collectionHub.errors.collection_failed'));
+        devices += Number(data.devices_synced || 0);
+        users += Number(data.criados || 0) + Number(data.atualizados || 0);
       }
+      setLastSyncInfo({ count: devices, date: new Date().toLocaleString(intlLocale()) });
+      toast.success(t('configIntegrations.azure.toastSyncOk'), { description: t('collectionHub.legacySync', { devices, users }) });
     } catch (error: any) {
       toast.error(t('configIntegrations.azure.toastSyncErro'), { description: error.message });
     } finally {
@@ -171,7 +157,7 @@ export function AzureConfigDialog({
           tenant_id: tenantId,
           client_id: clientId,
           sync_options: selectedSync,
-          sync_interval: syncInterval,
+          sync_interval: 'manual',
           has_secret: true
         },
         /*
@@ -462,22 +448,7 @@ export function AzureConfigDialog({
             {/* Intervalo de sincronização */}
             <div className="space-y-2">
               <Label>{t('configIntegrations.azure.syncFreqLabel')}</Label>
-              <div className="flex gap-2">
-                {[
-                  { value: 'manual', label: t('configIntegrations.azure.freqManual') },
-                  { value: 'daily', label: t('configIntegrations.azure.freqDaily') },
-                  { value: 'weekly', label: t('configIntegrations.azure.freqWeekly') },
-                ].map(opt => (
-                  <Button
-                    key={opt.value}
-                    variant={syncInterval === opt.value ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSyncInterval(opt.value)}
-                  >
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground">{t('collectionHub.legacyManual')}</p>
             </div>
 
             {/* Sincronizar agora */}

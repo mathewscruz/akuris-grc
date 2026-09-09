@@ -1,7 +1,8 @@
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages } from '@/lib/read-all-pages';
 import { useListState } from '@/hooks/useListState';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { IconAdd, IconEdit, IconDelete, IconMore, IconServer } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ interface SistemaPrivilegiado {
 export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showSistemaDialog, setShowSistemaDialog] = useState(false);
   const [selectedSistema, setSelectedSistema] = useState<SistemaPrivilegiado | null>(null);
   const [detalheSistema, setDetalheSistema] = useState<SistemaPrivilegiado | null>(null);
@@ -75,6 +77,15 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
     },
     enabled: !!empresaId,
   });
+
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    const target = sistemas.find(sistema => sistema.id === focusId);
+    if (!target) return;
+    setDetalheSistema(target);
+    const next = new URLSearchParams(searchParams); next.delete('focus');
+    setSearchParams(next, { replace: true });
+  }, [sistemas, searchParams, setSearchParams]);
 
   const sistemasAtivos = sistemas.filter(s => s.ativo).length;
   /*

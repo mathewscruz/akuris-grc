@@ -1,0 +1,29 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Akuris: read-only compliance observations. No access to S3 object content and no resource modification.",
+  "Parameters": {
+    "TrustedPrincipal": { "Type": "String", "AllowedPattern": "arn:aws:iam::[0-9]{12}:(role|user)/[A-Za-z0-9+=,.@_/-]+" },
+    "ExternalId": { "Type": "String", "MinLength": 32, "MaxLength": 128 },
+    "RoleName": { "Type": "String", "AllowedPattern": "AkurisReadOnly-[a-f0-9]{8}" }
+  },
+  "Resources": {
+    "ReadOnlyRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": { "Ref": "RoleName" },
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ "Effect": "Allow", "Principal": { "AWS": { "Ref": "TrustedPrincipal" } }, "Action": "sts:AssumeRole", "Condition": { "StringEquals": { "sts:ExternalId": { "Ref": "ExternalId" } } } }]
+        },
+        "Policies": [{
+          "PolicyName": "AkurisComplianceReadOnly",
+          "PolicyDocument": { "Version": "2012-10-17", "Statement": [
+            { "Effect": "Allow", "Action": ["iam:GetAccountSummary", "s3:ListAllMyBuckets", "s3:GetBucketPublicAccessBlock", "cloudtrail:DescribeTrails", "cloudtrail:GetTrailStatus"], "Resource": "*" }
+          ] }
+        }]
+      }
+    }
+  },
+  "Outputs": { "RoleArn": { "Value": { "Fn::GetAtt": ["ReadOnlyRole", "Arn"] } } }
+}

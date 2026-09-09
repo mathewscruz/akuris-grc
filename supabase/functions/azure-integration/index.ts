@@ -73,30 +73,18 @@ async function getIntuneDevices(accessToken: string): Promise<ManagedDevice[]> {
 }
 
 function mapIntuneDeviceToAtivo(device: ManagedDevice, empresaId: string) {
-  const statusMap: Record<string, string> = {
-    'compliant': 'ativo',
-    'noncompliant': 'em_manutencao',
-    'conflict': 'em_manutencao',
-    'error': 'inativo',
-    'inGracePeriod': 'ativo',
-    'configManager': 'ativo',
-    'unknown': 'ativo',
-  };
-
   return {
     empresa_id: empresaId,
     nome: device.deviceName || 'Dispositivo sem nome',
     tipo: 'tecnologia',
     descricao: `${device.manufacturer || ''} ${device.model || ''} - ${device.operatingSystem} ${device.osVersion || ''}`.trim(),
     proprietario: device.userDisplayName || device.userPrincipalName || null,
-    status: statusMap[device.complianceState] || 'ativo',
     tags: [
       device.serialNumber ? `SN:${device.serialNumber}` : null,
       `Intune:${device.id}`,
       device.managementState
     ].filter(Boolean),
     data_aquisicao: device.enrolledDateTime ? device.enrolledDateTime.split('T')[0] : null,
-    criticidade: device.complianceState === 'noncompliant' ? 'alto' : 'medio',
     fornecedor: device.manufacturer || null,
     versao: device.osVersion || null,
   };
@@ -586,29 +574,34 @@ serve(async (req) => {
             const ativo = mapIntuneDeviceToAtivo(device, empresa_id);
             
             // Verificar se já existe pelo tag Intune:ID
-            const { data: existing } = await supabase
+            const { data: existing, error: lookupError } = await supabase
               .from('ativos')
               .select('id')
               .eq('empresa_id', empresa_id)
               .contains('tags', [`Intune:${device.id}`])
               .maybeSingle();
+            if (lookupError) throw lookupError;
 
             if (existing) {
-              await supabase
+              const { error: writeError } = await supabase
                 .from('ativos')
                 .update({ ...ativo, updated_at: new Date().toISOString() })
-                .eq('id', existing.id);
+                .eq('id', existing.id).eq('empresa_id', empresa_id);
+              if (writeError) throw writeError;
             } else {
-              await supabase.from('ativos').insert(ativo);
+              // Device compliance must not overwrite operational asset status.
+              const { error: writeError } = await supabase.from('ativos').insert({ ...ativo, status: 'ativo', criticidade: 'medio' });
+              if (writeError) throw writeError;
             }
             syncedCount++;
           }
 
           // Atualizar última sincronização
-          await supabase
+          const { error: syncStampError } = await supabase
             .from('integracoes_config')
-            .update({ ultima_sincronizacao: new Date().toISOString() })
-            .eq('id', config.id);
+            .update({ ultima_sincronizacao: new Date().toISOString(), status: 'conectado' })
+            .eq('id', config.id).eq('empresa_id', empresa_id);
+          if (syncStampError) throw syncStampError;
 
           // Registrar log
           await supabase.from('integracoes_webhook_logs').insert({
@@ -630,6 +623,7 @@ serve(async (req) => {
           );
         } catch (syncError) {
           console.error('Azure sync error:', syncError);
+          await supabase.from('integracoes_config').update({ status: 'erro' }).eq('id', config.id).eq('empresa_id', empresa_id);
           
           // Registrar erro no log
           await supabase.from('integracoes_webhook_logs').insert({

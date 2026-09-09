@@ -54,6 +54,18 @@ function cartao(n: string) {
 
 beforeEach(() => localStorage.clear());
 
+describe('frameworks sem assistente de escopo', () => {
+  it.each(['NIST CSF', 'NIST CSF 2.0', 'NIST SP 800-82', 'CIS Controls', 'COBIT', 'DORA', 'SOX', 'ITIL', 'ISO 9001', 'Framework personalizado'])('%s não derruba a página mesmo com o diálogo montado', (nome) => {
+    const { container } = render(
+      <LanguageProvider>
+        <AssistenteDeEscopo open={false} onOpenChange={() => {}} frameworkId="f1"
+          frameworkName={nome} empresaId="e1" totalRequisitos={106} onAplicado={() => {}} />
+      </LanguageProvider>,
+    );
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
+});
+
 describe('"Não sei" no ecrã', () => {
   it('marca o botão e conta como respondida', () => {
     montar('pt-BR');

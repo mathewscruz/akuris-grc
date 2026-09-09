@@ -50,6 +50,7 @@ import { contratosDialogs } from "./contratos-dialogs";
 import { dadosDialogs } from "./dados-dialogs";
 import { govDialogs } from "./gov-dialogs";
 import { configIntegrations } from "./config-integrations";
+import { integrationPlatform } from './integration-platform';
 import { configPerms } from "./config-permissoes";
 import { configPlanos } from "./config-planos";
 import { configGeral } from "./config-geral";
@@ -114,6 +115,7 @@ export function mergeDictionaries(
 import canalExperience from './canal-experience';
 
 const modules: Record<string, ModuleDict> = {
+  integrationPlatform,
   experience,
   executive,
   canalExperience,

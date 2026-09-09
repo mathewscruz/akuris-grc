@@ -18,6 +18,7 @@ import { IntegrationLogViewer } from './integrations/IntegrationLogViewer';
 import { ApiKeysManager } from './ApiKeysManager';
 import { InboundWebhooksManager } from './InboundWebhooksManager';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IntegrationCollections } from './integrations/IntegrationCollections';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 // Logos inline SVG
@@ -407,7 +408,7 @@ export function IntegrationHub() {
               variant={status === 'conectado' ? 'default' : 'outline'}
               className={status === 'conectado' ? 'bg-success/10 text-success border-success/30' : ''}
             >
-              {status === 'conectado' ? t('configIntegrations.hub.conectado') : t('configIntegrations.hub.desconectado')}
+              {status === 'conectado' ? t('configIntegrations.hub.conectado') : status === 'erro' ? t('collectionHub.status.error') : t('configIntegrations.hub.desconectado')}
             </Badge>
             
             <Button 
@@ -440,10 +441,11 @@ export function IntegrationHub() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="conectores">
-        <TabsList>
+      <Tabs defaultValue="collections">
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value="collections" className="gap-2"><IconPlug className="h-4 w-4" /> {t('collectionHub.tab')}</TabsTrigger>
           <TabsTrigger value="conectores" className="gap-2">
-            <IconPlug className="h-4 w-4" /> {t('configIntegrations.hub.tabConectores')}
+            <IconPlug className="h-4 w-4" /> {t('collectionHub.legacy')}
           </TabsTrigger>
           <TabsTrigger value="api-keys" className="gap-2">
             <IconKey className="h-4 w-4" /> {t('configIntegrations.hub.tabApiKeys')}
@@ -453,6 +455,7 @@ export function IntegrationHub() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="collections" className="pt-4">{empresaId && <IntegrationCollections empresaId={empresaId} />}</TabsContent>
         <TabsContent value="conectores">
           <div className="space-y-8">
             <div className="flex items-center justify-between">

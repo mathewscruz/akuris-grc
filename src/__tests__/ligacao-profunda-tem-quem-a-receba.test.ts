@@ -35,6 +35,7 @@ import { ler, linhas, semComentario } from './_fontes';
  * em qualquer página vizinha e dar-se por satisfeita.
  */
 const CONSUMIDORES: Record<EntityKey, string[]> = {
+  sistema: ['src/components/governanca/SistemasContent.tsx'],
   risco: ['src/pages/Riscos.tsx'],
   controle: ['src/components/governanca/ControlesContent.tsx'],
   gap_requirement: [

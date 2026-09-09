@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssumeOnlyCustomerAkurisRoles",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::*:role/AkurisReadOnly-????????",
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "true"
+        },
+        "StringEquals": {
+          "sts:RoleSessionName": "AkurisReadOnly"
+        },
+        "StringLike": {
+          "sts:ExternalId": "???????????????????????????????????????????"
+        }
+      }
+    }
+  ]
+}

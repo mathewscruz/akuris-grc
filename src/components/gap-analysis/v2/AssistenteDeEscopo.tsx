@@ -116,7 +116,9 @@ export function AssistenteDeEscopo({
   const respondidas = assistente
     ? assistente.perguntas.filter((p) => respostas[p.id]).length
     : 0;
-  const todasRespondidas = respondidas === assistente.perguntas.length;
+  // Frameworks sem roteiro próprio continuam acessíveis pela tabela/SoA.
+  // O diálogo pode estar montado (mesmo fechado) antes desta guarda.
+  const todasRespondidas = !!assistente && respondidas === assistente.perguntas.length;
 
   if (!assistente) return null;
 
