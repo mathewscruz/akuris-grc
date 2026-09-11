@@ -1,333 +1,343 @@
-/**
- * DocGen — geração do PDF a partir do documento estruturado.
- *
- * Compartilha o AST de `docgen-render.ts` com o DOCX e o preview, de modo que
- * negrito inline, listas e tabelas saem formatados (e não como markdown cru).
- */
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+/** PDF editorial do DocGen. Usa o mesmo conteúdo estruturado do preview/DOCX. */
+import { jsPDF } from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
 import { parseMarkdown, runsToPlain, type InlineRun, type MdNode } from './docgen-render';
 import type { DocGenDocument, DocxLabels } from './docgen-docx';
 
-import { formatarDiaParaDB } from '@/lib/date-utils';
-export interface PdfOptions {
-  empresaNome: string;
-  labels: DocxLabels;
-}
-
-const MARGIN_X = 56;
+export interface PdfOptions { empresaNome: string; labels: DocxLabels }
+const MARGIN = 52;
+const TOP = 80;
+const FOOTER = 64;
 const FONT = 'helvetica';
+type Color = [number, number, number];
+const INK: Color = [28, 35, 48];
+const MUTED: Color = [91, 102, 119];
+const ACCENT: Color = [101, 70, 219];
+const RULE: Color = [222, 226, 234];
 
 interface Ctx {
-  pdf: jsPDF;
-  y: number;
-  pageWidth: number;
-  pageHeight: number;
-  maxWidth: number;
-  bottom: number;
+  pdf: jsPDF; y: number; width: number; height: number; contentWidth: number; bottom: number;
+}
+interface TextStyle {
+  size: number; indent?: number; width?: number; color?: Color; boldAll?: boolean; leading?: number;
+}
+interface Fragment { text: string; style: string; font: string; width: number }
+type Line = Fragment[];
+
+// Keep Latin accents; normalize separators unsupported by PDF's standard fonts.
+function printable(text: string): string {
+  return String(text).replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\u00a0/g, ' ')
+    .replace(/[\u200b\u00ad\ufeff]/g, '');
+}
+function newPage(ctx: Ctx) { ctx.pdf.addPage(); ctx.y = TOP; }
+function ensureSpace(ctx: Ctx, height: number) {
+  if (ctx.y > TOP && ctx.y + height > ctx.bottom) newPage(ctx);
 }
 
-function newPage(ctx: Ctx) {
-  ctx.pdf.addPage();
-  ctx.y = 64;
-}
-
-function ensureSpace(ctx: Ctx, needed: number) {
-  if (ctx.y + needed > ctx.bottom) newPage(ctx);
-}
-
-/** Escreve runs com negrito/itálico inline, quebrando por largura. */
-function writeRuns(ctx: Ctx, runs: InlineRun[], opts: { size: number; indent?: number; color?: [number, number, number]; boldAll?: boolean }) {
-  const indent = opts.indent || 0;
-  const startX = MARGIN_X + indent;
-  const maxWidth = ctx.maxWidth - indent;
-  const lineHeight = opts.size * 1.45;
-  let x = startX;
-
-  ctx.pdf.setFontSize(opts.size);
-  ctx.pdf.setTextColor(...(opts.color || [32, 38, 48]));
-
-  ensureSpace(ctx, lineHeight);
-
-  runs.forEach((run) => {
+/** Measure before painting: even long URLs/identifiers wrap without losing text. */
+function wrapRuns(pdf: jsPDF, runs: InlineRun[], opts: TextStyle, width: number): Line[] {
+  const lines: Line[] = [];
+  let line: Line = [];
+  let used = 0;
+  const flush = () => {
+    while (line.length && !line[line.length - 1].text.trim()) line.pop();
+    if (line.length) lines.push(line);
+    line = []; used = 0;
+  };
+  pdf.setFontSize(opts.size);
+  for (const run of runs) {
     const bold = opts.boldAll || run.bold;
     const style = bold && run.italic ? 'bolditalic' : bold ? 'bold' : run.italic ? 'italic' : 'normal';
-    ctx.pdf.setFont(run.code ? 'courier' : FONT, run.code && style === 'bolditalic' ? 'bold' : style);
-
-    const words = run.text.split(/(\s+)/).filter((w) => w !== '');
-    words.forEach((word) => {
-      const w = ctx.pdf.getTextWidth(word);
-      if (x + w > startX + maxWidth && word.trim()) {
-        x = startX;
-        ctx.y += lineHeight;
-        ensureSpace(ctx, lineHeight);
+    const font = run.code ? 'courier' : FONT;
+    pdf.setFont(font, style);
+    for (const token of printable(run.text).split(/(\s+)/).filter(Boolean)) {
+      const whitespace = !token.trim();
+      const text = whitespace ? ' ' : token;
+      if (whitespace && !line.length) continue;
+      const tokenWidth = pdf.getTextWidth(text);
+      if (used + tokenWidth > width && line.length) flush();
+      if (whitespace && !line.length) continue;
+      if (tokenWidth <= width) {
+        line.push({ text, style, font, width: tokenWidth });
+        used += tokenWidth;
+      } else {
+        // Normal words stay intact. Only an overlong token uses character wrapping.
+        for (const char of Array.from(text)) {
+          const charWidth = pdf.getTextWidth(char);
+          if (used + charWidth > width && line.length) flush();
+          line.push({ text: char, style, font, width: charWidth });
+          used += charWidth;
+        }
       }
-      if (x === startX && !word.trim()) return; // não inicia linha com espaço
-      ctx.pdf.text(word, x, ctx.y);
-      x += w;
+    }
+  }
+  flush();
+  return lines;
+}
+function paintLine(ctx: Ctx, line: Line, x: number, y: number, opts: TextStyle) {
+  ctx.pdf.setFontSize(opts.size).setTextColor(...(opts.color || INK));
+  // Real spans improve PDF text selection, instead of one text object per word.
+  const spans: Fragment[] = [];
+  for (const part of line) {
+    const last = spans[spans.length - 1];
+    if (last && last.style === part.style && last.font === part.font) {
+      last.text += part.text; last.width += part.width;
+    } else spans.push({ ...part });
+  }
+  for (const span of spans) {
+    ctx.pdf.setFont(span.font, span.style).text(span.text, x, y);
+    x += span.width;
+  }
+}
+function linesFor(ctx: Ctx, runs: InlineRun[], opts: TextStyle) {
+  return wrapRuns(ctx.pdf, runs, opts, opts.width ?? ctx.contentWidth - (opts.indent || 0));
+}
+function writeRuns(ctx: Ctx, runs: InlineRun[], opts: TextStyle, marker?: string) {
+  const lines = linesFor(ctx, runs, opts);
+  const leading = opts.leading || opts.size * 1.55;
+  let offset = 0;
+  while (offset < lines.length) {
+    const remaining = lines.length - offset;
+    let capacity = Math.floor((ctx.bottom - ctx.y) / leading);
+    // A 3-line paragraph must not split 1+2 or 2+1; larger paragraphs
+    // leave at least two lines on either side of a page break.
+    if (capacity < Math.min(remaining, 2) || (remaining === 3 && capacity === 2)) {
+      newPage(ctx);
+      capacity = Math.floor((ctx.bottom - ctx.y) / leading);
+    }
+    let count = Math.min(remaining, capacity);
+    if (remaining - count === 1 && count > 2) count -= 1;
+    lines.slice(offset, offset + count).forEach((line, i) => {
+      if (marker && offset + i === 0) {
+        ctx.pdf.setFont(FONT, 'normal').setFontSize(opts.size).setTextColor(...MUTED);
+        ctx.pdf.text(marker, MARGIN + (opts.indent || 0) - 8, ctx.y, { align: 'right' });
+      }
+      paintLine(ctx, line, MARGIN + (opts.indent || 0), ctx.y, opts);
+      ctx.y += leading;
     });
-  });
-
-  ctx.y += lineHeight;
-  ctx.pdf.setFont(FONT, 'normal');
-  ctx.pdf.setTextColor(32, 38, 48);
+    offset += count;
+    if (offset < lines.length) newPage(ctx);
+  }
 }
-
 function renderTable(ctx: Ctx, header: InlineRun[][], rows: InlineRun[][][]) {
-  const head = header.length ? [header.map((h) => runsToPlain(h))] : undefined;
-  const body = rows.map((r) => r.map((c) => runsToPlain(c)));
+  ensureSpace(ctx, 68);
+  const columns = Math.max(header.length, ...rows.map(row => row.length), 1);
+  const plain = (row: InlineRun[][]) => Array.from({ length: columns }, (_, i) => printable(runsToPlain(row[i] || [])));
   autoTable(ctx.pdf, {
-    head,
-    body,
-    startY: ctx.y + 4,
-    margin: { left: MARGIN_X, right: MARGIN_X },
-    styles: { font: FONT, fontSize: 9, cellPadding: 5, lineColor: [208, 213, 221], lineWidth: 0.5, textColor: [32, 38, 48] },
-    headStyles: { fillColor: [238, 241, 246], textColor: [16, 24, 40], fontStyle: 'bold' },
-    theme: 'grid',
+    head: header.length ? [plain(header)] : undefined,
+    body: rows.map(plain),
+    startY: ctx.y,
+    margin: { left: MARGIN, right: MARGIN, top: TOP, bottom: FOOTER },
+    styles: {
+      font: FONT, fontSize: 9.25, cellPadding: 7, overflow: 'linebreak',
+      textColor: INK, lineColor: RULE, lineWidth: 0.35, valign: 'top',
+    },
+    headStyles: { fillColor: [241, 239, 249], textColor: INK, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [250, 251, 253] },
+    theme: 'grid', showHead: 'everyPage', rowPageBreak: 'avoid',
   });
-  const finalY = (ctx.pdf as any).lastAutoTable?.finalY;
-  ctx.y = (typeof finalY === 'number' ? finalY : ctx.y) + 16;
+  const finalY = (ctx.pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY;
+  ctx.y = (finalY ?? ctx.y) + 24;
 }
-
-function renderNodes(ctx: Ctx, nodes: MdNode[], sectionNumber: number) {
-  let subCount = 0;
-  let subSubCount = 0;
-
-  nodes.forEach((node) => {
+function headingIdentity(text: string) {
+  return text.replace(/^\s*\d+(?:\.\d+)*[.)]?\s+/, '').trim().toLocaleLowerCase();
+}
+function sectionTitle(name: string, number: number) {
+  // Preserve existing numbering: references inside a policy must not change.
+  return /^\s*\d+(?:\.\d+)*[.)]?\s+/.test(name) ? name : number + '. ' + name;
+}
+function renderNodes(ctx: Ctx, nodes: MdNode[], sectionName: string) {
+  nodes.forEach((node, index) => {
     switch (node.type) {
       case 'heading': {
-        ensureSpace(ctx, 46);
-        ctx.y += 6;
-        if (node.level === 2) {
-          subCount += 1;
-          subSubCount = 0;
-          writeRuns(ctx, [{ text: `${sectionNumber}.${subCount} ${runsToPlain(node.runs)}` }], { size: 12, boldAll: true, color: [16, 24, 40] });
-        } else if (node.level === 3) {
-          subSubCount += 1;
-          writeRuns(ctx, [{ text: `${sectionNumber}.${Math.max(subCount, 1)}.${subSubCount} ${runsToPlain(node.runs)}` }], { size: 11, boldAll: true, color: [52, 64, 84] });
-        } else {
-          writeRuns(ctx, node.runs, { size: 10.5, boldAll: true, color: [52, 64, 84] });
-        }
-        ctx.y += 2;
+        // Models often repeat the section's title as the first Markdown heading.
+        if (index === 0 && headingIdentity(runsToPlain(node.runs)) === headingIdentity(sectionName)) break;
+        const opts = { size: node.level === 2 ? 12 : 11, boldAll: true, color: INK };
+        ensureSpace(ctx, linesFor(ctx, node.runs, opts).length * opts.size * 1.55 + 50);
+        ctx.y += 8;
+        writeRuns(ctx, node.runs, opts);
+        ctx.y += 4;
         break;
       }
       case 'paragraph':
-        writeRuns(ctx, node.runs, { size: 10 });
-        ctx.y += 4;
-        break;
+        writeRuns(ctx, node.runs, { size: 10.5 }); ctx.y += 7; break;
       case 'quote':
-        writeRuns(ctx, node.runs.map((r) => ({ ...r, italic: true })), { size: 10, indent: 18, color: [71, 84, 103] });
-        ctx.y += 4;
-        break;
+        writeRuns(ctx, node.runs.map(run => ({ ...run, italic: true })), { size: 10.5, indent: 18, color: MUTED });
+        ctx.y += 9; break;
       case 'list':
         node.items.forEach((item, i) => {
-          const marker = node.ordered ? `${i + 1}.` : ['•', '–', '·'][Math.min(item.level, 2)];
-          writeRuns(ctx, [{ text: `${marker} ` }, ...item.runs], { size: 10, indent: 14 + item.level * 14 });
+          writeRuns(ctx, item.runs, { size: 10.5, indent: 18 + item.level * 16 }, node.ordered ? (i + 1) + '.' : '•');
+          ctx.y += 3;
         });
-        ctx.y += 6;
-        break;
-      case 'table':
-        renderTable(ctx, node.header, node.rows);
-        break;
+        ctx.y += 6; break;
+      case 'table': renderTable(ctx, node.header, node.rows); break;
     }
   });
 }
 
-/** Mesmo prazo do DOCX: logo é decorativo, não pode pendurar a exportação. */
-const LOGO_TIMEOUT_MS = 3000;
-
-async function logoDataUrl(url: string): Promise<{ dataUrl: string; format: 'PNG' | 'JPEG' } | null> {
-  const abortar = new AbortController();
-  const prazo = setTimeout(() => abortar.abort(), LOGO_TIMEOUT_MS);
+/** Decorative assets must never prevent downloading the document. */
+async function loadLogo(url: string): Promise<Uint8Array | null> {
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), 3000);
   try {
-    const resp = await fetch(url, { signal: abortar.signal });
-    if (!resp.ok) return null;
-    const blob = await resp.blob();
-    const reader = new FileReader();
-    const dataUrl: string = await new Promise((resolve, reject) => {
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('logo'));
-      reader.readAsDataURL(blob);
-    });
-    return { dataUrl, format: blob.type.includes('png') ? 'PNG' : 'JPEG' };
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(prazo);
+    const response = await fetch(url, { signal: abort.signal });
+    if (!response.ok) return null;
+    return new Uint8Array(await response.arrayBuffer());
+  } catch { return null; } finally { clearTimeout(timeout); }
+}
+function fitLabel(pdf: jsPDF, value: string, width: number): string {
+  const text = printable(value).replace(/\s+/g, ' ').trim();
+  if (pdf.getTextWidth(text) <= width) return text;
+  let result = '';
+  for (const char of Array.from(text)) {
+    if (pdf.getTextWidth(result + char + '...') > width) break;
+    result += char;
   }
+  return result.trimEnd() + '...';
+}
+interface Entry {
+  title: string; page?: number; targetY?: number;
+  placements: Array<{ page: number; y: number; height: number }>;
 }
 
 export async function buildDocGenPdfBlob(doc: DocGenDocument, options: PdfOptions): Promise<Blob> {
   const { empresaNome, labels } = options;
-  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', putOnlyUsedFonts: true });
+  const width = pdf.internal.pageSize.getWidth();
+  const height = pdf.internal.pageSize.getHeight();
+  const ctx: Ctx = { pdf, y: TOP, width, height, contentWidth: width - MARGIN * 2, bottom: height - FOOTER };
+  const title = doc.titulo?.trim() || 'Documento';
+  const classification = String(doc.metadados?.classificacao || 'Interno');
+  pdf.setProperties({ title, author: empresaNome, subject: classification, creator: 'Akuris DocGen' });
+  pdf.setDisplayMode('fullwidth', 'continuous', 'UseOutlines');
 
-  const ctx: Ctx = {
-    pdf,
-    y: 64,
-    pageWidth,
-    pageHeight,
-    maxWidth: pageWidth - MARGIN_X * 2,
-    bottom: pageHeight - 72,
-  };
-
-  const titulo = doc.titulo || 'Documento';
-  const versao = doc.versao || '1.0';
-  const dataCriacao = doc.data_criacao || formatarDiaParaDB(new Date());
-  const classificacao = doc.metadados?.classificacao || 'Interno';
-  const logoUrl: string | undefined = doc.metadados?.logo_url;
-  const logoAltura = parseInt(doc.metadados?.logo_altura || '48', 10);
-
-  // ===== CAPA =====
-  if (logoUrl) {
-    const logo = await logoDataUrl(logoUrl);
+  // Full original title, proportional logo and metadata with measured placement.
+  pdf.setFillColor(...ACCENT).rect(0, 0, 7, height, 'F');
+  pdf.setFont(FONT, 'bold').setFontSize(9).setTextColor(...MUTED);
+  pdf.text('AKURIS / DOCGEN', width - MARGIN, TOP, { align: 'right' });
+  if (doc.metadados?.logo_url) {
+    const logo = await loadLogo(doc.metadados.logo_url);
     if (logo) {
-      const logoW = Math.round(logoAltura * 2);
-      pdf.addImage(logo.dataUrl, logo.format, (pageWidth - logoW) / 2, 96, logoW, logoAltura);
+      try {
+        const properties = pdf.getImageProperties(logo);
+        const requested = Number.parseFloat(doc.metadados.logo_altura);
+        const maxHeight = Number.isFinite(requested) ? Math.min(64, Math.max(24, requested)) : 48;
+        const scale = Math.min(180 / properties.width, maxHeight / properties.height);
+        pdf.addImage(logo, properties.fileType, MARGIN, 62, properties.width * scale, properties.height * scale);
+      } catch { /* Corrupt/unsupported image: keep the document downloadable. */ }
     }
   }
-  pdf.setFont(FONT, 'bold');
-  pdf.setFontSize(24);
-  pdf.setTextColor(16, 24, 40);
-  const tituloLines = pdf.splitTextToSize(titulo, ctx.maxWidth);
-  let capaY = pageHeight / 2 - 40;
-  tituloLines.forEach((line: string) => {
-    pdf.text(line, pageWidth / 2, capaY, { align: 'center' });
-    capaY += 30;
-  });
-  pdf.setDrawColor(117, 82, 255);
-  pdf.setLineWidth(2);
-  pdf.line(pageWidth / 2 - 40, capaY + 6, pageWidth / 2 + 40, capaY + 6);
-  pdf.setFont(FONT, 'normal');
-  pdf.setFontSize(13);
-  pdf.setTextColor(71, 84, 103);
-  pdf.text(empresaNome, pageWidth / 2, capaY + 34, { align: 'center' });
-  pdf.setFontSize(10.5);
-  pdf.text(labels.versaoText, pageWidth / 2, pageHeight - 160, { align: 'center' });
-  pdf.text(labels.emissionDateText, pageWidth / 2, pageHeight - 144, { align: 'center' });
-  pdf.text(labels.classificationText, pageWidth / 2, pageHeight - 128, { align: 'center' });
-
-  // ===== SUMÁRIO (páginas preenchidas no fim) =====
-  pdf.addPage();
-  const tocPage = pdf.getNumberOfPages();
-  ctx.y = 64;
-  writeRuns(ctx, [{ text: labels.summary }], { size: 16, boldAll: true, color: [16, 24, 40] });
-  ctx.y += 8;
-
-  const tocEntries: Array<{ label: string; y: number; page?: number }> = [];
-  const secoes = doc.secoes || [];
-  secoes.forEach((s, i) => {
-    ensureSpace(ctx, 18);
-    const label = `${i + 1}. ${s.nome || labels.section}`;
-    tocEntries.push({ label, y: ctx.y });
-    writeRuns(ctx, [{ text: label }], { size: 10.5, color: [52, 64, 84] });
-  });
-
-  const appendixTitles: string[] = [];
-  const glossario = (doc.glossario || []).filter((g) => g?.termo);
-  const historico = (doc.historico_versoes || []).filter((h) => h?.versao);
-  const coverage = (doc.coverage_map || []).filter((c) => c?.requirement_codigo);
-  if (glossario.length) appendixTitles.push(labels.glossary);
-  if (historico.length) appendixTitles.push(labels.versionHistory);
-  if (coverage.length) appendixTitles.push(labels.coverage);
-  appendixTitles.forEach((titleText, i) => {
-    ensureSpace(ctx, 18);
-    const label = `${secoes.length + i + 1}. ${titleText}`;
-    tocEntries.push({ label, y: ctx.y });
-    writeRuns(ctx, [{ text: label }], { size: 10.5, color: [52, 64, 84] });
-  });
-
-  // ===== SEÇÕES =====
-  let entryIdx = 0;
-  secoes.forEach((secao, idx) => {
-    pdf.addPage();
-    ctx.y = 64;
-    if (tocEntries[entryIdx]) tocEntries[entryIdx].page = pdf.getNumberOfPages();
-    entryIdx += 1;
-    writeRuns(ctx, [{ text: `${idx + 1}. ${secao.nome || labels.section}` }], { size: 15, boldAll: true, color: [16, 24, 40] });
-    pdf.setDrawColor(117, 82, 255);
-    pdf.setLineWidth(1.5);
-    pdf.line(MARGIN_X, ctx.y - 6, MARGIN_X + 48, ctx.y - 6);
-    ctx.y += 10;
-    renderNodes(ctx, parseMarkdown(secao.conteudo || ''), idx + 1);
-  });
-
-  const startAppendix = (titleText: string, number: number) => {
-    pdf.addPage();
-    ctx.y = 64;
-    if (tocEntries[entryIdx]) tocEntries[entryIdx].page = pdf.getNumberOfPages();
-    entryIdx += 1;
-    writeRuns(ctx, [{ text: `${number}. ${titleText}` }], { size: 15, boldAll: true, color: [16, 24, 40] });
-    ctx.y += 6;
-  };
-
-  let appendixNumber = secoes.length;
-  if (glossario.length) {
-    appendixNumber += 1;
-    startAppendix(labels.glossary, appendixNumber);
-    renderTable(
-      ctx,
-      [[{ text: labels.glossaryTerm }], [{ text: labels.glossaryDefinition }]],
-      glossario.map((g) => [[{ text: String(g.termo || '') }], [{ text: String(g.definicao || '') }]]),
-    );
+  ctx.y = 168;
+  writeRuns(ctx, [{ text: empresaNome }], { size: 12, color: MUTED });
+  ctx.y = Math.max(ctx.y + 38, 236);
+  let titleSize = 30;
+  while (titleSize > 20 && linesFor(ctx, [{ text: title }], { size: titleSize, boldAll: true }).length * titleSize * 1.22 > 300) titleSize -= 1;
+  writeRuns(ctx, [{ text: title }], { size: titleSize, boldAll: true, leading: titleSize * 1.22 });
+  ctx.y += 22;
+  ensureSpace(ctx, 22);
+  pdf.setFillColor(...ACCENT).rect(MARGIN, ctx.y, 64, 3, 'F');
+  ctx.y += 45;
+  const metadata = [labels.versaoText, labels.emissionDateText, labels.classificationText];
+  const metaOpts = { size: 10, indent: 18, width: ctx.contentWidth - 36, color: MUTED };
+  const metaHeight = metadata.reduce((sum, text) => sum + linesFor(ctx, [{ text }], metaOpts).length * 15.5 + 8, 0) + 24;
+  ensureSpace(ctx, metaHeight);
+  if (metaHeight < ctx.bottom - TOP) {
+    ctx.y = Math.max(ctx.y, ctx.bottom - metaHeight - 25);
+    pdf.setFillColor(246, 247, 250).roundedRect(MARGIN, ctx.y - 16, ctx.contentWidth, metaHeight, 5, 5, 'F');
   }
-  if (historico.length) {
-    appendixNumber += 1;
-    startAppendix(labels.versionHistory, appendixNumber);
-    renderTable(
-      ctx,
-      [[{ text: labels.versionCol }], [{ text: labels.dateCol }], [{ text: labels.authorCol }], [{ text: labels.descriptionCol }]],
-      historico.map((h) => [
-        [{ text: String(h.versao || '') }],
-        [{ text: String(h.data || '') }],
-        [{ text: String(h.autor || '') }],
-        [{ text: String(h.descricao || '') }],
-      ]),
-    );
+  metadata.forEach(text => { writeRuns(ctx, [{ text }], metaOpts); ctx.y += 8; });
+
+  const sections = doc.secoes || [];
+  const glossary = (doc.glossario || []).filter(item => item?.termo);
+  const history = (doc.historico_versoes || []).filter(item => item?.versao);
+  const coverage = (doc.coverage_map || []).filter(item => item?.requirement_codigo);
+  const appendices = [glossary.length ? labels.glossary : '', history.length ? labels.versionHistory : '', coverage.length ? labels.coverage : ''].filter(Boolean);
+  const entries: Entry[] = [...sections.map(section => section.nome || labels.section), ...appendices]
+    .map((name, i) => ({ title: sectionTitle(name, i + 1), placements: [] }));
+
+  // Reserve the entire TOC first; every row records its own TOC page and target.
+  const startSummary = () => {
+    newPage(ctx);
+    writeRuns(ctx, [{ text: labels.summary }], { size: 24, boldAll: true });
+    ctx.y += 20;
+  };
+  if (entries.length) startSummary();
+  const tocStyle = { size: 11, width: ctx.contentWidth - 48, color: INK };
+  for (const entry of entries) {
+    const lines = linesFor(ctx, [{ text: entry.title }], tocStyle);
+    let lineIndex = 0;
+    while (lineIndex < lines.length) {
+      if (ctx.y + Math.min(lines.length - lineIndex, 2) * 18 + 18 > ctx.bottom) startSummary();
+      const startY = ctx.y;
+      const capacity = Math.max(1, Math.floor((ctx.bottom - ctx.y - 18) / 18));
+      const chunk = lines.slice(lineIndex, lineIndex + capacity);
+      chunk.forEach(line => { paintLine(ctx, line, MARGIN, ctx.y, tocStyle); ctx.y += 18; });
+      entry.placements.push({ page: pdf.getNumberOfPages(), y: startY, height: chunk.length * 18 });
+      pdf.setDrawColor(...RULE).setLineWidth(0.4).line(MARGIN, ctx.y + 2, width - MARGIN, ctx.y + 2);
+      ctx.y += 18;
+      lineIndex += chunk.length;
+    }
+  }
+  if (entries.length) newPage(ctx);
+  let entryIndex = 0;
+  const startSection = () => {
+    const entry = entries[entryIndex++];
+    const opts = { size: 16, boldAll: true, color: INK };
+    const titleHeight = linesFor(ctx, [{ text: entry.title }], opts).length * 24.8;
+    ensureSpace(ctx, titleHeight + 86);
+    if (ctx.y > TOP) ctx.y += 16;
+    entry.page = pdf.getNumberOfPages();
+    entry.targetY = ctx.y - 16;
+    pdf.outline.add(null, printable(entry.title), { pageNumber: entry.page });
+    pdf.setDrawColor(...RULE).setLineWidth(0.5).line(MARGIN, ctx.y - 16, width - MARGIN, ctx.y - 16);
+    pdf.setDrawColor(...ACCENT).setLineWidth(2).line(MARGIN, ctx.y - 16, MARGIN + 32, ctx.y - 16);
+    writeRuns(ctx, [{ text: entry.title }], opts);
+    ctx.y += 12;
+  };
+  sections.forEach(section => {
+    startSection();
+    renderNodes(ctx, parseMarkdown(section.conteudo || ''), section.nome || labels.section);
+  });
+  const cells = (values: unknown[]) => values.map(value => [{ text: String(value ?? '') }]);
+  if (glossary.length) {
+    startSection();
+    renderTable(ctx, cells([labels.glossaryTerm, labels.glossaryDefinition]), glossary.map(item => cells([item.termo, item.definicao])));
+  }
+  if (history.length) {
+    startSection();
+    renderTable(ctx, cells([labels.versionCol, labels.dateCol, labels.authorCol, labels.descriptionCol]),
+      history.map(item => cells([item.versao, item.data, item.autor, item.descricao])));
   }
   if (coverage.length) {
-    appendixNumber += 1;
-    startAppendix(labels.coverage, appendixNumber);
-    renderTable(
-      ctx,
-      [[{ text: labels.requirementCol }], [{ text: labels.sectionsCol }], [{ text: labels.evidenceCol }]],
-      coverage.map((c) => [
-        [{ text: `${c.requirement_codigo}${c.requirement_titulo ? ` — ${c.requirement_titulo}` : ''}` }],
-        [{ text: (c.section_indexes || []).map((i) => String(i + 1)).join(', ') }],
-        [{ text: String(c.evidencia || '').slice(0, 240) }],
-      ]),
-    );
+    startSection();
+    renderTable(ctx, cells([labels.requirementCol, labels.sectionsCol, labels.evidenceCol]), coverage.map(item => cells([
+      item.requirement_codigo + (item.requirement_titulo ? ' - ' + item.requirement_titulo : ''),
+      (item.section_indexes || []).map(index => index + 1).join(', '),
+      item.evidencia, // Never truncate evidence in an exported record.
+    ])));
+  }
+  for (const entry of entries) {
+    for (const placement of entry.placements) {
+      pdf.setPage(placement.page);
+      pdf.setFont(FONT, 'bold').setFontSize(11).setTextColor(...ACCENT);
+      pdf.text(String(entry.page), width - MARGIN, placement.y, { align: 'right' });
+      pdf.link(MARGIN, placement.y - 12, ctx.contentWidth, placement.height + 8, { pageNumber: entry.page, top: entry.targetY });
+    }
   }
 
-  // ===== Números de página no sumário =====
-  pdf.setPage(tocPage);
-  pdf.setFont(FONT, 'normal');
-  pdf.setFontSize(10.5);
-  pdf.setTextColor(52, 64, 84);
-  tocEntries.forEach((entry) => {
-    if (!entry.page) return;
-    pdf.text(String(entry.page), pageWidth - MARGIN_X, entry.y, { align: 'right' });
-  });
-
-  // ===== Cabeçalho e rodapé em todas as páginas (menos a capa) =====
+  // Independent columns prevent long titles/names/classifications from colliding.
+  // Only these repeated running labels abbreviate; full values remain on the cover.
   const total = pdf.getNumberOfPages();
-  for (let p = 2; p <= total; p += 1) {
-    pdf.setPage(p);
-    pdf.setFont(FONT, 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(152, 162, 179);
-    pdf.text(`${titulo} · ${classificacao}`, pageWidth - MARGIN_X, 36, { align: 'right' });
-    pdf.text(
-      `${empresaNome} · v${versao} · ${labels.footerPage} ${p} ${labels.of} ${total}`,
-      pageWidth / 2,
-      pageHeight - 32,
-      { align: 'center' },
-    );
-    pdf.setDrawColor(233, 236, 241);
-    pdf.setLineWidth(0.5);
-    pdf.line(MARGIN_X, 44, pageWidth - MARGIN_X, 44);
+  for (let page = 2; page <= total; page += 1) {
+    pdf.setPage(page);
+    pdf.setFont(FONT, 'normal').setFontSize(8.5).setTextColor(...MUTED);
+    pdf.text(fitLabel(pdf, title, ctx.contentWidth - 124), MARGIN, 37);
+    pdf.text(fitLabel(pdf, classification, 106), width - MARGIN, 37, { align: 'right' });
+    pdf.setDrawColor(...RULE).setLineWidth(0.5).line(MARGIN, 49, width - MARGIN, 49);
+    pdf.line(MARGIN, height - 46, width - MARGIN, height - 46);
+    const footer = [empresaNome, 'v' + (doc.versao || '1.0')].filter(Boolean).join(' / ');
+    pdf.text(fitLabel(pdf, footer, ctx.contentWidth - 150), MARGIN, height - 29);
+    pdf.text(labels.footerPage + ' ' + page + ' ' + labels.of + ' ' + total, width - MARGIN, height - 29, { align: 'right' });
   }
-
   return pdf.output('blob');
 }

@@ -61,3 +61,6 @@ supabase/.temp/
 .claude/skills/
 skills-lock.json
 .tmp/
+
+# Amostras de documentos exportados para conferência local (podem conter dados de clientes).
+/output/pdf/
