@@ -479,6 +479,9 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
       </div>
 
       {/* Footer */}
+      <p className="text-xs text-muted-foreground">
+        {t('docgen.dialog.generationBillingNote')}
+      </p>
       <div className="flex items-center justify-between gap-2 border-t pt-3">
         <Button variant="ghost" onClick={handleBack} className="gap-1">
           <IconArrowLeft className="h-4 w-4" strokeWidth={1.5} />
@@ -500,4 +503,3 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     </div>
   );
 };
-

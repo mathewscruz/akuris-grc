@@ -58,6 +58,9 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
             <p className="text-sm text-muted-foreground mt-0.5">
               {t('docgen.templateGallery.description')}
             </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {t('docgen.dialog.generationBillingNote')}
+            </p>
           </div>
           <Button variant="outline" onClick={onStartBlank} className="gap-2 shrink-0">
             <IconAdd className="h-4 w-4" strokeWidth={1.5} />
@@ -180,4 +183,3 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
     </div>
   );
 };
-

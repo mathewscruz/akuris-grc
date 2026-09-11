@@ -15,6 +15,7 @@ import {
 } from '../_shared/compliance-score.ts';
 import { createAttemptSignal, withTransientFallback } from '../_shared/ai-resilience.ts';
 import { MODELOS } from '../_shared/modelos.ts';
+import { deliverDocGenResult, DocGenBillingError } from '../_shared/docgen-billing.ts';
 
 
 const corsHeaders = {
@@ -525,10 +526,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // P0: se algo falhar DEPOIS do débito, estornamos — o crédito só fica
-  // debitado quando o documento é efetivamente entregue ao usuário.
-  let chargeState: { client: any; empresaId: string; key: string } | null = null;
-
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -751,37 +748,18 @@ serve(async (req) => {
       });
     }
 
-    // Crédito consumido apenas após sucesso da IA — cada handler (generate/refine)
-    // chama consume_ai_credit no seu retorno bem-sucedido. Manter um único ponto
-    // de consumo por ação evita cobranças em chamadas malformadas ou erros de gateway.
-    // Chave de idempotência: o cliente manda a sua (uma por tentativa de
-    // geração); sem ela derivamos uma estável por ação para nunca cair no
-    // caminho não-idempotente.
+    // A chave do cliente é mantida nos retries da mesma geração. Clientes
+    // antigos sem chave recebem uma identidade nova por chamada.
     const idemKey = String(
       idempotency_key || `${authedUserId}:${action}:${conversation_id || 'new'}:${startedAt}`,
     ).slice(0, 200);
-
-    const chargeAiCredit = async () => {
-      try {
-        const { data, error } = await supabase.rpc('consume_ai_credit_idempotente', {
-          p_empresa_id: authedEmpresaId,
-          p_user_id: authedUserId,
-          p_funcionalidade: `docgen-chat:${action}`,
-          p_idempotency_key: idemKey,
-          p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`,
-        });
-        if (error) { console.warn('consume_ai_credit_idempotente falhou:', error); return; }
-        if ((data as any)?.charged) {
-          chargeState = { client: supabase, empresaId: authedEmpresaId, key: idemKey };
-        }
-      } catch (e) { console.warn('consume_ai_credit_idempotente falhou:', e); }
-    };
-    // Entregue ao usuário => a cobrança é definitiva (não estornar no catch).
-    const settleCharge = () => { chargeState = null; };
-    // NOTA: cada handler (generate_document, refine_section, refine_document,
-    // quick_adherence, chat) deve chamar `await chargeAiCredit()` após produzir
-    // conteúdo com sucesso e antes de retornar a Response 200.
-
+    // Só é chamado ao entregar resultado válido. Abrir/carregar contexto,
+    // conversar sobre o briefing e refinar automaticamente não debitam crédito.
+    const deliverResult = (payload: Record<string, unknown>) => deliverDocGenResult({
+      action, payload, client: supabase, empresaId: authedEmpresaId,
+      userId: authedUserId, idempotencyKey: idemKey,
+      signal: aborter.signal, headers: corsHeaders,
+    });
 
     // Buscar informações do usuário e empresa
     const { data: profile } = await supabase
@@ -975,7 +953,6 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         2000,
         0.8
       );
-      await chargeAiCredit();
 
       console.log('AI Response length:', aiMessage.length);
 
@@ -1476,11 +1453,6 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         console.error('Falha ao persistir docgen_generated_docs:', generatedDocError);
       }
 
-      // P0: crédito só agora — o documento está pronto e vai efetivamente ser
-      // entregue nesta resposta. Se algo acima tivesse falhado, nada seria
-      // debitado; se algo abaixo falhar, o catch estorna.
-      await chargeAiCredit();
-
       // P1: progresso do refino persistido no SERVIDOR (recuperável após
       // refresh, aba fechada ou timeout do cliente).
       try {
@@ -1503,8 +1475,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
           .eq('id', conversation.id);
       } catch (_e) { /* progresso é acessório */ }
 
-      settleCharge();
-      return new Response(JSON.stringify({
+      return await deliverResult({
         conversation_id: conversation.id,
         document_id: generatedDoc?.id ?? null,
         idempotency_key: idemKey,
@@ -1524,8 +1495,6 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         audit_threshold: AUDIT_THRESHOLD,
         framework_ids: docFwIds,
         warnings,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -1619,7 +1588,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         signal: aborter.signal,
       });
 
-      if (result.changed) { await chargeAiCredit(); }
+      // O refino automático está incluído na geração; não há novo débito.
 
       const history = Array.isArray(document._auto_refine_history) ? document._auto_refine_history : [];
       if (result.changed) {
@@ -1677,7 +1646,6 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
 
       console.log('DocGen auto_refine', { attempt, before: result.before, after: result.after, should_continue });
 
-      settleCharge();
       return new Response(JSON.stringify({
         document,
         attempt,
@@ -1693,7 +1661,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     }
 
 
-    // ============ ACTION: refine_section (Onda 3 - 1 crédito já consumido acima) ============
+    // ============ ACTION: refine_section (1 crédito após o refino concluído) ============
     if (action === 'refine_section') {
       const secoes = document.secoes || [];
       const target = secoes[section_index];
@@ -1744,7 +1712,6 @@ Responda EXATAMENTE neste JSON:
         3000,
         0.4
       );
-      await chargeAiCredit();
 
       let parsedRefine: any = null;
       try {
@@ -1809,14 +1776,14 @@ Responda EXATAMENTE neste JSON:
         }
       } catch (_e) { /* não bloqueia resposta */ }
 
-      return new Response(JSON.stringify({
+      return await deliverResult({
         section_index,
         new_content: newContent,
         document: updatedDoc,
         compliance_impact: complianceImpact,
         removed_coverage: parsedRefine?.removed_coverage || [],
         new_score: newScore,
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      });
     }
 
 
@@ -1902,7 +1869,6 @@ Responda EXATAMENTE neste JSON:
         6000,
         0.3
       );
-      await chargeAiCredit();
 
       let parsed: any;
       try {
@@ -1937,9 +1903,7 @@ Responda EXATAMENTE neste JSON:
         truncated: truncatedDoc,
       });
 
-      return new Response(JSON.stringify({ adherence: parsed }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return await deliverResult({ adherence: parsed });
     }
 
     // ============ ACTION: refine_document (chat pós-geração aplica refinos no documento inteiro) ============
@@ -2005,7 +1969,6 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
         0.35,
         MODEL_QUALITY,
       );
-      await chargeAiCredit();
 
       let parsed: any = null;
       try {
@@ -2089,14 +2052,14 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
         }
       } catch (_e) { /* não bloqueia resposta */ }
 
-      return new Response(JSON.stringify({
+      return await deliverResult({
         document: mergedDoc,
         sections_changed: changed,
         summary: summaryWithScore,
         compliance_impact: complianceImpact,
         removed_coverage: parsed?.removed_coverage || [],
         new_score: newScore,
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      });
     }
 
 
@@ -2107,24 +2070,13 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
 
   } catch (error) {
     console.error('Error in docgen-chat function:', error);
-    // Falhou, expirou ou foi abortada => estorna o crédito eventualmente debitado.
-    const failedCharge = chargeState as { client: any; empresaId: string; key: string } | null;
-    if (failedCharge) {
-      try {
-        await failedCharge.client.rpc('estornar_ai_credit', {
-          p_empresa_id: failedCharge.empresaId,
-          p_idempotency_key: failedCharge.key,
-        });
-      } catch (e) { console.warn('estornar_ai_credit falhou:', e); }
-      chargeState = null;
-    }
-    const isGateway = error instanceof AiGatewayError;
-    const code = isGateway ? (error as AiGatewayError).code : 'INTERNAL_ERROR';
-    const status = isGateway ? (error as AiGatewayError).httpStatus : 500;
+    const isKnown = error instanceof AiGatewayError || error instanceof DocGenBillingError;
+    const code = isKnown ? error.code : 'INTERNAL_ERROR';
+    const status = isKnown ? error.httpStatus : 500;
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : 'Internal server error',
       code,
-      retryable: code === 'AI_UNAVAILABLE' || code === 'GENERATION_ABORTED',
+      retryable: code === 'AI_UNAVAILABLE' || code === 'GENERATION_ABORTED' || code === 'BILLING_UNAVAILABLE',
     }), {
       status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
