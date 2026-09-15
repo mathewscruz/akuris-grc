@@ -29,7 +29,7 @@ describe('ajustes solicitados no documento 23', () => {
   it('exibe a orientação incluída nas duas superfícies e mantém navegação por seções', () => {
     for (const f of ['dialogs/RequirementDetailDialog.tsx', 'v2/RequirementDrawer.tsx']) {
       const s = source(`src/components/gap-analysis/${f}`);
-      expect(s).toContain('experience.guidanceIncluded');
+      expect(s).toContain('gapUi.detail.guidancePlatformIncluded');
       expect(s).not.toContain('guidanceSemCreditos');
     }
     const dialog = source('src/components/gap-analysis/dialogs/RequirementDetailDialog.tsx');

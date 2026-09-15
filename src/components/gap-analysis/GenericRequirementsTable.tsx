@@ -99,6 +99,11 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const { data: controlosPorRequisito } = useRequisitoControles(frameworkId);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(true);
+  const tableContext = `${empresaId || ''}:${frameworkId}`;
+  const currentContext = useRef(tableContext);
+  currentContext.current = tableContext;
+  const loadedContext = useRef<string | null>(null);
+  const loadSequence = useRef(0);
   // Categoria em foco. Chamava-se `activeTab` de quando havia uma fileira de
   // abas por categoria dentro da tabela — a mesma lista que o mapa de calor já
   // mostrava logo acima, com o mesmo número. Ficou o estado, saíram as abas.
@@ -204,14 +209,19 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     setOrDelete('sec', activeSection, config.sections?.[0]?.id || '');
     setOrDelete('size', String(itemsPerPage), '10');
     setOrDelete('page', String(currentPage), '1');
-    setSearchParams(params, { replace: true });
+    if (params.toString() !== searchParams.toString()) {
+      setSearchParams(params, { replace: true, preventScrollReset: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter, onlyMandatory, categoriaAtiva, activeSection, itemsPerPage, currentPage]);
 
   const loadRequirements = async () => {
     if (!empresaId) return;
+    const request = ++loadSequence.current;
+    const isCurrent = () => request === loadSequence.current && currentContext.current === tableContext;
     try {
-      setLoading(true);
+      // A refresh must not replace the table (or its open dialog) with a spinner.
+      if (loadedContext.current !== tableContext) setLoading(true);
       // O catálogo vem do cache partilhado da página; avaliações continuam
       // isoladas por empresa e são recarregadas após cada alteração.
       const { fetchAllPaginated } = await import('@/lib/supabase-paginate');
@@ -273,17 +283,22 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         };
       });
 
-      setRequirements(merged);
+      if (isCurrent()) {
+        loadedContext.current = tableContext;
+        setRequirements(merged);
+      }
     } catch (error: any) {
+      if (!isCurrent()) return;
       logger.error('Erro ao carregar requisitos', { error: error instanceof Error ? error.message : String(error) });
       toast.error(t('gapUi.table.errorLoadRequirements'));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadRequirements();
+    return () => { loadSequence.current++; };
   /*
     A chave que diz "o escopo mudou, recarrega".
 
@@ -488,6 +503,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     setSelectedRequirement(null);
     limparReqDaUrl();
     loadRequirements();
+    onStatusChange?.();
+  };
+
+  const handleDetailStatusChange = (requirementId: string, newStatus: string) => {
+    // The dialog has already saved this status. Refresh summaries without closing it.
+    setRequirements(previous => previous.map(row => row.id === requirementId ? { ...row, conformity_status: newStatus } : row));
+    setSelectedRequirement(previous => previous?.id === requirementId ? { ...previous, conformity_status: newStatus } : previous);
     onStatusChange?.();
   };
 
@@ -735,13 +757,31 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   };
 
   const filteredRequirements = getFilteredRequirements(requirements);
+  const activeSectionConfig = config.sections?.find(section => section.id === activeSection);
+  const visibleRequirements = activeSectionConfig
+    ? getFilteredRequirements(requirements.filter(r => activeSectionConfig.filter(r.codigo)))
+    : filteredRequirements;
+  const visiblePages = Math.max(1, Math.ceil(visibleRequirements.length / itemsPerPage));
   const totalPages = Math.ceil(filteredRequirements.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedRequirements = filteredRequirements.slice(startIndex, startIndex + itemsPerPage);
 
+  const filterIdentity = JSON.stringify([categoriaAtiva, faseAtiva, activeSection, itemsPerPage, searchTerm, statusFilter, onlyMandatory]);
+  const previousFilters = useRef(filterIdentity);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [categoriaAtiva, faseAtiva, activeSection, itemsPerPage, searchTerm, statusFilter, onlyMandatory]);
+    // Preserve ?page= when mounting/restoring the table. Only a real filter change resets it.
+    if (previousFilters.current !== filterIdentity) {
+      previousFilters.current = filterIdentity;
+      setCurrentPage(1);
+    }
+  }, [filterIdentity]);
+  useEffect(() => {
+    // If the last row leaves a status-filtered page, go to the nearest valid page,
+    // not page one. Counts must use the active section, not the entire catalogue.
+    if (loadedContext.current === tableContext && !loading) {
+      setCurrentPage(page => Math.min(page, visiblePages));
+    }
+  }, [visiblePages, loading, tableContext]);
 
   const limparFase = () => {
     const sp = new URLSearchParams(window.location.search);
@@ -1100,7 +1140,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     );
   };
 
-  if (loading) {
+  if (loading || (loadedContext.current !== tableContext && requirements.length > 0)) {
     return (
       <Card>
         <CardContent className="p-6 min-h-[280px] flex flex-col items-center justify-center gap-3">
@@ -1158,6 +1198,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
               requirement={selectedRequirement}
               frameworkId={frameworkId}
               onClose={handleDetailDialogClose}
+              onStatusChange={handleDetailStatusChange}
             />
           )}
         </CardContent>
@@ -1198,6 +1239,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
             requirement={selectedRequirement}
             frameworkId={frameworkId}
             onClose={handleDetailDialogClose}
+            onStatusChange={handleDetailStatusChange}
           />
         )}
       </CardContent>

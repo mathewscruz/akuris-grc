@@ -1,14 +1,11 @@
+import { implementationSection } from '../../supabase/functions/_shared/requirement-guidance-content';
+
 /** Present existing implementation instructions, not the entire generated article.
  * The full guidance stays available separately; no source content is rewritten. */
 export function implementationExcerpt(content: string | null | undefined): string {
   if (!content?.trim()) return '';
-  const sections = content.split(/^##\s+/m);
-  const section = sections.find(part => {
-    const heading = part.split('\n')[0];
-    return /implementa|practical|how to|action steps/i.test(heading);
-  });
-  if (section) {
-    const body = section.slice(section.indexOf('\n') + 1).trim();
+  const body = implementationSection(content);
+  if (body) {
     const items = body.split(/\n(?=(?:[-*•]|\d+[.)])\s)/).filter(Boolean);
     return items.slice(0, 3).join('\n');
   }

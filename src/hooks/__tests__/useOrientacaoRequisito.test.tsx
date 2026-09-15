@@ -11,6 +11,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   functions: { invoke: (...args: unknown[]) => mock.invoke(...args) },
 } }));
 const clients: QueryClient[] = [];
+const saved = { orientacao_implementacao: '## Faça nesta ordem\n- Texto salvo', exemplos_evidencias: '- Política aprovada', perguntas_diagnostico: '[{"pergunta":"A política foi aprovada?","peso":2}]' };
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); clients.push(client);
   return { client, wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> };
@@ -18,7 +19,7 @@ function setup() {
 afterEach(() => { cleanup(); clients.splice(0).forEach(c => c.clear()); });
 beforeEach(() => {
   mock.locale = 'pt-BR'; mock.read.mockReset(); mock.invoke.mockReset();
-  mock.read.mockResolvedValue({ data: { orientacao_implementacao: 'Texto salvo', exemplos_evidencias: '- Política', perguntas_diagnostico: '[]' }, error: null });
+  mock.read.mockResolvedValue({ data: saved, error: null });
 });
 describe('orientação compartilhada entre as superfícies', () => {
   it('reutiliza a consulta e não chama IA para conteúdo já gravado', async () => {
@@ -29,15 +30,15 @@ describe('orientação compartilhada entre as superfícies', () => {
   });
   it('pede geração apenas quando falta a orientação do idioma', async () => {
     mock.locale = 'en';
-    mock.invoke.mockResolvedValue({ data: { orientacao_implementacao: 'Saved English', exemplos_evidencias: '- Policy', perguntas_diagnostico: '[]' }, error: null });
+    mock.invoke.mockResolvedValue({ data: { ...saved, orientacao_implementacao: '## Do this in order\n- Saved English' }, error: null });
     const { result } = renderHook(() => useOrientacaoRequisito('r1'), setup());
-    await waitFor(() => expect(result.current.texto).toBe('Saved English'));
+    await waitFor(() => expect(result.current.texto).toContain('Saved English'));
     expect(mock.invoke).toHaveBeenCalledWith('populate-requirement-guidance', { body: { requirement_id: 'r1', locale: 'en', force: false } });
   });
   it('não usa o texto do requisito anterior enquanto a próxima consulta carrega', async () => {
-    mock.read.mockImplementation((id) => id === 'r1' ? Promise.resolve({ data: { orientacao_implementacao: 'Primeiro' } }) : new Promise(() => {}));
+    mock.read.mockImplementation((id) => id === 'r1' ? Promise.resolve({ data: { ...saved, orientacao_implementacao: '## Faça nesta ordem\nPrimeiro' } }) : new Promise(() => {}));
     const { result, rerender } = renderHook(({ id }) => useOrientacaoRequisito(id), { ...setup(), initialProps: { id: 'r1' } });
-    await waitFor(() => expect(result.current.texto).toBe('Primeiro'));
+    await waitFor(() => expect(result.current.texto).toContain('Primeiro'));
     rerender({ id: 'r2' }); expect(result.current.texto).toBeNull();
   });
   it('falha de leitura não dispara geração nem sugere comprar créditos', async () => {
@@ -52,7 +53,29 @@ describe('orientação compartilhada entre as superfícies', () => {
     const { result } = renderHook(() => useOrientacaoRequisito('r1'), setup());
     await waitFor(() => expect(mock.invoke).toHaveBeenCalledTimes(1));
     await act(async () => { await result.current.gerar(); });
-    await waitFor(() => expect(result.current.texto).toBe('Texto salvo'));
+    await waitFor(() => expect(result.current.texto).toBe(saved.orientacao_implementacao));
+    expect(mock.invoke).toHaveBeenCalledTimes(1);
+  });
+  it('prepara orientação ausente sem precisar expandir o painel e reutiliza no próximo acesso', async () => {
+    const { client, wrapper } = setup();
+    mock.read.mockResolvedValue({ data: {}, error: null });
+    mock.invoke.mockResolvedValue({ data: saved, error: null });
+    const first = renderHook(() => useOrientacaoRequisito('r1'), { wrapper });
+    await waitFor(() => expect(first.result.current.estado).toBe('ok'));
+    first.unmount();
+    mock.read.mockResolvedValue({ data: saved, error: null });
+    client.clear(); // Simulates a different browser/user with no in-memory cache.
+    const next = renderHook(() => useOrientacaoRequisito('r1'), { wrapper });
+    await waitFor(() => expect(next.result.current.estado).toBe('ok'));
+    expect(mock.invoke).toHaveBeenCalledTimes(1);
+  });
+  it('repara conteúdo parcial e preserva o texto salvo se o provedor falhar', async () => {
+    mock.read.mockResolvedValue({ data: { ...saved, exemplos_evidencias: '' }, error: null });
+    mock.invoke.mockResolvedValue({ data: null, error: new Error('provider unavailable') });
+    const { result } = renderHook(() => useOrientacaoRequisito('r1'), setup());
+    await waitFor(() => expect(result.current.estado).toBe('falha'));
+    expect(result.current.texto).toBe(saved.orientacao_implementacao);
+    expect(result.current.perguntas).toHaveLength(1);
     expect(mock.invoke).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { completeGuidance, guidanceQuestions } from '../../supabase/functions/_shared/requirement-guidance-content';
 
 export interface PerguntaDiagnostico { pergunta: string; peso: number; }
 export type EstadoOrientacao = 'ok' | 'gerando' | 'indisponivel' | 'falha';
@@ -16,13 +17,7 @@ interface GuidanceData {
   texto: string | null; evidencias: string | null; perguntas: PerguntaDiagnostico[];
   pending: boolean; attempts: number;
 }
-const perguntasDe = (raw: unknown): PerguntaDiagnostico[] => {
-  try {
-    const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Array.isArray(parsed) ? parsed.filter((p): p is PerguntaDiagnostico =>
-      !!p && typeof p.pergunta === 'string' && [1, 2, 3].includes(p.peso)) : [];
-  } catch { return []; }
-};
+const perguntasDe = guidanceQuestions;
 const empty: GuidanceData = { texto: null, evidencias: null, perguntas: [], pending: false, attempts: 0 };
 
 // Both requirement surfaces share this query. Persistence belongs to the server;
@@ -44,7 +39,7 @@ export function useOrientacaoRequisito(requirementId: string | null, ativo = tru
       if (attempts > 15) throw new Error('guidance_temporarily_unavailable');
       return { ...fallback, pending: true, attempts };
     }
-    if (!data?.orientacao_implementacao?.trim()) throw new Error('guidance_unavailable');
+    if (!completeGuidance(data)) throw new Error('guidance_unavailable');
     return {
       texto: data.orientacao_implementacao,
       evidencias: data.exemplos_evidencias || null,
@@ -71,8 +66,16 @@ export function useOrientacaoRequisito(requirementId: string | null, ativo = tru
         perguntas: perguntasDe(row[`perguntas_diagnostico${suffix}` as keyof typeof row] || row.perguntas_diagnostico),
         pending: false, attempts: 0,
       };
-      if (native?.trim()) return fallback;
+      if (completeGuidance({
+        orientacao_implementacao: native || '',
+        exemplos_evidencias: row[`exemplos_evidencias${suffix}`] || '',
+        perguntas_diagnostico: row[`perguntas_diagnostico${suffix}`] || null,
+      })) return fallback;
       if (signal.aborted) throw new Error('cancelled');
+      // Keep existing content available if preparing the missing pieces fails.
+      client.setQueryData<GuidanceData>(key, previous => ({
+        ...fallback, pending: true, attempts: previous?.attempts || 0,
+      }));
       return invoke(false, fallback);
     },
   });

@@ -331,20 +331,22 @@ export function RequirementDrawer({
               */}
               <section>
                 <SectionHead title={t('gapUi.drawer.comoCumprir')} />
-                <p className="text-micro text-muted-foreground">{t('experience.guidanceIncluded')}</p>
-                {orientacao.estado === 'gerando' ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+                <p className="text-micro text-muted-foreground">{t('gapUi.detail.guidancePlatformIncluded')}</p>
+                {orientacao.estado === 'gerando' && (
+                  <div role="status" className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                     <AkurisPulse size={14} />
                     {t('gapUi.drawer.comoCumprirGerando')}
                   </div>
-                ) : orientacao.texto ? (
+                )}
+                {orientacao.texto && (
                   <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                       {orientacao.texto}
                     </ReactMarkdown>
                   </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-border bg-card p-4">
+                )}
+                {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
+                  <div role="status" className="rounded-lg border border-dashed border-border bg-card p-4">
                     <p className="text-sm leading-6 text-muted-foreground">
                       {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
                     </p>

@@ -20,6 +20,9 @@ interface FrameworkScore {
   catalogRequirements: number;
   evaluatedRequirements: number;
   loading: boolean;
+  /** Initial loading is distinct from a refresh, so callers keep the workspace mounted. */
+  refreshing: boolean;
+  hasData: boolean;
   error: Error | null;
 }
 const COLORS: Record<string, string> = {
@@ -29,19 +32,22 @@ const COLORS: Record<string, string> = {
 };
 const EMPTY: FrameworkScore = {
   overallScore: 0, pillarScores: [], domainScores: [], areaScores: [], sectionScores: [], categoryScores: [],
-  totalRequirements: 0, catalogRequirements: 0, evaluatedRequirements: 0, loading: true, error: null,
+  totalRequirements: 0, catalogRequirements: 0, evaluatedRequirements: 0, loading: true, refreshing: false, hasData: false, error: null,
 };
 
 /** All chart/PDF groups use the same weighted, applicable-scope calculation as the list. */
 export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, refreshKey?: number): FrameworkScore {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
-  const [state, setState] = useState<FrameworkScore>(EMPTY);
+  const contextKey = `${empresaId || ''}:${frameworkId}:${config.id}`;
+  const [state, setState] = useState<FrameworkScore & { contextKey: string }>({ ...EMPTY, contextKey: '' });
   useEffect(() => {
     let current = true;
     const controller = new AbortController();
-    if (!frameworkId || !empresaId) { setState({ ...EMPTY, loading: false }); return; }
-    setState(EMPTY);
+    if (!frameworkId || !empresaId) { setState({ ...EMPTY, contextKey, loading: false }); return; }
+    setState(previous => previous.contextKey === contextKey && previous.hasData
+      ? { ...previous, refreshing: true, error: null }
+      : { ...EMPTY, contextKey });
     const load = async () => {
       try {
         const [requirements, { data: evaluations }, { data: soa }] = await Promise.all([
@@ -72,6 +78,7 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
         }));
         const overall = score(requirements);
         if (current) setState({
+          contextKey,
           overallScore: overall.score, totalRequirements: overall.totalRequirements, evaluatedRequirements: overall.evaluatedRequirements,
           catalogRequirements: requirements.length,
           pillarScores,
@@ -81,10 +88,14 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
           }).sort((a, b) => b.score - a.score),
           sectionScores: (config.sections || []).map(s => ({ ...score(requirements.filter(r => s.filter(r.codigo))), section: s.id, name: s.title })),
           domainScores: (config.domains || []).map(d => ({ ...score(requirements.filter(r => r.codigo?.startsWith(d.id))), domain: d.id, name: d.name, color: d.color })),
-          loading: false, error: null,
+          loading: false, refreshing: false, hasData: true, error: null,
         });
       } catch (err) {
-        if (current) setState({ ...EMPTY, loading: false, error: err instanceof Error ? err : new Error(String(err)) });
+        if (current) setState(previous => ({
+          ...(previous.contextKey === contextKey && previous.hasData ? previous : EMPTY),
+          contextKey, loading: false, refreshing: false,
+          error: err instanceof Error ? err : new Error(String(err)),
+        }));
       }
     };
     void load();
@@ -93,5 +104,7 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
   // same config in a fresh object without restarting an asynchronous read.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frameworkId, empresaId, config.id, refreshKey]);
-  return state;
+  // Never expose another company's/framework's cached score, even for one render.
+  if (!frameworkId || !empresaId) return { ...EMPTY, loading: false };
+  return state.contextKey === contextKey ? state : EMPTY;
 }

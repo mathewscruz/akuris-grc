@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type ComponentType } from "react";
-import { IconClose, IconUpload, IconExternal, IconCheck, IconSuccess, IconWarning, IconCalendar, IconRefresh, IconFile, IconIdea, IconChecklist, IconChevronDown, IconHistory, IconBook, IconHelp, IconOrg, IconSettings, IconFileCheck, IconCheckbox, IconShield, IconTarget, GapAnalysisIcon } from '@/components/icons';
+import { IconClose, IconUpload, IconExternal, IconCheck, IconSuccess, IconWarning, IconCalendar, IconRefresh, IconFile, IconChecklist, IconChevronDown, IconHistory, IconBook, IconHelp, IconOrg, IconSettings, IconFileCheck, IconCheckbox, IconShield, IconTarget, GapAnalysisIcon } from '@/components/icons';
 import DOMPurify from 'dompurify';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
@@ -366,7 +366,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   */
   const orientacao = useOrientacaoRequisito(open ? requirement.id : null, open);
   const guidanceText = orientacao.texto;
-  const implementationText = implementationExcerpt(guidanceText || requirement.orientacao_implementacao);
+  const implementationText = implementationExcerpt(guidanceText);
   const evidenciasText = orientacao.evidencias;
   const diagnosticQuestions = orientacao.perguntas;
   const generatingGuidance = orientacao.estado === 'gerando';
@@ -899,6 +899,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     <ol>{[1, 2, 3].map(n => <li key={n}><span aria-hidden="true">0{n}</span><div><strong>{t(`gapUi.workspace.work${n}`)}</strong><p>{t(`gapUi.workspace.work${n}Body`)}</p></div></li>)}</ol>
                   </div>
                   {implementationText && <div className="requirement-implementation"><h3>{t('gapUi.workspace.implementation')}</h3><MarkdownContent content={implementationText} /></div>}
+                  <p className="text-micro leading-5 text-muted-foreground">{t('gapUi.detail.guidancePlatformIncluded')}</p>
+                  {generatingGuidance && <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <AkurisPulse size={16} />{t('gapUi.detail.guidancePreparing')}
+                  </div>}
+                  {!generatingGuidance && (guidanceErro || !guidanceText) && <div role="status" className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{t('gapUi.detail.guidanceFalhou')}</p>
+                    <Button variant="outline" size="sm" onClick={() => orientacao.gerar(false)}>{t('gapUi.detail.guidanceTentarDeNovo')}</Button>
+                  </div>}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
@@ -924,50 +932,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     )}
                   </div>
 
-                  {guidanceOpen && <p className="text-micro leading-5 text-muted-foreground">{t('experience.guidanceIncluded')}</p>}
-                  {guidanceOpen && (generatingGuidance && !guidanceText ? (
-                    <GuidanceSkeleton />
-                  ) : guidanceText ? (
-                    <>
-                      <MarkdownContent content={guidanceText} />
-
-
-                    </>
-                  ) : (
-                    <div className="space-y-3">
-                      {/*
-                        Dizer a verdade sobre o estado, e oferecer a saída certa.
-
-                        O texto da norma continua a aparecer — é o que há — mas
-                        deixa de ser servido como se fosse a orientação. E a
-                        acção proposta é a que a pessoa PODE executar: tentar de
-                        novo, ou ir buscar o diagnóstico guiado, que funciona
-                        mesmo sem orientação escrita.
-                      */}
-                      <div className="rounded-lg border border-dashed bg-card p-3">
-                        <div className="flex items-start gap-2">
-                          <IconIdea className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" strokeWidth={1.5} />
-                          <p className="text-xs text-muted-foreground leading-6">
-                            {guidanceErro === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
-                          </p>
-                        </div>
-                        {
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-3 h-7 text-xs"
-                            disabled={generatingGuidance}
-                            onClick={() => orientacao.gerar(false)}
-                          >
-                            {generatingGuidance
-                              ? <AkurisPulse size={12} className="mr-1.5" />
-                              : <IconRefresh className="h-3 w-3 mr-1.5" strokeWidth={1.5} />}
-                            {t('gapUi.detail.guidanceTentarDeNovo')}
-                          </Button>
-                        }
-                      </div>
-                    </div>
-                  ))}
+                  {guidanceOpen && (guidanceText ? <MarkdownContent content={guidanceText} /> : generatingGuidance ? <GuidanceSkeleton /> : null)}
                 </div>
 
                 {/* Controlos internos que implementam este requisito (N para N) */}

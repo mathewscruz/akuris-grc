@@ -79,14 +79,17 @@ export function PriorityQueueCard({
   onSeeAll,
 }: PriorityQueueCardProps) {
   const { t } = useLanguage();
-  const [items, setItems] = useState<PriorityRequirement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const contextKey = `${empresaId}:${frameworkId}`;
+  const [state, setState] = useState({ contextKey: '', items: [] as PriorityRequirement[], loading: true });
+  const { items, loading } = state.contextKey === contextKey ? state : { items: [] as PriorityRequirement[], loading: true };
 
   useEffect(() => {
     if (!frameworkId || !empresaId) return;
     let cancelled = false;
     (async () => {
-      setLoading(true);
+      // This card sits above the table. Collapsing it on every refresh moves
+      // the user's reading position even if the table itself stays mounted.
+      setState(previous => previous.contextKey === contextKey ? previous : { contextKey, items: [], loading: true });
       try {
         const [requirements, evalsRes] = await Promise.all([
           fetchFrameworkRequirements(frameworkId),
@@ -97,6 +100,7 @@ export function PriorityQueueCard({
             .eq('empresa_id', empresaId),
         ]);
         if (cancelled) return;
+        if (evalsRes.error) throw evalsRes.error;
         const evalMap = new Map(
           (evalsRes.data || []).map(e => [e.requirement_id, e])
         );
@@ -104,6 +108,7 @@ export function PriorityQueueCard({
         // Aparecia aqui como prioridade 02, cobrando ação sobre um requisito
         // que a diretoria já tinha dispensado por escrito.
         const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
+        if (cancelled) return;
         const scored = requirements.filter(r => !foraDoEscopo.has(r.id)).map(r => {
           const ev = evalMap.get(r.id);
           const peso = Number(r.peso || 3);
@@ -143,13 +148,13 @@ export function PriorityQueueCard({
         scored.sort((a, b) =>
           b.priority - a.priority || (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true }),
         );
-        setItems(scored.filter(s => s.priority > 0).slice(0, limit));
+        setState({ contextKey, items: scored.filter(s => s.priority > 0).slice(0, limit), loading: false });
       } catch (e) {
         logger.error('Erro ao montar fila de prioridade', {
           error: e instanceof Error ? e.message : String(e),
         });
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setState(previous => ({ ...previous, loading: false }));
       }
     })();
     return () => {

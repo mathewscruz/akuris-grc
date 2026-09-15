@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { RequirementDetailDialog } from '@/components/gap-analysis/dialogs/RequirementDetailDialog';
 import { gapUi } from '@/i18n/modules/gap-ui';
 
-const mocks = vi.hoisted(() => ({ writes: vi.fn(), onClose: vi.fn(), onOpenChange: vi.fn() }));
+const mocks = vi.hoisted(() => ({ writes: vi.fn(), onClose: vi.fn(), onOpenChange: vi.fn(), guidanceText: '## 📋 Significado\nOrientação detalhada do requisito.' as string | null, guidanceState: 'ok', generate: vi.fn() }));
 vi.mock('@/contexts/LanguageContext', () => ({ useLanguage: () => ({ t: (key: string, params?: Record<string, unknown>) => {
   const value = key.split('.').reduce((node, part) => node?.[part], gapUi.pt as any) || key;
   return Object.entries(params || {}).reduce((text, [key, value]) => text.replaceAll('{' + key + '}', String(value)), value);
@@ -12,7 +12,7 @@ vi.mock('@/contexts/LanguageContext', () => ({ useLanguage: () => ({ t: (key: st
 vi.mock('@/hooks/useEmpresaId', () => ({ useEmpresaId: () => ({ empresaId: 'tenant-test' }) }));
 vi.mock('@/components/AuthProvider', () => ({ useAuth: () => ({ profile: { role: 'admin' } }) }));
 vi.mock('@/hooks/useControleRequisitos', () => ({ useRequisitoControles: () => ({ data: new Map() }) }));
-vi.mock('@/hooks/useOrientacaoRequisito', () => ({ useOrientacaoRequisito: () => ({ texto: '## 📋 Significado\nOrientação detalhada do requisito.', evidencias: '- Registro de revisão atual', perguntas: [{ pergunta: 'O controle é executado?', peso: 1 }, { pergunta: 'Há evidência atual?', peso: 1 }], estado: 'pronto', gerar: vi.fn() }) }));
+vi.mock('@/hooks/useOrientacaoRequisito', () => ({ useOrientacaoRequisito: () => ({ texto: mocks.guidanceText, evidencias: '- Registro de revisão atual', perguntas: [{ pergunta: 'O controle é executado?', peso: 1 }, { pergunta: 'Há evidência atual?', peso: 1 }], estado: mocks.guidanceState, gerar: mocks.generate }) }));
 vi.mock('@/contexts/DocGenContext', () => ({ useDocGen: () => ({ openDocGen: vi.fn() }) }));
 vi.mock('@/components/gap-analysis/DocumentosDoRequisito', () => ({ DocumentosDoRequisito: () => <div>Documentos vinculados</div> }));
 vi.mock('@/components/gap-analysis/dialogs/EvidenceReusePanel', () => ({ EvidenceReusePanel: () => <div>Biblioteca de evidências</div> }));
@@ -36,6 +36,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: (table: str
 
 beforeEach(() => {
   mocks.writes.mockReset(); mocks.onClose.mockReset(); mocks.onOpenChange.mockReset();
+  mocks.generate.mockReset(); mocks.guidanceText = '## 📋 Significado\nOrientação detalhada do requisito.'; mocks.guidanceState = 'ok';
   HTMLElement.prototype.scrollIntoView = vi.fn();
   HTMLElement.prototype.scrollTo = vi.fn();
 });
@@ -43,6 +44,28 @@ afterEach(cleanup);
 const show = (status = 'nao_avaliado') => render(<MemoryRouter><RequirementDetailDialog open onOpenChange={mocks.onOpenChange} requirement={{ id: 'req-test', codigo: '4.1', titulo: 'Contexto da organização', descricao: 'Identifique os fatores internos e externos relevantes ao escopo.', categoria: 'Gestão', area_responsavel: null, peso: 1, conformity_status: status }} frameworkId="framework-test" onClose={mocks.onClose} /></MemoryRouter>);
 
 describe('requirement workspace', () => {
+  it('shows current generated implementation instructions without expanding detailed guidance', async () => {
+    mocks.guidanceText = '## Entenda o requisito\nGerencie a devolução dos ativos.\n## Faça nesta ordem\n1. Confira os ativos devolvidos.\n2. Registre a entrega.\n## Considere concluído quando\nHouver registro atualizado.';
+    show();
+    expect(await screen.findByText('O que implementar')).toBeVisible();
+    expect(screen.getByText('Confira os ativos devolvidos.')).toBeVisible();
+    expect(screen.getByText(/sem desconto de créditos/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Consultar orientação detalhada' })).toHaveAttribute('aria-expanded', 'false');
+  });
+  it('shows generation status immediately, outside the collapsed explanation', async () => {
+    mocks.guidanceText = null; mocks.guidanceState = 'gerando';
+    show();
+    expect(await screen.findByText('Preparando a orientação completa deste requisito…')).toBeVisible();
+    expect(screen.queryByText('O que implementar')).not.toBeInTheDocument();
+  });
+  it('offers a visible retry after a failure while preserving existing instructions', async () => {
+    mocks.guidanceText = '## Faça nesta ordem\nConfira os ativos devolvidos.'; mocks.guidanceState = 'falha';
+    show();
+    expect(await screen.findByText('Confira os ativos devolvidos.')).toBeVisible();
+    expect(screen.getByText(/conteúdo já salvo foi preservado/)).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar gerar novamente' }));
+    expect(mocks.generate).toHaveBeenCalledWith(false);
+  });
   it('starts with a concise brief, optional full guidance and one visible step', async () => {
     const { container } = show();
     await screen.findByText('O que este requisito pede');

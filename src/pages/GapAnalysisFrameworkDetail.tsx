@@ -216,6 +216,7 @@ function GapAnalysisFrameworkDetailInner() {
   const {
     overallScore, pillarScores, domainScores, areaScores, sectionScores,
     categoryScores, totalRequirements, catalogRequirements, evaluatedRequirements, loading: scoreLoading, error: scoreError,
+    refreshing: scoreRefreshing, hasData: scoreHasData,
   } = useFrameworkScore(frameworkId || '', config || defaultConfig, scoreRefreshKey);
 
   const [autoOnboardingShown, setAutoOnboardingShown] = useState(false);
@@ -244,7 +245,7 @@ function GapAnalysisFrameworkDetailInner() {
    * arquiva isso como evidência.
    */
   const getExportData = async () => {
-    if (scoreError || scoreLoading) throw new Error('Score unavailable');
+    if (scoreError || scoreLoading || scoreRefreshing) throw new Error('Score unavailable');
     const { data: reqs, error: erroReqs } = await readAllPages((from, to) => supabase
       .from('gap_analysis_requirements')
       .select('id, codigo, titulo, categoria, peso, area_responsavel, titulo_en, categoria_en')
@@ -391,7 +392,7 @@ function GapAnalysisFrameworkDetailInner() {
   // O score também determina se a primeira experiência deve abrir o onboarding.
   // Sem aguardar essa leitura, o utilizador novo vê por alguns instantes a tela
   // avançada vazia ("0 de 0") antes de o guia aparecer.
-  if (scoreError) return <QueryError onRetry={() => setScoreRefreshKey(key => key + 1)} />;
+  if (scoreError && !scoreHasData) return <QueryError onRetry={() => setScoreRefreshKey(key => key + 1)} />;
   if (loading || scoreLoading || (empresaId && jaDeclarouEscopo === null) || !framework || !config) {
     return (
       <ErrorBoundary>
@@ -406,6 +407,7 @@ function GapAnalysisFrameworkDetailInner() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
+        {scoreError && <QueryError onRetry={() => setScoreRefreshKey(key => key + 1)} />}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/gap-analysis/frameworks')}>
             <IconChevronLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />{t('gapAnalysis.detail.back')}
@@ -439,11 +441,11 @@ function GapAnalysisFrameworkDetailInner() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleExportPDF} disabled={exporting}>
+                  <DropdownMenuItem onClick={handleExportPDF} disabled={exporting || scoreRefreshing || !!scoreError}>
                     <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportTechnical')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportBoard} disabled={exporting}>
+                  <DropdownMenuItem onClick={handleExportBoard} disabled={exporting || scoreRefreshing || !!scoreError}>
                     <IconChart className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportBoard')}
                   </DropdownMenuItem>

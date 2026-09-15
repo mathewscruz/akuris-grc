@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { MODELOS } from '../_shared/modelos.ts';
+import { guidanceQuestions, implementationSection, parseGeneratedGuidance } from '../_shared/requirement-guidance-content.ts';
 import { getOrCreateGuidance, GuidanceError, type GuidanceResult } from './guidance-service.ts';
 
 const corsHeaders = {
@@ -94,6 +95,21 @@ Deno.serve(async (req) => {
         },
         generate: () => generateGuidance(row as any, Deno.env.get('LOVABLE_API_KEY')!, locale, basePt(row, locale)),
         save: async (guidance) => {
+          // Repair missing pieces without rewriting valid catalogue content or
+          // changing question order beneath evaluations already answered by users.
+          const currentRow = await readRow(row.id!);
+          if (!force) {
+            const previous = {
+              orientacao_implementacao: currentRow[cols.orientacao] || '',
+              exemplos_evidencias: currentRow[cols.evidencias] || '',
+              perguntas_diagnostico: currentRow[cols.perguntas] || null,
+            };
+            guidance = {
+              orientacao_implementacao: implementationSection(previous.orientacao_implementacao) ? previous.orientacao_implementacao : guidance.orientacao_implementacao,
+              exemplos_evidencias: previous.exemplos_evidencias.trim() ? previous.exemplos_evidencias : guidance.exemplos_evidencias,
+              perguntas_diagnostico: guidanceQuestions(previous.perguntas_diagnostico).length ? previous.perguntas_diagnostico : guidance.perguntas_diagnostico,
+            };
+          }
           const { data, error } = await supabase.from('gap_analysis_requirements').update({
             [cols.orientacao]: guidance.orientacao_implementacao,
             [cols.evidencias]: guidance.exemplos_evidencias,
@@ -192,34 +208,7 @@ async function generateGuidance(
 
     if (!fullContent) return null;
 
-    // Parse the three sections from the consolidated response
-    const orientacaoMatch = fullContent.match(/===ORIENTACAO_START===([\s\S]*?)===ORIENTACAO_END===/);
-    const evidenciasMatch = fullContent.match(/===EVIDENCIAS_START===([\s\S]*?)===EVIDENCIAS_END===/);
-    const diagnosticoMatch = fullContent.match(/===DIAGNOSTICO_START===([\s\S]*?)===DIAGNOSTICO_END===/);
-
-    const orientacao = orientacaoMatch?.[1]?.trim() || fullContent;
-    const evidencias = evidenciasMatch?.[1]?.trim() || "";
-
-    // Parse diagnostic questions
-    let perguntasJson: string | null = null;
-    if (diagnosticoMatch) {
-      const rawDiagnostico = diagnosticoMatch[1].trim();
-      const jsonMatch = rawDiagnostico.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        try {
-          JSON.parse(jsonMatch[0]); // validate
-          perguntasJson = jsonMatch[0];
-        } catch {
-          console.error("Failed to parse diagnostic questions JSON");
-        }
-      }
-    }
-
-    return {
-      orientacao_implementacao: orientacao,
-      exemplos_evidencias: evidencias,
-      perguntas_diagnostico: perguntasJson,
-    };
+    return parseGeneratedGuidance(fullContent, data.choices?.[0]?.finish_reason);
   } catch (e) {
     console.error(`AI call error for ${req.codigo}:`, e);
     return null;
