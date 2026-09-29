@@ -71,7 +71,8 @@ describe('public UX contracts', () => {
   });
   it('prerenders only allowlisted public reading content', () => {
     const pages = publicPages();
-    expect(pages.length).toBe(14);
+    expect(pages.length).toBe(13);
+    expect(pages.some(page => page.path === '/planos')).toBe(false);
     expect(pages.every(page => isMarketingPath(page.path) && page.content.includes('<h1>'))).toBe(true);
     expect(escapePublicHtml('<script>"&')).toBe('&lt;script&gt;&quot;&amp;');
   });

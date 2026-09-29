@@ -13,7 +13,6 @@ export function publicPages(): PublicPage[] {
   const pages: PublicPage[] = [
     { path: '/', title: t('seoTitle'), description: t('seoDescription'), content: '<h1>' + t('storyHero') + '</h1>' + paragraph(t('heroBody')) + '<h2>Gap Analysis</h2>' + paragraph(t('gapBody')) + '<h2>' + t('catalogTitle') + '</h2>' + PUBLIC_MODULES.map(module => '<h3>' + t(module.title || module.key) + '</h3>' + paragraph(t(module.body || module.key + 'Body'))).join('') + '<h2>' + t('guidesTitle') + '</h2><ul>' + guides + '</ul>' },
     { path: '/frameworks', title: t('guides') + ' | Akuris', description: t('guideBody'), content: '<h1>' + t('guideTitle') + '</h1><ul>' + guides + '</ul>' + paragraph(t('guidesNote')) },
-    { path: '/planos', title: t('plans') + ' | Akuris', description: t('planBody'), content: '<h1>' + t('planTitle') + '</h1>' + paragraph(t('planBody')) + paragraph(t('priceNote')) },
     { path: '/blog', title: publico.pt.publico.blog.seoTitle, description: publico.pt.publico.blog.seoDesc, content: '<h1>' + publico.pt.publico.blog.titulo + '</h1>' + paragraph(publico.pt.publico.blog.sub) },
   ];
   for (const [path, type] of [['/migracao', 'migration'], ['/seguranca', 'trust'], ['/solucoes/canal-de-denuncias', 'channel']]) {
@@ -41,7 +40,7 @@ export function publicPrerender(): Plugin {
           return tag.replace(/content="[^"]*"/, 'content="' + escapePublicHtml(value) + '"');
         }).replace(/<link([^>]*rel="canonical"[^>]*)>/, '<link data-rh="true" rel="canonical" href="' + url + '" />');
         // createRoot replaces this same-content reading fallback when the interactive app is ready.
-        const content = '<div id="root"><main style="max-width:1000px;margin:auto;padding:48px 24px;font-family:DM Sans,sans-serif;line-height:1.7"><nav><a href="/">Akuris</a> · <a href="/planos">Planos</a> · <a href="/frameworks">Guias</a></nav>' + page.content + '<p><a href="/?demo=1">' + t('demo') + '</a> · <a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a></p></main></div>';
+        const content = '<div id="root"><main style="max-width:1000px;margin:auto;padding:48px 24px;font-family:DM Sans,sans-serif;line-height:1.7"><nav><a href="/">Akuris</a> · <a href="/frameworks">Guias</a></nav>' + page.content + '<p><a href="/?demo=1">' + t('demo') + '</a> · <a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a></p></main></div>';
         html = html.replace('<div id="root"></div>', content).replace(/<noscript>[\s\S]*?<\/noscript>/, '');
         if (page.path === '/') index.source = html;
         else this.emitFile({ type: 'asset', fileName: page.path.slice(1) + '/index.html', source: html });

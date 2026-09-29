@@ -17,7 +17,7 @@ export default function PublicResource() {
       {[1, 2, 3].map(n => <article key={n}><h2>{t('site.' + type + n)}</h2><p>{t('site.' + type + n + 'Body')}</p></article>)}
       {type === 'migration' && <section><h2>{t('site.checklist')}</h2><ul className="site-checklist">{[1, 2, 3, 4].map(n => <li key={n}>{t(`site.check${n}`)}</li>)}</ul></section>}
       {type === 'trust' && <p className="site-notice">{t('site.trustNotice')}</p>}
-      <div className="site-actions"><DemoButton interest={type} /><Link to={type === 'trust' ? '/politica-privacidade' : '/planos'} className="site-text-link">{t(type === 'trust' ? 'publico.landing.footer.politica' : 'site.plans')} →</Link></div>
+      <div className="site-actions"><DemoButton interest={type} /><Link to={type === 'trust' ? '/politica-privacidade' : '/#produto'} className="site-text-link">{t(type === 'trust' ? 'publico.landing.footer.politica' : 'site.product')} →</Link></div>
     </section>
   </PublicShell>;
 }

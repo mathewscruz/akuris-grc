@@ -260,7 +260,7 @@ export function AssinaturaTab() {
               </a>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/planos">{t('configPlanos.assinatura.verTodosPlanos')}</Link>
+              <Link to="/?demo=1&interest=plans">{t('configPlanos.assinatura.falarComercial')}</Link>
             </Button>
           </div>
         </CardContent>

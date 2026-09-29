@@ -51,7 +51,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const repeatAnchor = (href: string) => {
     if (location.pathname === '/' && href === '/' + location.hash && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
   };
-  const links = [['/#produto', 'product'], ['/#solucoes', 'solutions'], ['/frameworks', 'guides'], ['/planos', 'plans'], ['/blog', 'content']] as const;
+  const links = [['/#produto', 'product'], ['/#solucoes', 'solutions'], ['/frameworks', 'guides'], ['/blog', 'content']] as const;
   return <DemoContext.Provider value={requestDemo}>
     <div className="lp-root public-site">
       <a href="#public-main" className="public-skip">{t('site.skip')}</a>
@@ -77,7 +77,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
       <footer className="public-footer lp-container">
         <div><Link to="/" aria-label="Akuris"><img src={akurisLogo} alt="Akuris" width="134" height="40" /></Link><p>{t('publico.landing.footer.tagline')}</p></div>
         <nav aria-label={t('publico.landing.footer.produto')}>
-          <Link to="/planos">{t('site.plans')}</Link><Link to="/solucoes/canal-de-denuncias">{t('site.channel')}</Link><Link to="/migracao">{t('site.migration')}</Link>
+          <Link to="/#produto">{t('site.product')}</Link><Link to="/solucoes/canal-de-denuncias">{t('site.channel')}</Link><Link to="/migracao">{t('site.migration')}</Link>
         </nav>
         <nav aria-label={t('publico.landing.footer.empresa')}>
           <Link to="/seguranca">{t('site.trust')}</Link><Link to="/blog">{t('site.content')}</Link><Link to="/politica-privacidade">{t('publico.landing.footer.politica')}</Link>

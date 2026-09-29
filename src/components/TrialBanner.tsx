@@ -35,8 +35,8 @@ const TrialBanner: React.FC = () => {
             : t('trialBanner.daysLeftPlural', { days: diasRestantes })
           }
         </p>
-        <Link to="/planos" className="text-sm font-semibold underline hover:no-underline ml-1">
-          {t('trialBanner.viewPlans')}
+        <Link to="/?demo=1&interest=plans" className="text-sm font-semibold underline hover:no-underline ml-1">
+          {t('trial.contactSales')}
         </Link>
       </div>
     </div>

@@ -4,7 +4,6 @@ Allow: /blog
 Allow: /blog/
 Allow: /frameworks/
 Allow: /politica-privacidade
-Allow: /planos
 Disallow: /auth
 Disallow: /registro
 Disallow: /definir-senha

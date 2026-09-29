@@ -5,7 +5,6 @@
 ## Conteúdo público
 
 - [Site oficial](https://akuris.pt/): visão geral do produto e fluxo de trabalho.
-- [Planos](https://akuris.pt/planos): opções de contratação.
 - [Política de Privacidade](https://akuris.pt/politica-privacidade): práticas de tratamento de dados.
 - [Blog](https://akuris.pt/blog): conteúdo sobre riscos, controles, privacidade e auditoria.
 
