@@ -16,6 +16,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEntityById, type EntityKey } from '@/lib/entity-search';
 import { logger } from '@/lib/logger';
+import { regulatoryDb } from '@/lib/regulatory/types';
 
 interface BreadcrumbItem {
   title: string;
@@ -40,6 +41,7 @@ function getRouteMap(t: (k: string) => string): Record<string, string> {
     '/continuidade': t('p3Breadcrumbs.routes.continuidade'),
     '/gap-analysis': t('sweepCore.breadcrumb.gapAnalysis'),
     '/gap-analysis/frameworks': t('sweepCore.breadcrumb.frameworks'),
+    '/gap-analysis/cra': 'CRA',
     '/gap-analysis/avaliacao-aderencia': t('sweepCore.breadcrumb.avaliacaoAderencia'),
     '/governanca': t('p3Breadcrumbs.routes.governanca'),
     '/governanca/controles': t('sweepCore.breadcrumb.controles'),
@@ -134,6 +136,12 @@ export const useBreadcrumb = () => {
         const parent = pathSegments[i - 1];
 
         try {
+          if (parent === 'cra' && empresaId) {
+            const { data } = await regulatoryDb.from('regulatory_assessments').select('name')
+              .eq('id', segment).eq('empresa_id', empresaId).maybeSingle();
+            if (data?.name) updates[segment] = data.name;
+            continue;
+          }
           // Frameworks de Gap Analysis vivem numa tabela global própria.
           if (parent === 'framework') {
             const { data } = await supabase

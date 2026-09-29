@@ -6,6 +6,7 @@ import { akurisToast } from '@/lib/akuris-toast';
 import { toast } from '@/lib/toast';
 import { tGlobal } from '@/lib/i18n-global';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
+import { regulatoryDb } from '@/lib/regulatory/types';
 
 export interface EvidenceLibraryItem {
   id: string;
@@ -18,6 +19,7 @@ export interface EvidenceLibraryItem {
   arquivo_tipo: string | null;
   arquivo_tamanho: number | null;
   arquivo_hash: string | null;
+  bucket?: string | null;
   link_externo: string | null;
   origem_evaluation_id: string | null;
   /** Data em que a prova deixa de servir. `null` = sem prazo definido. */
@@ -110,11 +112,21 @@ export function useEvidenceLibrary(empresaId: string | null) {
       const ids = (evidences || []).map((e) => e.id);
       const linkCounts: Record<string, { total: number; sugestoes: number }> = {};
       if (ids.length > 0) {
-        const { data: links } = await readAllPagesByIds(ids, (batch, from, to) => supabase
+        const { data: links, error: linksError } = await readAllPagesByIds(ids, (batch, from, to) => supabase
           .from('evidence_library_links')
           .select('evidence_id, vinculo_tipo, aceito_em')
           .eq('empresa_id', empresaId)
           .in('evidence_id', batch).order('id').range(from, to));
+        if (linksError) throw linksError;
+        const regulatory = await readAllPagesByIds(ids, (batch, from, to) => regulatoryDb
+          .from('regulatory_evidence_links').select('evidence_id').eq('empresa_id', empresaId)
+          .in('evidence_id', batch).is('removed_at', null).order('id').range(from, to));
+        if (regulatory.error) throw regulatory.error;
+        for (const link of regulatory.data) {
+          const slot = linkCounts[link.evidence_id] || { total: 0, sugestoes: 0 };
+          slot.total++;
+          linkCounts[link.evidence_id] = slot;
+        }
         for (const l of (links || []) as any[]) {
           const slot = linkCounts[l.evidence_id] || { total: 0, sugestoes: 0 };
           if (l.vinculo_tipo === 'sugestao_ia' && !l.aceito_em) slot.sugestoes++;
@@ -153,6 +165,8 @@ export function useEvidenceLibrary(empresaId: string | null) {
     tags?: string[];
     link_externo?: string;
     origem_evaluation_id?: string | null;
+    /** CRA uploads use expiring signed upload tokens and opaque downloads. */
+    signedUpload?: boolean;
   }): Promise<EvidenceLibraryItem | null> => {
     if (!empresaId) return null;
     try {
@@ -181,10 +195,16 @@ export function useEvidenceLibrary(empresaId: string | null) {
 
         const safeName = params.file.name.replace(/[^\w.-]+/g, '_');
         const path = `${empresaId}/${arquivo_hash.slice(0, 16)}-${Date.now()}-${safeName}`;
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, params.file, {
-          contentType: params.file.type || 'application/octet-stream',
-          upsert: false,
-        });
+        let upErr;
+        if (params.signedUpload) {
+          const signed = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
+          if (signed.error || !signed.data) throw signed.error;
+          ({ error: upErr } = await supabase.storage.from(BUCKET).uploadToSignedUrl(path, signed.data.token, params.file, { contentType: 'application/octet-stream' }));
+        } else {
+          ({ error: upErr } = await supabase.storage.from(BUCKET).upload(path, params.file, {
+            contentType: params.file.type || 'application/octet-stream', upsert: false,
+          }));
+        }
         if (upErr) throw upErr;
 
         // Persist an object key, never a year-long bearer URL.

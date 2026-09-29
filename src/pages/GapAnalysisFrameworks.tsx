@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { WelcomeHero } from '@/components/gap-analysis/WelcomeHero';
 import { FrameworkCatalog } from '@/components/gap-analysis/FrameworkCatalog';
+import { CraEntry } from '@/components/regulatory/CraEntry';
 import {
   MaturityHero,
   AIRecommendedTile,
@@ -539,6 +540,7 @@ export default function GapAnalysisFrameworks() {
           description={t('gapAnalysis.frameworks.description')}
         />
 
+        <CraEntry />
         {!hasActiveFrameworks ? (
           <WelcomeHero
             suggestedFrameworks={suggestedFrameworks}

@@ -9,6 +9,7 @@
  * completa, ex.: t('riscos.title').
  */
 import { riscos } from "./riscos";
+import { regulatory } from "./regulatory";
 import { experience } from "./experience";
 import { executive } from "./executive";
 import { riscosVisoes } from "./riscos-visoes";
@@ -129,6 +130,7 @@ const modules: Record<string, ModuleDict> = {
   vinculoRequisitos,
   t4Ciclo,
   riscos,
+  regulatory,
   riscosVisoes,
   riscosDialogs,
   riscosDetalhe,

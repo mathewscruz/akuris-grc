@@ -1,0 +1,1347 @@
+{
+  "version": "2024.2847-readiness-draft.1",
+  "verifiedOn": "2026-09-29",
+  "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+  "classificationSourceUrl": "https://eur-lex.europa.eu/eli/reg_impl/2025/2392/oj",
+  "reportingAppliesOn": "2026-09-11",
+  "generalAppliesOn": "2027-12-11",
+  "coverage": "Initial readiness baseline across 22 product-security domains. Not a complete legal requirement inventory. Human applicability and legal review required before activation.",
+  "domains": [
+    {
+      "code": "governance",
+      "name": "Governança",
+      "nameEn": "Governance",
+      "position": 1
+    },
+    {
+      "code": "cybersecurity-risk-management",
+      "name": "Gestão de riscos de cibersegurança",
+      "nameEn": "Cybersecurity Risk Management",
+      "position": 2
+    },
+    {
+      "code": "secure-by-design",
+      "name": "Segurança por concepção",
+      "nameEn": "Secure by Design",
+      "position": 3
+    },
+    {
+      "code": "secure-by-default",
+      "name": "Segurança por padrão",
+      "nameEn": "Secure by Default",
+      "position": 4
+    },
+    {
+      "code": "identity-access-management",
+      "name": "Identidade e acesso",
+      "nameEn": "Identity & Access Management",
+      "position": 5
+    },
+    {
+      "code": "data-protection",
+      "name": "Proteção de dados",
+      "nameEn": "Data Protection",
+      "position": 6
+    },
+    {
+      "code": "cryptography",
+      "name": "Criptografia",
+      "nameEn": "Cryptography",
+      "position": 7
+    },
+    {
+      "code": "attack-surface-management",
+      "name": "Superfície de ataque",
+      "nameEn": "Attack Surface Management",
+      "position": 8
+    },
+    {
+      "code": "secure-development-lifecycle",
+      "name": "Desenvolvimento seguro",
+      "nameEn": "Secure Development Lifecycle",
+      "position": 9
+    },
+    {
+      "code": "dependency-management",
+      "name": "Gestão de dependências",
+      "nameEn": "Dependency Management",
+      "position": 10
+    },
+    {
+      "code": "software-bill-of-materials",
+      "name": "Lista de materiais de software",
+      "nameEn": "Software Bill of Materials",
+      "position": 11
+    },
+    {
+      "code": "vulnerability-management",
+      "name": "Gestão de vulnerabilidades",
+      "nameEn": "Vulnerability Management",
+      "position": 12
+    },
+    {
+      "code": "vulnerability-disclosure",
+      "name": "Divulgação de vulnerabilidades",
+      "nameEn": "Vulnerability Disclosure",
+      "position": 13
+    },
+    {
+      "code": "security-updates",
+      "name": "Atualizações de segurança",
+      "nameEn": "Security Updates",
+      "position": 14
+    },
+    {
+      "code": "logging-monitoring",
+      "name": "Registros e monitoramento",
+      "nameEn": "Logging & Monitoring",
+      "position": 15
+    },
+    {
+      "code": "incident-management",
+      "name": "Gestão de incidentes",
+      "nameEn": "Incident Management",
+      "position": 16
+    },
+    {
+      "code": "cra-incident-reporting",
+      "name": "Notificações CRA",
+      "nameEn": "CRA Incident Reporting",
+      "position": 17
+    },
+    {
+      "code": "product-security-documentation",
+      "name": "Documentação de segurança do produto",
+      "nameEn": "Product Security Documentation",
+      "position": 18
+    },
+    {
+      "code": "support-period-management",
+      "name": "Período de suporte",
+      "nameEn": "Support Period Management",
+      "position": 19
+    },
+    {
+      "code": "conformity-readiness",
+      "name": "Preparação da avaliação de conformidade",
+      "nameEn": "Conformity Readiness",
+      "position": 20
+    },
+    {
+      "code": "supply-chain-security",
+      "name": "Segurança da cadeia de fornecimento",
+      "nameEn": "Supply Chain Security",
+      "position": 21
+    },
+    {
+      "code": "end-of-life-management",
+      "name": "Fim de vida do produto",
+      "nameEn": "End-of-Life Management",
+      "position": 22
+    }
+  ],
+  "requirements": [
+    {
+      "code": "CRA-GOV-001",
+      "domain": "governance",
+      "controlCode": "AK-GOV-001",
+      "title": "Responsabilidades pela segurança do produto",
+      "titleEn": "Product security responsibilities",
+      "legalReference": "Art. 13",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Defina responsáveis pelas obrigações do produto, decisões e evidências ao longo do ciclo de vida.",
+      "descriptionEn": "Assign owners for product obligations, decisions and evidence throughout the lifecycle.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de responsabilidades pela segurança do produto?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of product security responsibilities?",
+      "expectedEvidence": [
+        "Matriz de responsabilidades",
+        "política de segurança do produto",
+        "atas de revisão"
+      ],
+      "expectedEvidenceEn": [
+        "Responsibility matrix",
+        "product security policy",
+        "review records"
+      ],
+      "guidance": "Defina responsáveis pelas obrigações do produto, decisões e evidências ao longo do ciclo de vida.",
+      "guidanceEn": "Assign owners for product obligations, decisions and evidence throughout the lifecycle.",
+      "remediationGuidance": "Defina responsáveis pelas obrigações do produto, decisões e evidências ao longo do ciclo de vida.",
+      "remediationGuidanceEn": "Assign owners for product obligations, decisions and evidence throughout the lifecycle.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-RSK-001",
+      "domain": "cybersecurity-risk-management",
+      "controlCode": "AK-RSK-001",
+      "title": "Avaliação de riscos do produto",
+      "titleEn": "Product cybersecurity risk assessment",
+      "legalReference": "Art. 13(2)–(3); Annex I, Part I",
+      "criticality": "critical",
+      "riskLevel": "critical",
+      "weight": 4,
+      "description": "Avalie uso pretendido e previsível, ameaças, ativos e riscos; justifique a aplicabilidade de cada requisito essencial e revise após mudanças.",
+      "descriptionEn": "Assess intended and foreseeable use, threats, assets and risks; justify each essential requirement's applicability and review changes.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de avaliação de riscos do produto?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of product cybersecurity risk assessment?",
+      "expectedEvidence": [
+        "Avaliação de riscos",
+        "modelo de ameaças",
+        "decisões sobre requisitos essenciais"
+      ],
+      "expectedEvidenceEn": [
+        "Risk assessment",
+        "threat model",
+        "essential-requirement decisions"
+      ],
+      "guidance": "Avalie uso pretendido e previsível, ameaças, ativos e riscos; justifique a aplicabilidade de cada requisito essencial e revise após mudanças.",
+      "guidanceEn": "Assess intended and foreseeable use, threats, assets and risks; justify each essential requirement's applicability and review changes.",
+      "remediationGuidance": "Avalie uso pretendido e previsível, ameaças, ativos e riscos; justifique a aplicabilidade de cada requisito essencial e revise após mudanças.",
+      "remediationGuidanceEn": "Assess intended and foreseeable use, threats, assets and risks; justify each essential requirement's applicability and review changes.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-SBD-001",
+      "domain": "secure-by-design",
+      "controlCode": "AK-SBD-001",
+      "title": "Segurança na arquitetura",
+      "titleEn": "Security in architecture",
+      "legalReference": "Annex I, Part I; Art. 13(2)",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Inclua requisitos de segurança no desenho, decisões de arquitetura e critérios de aceitação antes da disponibilização.",
+      "descriptionEn": "Include security requirements in design, architecture decisions and acceptance criteria before market availability.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de segurança na arquitetura?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of security in architecture?",
+      "expectedEvidence": [
+        "Arquitetura",
+        "revisão de desenho",
+        "testes de aceitação de segurança"
+      ],
+      "expectedEvidenceEn": [
+        "Architecture",
+        "design review",
+        "security acceptance tests"
+      ],
+      "guidance": "Inclua requisitos de segurança no desenho, decisões de arquitetura e critérios de aceitação antes da disponibilização.",
+      "guidanceEn": "Include security requirements in design, architecture decisions and acceptance criteria before market availability.",
+      "remediationGuidance": "Inclua requisitos de segurança no desenho, decisões de arquitetura e critérios de aceitação antes da disponibilização.",
+      "remediationGuidanceEn": "Include security requirements in design, architecture decisions and acceptance criteria before market availability.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-SDF-001",
+      "domain": "secure-by-default",
+      "controlCode": "AK-SDF-001",
+      "title": "Configuração inicial segura",
+      "titleEn": "Secure default configuration",
+      "legalReference": "Annex I, Part I",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Revise configurações de fábrica, credenciais e restauração segura; documente exceções justificadas para produtos sob medida.",
+      "descriptionEn": "Review factory settings, credentials and secure reset; document justified exceptions for tailored products.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de configuração inicial segura?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of secure default configuration?",
+      "expectedEvidence": [
+        "Baseline de configuração",
+        "testes de instalação e restauração",
+        "exceções aprovadas"
+      ],
+      "expectedEvidenceEn": [
+        "Configuration baseline",
+        "installation and reset tests",
+        "approved exceptions"
+      ],
+      "guidance": "Revise configurações de fábrica, credenciais e restauração segura; documente exceções justificadas para produtos sob medida.",
+      "guidanceEn": "Review factory settings, credentials and secure reset; document justified exceptions for tailored products.",
+      "remediationGuidance": "Revise configurações de fábrica, credenciais e restauração segura; documente exceções justificadas para produtos sob medida.",
+      "remediationGuidanceEn": "Review factory settings, credentials and secure reset; document justified exceptions for tailored products.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-IAM-001",
+      "domain": "identity-access-management",
+      "controlCode": "AK-IAM-001",
+      "title": "Proteção contra acesso não autorizado",
+      "titleEn": "Protection against unauthorised access",
+      "legalReference": "Annex I, Part I",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Defina autenticação, autorização e menor privilégio proporcionais ao produto e teste acesso indevido às funções e dados.",
+      "descriptionEn": "Define authentication, authorisation and least privilege proportionate to the product and test unauthorised access to functions and data.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de proteção contra acesso não autorizado?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of protection against unauthorised access?",
+      "expectedEvidence": [
+        "Modelo de autorização",
+        "testes de controle de acesso",
+        "configuração de autenticação"
+      ],
+      "expectedEvidenceEn": [
+        "Authorisation model",
+        "access-control tests",
+        "authentication configuration"
+      ],
+      "guidance": "Defina autenticação, autorização e menor privilégio proporcionais ao produto e teste acesso indevido às funções e dados.",
+      "guidanceEn": "Define authentication, authorisation and least privilege proportionate to the product and test unauthorised access to functions and data.",
+      "remediationGuidance": "Defina autenticação, autorização e menor privilégio proporcionais ao produto e teste acesso indevido às funções e dados.",
+      "remediationGuidanceEn": "Define authentication, authorisation and least privilege proportionate to the product and test unauthorised access to functions and data.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-DAT-001",
+      "domain": "data-protection",
+      "controlCode": "AK-DAT-001",
+      "title": "Confidencialidade, integridade e minimização",
+      "titleEn": "Confidentiality, integrity and minimisation",
+      "legalReference": "Annex I, Part I",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Identifique dados tratados pelo produto, limite a coleta ao necessário e teste proteção contra acesso e alteração indevidos.",
+      "descriptionEn": "Identify product data, minimise collection and test protection against unauthorised access and modification.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de confidencialidade, integridade e minimização?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of confidentiality, integrity and minimisation?",
+      "expectedEvidence": [
+        "Fluxo de dados",
+        "inventário",
+        "testes de integridade e confidencialidade"
+      ],
+      "expectedEvidenceEn": [
+        "Data flow",
+        "inventory",
+        "integrity and confidentiality tests"
+      ],
+      "guidance": "Identifique dados tratados pelo produto, limite a coleta ao necessário e teste proteção contra acesso e alteração indevidos.",
+      "guidanceEn": "Identify product data, minimise collection and test protection against unauthorised access and modification.",
+      "remediationGuidance": "Identifique dados tratados pelo produto, limite a coleta ao necessário e teste proteção contra acesso e alteração indevidos.",
+      "remediationGuidanceEn": "Identify product data, minimise collection and test protection against unauthorised access and modification.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-CRY-001",
+      "domain": "cryptography",
+      "controlCode": "AK-CRY-001",
+      "title": "Proteção criptográfica proporcional ao risco",
+      "titleEn": "Risk-proportionate cryptographic protection",
+      "legalReference": "Annex I, Part I",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Selecione proteção criptográfica conforme o risco; documente chaves, protocolos, ciclo de vida e testes, sem prescrever um algoritmo universal.",
+      "descriptionEn": "Select cryptographic protection based on risk; document keys, protocols, lifecycle and tests without prescribing one universal algorithm.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de proteção criptográfica proporcional ao risco?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of risk-proportionate cryptographic protection?",
+      "expectedEvidence": [
+        "Padrão criptográfico",
+        "gestão de chaves",
+        "testes de transporte e armazenamento"
+      ],
+      "expectedEvidenceEn": [
+        "Cryptography standard",
+        "key management",
+        "transport and storage tests"
+      ],
+      "guidance": "Selecione proteção criptográfica conforme o risco; documente chaves, protocolos, ciclo de vida e testes, sem prescrever um algoritmo universal.",
+      "guidanceEn": "Select cryptographic protection based on risk; document keys, protocols, lifecycle and tests without prescribing one universal algorithm.",
+      "remediationGuidance": "Selecione proteção criptográfica conforme o risco; documente chaves, protocolos, ciclo de vida e testes, sem prescrever um algoritmo universal.",
+      "remediationGuidanceEn": "Select cryptographic protection based on risk; document keys, protocols, lifecycle and tests without prescribing one universal algorithm.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-ASM-001",
+      "domain": "attack-surface-management",
+      "controlCode": "AK-ASM-001",
+      "title": "Redução da superfície e do impacto de ataques",
+      "titleEn": "Attack surface and impact reduction",
+      "legalReference": "Annex I, Part I",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Inventarie interfaces e serviços, desative o desnecessário e demonstre medidas que limitem exploração e impacto sobre outras redes.",
+      "descriptionEn": "Inventory interfaces and services, disable unnecessary exposure and demonstrate measures limiting exploitation and impact on other networks.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de redução da superfície e do impacto de ataques?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of attack surface and impact reduction?",
+      "expectedEvidence": [
+        "Inventário de interfaces",
+        "hardening",
+        "testes de exposição e resiliência"
+      ],
+      "expectedEvidenceEn": [
+        "Interface inventory",
+        "hardening",
+        "exposure and resilience tests"
+      ],
+      "guidance": "Inventarie interfaces e serviços, desative o desnecessário e demonstre medidas que limitem exploração e impacto sobre outras redes.",
+      "guidanceEn": "Inventory interfaces and services, disable unnecessary exposure and demonstrate measures limiting exploitation and impact on other networks.",
+      "remediationGuidance": "Inventarie interfaces e serviços, desative o desnecessário e demonstre medidas que limitem exploração e impacto sobre outras redes.",
+      "remediationGuidanceEn": "Inventory interfaces and services, disable unnecessary exposure and demonstrate measures limiting exploitation and impact on other networks.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-SDL-001",
+      "domain": "secure-development-lifecycle",
+      "controlCode": "AK-SDL-001",
+      "title": "Verificação contínua de segurança",
+      "titleEn": "Continuous security verification",
+      "legalReference": "Annex I, Part II; Art. 13(2)",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Integre revisão e testes de segurança regulares ao desenvolvimento, triagem dos resultados e critérios de liberação.",
+      "descriptionEn": "Integrate regular security review and testing into development, result triage and release gates.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de verificação contínua de segurança?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of continuous security verification?",
+      "expectedEvidence": [
+        "Procedimento SDLC",
+        "revisão de código",
+        "SAST/DAST",
+        "critérios de release"
+      ],
+      "expectedEvidenceEn": [
+        "SDLC procedure",
+        "code review",
+        "SAST/DAST",
+        "release criteria"
+      ],
+      "guidance": "Integre revisão e testes de segurança regulares ao desenvolvimento, triagem dos resultados e critérios de liberação.",
+      "guidanceEn": "Integrate regular security review and testing into development, result triage and release gates.",
+      "remediationGuidance": "Integre revisão e testes de segurança regulares ao desenvolvimento, triagem dos resultados e critérios de liberação.",
+      "remediationGuidanceEn": "Integrate regular security review and testing into development, result triage and release gates.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-DEP-001",
+      "domain": "dependency-management",
+      "controlCode": "AK-DEP-001",
+      "title": "Diligência sobre componentes de terceiros",
+      "titleEn": "Third-party component due diligence",
+      "legalReference": "Art. 13(5); Annex I, Part II",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Identifique componentes incorporados, avalie seu estado de segurança e acompanhe vulnerabilidades e correções ao longo do suporte.",
+      "descriptionEn": "Identify integrated components, evaluate their security and track vulnerabilities and fixes throughout support.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de diligência sobre componentes de terceiros?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of third-party component due diligence?",
+      "expectedEvidence": [
+        "Inventário de dependências",
+        "revisão de fornecedores",
+        "triagem de avisos"
+      ],
+      "expectedEvidenceEn": [
+        "Dependency inventory",
+        "supplier review",
+        "advisory triage"
+      ],
+      "guidance": "Identifique componentes incorporados, avalie seu estado de segurança e acompanhe vulnerabilidades e correções ao longo do suporte.",
+      "guidanceEn": "Identify integrated components, evaluate their security and track vulnerabilities and fixes throughout support.",
+      "remediationGuidance": "Identifique componentes incorporados, avalie seu estado de segurança e acompanhe vulnerabilidades e correções ao longo do suporte.",
+      "remediationGuidanceEn": "Identify integrated components, evaluate their security and track vulnerabilities and fixes throughout support.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-SBM-001",
+      "domain": "software-bill-of-materials",
+      "controlCode": "AK-SBOM-001",
+      "title": "SBOM rastreável por versão",
+      "titleEn": "Traceable SBOM per product version",
+      "legalReference": "Annex I, Part II, point 1",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Mantenha SBOM legível por máquina que documente componentes e pelo menos dependências de nível superior, vinculada à versão avaliada. CycloneDX e SPDX são opções, não formatos impostos pelo CRA.",
+      "descriptionEn": "Maintain a machine-readable SBOM documenting components and at least top-level dependencies for the assessed version. CycloneDX and SPDX are options, not CRA-mandated formats.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de sbom rastreável por versão?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of traceable sbom per product version?",
+      "expectedEvidence": [
+        "SBOM CycloneDX/SPDX",
+        "configuração de geração",
+        "histórico por versão"
+      ],
+      "expectedEvidenceEn": [
+        "CycloneDX/SPDX SBOM",
+        "generation configuration",
+        "version history"
+      ],
+      "guidance": "Mantenha SBOM legível por máquina que documente componentes e pelo menos dependências de nível superior, vinculada à versão avaliada. CycloneDX e SPDX são opções, não formatos impostos pelo CRA.",
+      "guidanceEn": "Maintain a machine-readable SBOM documenting components and at least top-level dependencies for the assessed version. CycloneDX and SPDX are options, not CRA-mandated formats.",
+      "remediationGuidance": "Mantenha SBOM legível por máquina que documente componentes e pelo menos dependências de nível superior, vinculada à versão avaliada. CycloneDX e SPDX são opções, não formatos impostos pelo CRA.",
+      "remediationGuidanceEn": "Maintain a machine-readable SBOM documenting components and at least top-level dependencies for the assessed version. CycloneDX and SPDX are options, not CRA-mandated formats.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-VUL-001",
+      "domain": "vulnerability-management",
+      "controlCode": "AK-VM-001",
+      "title": "Processo de tratamento de vulnerabilidades",
+      "titleEn": "Vulnerability handling process",
+      "legalReference": "Annex I, Part II; Art. 13",
+      "criticality": "critical",
+      "riskLevel": "critical",
+      "weight": 4,
+      "description": "Documente identificação, avaliação, correção e comunicação; demonstre execução com tickets, responsáveis e decisões justificadas.",
+      "descriptionEn": "Document identification, assessment, remediation and communication; demonstrate operation with tickets, owners and justified decisions.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de processo de tratamento de vulnerabilidades?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of vulnerability handling process?",
+      "expectedEvidence": [
+        "Política de vulnerabilidades",
+        "procedimento PSIRT",
+        "tickets",
+        "relatórios de correção"
+      ],
+      "expectedEvidenceEn": [
+        "Vulnerability policy",
+        "PSIRT procedure",
+        "tickets",
+        "remediation reports"
+      ],
+      "guidance": "Documente identificação, avaliação, correção e comunicação; demonstre execução com tickets, responsáveis e decisões justificadas.",
+      "guidanceEn": "Document identification, assessment, remediation and communication; demonstrate operation with tickets, owners and justified decisions.",
+      "remediationGuidance": "Documente identificação, avaliação, correção e comunicação; demonstre execução com tickets, responsáveis e decisões justificadas.",
+      "remediationGuidanceEn": "Document identification, assessment, remediation and communication; demonstrate operation with tickets, owners and justified decisions.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-VDP-001",
+      "domain": "vulnerability-disclosure",
+      "controlCode": "AK-VDP-001",
+      "title": "Divulgação coordenada e ponto de contato",
+      "titleEn": "Coordinated disclosure and contact point",
+      "legalReference": "Annex I, Part II",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Publique política de divulgação coordenada e contato acessível; teste recepção, triagem e comunicação de vulnerabilidades.",
+      "descriptionEn": "Publish a coordinated disclosure policy and accessible contact; test vulnerability intake, triage and communication.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de divulgação coordenada e ponto de contato?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of coordinated disclosure and contact point?",
+      "expectedEvidence": [
+        "Política CVD",
+        "contato público",
+        "registros de triagem e comunicação"
+      ],
+      "expectedEvidenceEn": [
+        "CVD policy",
+        "public contact",
+        "triage and communication records"
+      ],
+      "guidance": "Publique política de divulgação coordenada e contato acessível; teste recepção, triagem e comunicação de vulnerabilidades.",
+      "guidanceEn": "Publish a coordinated disclosure policy and accessible contact; test vulnerability intake, triage and communication.",
+      "remediationGuidance": "Publique política de divulgação coordenada e contato acessível; teste recepção, triagem e comunicação de vulnerabilidades.",
+      "remediationGuidanceEn": "Publish a coordinated disclosure policy and accessible contact; test vulnerability intake, triage and communication.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-UPD-001",
+      "domain": "security-updates",
+      "controlCode": "AK-UPD-001",
+      "title": "Distribuição segura e tempestiva de correções",
+      "titleEn": "Secure and timely delivery of fixes",
+      "legalReference": "Annex I, Parts I and II; Art. 13",
+      "criticality": "critical",
+      "riskLevel": "critical",
+      "weight": 4,
+      "description": "Defina distribuição, integridade e instalação de atualizações, informações ao usuário e disponibilidade durante o suporte; justifique exceções aplicáveis.",
+      "descriptionEn": "Define update distribution, integrity and installation, user information and availability during support; justify applicable exceptions.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de distribuição segura e tempestiva de correções?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of secure and timely delivery of fixes?",
+      "expectedEvidence": [
+        "Procedimento de atualização",
+        "validação de assinatura",
+        "releases",
+        "comunicação ao usuário"
+      ],
+      "expectedEvidenceEn": [
+        "Update procedure",
+        "signature validation",
+        "releases",
+        "user communication"
+      ],
+      "guidance": "Defina distribuição, integridade e instalação de atualizações, informações ao usuário e disponibilidade durante o suporte; justifique exceções aplicáveis.",
+      "guidanceEn": "Define update distribution, integrity and installation, user information and availability during support; justify applicable exceptions.",
+      "remediationGuidance": "Defina distribuição, integridade e instalação de atualizações, informações ao usuário e disponibilidade durante o suporte; justifique exceções aplicáveis.",
+      "remediationGuidanceEn": "Define update distribution, integrity and installation, user information and availability during support; justify applicable exceptions.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-LOG-001",
+      "domain": "logging-monitoring",
+      "controlCode": "AK-LOG-001",
+      "title": "Visibilidade de eventos relevantes à segurança",
+      "titleEn": "Visibility of security-relevant events",
+      "legalReference": "Annex I, Part I",
+      "criticality": "medium",
+      "riskLevel": "medium",
+      "weight": 2,
+      "description": "Defina os eventos necessários, acesso aos registros e opções do usuário aplicáveis; evite expor credenciais ou dados desnecessários nos logs.",
+      "descriptionEn": "Define required events, log access and applicable user options; avoid credentials and unnecessary data in logs.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de visibilidade de eventos relevantes à segurança?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of visibility of security-relevant events?",
+      "expectedEvidence": [
+        "Catálogo de eventos",
+        "exemplos sanitizados",
+        "testes de monitoração"
+      ],
+      "expectedEvidenceEn": [
+        "Event catalog",
+        "sanitised examples",
+        "monitoring tests"
+      ],
+      "guidance": "Defina os eventos necessários, acesso aos registros e opções do usuário aplicáveis; evite expor credenciais ou dados desnecessários nos logs.",
+      "guidanceEn": "Define required events, log access and applicable user options; avoid credentials and unnecessary data in logs.",
+      "remediationGuidance": "Defina os eventos necessários, acesso aos registros e opções do usuário aplicáveis; evite expor credenciais ou dados desnecessários nos logs.",
+      "remediationGuidanceEn": "Define required events, log access and applicable user options; avoid credentials and unnecessary data in logs.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-INC-001",
+      "domain": "incident-management",
+      "controlCode": "AK-IR-001",
+      "title": "Resposta a incidentes de segurança do produto",
+      "titleEn": "Product security incident response",
+      "legalReference": "Art. 13; Art. 14",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Defina triagem, contenção, recuperação e coordenação entre engenharia, PSIRT, jurídico e gestão; execute simulações.",
+      "descriptionEn": "Define triage, containment, recovery and coordination between engineering, PSIRT, legal and management; exercise the process.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de resposta a incidentes de segurança do produto?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of product security incident response?",
+      "expectedEvidence": [
+        "Plano de resposta",
+        "simulado",
+        "contatos",
+        "lições aprendidas"
+      ],
+      "expectedEvidenceEn": [
+        "Response plan",
+        "exercise",
+        "contacts",
+        "lessons learned"
+      ],
+      "guidance": "Defina triagem, contenção, recuperação e coordenação entre engenharia, PSIRT, jurídico e gestão; execute simulações.",
+      "guidanceEn": "Define triage, containment, recovery and coordination between engineering, PSIRT, legal and management; exercise the process.",
+      "remediationGuidance": "Defina triagem, contenção, recuperação e coordenação entre engenharia, PSIRT, jurídico e gestão; execute simulações.",
+      "remediationGuidanceEn": "Define triage, containment, recovery and coordination between engineering, PSIRT, legal and management; exercise the process.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-RPT-001",
+      "domain": "cra-incident-reporting",
+      "controlCode": "AK-REP-001",
+      "title": "Prontidão para notificações regulatórias",
+      "titleEn": "Regulatory reporting readiness",
+      "legalReference": "Art. 14; Art. 69; Art. 71",
+      "criticality": "critical",
+      "riskLevel": "critical",
+      "weight": 4,
+      "description": "Separe vulnerabilidade ativamente explorada de incidente grave. Prepare alerta em 24h e notificação em 72h após ciência; relatório final de vulnerabilidade até 14 dias após medida corretiva/mitigadora disponível e de incidente até um mês após a notificação de 72h. Valide exceções e marco inicial com jurídico. Não enviar automaticamente.",
+      "descriptionEn": "Distinguish actively exploited vulnerabilities from severe incidents. Prepare 24-hour early warnings and 72-hour notifications after awareness; vulnerability final report within 14 days of an available corrective/mitigating measure and incident final report within one month of the 72-hour notification. Review exceptions and time anchors with legal. Do not send automatically.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de prontidão para notificações regulatórias?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of regulatory reporting readiness?",
+      "expectedEvidence": [
+        "Workflow com marcos",
+        "responsáveis",
+        "modelo de notificações",
+        "exercícios com prazos"
+      ],
+      "expectedEvidenceEn": [
+        "Workflow time anchors",
+        "owners",
+        "notification templates",
+        "timed exercises"
+      ],
+      "guidance": "Separe vulnerabilidade ativamente explorada de incidente grave. Prepare alerta em 24h e notificação em 72h após ciência; relatório final de vulnerabilidade até 14 dias após medida corretiva/mitigadora disponível e de incidente até um mês após a notificação de 72h. Valide exceções e marco inicial com jurídico. Não enviar automaticamente.",
+      "guidanceEn": "Distinguish actively exploited vulnerabilities from severe incidents. Prepare 24-hour early warnings and 72-hour notifications after awareness; vulnerability final report within 14 days of an available corrective/mitigating measure and incident final report within one month of the 72-hour notification. Review exceptions and time anchors with legal. Do not send automatically.",
+      "remediationGuidance": "Separe vulnerabilidade ativamente explorada de incidente grave. Prepare alerta em 24h e notificação em 72h após ciência; relatório final de vulnerabilidade até 14 dias após medida corretiva/mitigadora disponível e de incidente até um mês após a notificação de 72h. Valide exceções e marco inicial com jurídico. Não enviar automaticamente.",
+      "remediationGuidanceEn": "Distinguish actively exploited vulnerabilities from severe incidents. Prepare 24-hour early warnings and 72-hour notifications after awareness; vulnerability final report within 14 days of an available corrective/mitigating measure and incident final report within one month of the 72-hour notification. Review exceptions and time anchors with legal. Do not send automatically.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-DOC-001",
+      "domain": "product-security-documentation",
+      "controlCode": "AK-DOC-001",
+      "title": "Dossiê técnico e informação ao usuário",
+      "titleEn": "Technical file and user information",
+      "legalReference": "Arts. 13, 31; Annexes II and VII",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Organize descrição do produto, arquitetura, riscos, medidas, testes, instruções e informações de suporte; mantenha versões identificadas e atualizadas.",
+      "descriptionEn": "Organise product description, architecture, risks, measures, tests, instructions and support information; maintain identified, current versions.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de dossiê técnico e informação ao usuário?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of technical file and user information?",
+      "expectedEvidence": [
+        "Documentação técnica",
+        "instruções do usuário",
+        "controle de versões"
+      ],
+      "expectedEvidenceEn": [
+        "Technical documentation",
+        "user instructions",
+        "version control"
+      ],
+      "guidance": "Organize descrição do produto, arquitetura, riscos, medidas, testes, instruções e informações de suporte; mantenha versões identificadas e atualizadas.",
+      "guidanceEn": "Organise product description, architecture, risks, measures, tests, instructions and support information; maintain identified, current versions.",
+      "remediationGuidance": "Organize descrição do produto, arquitetura, riscos, medidas, testes, instruções e informações de suporte; mantenha versões identificadas e atualizadas.",
+      "remediationGuidanceEn": "Organise product description, architecture, risks, measures, tests, instructions and support information; maintain identified, current versions.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-SUP-001",
+      "domain": "support-period-management",
+      "controlCode": "AK-SUP-001",
+      "title": "Definição e comunicação do suporte",
+      "titleEn": "Support period definition and communication",
+      "legalReference": "Art. 13(8); Annex II",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Justifique o período conforme uso esperado e características do produto; considere mínimo de cinco anos ou a vida útil esperada quando inferior. Comunique claramente o término e o tratamento de vulnerabilidades.",
+      "descriptionEn": "Justify support against expected use and product characteristics; consider a minimum of five years or expected lifetime where shorter. Clearly communicate end of support and vulnerability handling.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de definição e comunicação do suporte?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of support period definition and communication?",
+      "expectedEvidence": [
+        "Política de suporte",
+        "justificativa de duração",
+        "data pública de término"
+      ],
+      "expectedEvidenceEn": [
+        "Support policy",
+        "duration rationale",
+        "public end date"
+      ],
+      "guidance": "Justifique o período conforme uso esperado e características do produto; considere mínimo de cinco anos ou a vida útil esperada quando inferior. Comunique claramente o término e o tratamento de vulnerabilidades.",
+      "guidanceEn": "Justify support against expected use and product characteristics; consider a minimum of five years or expected lifetime where shorter. Clearly communicate end of support and vulnerability handling.",
+      "remediationGuidance": "Justifique o período conforme uso esperado e características do produto; considere mínimo de cinco anos ou a vida útil esperada quando inferior. Comunique claramente o término e o tratamento de vulnerabilidades.",
+      "remediationGuidanceEn": "Justify support against expected use and product characteristics; consider a minimum of five years or expected lifetime where shorter. Clearly communicate end of support and vulnerability handling.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-CNF-001",
+      "domain": "conformity-readiness",
+      "controlCode": "AK-CONF-001",
+      "title": "Preparação do procedimento de avaliação",
+      "titleEn": "Preparation for conformity assessment",
+      "legalReference": "Arts. 7, 8, 27–32; Annex VIII; Regulation (EU) 2025/2392",
+      "criticality": "critical",
+      "riskLevel": "critical",
+      "weight": 4,
+      "description": "Confirme função principal, classe e procedimento aplicável com revisão humana; reúna documentação e eventual avaliação externa. Score de prontidão não é declaração UE, marcação CE ou certificação.",
+      "descriptionEn": "Confirm core functionality, class and applicable procedure with human review; assemble documentation and any external assessment. A readiness score is not an EU declaration, CE marking or certification.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de preparação do procedimento de avaliação?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of preparation for conformity assessment?",
+      "expectedEvidence": [
+        "Classificação revisada",
+        "procedimento escolhido",
+        "dossiê",
+        "parecer de organismo quando aplicável"
+      ],
+      "expectedEvidenceEn": [
+        "Reviewed classification",
+        "selected procedure",
+        "dossier",
+        "body opinion where applicable"
+      ],
+      "guidance": "Confirme função principal, classe e procedimento aplicável com revisão humana; reúna documentação e eventual avaliação externa. Score de prontidão não é declaração UE, marcação CE ou certificação.",
+      "guidanceEn": "Confirm core functionality, class and applicable procedure with human review; assemble documentation and any external assessment. A readiness score is not an EU declaration, CE marking or certification.",
+      "remediationGuidance": "Confirme função principal, classe e procedimento aplicável com revisão humana; reúna documentação e eventual avaliação externa. Score de prontidão não é declaração UE, marcação CE ou certificação.",
+      "remediationGuidanceEn": "Confirm core functionality, class and applicable procedure with human review; assemble documentation and any external assessment. A readiness score is not an EU declaration, CE marking or certification.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-SSC-001",
+      "domain": "supply-chain-security",
+      "controlCode": "AK-SC-001",
+      "title": "Cooperação na cadeia de fornecimento",
+      "titleEn": "Supply chain cooperation",
+      "legalReference": "Art. 13(5); Arts. 18–20",
+      "criticality": "high",
+      "riskLevel": "high",
+      "weight": 3,
+      "description": "Defina diligência, rastreabilidade e comunicação entre fabricantes, representantes, importadores e distribuidores conforme o papel efetivo.",
+      "descriptionEn": "Define due diligence, traceability and communication among manufacturers, representatives, importers and distributors according to the actual role.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de cooperação na cadeia de fornecimento?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of supply chain cooperation?",
+      "expectedEvidence": [
+        "Acordos de fornecimento",
+        "responsabilidades",
+        "registros de comunicação"
+      ],
+      "expectedEvidenceEn": [
+        "Supply agreements",
+        "responsibilities",
+        "communication records"
+      ],
+      "guidance": "Defina diligência, rastreabilidade e comunicação entre fabricantes, representantes, importadores e distribuidores conforme o papel efetivo.",
+      "guidanceEn": "Define due diligence, traceability and communication among manufacturers, representatives, importers and distributors according to the actual role.",
+      "remediationGuidance": "Defina diligência, rastreabilidade e comunicação entre fabricantes, representantes, importadores e distribuidores conforme o papel efetivo.",
+      "remediationGuidanceEn": "Define due diligence, traceability and communication among manufacturers, representatives, importers and distributors according to the actual role.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    },
+    {
+      "code": "CRA-EOL-001",
+      "domain": "end-of-life-management",
+      "controlCode": "AK-EOL-001",
+      "title": "Descontinuação e descarte seguro",
+      "titleEn": "Discontinuation and secure disposal",
+      "legalReference": "Art. 13; Annex I, Part I; Annex II",
+      "criticality": "medium",
+      "riskLevel": "medium",
+      "weight": 2,
+      "description": "Planeje comunicação do fim de suporte, acesso às informações necessárias e eliminação segura de dados/configurações, respeitando obrigações que permaneçam aplicáveis.",
+      "descriptionEn": "Plan end-of-support communication, access to required information and secure erasure of data/settings, respecting obligations that remain applicable.",
+      "question": "O produto avaliado possui evidências atuais e verificáveis de descontinuação e descarte seguro?",
+      "questionEn": "Does the assessed product have current, verifiable evidence of discontinuation and secure disposal?",
+      "expectedEvidence": [
+        "Plano de descontinuação",
+        "aviso ao usuário",
+        "testes de eliminação segura"
+      ],
+      "expectedEvidenceEn": [
+        "Discontinuation plan",
+        "user notice",
+        "secure-erasure tests"
+      ],
+      "guidance": "Planeje comunicação do fim de suporte, acesso às informações necessárias e eliminação segura de dados/configurações, respeitando obrigações que permaneçam aplicáveis.",
+      "guidanceEn": "Plan end-of-support communication, access to required information and secure erasure of data/settings, respecting obligations that remain applicable.",
+      "remediationGuidance": "Planeje comunicação do fim de suporte, acesso às informações necessárias e eliminação segura de dados/configurações, respeitando obrigações que permaneçam aplicáveis.",
+      "remediationGuidanceEn": "Plan end-of-support communication, access to required information and secure erasure of data/settings, respecting obligations that remain applicable.",
+      "applicabilityRule": {
+        "version": 1,
+        "kind": "human_review_required",
+        "roles": [
+          "manufacturer"
+        ],
+        "categories": [
+          "default",
+          "important_class_i",
+          "important_class_ii",
+          "critical",
+          "review_required"
+        ],
+        "note": "Do not auto-select or mark N/A. Importer, distributor and authorised-representative obligations require a separately reviewed role-specific selection."
+      },
+      "mappingStrength": "partial",
+      "mappingNotes": "Control supports the stated readiness outcome; product scope, evidence and all referenced legal conditions require an independent human review. No automatic conformity inheritance."
+    }
+  ],
+  "controls": [
+    {
+      "code": "AK-GOV-001",
+      "domain": "governance",
+      "name": "Governança",
+      "nameEn": "Governance",
+      "description": "Define responsabilidades e supervisão da segurança ao longo do ciclo de vida.",
+      "descriptionEn": "Defines security accountability and oversight throughout the lifecycle."
+    },
+    {
+      "code": "AK-RSK-001",
+      "domain": "cybersecurity-risk-management",
+      "name": "Gestão de riscos de cibersegurança",
+      "nameEn": "Cybersecurity Risk Management",
+      "description": "Identifica, analisa, trata e revisa riscos de cibersegurança no escopo avaliado.",
+      "descriptionEn": "Identifies, analyses, treats and reviews cybersecurity risks in the assessed scope."
+    },
+    {
+      "code": "AK-SBD-001",
+      "domain": "secure-by-design",
+      "name": "Segurança por concepção",
+      "nameEn": "Secure by Design",
+      "description": "Integra requisitos de segurança e análise de ameaças nas decisões de arquitetura.",
+      "descriptionEn": "Integrates security requirements and threat analysis into architecture decisions."
+    },
+    {
+      "code": "AK-SDF-001",
+      "domain": "secure-by-default",
+      "name": "Segurança por padrão",
+      "nameEn": "Secure by Default",
+      "description": "Mantém configurações iniciais seguras e procedimentos de restauração controlados.",
+      "descriptionEn": "Maintains secure default configurations and controlled reset procedures."
+    },
+    {
+      "code": "AK-IAM-001",
+      "domain": "identity-access-management",
+      "name": "Identidade e acesso",
+      "nameEn": "Identity & Access Management",
+      "description": "Controla identidades, autenticação, autorização e privilégios sobre funções e dados.",
+      "descriptionEn": "Controls identities, authentication, authorisation and privileges over functions and data."
+    },
+    {
+      "code": "AK-DAT-001",
+      "domain": "data-protection",
+      "name": "Proteção de dados",
+      "nameEn": "Data Protection",
+      "description": "Protege confidencialidade e integridade, minimiza coleta e controla o ciclo de vida dos dados.",
+      "descriptionEn": "Protects confidentiality and integrity, minimises collection and controls the data lifecycle."
+    },
+    {
+      "code": "AK-CRY-001",
+      "domain": "cryptography",
+      "name": "Criptografia",
+      "nameEn": "Cryptography",
+      "description": "Mantém mecanismos criptográficos e gestão de chaves proporcionais ao risco.",
+      "descriptionEn": "Maintains cryptographic mechanisms and key management proportionate to risk."
+    },
+    {
+      "code": "AK-ASM-001",
+      "domain": "attack-surface-management",
+      "name": "Superfície de ataque",
+      "nameEn": "Attack Surface Management",
+      "description": "Identifica interfaces expostas e reduz oportunidades e impacto de exploração.",
+      "descriptionEn": "Identifies exposed interfaces and reduces exploitation opportunities and impact."
+    },
+    {
+      "code": "AK-SDL-001",
+      "domain": "secure-development-lifecycle",
+      "name": "Desenvolvimento seguro",
+      "nameEn": "Secure Development Lifecycle",
+      "description": "Integra revisões e testes de segurança à entrega e manutenção de software.",
+      "descriptionEn": "Integrates security reviews and tests into software delivery and maintenance."
+    },
+    {
+      "code": "AK-DEP-001",
+      "domain": "dependency-management",
+      "name": "Gestão de dependências",
+      "nameEn": "Dependency Management",
+      "description": "Identifica, avalia e acompanha componentes e dependências de terceiros.",
+      "descriptionEn": "Identifies, assesses and monitors third-party components and dependencies."
+    },
+    {
+      "code": "AK-SBOM-001",
+      "domain": "software-bill-of-materials",
+      "name": "Lista de materiais de software",
+      "nameEn": "Software Bill of Materials",
+      "description": "Mantém inventário legível por máquina de componentes por versão do produto.",
+      "descriptionEn": "Maintains a machine-readable inventory of components per product version."
+    },
+    {
+      "code": "AK-VM-001",
+      "domain": "vulnerability-management",
+      "name": "Gestão de vulnerabilidades",
+      "nameEn": "Vulnerability Management",
+      "description": "Mantém processos de identificação, avaliação, remediação e comunicação de vulnerabilidades.",
+      "descriptionEn": "Maintains processes for identifying, assessing, remediating and communicating vulnerabilities."
+    },
+    {
+      "code": "AK-VDP-001",
+      "domain": "vulnerability-disclosure",
+      "name": "Divulgação de vulnerabilidades",
+      "nameEn": "Vulnerability Disclosure",
+      "description": "Recebe e trata relatos de vulnerabilidades mediante divulgação coordenada.",
+      "descriptionEn": "Receives and handles vulnerability reports through coordinated disclosure."
+    },
+    {
+      "code": "AK-UPD-001",
+      "domain": "security-updates",
+      "name": "Atualizações de segurança",
+      "nameEn": "Security Updates",
+      "description": "Distribui e mantém atualizações de segurança íntegras, acessíveis e tempestivas.",
+      "descriptionEn": "Distributes and maintains authentic, available and timely security updates."
+    },
+    {
+      "code": "AK-LOG-001",
+      "domain": "logging-monitoring",
+      "name": "Registros e monitoramento",
+      "nameEn": "Logging & Monitoring",
+      "description": "Registra e monitora eventos relevantes à segurança com acesso e retenção controlados.",
+      "descriptionEn": "Records and monitors security-relevant events with controlled access and retention."
+    },
+    {
+      "code": "AK-IR-001",
+      "domain": "incident-management",
+      "name": "Gestão de incidentes",
+      "nameEn": "Incident Management",
+      "description": "Coordena preparação, identificação, contenção e recuperação de incidentes.",
+      "descriptionEn": "Coordinates incident preparation, identification, containment and recovery."
+    },
+    {
+      "code": "AK-REP-001",
+      "domain": "cra-incident-reporting",
+      "name": "Notificações CRA",
+      "nameEn": "CRA Incident Reporting",
+      "description": "Identifica deveres de notificação, marcos temporais, responsáveis e procedimentos de comunicação.",
+      "descriptionEn": "Identifies reporting duties, time anchors, owners and communication procedures."
+    },
+    {
+      "code": "AK-DOC-001",
+      "domain": "product-security-documentation",
+      "name": "Documentação de segurança do produto",
+      "nameEn": "Product Security Documentation",
+      "description": "Mantém documentação técnica, instruções e evidências identificadas e atualizadas.",
+      "descriptionEn": "Maintains identified and current technical documentation, instructions and evidence."
+    },
+    {
+      "code": "AK-SUP-001",
+      "domain": "support-period-management",
+      "name": "Período de suporte",
+      "nameEn": "Support Period Management",
+      "description": "Define, justifica e comunica períodos de suporte e responsabilidades de manutenção.",
+      "descriptionEn": "Defines, justifies and communicates support periods and maintenance responsibilities."
+    },
+    {
+      "code": "AK-CONF-001",
+      "domain": "conformity-readiness",
+      "name": "Preparação da avaliação de conformidade",
+      "nameEn": "Conformity Readiness",
+      "description": "Reúne evidências e decisões para os procedimentos de avaliação de conformidade aplicáveis.",
+      "descriptionEn": "Assembles evidence and decisions for applicable conformity assessment procedures."
+    },
+    {
+      "code": "AK-SC-001",
+      "domain": "supply-chain-security",
+      "name": "Segurança da cadeia de fornecimento",
+      "nameEn": "Supply Chain Security",
+      "description": "Avalia fornecedores e estabelece obrigações e comunicação de segurança na cadeia de fornecimento.",
+      "descriptionEn": "Assesses suppliers and establishes security obligations and supply-chain communication."
+    },
+    {
+      "code": "AK-EOL-001",
+      "domain": "end-of-life-management",
+      "name": "Fim de vida do produto",
+      "nameEn": "End-of-Life Management",
+      "description": "Planeja descontinuação, comunicação e tratamento seguro dos dados no fim de vida.",
+      "descriptionEn": "Plans discontinuation, communication and secure data handling at end of life."
+    }
+  ]
+}

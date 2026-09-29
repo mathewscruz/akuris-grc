@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { AuthError, requireUserContext, requireValidMfa } from "./auth.ts";
 import { MODELOS } from "./modelos.ts";
 import { semCreditoIA, temCreditoIA } from "./creditos.ts";
+import { regulatoryEvidenceContext } from "./regulatory-evidence-context.ts";
 import {
   boundedDownload,
   EVIDENCE_READER_VERSION,
@@ -34,6 +35,7 @@ const digest = async (s: Uint8Array | string) =>
     ),
   ).map((v) => v.toString(16).padStart(2, "0")).join("");
 const messages: Record<string, string> = {
+  ai_unavailable: "O serviço de IA não está configurado ou está temporariamente indisponível. Nenhum crédito foi descontado.",
   unsupported_format:
     "Este formato pode ser anexado, mas ainda não pode ser interpretado. Use PDF, DOCX, XLSX, texto, PNG ou JPEG para análise.",
   unreadable_document:
@@ -99,12 +101,21 @@ export async function handleEvidenceAnalysis(req: Request) {
           },
       );
     }
+    const regulatory = typeof body.assessmentItemId === "string" && typeof body.evidenceLinkId === "string"
+      ? await regulatoryEvidenceContext(userDb, ctx.empresaId, body.assessmentItemId, body.evidenceLinkId) : null;
+    if (regulatory) {
+      // File paths and requirement context come from authorized database rows, not request input.
+      body.requirementId = regulatory.requirementId;
+      body.filePath = regulatory.filePath;
+      body.fileName = regulatory.fileName;
+      body.bucket = regulatory.bucket;
+    }
     if (
       typeof body.requirementId !== "string" ||
       typeof (body.filePath || body.fileUrl) !== "string" ||
       typeof body.fileName !== "string"
     ) return json({ error: "Informe requisito e evidência." }, 400);
-    const requirement = await userDb.from("gap_analysis_requirements").select(
+    const requirement = regulatory ? { data: regulatory.requirement, error: null } : await userDb.from("gap_analysis_requirements").select(
       "id,codigo,titulo,descricao,orientacao_implementacao,exemplos_evidencias,framework_id",
     ).eq("id", body.requirementId).single();
     if (requirement.error || !requirement.data) {
@@ -125,6 +136,13 @@ export async function handleEvidenceAnalysis(req: Request) {
     }
     const bytes = await boundedDownload(signed.data.signedUrl);
     const sourceHash = await digest(bytes);
+    if (regulatory && regulatory.expectedHash !== sourceHash) throw new AuthError("A evidência foi alterada. Envie uma nova versão para análise.", 409);
+    const attachRegulatoryResult = async (id: string) => {
+      if (!regulatory) return;
+      // A failed link does not charge again or invalidate the completed job. A retry reuses the cached result.
+      await userDb.from("regulatory_evidence_links").update({ analysis_job_id: id })
+        .eq("id", body.evidenceLinkId).eq("empresa_id", ctx.empresaId).eq("item_id", body.assessmentItemId).is("removed_at", null);
+    };
     const key = await digest(
       JSON.stringify({
         sourceHash,
@@ -144,6 +162,7 @@ export async function handleEvidenceAnalysis(req: Request) {
     });
     if (claimed.error) throw new Error(claimed.error.message);
     if (claimed.data.cached) {
+      await attachRegulatoryResult(claimed.data.job.id);
       return json({
         ...claimed.data.job.result,
         cached: true,
@@ -227,6 +246,7 @@ export async function handleEvidenceAnalysis(req: Request) {
       source_hash: sourceHash,
       reader_version: EVIDENCE_READER_VERSION,
       job_id: job!.id,
+      ...(regulatory ? { assessment_item_id: body.assessmentItemId, evidence_id: regulatory.evidenceId } : {}),
     };
     const finished = await admin.rpc("evidence_analysis_finish", {
       p_id: job!.id,
@@ -237,6 +257,7 @@ export async function handleEvidenceAnalysis(req: Request) {
     // Completion and the one-credit debit share a locked database transaction.
     // Invalid JSON, failed OCR, retries and stale workers cannot charge a user.
     if (finished.error) throw new Error(finished.error.message === "credits_exhausted" ? "credits_exhausted" : "lease_lost");
+    await attachRegulatoryResult(job!.id);
     return json(result);
   } catch (error) {
     const code = error instanceof Error ? error.message : "analysis_failed";

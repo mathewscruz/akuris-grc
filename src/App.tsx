@@ -43,6 +43,7 @@ const Continuidade = React.lazy(() => import("@/pages/Continuidade"));
 const GapAnalysisFrameworks = React.lazy(
   () => import("@/pages/GapAnalysisFrameworks"),
 );
+const RegulatoryCRA = React.lazy(() => import('@/pages/RegulatoryCRA'));
 const GapAnalysisFrameworkDetail = React.lazy(
   () => import("@/pages/GapAnalysisFrameworkDetail"),
 );
@@ -456,6 +457,10 @@ function App() {
                             <Continuidade />
                           </ProtectedRoute>
                         }
+                      />
+                      <Route
+                        path="/gap-analysis/cra/:assessmentId?"
+                        element={<ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}><RegulatoryCRA /></ProtectedRoute>}
                       />
                       <Route
                         path="/gap-analysis/frameworks"
