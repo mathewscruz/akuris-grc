@@ -25,3 +25,6 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </HelmetProvider>
 );
+
+// Remove o estilo de arranque das páginas pré-geradas para não afetar o tema do app.
+requestAnimationFrame(() => document.getElementById('akuris-boot')?.remove());

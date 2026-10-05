@@ -107,7 +107,7 @@ export function ProductDialog({
             .single()
         : await db
             .from("products")
-            .insert({ ...parsed.data, empresa_id: empresaId })
+            .insert([{ ...parsed.data, empresa_id: empresaId } as never])
             .select("id")
             .single();
       if (result.error) throw result.error;
@@ -379,7 +379,7 @@ export function ProductVersionDialog({
             .single()
         : await db
             .from("product_versions")
-            .insert({ ...parsed.data, empresa_id: empresaId })
+            .insert([{ ...parsed.data, empresa_id: empresaId } as never])
             .select("id")
             .single();
       if (result.error) throw result.error;
