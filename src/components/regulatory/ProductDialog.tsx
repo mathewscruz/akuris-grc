@@ -1,3 +1,4 @@
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { useState } from "react";
 import {
   Dialog,
@@ -107,7 +108,7 @@ export function ProductDialog({
             .single()
         : await db
             .from("products")
-            .insert({ ...parsed.data, empresa_id: empresaId })
+            .insert({ ...parsed.data, empresa_id: empresaId } as TablesInsert<"products">)
             .select("id")
             .single();
       if (result.error) throw result.error;
@@ -379,7 +380,7 @@ export function ProductVersionDialog({
             .single()
         : await db
             .from("product_versions")
-            .insert({ ...parsed.data, empresa_id: empresaId })
+            .insert({ ...parsed.data, empresa_id: empresaId } as TablesInsert<"product_versions">)
             .select("id")
             .single();
       if (result.error) throw result.error;
