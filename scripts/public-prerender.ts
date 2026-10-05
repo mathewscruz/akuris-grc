@@ -40,8 +40,10 @@ export function publicPrerender(): Plugin {
           return tag.replace(/content="[^"]*"/, 'content="' + escapePublicHtml(value) + '"');
         }).replace(/<link([^>]*rel="canonical"[^>]*)>/, '<link data-rh="true" rel="canonical" href="' + url + '" />');
         // createRoot replaces this same-content reading fallback when the interactive app is ready.
-        const content = '<div id="root"><main style="max-width:1000px;margin:auto;padding:48px 24px;font-family:DM Sans,sans-serif;line-height:1.7"><nav><a href="/">Akuris</a> · <a href="/frameworks">Guias</a></nav>' + page.content + '<p><a href="/?demo=1">' + t('demo') + '</a> · <a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a></p></main></div>';
-        html = html.replace('<div id="root"></div>', content).replace(/<noscript>[\s\S]*?<\/noscript>/, '');
+        // Texto para buscadores fica visualmente oculto; o visitante vê só o fundo da marca até o app montar.
+        const critical = '<style id="akuris-boot">html,body{background:#0a1628;margin:0}.akuris-seo{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}.akuris-boot{position:fixed;inset:0;display:grid;place-items:center;background:#0a1628}.akuris-boot i{width:14px;height:14px;border-radius:50%;background:#7552FF;animation:akp 1.2s ease-in-out infinite}@keyframes akp{50%{opacity:.3;transform:scale(.7)}}@media (prefers-reduced-motion:reduce){.akuris-boot i{animation:none}}</style>';
+        const content = '<div id="root"><div class="akuris-boot" aria-hidden="true"><i></i></div><main class="akuris-seo"><nav><a href="/">Akuris</a> · <a href="/frameworks">Guias</a></nav>' + page.content + '<p><a href="/?demo=1">' + t('demo') + '</a> · <a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a></p></main></div>';
+        html = html.replace('</head>', critical + '</head>').replace('<div id="root"></div>', content);
         if (page.path === '/') index.source = html;
         else this.emitFile({ type: 'asset', fileName: page.path.slice(1) + '/index.html', source: html });
       }
