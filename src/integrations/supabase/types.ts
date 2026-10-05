@@ -14,112 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      evidence_analysis_jobs: {
-        Row: {
-          id: string
-          empresa_id: string
-          requested_by: string
-          requirement_id: string
-          cache_key: string
-          source_hash: string
-          reader_version: string
-          status: string
-          attempt: number
-          attempts_in_window: number
-          attempt_window_started_at: string
-          lease_until: string
-          checkpoint: Json | null
-          result: Json | null
-          error_code: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          empresa_id: string
-          requested_by: string
-          requirement_id: string
-          cache_key: string
-          source_hash: string
-          reader_version: string
-          status: string
-          attempt?: number
-          attempts_in_window?: number
-          attempt_window_started_at?: string
-          lease_until?: string
-          checkpoint?: Json | null
-          result?: Json | null
-          error_code?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          empresa_id?: string
-          requested_by?: string
-          requirement_id?: string
-          cache_key?: string
-          source_hash?: string
-          reader_version?: string
-          status?: string
-          attempt?: number
-          attempts_in_window?: number
-          attempt_window_started_at?: string
-          lease_until?: string
-          checkpoint?: Json | null
-          result?: Json | null
-          error_code?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          { foreignKeyName: "evidence_analysis_jobs_empresa_id_fkey"; columns: ["empresa_id"]; isOneToOne: false; referencedRelation: "empresas"; referencedColumns: ["id"] },
-          { foreignKeyName: "evidence_analysis_jobs_requirement_id_fkey"; columns: ["requirement_id"]; isOneToOne: false; referencedRelation: "gap_analysis_requirements"; referencedColumns: ["id"] }
-        ]
-      }
-      compliance_review_events: {
-        Row: {
-          id: string
-          empresa_id: string
-          evaluation_id: string
-          kind: string
-          reason: string
-          actor_id: string
-          request_id: string | null
-          valid_until: string | null
-          snapshot: Json
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          empresa_id: string
-          evaluation_id: string
-          kind: string
-          reason: string
-          actor_id: string
-          request_id?: string | null
-          valid_until?: string | null
-          snapshot?: Json
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          empresa_id?: string
-          evaluation_id?: string
-          kind?: string
-          reason?: string
-          actor_id?: string
-          request_id?: string | null
-          valid_until?: string | null
-          snapshot?: Json
-          created_at?: string
-        }
-        Relationships: [
-          { foreignKeyName: "compliance_review_events_empresa_id_fkey"; columns: ["empresa_id"]; isOneToOne: false; referencedRelation: "empresas"; referencedColumns: ["id"] },
-          { foreignKeyName: "compliance_review_events_evaluation_id_fkey"; columns: ["evaluation_id"]; isOneToOne: false; referencedRelation: "gap_analysis_evaluations"; referencedColumns: ["id"] },
-          { foreignKeyName: "compliance_review_events_request_id_fkey"; columns: ["request_id"]; isOneToOne: false; referencedRelation: "compliance_review_events"; referencedColumns: ["id"] }
-        ]
-      }
       access_review_history: {
         Row: {
           acao_tomada: string
@@ -1289,11 +1183,11 @@ export type Database = {
       }
       auditoria_itens: {
         Row: {
-          controle_excluido_em: string | null
-          controle_excluido_id: string | null
           area_sistema_id: string | null
           auditoria_id: string
           codigo: string
+          controle_excluido_em: string | null
+          controle_excluido_id: string | null
           controle_gerado_automaticamente: boolean
           controle_vinculado_id: string | null
           created_at: string
@@ -1753,6 +1647,67 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      compliance_review_events: {
+        Row: {
+          actor_id: string
+          created_at: string
+          empresa_id: string
+          evaluation_id: string
+          id: string
+          kind: string
+          reason: string
+          request_id: string | null
+          snapshot: Json
+          valid_until: string | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          empresa_id: string
+          evaluation_id: string
+          id?: string
+          kind: string
+          reason: string
+          request_id?: string | null
+          snapshot?: Json
+          valid_until?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          empresa_id?: string
+          evaluation_id?: string
+          id?: string
+          kind?: string
+          reason?: string
+          request_id?: string | null
+          snapshot?: Json
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_review_events_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_review_events_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_review_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_review_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compliance_templates: {
         Row: {
@@ -2651,6 +2606,64 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      control_framework_mappings: {
+        Row: {
+          control_id: string
+          created_at: string
+          framework_version_id: string | null
+          id: string
+          mapping_notes: string
+          mapping_strength: string
+          requirement_id: string
+          review_status: string
+          source_url: string
+        }
+        Insert: {
+          control_id: string
+          created_at?: string
+          framework_version_id?: string | null
+          id?: string
+          mapping_notes: string
+          mapping_strength: string
+          requirement_id: string
+          review_status?: string
+          source_url: string
+        }
+        Update: {
+          control_id?: string
+          created_at?: string
+          framework_version_id?: string | null
+          id?: string
+          mapping_notes?: string
+          mapping_strength?: string
+          requirement_id?: string
+          review_status?: string
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "control_framework_mappings_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "universal_controls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_framework_mappings_framework_version_id_fkey"
+            columns: ["framework_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_framework_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_framework_mappings_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
             referencedColumns: ["id"]
           },
         ]
@@ -5527,6 +5540,81 @@ export type Database = {
           },
         ]
       }
+      evidence_analysis_jobs: {
+        Row: {
+          attempt: number
+          attempt_window_started_at: string
+          attempts_in_window: number
+          cache_key: string
+          checkpoint: Json | null
+          created_at: string
+          empresa_id: string
+          error_code: string | null
+          id: string
+          lease_until: string
+          reader_version: string
+          requested_by: string
+          requirement_id: string
+          result: Json | null
+          source_hash: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          attempt_window_started_at?: string
+          attempts_in_window?: number
+          cache_key: string
+          checkpoint?: Json | null
+          created_at?: string
+          empresa_id: string
+          error_code?: string | null
+          id?: string
+          lease_until?: string
+          reader_version: string
+          requested_by: string
+          requirement_id: string
+          result?: Json | null
+          source_hash: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          attempt_window_started_at?: string
+          attempts_in_window?: number
+          cache_key?: string
+          checkpoint?: Json | null
+          created_at?: string
+          empresa_id?: string
+          error_code?: string | null
+          id?: string
+          lease_until?: string
+          reader_version?: string
+          requested_by?: string
+          requirement_id?: string
+          result?: Json | null
+          source_hash?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_analysis_jobs_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_analysis_jobs_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_library: {
         Row: {
           arquivo_hash: string | null
@@ -6224,6 +6312,7 @@ export type Database = {
       }
       gap_analysis_frameworks: {
         Row: {
+          assessment_scope: string
           created_at: string
           created_by: string | null
           descricao: string | null
@@ -6233,12 +6322,14 @@ export type Database = {
           is_template: boolean | null
           nome: string
           nome_en: string | null
+          rollout_status: string
           tipo: string
           tipo_framework: string | null
           updated_at: string
           versao: string | null
         }
         Insert: {
+          assessment_scope?: string
           created_at?: string
           created_by?: string | null
           descricao?: string | null
@@ -6248,12 +6339,14 @@ export type Database = {
           is_template?: boolean | null
           nome: string
           nome_en?: string | null
+          rollout_status?: string
           tipo?: string
           tipo_framework?: string | null
           updated_at?: string
           versao?: string | null
         }
         Update: {
+          assessment_scope?: string
           created_at?: string
           created_by?: string | null
           descricao?: string | null
@@ -6263,6 +6356,7 @@ export type Database = {
           is_template?: boolean | null
           nome?: string
           nome_en?: string | null
+          rollout_status?: string
           tipo?: string
           tipo_framework?: string | null
           updated_at?: string
@@ -6942,6 +7036,268 @@ export type Database = {
             columns: ["integracao_id"]
             isOneToOne: false
             referencedRelation: "integracoes_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_connections: {
+        Row: {
+          created_at: string
+          created_by: string
+          credentials: string | null
+          empresa_id: string
+          error_code: string | null
+          frequency: string
+          id: string
+          last_success_at: string | null
+          name: string
+          next_run_at: string | null
+          provider: string
+          scope_ids: string[]
+          settings: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          credentials?: string | null
+          empresa_id: string
+          error_code?: string | null
+          frequency?: string
+          id?: string
+          last_success_at?: string | null
+          name: string
+          next_run_at?: string | null
+          provider: string
+          scope_ids?: string[]
+          settings?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          credentials?: string | null
+          empresa_id?: string
+          error_code?: string | null
+          frequency?: string
+          id?: string
+          last_success_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          provider?: string
+          scope_ids?: string[]
+          settings?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_connections_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_oauth_states: {
+        Row: {
+          connection_id: string
+          expires_at: string
+          session_id: string
+          state_hash: string
+          user_id: string
+          verifier: string
+        }
+        Insert: {
+          connection_id: string
+          expires_at?: string
+          session_id: string
+          state_hash: string
+          user_id: string
+          verifier: string
+        }
+        Update: {
+          connection_id?: string
+          expires_at?: string
+          session_id?: string
+          state_hash?: string
+          user_id?: string
+          verifier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_oauth_states_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_observations: {
+        Row: {
+          checks: Json
+          created_at: string
+          empresa_id: string
+          id: string
+          resource_id: string
+          rule_version: string
+          run_id: string
+          signals: Json
+        }
+        Insert: {
+          checks: Json
+          created_at?: string
+          empresa_id: string
+          id?: string
+          resource_id: string
+          rule_version?: string
+          run_id: string
+          signals: Json
+        }
+        Update: {
+          checks?: Json
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          resource_id?: string
+          rule_version?: string
+          run_id?: string
+          signals?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_observations_resource_id_empresa_id_fkey"
+            columns: ["resource_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "integration_resources"
+            referencedColumns: ["id", "empresa_id"]
+          },
+          {
+            foreignKeyName: "integration_observations_run_id_empresa_id_fkey"
+            columns: ["run_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "integration_runs"
+            referencedColumns: ["id", "empresa_id"]
+          },
+        ]
+      }
+      integration_resources: {
+        Row: {
+          collected_at: string
+          connection_id: string
+          empresa_id: string
+          external_id: string
+          id: string
+          kind: string
+          last_run_id: string
+          name: string
+          signals: Json
+          source_url: string | null
+        }
+        Insert: {
+          collected_at: string
+          connection_id: string
+          empresa_id: string
+          external_id: string
+          id?: string
+          kind: string
+          last_run_id: string
+          name: string
+          signals?: Json
+          source_url?: string | null
+        }
+        Update: {
+          collected_at?: string
+          connection_id?: string
+          empresa_id?: string
+          external_id?: string
+          id?: string
+          kind?: string
+          last_run_id?: string
+          name?: string
+          signals?: Json
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_resources_connection_id_empresa_id_fkey"
+            columns: ["connection_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id", "empresa_id"]
+          },
+          {
+            foreignKeyName: "integration_resources_last_run_id_empresa_id_fkey"
+            columns: ["last_run_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "integration_runs"
+            referencedColumns: ["id", "empresa_id"]
+          },
+        ]
+      }
+      integration_runs: {
+        Row: {
+          attempt: number
+          available_at: string
+          connection_id: string
+          created_at: string
+          empresa_id: string
+          error_code: string | null
+          evidence_id: string | null
+          finished_at: string | null
+          id: string
+          lease_until: string | null
+          resource_count: number
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          attempt?: number
+          available_at?: string
+          connection_id: string
+          created_at?: string
+          empresa_id: string
+          error_code?: string | null
+          evidence_id?: string | null
+          finished_at?: string | null
+          id?: string
+          lease_until?: string | null
+          resource_count?: number
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempt?: number
+          available_at?: string
+          connection_id?: string
+          created_at?: string
+          empresa_id?: string
+          error_code?: string | null
+          evidence_id?: string | null
+          finished_at?: string | null
+          id?: string
+          lease_until?: string | null
+          resource_count?: number
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_runs_connection_id_empresa_id_fkey"
+            columns: ["connection_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id", "empresa_id"]
+          },
+          {
+            foreignKeyName: "integration_runs_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_library"
             referencedColumns: ["id"]
           },
         ]
@@ -7924,6 +8280,145 @@ export type Database = {
             columns: ["ropa_id"]
             isOneToOne: false
             referencedRelation: "ropa_registros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          id: string
+          lifecycle_status: string
+          product_id: string
+          release_date: string | null
+          support_ends_on: string | null
+          support_rationale: string
+          support_starts_on: string | null
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          id?: string
+          lifecycle_status?: string
+          product_id: string
+          release_date?: string | null
+          support_ends_on?: string | null
+          support_rationale?: string
+          support_starts_on?: string | null
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          id?: string
+          lifecycle_status?: string
+          product_id?: string
+          release_date?: string | null
+          support_ends_on?: string | null
+          support_rationale?: string
+          support_starts_on?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_versions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_versions_product_id_empresa_id_fkey"
+            columns: ["product_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id", "empresa_id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deployment_model: string
+          description: string
+          development_team: string
+          empresa_id: string
+          eu_availability: string
+          id: string
+          markets: Json
+          name: string
+          product_owner_id: string | null
+          product_type: string
+          repositories: Json
+          security_owner_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deployment_model?: string
+          description?: string
+          development_team?: string
+          empresa_id: string
+          eu_availability?: string
+          id?: string
+          markets?: Json
+          name: string
+          product_owner_id?: string | null
+          product_type: string
+          repositories?: Json
+          security_owner_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deployment_model?: string
+          description?: string
+          development_team?: string
+          empresa_id?: string
+          eu_availability?: string
+          id?: string
+          markets?: Json
+          name?: string
+          product_owner_id?: string | null
+          product_type?: string
+          repositories?: Json
+          security_owner_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_product_owner_id_fkey"
+            columns: ["product_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_security_owner_id_fkey"
+            columns: ["security_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -8958,6 +9453,747 @@ export type Database = {
         }
         Relationships: []
       }
+      regulatory_assessment_items: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          due_on: string | null
+          empresa_id: string
+          id: string
+          notes: string
+          owner_id: string | null
+          product_id: string
+          requirement_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          revision: number
+          snapshot: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          due_on?: string | null
+          empresa_id: string
+          id?: string
+          notes?: string
+          owner_id?: string | null
+          product_id: string
+          requirement_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision?: number
+          snapshot: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          due_on?: string | null
+          empresa_id?: string
+          id?: string
+          notes?: string
+          owner_id?: string | null
+          product_id?: string
+          requirement_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision?: number
+          snapshot?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_assessment_items_assessment_id_empresa_id_produ_fkey"
+            columns: ["assessment_id", "empresa_id", "product_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessments"
+            referencedColumns: ["id", "empresa_id", "product_id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessment_items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessment_items_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_assessment_scores: {
+        Row: {
+          assessment_id: string
+          calculated_by: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          product_id: string
+          result: Json
+          source_item_id: string | null
+          source_revision: number | null
+        }
+        Insert: {
+          assessment_id: string
+          calculated_by?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          product_id: string
+          result: Json
+          source_item_id?: string | null
+          source_revision?: number | null
+        }
+        Update: {
+          assessment_id?: string
+          calculated_by?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          product_id?: string
+          result?: Json
+          source_item_id?: string | null
+          source_revision?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_assessment_scores_assessment_id_empresa_id_prod_fkey"
+            columns: ["assessment_id", "empresa_id", "product_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessments"
+            referencedColumns: ["id", "empresa_id", "product_id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessment_scores_source_item_id_fkey"
+            columns: ["source_item_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessment_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_assessments: {
+        Row: {
+          answers: Json
+          applicability: string
+          classification: string
+          created_at: string
+          created_by: string | null
+          decision_rationale: string
+          empresa_id: string
+          framework_version_id: string
+          id: string
+          name: string
+          preliminary: Json
+          product_id: string
+          product_version_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          revision: number
+          roles: string[]
+          scope_note: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          answers: Json
+          applicability: string
+          classification: string
+          created_at?: string
+          created_by?: string | null
+          decision_rationale: string
+          empresa_id: string
+          framework_version_id: string
+          id?: string
+          name: string
+          preliminary?: Json
+          product_id: string
+          product_version_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision?: number
+          roles: string[]
+          scope_note?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          applicability?: string
+          classification?: string
+          created_at?: string
+          created_by?: string | null
+          decision_rationale?: string
+          empresa_id?: string
+          framework_version_id?: string
+          id?: string
+          name?: string
+          preliminary?: Json
+          product_id?: string
+          product_version_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision?: number
+          roles?: string[]
+          scope_note?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_assessments_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessments_framework_version_id_fkey"
+            columns: ["framework_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_framework_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessments_product_id_empresa_id_fkey"
+            columns: ["product_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id", "empresa_id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessments_product_version_id_product_id_empre_fkey"
+            columns: ["product_version_id", "product_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "product_versions"
+            referencedColumns: ["id", "product_id", "empresa_id"]
+          },
+        ]
+      }
+      regulatory_audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          changed_fields: string[]
+          created_at: string
+          empresa_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          product_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          changed_fields?: string[]
+          created_at?: string
+          empresa_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          product_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          changed_fields?: string[]
+          created_at?: string
+          empresa_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_audit_events_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_domains: {
+        Row: {
+          code: string
+          framework_version_id: string
+          id: string
+          name: string
+          name_en: string
+          position: number
+        }
+        Insert: {
+          code: string
+          framework_version_id: string
+          id?: string
+          name: string
+          name_en: string
+          position: number
+        }
+        Update: {
+          code?: string
+          framework_version_id?: string
+          id?: string
+          name?: string
+          name_en?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_domains_framework_version_id_fkey"
+            columns: ["framework_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_framework_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_evidence_links: {
+        Row: {
+          analysis_job_id: string | null
+          comment: string
+          created_at: string
+          empresa_id: string
+          evidence_date: string | null
+          evidence_id: string
+          id: string
+          item_id: string
+          owner_id: string | null
+          product_id: string
+          removed_at: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          analysis_job_id?: string | null
+          comment?: string
+          created_at?: string
+          empresa_id: string
+          evidence_date?: string | null
+          evidence_id: string
+          id?: string
+          item_id: string
+          owner_id?: string | null
+          product_id: string
+          removed_at?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          analysis_job_id?: string | null
+          comment?: string
+          created_at?: string
+          empresa_id?: string
+          evidence_date?: string | null
+          evidence_id?: string
+          id?: string
+          item_id?: string
+          owner_id?: string | null
+          product_id?: string
+          removed_at?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_evidence_links_analysis_job_id_fkey"
+            columns: ["analysis_job_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_analysis_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_evidence_links_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_evidence_links_item_id_empresa_id_product_id_fkey"
+            columns: ["item_id", "empresa_id", "product_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessment_items"
+            referencedColumns: ["id", "empresa_id", "product_id"]
+          },
+          {
+            foreignKeyName: "regulatory_evidence_links_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_findings: {
+        Row: {
+          action_plan_id: string | null
+          created_at: string
+          decision_note: string
+          department: string
+          description: string
+          due_on: string | null
+          empresa_id: string
+          id: string
+          impact: string
+          item_id: string
+          missing_evidence: string
+          owner_id: string | null
+          product_id: string
+          recommendation: string
+          revision: number
+          risk: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_plan_id?: string | null
+          created_at?: string
+          decision_note?: string
+          department?: string
+          description?: string
+          due_on?: string | null
+          empresa_id: string
+          id?: string
+          impact?: string
+          item_id: string
+          missing_evidence?: string
+          owner_id?: string | null
+          product_id: string
+          recommendation?: string
+          revision?: number
+          risk: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_plan_id?: string | null
+          created_at?: string
+          decision_note?: string
+          department?: string
+          description?: string
+          due_on?: string | null
+          empresa_id?: string
+          id?: string
+          impact?: string
+          item_id?: string
+          missing_evidence?: string
+          owner_id?: string | null
+          product_id?: string
+          recommendation?: string
+          revision?: number
+          risk?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_findings_action_plan_id_fkey"
+            columns: ["action_plan_id"]
+            isOneToOne: false
+            referencedRelation: "planos_acao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_findings_item_id_empresa_id_product_id_fkey"
+            columns: ["item_id", "empresa_id", "product_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessment_items"
+            referencedColumns: ["id", "empresa_id", "product_id"]
+          },
+          {
+            foreignKeyName: "regulatory_findings_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_framework_versions: {
+        Row: {
+          coverage_note: string
+          created_at: string
+          framework_id: string
+          general_applies_on: string | null
+          id: string
+          jurisdiction: string
+          legal_instrument: string
+          reporting_applies_on: string | null
+          scoring_method: string
+          source_url: string
+          status: string
+          verified_on: string
+          version: string
+        }
+        Insert: {
+          coverage_note: string
+          created_at?: string
+          framework_id: string
+          general_applies_on?: string | null
+          id?: string
+          jurisdiction: string
+          legal_instrument: string
+          reporting_applies_on?: string | null
+          scoring_method?: string
+          source_url: string
+          status?: string
+          verified_on: string
+          version: string
+        }
+        Update: {
+          coverage_note?: string
+          created_at?: string
+          framework_id?: string
+          general_applies_on?: string | null
+          id?: string
+          jurisdiction?: string
+          legal_instrument?: string
+          reporting_applies_on?: string | null
+          scoring_method?: string
+          source_url?: string
+          status?: string
+          verified_on?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_framework_versions_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_reporting_workflows: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          detailed_procedure: string
+          empresa_id: string
+          event_type: string
+          final_procedure: string
+          id: string
+          initial_procedure: string
+          last_exercise_on: string | null
+          legal_contact: string
+          management_contact: string
+          notes: string
+          product_id: string
+          psirt: string
+          responsible_team: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          detailed_procedure?: string
+          empresa_id: string
+          event_type: string
+          final_procedure?: string
+          id?: string
+          initial_procedure?: string
+          last_exercise_on?: string | null
+          legal_contact?: string
+          management_contact?: string
+          notes?: string
+          product_id: string
+          psirt?: string
+          responsible_team?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          detailed_procedure?: string
+          empresa_id?: string
+          event_type?: string
+          final_procedure?: string
+          id?: string
+          initial_procedure?: string
+          last_exercise_on?: string | null
+          legal_contact?: string
+          management_contact?: string
+          notes?: string
+          product_id?: string
+          psirt?: string
+          responsible_team?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_reporting_workflow_assessment_id_empresa_id_pro_fkey"
+            columns: ["assessment_id", "empresa_id", "product_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessments"
+            referencedColumns: ["id", "empresa_id", "product_id"]
+          },
+        ]
+      }
+      regulatory_requirement_definitions: {
+        Row: {
+          applicability_rule: Json
+          assessment_question: string
+          assessment_question_en: string
+          criticality: string
+          domain_id: string
+          framework_version_id: string
+          legal_reference: string
+          remediation_guidance: string
+          remediation_guidance_en: string
+          requirement_id: string
+          review_status: string
+          risk_level: string
+          source_url: string
+        }
+        Insert: {
+          applicability_rule: Json
+          assessment_question: string
+          assessment_question_en: string
+          criticality: string
+          domain_id: string
+          framework_version_id: string
+          legal_reference: string
+          remediation_guidance: string
+          remediation_guidance_en: string
+          requirement_id: string
+          review_status?: string
+          risk_level: string
+          source_url: string
+        }
+        Update: {
+          applicability_rule?: Json
+          assessment_question?: string
+          assessment_question_en?: string
+          criticality?: string
+          domain_id?: string
+          framework_version_id?: string
+          legal_reference?: string
+          remediation_guidance?: string
+          remediation_guidance_en?: string
+          requirement_id?: string
+          review_status?: string
+          risk_level?: string
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_requirement_defini_domain_id_framework_version__fkey"
+            columns: ["domain_id", "framework_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_domains"
+            referencedColumns: ["id", "framework_version_id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_definitions_framework_version_id_fkey"
+            columns: ["framework_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_framework_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_definitions_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: true
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_sboms: {
+        Row: {
+          component_count: number
+          created_at: string
+          empresa_id: string
+          evidence_id: string
+          format: string
+          generated_at: string | null
+          id: string
+          product_id: string
+          product_version_id: string
+          spec_version: string
+          status: string
+          tool: string
+          updated_at: string
+          validation_note: string
+        }
+        Insert: {
+          component_count: number
+          created_at?: string
+          empresa_id: string
+          evidence_id: string
+          format: string
+          generated_at?: string | null
+          id?: string
+          product_id: string
+          product_version_id: string
+          spec_version: string
+          status?: string
+          tool?: string
+          updated_at?: string
+          validation_note?: string
+        }
+        Update: {
+          component_count?: number
+          created_at?: string
+          empresa_id?: string
+          evidence_id?: string
+          format?: string
+          generated_at?: string | null
+          id?: string
+          product_id?: string
+          product_version_id?: string
+          spec_version?: string
+          status?: string
+          tool?: string
+          updated_at?: string
+          validation_note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_sboms_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_sboms_product_version_id_product_id_empresa_id_fkey"
+            columns: ["product_version_id", "product_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "product_versions"
+            referencedColumns: ["id", "product_id", "empresa_id"]
+          },
+        ]
+      }
       relatorio_agendamentos: {
         Row: {
           ativo: boolean
@@ -9098,6 +10334,27 @@ export type Database = {
           nome?: string
           tipo?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      removed_user_registrations: {
+        Row: {
+          empresa_id: string | null
+          previous_role: Database["public"]["Enums"]["user_role"]
+          removed_at: string
+          user_id: string
+        }
+        Insert: {
+          empresa_id?: string | null
+          previous_role: Database["public"]["Enums"]["user_role"]
+          removed_at?: string
+          user_id: string
+        }
+        Update: {
+          empresa_id?: string | null
+          previous_role?: Database["public"]["Enums"]["user_role"]
+          removed_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -10343,6 +11600,42 @@ export type Database = {
           },
         ]
       }
+      rotinas_agendadas_execucoes: {
+        Row: {
+          concluido_em: string | null
+          dia: string
+          id: string
+          iniciado_em: string
+          reserva_ate: string
+          resumo: Json
+          rotina: string
+          status: string
+          tentativas: number
+        }
+        Insert: {
+          concluido_em?: string | null
+          dia: string
+          id?: string
+          iniciado_em?: string
+          reserva_ate: string
+          resumo?: Json
+          rotina: string
+          status: string
+          tentativas?: number
+        }
+        Update: {
+          concluido_em?: string | null
+          dia?: string
+          id?: string
+          iniciado_em?: string
+          reserva_ate?: string
+          resumo?: Json
+          rotina?: string
+          status?: string
+          tentativas?: number
+        }
+        Relationships: []
+      }
       security_rate_limits: {
         Row: {
           fingerprint_hash: string
@@ -10427,6 +11720,8 @@ export type Database = {
           email_usuario: string | null
           empresa_id: string
           id: string
+          integration_connection_id: string | null
+          integration_signals: Json | null
           justificativa: string | null
           nivel_privilegio: string | null
           nome_usuario: string
@@ -10449,6 +11744,8 @@ export type Database = {
           email_usuario?: string | null
           empresa_id: string
           id?: string
+          integration_connection_id?: string | null
+          integration_signals?: Json | null
           justificativa?: string | null
           nivel_privilegio?: string | null
           nome_usuario: string
@@ -10471,6 +11768,8 @@ export type Database = {
           email_usuario?: string | null
           empresa_id?: string
           id?: string
+          integration_connection_id?: string | null
+          integration_signals?: Json | null
           justificativa?: string | null
           nivel_privilegio?: string | null
           nome_usuario?: string
@@ -10488,6 +11787,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sistemas_usuarios_integration_connection_id_fkey"
+            columns: ["integration_connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
             referencedColumns: ["id"]
           },
           {
@@ -10607,6 +11913,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      universal_controls: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          description_en: string
+          domain: string
+          id: string
+          name: string
+          name_en: string
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description: string
+          description_en: string
+          domain: string
+          id?: string
+          name: string
+          name_en: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          description_en?: string
+          domain?: string
+          id?: string
+          name?: string
+          name_en?: string
+          status?: string
+        }
+        Relationships: []
       }
       user_invitation_reminders: {
         Row: {
@@ -10771,30 +12113,6 @@ export type Database = {
       }
     }
     Functions: {
-      compliance_review_state: {
-        Args: { p_evaluation: string }
-        Returns: Json
-      }
-      compliance_record_review: {
-        Args: { p_evaluation: string; p_kind: string; p_reason: string; p_until?: string | null; p_request?: string | null; p_plan?: string | null }
-        Returns: string
-      }
-      compliance_module_context: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      compliance_evaluation_snapshot: {
-        Args: { p_evaluation: string; p_empresa: string }
-        Returns: Json
-      }
-      evidence_analysis_claim: {
-        Args: { p_empresa: string; p_user: string; p_requirement: string; p_key: string; p_hash: string; p_version: string }
-        Returns: Json
-      }
-      evidence_analysis_finish: {
-        Args: { p_id: string; p_attempt: number; p_status: string; p_result?: Json | null; p_checkpoint?: Json | null; p_error?: string | null }
-        Returns: undefined
-      }
       activate_mfa_code_issue: {
         Args: { p_code_id: string; p_user_id: string }
         Returns: boolean
@@ -10854,6 +12172,23 @@ export type Database = {
       check_trial_expiration: { Args: never; Returns: undefined }
       cifrar_credenciais: { Args: { p_claro: string }; Returns: string }
       cleanup_expired_mfa_codes: { Args: never; Returns: undefined }
+      compliance_evaluation_snapshot: {
+        Args: { p_empresa: string; p_evaluation: string }
+        Returns: Json
+      }
+      compliance_module_context: { Args: never; Returns: Json }
+      compliance_record_review: {
+        Args: {
+          p_evaluation: string
+          p_kind: string
+          p_plan?: string
+          p_reason: string
+          p_request?: string
+          p_until?: string
+        }
+        Returns: string
+      }
+      compliance_review_state: { Args: { p_evaluation: string }; Returns: Json }
       confirmar_ata_reuniao: {
         Args: { p_reuniao_id: string; p_tracking_hash: string }
         Returns: Json
@@ -10932,6 +12267,17 @@ export type Database = {
       controle_pertence_empresa: {
         Args: { controle_id: string }
         Returns: boolean
+      }
+      convites_elegiveis_lembrete: {
+        Args: { p_empresa_id?: string; p_user_id?: string }
+        Returns: {
+          created_at: string
+          email: string
+          empresa_id: string
+          empresa_nome: string
+          nome: string
+          user_id: string
+        }[]
       }
       create_access_review: {
         Args: { p_data: Json; p_empresa_id: string }
@@ -11171,6 +12517,32 @@ export type Database = {
         Args: { evaluation_id: string }
         Returns: boolean
       }
+      evidence_analysis_claim: {
+        Args: {
+          p_empresa: string
+          p_hash: string
+          p_key: string
+          p_requirement: string
+          p_user: string
+          p_version: string
+        }
+        Returns: Json
+      }
+      evidence_analysis_finish: {
+        Args: {
+          p_attempt: number
+          p_checkpoint?: Json
+          p_error?: string
+          p_id: string
+          p_result?: Json
+          p_status: string
+        }
+        Returns: undefined
+      }
+      executar_rotina_agendada: {
+        Args: { p_dry_run?: boolean; p_rotina: string }
+        Returns: number
+      }
       exige_empresa_da_sessao: {
         Args: { p_empresa_id: string }
         Returns: undefined
@@ -11190,6 +12562,10 @@ export type Database = {
           id: string
         }[]
       }
+      finalizar_rotina_agendada: {
+        Args: { p_id: string; p_resumo?: Json; p_sucesso: boolean }
+        Returns: boolean
+      }
       finalize_access_review: { Args: { p_review_id: string }; Returns: Json }
       finalize_denuncia_attachment: {
         Args: {
@@ -11200,6 +12576,10 @@ export type Database = {
           p_storage_path: string
           p_tracking_hash: string
         }
+        Returns: string
+      }
+      find_registration_auth_user: {
+        Args: { p_email: string }
         Returns: string
       }
       gap_calcula_score_framework: {
@@ -11341,6 +12721,76 @@ export type Database = {
         Args: { incidente_id: string }
         Returns: boolean
       }
+      iniciar_rotina_agendada: { Args: { p_rotina: string }; Returns: string }
+      integration_change_state: {
+        Args: { p_action: string; p_empresa: string; p_id: string }
+        Returns: undefined
+      }
+      integration_claim: {
+        Args: { p_run?: string }
+        Returns: {
+          attempt: number
+          available_at: string
+          connection_id: string
+          created_at: string
+          empresa_id: string
+          error_code: string | null
+          evidence_id: string | null
+          finished_at: string | null
+          id: string
+          lease_until: string | null
+          resource_count: number
+          started_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "integration_runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      integration_configure: {
+        Args: {
+          p_empresa: string
+          p_frequency: string
+          p_id: string
+          p_region?: string
+          p_scope: string[]
+          p_system?: string
+        }
+        Returns: undefined
+      }
+      integration_dispatch_tick: { Args: never; Returns: undefined }
+      integration_enqueue: {
+        Args: { p_empresa: string; p_id: string }
+        Returns: string
+      }
+      integration_finish_run: {
+        Args: {
+          p_attempt: number
+          p_count: number
+          p_error: string
+          p_evidence?: Json
+          p_retry_at?: string
+          p_run: string
+          p_status: string
+        }
+        Returns: boolean
+      }
+      integration_import_accounts: {
+        Args: { p_attempt: number; p_rows: Json; p_run: string }
+        Returns: number
+      }
+      integration_read_credentials: {
+        Args: { p_empresa: string; p_id: string }
+        Returns: Json
+      }
+      integration_schedule_due: { Args: never; Returns: number }
+      integration_scheduler_ready: {
+        Args: { p_token_sha256: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_super_admin: { Args: never; Returns: boolean }
       is_projeto_member: {
@@ -11407,10 +12857,25 @@ export type Database = {
           titulo: string
         }[]
       }
+      prever_expurgo_denuncias: { Args: never; Returns: Json }
       processar_alertas_privacidade: { Args: never; Returns: number }
       projeto_pertence_empresa: {
         Args: { _projeto_id: string }
         Returns: boolean
+      }
+      provision_user_registration: {
+        Args: {
+          p_actor_id: string
+          p_email: string
+          p_empresa_id: string
+          p_new_auth?: boolean
+          p_nome: string
+          p_permission_profile_id: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       provisionar_canal_denuncia: {
         Args: { p_empresa_id: string }
@@ -11420,6 +12885,22 @@ export type Database = {
         Args: { _base: string; _freq: string }
         Returns: string
       }
+      regulatory_cra_triage: { Args: { a: Json }; Returns: Json }
+      regulatory_create_action: {
+        Args: {
+          p_description: string
+          p_due: string
+          p_finding: string
+          p_owner: string
+          p_title: string
+        }
+        Returns: string
+      }
+      regulatory_is_organization_requirement: {
+        Args: { p_framework: string; p_requirement: string }
+        Returns: boolean
+      }
+      regulatory_readiness: { Args: { p_assessment: string }; Returns: Json }
       requirement_pertence_empresa: {
         Args: { requirement_id: string }
         Returns: boolean
