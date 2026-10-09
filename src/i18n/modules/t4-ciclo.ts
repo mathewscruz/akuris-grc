@@ -48,6 +48,8 @@ export const t4Ciclo = {
         campoProxima: 'Próxima data prevista',
         proximaAuto: 'Calculada a partir da frequência do controlo ({{frequencia}}).',
         proximaSemFrequencia: 'O controlo não tem frequência definida — indique a data manualmente.',
+        proximaSemCiclo: 'A frequência «{{frequencia}}» não marca data no calendário — indique a próxima avaliação manualmente.',
+
         anexar: 'Anexar arquivo',
         anexoErro: 'Não foi possível anexar o arquivo.',
         removerAnexo: 'Remover anexo',
@@ -172,6 +174,8 @@ export const t4Ciclo = {
         campoProxima: 'Next expected date',
         proximaAuto: 'Calculated from the control frequency ({{frequencia}}).',
         proximaSemFrequencia: 'This control has no frequency set — enter the date manually.',
+        proximaSemCiclo: 'The "{{frequencia}}" frequency has no calendar date — enter the next assessment manually.',
+
         anexar: 'Attach file',
         anexoErro: 'Could not attach the file.',
         removerAnexo: 'Remove attachment',
