@@ -126,6 +126,9 @@ export const controlesAuditorias = {
       cdlgFrequenciaTrimestral: 'Trimestral',
       cdlgFrequenciaSemestral: 'Semestral',
       cdlgFrequenciaAnual: 'Anual',
+      cdlgFrequenciaSobDemanda: 'Sob demanda',
+      cdlgFrequenciaAutomatico: 'Automático',
+
       cdlgFieldStatus: 'Status',
       cdlgStatusAtivo: 'Ativo',
       cdlgStatusInativo: 'Inativo',
@@ -646,6 +649,9 @@ export const controlesAuditorias = {
       cdlgFrequenciaTrimestral: 'Quarterly',
       cdlgFrequenciaSemestral: 'Semiannual',
       cdlgFrequenciaAnual: 'Annual',
+      cdlgFrequenciaSobDemanda: 'On demand',
+      cdlgFrequenciaAutomatico: 'Automatic',
+
       cdlgFieldStatus: 'Status',
       cdlgStatusAtivo: 'Active',
       cdlgStatusInativo: 'Inactive',

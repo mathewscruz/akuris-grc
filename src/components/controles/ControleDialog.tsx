@@ -308,6 +308,9 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
                   <SelectItem value="trimestral">{t('controlesAuditorias.cdlgFrequenciaTrimestral')}</SelectItem>
                   <SelectItem value="semestral">{t('controlesAuditorias.cdlgFrequenciaSemestral')}</SelectItem>
                   <SelectItem value="anual">{t('controlesAuditorias.cdlgFrequenciaAnual')}</SelectItem>
+                  <SelectItem value="sob_demanda">{t('controlesAuditorias.cdlgFrequenciaSobDemanda')}</SelectItem>
+                  <SelectItem value="automatico">{t('controlesAuditorias.cdlgFrequenciaAutomatico')}</SelectItem>
+
                 </SelectContent>
               </Select>
             </div>

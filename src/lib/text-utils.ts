@@ -161,6 +161,8 @@ const STATUS_LABELS: Record<string, string> = {
   'semestral': 'Semestral',
   'anual': 'Anual',
   'sob_demanda': 'Sob Demanda',
+  'automatico': 'Automático',
+
   
   // Níveis de privilégio
   'administrativo': 'Administrativo',
@@ -347,7 +349,7 @@ const STATUS_LABELS_EN: Record<string, string> = {
   mitigar: 'Mitigate', transferir: 'Transfer', aceitar: 'Accept', evitar: 'Avoid',
   diaria: 'Daily', diario: 'Daily', semanal: 'Weekly', quinzenal: 'Biweekly',
   mensal: 'Monthly', bimestral: 'Bimonthly', trimestral: 'Quarterly',
-  semestral: 'Semiannual', anual: 'Annual', sob_demanda: 'On Demand',
+  semestral: 'Semiannual', anual: 'Annual', sob_demanda: 'On Demand', automatico: 'Automatic',
   administrativo: 'Administrative', leitura: 'Read', escrita: 'Write', total: 'Total',
   elevado: 'Elevated', padrao: 'Standard',
   sensivel: 'Sensitive', muito_sensivel: 'Highly Sensitive', comum: 'Common', moderado: 'Moderate',
