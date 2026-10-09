@@ -294,6 +294,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
                   <SelectItem value="preventivo">{t('controlesAuditorias.cdlgTipoPreventivo')}</SelectItem>
                   <SelectItem value="detectivo">{t('controlesAuditorias.cdlgTipoDetectivo')}</SelectItem>
                   <SelectItem value="corretivo">{t('controlesAuditorias.cdlgTipoCorretivo')}</SelectItem>
+                  <SelectItem value="automatico">{t('controlesAuditorias.cdlgTipoAutomatico')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
