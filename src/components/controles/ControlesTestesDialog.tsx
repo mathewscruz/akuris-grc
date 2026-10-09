@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserSelect } from "@/components/riscos/UserSelect";
-import { proximaDataPorFrequencia, frequenciaLabel } from "@/lib/controle-testes";
+import { proximaDataPorFrequencia, frequenciaLabel, frequenciaSemCiclo } from "@/lib/controle-testes";
 import { logger } from "@/lib/logger";
 
 import { formatarDiaParaDB } from '@/lib/date-utils';
@@ -339,10 +339,13 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
               onChange={(v) => update({ proxima_avaliacao: v || '' })}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {frequencia
-                ? t('t4.testes.proximaAuto', { frequencia: frequenciaLabel(frequencia, t) })
-                : t('t4.testes.proximaSemFrequencia')}
+              {!frequencia
+                ? t('t4.testes.proximaSemFrequencia')
+                : frequenciaSemCiclo(frequencia)
+                  ? t('t4.testes.proximaSemCiclo', { frequencia: frequenciaLabel(frequencia, t) })
+                  : t('t4.testes.proximaAuto', { frequencia: frequenciaLabel(frequencia, t) })}
             </p>
+
           </div>
         </div>
 

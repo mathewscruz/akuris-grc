@@ -5,6 +5,8 @@
  * Agnóstico de framework: a frequência é a do controlo, seja de que norma for.
  */
 import { formatarDiaParaDB } from '@/lib/date-utils';
+import { formatStatus } from '@/lib/text-utils';
+
 
 const MESES: Record<string, number> = {
   mensal: 1,
@@ -112,8 +114,20 @@ export const frequenciaLabel = (frequencia: string | null | undefined, t: Transl
   if (!frequencia) return '—';
   const key = `campos.frequencia.${frequencia.toLowerCase().trim()}`;
   const label = t(key);
-  return label === key ? frequencia : label;
+  return label === key ? formatStatus(frequencia) : label;
 };
+
+/**
+ * Frequências sem calendário próprio — «sob demanda» e «automático» acontecem
+ * quando algo ocorre, não quando o relógio marca uma data. Por isso não geram
+ * próxima avaliação automática e a interface deve pedir a data manualmente.
+ */
+export const frequenciaSemCiclo = (frequencia: string | null | undefined): boolean => {
+  if (!frequencia) return true;
+  const freq = frequencia.toLowerCase().trim();
+  return !DIAS[freq] && !MESES[freq];
+};
+
 
 export interface TesteResumo {
   controle_id: string;
