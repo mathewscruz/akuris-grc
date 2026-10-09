@@ -415,6 +415,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                         <SelectItem value="seguranca">{t('contasPrivilegiadasComp.sistemaDialog.categoriaSeguranca')}</SelectItem>
                         <SelectItem value="desenvolvimento">{t('contasPrivilegiadasComp.sistemaDialog.categoriaDesenvolvimento')}</SelectItem>
                         <SelectItem value="financeiro">{t('contasPrivilegiadasComp.sistemaDialog.categoriaFinanceiro')}</SelectItem>
+                         <SelectItem value="compras">{t('contasPrivilegiadasComp.sistemaDialog.categoriaCompras')}</SelectItem>
                         <SelectItem value="rh">{t('contasPrivilegiadasComp.sistemaDialog.categoriaRh')}</SelectItem>
                         <SelectItem value="compliance">{t('contasPrivilegiadasComp.sistemaDialog.categoriaCompliance')}</SelectItem>
                       </SelectContent>
