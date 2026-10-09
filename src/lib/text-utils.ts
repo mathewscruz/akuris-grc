@@ -105,6 +105,7 @@ const STATUS_LABELS: Record<string, string> = {
   'detectivo': 'Detectivo',
   'corretivo': 'Corretivo',
   'compensatorio': 'Compensatório',
+  'automatico': 'Automático',
   
   // Sistemas e Tecnologia
   'erp': 'ERP',
@@ -337,7 +338,7 @@ const STATUS_LABELS_EN: Record<string, string> = {
   resolvido: 'Resolved', resolvida: 'Resolved', atendida: 'Fulfilled',
   fechado: 'Closed', aberto: 'Open', nova: 'New', novo: 'New',
   ti: 'IT', compliance: 'Compliance', operacional: 'Operational', externa: 'External', financeira: 'Financial',
-  preventivo: 'Preventive', detectivo: 'Detective', corretivo: 'Corrective', compensatorio: 'Compensatory',
+  preventivo: 'Preventive', detectivo: 'Detective', corretivo: 'Corrective', compensatorio: 'Compensatory', automatico: 'Automatic',
   erp: 'ERP', crm: 'CRM', bi: 'BI', siem: 'SIEM', iam: 'IAM', vpn: 'VPN', api: 'API',
   saas: 'SaaS', paas: 'PaaS', iaas: 'IaaS',
   ativo: 'Active', ativa: 'Active', inativo: 'Inactive', inativa: 'Inactive',
