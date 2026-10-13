@@ -310,7 +310,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               cima do conteúdo a rolar de qualquer maneira — só protegiam os
               últimos 96px da página, à custa de uma faixa vazia em todas. */}
           <main ref={mainRef} className="min-w-0 flex-1 flex flex-col p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-28 md:pb-10">
-            <ErrorBoundary>
+            {/* key por rota: um erro numa página não pode ficar preso ao
+                trocar de módulo — a fronteira recomeça limpa em cada rota. */}
+            <ErrorBoundary key={location.pathname}>
               <React.Suspense fallback={<ModuleLoadingSkeleton />}>
                 <div className="min-w-0 max-w-full flex flex-1 flex-col">
                   <PageTransition routeKey={location.pathname}>
