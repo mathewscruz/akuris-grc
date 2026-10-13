@@ -36,6 +36,7 @@ import { resolveCriticidadeTone, resolveWorkflowStatusTone } from '@/lib/status-
 import { estadoIncidente } from '@/lib/metrics';
 import { formatDateOnly } from '@/lib/date-utils';
 import { IncidenteDialog } from '@/components/incidentes/IncidenteDialog';
+import { IncidenteAtivosVinculados } from '@/components/incidentes/IncidenteAtivosVinculados';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { TratamentoDialog } from '@/components/incidentes/TratamentoDialog';
@@ -659,7 +660,7 @@ export default function Incidentes() {
         fields={detalheIncidente ? [
           { label: t('fin.comum.categoria'), value: detalheIncidente.categoria ? formatStatus(detalheIncidente.categoria) : null },
           { label: t('sweepRiscos.incidentes.origemDeteccao'), value: detalheIncidente.origem_deteccao ? formatStatus(detalheIncidente.origem_deteccao) : null },
-          { label: t('sweepRiscos.incidentes.impactoEstimado'), value: detalheIncidente.impacto_estimado },
+          { label: t('sweepRiscos.incidentes.impactoEstimado'), value: detalheIncidente.impacto_estimado ? formatStatus(detalheIncidente.impacto_estimado) : null },
           { label: t('sweepRiscos.incidentes.responsavelDeteccao'), value: nomeResponsavel(detalheIncidente.responsavel_deteccao) },
           { label: t('sweepRiscos.incidentes.responsavelTratamento'), value: nomeResponsavel(detalheIncidente.responsavel_tratamento) || t('experience.notAssigned') },
           { label: t('experience.treatmentDeadline'), value: detalheIncidente.proximo_prazo ? formatDateOnly(detalheIncidente.proximo_prazo) : t('experience.noDeadline') },
@@ -668,7 +669,9 @@ export default function Incidentes() {
           { label: t('fin.incidentes.dataResolucao'), value: detalheIncidente.data_resolucao ? formatDateOnly(detalheIncidente.data_resolucao) : null },
           { label: t('sweepRiscos.incidentes.dadosAfetados'), value: detalheIncidente.dados_afetados, full: true },
           { label: t('sweepRiscos.incidentes.sistemasAfetados'), value: detalheIncidente.sistemas_afetados?.join(', '), full: true },
-          { label: t('sweepRiscos.incidentes.ativosAfetados'), value: detalheIncidente.ativos_afetados?.join(', '), full: true },
+          { label: t('sweepRiscos.incidentes.ativosAfetados'), value: detalheIncidente.ativos_afetados?.length ? (
+            <IncidenteAtivosVinculados empresaId={empresaId} ids={detalheIncidente.ativos_afetados} onNavigate={() => setDetalheIncidente(null)} />
+          ) : null, full: true },
           { label: t('fin.comum.descricao'), value: detalheIncidente.descricao, full: true },
         ] : []}
         createdAt={detalheIncidente?.created_at}

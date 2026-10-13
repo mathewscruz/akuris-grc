@@ -1,0 +1,2 @@
+# Architecture rules
+- Incident asset references are resolved through the central entity registry with tenant-scoped query keys; this preserves stored UUID links and reuses canonical navigation without exposing raw identifiers.
