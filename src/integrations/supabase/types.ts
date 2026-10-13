@@ -551,6 +551,7 @@ export type Database = {
       }
       ativos: {
         Row: {
+          atributos: Json
           cliente: string | null
           created_at: string
           criticidade: string | null
@@ -572,6 +573,7 @@ export type Database = {
           versao: string | null
         }
         Insert: {
+          atributos?: Json
           cliente?: string | null
           created_at?: string
           criticidade?: string | null
@@ -593,6 +595,7 @@ export type Database = {
           versao?: string | null
         }
         Update: {
+          atributos?: Json
           cliente?: string | null
           created_at?: string
           criticidade?: string | null

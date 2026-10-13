@@ -37,6 +37,7 @@ import { projetos } from "./projetos";
 import { incidentesComp } from "./incidentes-comp";
 import { continuidadeComp } from "./continuidade-comp";
 import { contasPrivilegiadasComp } from "./contas-privilegiadas-comp";
+import { ativoFicha } from "./ativo-ficha";
 import { revisaoAcessosComp } from "./revisao-acessos-comp";
 import { relatoriosComp } from "./relatorios-comp";
 import { governancaComp } from "./governanca-comp";
@@ -158,6 +159,7 @@ const modules: Record<string, ModuleDict> = {
   incidentesComp,
   continuidadeComp,
   contasPrivilegiadasComp,
+  ativoFicha,
   revisaoAcessosComp,
   relatoriosComp,
   governancaComp,
