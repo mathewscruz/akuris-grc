@@ -54,8 +54,15 @@ export function PreparacaoContinuidade({ plano, onSuccess }: { plano: any; onSuc
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setProcessos(Array.isArray(plano?.processos_criticos) ? plano.processos_criticos : []);
-    setEquipe(Array.isArray(plano?.equipe_crise) ? plano.equipe_crise : []);
+    // Normaliza: registos antigos/importados podem vir sem algum campo, e um
+    // `.trim()` em `undefined` derrubava a página inteira.
+    const str = (v: unknown) => (v == null ? '' : String(v));
+    setProcessos(Array.isArray(plano?.processos_criticos) ? plano.processos_criticos.map((p: Partial<ProcessoCritico>) => ({
+      ...novoProcesso(), ...Object.fromEntries(Object.entries(p ?? {}).map(([k, v]) => [k, str(v)])),
+    })) : []);
+    setEquipe(Array.isArray(plano?.equipe_crise) ? plano.equipe_crise.map((m: Partial<MembroCrise>) => ({
+      ...novoMembro(), ...Object.fromEntries(Object.entries(m ?? {}).map(([k, v]) => [k, str(v)])),
+    })) : []);
     setCriterios(plano?.criterios_ativacao || '');
     setEstrategia(plano?.estrategia_recuperacao || '');
     setComunicacao(plano?.plano_comunicacao || '');

@@ -235,6 +235,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       if (request !== accessRequest.current) return;
       setUsersAccessInfo(new Map());
       setAcessoIndisponivel(true);
+      // Sessão encerrada no servidor (ex.: "sair de todos os dispositivos"):
+      // o token local ainda lê tabelas, mas o servidor recusa. Pede novo login.
+      const { error: userError } = await supabase.auth.getUser();
+      if (userError && /session/i.test(userError.message || '')) {
+        toast.error(t('cardsKpi.sweep.sistema.sessaoEncerrada'));
+        await supabase.auth.signOut({ scope: 'local' });
+        return;
+      }
       toast.error(t('admin.usuarios.acessoIndisponivelToast'));
     } finally {
       if (request === accessRequest.current) setAccessLoading(false);
