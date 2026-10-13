@@ -1,0 +1,1 @@
+ALTER TABLE public.ativos ADD COLUMN IF NOT EXISTS atributos jsonb NOT NULL DEFAULT '{}'::jsonb;
