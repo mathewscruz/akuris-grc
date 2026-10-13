@@ -599,7 +599,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try { sessionStorage.removeItem('akuris_show_login_toast'); } catch { /* ignore */ }
-    const { error } = await supabase.auth.signOut();
+    // Só este aparelho: o padrão do supabase-js é 'global' e derrubava as
+    // sessões de outras abas/dispositivos sem aviso ("Session not found").
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) throw error;
     // Só limpa o cache MFA/flag DEPOIS de confirmar o signOut bem-sucedido
     setCachedMfaUntil(0);
