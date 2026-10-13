@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { resolveItemStatusTone } from "@/lib/status-tone";
 import { COLLECTION_PROVIDERS } from "@/lib/integration-platform";
 import { formatDateTime } from "@/lib/date-utils";
 
@@ -70,7 +71,7 @@ export function ConexoesAtivas({ empresaId }: { empresaId: string }) {
                     {t("collectionHub.conectadas.ultimoScan")}: {c.last_success_at ? formatDateTime(c.last_success_at) : "—"}
                   </p>
                 </div>
-                <StatusBadge tone="success">{t("collectionHub.conectadas.conectado")}</StatusBadge>
+                <StatusBadge {...resolveItemStatusTone("concluido")}>{t("collectionHub.conectadas.conectado")}</StatusBadge>
               </div>
               {recursos != null && (
                 <p className="mt-3 text-sm">

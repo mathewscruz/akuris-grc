@@ -22,6 +22,7 @@ import {
   IconSearch,
 } from "@/components/icons";
 import { toast } from "@/lib/toast";
+import { ConexoesAtivas } from "./ConexoesAtivas";
 import { INTEGRATION_COLLECTIONS_ENABLED } from "@/lib/integration-release";
 import {
   COLLECTION_PROVIDERS,
@@ -53,7 +54,10 @@ export function IntegrationCollections({ empresaId }: { empresaId: string }) {
   return INTEGRATION_COLLECTIONS_ENABLED ? (
     <AvailableIntegrationCollections empresaId={empresaId} />
   ) : (
-    <ComingSoonCollections />
+    <div className="space-y-8">
+      <ConexoesAtivas empresaId={empresaId} />
+      <ComingSoonCollections />
+    </div>
   );
 }
 
