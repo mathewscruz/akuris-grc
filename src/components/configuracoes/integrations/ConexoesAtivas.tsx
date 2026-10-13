@@ -22,10 +22,9 @@ interface Execucao {
   resource_count: number | null;
 }
 
-/** Lista as conexões de coleta ativas da empresa (somente leitura). */
-export function ConexoesAtivas({ empresaId }: { empresaId: string }) {
-  const { t } = useLanguage();
-  const { data } = useQuery({
+/** Shared tenant-scoped data for the connected section and provider catalog. */
+export function useConexoesAtivas(empresaId: string) {
+  return useQuery({
     queryKey: ["conexoes-ativas", empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
@@ -44,6 +43,12 @@ export function ConexoesAtivas({ empresaId }: { empresaId: string }) {
       return { conns: (conns ?? []) as Conexao[], runs: (runs ?? []) as Execucao[] };
     },
   });
+}
+
+/** Lista as conexões de coleta ativas da empresa (somente leitura). */
+export function ConexoesAtivas({ empresaId }: { empresaId: string }) {
+  const { t } = useLanguage();
+  const { data } = useConexoesAtivas(empresaId);
 
   if (!data?.conns.length) return null;
 

@@ -1,2 +1,3 @@
 # Architecture rules
 - Incident asset references are resolved through the central entity registry with tenant-scoped query keys; this preserves stored UUID links and reuses canonical navigation without exposing raw identifiers.
+- Integration catalog statuses and the connected section share the same tenant-scoped query through useConexoesAtivas; this prevents contradictory connection labels without enabling new connections.
