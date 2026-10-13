@@ -7,7 +7,9 @@ import { useIncidentAssets } from '../useIncidentAssets';
 const api = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock('@/lib/entity-search', () => ({ fetchEntitiesByIds: api.fetch }));
 afterEach(cleanup);
-beforeEach(() => api.fetch.mockReset().mockResolvedValue([{ id: 'asset-a', titulo: 'Servidor ERP' }]));
+beforeEach(() => {
+  api.fetch.mockReset().mockResolvedValue([{ id: 'asset-a', titulo: 'Servidor ERP' }]);
+});
 
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
