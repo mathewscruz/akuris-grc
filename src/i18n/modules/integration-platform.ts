@@ -2,6 +2,7 @@ export const integrationPlatform = {
   pt: {
     entidades: { sistema: "Sistema" },
     collectionHub: {
+      conectadas: { titulo: "Conectadas", conectado: "Conectado", ultimoScan: "Último scan", recursos: "recursos encontrados", historico: "Últimos scans", nenhum: "Nenhum scan registrado", sucesso: "Concluído", falha: "Falhou" },
       tab: "Coleta de evidências",
       legacy: "Notificações e conectores existentes",
       title: "Suas ferramentas, conectadas à governança.",
@@ -206,6 +207,7 @@ export const integrationPlatform = {
   en: {
     entidades: { sistema: "System" },
     collectionHub: {
+      conectadas: { titulo: "Connected", conectado: "Connected", ultimoScan: "Last scan", recursos: "resources found", historico: "Recent scans", nenhum: "No scans recorded", sucesso: "Completed", falha: "Failed" },
       tab: "Evidence collection",
       legacy: "Notifications and existing connectors",
       title: "Your tools, connected to governance.",

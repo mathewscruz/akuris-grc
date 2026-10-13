@@ -12,6 +12,7 @@ import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly, formatDateTime, intlLocale } from '@/lib/date-utils';
 import { supabase } from '@/integrations/supabase/client';
+import { fotoDoAtivo } from '@/lib/ativo-fotos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   IconServer, IconCloud, IconMonitor, IconPhone, IconDatabase, IconGlobe, IconCode, IconQr, IconSettings,
@@ -130,6 +131,7 @@ export const AtivoFicha: React.FC<Props> = ({
 
   if (!ativo) return null;
   const Icone = iconeDoTipo(ativo);
+  const foto = fotoDoAtivo(ativo);
   const isAws = origem === 'aws';
   const custo = typeof attr.custo_mensal === 'number'
     ? new Intl.NumberFormat(intlLocale(), { style: 'currency', currency: 'BRL' }).format(attr.custo_mensal)
@@ -144,9 +146,20 @@ export const AtivoFicha: React.FC<Props> = ({
           {/* Coluna esquerda */}
           <aside className="flex w-full shrink-0 flex-col gap-4 border-b p-5 md:w-72 md:overflow-y-auto md:border-b-0 md:border-r">
             <div className="flex flex-col items-center gap-2 pt-2 text-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-2xl border bg-muted/40">
-                <Icone className="h-12 w-12 text-muted-foreground" />
-              </div>
+              {foto ? (
+                <img
+                  src={foto}
+                  alt={ativo.nome}
+                  width={160}
+                  height={160}
+                  loading="lazy"
+                  className="h-40 w-40 rounded-2xl border object-cover"
+                />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border bg-muted/40">
+                  <Icone className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
               <SheetTitle className="text-lg font-semibold leading-tight">{ativo.nome}</SheetTitle>
               <SheetDescription className="text-xs">
                 {attr.serie ? `${t('ativoFicha.serie')} ${attr.serie}` : tipoLabel(ativo.tipo)}
