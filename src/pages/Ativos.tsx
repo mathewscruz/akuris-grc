@@ -643,34 +643,26 @@ const Ativos = () => {
         </CardContent>
       </Card>
 
-      <RecordDetailDrawer
-        open={!!detalheAtivo}
-        onOpenChange={(o) => !o && setDetalheAtivo(null)}
-        title={detalheAtivo?.nome}
-        subtitle={detalheAtivo ? getTipoLabel(detalheAtivo.tipo) : undefined}
-        badges={detalheAtivo ? (
-          <>
-            <StatusBadge {...resolveItemStatusTone(detalheAtivo.status)}>
-              {formatStatus(detalheAtivo.status)}
-            </StatusBadge>
-            <StatusBadge {...resolveCriticidadeTone(detalheAtivo.criticidade)}>
-              {(() => { const o = criticidades.find(c => c.value === criticidadeAtivo(detalheAtivo)); return o ? t(o.label) : detalheAtivo.criticidade; })()}
-            </StatusBadge>
-          </>
-        ) : undefined}
-        actions={detalheAtivo ? (
-          <Button variant="outline" size="sm" onClick={() => { const a = detalheAtivo; setDetalheAtivo(null); handleEdit(a); }}>
-            <IconEdit className="h-4 w-4 mr-2" />{t('sweepCore.assets.edit')}
-          </Button>
-        ) : undefined}
-        fields={detalheAtivo ? [
-          { label: t('fin.comum.proprietario'), value: detalheAtivo.proprietario_nome },
-          { label: t('fin.comum.localizacao'), value: detalheAtivo.localizacao },
-          { label: t('fin.comum.descricao'), value: (detalheAtivo as any).descricao, full: true },
-        ] : []}
-        createdAt={(detalheAtivo as any)?.created_at}
-        updatedAt={(detalheAtivo as any)?.updated_at}
-      />
+      {(() => {
+        const idx = detalheAtivo ? filteredAndSortedAtivos.findIndex(a => a.id === detalheAtivo.id) : -1;
+        const prev = idx > 0 ? filteredAndSortedAtivos[idx - 1] : null;
+        const next = idx >= 0 && idx < filteredAndSortedAtivos.length - 1 ? filteredAndSortedAtivos[idx + 1] : null;
+        return (
+          <AtivoFicha
+            ativo={detalheAtivo as any}
+            empresaId={profile?.empresa_id}
+            tipoLabel={getTipoLabel}
+            criticidadeLabel={(a: any) => { const o = criticidades.find(c => c.value === criticidadeAtivo(a)); return o ? t(o.label) : (a.criticidade ?? ''); }}
+            onClose={() => setDetalheAtivo(null)}
+            onEdit={(a: any) => { setDetalheAtivo(null); handleEdit(a); }}
+            onDelete={(a) => { setDetalheAtivo(null); setDeleteConfirm({ open: true, ativoId: a.id }); }}
+            onManutencao={(a) => setManutencaoDialog({ open: true, ativoId: a.id, ativoNome: a.nome })}
+            onTrilha={(a) => setTrilhaDialog({ open: true, ativoId: a.id })}
+            onPrev={prev ? () => setDetalheAtivo(prev) : undefined}
+            onNext={next ? () => setDetalheAtivo(next) : undefined}
+          />
+        );
+      })()}
 
       <ConfirmDialog
         open={deleteConfirm.open}
