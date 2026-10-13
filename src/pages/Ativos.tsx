@@ -24,7 +24,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useAtivosStats } from '@/hooks/useAtivosStats';
 import ImportacaoAtivos from '@/components/ativos/ImportacaoAtivos';
 import AtivoDialog from '@/components/ativos/AtivoDialog';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import AtivoFicha from '@/components/ativos/AtivoFicha';
 import ManutencaoDialog from '@/components/ativos/ManutencaoDialog';
 import TrilhaAuditoriaAtivos from '@/components/ativos/TrilhaAuditoriaAtivos';
 import { exportCSV } from '@/lib/csv-utils';
