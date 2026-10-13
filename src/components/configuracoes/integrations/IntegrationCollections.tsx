@@ -22,7 +22,9 @@ import {
   IconSearch,
 } from "@/components/icons";
 import { toast } from "@/lib/toast";
-import { ConexoesAtivas } from "./ConexoesAtivas";
+import { ConexoesAtivas, useConexoesAtivas } from "./ConexoesAtivas";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { resolveItemStatusTone } from "@/lib/status-tone";
 import { INTEGRATION_COLLECTIONS_ENABLED } from "@/lib/integration-release";
 import {
   COLLECTION_PROVIDERS,
@@ -56,13 +58,15 @@ export function IntegrationCollections({ empresaId }: { empresaId: string }) {
   ) : (
     <div className="space-y-8">
       <ConexoesAtivas empresaId={empresaId} />
-      <ComingSoonCollections />
+      <ComingSoonCollections empresaId={empresaId} />
     </div>
   );
 }
 
-function ComingSoonCollections() {
+function ComingSoonCollections({ empresaId }: { empresaId: string }) {
   const { t } = useLanguage();
+  const { data } = useConexoesAtivas(empresaId);
+  const connectedProviders = new Set(data?.conns.map((connection) => connection.provider));
   const [search, setSearch] = useState("");
   const providers = COLLECTION_PROVIDERS.filter((provider) =>
     `${provider.name} ${t(`collectionHub.family.${provider.family}`)}`
@@ -70,7 +74,7 @@ function ComingSoonCollections() {
       .includes(search.trim().toLocaleLowerCase()),
   );
 
-  // This catalog deliberately mounts no connection queries, callbacks or dialogs.
+  // Read existing connections only; new connections and OAuth remain unavailable.
   return (
     <section className="space-y-6" aria-label={t("collectionHub.tab")}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -108,14 +112,20 @@ function ComingSoonCollections() {
             <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
               {t(`collectionHub.provider.${provider.id}`)}
             </p>
-            <Button
+            {connectedProviders.has(provider.id) ? (
+              <div className="self-start">
+                <StatusBadge {...resolveItemStatusTone("concluido")}>
+                  {t("collectionHub.conectadas.conectado")}
+                </StatusBadge>
+              </div>
+            ) : <Button
               disabled
               variant="secondary"
               className="self-start disabled:opacity-100"
               aria-label={`${provider.name}: ${t("collectionHub.comingSoon")}`}
             >
               {t("collectionHub.comingSoon")}
-            </Button>
+            </Button>}
           </article>
         ))}
       </div>
