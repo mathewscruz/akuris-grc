@@ -12,7 +12,8 @@
 
 # Diferenciais (plano aprovado 15/10)
 - [x] B1: framework BACEN 4.893 no catálogo (24 requisitos PT/EN).
-- [ ] B2: CVM 35, SUSEP 638, ANS e Resolução ANPD 15/2024 — precisa revisão jurídica do texto.
+- [x] B2: ANPD 15/2024, SUSEP 638 e CVM 35 no catálogo (revisão jurídica recomendada).
+- [ ] B3: ANS — aguarda indicação da norma exata pelo usuário.
 - [ ] A: configuração automática pelo CNPJ.
 - [ ] C: relógio regulatório (ANPD 3 dias úteis, CNPD 72h, titulares 15 dias).
 - [ ] D, E, F, G, H, I — planos próprios.
