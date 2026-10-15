@@ -180,6 +180,7 @@ export function TraducaoFrameworksTab() {
 
   const prepararTodos = async () => {
     setRunningId('guidance-all');
+    toast.info(t('sweepConfig.traducaoFrameworks.btnGenerating'));
     let ok = true;
     try {
       for (const fw of rows) {
