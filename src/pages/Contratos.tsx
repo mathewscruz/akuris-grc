@@ -41,7 +41,9 @@ import { formatStatus } from '@/lib/text-utils';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
 import { estadoContrato } from '@/lib/metrics';
 import { rowOpenProps } from '@/lib/row-interaction';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { useContratoLigacoes } from '@/hooks/useDetalheLigacoes';
+import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';
 import { TrilhaAuditoria } from '@/components/common/TrilhaAuditoria';
 
 interface Contrato {
@@ -85,6 +87,7 @@ export default function Contratos() {
   const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [detalheContrato, setDetalheContrato] = useState<Contrato | null>(null);
+  const { data: contratoLig, isLoading: contratoLigLoading } = useContratoLigacoes(detalheContrato?.id);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [marcosDialogOpen, setMarcosDialogOpen] = useState(false);
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
@@ -717,7 +720,7 @@ export default function Contratos() {
           open={!!detalheContrato}
           onOpenChange={(o) => !o && setDetalheContrato(null)}
           icon={IconFile}
-          eyebrow={t('fin.comum.contrato') || undefined}
+          eyebrow={t('detalheRegisto.eyContrato')}
           code={detalheContrato?.numero_contrato}
           title={detalheContrato?.nome}
           subtitle={detalheContrato?.fornecedores?.nome}

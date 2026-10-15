@@ -112,6 +112,7 @@ export const detalheRegisto = {
       grpContas: 'Contas privilegiadas',
       grpSistema: 'Sistema',
       nota: 'Nota {n}',
+      eyContrato: 'Contrato', eyFornecedor: 'Fornecedor', eyLicenca: 'Licença', eyChave: 'Chave criptográfica', eySistema: 'Sistema', eyConta: 'Conta privilegiada', eyRopa: 'Atividade de tratamento',
     },
   },
   en: {
@@ -216,6 +217,7 @@ export const detalheRegisto = {
       grpContas: 'Privileged accounts',
       grpSistema: 'System',
       nota: 'Score {n}',
+      eyContrato: 'Contract', eyFornecedor: 'Vendor', eyLicenca: 'License', eyChave: 'Cryptographic key', eySistema: 'System', eyConta: 'Privileged account', eyRopa: 'Processing activity',
     },
   },
 };
