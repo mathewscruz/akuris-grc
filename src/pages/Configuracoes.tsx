@@ -22,6 +22,7 @@ import GerenciamentoChangelog from '@/components/configuracoes/GerenciamentoChan
 import NoticiasTab from '@/components/configuracoes/NoticiasTab';
 import BlogManager from '@/components/configuracoes/BlogManager';
 import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
+import { QuestionarioSegurancaCard } from '@/components/configuracoes/QuestionarioSegurancaCard';
 import { TrustCenterTab } from '@/components/configuracoes/TrustCenterTab';
 import { ContactRequests } from '@/components/configuracoes/ContactRequests';
 
@@ -209,7 +210,7 @@ const Configuracoes = () => {
           </TabsContent>
         )}
 
-        {isAdmin && <TabsContent value="trust-center"><TrustCenterTab /></TabsContent>}
+        {isAdmin && <TabsContent value="trust-center"><div className="space-y-6"><TrustCenterTab /><QuestionarioSegurancaCard /></div></TabsContent>}
 
         <TabsContent value="assinatura">
           <div className="space-y-6">
