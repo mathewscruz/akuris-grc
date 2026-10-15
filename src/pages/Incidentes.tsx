@@ -7,6 +7,9 @@ import { useFocusRow } from '@/hooks/useFocusRow';
 import { IconFilter, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconSuccess, IconWarning, IconInfo, IconError, IconTime, IconCalendar, IconFile, IconShield, IconMessage, IconChecklist, IconAttach, IconMegaphone, IncidentesIcon } from '@/components/icons';
 import { logger } from '@/lib/logger';
 import { exportCSV } from '@/lib/csv-utils';
+import { ModuleBulkActionBar } from '@/components/common/ModuleBulkActionBar';
+import { useBulkStatusUpdate } from '@/hooks/useBulkStatusUpdate';
+import { toast as sonnerToast } from '@/lib/toast';
 import { useIncidentesStats } from '@/hooks/useIncidentesStats';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -114,6 +117,8 @@ export default function Incidentes() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const bulk = useBulkStatusUpdate({ table: 'incidentes', queryKeys: ['incidentes', 'incidentes-stats'] });
   
   const { data: statsIncidentes, isLoading: statsLoading, isError: statsError } = useIncidentesStats();
 
@@ -569,6 +574,9 @@ export default function Incidentes() {
             pageSize={20}
             data={sortedIncidentes}
             columns={incidentesColumns}
+            selectable
+            selectedIds={selecionados}
+            onSelectionChange={setSelecionados}
             onRowClick={(item) => setDetalheIncidente(item)}
             loading={loading}
             error={isError}
@@ -588,6 +596,28 @@ export default function Incidentes() {
           />
         </CardContent>
       </Card>
+
+      <ModuleBulkActionBar
+        selectedCount={selecionados.size}
+        busy={bulk.busy}
+        statusOptions={['aberto', 'em_investigacao', 'contido', 'resolvido', 'fechado'].map((value) => ({ value, label: formatStatus(value) }))}
+        onStatusChange={async (status) => {
+          if (await bulk.apply([...selecionados], status)) setSelecionados(new Set());
+        }}
+        onExport={() => {
+          const escolhidos = sortedIncidentes.filter((inc: any) => selecionados.has(inc.id));
+          exportCSV(
+            [t('sweepRiscos.incidentes.exportColTitulo'), t('fin.comum.tipo'), t('sweepRiscos.incidentes.exportColCategoria'), t('sweepRiscos.incidentes.exportColCriticidade'), t('sweepRiscos.incidentes.exportColStatus'), t('sweepRiscos.incidentes.exportColDataDeteccao'), t('sweepRiscos.incidentes.exportColDataResolucao')],
+            escolhidos.map((inc: any) => [
+              inc.titulo, inc.tipo_incidente || '', inc.categoria || '', inc.criticidade || '',
+              inc.status || '', inc.data_deteccao || '', inc.data_resolucao || ''
+            ]),
+            'incidentes-selecionados'
+          );
+          sonnerToast.success(t('bulkActions.exported', { count: escolhidos.length }));
+        }}
+        onClear={() => setSelecionados(new Set())}
+      />
 
       <RecordDetailDrawer
         open={!!detalheIncidente && !tratamentoDialogOpen && !evidenciaDialogOpen && !comunicacaoDialogOpen}

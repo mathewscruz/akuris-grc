@@ -3,6 +3,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { formatStatus } from "@/lib/text-utils"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -124,6 +125,15 @@ interface DataTableProps<T> {
   pageSize?: number
   pageSizeOptions?: number[]
   onRowClick?: (item: T) => void
+  /**
+   * Seleção em lote (ações em lote dos módulos). Com `selectable` e
+   * `onSelectionChange`, cada linha ganha uma caixa de seleção e o
+   * cabeçalho uma que marca toda a página. A seleção é controlada por
+   * quem chama, que decide o que fazer com os IDs.
+   */
+  selectable?: boolean
+  selectedIds?: ReadonlySet<string>
+  onSelectionChange?: (ids: Set<string>) => void
   /** Quantidade de campos essenciais antes de "Ver detalhes" no telemóvel. */
   mobileCollapsedFields?: number
 }
@@ -152,6 +162,9 @@ export function DataTable<T extends Record<string, any>>({
   pageSize: initialPageSize = 20,
   pageSizeOptions = [10, 20, 50, 100],
   onRowClick,
+  selectable = false,
+  selectedIds,
+  onSelectionChange,
   mobileCollapsedFields = 4,
 }: DataTableProps<T>) {
   const { t } = useLanguage()
@@ -291,6 +304,27 @@ export function DataTable<T extends Record<string, any>>({
 
   const rowId = React.useCallback((item: T, index: number) =>
     String((item as any).id ?? (item as any).codigo ?? index), [])
+
+  /* Seleção em lote. O clique na caixa não pode abrir o registo (a linha
+     inteira é clicável), por isso cada caixa para a propagação. */
+  const selectionEnabled = selectable && typeof onSelectionChange === 'function'
+  const selectedSet = selectedIds ?? new Set<string>()
+  const toggleRowSelection = (id: string) => {
+    if (!selectionEnabled) return
+    const next = new Set(selectedSet)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    onSelectionChange!(next)
+  }
+  const pageRowIds = paginatedData.map((item, index) => rowId(item, index))
+  const allPageSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedSet.has(id))
+  const togglePageSelection = () => {
+    if (!selectionEnabled) return
+    const next = new Set(selectedSet)
+    if (allPageSelected) pageRowIds.forEach((id) => next.delete(id))
+    else pageRowIds.forEach((id) => next.add(id))
+    onSelectionChange!(next)
+  }
   const seenRows = React.useRef<Set<string>>(new Set())
   const rowsInitialized = React.useRef(false)
   const newRowsTimer = React.useRef<number | null>(null)
@@ -510,6 +544,15 @@ export function DataTable<T extends Record<string, any>>({
                   className={cn('akuris-data-card p-4 space-y-3', abrir?.className)}
                 >
                   <div className="flex items-start justify-between gap-3">
+                    {selectionEnabled && (
+                      <span className="pt-0.5" onClick={(event) => event.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedSet.has(rowKey)}
+                          onCheckedChange={() => toggleRowSelection(rowKey)}
+                          aria-label={t('bulkActions.selectRow', { name: (item as any).titulo || (item as any).nome || rowKey })}
+                        />
+                      </span>
+                    )}
                     <div className="min-w-0 font-medium">{principal && valor(principal)}</div>
                     {acoes && <div className="shrink-0">{valor(acoes)}</div>}
                   </div>
@@ -554,6 +597,15 @@ export function DataTable<T extends Record<string, any>>({
         <Table>
           <TableHeader className="sticky top-0 z-20">
             <TableRow>
+              {selectionEnabled && (
+                <TableHead className="w-10 sticky left-0 z-20">
+                  <Checkbox
+                    checked={allPageSelected}
+                    onCheckedChange={togglePageSelection}
+                    aria-label={t('bulkActions.selectAll')}
+                  />
+                </TableHead>
+              )}
               {columns.map((column, columnIndex) => {
                 const sortable = isSortable(column)
                 return (
@@ -573,7 +625,7 @@ export function DataTable<T extends Record<string, any>>({
                          tinta da linha. O realce dela vem do `hover:bg-accent`
                          do `TableHead`, que é igualmente opaco. */
                       isActionsColumn(column) && 'sticky right-0 z-10',
-                      columnIndex === 0 && 'sticky left-0 z-20',
+                      columnIndex === 0 && !selectionEnabled && 'sticky left-0 z-20',
                       sortable && "select-none"
                     )}
                   >
@@ -597,7 +649,7 @@ export function DataTable<T extends Record<string, any>>({
           <TableBody key={`desktop-${dataMotionKey}`} className="akuris-data-refresh">
             {!loading && data.length === 0 ? (
               <TableRow data-table-static="">
-                <TableCell colSpan={columns.length} className="p-0">
+                <TableCell colSpan={columns.length + (selectionEnabled ? 1 : 0)} className="p-0">
                   {ecraVazio && (
                     <EmptyState
                       icon={ecraVazio.icon}
@@ -638,6 +690,18 @@ export function DataTable<T extends Record<string, any>>({
                   })()}
                 >
 
+                  {selectionEnabled && (
+                    <TableCell
+                      className="w-10 sticky left-0 z-10 bg-inherit"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={selectedSet.has(rowId(item, index))}
+                        onCheckedChange={() => toggleRowSelection(rowId(item, index))}
+                        aria-label={t('bulkActions.selectRow', { name: (item as any).titulo || (item as any).nome || rowId(item, index) })}
+                      />
+                    </TableCell>
+                  )}
                   {columns.map((column, columnIndex) => (
                     <TableCell
                       key={String(column.key)}
@@ -645,7 +709,7 @@ export function DataTable<T extends Record<string, any>>({
                         column.className,
                         column === colunaPrincipal && PRIMARY_CELL,
                         isActionsColumn(column) && STICKY_CELL,
-                        columnIndex === 0 && 'sticky left-0 z-10 bg-inherit',
+                        columnIndex === 0 && !selectionEnabled && 'sticky left-0 z-10 bg-inherit',
                       )}
                     >
                       {column.render

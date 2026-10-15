@@ -71,6 +71,9 @@ import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos
 import { HistoricoAvaliacoesDialog } from '@/components/riscos/HistoricoAvaliacoesDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
 import { exportRiscosPDF, exportRiscosCSV } from '@/components/riscos/ExportRiscosPDF';
+import { ModuleBulkActionBar } from '@/components/common/ModuleBulkActionBar';
+import { useBulkStatusUpdate } from '@/hooks/useBulkStatusUpdate';
+import { toast as sonnerToast } from '@/lib/toast';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -135,6 +138,8 @@ export function Riscos() {
   const { data: stats, refetch: refetchStats } = useRiscosStats();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const bulk = useBulkStatusUpdate({ table: 'riscos', queryKeys: ['riscos'] });
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   
   const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
@@ -1005,6 +1010,9 @@ export function Riscos() {
                     pageSize={20}
                     data={viewedRiscos}
                     columns={riscoColumns as Column<Risco>[]}
+                    selectable
+                    selectedIds={selecionados}
+                    onSelectionChange={setSelecionados}
                     onRowClick={(risco) => setDrawerRiscoId(risco.id)}
                     loading={loading}
                     searchable
@@ -1031,6 +1039,20 @@ export function Riscos() {
                   />
                 </CardContent>
               </Card>
+              <ModuleBulkActionBar
+                selectedCount={selecionados.size}
+                busy={bulk.busy}
+                statusOptions={['identificado', 'analisado', 'em_tratamento', 'tratado', 'monitorado'].map((value) => ({ value, label: t(`riscos.page.status.${value}`) }))}
+                onStatusChange={async (status) => {
+                  if (await bulk.apply([...selecionados], status)) setSelecionados(new Set());
+                }}
+                onExport={() => {
+                  const escolhidos = viewedRiscos.filter((r: any) => selecionados.has(r.id));
+                  exportRiscosCSV(escolhidos);
+                  sonnerToast.success(t('bulkActions.exported', { count: escolhidos.length }));
+                }}
+                onClear={() => setSelecionados(new Set())}
+              />
             </div>
           );
 
