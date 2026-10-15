@@ -19,7 +19,9 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { formatStatus, capitalizeText } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { useSistemaLigacoes } from '@/hooks/useDetalheLigacoes';
+import { formatDateOnly as fmtDia } from '@/lib/date-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +52,7 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
   const [showSistemaDialog, setShowSistemaDialog] = useState(false);
   const [selectedSistema, setSelectedSistema] = useState<SistemaPrivilegiado | null>(null);
   const [detalheSistema, setDetalheSistema] = useState<SistemaPrivilegiado | null>(null);
+  const { data: sisLig, isLoading: sisLigLoading } = useSistemaLigacoes(detalheSistema?.id);
   const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
   const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
   const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
@@ -437,6 +440,19 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
             {t('fin.comum.editar')}
           </Button>
         ) : undefined}
+        eyebrow={t('detalheRegisto.eySistema')}
+        {...recordNav(filteredAndSortedSistemas as any, detalheSistema as any, setDetalheSistema as any)}
+        kpis={detalheSistema ? [
+          { label: t('detalheRegisto.kContas'), value: sisLig ? sisLig.contas.length : '—' },
+          { label: t('fin.comum.categoria'), value: detalheSistema.categoria ? capitalizeText(detalheSistema.categoria) : '—' },
+          { label: t('detalheRegisto.kRisco'), value: formatStatus(detalheSistema.criticidade) || '—' },
+        ] as any : undefined}
+        linksLoading={sisLigLoading}
+        links={detalheSistema ? [
+          { title: t('detalheRegisto.grpContas'), items: (sisLig?.contas || []).map((c: any) => ({ id: c.id, label: c.usuario_beneficiario, meta: [c.nivel_privilegio ? formatStatus(c.nivel_privilegio) : null, formatStatus(c.status), c.data_expiracao ? formatDateOnly(c.data_expiracao) : null].filter(Boolean).join(' · '), href: `/contas-privilegiadas?focus=${c.id}` })) },
+        ] : undefined}
+        createdAt={(detalheSistema as any)?.created_at}
+        updatedAt={(detalheSistema as any)?.updated_at}
         fields={detalheSistema ? [
           { label: t('detalheRegisto.responsavel'), value: detalheSistema.responsavel_sistema },
           { label: t('fin.comum.categoria'), value: detalheSistema.categoria ? capitalizeText(detalheSistema.categoria) : null },
