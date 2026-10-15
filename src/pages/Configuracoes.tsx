@@ -22,6 +22,7 @@ import GerenciamentoChangelog from '@/components/configuracoes/GerenciamentoChan
 import NoticiasTab from '@/components/configuracoes/NoticiasTab';
 import BlogManager from '@/components/configuracoes/BlogManager';
 import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
+import { TrustCenterTab } from '@/components/configuracoes/TrustCenterTab';
 import { ContactRequests } from '@/components/configuracoes/ContactRequests';
 
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
@@ -36,7 +37,7 @@ const Configuracoes = () => {
   const userRole = profile?.role || 'user';
   const isSuperAdmin = userRole === 'super_admin';
   const isAdmin = userRole === 'admin' || isSuperAdmin;
-  const customerTabs = ['usuarios', 'organizacao', 'integracoes', 'denuncia', 'assinatura'];
+  const customerTabs = ['usuarios', 'organizacao', 'integracoes', 'denuncia', 'trust-center', 'assinatura'];
   const platformTabs = ['empresas', 'planos', 'financeiro-ia', 'novidades', 'noticias', 'traducoes', 'blog', 'solicitacoes-site'];
   const allowedTabs = isSuperAdmin
     ? [...customerTabs, ...platformTabs]
@@ -71,6 +72,7 @@ const Configuracoes = () => {
     integracoes: t('configGeral.page.tabIntegracoes'),
     denuncia: t('configGeral.page.tabDenuncia'),
     assinatura: t('configGeral.page.tabAssinatura'),
+    'trust-center': t('trustCenter.tab'),
     empresas: t('configGeral.page.tabEmpresas'),
     planos: t('configGeral.page.tabPlanos'),
     'financeiro-ia': t('configGeral.page.tabFinanceiroIA'),
@@ -115,6 +117,7 @@ const Configuracoes = () => {
               {isAdmin && <TabsTrigger className={navTriggerClass} value="organizacao"><IconOrg />{t('configGeral.page.tabOrganizacao')}</TabsTrigger>}
               {isAdmin && <TabsTrigger className={navTriggerClass} value="integracoes"><IconPlug />{t('configGeral.page.tabIntegracoes')}</TabsTrigger>}
               {isAdmin && <TabsTrigger className={navTriggerClass} value="denuncia"><IconMessage />{t('configGeral.page.tabDenuncia')}</TabsTrigger>}
+              {isAdmin && <TabsTrigger className={navTriggerClass} value="trust-center"><IconGlobe />{t('trustCenter.tab')}</TabsTrigger>}
               <TabsTrigger className={navTriggerClass} value="assinatura"><IconCard />{t('configGeral.page.tabAssinatura')}</TabsTrigger>
             </TabsList>
           </section>
@@ -205,6 +208,8 @@ const Configuracoes = () => {
             </div>
           </TabsContent>
         )}
+
+        {isAdmin && <TabsContent value="trust-center"><TrustCenterTab /></TabsContent>}
 
         <TabsContent value="assinatura">
           <div className="space-y-6">

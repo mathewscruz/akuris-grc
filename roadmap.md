@@ -23,5 +23,5 @@
 - [ ] 3c: resposta a avisos por e-mail com links assinados de uso único — pendente (exige Edge Function + tokens).
 - [x] 4: preenchimento inteligente — responsável padrão e prazo por prioridade no plano de ação; categoria sugerida pelo título no risco (src/lib/preenchimento-inteligente.ts, 9 testes).
 - [x] 5a: pacote de auditoria em PDF com um clique na página do framework (requisitos + evidências + planos em aberto).
-- [ ] 5b: Trust Center público por empresa — pendente.
+- [x] 5b: Trust Center público por empresa (Configurações → Trust Center, página /trust/:endereço).
 - [ ] 5c: resposta automática a questionários de segurança de clientes — pendente.

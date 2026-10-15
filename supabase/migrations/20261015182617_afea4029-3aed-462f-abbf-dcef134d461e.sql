@@ -1,0 +1,1 @@
+REVOKE ALL ON public.trust_center FROM anon;
