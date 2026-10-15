@@ -12122,6 +12122,7 @@ export type Database = {
       }
       agendar_expurgo_denuncias: { Args: never; Returns: string }
       agendar_lembretes_diarios: { Args: never; Returns: string }
+      agendar_orientacoes_requisitos: { Args: never; Returns: string }
       apply_default_permissions_for_user: {
         Args: { user_id_param: string }
         Returns: undefined
