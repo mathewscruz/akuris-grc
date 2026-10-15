@@ -38,7 +38,10 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { IncidenteDialog } from '@/components/incidentes/IncidenteDialog';
 import { IncidenteAtivosVinculados } from '@/components/incidentes/IncidenteAtivosVinculados';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { useIncidenteLigacoes } from '@/hooks/useDetalheLigacoes';
+import { useJurisdicao } from '@/hooks/useJurisdicao';
+import { diasDesde } from '@/lib/detalhe-alertas';
 import { TratamentoDialog } from '@/components/incidentes/TratamentoDialog';
 import { ComunicacaoDialog } from '@/components/incidentes/ComunicacaoDialog';
 import { EvidenciaDialog } from '@/components/incidentes/EvidenciaDialog';
@@ -90,6 +93,8 @@ export default function Incidentes() {
   const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(null);
   const [detalheIncidente, setDetalheIncidente] = useState<Incidente | null>(null);
+  const { data: incLig, isLoading: incLigLoading } = useIncidenteLigacoes(detalheIncidente?.id);
+  const jurisdicaoInc = useJurisdicao() as any;
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [comunicacaoDialogOpen, setComunicacaoDialogOpen] = useState(false);
   const [evidenciaDialogOpen, setEvidenciaDialogOpen] = useState(false);
@@ -657,23 +662,55 @@ export default function Incidentes() {
             </div>
           </div>
         ) : undefined}
-        fields={detalheIncidente ? [
-          { label: t('fin.comum.categoria'), value: detalheIncidente.categoria ? formatStatus(detalheIncidente.categoria) : null },
-          { label: t('sweepRiscos.incidentes.origemDeteccao'), value: detalheIncidente.origem_deteccao ? formatStatus(detalheIncidente.origem_deteccao) : null },
-          { label: t('sweepRiscos.incidentes.impactoEstimado'), value: detalheIncidente.impacto_estimado ? formatStatus(detalheIncidente.impacto_estimado) : null },
-          { label: t('sweepRiscos.incidentes.responsavelDeteccao'), value: nomeResponsavel(detalheIncidente.responsavel_deteccao) },
-          { label: t('sweepRiscos.incidentes.responsavelTratamento'), value: nomeResponsavel(detalheIncidente.responsavel_tratamento) || t('experience.notAssigned') },
-          { label: t('experience.treatmentDeadline'), value: detalheIncidente.proximo_prazo ? formatDateOnly(detalheIncidente.proximo_prazo) : t('experience.noDeadline') },
-          { label: t('fin.incidentes.dataOcorrencia'), value: detalheIncidente.data_ocorrencia ? formatDateOnly(detalheIncidente.data_ocorrencia) : null },
-          { label: t('fin.incidentes.dataDeteccao'), value: detalheIncidente.data_deteccao ? formatDateOnly(detalheIncidente.data_deteccao) : null },
-          { label: t('fin.incidentes.dataResolucao'), value: detalheIncidente.data_resolucao ? formatDateOnly(detalheIncidente.data_resolucao) : null },
-          { label: t('sweepRiscos.incidentes.dadosAfetados'), value: detalheIncidente.dados_afetados, full: true },
-          { label: t('sweepRiscos.incidentes.sistemasAfetados'), value: detalheIncidente.sistemas_afetados?.join(', '), full: true },
-          { label: t('sweepRiscos.incidentes.ativosAfetados'), value: detalheIncidente.ativos_afetados?.length ? (
-            <IncidenteAtivosVinculados empresaId={empresaId} ids={detalheIncidente.ativos_afetados} onNavigate={() => setDetalheIncidente(null)} />
-          ) : null, full: true },
-          { label: t('fin.comum.descricao'), value: detalheIncidente.descricao, full: true },
-        ] : []}
+        {...recordNav(sortedIncidentes as Incidente[], detalheIncidente, setDetalheIncidente)}
+        kpis={detalheIncidente ? (() => {
+          const aberto = detalheIncidente.data_resolucao ? null : diasDesde(detalheIncidente.data_deteccao || detalheIncidente.created_at);
+          return [
+            { label: t('detalheRegisto.kTempoAberto'), value: aberto == null ? '—' : t('detalheRegisto.dias', { n: aberto }), tone: aberto != null && aberto > 30 ? 'warning' : 'neutral' },
+            { label: t('detalheRegisto.kAtivos'), value: detalheIncidente.ativos_afetados?.length || 0 },
+            { label: t('detalheRegisto.kTratamentos'), value: detalheIncidente.tratamentos_count || 0 },
+            { label: t('detalheRegisto.kComunicacoes'), value: incLig ? incLig.comunicacoes.length : '—' },
+          ] as any;
+        })() : undefined}
+        alert={detalheIncidente && !detalheIncidente.data_resolucao && /crit|alt/i.test(detalheIncidente.criticidade || '') && (detalheIncidente.dados_afetados || /vazamento|dados/i.test(detalheIncidente.tipo_incidente || '')) && incLig && incLig.comunicacoes.length === 0
+          ? { tone: 'danger' as const, title: t('detalheRegisto.alertaIncidente', { autoridade: jurisdicaoInc?.autoridade || 'ANPD' }), body: t('detalheRegisto.alertaIncidenteBody', { n: diasDesde(detalheIncidente.data_deteccao || detalheIncidente.created_at) ?? 0 }) }
+          : null}
+        sections={detalheIncidente ? [
+          { title: t('detalheRegisto.secIdentificacao'), fields: [
+            { label: t('fin.comum.categoria'), value: detalheIncidente.categoria ? formatStatus(detalheIncidente.categoria) : null },
+            { label: t('sweepRiscos.incidentes.origemDeteccao'), value: detalheIncidente.origem_deteccao ? formatStatus(detalheIncidente.origem_deteccao) : null },
+            { label: t('sweepRiscos.incidentes.responsavelDeteccao'), value: nomeResponsavel(detalheIncidente.responsavel_deteccao) },
+            { label: t('sweepRiscos.incidentes.responsavelTratamento'), value: nomeResponsavel(detalheIncidente.responsavel_tratamento) || t('experience.notAssigned') },
+          ] },
+          { title: t('detalheRegisto.secPrazos'), fields: [
+            { label: t('fin.incidentes.dataOcorrencia'), value: detalheIncidente.data_ocorrencia ? formatDateOnly(detalheIncidente.data_ocorrencia) : null },
+            { label: t('fin.incidentes.dataDeteccao'), value: detalheIncidente.data_deteccao ? formatDateOnly(detalheIncidente.data_deteccao) : null },
+            { label: t('experience.treatmentDeadline'), value: detalheIncidente.proximo_prazo ? formatDateOnly(detalheIncidente.proximo_prazo) : t('experience.noDeadline') },
+            { label: t('fin.incidentes.dataResolucao'), value: detalheIncidente.data_resolucao ? formatDateOnly(detalheIncidente.data_resolucao) : null },
+          ] },
+          { title: t('detalheRegisto.secImpacto'), fields: [
+            { label: t('sweepRiscos.incidentes.impactoEstimado'), value: detalheIncidente.impacto_estimado ? formatStatus(detalheIncidente.impacto_estimado) : null },
+            { label: t('sweepRiscos.incidentes.dadosAfetados'), value: detalheIncidente.dados_afetados, full: true },
+            { label: t('sweepRiscos.incidentes.sistemasAfetados'), value: detalheIncidente.sistemas_afetados?.join(', '), full: true },
+            { label: t('sweepRiscos.incidentes.ativosAfetados'), value: detalheIncidente.ativos_afetados?.length ? (
+              <IncidenteAtivosVinculados empresaId={empresaId} ids={detalheIncidente.ativos_afetados} onNavigate={() => setDetalheIncidente(null)} />
+            ) : null, full: true },
+          ] },
+          { title: t('detalheRegisto.secDescricao'), fields: [
+            { label: t('fin.comum.descricao'), value: detalheIncidente.descricao, full: true },
+          ] },
+        ] : undefined}
+        linksLoading={incLigLoading}
+        links={detalheIncidente ? [
+          { title: t('detalheRegisto.grpComunicacoes'), items: (incLig?.comunicacoes || []).map((c: any) => ({ id: c.id, label: c.destinatario || formatStatus(c.tipo_comunicacao), meta: [formatStatus(c.tipo_comunicacao), c.meio_comunicacao ? formatStatus(c.meio_comunicacao) : null, c.data_comunicacao ? formatDateOnly(c.data_comunicacao) : null].filter(Boolean).join(' · ') })) },
+        ] : undefined}
+        timeline={detalheIncidente ? [
+          ...(detalheIncidente.data_ocorrencia ? [{ date: detalheIncidente.data_ocorrencia, title: t('fin.incidentes.dataOcorrencia') }] : []),
+          ...(detalheIncidente.data_deteccao ? [{ date: detalheIncidente.data_deteccao, title: t('fin.incidentes.dataDeteccao') }] : []),
+          ...(incLig?.comunicacoes || []).map((c: any) => ({ date: c.data_comunicacao || c.created_at, title: t('detalheRegisto.grpComunicacoes'), detail: c.destinatario })),
+          ...(detalheIncidente.data_resolucao ? [{ date: detalheIncidente.data_resolucao, title: t('fin.incidentes.dataResolucao') }] : []),
+        ] : undefined}
+        updatedAt={(detalheIncidente as any)?.updated_at}
         createdAt={detalheIncidente?.created_at}
       />
 
