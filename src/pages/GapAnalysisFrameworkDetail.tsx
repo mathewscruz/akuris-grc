@@ -10,7 +10,7 @@ import { escopoDe } from '@/lib/gap-escopo';
 import { provasPorRequisito } from '@/lib/gap-provas';
 import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck } from '@/components/icons';
+import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck, IconFile } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
