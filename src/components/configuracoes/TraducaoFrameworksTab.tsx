@@ -134,16 +134,22 @@ export function TraducaoFrameworksTab() {
    * qual o inglês é escrito (`basePt` na função de borda).
    */
   /** Gera as orientações em falta de um framework, PT e depois EN. Devolve se ficou completo. */
+  const [atual, setAtual] = useState<{ id: string; locale: 'pt' | 'en' } | null>(null);
   const prepararFramework = async (fw: FrameworkRow): Promise<boolean> => {
     let complete = true;
     for (const locale of ['pt', 'en'] as const) {
+      setAtual({ id: fw.id, locale });
       let offset = 0, passes = 0, guard = 0;
       while (guard++ < 200) {
         const res = await invokeEdgeFunction<{ processed: number; failed: number; pending: number; remaining: number; total: number }>(
           'populate-requirement-guidance',
           { body: { framework_id: fw.id, locale, batch_size: 4, offset } },
         );
-        if (res.error || !res.data) { complete = false; break; }
+        if (res.error || !res.data) {
+          complete = false;
+          toast.error(`${fw.nome} (${locale.toUpperCase()}): ${res.error?.message || t('experience.guidanceBatchIncomplete')}`);
+          break;
+        }
         const d = res.data;
         const feitos = Math.max(fw.total - (d.remaining ?? 0), 0);
         setRows((prev) => prev.map((r) => r.id === fw.id ? { ...r, ...(locale === 'pt' ? { guidancePt: feitos } : { guidanceEn: feitos }) } : r));
@@ -157,6 +163,7 @@ export function TraducaoFrameworksTab() {
         }
       }
     }
+    setAtual(null);
     return complete;
   };
 
@@ -173,6 +180,7 @@ export function TraducaoFrameworksTab() {
 
   const prepararTodos = async () => {
     setRunningId('guidance-all');
+    toast.info(t('sweepConfig.traducaoFrameworks.btnGenerating'));
     let ok = true;
     try {
       for (const fw of rows) {
@@ -217,7 +225,7 @@ export function TraducaoFrameworksTab() {
             ? Math.round((Math.min(fw.guidancePt, fw.guidanceEn) / fw.total) * 100)
             : 0;
           const running = runningId === fw.id;
-          const runningGuidance = runningId === `guidance-${fw.id}`;
+          const runningGuidance = atual?.id === fw.id;
           return (
             <Card key={fw.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -229,6 +237,12 @@ export function TraducaoFrameworksTab() {
                     </StatusBadge>
                   </div>
                   <Progress value={pct} className="h-1.5" />
+                  <Progress value={pctGuidance} className="h-1.5" />
+                  {runningGuidance && (
+                    <span className="flex items-center gap-2 text-xs font-medium text-primary">
+                      <AkurisPulse size={14} /> {t('sweepConfig.traducaoFrameworks.btnGenerating')} ({atual!.locale.toUpperCase()}) — PT {fw.guidancePt}/{fw.total} · EN {fw.guidanceEn}/{fw.total}
+                    </span>
+                  )}
                   <span className="text-xs text-muted-foreground">
                     {t('sweepConfig.traducaoFrameworks.progressLine', { traduzidos: String(fw.traduzidos), total: String(fw.total), guidancePt: String(fw.guidancePt), guidanceEn: String(fw.guidanceEn) })}
                   </span>
