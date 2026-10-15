@@ -12,7 +12,7 @@ interface TrustData {
 
 export default function TrustCenterPublico() {
   const { slug = '' } = useParams();
-  const { t, language } = useLanguage();
+  const { t, locale } = useLanguage(); const language = locale.startsWith('en') ? 'en' : 'pt';
   const { data, isLoading } = useQuery({
     queryKey: ['trust-center-publico', slug],
     queryFn: async () => {

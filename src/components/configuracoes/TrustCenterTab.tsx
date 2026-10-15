@@ -16,7 +16,7 @@ const normalizarSlug = (v: string) =>
   v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 
 export function TrustCenterTab() {
-  const { t, language } = useLanguage();
+  const { t, locale } = useLanguage(); const language = locale.startsWith('en') ? 'en' : 'pt';
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const qc = useQueryClient();
