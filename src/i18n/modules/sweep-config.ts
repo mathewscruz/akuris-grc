@@ -7,7 +7,10 @@ export const sweepConfig = {
     sweepConfig: {
       traducaoFrameworks: {
         toastTranslateDone: 'Tradução concluída: {nome}',
-        toastGuidanceDone: 'Orientações em inglês atualizadas: {nome}',
+        toastGuidanceDone: 'Orientações preparadas em português e inglês: {nome}',
+        toastGuidanceAll: 'Orientações de todos os frameworks preparadas.',
+        btnGuidanceAll: 'Preparar orientações de todos',
+        guidanceAllHint: 'Gera e guarda, uma única vez, a orientação de todos os requisitos em português e inglês. Os clientes passam a abrir o requisito com o texto pronto, sem gastar créditos de IA da empresa.',
         intro: 'Traduz para inglês títulos, descrições, categorias e textos de apoio dos requisitos. O conteúdo em português continua como base — o inglês é exibido apenas quando o idioma ativo é EN.',
         pendingCount: '{count} requisito(s) pendente(s).',
         progressLine: '{traduzidos} de {total} requisitos · orientações PT: {guidancePt} · EN: {guidanceEn} (de {total})',
@@ -66,7 +69,10 @@ export const sweepConfig = {
     sweepConfig: {
       traducaoFrameworks: {
         toastTranslateDone: 'Translation completed: {nome}',
-        toastGuidanceDone: 'English guidance updated: {nome}',
+        toastGuidanceDone: 'Guidance prepared in Portuguese and English: {nome}',
+        toastGuidanceAll: 'Guidance prepared for all frameworks.',
+        btnGuidanceAll: 'Prepare guidance for all',
+        guidanceAllHint: 'Generates and saves, once, the guidance for every requirement in Portuguese and English. Customers then open requirements with the text ready, without using company AI credits.',
         intro: 'Translates requirement titles, descriptions, categories and supporting text into English. Portuguese content remains the base — English is displayed only when the active language is EN.',
         pendingCount: '{count} pending requirement(s).',
         progressLine: '{traduzidos} of {total} requirements · guidance PT: {guidancePt} · EN: {guidanceEn} (of {total})',
