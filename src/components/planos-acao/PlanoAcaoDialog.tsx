@@ -8,6 +8,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { formatDateOnly, intlLocale } from '@/lib/date-utils';
 import { UserSelect } from '@/components/riscos/UserSelect';
+import { useAuth } from '@/components/AuthProvider';
+import { sugerirPrazoPorPrioridade } from '@/lib/preenchimento-inteligente';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
@@ -60,6 +62,7 @@ function buildModulosOrigem(t: (key: string) => string) {
 export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, origemInicial, rascunho }: PlanoAcaoDialogProps) {
   const { t } = useLanguage();
   const modulosOrigem = useMemo(() => buildModulosOrigem(t), [t]);
+  const { user } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('pendente');
@@ -90,15 +93,18 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       setDescricao(rascunho?.descricao ?? '');
       setStatus('pendente');
       setPrioridade(rascunho?.prioridade ?? 'media');
-      setResponsavelId('');
-      setPrazo(null);
+      // Preenchimento inteligente: quem cria costuma ser quem executa. O
+      // campo já vem preenchido com o usuário da sessão e pode ser trocado.
+      setResponsavelId(user?.id ?? '');
+      // Prazo sugerido pela prioridade — o usuário ajusta se quiser.
+      setPrazo(sugerirPrazoPorPrioridade(rascunho?.prioridade ?? 'media'));
       setModuloOrigem(origemInicial?.modulo ?? 'manual');
       setRegistroOrigemTitulo(origemInicial?.registroTitulo ?? '');
       setRegistroOrigemId(origemInicial?.registroId ?? '');
       setObservacoes('');
     }
     setActiveTab('identificacao');
-  }, [plano, open, origemInicial, rascunho]);
+  }, [plano, open, origemInicial, rascunho, user?.id]);
 
   useEffect(() => {
     if (open) {
@@ -247,7 +253,12 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
                   {t('planosAcao.fieldPriority')}
                   <FieldHelpTooltip content={t('planosAcao.fieldPriorityHelp')} />
                 </Label>
-                <Select value={prioridade} onValueChange={setPrioridade}>
+                <Select value={prioridade} onValueChange={(valor) => {
+                  setPrioridade(valor);
+                  // Ao subir a prioridade com o prazo vazio, sugere-se a
+                  // data correspondente. Prazo já escolhido nunca é pisado.
+                  if (!prazo) setPrazo(sugerirPrazoPorPrioridade(valor));
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

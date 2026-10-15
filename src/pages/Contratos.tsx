@@ -38,6 +38,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { ModuleBulkActionBar } from '@/components/common/ModuleBulkActionBar';
+import { useBulkStatusUpdate } from '@/hooks/useBulkStatusUpdate';
+import { toast as sonnerToast } from '@/lib/toast';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
 import { estadoContrato } from '@/lib/metrics';
 import { rowOpenProps } from '@/lib/row-interaction';
@@ -82,6 +85,8 @@ export default function Contratos() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
+  const [selecionadosContratos, setSelecionadosContratos] = useState<Set<string>>(new Set());
+  const bulkContratos = useBulkStatusUpdate({ table: 'contratos', queryKeys: ['contratos', 'contratos-stats'] });
   const [searchTerm, setSearchTerm] = useListState('searchTerm', '');
   const [statusFilter, setStatusFilter] = useListState('statusFilter', 'todos');
   const [tipoFilter, setTipoFilter] = useListState('tipoFilter', 'todos');
@@ -589,6 +594,9 @@ export default function Contratos() {
                 <DataTable
                   data={sortedContratos}
                   columns={colunasContratos}
+                  selectable
+                  selectedIds={selecionadosContratos}
+                  onSelectionChange={setSelecionadosContratos}
                   sortField={sortContratos?.field}
                   sortDirection={sortContratos?.direction}
                   onSort={toggleSortContratos}
@@ -644,6 +652,37 @@ export default function Contratos() {
                 />
               </CardContent>
             </Card>
+            <ModuleBulkActionBar
+              selectedCount={selecionadosContratos.size}
+              busy={bulkContratos.busy}
+              statusOptions={[
+                { value: 'rascunho', label: t('campos.opcoes.rascunho') },
+                { value: 'ativo', label: t('campos.opcoes.ativo') },
+                { value: 'suspenso', label: t('campos.opcoes.suspenso') },
+                { value: 'encerrado', label: t('campos.opcoes.encerrado') },
+              ]}
+              onStatusChange={async (status) => {
+                if (await bulkContratos.apply([...selecionadosContratos], status)) setSelecionadosContratos(new Set());
+              }}
+              onExport={() => {
+                const escolhidos = sortedContratos.filter((c: any) => selecionadosContratos.has(c.id));
+                const headers = [t('fin.comum.numero'), t('fin.comum.nome'), t('fin.comum.fornecedor'), t('fin.comum.tipo'), t('fin.comum.status'), t('fin.comum.valor'), t('fin.comum.inicio'), t('fin.comum.fim')];
+                const rows = escolhidos.map((c: any) => [
+                  c.numero_contrato, c.nome, c.fornecedores?.nome || '', c.tipo, c.status,
+                  c.valor || 0,
+                  c.data_inicio ? formatDateOnly(c.data_inicio) : '',
+                  c.data_fim ? formatDateOnly(c.data_fim) : ''
+                ]);
+                const csvContent = [headers.join(";"), ...rows.map((row: any[]) => row.join(";"))].join("\n");
+                const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `contratos_selecionados_${formatarDiaParaDB(new Date())}.csv`;
+                link.click();
+                sonnerToast.success(t('bulkActions.exported', { count: escolhidos.length }));
+              }}
+              onClear={() => setSelecionadosContratos(new Set())}
+            />
           </TabsContent>
 
           {/* Fornecedores Tab */}

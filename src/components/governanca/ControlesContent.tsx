@@ -48,6 +48,9 @@ import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoT
 import { resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
 import { criticidadeControle } from '@/lib/metrics/controles';
 import { shortControleId } from '@/lib/controle-id';
+import { ModuleBulkActionBar } from '@/components/common/ModuleBulkActionBar';
+import { useBulkStatusUpdate } from '@/hooks/useBulkStatusUpdate';
+import { toast as sonnerToast } from '@/lib/toast';
 import { formatDateOnly, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { compararEscala } from '@/lib/ordem-de-escala';
@@ -91,6 +94,8 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [controleDialogOpen, setControleDialogOpen] = useState(false);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const bulk = useBulkStatusUpdate({ table: 'controles', queryKeys: ['controles'] });
   const [categoriasDialogOpen, setCategoriasDialogOpen] = useState(false);
   const [testesDialogOpen, setTestesDialogOpen] = useState(false);
   const [vinculacaoDialogOpen, setVinculacaoDialogOpen] = useState(false);
@@ -702,6 +707,9 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             paginated
             pageSize={20}
             data={sortedControles}
+            selectable
+            selectedIds={selecionados}
+            onSelectionChange={setSelecionados}
             columns={controlesColumns}
             onRowClick={(controle) => handleOpenDetail(controle)}
             loading={isLoading || auditOptionsLoading || linksLoading || categoriesLoading}
@@ -783,6 +791,35 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         </CardContent>
       </Card>
 
+      <ModuleBulkActionBar
+        selectedCount={selecionados.size}
+        busy={bulk.busy}
+        statusOptions={[
+          { value: 'ativo', label: t("governancaComp.controles.statusAtivo") },
+          { value: 'em_revisao', label: t("governancaComp.controles.statusEmRevisao") },
+          { value: 'inativo', label: t("governancaComp.controles.statusInativo") },
+          { value: 'descontinuado', label: t("governancaComp.controles.statusDescontinuado") },
+        ]}
+        onStatusChange={async (status) => {
+          if (await bulk.apply([...selecionados], status)) setSelecionados(new Set());
+        }}
+        onExport={() => {
+          const escolhidos = sortedControles.filter((c: any) => selecionados.has(c.id));
+          const headers = [t("governancaComp.controles.columnCodigo"), t("governancaComp.controles.columnNome"), t("governancaComp.controles.columnTipo"), t("governancaComp.controles.columnStatus"), t("governancaComp.controles.columnCriticidade"), t("governancaComp.controles.columnResponsavel"), t("governancaComp.controles.columnTestes")];
+          const rows = escolhidos.map((c: any) => [
+            shortControleId(c.id, c.codigo), c.nome, c.tipo, c.status, c.criticidade,
+            c.responsavel_nome || '', c.testesCount || 0
+          ]);
+          const csvContent = [headers.join(";"), ...rows.map((r: any[]) => r.join(";"))].join("\n");
+          const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `controles_selecionados_${formatarDiaParaDB(new Date())}.csv`;
+          link.click();
+          sonnerToast.success(t('bulkActions.exported', { count: escolhidos.length }));
+        }}
+        onClear={() => setSelecionados(new Set())}
+      />
 
       <ControleDialog
         open={controleDialogOpen}

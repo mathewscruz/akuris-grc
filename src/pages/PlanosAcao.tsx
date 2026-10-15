@@ -32,6 +32,8 @@ import { PlanosAcaoKanban, PLANO_STATUS_EDITAVEIS } from '@/components/planos-ac
 import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailDrawer';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
+import { ModuleBulkActionBar } from '@/components/common/ModuleBulkActionBar';
+import { useBulkStatusUpdate } from '@/hooks/useBulkStatusUpdate';
 import { logger } from '@/lib/logger';
 import { formatDateOnly, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
@@ -130,6 +132,8 @@ export default function PlanosAcao() {
   const { user, profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const queryClient = useQueryClient();
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const bulk = useBulkStatusUpdate({ table: 'planos_acao', queryKeys: ['planos-acao'] });
   const navigate = useNavigate();
 
   const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
@@ -786,9 +790,13 @@ export default function PlanosAcao() {
           />
               </div>
           {viewMode === 'lista' ? (
+            <>
               <DataTable
                 data={filteredPlanos}
                 columns={columns}
+                selectable
+                selectedIds={selecionados}
+                onSelectionChange={setSelecionados}
                 // A página já tem a sua busca no `ModuleToolbar`; o `DataTable`
                 // traz uma por omissão e o ecrã ficava com dois campos
                 // empilhados, o de baixo sem rótulo nenhum.
@@ -817,6 +825,33 @@ export default function PlanosAcao() {
                   action: { label: t('planosAcao.newAction'), onClick: () => { setEditingPlano(null); setDialogOpen(true); } },
                 }}
               />
+              <ModuleBulkActionBar
+                selectedCount={selecionados.size}
+                busy={bulk.busy}
+                statusOptions={[
+                  { value: 'pendente', label: t('planosAcao.statusPendente') },
+                  { value: 'em_andamento', label: t('planosAcao.statusEmAndamento') },
+                  { value: 'concluido', label: t('planosAcao.statusConcluido') },
+                  { value: 'cancelado', label: t('planosAcao.statusCancelado') },
+                ]}
+                onStatusChange={async (status) => {
+                  // Só os planos próprios mudam de situação aqui; os itens
+                  // espelhados de controles, auditorias e incidentes são
+                  // geridos no módulo de origem.
+                  const elegiveis = filteredPlanos.filter((p: any) => selecionados.has(p.id) && (!p.modulo_origem || p.modulo_origem === 'planos_acao'));
+                  const ignorados = selecionados.size - elegiveis.length;
+                  if (elegiveis.length === 0) {
+                    toast.error(t('bulkActions.statusAppliedPartial', { done: 0, skipped: ignorados }));
+                    return;
+                  }
+                  if (await bulk.apply(elegiveis.map((p: any) => p.id), status)) {
+                    if (ignorados > 0) toast.success(t('bulkActions.statusAppliedPartial', { done: elegiveis.length, skipped: ignorados }));
+                    setSelecionados(new Set());
+                  }
+                }}
+                onClear={() => setSelecionados(new Set())}
+              />
+            </>
           ) : (
             <div className="p-4 sm:p-6 pt-0">
               {listError ? <QueryError onRetry={() => { void refetch(); void queryClient.invalidateQueries({ queryKey: ['planos-acao-controles'] }); void queryClient.invalidateQueries({ queryKey: ['planos-acao-auditorias'] }); void queryClient.invalidateQueries({ queryKey: ['planos-acao-incidentes'] }); }} /> : listLoading ? <Skeleton className="h-48 w-full" /> : viewMode === 'roadmap' ? <ActionRoadmap items={filteredPlanos.map((p: any) => ({

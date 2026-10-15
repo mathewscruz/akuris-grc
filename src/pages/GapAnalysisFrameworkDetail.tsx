@@ -10,7 +10,7 @@ import { escopoDe } from '@/lib/gap-escopo';
 import { provasPorRequisito } from '@/lib/gap-provas';
 import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck } from '@/components/icons';
+import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck, IconFile } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -267,7 +267,8 @@ function GapAnalysisFrameworkDetailInner() {
     // a própria Declaração de Aplicabilidade excluiu.
     const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
     foraDoEscopo.forEach(id => evalMap.set(id, 'nao_aplicavel'));
-    const requirements = (reqs || []).map(r => ({
+     const requirements = (reqs || []).map(r => ({
+      id: r.id,
       codigo: r.codigo || '', titulo: reqTitulo(r as any), categoria: reqCategoria(r as any) || '',
       conformity_status: evalMap.get(r.id) || 'nao_avaliado', peso: r.peso, area_responsavel: r.area_responsavel,
     }));
@@ -294,6 +295,73 @@ function GapAnalysisFrameworkDetailInner() {
     } catch (error: any) {
       logger.error('Erro ao exportar PDF', { error: error instanceof Error ? error.message : String(error) });
       toast.error(t('gapAnalysis.detail.toast.pdfExportError'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  /**
+   * Pacote de auditoria com um clique (item 5 do plano "menos interações"):
+   * a situação de cada requisito, quantas evidências cada um tem ligadas e
+   * os planos de ação ainda abertos deste framework — o PDF que o auditor
+   * pede, sem montar nada à mão.
+   */
+  const handlePacoteAuditoria = async () => {
+    if (!framework || !config) return;
+    setExporting(true);
+    try {
+      const base = await getExportData();
+
+      const { data: links, error: erroLinks } = await readAllPages((from, to) => supabase
+        .from('evidence_library_links')
+        .select('requirement_id')
+        .eq('framework_id', frameworkId)
+        .eq('empresa_id', empresaId)
+        .not('requirement_id', 'is', null)
+        .order('id').range(from, to));
+      if (erroLinks) throw erroLinks;
+      const evidPorReq = new Map<string, number>();
+      (links || []).forEach((l: any) => {
+        evidPorReq.set(l.requirement_id, (evidPorReq.get(l.requirement_id) || 0) + 1);
+      });
+
+      const reqIds = base.requirements.map((r: any) => r.id);
+      const { data: planos, error: erroPlanos } = await readAllPages((from, to) => supabase
+        .from('planos_acao')
+        .select('titulo, prazo, prioridade, status, registro_origem_id, profiles:responsavel_id(nome)')
+        .eq('empresa_id', empresaId)
+        .eq('modulo_origem', 'frameworks')
+        .not('status', 'in', '("concluido","cancelado")')
+        .order('id').range(from, to));
+      if (erroPlanos) throw erroPlanos;
+      const planosDoFramework = (planos || []).filter((p: any) =>
+        p.registro_origem_id === frameworkId || reqIds.includes(p.registro_origem_id));
+
+      const { exportPacoteAuditoriaPDF } = await import('@/components/gap-analysis/PacoteAuditoriaPDF');
+      await exportPacoteAuditoriaPDF({
+        frameworkName: framework.nome,
+        frameworkVersion: framework.versao,
+        empresaNome: base.empresaNome,
+        overallScore,
+        requisitos: base.requirements.map((r: any) => ({
+          codigo: r.codigo,
+          titulo: r.titulo,
+          categoria: r.categoria,
+          conformity_status: r.conformity_status,
+          evidencias: evidPorReq.get(r.id) || 0,
+        })),
+        planosAbertos: planosDoFramework.map((p: any) => ({
+          titulo: p.titulo,
+          responsavel: p.profiles?.nome || '',
+          prazo: p.prazo,
+          prioridade: p.prioridade,
+          status: p.status,
+        })),
+      });
+      toast.success(t('pacoteAuditoria.toastOk'));
+    } catch (error: any) {
+      logger.error('Erro ao gerar pacote de auditoria', { error: error instanceof Error ? error.message : String(error) });
+      toast.error(t('pacoteAuditoria.toastErro'));
     } finally {
       setExporting(false);
     }
@@ -448,6 +516,10 @@ function GapAnalysisFrameworkDetailInner() {
                   <DropdownMenuItem onClick={handleExportBoard} disabled={exporting || scoreRefreshing || !!scoreError}>
                     <IconChart className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportBoard')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePacoteAuditoria} disabled={exporting || scoreRefreshing || !!scoreError}>
+                    <IconFile className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    {t('pacoteAuditoria.menuItem')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => openDocGen({ frameworkId, frameworkName: framework.nome })}>

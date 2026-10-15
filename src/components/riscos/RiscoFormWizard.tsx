@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { sugerirCategoriaPorTitulo } from '@/lib/preenchimento-inteligente';
 import { IconSuccess, IconWarning, IconInfo, IconFile, IconChevron, IconSave, IconGauge, IconSettings, IconLink, IconShieldCheck, IconChevronLeft, IconError, IconTime } from '@/components/icons';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -210,6 +211,20 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
   const watchProbabilidadeResidual = form.watch('probabilidade_residual');
   const watchImpactoResidual = form.watch('impacto_residual');
   const watchAceito = form.watch('aceito');
+  const watchNome = form.watch('nome');
+
+  /*
+     Preenchimento inteligente: ao criar um risco, a categoria mais provável
+     é sugerida a partir do título. Só quando o campo está vazio — uma
+     escolha já feita (ou carregada do risco em edição) nunca é pisada.
+  */
+  useEffect(() => {
+    if (risco) return;
+    if (form.getValues('categoria_id')) return;
+    const sugestao = sugerirCategoriaPorTitulo(watchNome || '', categorias);
+    if (sugestao) form.setValue('categoria_id', sugestao);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchNome, categorias, risco]);
 
   /*
      `fetchData` desiste quando ainda não há `profile.empresa_id`. Com a lista
@@ -684,8 +699,8 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
     }
   };
 
-  // Status visual da aba (preenchido / com erro)
-  const watchNome = form.watch('nome');
+  // Status visual da aba (preenchido / com erro). `watchNome` já está
+  // declarado acima, junto dos demais campos observados.
   const watchStatus = form.watch('status');
   const errors = form.formState.errors;
 
