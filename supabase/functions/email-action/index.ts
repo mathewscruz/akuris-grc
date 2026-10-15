@@ -47,8 +47,8 @@ Deno.serve(async (req) => {
     const { error } = await supabase.from('planos_acao').update(update).eq('id', plano.id).eq('empresa_id', tk.empresa_id);
     if (error) return json({ error: 'falha' }, 500);
 
-    await supabase.from('notificacoes').insert({
-      empresa_id: tk.empresa_id, user_id: tk.user_id,
+    await supabase.from('notifications').insert({
+      user_id: tk.user_id,
       title: acao === 'concluir' ? 'Plano concluído pelo e-mail' : 'Prazo adiado pelo e-mail',
       message: plano.titulo, type: 'info', link_to: '/planos-acao',
     }).then(() => {}, () => {});
