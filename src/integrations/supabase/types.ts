@@ -11917,6 +11917,39 @@ export type Database = {
           },
         ]
       }
+      trust_center: {
+        Row: {
+          ativo: boolean
+          contato_email: string | null
+          descricao: string | null
+          empresa_id: string
+          framework_ids: string[]
+          slug: string
+          titulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          contato_email?: string | null
+          descricao?: string | null
+          empresa_id: string
+          framework_ids?: string[]
+          slug: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          contato_email?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          framework_ids?: string[]
+          slug?: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       universal_controls: {
         Row: {
           code: string
@@ -12702,6 +12735,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_trust_center_publico: { Args: { _slug: string }; Returns: Json }
       get_user_empresa_id:
         | { Args: never; Returns: string }
         | { Args: { _user_id: string }; Returns: string }
