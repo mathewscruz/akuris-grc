@@ -267,7 +267,8 @@ function GapAnalysisFrameworkDetailInner() {
     // a própria Declaração de Aplicabilidade excluiu.
     const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
     foraDoEscopo.forEach(id => evalMap.set(id, 'nao_aplicavel'));
-    const requirements = (reqs || []).map(r => ({
+     const requirements = (reqs || []).map(r => ({
+      id: r.id,
       codigo: r.codigo || '', titulo: reqTitulo(r as any), categoria: reqCategoria(r as any) || '',
       conformity_status: evalMap.get(r.id) || 'nao_avaliado', peso: r.peso, area_responsavel: r.area_responsavel,
     }));

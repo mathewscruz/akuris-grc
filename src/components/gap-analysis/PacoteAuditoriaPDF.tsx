@@ -169,7 +169,7 @@ export async function exportPacoteAuditoriaPDF(params: PacoteAuditoriaParams) {
   if (planosAbertos.length === 0) {
     doc.setFontSize(9);
     doc.setTextColor(AKURIS_COLORS.textLight);
-    doc.text(tGlobal('pacoteAuditoria.semplans') || tGlobal('pacoteAuditoria.semPlanos'), margin, yPos);
+    doc.text(tGlobal('pacoteAuditoria.semPlanos'), margin, yPos);
     yPos += 8;
   } else {
     const planoX = {
