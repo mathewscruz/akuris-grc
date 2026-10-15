@@ -20,6 +20,9 @@ export const riscosControles = {
       aba: {
         vinculados: '{count} requisito(s) relacionado(s)',
         vincular: 'Relacionar requisito',
+        reqTitulo: 'Requisitos de compliance relacionados',
+        reqAjuda: 'Referências do Gap Analysis ajudam a provar conformidade, mas não reduzem o risco por si só.',
+        eficacia: 'Eficácia estimada',
         vazio: 'Ainda não há requisitos relacionados a este risco.',
         abrirNoGap: 'Abrir no Gap Analysis',
         notaTexto: 'Nota descritiva (texto livre). A avaliação residual deve ser sustentada por controles internos vinculados e evidências.',
@@ -66,8 +69,11 @@ export const riscosControles = {
         erroDesc: 'Please try again.',
       },
       aba: {
-        vinculados: '{count} linked control(s)',
-        vincular: 'Link control',
+        vinculados: '{count} linked requirement(s)',
+        vincular: 'Link requirement',
+        reqTitulo: 'Related compliance requirements',
+        reqAjuda: 'Gap Analysis references help prove compliance, but do not reduce the risk on their own.',
+        eficacia: 'Estimated effectiveness',
         vazio: 'No controls linked yet. Link this risk to requirements of the active frameworks.',
         abrirNoGap: 'Open in Gap Analysis',
         notaTexto: 'Descriptive note (free text). The source of truth for the calculation is the linked requirements.',

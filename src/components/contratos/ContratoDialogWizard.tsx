@@ -621,16 +621,16 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewName')}</span>
                     <span className="font-medium">{formData.nome || '-'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewType')}</span>
                     <StatusBadge tone="neutral" variant="outline">{formatStatus(formData.tipo)}</StatusBadge>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewStatus')}</span>
                     <StatusBadge {...resolveContratoStatusTone(formData.status)}>{formatStatus(formData.status)}</StatusBadge>
                   </div>
                   {formData.confidencial && (
-                    <div className="flex justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewConfidential')}</span>
                       <StatusBadge tone="destructive">{t('contratosAtivos.contratoDialogWizard.reviewYes')}</StatusBadge>
                     </div>
