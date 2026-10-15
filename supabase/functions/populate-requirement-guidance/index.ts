@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { MODELOS } from '../_shared/modelos.ts';
 import { guidanceQuestions, implementationSection, parseGeneratedGuidance } from '../_shared/requirement-guidance-content.ts';
+import { authorizedScheduledJob } from '../_shared/scheduled-job.ts';
 import { getOrCreateGuidance, GuidanceError, type GuidanceResult } from './guidance-service.ts';
 
 const corsHeaders = {
@@ -30,19 +31,25 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    // Scheduled warm-up: platform cron prepares the shared catalogue in small batches.
+    const scheduled = authorizedScheduledJob(req, Deno.env.get('LEMBRETES_DIARIOS_TOKEN'), supabaseKey);
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
     const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } }
     });
-    const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (claimsError || !userData?.user?.id) return json({ error: 'Unauthorized' }, 401);
-    const userId = userData.user.id;
-    const { data: profile, error: profileError } = await supabase.from('profiles')
-      .select('empresa_id').eq('user_id', userId).eq('ativo', true).single();
-    if (profileError || !profile?.empresa_id) return json({ error: 'Forbidden' }, 403);
+    let userId = 'platform-cron';
+    if (!scheduled) {
+      const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (claimsError || !userData?.user?.id) return json({ error: 'Unauthorized' }, 401);
+      userId = userData.user.id;
+      const { data: profile, error: profileError } = await supabase.from('profiles')
+        .select('empresa_id').eq('user_id', userData.user.id).eq('ativo', true).single();
+      if (profileError || !profile?.empresa_id) return json({ error: 'Forbidden' }, 403);
+    }
 
-    const body = await req.json().catch(() => null);
+    const body = scheduled ? await scheduledBody(supabase) : await req.json().catch(() => null);
+    if (scheduled && !body) return json({ processed: 0, remaining: 0, idle: true });
     if (!body || typeof body !== 'object') return json({ error: 'invalid_request' }, 400);
     const requirementId = typeof body.requirement_id === 'string' ? body.requirement_id : null;
     const frameworkId = typeof body.framework_id === 'string' ? body.framework_id : null;
@@ -59,7 +66,7 @@ Deno.serve(async (req) => {
 
     // Shared catalogue: only the platform administrator can overwrite or
     // warm a whole framework. A customer can request missing individual guidance.
-    if (force || !requirementId) {
+    if (!scheduled && (force || !requirementId)) {
       const { data: isSuper, error: roleError } = await userClient.rpc('has_super_admin_role');
       if (roleError || isSuper !== true) return json({ error: 'Forbidden: super admin required' }, 403);
     }
@@ -350,4 +357,16 @@ Weights: 1 (normal), 2 (high), 3 (critical). Exactly 5 items.
 - Do not repeat the diagnostic questions inside the guidance
 - Keep the JSON key names exactly as shown ("pergunta", "peso"), only the values in English
 - Start DIRECTLY with the content, no greetings`;
+}
+
+/** Cron body: Portuguese first, then English; a fixed batch per run. */
+// deno-lint-ignore no-explicit-any
+async function scheduledBody(supabase: any): Promise<Record<string, unknown> | null> {
+  for (const locale of ['pt', 'en'] as const) {
+    const col = COLS[locale].orientacao;
+    const { count } = await supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
+      .or(`${col}.is.null,${col}.eq.`);
+    if ((count ?? 0) > 0) return { locale, batch_size: 4, offset: Math.floor(Math.random() * Math.min(count, 40)) };
+  }
+  return null;
 }
