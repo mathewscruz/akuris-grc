@@ -38,9 +38,11 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } }
     });
+    let userId = 'platform-cron';
     if (!scheduled) {
       const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
       if (claimsError || !userData?.user?.id) return json({ error: 'Unauthorized' }, 401);
+      userId = userData.user.id;
       const { data: profile, error: profileError } = await supabase.from('profiles')
         .select('empresa_id').eq('user_id', userData.user.id).eq('ativo', true).single();
       if (profileError || !profile?.empresa_id) return json({ error: 'Forbidden' }, 403);
