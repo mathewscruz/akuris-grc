@@ -1,0 +1,53 @@
+DO $$
+DECLARE fw uuid;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM gap_analysis_frameworks WHERE nome='ANPD 15/2024' AND empresa_id IS NULL) THEN
+    INSERT INTO gap_analysis_frameworks (nome,nome_en,descricao,descricao_en,versao,tipo_framework,tipo,is_template)
+    VALUES ('ANPD 15/2024','ANPD Resolution 15/2024','Resolução CD/ANPD nº 15/2024: Regulamento de Comunicação de Incidente de Segurança com dados pessoais.','ANPD Resolution 15/2024: Regulation on reporting security incidents involving personal data (Brazil).','2024','privacidade','personalizado',true) RETURNING id INTO fw;
+    INSERT INTO gap_analysis_requirements (framework_id,codigo,titulo,titulo_en,descricao,categoria,categoria_en,ordem,peso) VALUES
+    (fw,'ANPD-01','Critérios para identificar risco ou dano relevante aos titulares','Criteria to identify relevant risk or harm to data subjects','Avaliação documentada de quando um incidente pode causar risco ou dano relevante, considerando dados sensíveis, de crianças e adolescentes, financeiros, de autenticação, protegidos por sigilo e tratamento em larga escala.','Avaliação do incidente','Incident assessment',1,3),
+    (fw,'ANPD-02','Comunicação à ANPD em até 3 dias úteis','Notify ANPD within 3 business days','Comunicação à ANPD no prazo de 3 dias úteis a partir do conhecimento de que o incidente afetou dados pessoais e pode causar risco ou dano relevante.','Comunicação à ANPD','Notification to ANPD',2,3),
+    (fw,'ANPD-03','Conteúdo mínimo da comunicação à ANPD','Minimum content of the ANPD notification','A comunicação descreve a natureza e categoria dos dados e titulares, medidas técnicas de segurança, riscos, motivos de eventual demora, medidas adotadas, data do incidente e do conhecimento, e dados do encarregado.','Comunicação à ANPD','Notification to ANPD',3,3),
+    (fw,'ANPD-04','Complementação das informações em até 20 dias úteis','Supplementary information within 20 business days','Informações não disponíveis no momento da comunicação são complementadas no prazo de 20 dias úteis.','Comunicação à ANPD','Notification to ANPD',4,2),
+    (fw,'ANPD-05','Comunicação aos titulares afetados em até 3 dias úteis','Notify affected data subjects within 3 business days','Comunicação aos titulares em linguagem clara, de forma individual sempre que possível, com descrição do incidente, riscos, medidas adotadas e contato do encarregado.','Comunicação aos titulares','Notification to data subjects',5,3),
+    (fw,'ANPD-06','Registro de todos os incidentes por pelo menos 5 anos','Record of all incidents for at least 5 years','Registro de todos os incidentes, inclusive os não comunicados, com data, circunstâncias, dados afetados, avaliação de risco, medidas e justificativa da não comunicação.','Registro e documentação','Records and documentation',6,3),
+    (fw,'ANPD-07','Plano e responsáveis pela resposta a incidentes','Incident response plan and owners','Procedimento interno de resposta a incidentes com papéis definidos, incluindo o encarregado, para cumprir os prazos regulamentares.','Governança','Governance',7,2),
+    (fw,'ANPD-08','Medidas de contenção e mitigação dos efeitos','Containment and mitigation measures','Adoção e documentação de medidas para reverter ou mitigar os efeitos do incidente sobre os titulares.','Avaliação do incidente','Incident assessment',8,2),
+    (fw,'ANPD-09','Atendimento a requisições da ANPD no processo de comunicação','Responding to ANPD requests','Capacidade de responder a pedidos de informação e determinações da ANPD dentro dos prazos fixados no processo.','Comunicação à ANPD','Notification to ANPD',9,2);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM gap_analysis_frameworks WHERE nome='SUSEP 638' AND empresa_id IS NULL) THEN
+    INSERT INTO gap_analysis_frameworks (nome,nome_en,descricao,descricao_en,versao,tipo_framework,tipo,is_template)
+    VALUES ('SUSEP 638','SUSEP Circular 638','Circular SUSEP nº 638/2021: requisitos de segurança cibernética para seguradoras, entidades de previdência complementar aberta, sociedades de capitalização e resseguradores locais.','SUSEP Circular 638/2021: cybersecurity requirements for insurers, open pension entities, capitalization companies and local reinsurers (Brazil).','2021','seguranca','personalizado',true) RETURNING id INTO fw;
+    INSERT INTO gap_analysis_requirements (framework_id,codigo,titulo,titulo_en,descricao,categoria,categoria_en,ordem,peso) VALUES
+    (fw,'SUSEP-01','Política de segurança cibernética aprovada','Approved cybersecurity policy','Política de segurança cibernética formal, aprovada pela alta administração e compatível com porte, perfil de risco e complexidade das operações.','Governança','Governance',1,3),
+    (fw,'SUSEP-02','Diretor responsável pela segurança cibernética','Director responsible for cybersecurity','Designação de diretor responsável pela política e pela gestão de incidentes cibernéticos.','Governança','Governance',2,3),
+    (fw,'SUSEP-03','Controles de prevenção e detecção','Prevention and detection controls','Autenticação, criptografia, detecção de intrusão, prevenção de vazamento, gestão de vulnerabilidades, proteção contra software malicioso, controle de acesso e cópias de segurança.','Controles de segurança','Security controls',3,3),
+    (fw,'SUSEP-04','Classificação da informação','Information classification','Diretrizes para classificar informações por relevância e criticidade.','Controles de segurança','Security controls',4,2),
+    (fw,'SUSEP-05','Plano de resposta a incidentes','Incident response plan','Plano com rotinas de prevenção, detecção, resposta e recuperação de incidentes cibernéticos.','Gestão de incidentes','Incident management',5,3),
+    (fw,'SUSEP-06','Registro e análise de incidentes relevantes','Recording and analysis of relevant incidents','Registro de incidentes relevantes, análise de causa e impacto, e critérios de relevância definidos.','Gestão de incidentes','Incident management',6,3),
+    (fw,'SUSEP-07','Comunicação de incidentes relevantes à SUSEP','Reporting relevant incidents to SUSEP','Comunicação à SUSEP dos incidentes relevantes, nos prazos e formatos definidos pela autarquia.','Gestão de incidentes','Incident management',7,3),
+    (fw,'SUSEP-08','Contratação de serviços de processamento, armazenamento e nuvem','Outsourcing of processing, storage and cloud','Avaliação prévia de prestadores, cláusulas de segurança, localização dos dados e acesso da SUSEP às informações.','Terceiros e nuvem','Third parties and cloud',8,3),
+    (fw,'SUSEP-09','Continuidade de negócios e testes','Business continuity and testing','Cenários de incidentes cibernéticos considerados nos planos de continuidade, com testes periódicos.','Continuidade de negócios','Business continuity',9,2),
+    (fw,'SUSEP-10','Cultura e capacitação','Awareness and training','Programa de conscientização e treinamento em segurança cibernética para colaboradores e terceiros.','Pessoas e cultura','People and culture',10,2),
+    (fw,'SUSEP-11','Relatório anual de segurança cibernética','Annual cybersecurity report','Relatório anual sobre a implementação da política, incidentes e testes, apresentado à alta administração.','Governança','Governance',11,2),
+    (fw,'SUSEP-12','Revisão periódica e guarda de documentos','Periodic review and record retention','Revisão periódica da política e do plano, com documentação mantida à disposição da SUSEP.','Governança','Governance',12,2);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM gap_analysis_frameworks WHERE nome='CVM 35' AND empresa_id IS NULL) THEN
+    INSERT INTO gap_analysis_frameworks (nome,nome_en,descricao,descricao_en,versao,tipo_framework,tipo,is_template)
+    VALUES ('CVM 35','CVM Resolution 35','Resolução CVM nº 35/2021: requisitos de controles internos, segurança da informação, segurança cibernética e continuidade para intermediários do mercado de valores mobiliários.','CVM Resolution 35/2021: internal controls, information security, cybersecurity and continuity requirements for securities market intermediaries (Brazil).','2021','seguranca','personalizado',true) RETURNING id INTO fw;
+    INSERT INTO gap_analysis_requirements (framework_id,codigo,titulo,titulo_en,descricao,categoria,categoria_en,ordem,peso) VALUES
+    (fw,'CVM-01','Regras e controles internos de segurança da informação','Information security rules and internal controls','Regras, procedimentos e controles internos escritos para proteger informações confidenciais e sistemas.','Governança','Governance',1,3),
+    (fw,'CVM-02','Diretor responsável pelo cumprimento','Director responsible for compliance','Diretor estatutário responsável pelo cumprimento das regras e controles internos.','Governança','Governance',2,3),
+    (fw,'CVM-03','Programa de segurança cibernética','Cybersecurity program','Identificação de riscos, ações de proteção e prevenção, monitoramento e detecção de ameaças, e plano de resposta a incidentes.','Segurança cibernética','Cybersecurity',3,3),
+    (fw,'CVM-04','Controle de acesso e segregação de funções','Access control and segregation of duties','Controle de acesso a sistemas e informações por perfil, com segregação de funções e revisão periódica.','Segurança cibernética','Cybersecurity',4,3),
+    (fw,'CVM-05','Testes periódicos de segurança','Periodic security testing','Testes periódicos de vulnerabilidade e de efetividade dos controles.','Segurança cibernética','Cybersecurity',5,2),
+    (fw,'CVM-06','Plano de continuidade de negócios','Business continuity plan','Plano de continuidade com testes periódicos, garantindo a manutenção dos serviços aos clientes.','Continuidade de negócios','Business continuity',6,3),
+    (fw,'CVM-07','Comunicação de incidentes relevantes à CVM','Reporting relevant incidents to CVM','Comunicação à CVM e aos órgãos competentes de incidentes que afetem a prestação de serviços ou dados de clientes.','Gestão de incidentes','Incident management',7,3),
+    (fw,'CVM-08','Gestão de prestadores de serviços','Service provider management','Avaliação e monitoramento de terceiros com acesso a sistemas ou informações de clientes.','Terceiros','Third parties',8,2),
+    (fw,'CVM-09','Treinamento de colaboradores','Staff training','Treinamento periódico de colaboradores em segurança da informação e controles internos.','Pessoas e cultura','People and culture',9,2),
+    (fw,'CVM-10','Relatório anual de controles internos','Annual internal controls report','Relatório anual com conclusões dos exames, deficiências encontradas e plano de correção, submetido aos administradores.','Governança','Governance',10,3),
+    (fw,'CVM-11','Guarda de registros','Record retention','Manutenção de registros e documentos à disposição da CVM pelo prazo regulamentar.','Governança','Governance',11,2);
+  END IF;
+END $$;
