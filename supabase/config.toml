@@ -314,3 +314,6 @@ verify_jwt = true
 
 [functions.generate-agent-installer]
 verify_jwt = true
+
+[functions.email-action]
+verify_jwt = false

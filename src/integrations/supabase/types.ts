@@ -5266,6 +5266,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_acao_tokens: {
+        Row: {
+          acao_usada: string | null
+          created_at: string
+          empresa_id: string
+          expires_at: string
+          plano_id: string
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          acao_usada?: string | null
+          created_at?: string
+          empresa_id: string
+          expires_at?: string
+          plano_id: string
+          token?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          acao_usada?: string | null
+          created_at?: string
+          empresa_id?: string
+          expires_at?: string
+          plano_id?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_campanha_logs: {
         Row: {
           accepted_at: string | null

@@ -15,6 +15,9 @@
  * integração escolheu e registar o envio em `integracoes_webhook_logs`.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { notificationEmail } from '../_shared/email-brand.ts';
+import { EMAIL_FROM } from '../_shared/email.ts';
+import { sendIdempotentEmail } from '../_shared/idempotent-email.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -137,7 +140,7 @@ Deno.serve(async (req) => {
     */
     const { data: planos } = await supabase
       .from('planos_acao')
-      .select('id, titulo, prazo, status, prioridade, empresa_id')
+      .select('id, titulo, prazo, status, prioridade, empresa_id, responsavel_id')
       .not('prazo', 'is', null)
       .lt('prazo', hojeISO)
       /* Os estados reais da tabela são `pendente`, `em_andamento` e
@@ -158,6 +161,29 @@ Deno.serve(async (req) => {
         )
       ) {
         contagem.plano_acao_vencido++;
+      }
+      /* E-mail ao responsável com link de uso único (concluir / +7 dias). */
+      const resendKey = Deno.env.get('RESEND_API_KEY') ?? '';
+      if (p.responsavel_id && resendKey) {
+        try {
+          const { data: resp } = await supabase.from('profiles').select('email, nome')
+            .eq('user_id', p.responsavel_id).eq('empresa_id', p.empresa_id).maybeSingle();
+          if (resp?.email) {
+            const { data: tk } = await supabase.from('email_acao_tokens')
+              .insert({ empresa_id: p.empresa_id, plano_id: p.id, user_id: p.responsavel_id })
+              .select('token').single();
+            const html = notificationEmail({
+              title: 'Plano de ação vencido', module: 'Planos de ação', name: resp.nome,
+              intro: 'Este plano passou do prazo. Responda direto daqui, sem entrar no sistema:',
+              item: p.titulo, fields: [['Prazo', p.prazo], ['Situação', p.status]],
+              next: 'Marque como concluído ou adie o prazo em 7 dias. O link vale uma vez, por 7 dias.',
+              action: { label: 'Responder', url: `${site}/responder-aviso/${tk.token}` }, tone: 'warning',
+            });
+            await sendIdempotentEmail({ from: EMAIL_FROM, to: [resp.email], subject: `Plano de ação vencido: ${p.titulo}`, html,
+              text: `Plano vencido: ${p.titulo}. Responder: ${site}/responder-aviso/${tk.token}` },
+              `plano-vencido-${p.id}-${hojeISO}`, resendKey);
+          }
+        } catch (e) { console.error('email plano vencido falhou', p.id, e); }
       }
     }
 

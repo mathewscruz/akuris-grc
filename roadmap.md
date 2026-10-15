@@ -20,7 +20,7 @@
 # Menos interações — itens 3, 4 e 5 (aprovado 15/10)
 - [x] 3a: seleção múltipla na tabela padrão + barra de ações em lote em Riscos, Controles, Planos de Ação, Incidentes e Contratos (mudar situação com escopo de empresa + exportar selecionados).
 - [x] 3b: reuso entre frameworks — já existia no Gap Analysis (HerancaCrossFramework, aprovação em um clique); verificado.
-- [ ] 3c: resposta a avisos por e-mail com links assinados de uso único — pendente (exige Edge Function + tokens).
+- [x] 3c: e-mail de plano vencido com link de uso único (concluir / adiar 7 dias).
 - [x] 4: preenchimento inteligente — responsável padrão e prazo por prioridade no plano de ação; categoria sugerida pelo título no risco (src/lib/preenchimento-inteligente.ts, 9 testes).
 - [x] 5a: pacote de auditoria em PDF com um clique na página do framework (requisitos + evidências + planos em aberto).
 - [x] 5b: Trust Center público por empresa (Configurações → Trust Center, página /trust/:endereço).

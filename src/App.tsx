@@ -59,6 +59,7 @@ const Privacidade = React.lazy(() => import("@/pages/Privacidade"));
 const DueDiligence = React.lazy(() => import("@/pages/DueDiligence"));
 const Assessment = React.lazy(() => import("@/pages/Assessment"));
 const TrustCenterPublico = React.lazy(() => import("@/pages/TrustCenterPublico"));
+const ResponderAviso = React.lazy(() => import("@/pages/ResponderAviso"));
 const RevisaoAcessos = React.lazy(() => import("@/pages/RevisaoAcessos"));
 const ReviewExterna = React.lazy(() => import("@/pages/ReviewExterna"));
 const DenunciaRouter = React.lazy(() => import("@/pages/DenunciaRouter"));
@@ -201,6 +202,7 @@ function App() {
                         <><SEO title="Definir senha | Akuris" description="Definição segura de senha na plataforma Akuris." noindex /><Suspense fallback={<RouteFallback />}><DefinirSenha /></Suspense></>
                       }
                     />
+                    <Route path="/responder-aviso/:token" element={<Suspense fallback={<RouteFallback />}><ResponderAviso /></Suspense>} />
                     <Route
                       path="/trust/:slug"
                       element={<Suspense fallback={<RouteFallback />}><TrustCenterPublico /></Suspense>}

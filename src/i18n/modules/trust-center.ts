@@ -32,6 +32,13 @@ export const trustCenter = {
         sim: 'Sim', parcial: 'Parcial', nao: 'Não', na: 'Não se aplica',
       },
     },
+    responderAviso: {
+      eyebrow: 'Plano de ação vencido', prazo: 'Prazo: {date}',
+      concluir: 'Marcar como concluído', adiar: 'Adiar 7 dias',
+      unico: 'Este link vale uma única vez.',
+      invalido: 'Este link é inválido, expirou ou já foi usado.',
+      feito: { concluir: 'Pronto! O plano foi marcado como concluído.', adiar: 'Pronto! O prazo foi adiado em 7 dias.', erro: 'Não foi possível concluir. O link pode já ter sido usado.' },
+    },
   },
   en: {
     trustCenter: {
@@ -64,6 +71,13 @@ export const trustCenter = {
         pergunta: 'Question', resposta: 'Answer', justificativa: 'Justification', evidencias: 'Evidence',
         sim: 'Yes', parcial: 'Partial', nao: 'No', na: 'Not applicable',
       },
+    },
+    responderAviso: {
+      eyebrow: 'Overdue action plan', prazo: 'Deadline: {date}',
+      concluir: 'Mark as completed', adiar: 'Postpone 7 days',
+      unico: 'This link works only once.',
+      invalido: 'This link is invalid, expired or already used.',
+      feito: { concluir: 'Done! The plan was marked as completed.', adiar: 'Done! The deadline was postponed by 7 days.', erro: 'Could not complete. The link may already have been used.' },
     },
   },
 };
