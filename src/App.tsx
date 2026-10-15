@@ -205,6 +205,7 @@ function App() {
                       path="/trust/:slug"
                       element={<Suspense fallback={<RouteFallback />}><TrustCenterPublico /></Suspense>}
                     />
+                    <Route path="/trust/:slug" element={<Suspense fallback={<RouteFallback />}><TrustCenterPublico /></Suspense>} />
                     <Route
                       path="/assessment/:token"
                       element={
