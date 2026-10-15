@@ -51,6 +51,10 @@ Deno.serve(async (req) => {
     const batchSize = Number.isFinite(rawBatch) ? Math.min(Math.max(Math.trunc(rawBatch), 1), 25) : 10;
     const locale: Locale = body.locale === 'en' ? 'en' : 'pt';
     const force = body.force === true;
+    // Lets the batch caller step past items that failed or are mid-generation,
+    // instead of re-reading the same first rows forever.
+    const rawOffset = Number(body.offset);
+    const offset = Number.isFinite(rawOffset) ? Math.min(Math.max(Math.trunc(rawOffset), 0), 5000) : 0;
     const cols = COLS[locale];
 
     // Shared catalogue: only the platform administrator can overwrite or
@@ -128,19 +132,17 @@ Deno.serve(async (req) => {
 
     // Missing guidance only; both null and legacy blank values need preparation.
     let query = supabase.from('gap_analysis_requirements').select(selectCols)
-      .or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`).order('ordem').order('id').limit(batchSize);
+      .or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`).order('ordem').order('id').range(offset, offset + batchSize - 1);
     if (frameworkId) query = query.eq('framework_id', frameworkId);
     const { data: requirements, error: fetchError } = await query;
     if (fetchError) throw new GuidanceError('guidance_read_failed');
     let processed = 0, failed = 0, pending = 0;
-    for (const raw of requirements || []) {
-      try {
-        const result = await generateAndSave(raw as unknown as Record<string, string | null>);
-        if (result.pending) pending++; else processed++;
-      } catch (error) {
-        failed++;
-        console.error('Requirement guidance batch item failed', error instanceof GuidanceError ? error.code : 'internal_error');
-      }
+    // Parallel inside the batch so a batch fits the function's time limit.
+    const results = await Promise.allSettled((requirements || []).map((raw) =>
+      generateAndSave(raw as unknown as Record<string, string | null>)));
+    for (const r of results) {
+      if (r.status === 'fulfilled') { if (r.value.pending) pending++; else processed++; }
+      else { failed++; console.error('Requirement guidance batch item failed', r.reason instanceof GuidanceError ? r.reason.code : 'internal_error'); }
     }
     let remainingQuery = supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
       .or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`);
