@@ -133,32 +133,53 @@ export function TraducaoFrameworksTab() {
    * Português primeiro: é a língua do mercado, e é também a base a partir da
    * qual o inglês é escrito (`basePt` na função de borda).
    */
-  const traduzirOrientacoes = async (fw: FrameworkRow) => {
-    setRunningId(`guidance-${fw.id}`);
+  /** Gera as orientações em falta de um framework, PT e depois EN. Devolve se ficou completo. */
+  const prepararFramework = async (fw: FrameworkRow): Promise<boolean> => {
     let complete = true;
-    try {
-      for (const locale of ['pt', 'en'] as const) {
-        let guard = 0;
-        while (guard < 80) {
-          guard++;
-          const res = await invokeEdgeFunction<{ processed: number; remaining: number }>(
-            'populate-requirement-guidance',
-            { body: { framework_id: fw.id, locale, batch_size: 5 } },
-          );
-          if (res.error || !res.data) { complete = false; break; }
-          const feitos = Math.max(fw.total - (res.data.remaining ?? 0), 0);
-          setRows((prev) =>
-            prev.map((r) =>
-              r.id === fw.id
-                ? { ...r, ...(locale === 'pt' ? { guidancePt: feitos } : { guidanceEn: feitos }) }
-                : r,
-            ),
-          );
-          if ((res.data.remaining ?? 0) === 0) break;
-          if (res.data.processed === 0 || guard === 80) { complete = false; break; }
+    for (const locale of ['pt', 'en'] as const) {
+      let offset = 0, passes = 0, guard = 0;
+      while (guard++ < 200) {
+        const res = await invokeEdgeFunction<{ processed: number; failed: number; pending: number; remaining: number; total: number }>(
+          'populate-requirement-guidance',
+          { body: { framework_id: fw.id, locale, batch_size: 4, offset } },
+        );
+        if (res.error || !res.data) { complete = false; break; }
+        const d = res.data;
+        const feitos = Math.max(fw.total - (d.remaining ?? 0), 0);
+        setRows((prev) => prev.map((r) => r.id === fw.id ? { ...r, ...(locale === 'pt' ? { guidancePt: feitos } : { guidanceEn: feitos }) } : r));
+        if ((d.remaining ?? 0) === 0) break;
+        // Itens que falharam ou estão a meio ficam para trás; segue para os seguintes.
+        offset += (d.failed ?? 0) + (d.pending ?? 0);
+        if (d.total === 0 || offset >= (d.remaining ?? 0)) {
+          if (++passes >= 3) { complete = false; break; }
+          offset = 0;
+          await new Promise((r) => setTimeout(r, 15_000));
         }
       }
-      if (complete) toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceDone', { nome: fw.nome }));
+    }
+    return complete;
+  };
+
+  const traduzirOrientacoes = async (fw: FrameworkRow) => {
+    setRunningId(`guidance-${fw.id}`);
+    try {
+      if (await prepararFramework(fw)) toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceDone', { nome: fw.nome }));
+      else toast.error(t('experience.guidanceBatchIncomplete'));
+    } finally {
+      setRunningId(null);
+      load();
+    }
+  };
+
+  const prepararTodos = async () => {
+    setRunningId('guidance-all');
+    let ok = true;
+    try {
+      for (const fw of rows) {
+        if (fw.total === 0 || (fw.guidancePt >= fw.total && fw.guidanceEn >= fw.total)) continue;
+        if (!(await prepararFramework(fw))) ok = false;
+      }
+      if (ok) toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceAll'));
       else toast.error(t('experience.guidanceBatchIncomplete'));
     } finally {
       setRunningId(null);
@@ -176,6 +197,12 @@ export function TraducaoFrameworksTab() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">{t('sweepConfig.traducaoFrameworks.guidanceAllHint')}</p>
+        <Button size="sm" disabled={!!runningId} onClick={prepararTodos} className="shrink-0">
+          {runningId === 'guidance-all' ? <><AkurisPulse size={16} /> {t('sweepConfig.traducaoFrameworks.btnGenerating')}</> : t('sweepConfig.traducaoFrameworks.btnGuidanceAll')}
+        </Button>
+      </div>
       <p className="text-sm text-muted-foreground">
         {t('sweepConfig.traducaoFrameworks.intro')} {t('sweepConfig.traducaoFrameworks.pendingCount', { count: String(pendentesTotais) })}
       </p>
