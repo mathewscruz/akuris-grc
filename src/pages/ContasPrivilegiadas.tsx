@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly, formatarDiaParaDB } from '@/lib/date-utils';
-import { capitalizeText } from '@/lib/text-utils';
+import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { resolveItemStatusTone } from '@/lib/status-tone';
 import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
 import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';

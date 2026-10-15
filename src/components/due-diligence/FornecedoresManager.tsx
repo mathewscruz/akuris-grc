@@ -776,7 +776,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
               {formatStatus(detalheFornecedor.status)}
             </StatusBadge>
             {detalheFornecedor.avaliacao_risco && (
-              <StatusBadge tone={/alto|crit/i.test(detalheFornecedor.avaliacao_risco) ? 'danger' : /medio|médio/i.test(detalheFornecedor.avaliacao_risco) ? 'warning' : 'success'}>
+              <StatusBadge tone={/alto|crit/i.test(detalheFornecedor.avaliacao_risco) ? 'destructive' : /medio|médio/i.test(detalheFornecedor.avaliacao_risco) ? 'warning' : 'success'}>
                 {t('detalheRegisto.kRisco')}: {formatStatus(detalheFornecedor.avaliacao_risco)}
               </StatusBadge>
             )}
