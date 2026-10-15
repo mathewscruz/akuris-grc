@@ -301,7 +301,7 @@ export function RecordDetailDrawer({
 }
 
 /** Anterior/próximo dentro da lista visível (ordem da tabela). */
-export function recordNav<T extends { id: string }>(list: T[] | undefined, current: T | null, go: (r: T) => void) {
+export function recordNav<T extends { id: string }>(list: T[] | undefined, current: T | null, go: (r: any) => void) {
   if (!current || !list?.length) return { onPrev: null, onNext: null };
   const i = list.findIndex((r) => r.id === current.id);
   if (i < 0) return { onPrev: null, onNext: null };

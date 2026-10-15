@@ -1443,8 +1443,6 @@ export default function Privacidade() {
         ] as any : undefined}
         alert={selectedDado && (selectedDado.ropas_count ?? 0) === 0
           ? { tone: 'info' as const, title: t('detalheRegisto.alertaSemRopa'), body: t('detalheRegisto.alertaSemRopaBody') } : null}
-        createdAt={(selectedDado as any)?.created_at}
-        updatedAt={(selectedDado as any)?.updated_at}
         fields={
           selectedDado
             ? [

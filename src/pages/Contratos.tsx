@@ -788,7 +788,7 @@ export default function Contratos() {
             { title: t('detalheRegisto.grpMarcos'), items: (contratoLig?.marcos || []).map((m: any) => ({ id: m.id, label: m.nome, meta: [m.data_prevista ? formatDateOnly(m.data_prevista) : null, formatStatus(m.status), m.valor != null ? formatNaMoedaDo(m.valor, (detalheContrato as any).moeda) : null].filter(Boolean).join(' · ') })) },
           ] : undefined}
           timeline={(contratoLig?.aditivos || []).map((a: any) => ({ date: a.data_assinatura || a.created_at, title: `${t('detalheRegisto.grpAditivos')} ${a.numero_aditivo || ''}`, detail: formatStatus(a.tipo) }))}
-          createdAt={detalheContrato?.created_at}
+          createdAt={(detalheContrato as any)?.created_at}
           updatedAt={(detalheContrato as any)?.updated_at}
         />
 
