@@ -119,9 +119,11 @@ import canalExperience from './canal-experience';
 import { evidenceIntelligence } from './evidence-intelligence';
 import { calculationMethod } from './calculation-method';
 import { bulkActions } from './bulk-actions';
+import { trustCenter } from './trust-center';
 import { pacoteAuditoria } from './pacote-auditoria';
 const modules: Record<string, ModuleDict> = {
   bulkActions,
+  trustCenter,
   pacoteAuditoria,
   calculationMethod,
   evidenceIntelligence,
