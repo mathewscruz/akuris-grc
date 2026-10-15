@@ -24,4 +24,4 @@
 - [x] 4: preenchimento inteligente — responsável padrão e prazo por prioridade no plano de ação; categoria sugerida pelo título no risco (src/lib/preenchimento-inteligente.ts, 9 testes).
 - [x] 5a: pacote de auditoria em PDF com um clique na página do framework (requisitos + evidências + planos em aberto).
 - [x] 5b: Trust Center público por empresa (Configurações → Trust Center, página /trust/:endereço).
-- [ ] 5c: resposta automática a questionários de segurança de clientes — pendente.
+- [x] 5c: resposta automática a questionários (Configurações → Trust Center, 1 crédito IA, CSV).

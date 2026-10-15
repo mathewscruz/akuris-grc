@@ -21,6 +21,16 @@ export const trustCenter = {
       contactCta: 'Fale com a equipe de segurança',
       poweredBy: 'Mantido no Akuris',
       noFrameworks: 'Nenhum framework publicado ainda.',
+      q: {
+        title: 'Responder questionário de segurança',
+        description: 'Cole as perguntas do cliente (uma por linha). O Akuris rascunha as respostas usando só os seus controles, documentos e frameworks. Consome 1 crédito de IA.',
+        placeholder: 'Ex.: Vocês usam autenticação multifator?',
+        gerar: 'Responder {count} perguntas',
+        exportar: 'Exportar CSV',
+        revisar: 'Rascunho gerado por IA — revise antes de enviar ao cliente.',
+        pergunta: 'Pergunta', resposta: 'Resposta', justificativa: 'Justificativa', evidencias: 'Evidências',
+        sim: 'Sim', parcial: 'Parcial', nao: 'Não', na: 'Não se aplica',
+      },
     },
   },
   en: {
@@ -44,6 +54,16 @@ export const trustCenter = {
       contactCta: 'Contact the security team',
       poweredBy: 'Maintained on Akuris',
       noFrameworks: 'No frameworks published yet.',
+      q: {
+        title: 'Answer security questionnaire',
+        description: 'Paste the customer questions (one per line). Akuris drafts answers using only your controls, documents and frameworks. Uses 1 AI credit.',
+        placeholder: 'E.g.: Do you use multi-factor authentication?',
+        gerar: 'Answer {count} questions',
+        exportar: 'Export CSV',
+        revisar: 'AI-generated draft — review before sending to the customer.',
+        pergunta: 'Question', resposta: 'Answer', justificativa: 'Justification', evidencias: 'Evidence',
+        sim: 'Yes', parcial: 'Partial', nao: 'No', na: 'Not applicable',
+      },
     },
   },
 };
