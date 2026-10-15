@@ -184,9 +184,9 @@ export function RecordDetailDrawer({
               </div>
             )}
           </div>
-          {badges && <div className={cn('flex flex-wrap items-center gap-2 pt-3', Icon && 'sm:pl-14')}>{badges}</div>}
+          {badges && <div className={cn('flex flex-wrap items-center gap-2.5 pb-1 pt-3.5', Icon && 'sm:pl-14')}>{badges}</div>}
           {actions && (
-            <div className="mt-4 border-t border-border/60 pt-4 [&>div]:flex [&>div]:w-full [&>div]:flex-wrap [&>div]:gap-2">{actions}</div>
+            <div className="mt-5 border-t border-border/60 pt-4 [&>div]:flex [&>div]:w-full [&>div]:flex-wrap [&>div]:gap-2">{actions}</div>
           )}
         </SheetHeader>
 

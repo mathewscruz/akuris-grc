@@ -525,23 +525,23 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                       </StatusBadge>
                     </div>
                     {vinculo.eficacia_estimada && (
-                      <div className="mt-2 text-xs text-muted-foreground">Eficácia estimada: {formatStatus(vinculo.eficacia_estimada)}</div>
+                      <div className="mt-2 text-xs text-muted-foreground">{t('riscosControles.aba.eficacia')}: {formatStatus(vinculo.eficacia_estimada)}</div>
                     )}
                   </div>
                 ))}
               </div>
 
               <div className="border-t border-border/60 pt-4">
-              <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="mb-2 flex items-center justify-between gap-3">
                 <span className="text-xs font-semibold text-muted-foreground">
-                  Requisitos de compliance relacionados ({requisitos.length})
+                  {t('riscosControles.aba.reqTitulo')} ({requisitos.length})
                 </span>
                 {canUpdate('riscos') && <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
                   <IconAdd className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                   {t('riscosControles.aba.vincular')}
                 </Button>}
               </div>
-              <p className="mb-3 text-micro text-muted-foreground">Referências do Gap Analysis ajudam a provar conformidade, mas não reduzem o risco por si só.</p>
+              <p className="mb-4 mt-1 text-micro leading-relaxed text-muted-foreground">{t('riscosControles.aba.reqAjuda')}</p>
 
               {reqLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>

@@ -12,10 +12,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { resolveWorkflowStatusTone } from '@/lib/status-tone';
-import { rowOpenProps } from '@/lib/row-interaction';
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { QueryError } from '@/components/ui/query-error';
 import { formatStatus } from '@/lib/text-utils';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
@@ -118,15 +119,16 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
       ) : (
         <ul className="space-y-1.5">
           {planos.map((p: any) => (
+            (() => { const row = rowOpenProps(() => navigate(`/planos-acao?plano=${p.id}`), p.titulo, CARD_HOVER); return (
             <li
               key={p.id}
-              className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm hover:border-primary/40"
-              {...rowOpenProps(() => navigate(`/planos-acao?plano=${p.id}`), p.titulo)}
+              {...row}
+              className={cn('flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-sm', row.className)}
             >
-              <span className="min-w-0 flex-1 truncate">{p.titulo}</span>
-              <StatusBadge {...resolveWorkflowStatusTone(p.status)}>{formatStatus(p.status)}</StatusBadge>
+              <span className="min-w-0 flex-1 truncate" title={p.titulo}>{p.titulo}</span>
+              <StatusBadge className="shrink-0" {...resolveWorkflowStatusTone(p.status)}>{formatStatus(p.status)}</StatusBadge>
               <IconExternal className="h-3 w-3 shrink-0 text-muted-foreground" />
-            </li>
+            </li>); })()
           ))}
         </ul>
       )}
