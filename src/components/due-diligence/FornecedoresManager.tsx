@@ -25,7 +25,6 @@ import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor }
 import { useLanguage } from '@/contexts/LanguageContext';
 import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
 import { useFornecedorLigacoes } from '@/hooks/useDetalheLigacoes';
-import { formatDateOnly } from '@/lib/date-utils';
 import { ConsultaReceita } from './ConsultaReceita';
 import type { ConsultaCnpj } from '@/lib/cnpj';
 import type { Json } from '@/integrations/supabase/types';
