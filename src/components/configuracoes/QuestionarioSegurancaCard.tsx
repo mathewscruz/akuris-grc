@@ -10,7 +10,7 @@ import { exportCSV } from '@/lib/csv-utils';
 
 interface Resposta { pergunta: string; resposta: 'sim' | 'parcial' | 'nao' | 'na'; justificativa: string; evidencias: string[] }
 
-const tom = { sim: 'success', parcial: 'warning', nao: 'danger', na: 'neutral' } as const;
+const tom = { sim: 'success', parcial: 'warning', nao: 'destructive', na: 'neutral' } as const;
 
 export function QuestionarioSegurancaCard() {
   const { t, locale } = useLanguage();
