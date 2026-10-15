@@ -9,3 +9,10 @@
 - [ ] Planos de ação e riscos sugeridos a partir de lacunas/achados.
 - [ ] Leitura automática de documentos enviados e caixa de entrada por e-mail.
 - [ ] Integrações reais Microsoft/AWS — precisa das credenciais do cliente.
+
+# Diferenciais (plano aprovado 15/10)
+- [x] B1: framework BACEN 4.893 no catálogo (24 requisitos PT/EN).
+- [ ] B2: CVM 35, SUSEP 638, ANS e Resolução ANPD 15/2024 — precisa revisão jurídica do texto.
+- [ ] A: configuração automática pelo CNPJ.
+- [ ] C: relógio regulatório (ANPD 3 dias úteis, CNPD 72h, titulares 15 dias).
+- [ ] D, E, F, G, H, I — planos próprios.
