@@ -90,7 +90,7 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, co
               onClick={() => onOpenRisk(r.id)}
               className="text-left p-3 rounded-lg border border-border hover:bg-accent transition-colors flex flex-col gap-1.5"
             >
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between gap-3">
                 <span className="text-micro text-muted-foreground font-mono">{shortRiskId(r.id, (r as any).codigo)}</span>
                 <StatusBadge {...resolveRiscoStatusTone(r.status)}>
                   {formatStatus(r.status)}
