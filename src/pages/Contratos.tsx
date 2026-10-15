@@ -716,8 +716,12 @@ export default function Contratos() {
         <RecordDetailDrawer
           open={!!detalheContrato}
           onOpenChange={(o) => !o && setDetalheContrato(null)}
+          icon={IconFile}
+          eyebrow={t('fin.comum.contrato') || undefined}
+          code={detalheContrato?.numero_contrato}
           title={detalheContrato?.nome}
-          subtitle={detalheContrato?.numero_contrato}
+          subtitle={detalheContrato?.fornecedores?.nome}
+          {...recordNav(sortedContratos as Contrato[], detalheContrato, setDetalheContrato)}
           badges={detalheContrato ? (
             <>
               {getContratoStatusBadge(detalheContrato)}
@@ -729,20 +733,60 @@ export default function Contratos() {
             </>
           ) : undefined}
           actions={detalheContrato ? (
-            <Button variant="outline" size="sm" onClick={() => { const c = detalheContrato; setDetalheContrato(null); handleEdit(c); }}>
-              {t('fin.comum.editar')}
-            </Button>
+            <div>
+              <Button size="sm" onClick={() => { const c = detalheContrato; setDetalheContrato(null); handleEdit(c); }}>
+                <IconEdit className="mr-2 h-4 w-4" />{t('fin.comum.editar')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setSelectedContrato(detalheContrato); setTrilhaDialogOpen(true); }}>
+                <IconHistory className="mr-2 h-4 w-4" />{t('detalheRegisto.atividade')}
+              </Button>
+            </div>
           ) : undefined}
-          fields={detalheContrato ? [
-            { label: t('fin.comum.fornecedor'), value: detalheContrato.fornecedores?.nome },
-            { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
-            { label: t('fin.comum.valor'), value: detalheContrato.valor != null ? formatNaMoedaDo(detalheContrato.valor, (detalheContrato as any).moeda) : null },
-            { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
-            { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
-            { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato ? (nomePorUsuario.get(detalheContrato.gestor_contrato) || detalheContrato.gestor_contrato) : null },
-            { label: t('fin.contratos.objeto'), value: detalheContrato.objeto, full: true },
-            { label: t('detalheRegisto.observacoes'), value: detalheContrato.observacoes, full: true },
-          ] : []}
+          kpis={detalheContrato ? (() => {
+            const dias = diasAte(detalheContrato.data_fim);
+            const pend = (contratoLig?.marcos || []).filter((m: any) => !m.data_realizada && m.status !== 'concluido').length;
+            return [
+              { label: t('detalheRegisto.kValor'), value: detalheContrato.valor != null ? formatNaMoedaDo(detalheContrato.valor, (detalheContrato as any).moeda) : '—' },
+              { label: t('detalheRegisto.kDiasFim'), value: dias == null ? '—' : dias, tone: dias == null ? 'neutral' : dias < 0 ? 'danger' : dias <= 60 ? 'warning' : 'neutral' },
+              { label: t('detalheRegisto.kAditivos'), value: contratoLig?.aditivos.length ?? '—' },
+              { label: t('detalheRegisto.kMarcos'), value: contratoLig ? pend : '—', tone: pend > 0 ? 'warning' : 'neutral' },
+            ] as any;
+          })() : undefined}
+          alert={detalheContrato && detalheContrato.status !== 'encerrado' ? (() => {
+            const e = estadoVencimento(detalheContrato.data_fim);
+            const d = diasAte(detalheContrato.data_fim) ?? 0;
+            if (e === 'vencido') return { tone: 'danger' as const, title: t('detalheRegisto.alertaVencido'), body: t('detalheRegisto.alertaVencidoBody', { n: -d }) };
+            if (e === 'aVencer') return { tone: 'warning' as const, title: t('detalheRegisto.alertaAVencer', { n: d }), body: t('detalheRegisto.alertaAVencerBody') };
+            return null;
+          })() : null}
+          sections={detalheContrato ? [
+            { title: t('detalheRegisto.secIdentificacao'), fields: [
+              { label: t('fin.comum.fornecedor'), value: detalheContrato.fornecedores?.nome },
+              { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
+              { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato ? (nomePorUsuario.get(detalheContrato.gestor_contrato) || detalheContrato.gestor_contrato) : null },
+              { label: t('detalheRegisto.trilhaCampos.areaSolicitante'), value: (detalheContrato as any).area_solicitante },
+              { label: t('detalheRegisto.trilhaCampos.sla'), value: (detalheContrato as any).sla_principal, full: true },
+            ] },
+            { title: t('detalheRegisto.secPrazos'), fields: [
+              { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
+              { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
+              { label: t('detalheRegisto.trilhaCampos.dataAssinatura'), value: (detalheContrato as any).data_assinatura ? formatDateOnly((detalheContrato as any).data_assinatura) : null },
+              { label: t('detalheRegisto.kRenovacao'), value: (detalheContrato as any).renovacao_automatica == null ? null : t((detalheContrato as any).renovacao_automatica ? 'detalheRegisto.sim' : 'detalheRegisto.nao') },
+            ] },
+            { title: t('detalheRegisto.secDescricao'), fields: [
+              { label: t('fin.contratos.objeto'), value: detalheContrato.objeto, full: true },
+              { label: t('detalheRegisto.observacoes'), value: detalheContrato.observacoes, full: true },
+            ] },
+          ] : undefined}
+          linksLoading={contratoLigLoading}
+          links={detalheContrato ? [
+            { title: t('detalheRegisto.grpFornecedor'), items: detalheContrato.fornecedor_id && detalheContrato.fornecedores?.nome ? [{ id: detalheContrato.fornecedor_id, label: detalheContrato.fornecedores.nome, href: `/contratos?tab=fornecedores&focus=${detalheContrato.fornecedor_id}` }] : [] },
+            { title: t('detalheRegisto.grpAditivos'), items: (contratoLig?.aditivos || []).map((a: any) => ({ id: a.id, label: `${a.numero_aditivo || ''} · ${formatStatus(a.tipo)}`, meta: [formatStatus(a.status), a.valor_novo != null ? formatNaMoedaDo(a.valor_novo, (detalheContrato as any).moeda) : null].filter(Boolean).join(' · ') })) },
+            { title: t('detalheRegisto.grpMarcos'), items: (contratoLig?.marcos || []).map((m: any) => ({ id: m.id, label: m.nome, meta: [m.data_prevista ? formatDateOnly(m.data_prevista) : null, formatStatus(m.status), m.valor != null ? formatNaMoedaDo(m.valor, (detalheContrato as any).moeda) : null].filter(Boolean).join(' · ') })) },
+          ] : undefined}
+          timeline={(contratoLig?.aditivos || []).map((a: any) => ({ date: a.data_assinatura || a.created_at, title: `${t('detalheRegisto.grpAditivos')} ${a.numero_aditivo || ''}`, detail: formatStatus(a.tipo) }))}
+          createdAt={detalheContrato?.created_at}
+          updatedAt={(detalheContrato as any)?.updated_at}
         />
 
       </div>

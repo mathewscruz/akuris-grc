@@ -299,3 +299,14 @@ export function RecordDetailDrawer({
     </Sheet>
   );
 }
+
+/** Anterior/próximo dentro da lista visível (ordem da tabela). */
+export function recordNav<T extends { id: string }>(list: T[] | undefined, current: T | null, go: (r: T) => void) {
+  if (!current || !list?.length) return { onPrev: null, onNext: null };
+  const i = list.findIndex((r) => r.id === current.id);
+  if (i < 0) return { onPrev: null, onNext: null };
+  return {
+    onPrev: i > 0 ? () => go(list[i - 1]) : null,
+    onNext: i < list.length - 1 ? () => go(list[i + 1]) : null,
+  };
+}
