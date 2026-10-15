@@ -26,7 +26,8 @@ import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
@@ -540,6 +541,24 @@ export default function AtivosLicencas() {
             {t('fin.comum.editar')}
           </Button>
         ) : undefined}
+        eyebrow={t('detalheRegisto.eyLicenca')}
+        code={(detalheLicenca as any)?.numero_licenca}
+        {...recordNav(filteredAndSortedLicencas as any, detalheLicenca as any, setDetalheLicenca as any)}
+        kpis={detalheLicenca ? (() => { const d = diasAte(detalheLicenca.data_vencimento); return [
+          { label: t('detalheRegisto.kDiasVencer'), value: d == null ? '—' : d, tone: d == null ? 'neutral' : d < 0 ? 'danger' : d <= 60 ? 'warning' : 'neutral' },
+          { label: t('detalheRegisto.kQuantidade'), value: detalheLicenca.quantidade_licencas ?? '—' },
+          { label: t('detalheRegisto.valorRenovacao'), value: detalheLicenca.valor_renovacao != null ? formatMoedaEmpresa(detalheLicenca.valor_renovacao) : '—' },
+        ] as any; })() : undefined}
+        alert={detalheLicenca ? (() => { const e = estadoVencimento(detalheLicenca.data_vencimento); const d = diasAte(detalheLicenca.data_vencimento) ?? 0;
+          if (e === 'vencido') return { tone: 'danger' as const, title: t('detalheRegisto.alertaVencido'), body: t('detalheRegisto.alertaVencidoBody', { n: -d }) };
+          if (e === 'aVencer') return { tone: 'warning' as const, title: t('detalheRegisto.alertaAVencer', { n: d }), body: t('detalheRegisto.alertaAVencerBody') };
+          return null; })() : null}
+        timeline={detalheLicenca ? [
+          ...((detalheLicenca as any).data_aquisicao ? [{ date: (detalheLicenca as any).data_aquisicao, title: t('detalheRegisto.dataCriacao') }] : []),
+          ...(detalheLicenca.data_vencimento ? [{ date: detalheLicenca.data_vencimento, title: t('detalheRegisto.vencimento') }] : []),
+        ] : undefined}
+        createdAt={(detalheLicenca as any)?.created_at}
+        updatedAt={(detalheLicenca as any)?.updated_at}
         fields={detalheLicenca ? [
           { label: t('detalheRegisto.fornecedor'), value: detalheLicenca.fornecedor },
           { label: t('detalheRegisto.quantidade'), value: detalheLicenca.quantidade_licencas },

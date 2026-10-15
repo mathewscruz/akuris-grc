@@ -21,9 +21,10 @@ import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly, formatarDiaParaDB } from '@/lib/date-utils';
-import { capitalizeText } from '@/lib/text-utils';
+import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { resolveItemStatusTone } from '@/lib/status-tone';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';
 import { exportCSV } from '@/lib/csv-utils';
 import {
   DropdownMenu,
@@ -466,6 +467,24 @@ export default function ContasPrivilegiadas() {
           </Button>
           </>
         ) : undefined}
+        eyebrow={t('detalheRegisto.eyConta')}
+        code={detalheConta?.sistemas_privilegiados?.nome_sistema}
+        {...recordNav(filteredAndSortedContas as any, detalheConta as any, setDetalheConta as any)}
+        kpis={detalheConta ? (() => { const d = diasAte(detalheConta.data_expiracao); return [
+          { label: t('detalheRegisto.kDiasVencer'), value: d == null ? '—' : d, tone: d == null ? 'neutral' : d < 0 ? 'danger' : d <= 30 ? 'warning' : 'neutral' },
+          { label: t('detalheRegisto.nivelPrivilegio'), value: detalheConta.nivel_privilegio ? formatStatus(detalheConta.nivel_privilegio) : '—' },
+          { label: t('experience.accountLastReview'), value: detalheConta.last_review_at ? formatDateOnly(detalheConta.last_review_at) : '—' },
+        ] as any; })() : undefined}
+        alert={detalheConta ? (() => { const e = estadoVencimento(detalheConta.data_expiracao, new Date(), 30); const d = diasAte(detalheConta.data_expiracao) ?? 0;
+          if (e === 'vencido') return { tone: 'danger' as const, title: t('detalheRegisto.alertaVencido'), body: t('detalheRegisto.alertaVencidoBody', { n: -d }) };
+          if (e === 'aVencer') return { tone: 'warning' as const, title: t('detalheRegisto.alertaAVencer', { n: d }), body: t('detalheRegisto.alertaAVencerBody') };
+          return null; })() : null}
+        timeline={detalheConta ? [
+          ...(detalheConta.data_concessao ? [{ date: detalheConta.data_concessao, title: t('detalheRegisto.concessao') }] : []),
+          ...(detalheConta.last_review_at ? [{ date: detalheConta.last_review_at, title: t('experience.accountLastReview') }] : []),
+        ] : undefined}
+        createdAt={(detalheConta as any)?.created_at}
+        updatedAt={(detalheConta as any)?.updated_at}
         fields={detalheConta ? [
           { label: t('detalheRegisto.sistema'), value: detalheConta.sistemas_privilegiados?.nome_sistema },
           { label: t('experience.systemOwner'), value: detalheConta.system_owner_name || t('experience.notAssigned') },

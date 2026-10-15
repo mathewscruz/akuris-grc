@@ -27,7 +27,8 @@ import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { severidadeDeFaixas } from '@/lib/metrics/riscos';
@@ -562,6 +563,22 @@ export default function AtivosChaves() {
             {t('fin.comum.editar')}
           </Button>
         ) : undefined}
+        eyebrow={t('detalheRegisto.eyChave')}
+        code={detalheChave?.algoritmo}
+        {...recordNav(filteredAndSortedChaves as any, detalheChave as any, setDetalheChave as any)}
+        kpis={detalheChave ? (() => { const d = diasAte(detalheChave.data_proxima_rotacao); return [
+          { label: t('detalheRegisto.kProximaRotacao'), value: d == null ? '—' : t('detalheRegisto.dias', { n: d }), tone: d == null ? 'neutral' : d < 0 ? 'danger' : d <= 30 ? 'warning' : 'neutral' },
+          { label: t('fin.comum.ambiente'), value: formatStatus(detalheChave.ambiente) || '—' },
+          { label: t('detalheRegisto.kRenovacao'), value: t((detalheChave as any).rotacao_automatica ? 'detalheRegisto.sim' : 'detalheRegisto.nao') },
+        ] as any; })() : undefined}
+        alert={detalheChave && estadoVencimento(detalheChave.data_proxima_rotacao, new Date(), 0) === 'vencido'
+          ? { tone: 'danger' as const, title: t('detalheRegisto.alertaRotacao'), body: t('detalheRegisto.alertaRotacaoBody') } : null}
+        timeline={detalheChave ? [
+          ...(detalheChave.data_criacao ? [{ date: detalheChave.data_criacao, title: t('detalheRegisto.dataCriacao') }] : []),
+          ...((detalheChave as any).data_ultima_rotacao ? [{ date: (detalheChave as any).data_ultima_rotacao, title: t('detalheRegisto.alertaRotacao').split(' ')[0] }] : []),
+        ] : undefined}
+        createdAt={(detalheChave as any)?.created_at}
+        updatedAt={(detalheChave as any)?.updated_at}
         fields={detalheChave ? [
           { label: t('fin.comum.ambiente'), value: formatStatus(detalheChave.ambiente) },
           { label: t('fin.comum.localizacao'), value: detalheChave.localizacao },
