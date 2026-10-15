@@ -21,7 +21,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
 import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
 import { useSistemaLigacoes } from '@/hooks/useDetalheLigacoes';
-import { formatDateOnly as fmtDia } from '@/lib/date-utils';
+import { formatDateOnly } from '@/lib/date-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
