@@ -257,6 +257,15 @@ export const AI_FEATURES: AiFeature[] = [
     edgeFunction: 'projeto-suggest-tasks',
   },
   {
+    key: 'responder_questionario',
+    labelPt: 'Resposta automática a questionário de segurança',
+    labelEn: 'Automatic security questionnaire answers',
+    modulePt: 'Trust Center',
+    moduleEn: 'Trust Center',
+    model: 'google/gemini-3.6-flash',
+    edgeFunction: 'answer-security-questionnaire',
+  },
+  {
     key: 'generate_email_content',
     labelPt: 'Geração de conteúdo de e-mail',
     labelEn: 'Email content generation',
