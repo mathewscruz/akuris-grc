@@ -1434,6 +1434,17 @@ export default function Privacidade() {
             </>
           )
         }
+        eyebrow={t('detalheRegisto.eyDado')}
+        {...recordNav(dadosNav as any, selectedDado as any, (d: any) => setSelectedDado(d))}
+        kpis={selectedDado ? [
+          { label: t("sweepDados.privacidade.colMapeamentos"), value: selectedDado.mapeamentos_count ?? 0 },
+          { label: t("sweepDados.privacidade.colRopas"), value: selectedDado.ropas_count ?? 0, tone: (selectedDado.ropas_count ?? 0) === 0 ? 'warning' : 'neutral' },
+          { label: t('detalheRegisto.kRetencao'), value: selectedDado.prazo_retencao || '—' },
+        ] as any : undefined}
+        alert={selectedDado && (selectedDado.ropas_count ?? 0) === 0
+          ? { tone: 'info' as const, title: t('detalheRegisto.alertaSemRopa'), body: t('detalheRegisto.alertaSemRopaBody') } : null}
+        createdAt={(selectedDado as any)?.created_at}
+        updatedAt={(selectedDado as any)?.updated_at}
         fields={
           selectedDado
             ? [
