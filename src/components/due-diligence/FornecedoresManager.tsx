@@ -23,7 +23,9 @@ import { formatStatus } from '@/lib/text-utils';
 import { resolveCriticidadeTone, resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor } from '@/lib/fornecedor-status';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
+import { useFornecedorLigacoes } from '@/hooks/useDetalheLigacoes';
+import { formatDateOnly } from '@/lib/date-utils';
 import { ConsultaReceita } from './ConsultaReceita';
 import type { ConsultaCnpj } from '@/lib/cnpj';
 import type { Json } from '@/integrations/supabase/types';
@@ -152,6 +154,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
   const { empresaId } = useEmpresaId();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detalheFornecedor, setDetalheFornecedor] = useState<any>(null);
+  const { data: fornLig, isLoading: fornLigLoading } = useFornecedorLigacoes(detalheFornecedor?.id);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [searchTerm, setSearchTerm] = useListState('supplierSearch', '');
   /**
@@ -762,24 +765,67 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
       <RecordDetailDrawer
         open={!!detalheFornecedor}
         onOpenChange={(o) => !o && setDetalheFornecedor(null)}
+        icon={IconOrg}
+        eyebrow={t('detalheRegisto.eyFornecedor')}
+        code={detalheFornecedor?.cnpj}
         title={detalheFornecedor?.nome}
         subtitle={detalheFornecedor?.email}
+        {...recordNav(filteredFornecedores, detalheFornecedor, setDetalheFornecedor)}
         badges={detalheFornecedor ? (
-          <StatusBadge tone={detalheFornecedor.status === 'ativo' ? 'success' : 'neutral'}>
-            {formatStatus(detalheFornecedor.status)}
-          </StatusBadge>
+          <>
+            <StatusBadge tone={detalheFornecedor.status === 'ativo' ? 'success' : 'neutral'}>
+              {formatStatus(detalheFornecedor.status)}
+            </StatusBadge>
+            {detalheFornecedor.avaliacao_risco && (
+              <StatusBadge tone={/alto|crit/i.test(detalheFornecedor.avaliacao_risco) ? 'danger' : /medio|médio/i.test(detalheFornecedor.avaliacao_risco) ? 'warning' : 'success'}>
+                {t('detalheRegisto.kRisco')}: {formatStatus(detalheFornecedor.avaliacao_risco)}
+              </StatusBadge>
+            )}
+          </>
         ) : undefined}
         actions={detalheFornecedor ? (
-          <Button variant="outline" size="sm" onClick={() => { const f = detalheFornecedor; setDetalheFornecedor(null); handleEdit(f); }}>
-            {t('dueDiligence.fornecedoresManager.edit')}
+          <Button size="sm" onClick={() => { const f = detalheFornecedor; setDetalheFornecedor(null); handleEdit(f); }}>
+            <IconEdit className="mr-2 h-4 w-4" />{t('dueDiligence.fornecedoresManager.edit')}
           </Button>
         ) : undefined}
-        fields={detalheFornecedor ? [
-          { label: t('detalheRegisto.responsavel'), value: detalheFornecedor.contato_responsavel },
-          { label: t('fin.comum.categoria'), value: detalheFornecedor.categoria ? formatStatus(detalheFornecedor.categoria) : null },
-          { label: t('detalheRegisto.url'), value: detalheFornecedor.telefone },
-        ] : []}
+        kpis={detalheFornecedor ? (() => {
+          const ultima = fornLig?.avaliacoes.find((a: any) => a.score_final != null);
+          const ativos = (fornLig?.contratos || []).filter((c: any) => c.status === 'ativo' || c.status === 'vigente').length;
+          return [
+            { label: t('detalheRegisto.kNotaDD'), value: ultima ? Math.round(Number(ultima.score_final)) : '—', tone: !ultima ? 'neutral' : Number(ultima.score_final) < 60 ? 'danger' : Number(ultima.score_final) < 75 ? 'warning' : 'success' },
+            { label: t('detalheRegisto.kContratos'), value: fornLig ? fornLig.contratos.length : '—', hint: fornLig ? `${ativos} ${formatStatus('ativo').toLowerCase()}` : undefined },
+            { label: t('detalheRegisto.kRisco'), value: detalheFornecedor.avaliacao_risco ? formatStatus(detalheFornecedor.avaliacao_risco) : '—' },
+          ] as any;
+        })() : undefined}
+        alert={detalheFornecedor ? (
+          /alto|crit/i.test(detalheFornecedor.avaliacao_risco || '')
+            ? { tone: 'danger' as const, title: t('detalheRegisto.alertaRiscoAlto'), body: t('detalheRegisto.alertaRiscoAltoBody') }
+            : fornLig && fornLig.avaliacoes.length === 0
+              ? { tone: 'info' as const, title: t('detalheRegisto.alertaSemDD'), body: t('detalheRegisto.alertaSemDDBody') }
+              : null
+        ) : null}
+        sections={detalheFornecedor ? [
+          { title: t('detalheRegisto.secIdentificacao'), fields: [
+            { label: 'CNPJ', value: detalheFornecedor.cnpj },
+            { label: t('fin.comum.categoria'), value: detalheFornecedor.categoria ? formatStatus(detalheFornecedor.categoria) : null },
+            { label: t('fin.comum.tipo'), value: detalheFornecedor.tipo ? formatStatus(detalheFornecedor.tipo) : null },
+            { label: t('detalheRegisto.responsavel'), value: detalheFornecedor.contato_responsavel },
+            { label: 'E-mail', value: detalheFornecedor.email },
+            { label: t('detalheRegisto.url'), value: detalheFornecedor.telefone },
+            { label: t('detalheRegisto.url'), value: detalheFornecedor.endereco, full: true },
+          ] },
+          { title: t('detalheRegisto.secDescricao'), fields: [
+            { label: t('detalheRegisto.observacoes'), value: detalheFornecedor.observacoes, full: true },
+          ] },
+        ] : undefined}
+        linksLoading={fornLigLoading}
+        links={detalheFornecedor ? [
+          { title: t('detalheRegisto.grpContratos'), items: (fornLig?.contratos || []).map((c: any) => ({ id: c.id, label: c.nome, meta: [c.numero_contrato, formatStatus(c.status), c.data_fim ? formatDateOnly(c.data_fim) : null].filter(Boolean).join(' · '), href: `/contratos?focus=${c.id}` })) },
+          { title: t('detalheRegisto.grpDD'), items: (fornLig?.avaliacoes || []).map((a: any) => ({ id: a.id, label: [formatStatus(a.status), a.score_final != null ? t('detalheRegisto.nota', { n: Math.round(Number(a.score_final)) }) : null].filter(Boolean).join(' · '), meta: [a.ia_nivel_risco ? formatStatus(a.ia_nivel_risco) : null, a.data_conclusao ? formatDateOnly(a.data_conclusao) : a.data_envio ? formatDateOnly(a.data_envio) : null].filter(Boolean).join(' · '), href: `/due-diligence?focus=${a.id}` })) },
+        ] : undefined}
+        timeline={(fornLig?.avaliacoes || []).filter((a: any) => a.data_conclusao).map((a: any) => ({ date: a.data_conclusao, title: t('detalheRegisto.grpDD'), detail: a.score_final != null ? t('detalheRegisto.nota', { n: Math.round(Number(a.score_final)) }) : undefined }))}
         createdAt={detalheFornecedor?.created_at}
+        updatedAt={detalheFornecedor?.updated_at}
       />
 
     </>
