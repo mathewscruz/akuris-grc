@@ -810,8 +810,8 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
             { label: t('fin.comum.tipo'), value: detalheFornecedor.tipo ? formatStatus(detalheFornecedor.tipo) : null },
             { label: t('detalheRegisto.responsavel'), value: detalheFornecedor.contato_responsavel },
             { label: 'E-mail', value: detalheFornecedor.email },
-            { label: t('detalheRegisto.url'), value: detalheFornecedor.telefone },
-            { label: t('detalheRegisto.url'), value: detalheFornecedor.endereco, full: true },
+            { label: t('detalheRegisto.telefone'), value: detalheFornecedor.telefone },
+            { label: t('detalheRegisto.endereco'), value: detalheFornecedor.endereco, full: true },
           ] },
           { title: t('detalheRegisto.secDescricao'), fields: [
             { label: t('detalheRegisto.observacoes'), value: detalheFornecedor.observacoes, full: true },

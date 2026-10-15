@@ -112,7 +112,7 @@ export const detalheRegisto = {
       grpContas: 'Contas privilegiadas',
       grpSistema: 'Sistema',
       nota: 'Nota {n}',
-      eyContrato: 'Contrato', eyFornecedor: 'Fornecedor', eyLicenca: 'Licença', eyChave: 'Chave criptográfica', eySistema: 'Sistema', eyConta: 'Conta privilegiada', eyRopa: 'Atividade de tratamento', eyDado: 'Dado pessoal', alertaSemRopa: 'Sem atividade de tratamento ligada', alertaSemRopaBody: 'Ligue este dado a um registro do ROPA para documentar a finalidade e a base legal.',
+      eyContrato: 'Contrato', eyFornecedor: 'Fornecedor', eyLicenca: 'Licença', eyChave: 'Chave criptográfica', eySistema: 'Sistema', eyConta: 'Conta privilegiada', eyRopa: 'Atividade de tratamento', eyDado: 'Dado pessoal', telefone: 'Telefone', endereco: 'Endereço', alertaSemRopa: 'Sem atividade de tratamento ligada', alertaSemRopaBody: 'Ligue este dado a um registro do ROPA para documentar a finalidade e a base legal.',
     },
   },
   en: {
@@ -217,7 +217,7 @@ export const detalheRegisto = {
       grpContas: 'Privileged accounts',
       grpSistema: 'System',
       nota: 'Score {n}',
-      eyContrato: 'Contract', eyFornecedor: 'Vendor', eyLicenca: 'License', eyChave: 'Cryptographic key', eySistema: 'System', eyConta: 'Privileged account', eyRopa: 'Processing activity', eyDado: 'Personal data', alertaSemRopa: 'No processing activity linked', alertaSemRopaBody: 'Link this data to a ROPA record to document purpose and legal basis.',
+      eyContrato: 'Contract', eyFornecedor: 'Vendor', eyLicenca: 'License', eyChave: 'Cryptographic key', eySistema: 'System', eyConta: 'Privileged account', eyRopa: 'Processing activity', eyDado: 'Personal data', telefone: 'Phone', endereco: 'Address', alertaSemRopa: 'No processing activity linked', alertaSemRopaBody: 'Link this data to a ROPA record to document purpose and legal basis.',
     },
   },
 };

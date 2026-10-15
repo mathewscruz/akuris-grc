@@ -1,3 +1,3 @@
 # Architecture rules
 - Incident asset references are resolved through the central entity registry with tenant-scoped query keys; this preserves stored UUID links and reuses canonical navigation without exposing raw identifiers.
-- Integration catalog statuses and the connected section share the same tenant-scoped query through useConexoesAtivas; this prevents contradictory connection labels without enabling new connections.
+- Integration catalog statuses and the connected section share the same tenant-scoped query through useConexoesAtivas; this prevents contradictory connection labels without enabling new connections.- Module side panels use the shared RecordDetailDrawer (KPIs, contextual alert, grouped sections, Links/Activity tabs, prev/next); link data comes from tenant-scoped hooks in useDetalheLigacoes, so every module keeps one visual pattern.
