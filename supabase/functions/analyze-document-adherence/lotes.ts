@@ -107,9 +107,9 @@ export function orcamentoResumo(qtdTrechos: number): number {
   return Math.max(1200, Math.floor(60000 / Math.max(qtdTrechos, 1)));
 }
 
-/** Índices ainda não processados (undefined) em `feitos`, até `k`. */
+/** Índices ainda não processados (null/ausente) em `feitos`, até `k`. */
 export function proximosPendentes(feitos: unknown[], total: number, k: number): number[] {
   const out: number[] = [];
-  for (let i = 0; i < total && out.length < k; i++) if (feitos[i] === undefined) out.push(i);
+  for (let i = 0; i < total && out.length < k; i++) if (feitos[i] == null) out.push(i);
   return out;
 }
