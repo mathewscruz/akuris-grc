@@ -15,7 +15,7 @@ interface Props {
 export function SparklineCell({ points = [] }: Props) {
   const { t } = useLanguage();
 
-  if (points.length < 2) {
+  if (points.length < 2 || points.every((p) => p === points[0])) {
     /*
       Um traço, e o texto vai para o `title`.
 

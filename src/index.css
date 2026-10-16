@@ -2304,7 +2304,7 @@ input:-webkit-autofill:focus {
    Cada linha é um cartão arredondado com aresta e faixa à esquerda na cor
    do estado/gravidade (lida do primeiro Chip da linha). */
 @layer components {
-  .akuris-table { border-collapse: separate; border-spacing: 0 6px; }
+  .akuris-table { border-collapse: separate; border-spacing: 0 8px; }
   .akuris-table > thead th { background-image: none !important; background-color: transparent !important; }
   .akuris-table tbody > tr:not([data-table-static]) {
     --row-accent: hsl(var(--border));
@@ -2340,8 +2340,8 @@ input:-webkit-autofill:focus {
   /* Faixa reta de 3px em vez da curva do canto. */
   .akuris-table tbody > tr:not([data-table-static]) > td:first-child { position: relative; box-shadow: none !important; }
   .akuris-table tbody > tr:not([data-table-static]) > td:first-child::before {
-    content: ""; position: absolute; left: 0; top: 18%; bottom: 18%; width: 3px;
-    border-radius: 0 3px 3px 0; background: var(--row-accent);
+    content: ""; position: absolute; left: 0; top: -1px; bottom: -1px; width: 3px;
+    border-radius: 0.625rem 0 0 0.625rem; background: var(--row-accent);
   }
   .akuris-table tbody > tr:has(td[colspan]) > td::before { display: none; }
   .akuris-table tbody > tr:has(td[colspan]) > td { box-shadow: none; }

@@ -106,7 +106,7 @@ const SEVERITY_STEPS: Record<SeverityLevel, number> = {
   none: 0,
 };
 
-const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
+export const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
   const activeSteps = SEVERITY_STEPS[level];
   const meterRef = useVisibleMotion<HTMLSpanElement>();
 
@@ -183,7 +183,7 @@ export const Chip: React.FC<ChipProps> = ({
   if (family === 'severity' && isSeverity(tone)) {
     const s = SEVERITY_CLASSES[tone];
     chipClass = s.chip;
-    leading = <SeverityMeter level={tone} />;
+    leading = <span aria-hidden="true" className={cn('rounded-full flex-shrink-0 bg-current', CHIP_SIZING.dot)} />;
   } else if (family === 'state') {
     const s = STATE_CLASSES[isState(tone) ? tone : 'rest'];
     chipClass = s.chip;

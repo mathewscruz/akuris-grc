@@ -286,7 +286,9 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
         const progressPercent = !unavailable && progressValue !== null && progressValue !== undefined && progressMax > 0
           ? clamp((progressValue / progressMax) * 100, 0, 100)
           : null
-        const context = unavailable ? t('experience.unavailable') : zeroState?.label ?? item.context ?? item.hint
+        const rawContext = unavailable ? t('experience.unavailable') : zeroState?.label ?? item.context ?? item.hint
+        // Sem comparação real não mostramos texto de "sem dados"/"sem histórico".
+        const context = rawContext && /(sem dados|sem hist[oó]rico|no data|no comparable|no history)/i.test(rawContext) ? undefined : rawContext
         const targetLabel = item.target !== undefined
           ? t("cardsKpi.metricas.meta", { value: item.target })
           : undefined
@@ -337,7 +339,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
                 {item.trend.label}
               </span>
             )}
-            {!unavailable && item.series && item.series.length > 1 && (
+            {!unavailable && item.series && item.series.length > 1 && Math.max(...item.series) > Math.min(...item.series) && (
               <MiniArea series={item.series} tone={tone} />
             )}
             {progressPercent !== null && (
@@ -347,7 +349,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
                 aria-valuemax={progressMax}
                 aria-valuenow={clamp(progressValue!, 0, progressMax)}
                 aria-label={`${item.label}: ${item.value}`}
-                className="mt-2 block h-1 overflow-hidden rounded-full bg-muted"
+                className="mt-auto block h-1 overflow-hidden rounded-full bg-muted pt-0"
               >
                 <span
                   className={cn("akuris-motion-data block h-full rounded-full transition-[width] motion-reduce:transition-none", TONE_PROGRESS[tone])}
@@ -376,12 +378,12 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
                 onClick={activate}
                 title={item.hint ?? item.label}
                 aria-label={`${item.label}: ${item.value}`}
-                className="group h-full w-full cursor-pointer px-4 py-3 sm:px-5 sm:py-4 text-left transition-colors duration-150 hover:bg-accent/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none"
+                className="group flex h-full w-full cursor-pointer flex-col items-stretch justify-start px-4 py-3 sm:px-5 sm:py-4 text-left transition-colors duration-150 hover:bg-accent/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none"
               >
                 {content}
               </button>
             ) : (
-              <div className="h-full px-4 py-3 sm:px-5 sm:py-4" title={item.hint ?? item.label}>
+              <div className="flex h-full flex-col justify-start px-4 py-3 sm:px-5 sm:py-4" title={item.hint ?? item.label}>
                 {content}
               </div>
             )}
