@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { compareReviewRows } from '@/lib/access-review-sort';
 import { exportCSV, spreadsheetText } from '@/lib/csv-utils';
@@ -238,7 +239,7 @@ export default function RevisaoAcessos() {
       key: "responsavel.nome",
       label: t('fin.comum.responsavel'),
       sortable: true,
-      render: (_value: any, review: any) => review.responsavel?.nome || "-",
+      render: (_value: any, review: any) => <OwnerCell name={review.responsavel?.nome} photo={review.responsavel?.foto_url} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: "data_limite",
@@ -304,7 +305,7 @@ export default function RevisaoAcessos() {
     {
       key: "responsavel.nome",
       label: t('fin.comum.responsavel'),
-      render: (_value: any, review: any) => review.responsavel?.nome || "-",
+      render: (_value: any, review: any) => <OwnerCell name={review.responsavel?.nome} photo={review.responsavel?.foto_url} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: "data_conclusao",
@@ -379,9 +380,9 @@ export default function RevisaoAcessos() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="ativas">{t('fin.revisao.ativas')}</TabsTrigger>
-          <TabsTrigger value="historico">{t('fin.comum.historico')}</TabsTrigger>
+        <TabsList moduleTitle={t('sidebar.accessReview')} searchValue={activeTab === 'historico' ? historySearch : searchTerm} onSearchChange={activeTab === 'usuarios' ? undefined : activeTab === 'historico' ? setHistorySearch : setSearchTerm}>
+          <TabsTrigger value="ativas" count={filteredAndSortedReviews.length}>{t('fin.revisao.ativas')}</TabsTrigger>
+          <TabsTrigger value="historico" count={visibleHistory.length}>{t('fin.comum.historico')}</TabsTrigger>
           <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>
         </TabsList>
 

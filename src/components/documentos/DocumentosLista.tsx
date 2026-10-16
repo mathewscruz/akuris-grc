@@ -19,6 +19,7 @@ import {
 } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OwnerCell } from '@/components/ui/owner-cell';
 
 /** Campos anuláveis espelham o schema do Supabase (colunas sem NOT NULL). */
 export interface DocumentoListaItem {
@@ -61,6 +62,7 @@ export interface DocumentosListaProps<T extends DocumentoListaItem = DocumentoLi
   podeRenovar: (documento: T) => boolean;
   sort?: SortState | null;
   onSort?: (field: string) => void;
+  view?: 'list' | 'grid';
 }
 
 function getTipoLabel(tipo: string) {
@@ -192,6 +194,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
   podeRenovar,
   sort: externalSort,
   onSort,
+  view = 'list',
   ...acoes
 }: DocumentosListaProps<T>) {
   const { t } = useLanguage();
@@ -204,18 +207,18 @@ export function DocumentosLista<T extends DocumentoListaItem>({
   return (
     <>
       {/* Mobile (< md): cards empilhados */}
-      <div className="md:hidden" data-testid="documentos-lista-mobile">
+      <div className={view === 'grid' ? 'block' : 'md:hidden'} data-testid="documentos-lista-mobile">
         {vazio ? (
           emptyState
         ) : (
-          <ul role="list" className="divide-y divide-border">
+          <ul role="list" className={view === 'grid' ? 'grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-3' : 'grid gap-3 p-3'}>
             {documentosOrdenados.map((documento) => (
               <li
                 key={documento.id}
                 data-focus-id={documento.id}
                 {...(() => {
                   const props = rowOpenProps(() => acoes.onPreview(documento), documento.nome);
-                  return { ...props, className: `px-4 py-4 ${props.className}` };
+                  return { ...props, className: `min-w-0 rounded-lg border border-border bg-surface-1 px-4 py-4 ${props.className}` };
                 })()}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -258,9 +261,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                     <span>{formatVersao(documento.versao)}</span>
                   </CampoCard>
                   <CampoCard label={t('documentos.lista.responsavel')}>
-                    <span className={documento.responsavel_nome ? '' : 'text-muted-foreground'}>
-                      {documento.responsavel_nome || SEM_VALOR}
-                    </span>
+                    <OwnerCell name={documento.responsavel_nome} emptyLabel={t('experience.notAssigned')} />
                   </CampoCard>
                 </dl>
               </li>
@@ -270,7 +271,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
       </div>
 
       {/* Desktop (>= md): tabela original */}
-      <div className="hidden md:block" data-testid="documentos-tabela-desktop">
+      <div className={view === 'grid' ? 'hidden' : 'hidden md:block'} data-testid="documentos-tabela-desktop">
         <Table>
           <TableHeader>
             <TableRow>
@@ -322,9 +323,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className={documento.responsavel_nome ? '' : 'text-muted-foreground'}>
-                      {documento.responsavel_nome || SEM_VALOR}
-                    </span>
+                    <OwnerCell name={documento.responsavel_nome} emptyLabel={t('experience.notAssigned')} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DocumentoAcoesMenu

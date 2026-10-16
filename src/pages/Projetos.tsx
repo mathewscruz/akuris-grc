@@ -23,6 +23,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/lib/i18n-format';
 import { parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { OwnerCell } from '@/components/ui/owner-cell';
+import { RecordProgress } from '@/components/ui/record-progress';
 
 const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'info'> = {
   ativo: 'success',
@@ -54,10 +56,11 @@ export default function Projetos() {
     enabled: !!empresaId,
     staleTime: 60_000,
     queryFn: async () => {
+      if (!empresaId) return new Map<string, { total: number; feitas: number; atrasadas: number }>();
       const { data, error } = await supabase
         .from('projeto_tarefas' as never)
         .select('projeto_id, concluida_em, prazo, projetos!inner(empresa_id)')
-        .eq('projetos.empresa_id', empresaId!);
+        .eq('projetos.empresa_id', empresaId);
       if (error) throw error;
 
       const hoje = new Date();
@@ -80,6 +83,16 @@ export default function Projetos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<Projeto | null>(null);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const { data: owners = [] } = useQuery({
+    queryKey: ['projetos-owners', empresaId], enabled: !!empresaId,
+    queryFn: async () => {
+      if (!empresaId) return [];
+      const result = await supabase.from('profiles').select('user_id,nome,foto_url').eq('empresa_id', empresaId);
+      if (result.error) throw result.error;
+      return result.data ?? [];
+    },
+  });
 
   const STATUS_LABEL: Record<string, string> = {
     ativo: t('projetos.status.ativo'),
@@ -119,13 +132,15 @@ export default function Projetos() {
         ]}
       />
 
-      {totalArquivados > 0 && (
-        <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant={view === 'list' ? 'secondary' : 'ghost'} size="icon" aria-label={t('layout.listView')} title={t('layout.listView')} aria-pressed={view === 'list'} onClick={() => setView('list')}><IconRows className="h-4 w-4" /></Button>
+        <Button variant={view === 'grid' ? 'secondary' : 'ghost'} size="icon" aria-label={t('layout.gridView')} title={t('layout.gridView')} aria-pressed={view === 'grid'} onClick={() => setView('grid')}><IconGrid className="h-4 w-4" /></Button>
+        {totalArquivados > 0 && (
           <Button variant="ghost" size="sm" onClick={() => setMostrarArquivados((v) => !v)}>
             {mostrarArquivados ? t('projetos.page.backToActive') : t('projetos.page.showArchived', { count: totalArquivados })}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {tasksError && <QueryError onRetry={() => void retryTasks()} />}
       {isError ? <QueryError onRetry={() => void refetch()} /> : isLoading ? (
@@ -145,7 +160,7 @@ export default function Projetos() {
           Quatro colunas em ecras largos: com tres, um monitor de 2000px punha
           cartoes gordos e meia tela vazia por baixo.
         */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className={view === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : 'grid grid-cols-1 gap-3'}>
           {visiveis.map((p) => (
             <Card
               key={p.id}
@@ -154,7 +169,6 @@ export default function Projetos() {
               {...rowOpenProps(() => navigate(`/projetos/${p.id}`), p.nome)}
               className="overflow-hidden"
             >
-              <div className="h-1.5" style={{ backgroundColor: p.cor ?? '#7552FF' }} />
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold leading-tight flex-1 min-w-0">{p.nome}</h3>
@@ -164,6 +178,7 @@ export default function Projetos() {
                   </div>
                 </div>
                 {p.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{p.descricao}</p>}
+                <OwnerCell name={owners.find(owner => owner.user_id === p.owner_id)?.nome} photo={owners.find(owner => owner.user_id === p.owner_id)?.foto_url} emptyLabel={t('experience.ownerUnavailable')} />
 
                 {(() => {
                   if (tasksError || tasksLoading) return <p className="text-sm text-muted-foreground">{t(tasksError ? 'experience.unavailable' : 'common.loading')}</p>;
@@ -183,7 +198,7 @@ export default function Projetos() {
                       </div>
                       {/* Sem tarefas nao ha barra: uma barra a zero le-se como
                           «nao comecou», e nao comecar e diferente de nao ter. */}
-                      {total > 0 && <Progress value={pct} className="h-1.5" />}
+                      {total > 0 && <RecordProgress value={pct} label={t('layout.progress')} />}
                       {!!c?.atrasadas && (
                         <p className="text-xs text-destructive">
                           {t('projetos.page.cardAtrasadas', { n: String(c.atrasadas) })}

@@ -3,7 +3,7 @@ import { IconClose, IconDownload, IconUpload, IconSuccess, IconWarning } from '@
 ;
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -282,6 +282,9 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
           </DialogDescription>
         </DialogHeader>
 
+        <ol className="flex items-center gap-3 border-b pb-3 text-xs text-muted-foreground">
+          {[t('contratosAtivos.importacaoAtivos.step2Title'), t('contratosAtivos.importacaoAtivos.previewTitle'), t('contratosAtivos.importacaoAtivos.importingTitle')].map((label, index) => <li key={label} aria-current={index === (step === 'upload' ? 0 : step === 'preview' ? 1 : 2) ? 'step' : undefined} className="flex min-w-0 flex-1 items-center gap-2 aria-[current=step]:text-primary"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border">{index + 1}</span><span>{label}</span></li>)}
+        </ol>
         <div className="space-y-6">
           {step === 'upload' && (
             <div className="space-y-6">
@@ -433,7 +436,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                 </Table>
               </div>
 
-              <div className="flex justify-between">
+              <DialogFooter className="sm:justify-between">
                 <Button variant="outline" onClick={resetImport}>
                   {t('contratosAtivos.importacaoAtivos.backButton')}
                 </Button>
@@ -443,7 +446,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                 >
                   {t('contratosAtivos.importacaoAtivos.importButton', { count: validCount })}
                 </Button>
-              </div>
+              </DialogFooter>
             </div>
           )}
 

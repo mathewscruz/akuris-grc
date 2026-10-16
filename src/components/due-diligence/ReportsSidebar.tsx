@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { useReportsData } from '@/hooks/useReportsData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AkurisBars } from '@/components/charts/AkurisCharts';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries, CHART_FONT } from '@/lib/chart-tokens';
@@ -69,11 +70,7 @@ export function ReportsSidebar() {
             </CardHeader>
             <CardContent className="space-y-3">
               {statsLoading ? (
-                <div className="space-y-2">
-                  <div className="h-4 bg-muted rounded animate-pulse" />
-                  <div className="h-4 bg-muted rounded animate-pulse" />
-                  <div className="h-4 bg-muted rounded animate-pulse" />
-                </div>
+                <AkurisPulse size={40} />
               ) : (
                 <>
                   <div className="flex justify-between items-center">
@@ -120,19 +117,7 @@ export function ReportsSidebar() {
                 <CardTitle className="text-lg">{t('dueDiligence.reportsSidebar.categoryPerformanceTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={reports.categoryPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                    {/* Os dados vêm como `{ category, score }`; o gráfico lia
-                        `categoria` e `averageScore` — renderizava sem uma única
-                        barra e sem um único rótulo no eixo. */}
-                    <XAxis dataKey="category" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
-                    <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
-                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                    <Legend />
-                    <Bar radius={[6, 6, 6, 6]} maxBarSize={32} dataKey="score" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <AkurisBars height={250} data={reports.categoryPerformance.map(d => ({ label: d.category, value: d.score }))} format={value => `${value}%`} />
               </CardContent>
             </Card>
           )}

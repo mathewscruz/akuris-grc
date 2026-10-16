@@ -539,8 +539,8 @@ function AssessmentView({
               {
                 key: "owner_id",
                 label: text("regulatory.owner_865f50"),
-                render: (v) =>
-                  w.data.people.find((p) => p.id === v)?.nome ?? "—",
+                kind: 'owner',
+                ownerName: row => w.data.people.find(person => person.id === row.owner_id)?.nome,
               },
               {
                 key: "due_on",
@@ -630,8 +630,8 @@ function AssessmentView({
               {
                 key: "owner_id",
                 label: text("regulatory.owner_865f50"),
-                render: (v) =>
-                  w.data.people.find((p) => p.id === v)?.nome ?? "—",
+                kind: 'owner',
+                ownerName: row => w.data.people.find(person => person.id === row.owner_id)?.nome,
               },
               {
                 key: "due_on",

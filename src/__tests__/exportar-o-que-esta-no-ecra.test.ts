@@ -42,6 +42,9 @@ const ISENTOS: string[] = [];
 
 function exportMatchesShown(source: string, exported: string, shown: string[]): boolean {
   if (shown.includes(exported)) return true;
+  // Bulk export may narrow the displayed dataset to explicitly selected rows.
+  const selectedSubset = source.match(new RegExp('const\\s+' + exported + '\\s*=\\s*(\\w+)\\.filter\\([^;\\n]+selecionad[^;\\n]*\\.has\\('));
+  if (selectedSubset && shown.includes(selectedSubset[1])) return true;
   // A screen with two table tabs can choose its export source with a ternary.
   // BOTH branches must be actual displayed datasets; this is not an exemption.
   const alias = source.match(new RegExp('const\\s+' + exported + '\\s*=\\s*[^;\\n?]+\\?\\s*(\\w+)\\s*:\\s*(\\w+)\\s*;'));
@@ -82,6 +85,8 @@ describe('exportar o que está no ecrã', () => {
   it('aceita seleção entre abas, mas rejeita um ramo que exporta dados fora da tela', () => {
     expect(exportMatchesShown("const selected = tab === 'history' ? history : active;", 'selected', ['history', 'active'])).toBe(true);
     expect(exportMatchesShown("const selected = tab === 'history' ? allRows : active;", 'selected', ['history', 'active'])).toBe(false);
+    expect(exportMatchesShown('const chosen = visible.filter(row => selecionados.has(row.id));', 'chosen', ['visible'])).toBe(true);
+    expect(exportMatchesShown('const chosen = allRows.filter(row => selecionados.has(row.id));', 'chosen', ['visible'])).toBe(false);
   });
 
   it('o CSV não escreve valores crus onde o ecrã escreve rótulos', () => {

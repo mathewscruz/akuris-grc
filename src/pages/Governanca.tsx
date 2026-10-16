@@ -29,14 +29,19 @@ export default function Governanca() {
     queryKey: ['governanca-contagens', empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
+      if (!empresaId) return { controles: 0, auditorias: 0 };
       const [c, a] = await Promise.all([
-        supabase.from('controles').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId!),
-        supabase.from('auditorias').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId!),
+        supabase.from('controles').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId),
+        supabase.from('auditorias').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId),
       ]);
+      if (c.error) throw c.error;
+      if (a.error) throw a.error;
       return { controles: c.count ?? 0, auditorias: a.count ?? 0 };
     },
   });
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
+  const [controlsSearch, setControlsSearch] = useState('');
+  const [auditsSearch, setAuditsSearch] = useState('');
 
   // Detectar a aba inicial pelo caminho; `?tab=` fica suportado para os
   // endereços antigos que já circulam.
@@ -101,7 +106,7 @@ export default function Governanca() {
       />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList>
+        <TabsList moduleTitle={t('modules.governanca.title')} searchValue={activeTab === 'controles' ? controlsSearch : auditsSearch} onSearchChange={activeTab === 'controles' ? setControlsSearch : setAuditsSearch}>
           <TabsTrigger value="controles" count={contagens?.controles} className="flex items-center gap-2">
             <ControlesIcon className="h-5 w-5" />
             {t('modules.governanca.controls')}
@@ -117,11 +122,11 @@ export default function Governanca() {
             painel escondido. Só a aba ativa recebe o slot, senão o cabeçalho
             acumula os botões das duas abas. */}
         <TabsContent value="controles">
-          <ControlesContent actionsSlot={activeTab === 'controles' ? actionsSlot : null} />
+          <ControlesContent actionsSlot={activeTab === 'controles' ? actionsSlot : null} headerSearch={controlsSearch} onHeaderSearchChange={setControlsSearch} />
         </TabsContent>
 
         <TabsContent value="auditorias">
-          <AuditoriasContent actionsSlot={activeTab === 'auditorias' ? actionsSlot : null} />
+          <AuditoriasContent actionsSlot={activeTab === 'auditorias' ? actionsSlot : null} headerSearch={auditsSearch} onHeaderSearchChange={setAuditsSearch} />
         </TabsContent>
       </Tabs>
     </div>

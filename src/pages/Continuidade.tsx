@@ -22,6 +22,8 @@ import { PlanoDialog } from '@/components/continuidade/PlanoDialog';
 import { PlanoDetalheDialog } from '@/components/continuidade/PlanoDetalheDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OwnerCell } from '@/components/ui/owner-cell';
+import { RecordProgress } from '@/components/ui/record-progress';
 
 const statusMap: Record<string, { label: string; variant: any }> = {
   rascunho: { label: 'Rascunho', variant: 'secondary' },
@@ -76,6 +78,21 @@ export default function Continuidade() {
     queryClient.invalidateQueries({ queryKey: ['continuidade-planos'] });
     queryClient.invalidateQueries({ queryKey: ['continuidade-stats'] });
   };
+
+  const { data: detalhesLista } = useQuery({
+    queryKey: ['continuidade-detalhes-lista', empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      if (!empresaId) return null;
+      const [people, tasks] = await Promise.all([
+        supabase.from('profiles').select('user_id,nome,foto_url').eq('empresa_id', empresaId),
+        supabase.from('continuidade_tarefas').select('plano_id,status').eq('empresa_id', empresaId),
+      ]);
+      if (people.error) throw people.error;
+      if (tasks.error) throw tasks.error;
+      return { people: people.data ?? [], tasks: tasks.data ?? [] };
+    },
+  });
 
   // Insights executivos
   const insights = useMemo(() => {
@@ -143,6 +160,21 @@ export default function Continuidade() {
       render: (_val, row) => row.rto_horas != null ? `${row.rto_horas}h` : '—',
     },
     {
+      key: 'responsavel_id', label: t('fin.comum.responsavel'),
+      render: (_, row) => {
+        const person = detalhesLista?.people.find(person => person.user_id === row.responsavel_id);
+        return <OwnerCell name={person?.nome} photo={person?.foto_url} emptyLabel={t(row.responsavel_id ? 'experience.ownerUnavailable' : 'experience.notAssigned')} />;
+      },
+    },
+    {
+      key: 'progresso', label: t('layout.progress'),
+      render: (_, row) => {
+        const tasks = detalhesLista?.tasks.filter(task => task.plano_id === row.id);
+        const value = tasks?.length ? tasks.filter(task => task.status === 'concluida').length / tasks.length * 100 : null;
+        return <RecordProgress value={value} label={t('layout.progress')} />;
+      },
+    },
+    {
       key: 'rpo_horas',
       mobilePriority: 3,
       label: 'RPO (h)',
@@ -150,6 +182,7 @@ export default function Continuidade() {
     },
     {
       key: 'proxima_revisao',
+      kind: 'date',
       mobilePriority: 1,
       label: t('fin.comum.proxRevisao'),
       render: (_val, row) => row.proxima_revisao ? formatDateOnly(row.proxima_revisao) : '—',

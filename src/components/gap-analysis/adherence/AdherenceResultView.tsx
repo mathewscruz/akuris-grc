@@ -475,7 +475,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
 
       {/* Seções organizadas em abas */}
       {veredito && (
-        <Tabs value={aba} onValueChange={setAba} className="space-y-4" ref={abasRef}>
+        <Tabs value={aba} onValueChange={setAba} ref={abasRef}>
           <div className="sticky top-0 z-10 -mx-1 bg-background/95 px-1 py-2 backdrop-blur">
             <TabsList className="h-auto flex-wrap justify-start">
               <TabsTrigger value="ajustes">{t('gapAnalysis.adherenceUi.verdict.ui.tabAdjust')} <span className="ml-1.5 tabular-nums text-muted-foreground">{acoes.length}</span></TabsTrigger>
@@ -486,7 +486,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
             </TabsList>
           </div>
 
-          <TabsContent value="ajustes" className="mt-0 space-y-4 animate-in fade-in duration-300">
+          <TabsContent value="ajustes" className="space-y-4 animate-in fade-in duration-300">
             {acoes.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.adjustHint')}</p>
@@ -522,13 +522,13 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
             )}
           </TabsContent>
 
-          <TabsContent value="atende" className="mt-0 space-y-3 animate-in fade-in duration-300">
+          <TabsContent value="atende" className="space-y-3 animate-in fade-in duration-300">
             <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.goodHint')}</p>
             {(assessment.pontos_fortes?.length ?? 0) === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.noItems')}</p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {assessment.pontos_fortes!.map((ponto: PontoForte, index: number) => (
+                {assessment.pontos_fortes?.map((ponto: PontoForte, index: number) => (
                   <div key={index} className="flex gap-3 rounded-lg border bg-card p-4 animate-in fade-in slide-in-from-bottom-1" style={{ animationDelay: `${(index % 6) * 50}ms`, animationFillMode: 'both' }}>
                     <IconSuccess className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={1.5} />
                     <div className="min-w-0">
@@ -547,7 +547,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           </TabsContent>
 
           {details && details.length > 0 && (
-            <TabsContent value="requisitos" className="mt-0 space-y-3 animate-in fade-in duration-300">
+            <TabsContent value="requisitos" className="space-y-3 animate-in fade-in duration-300">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.detailHint')}</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -589,7 +589,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
             </TabsContent>
           )}
 
-          <TabsContent value="fora" className="mt-0 space-y-3 animate-in fade-in duration-300">
+          <TabsContent value="fora" className="space-y-3 animate-in fade-in duration-300">
             <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.outOfScopeHint')}</p>
             {!foraEscopo || foraEscopo.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.noItems')}</p>
@@ -605,7 +605,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           </TabsContent>
 
           {assessment.analise_detalhada && (
-            <TabsContent value="completa" className="mt-0 animate-in fade-in duration-300">
+            <TabsContent value="completa" className="animate-in fade-in duration-300">
               <AnaliseCompleta texto={assessment.analise_detalhada} />
             </TabsContent>
           )}

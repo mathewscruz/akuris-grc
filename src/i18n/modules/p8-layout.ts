@@ -11,6 +11,11 @@ export const p8Layout = {
       search: 'Pesquisar',
       primaryAction: 'Ação principal',
       overview: 'Resumo',
+      listView: 'Lista',
+      gridView: 'Grade',
+      sortBy: 'Ordenar por',
+      progress: 'Progresso',
+      dialogDescription: 'Detalhes de {title}',
     },
   },
   en: {
@@ -21,6 +26,11 @@ export const p8Layout = {
       search: 'Search',
       primaryAction: 'Primary action',
       overview: 'Overview',
+      listView: 'List',
+      gridView: 'Grid',
+      sortBy: 'Sort by',
+      progress: 'Progress',
+      dialogDescription: '{title} details',
     },
   },
 };

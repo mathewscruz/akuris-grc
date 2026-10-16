@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -614,9 +614,10 @@ const GerenciamentoEmpresasInner = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="flex items-center gap-2"><IconOrg className="h-5 w-5 text-primary" />
                 {editingEmpresa ? t('admin.empresas.dialogEditTitle') : t('admin.empresas.dialogNewTitle')}
               </DialogTitle>
+              <DialogDescription>{t('layout.dialogDescription', { title: t('admin.empresas.fieldNome') })}</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -748,7 +749,7 @@ const GerenciamentoEmpresasInner = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
+                <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
@@ -759,7 +760,7 @@ const GerenciamentoEmpresasInner = () => {
                   <Button type="submit">
                     {editingEmpresa ? t('admin.empresas.atualizar') : t('admin.empresas.criar')}
                   </Button>
-                </div>
+                </DialogFooter>
               </form>
             </Form>
           </DialogContent>

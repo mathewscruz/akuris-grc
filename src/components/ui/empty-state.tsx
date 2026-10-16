@@ -29,7 +29,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
       return (
         <div
           ref={ref}
-          className={cn("flex flex-col items-center rounded-xl border border-dashed border-border px-4 py-10 text-center sm:px-8", className)}
+          className={cn("flex flex-col items-center rounded-lg border border-dashed border-border px-4 py-10 text-center sm:px-8", className)}
           {...props}
         >
           {icon && <div className="mb-3 text-primary [&_svg]:h-8 [&_svg]:w-8">{icon}</div>}
@@ -38,17 +38,17 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
           {atalhos.length > 0 && (
             <div className={cn("mt-6 grid w-full max-w-3xl gap-3", atalhos.length > 1 ? "sm:grid-cols-2 lg:grid-cols-3" : "max-w-xs")}>
               {atalhos.map((a) => (
-                <button
+                <Button variant="outline"
                   key={a.label}
                   type="button"
                   onClick={a.onClick}
-                  className="group flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-5 text-center transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group flex h-auto flex-col items-center gap-2 whitespace-normal rounded-lg border border-border bg-card p-5 text-center transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {a.icon && <span className="text-primary [&_svg]:h-6 [&_svg]:w-6">{a.icon}</span>}
                   <span className="text-sm font-semibold text-foreground">{a.label}</span>
                   {a.description && <span className="text-xs text-muted-foreground">{a.description}</span>}
                   <span aria-hidden="true" className="mt-1 text-primary transition-transform group-hover:translate-x-0.5">→</span>
-                </button>
+                </Button>
               ))}
             </div>
           )}

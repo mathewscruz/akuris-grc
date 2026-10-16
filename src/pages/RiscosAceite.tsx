@@ -261,7 +261,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (_v: string, r: any) => { const n = r.nivel_risco_residual || r.nivel_risco_inicial; return <StatusBadge {...resolveNivelRiscoTone(n)}>{formatStatus(n)}</StatusBadge>; } },
     { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
     { key: 'data_aceite', label: t('riscos.aceite.columns.acceptDate'), sortable: true, render: (value: string) => value ? formatDateOnly(value) : '-' },
-    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
+    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), kind: 'owner', ownerName: row => row.aprovador_nome },
     {
       key: 'data_proxima_revisao', label: t('riscos.aceite.columns.review'), sortable: true,
       /* Só a data: o selo por baixo repetia o que ela já diz. */
@@ -312,7 +312,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     // punha o mesmo risco com dois níveis diferentes em dois ecrãs.
     { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (_v: string, r: any) => { const n = r.nivel_risco_residual || r.nivel_risco_inicial; return <StatusBadge {...resolveNivelRiscoTone(n)}>{formatStatus(n)}</StatusBadge>; } },
     { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
-    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
+    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), kind: 'owner', ownerName: row => row.aprovador_nome },
     { key: 'data_proxima_revisao', label: t('riscos.aceite.columns.reviewDate'), render: (value: string) => value ? formatDateOnly(value) : '-' },
     {
       key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',
@@ -378,28 +378,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       />
 
       <Tabs defaultValue={totalPendentes > 0 ? "pendentes" : "aceitos"} className="space-y-4">
-        <TabsList className="h-auto bg-transparent p-0 gap-1 rounded-none border-b border-border w-full justify-start">
-          <TabsTrigger
-            value="pendentes"
-            className="relative text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
-          >
-            {t('riscos.aceite.tabs.pending')}
-            {totalPendentes > 0 && (
-              <StatusBadge tone="warning" className="ml-2">{totalPendentes}</StatusBadge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger
-            value="aceitos"
-            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
-          >
-            {t('riscos.aceite.tabs.accepted')} ({totalAceitos})
-          </TabsTrigger>
-          <TabsTrigger
-            value="expirados"
-            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
-          >
-            Aceites expirados ({totalExpirados})
-          </TabsTrigger>
+        <TabsList moduleTitle={t('riscos.aceite.title')}>
+          <TabsTrigger value="pendentes" count={totalPendentes}>{t('riscos.aceite.tabs.pending')}</TabsTrigger>
+          <TabsTrigger value="aceitos" count={totalAceitos}>{t('riscos.aceite.tabs.accepted')}</TabsTrigger>
+          <TabsTrigger value="expirados" count={totalExpirados}>{t('riscos.aceite.stats.expiredTitle')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pendentes">

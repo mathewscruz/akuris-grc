@@ -19,12 +19,14 @@ import { exportCSV } from "@/lib/csv-utils";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
+import { AkurisArea } from '@/components/charts/AkurisCharts';
 import { criticidadeControle, resultadoTeste } from '@/lib/metrics/controles';
 import { severidadeRiscoEfetiva, SEVERIDADES, type Severidade } from '@/lib/metrics/riscos';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
 import { formatMonthYearLabel, intlLocale, parseDataLocal, formatarDiaParaDB, formatDateOnly } from '@/lib/date-utils';
 import { pct } from '@/lib/metrics/core';
+import { useAuth } from '@/components/AuthProvider';
+import { logger } from '@/lib/logger';
 
 interface RelatoriosDialogProps {
   open: boolean;
@@ -32,6 +34,7 @@ interface RelatoriosDialogProps {
 }
 
 export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) {
+  const empresaId = useAuth().profile?.empresa_id;
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date()
@@ -42,9 +45,10 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
   // Só corre com o diálogo aberto: sem o guarda, cada carregamento da
   // listagem de controles disparava também as consultas do relatório.
   const { data: controles } = useQuery({
-    queryKey: ['controles-relatorios'],
-    enabled: open,
+    queryKey: ['controles-relatorios', empresaId],
+    enabled: open && !!empresaId,
     queryFn: async () => {
+      if (!empresaId) return [];
       const { data, error } = await supabase
         .from('controles')
         .select(`
@@ -52,7 +56,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
           categoria:controles_categorias(nome, cor),
           testes:controles_testes(resultado, data_teste, estado, eficacia_desenho, eficacia_operacional, amostra_total, amostra_excecoes, testador_id, atestado_por, atestado_em),
           riscos:controles_riscos(*)
-        `);
+        `).eq('empresa_id', empresaId);
       
       if (error) throw error;
       return data;
@@ -61,10 +65,11 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
 
   /** Nomes dos responsáveis: a coluna guarda `profiles.user_id`. */
   const { data: perfis } = useQuery({
-    queryKey: ['controles-relatorios-perfis'],
-    enabled: open,
+    queryKey: ['controles-relatorios-perfis', empresaId],
+    enabled: open && !!empresaId,
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('user_id, nome');
+      if (!empresaId) return [];
+      const { data, error } = await supabase.from('profiles').select('user_id, nome').eq('empresa_id', empresaId);
       if (error) throw error;
       return data ?? [];
     },
@@ -77,12 +82,13 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
   }, [perfis]);
 
   const { data: stats } = useQuery({
-    queryKey: ['controles-stats-relatorio'],
-    enabled: open,
+    queryKey: ['controles-stats-relatorio', empresaId],
+    enabled: open && !!empresaId,
     queryFn: async () => {
+      if (!empresaId) return null;
       const { data: controles, error } = await supabase
         .from('controles')
-        .select('status, criticidade, tipo');
+        .select('status, criticidade, tipo').eq('empresa_id', empresaId);
       
       if (error) throw error;
 
@@ -115,12 +121,13 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
 
   /** Riscos da empresa e os seus vínculos a controlos — base da cobertura e dos gaps. */
   const { data: riscosCobertura } = useQuery({
-    queryKey: ['riscos-cobertura-relatorio'],
-    enabled: open,
+    queryKey: ['riscos-cobertura-relatorio', empresaId],
+    enabled: open && !!empresaId,
     queryFn: async () => {
+      if (!empresaId) return [];
       const [{ data: riscos, error: e1 }, { data: vinculos, error: e2 }] = await Promise.all([
-        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, status'),
-        supabase.from('controles_riscos').select('risco_id'),
+        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, status').eq('empresa_id', empresaId),
+        supabase.from('controles_riscos').select('risco_id, controles!inner(empresa_id)').eq('controles.empresa_id', empresaId),
       ]);
       if (e1) throw e1;
       if (e2) throw e2;
@@ -362,7 +369,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       });
 
     if (error) {
-      console.error('Erro ao salvar relatório:', error);
+      logger.error('Erro ao salvar relatório', { error });
     }
   };
 
@@ -477,15 +484,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   </div>
                 ) : (
                   <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={tendencia} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
-                        <XAxis dataKey="mes" stroke={CHART_AXIS} fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis domain={[0, 100]} stroke={CHART_AXIS} fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                        <ChartTooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number) => [v + '%', t('controlesAuditorias.rdTendenciaEixo')]} />
-                        <Line type="monotone" dataKey="eficacia" stroke={chartSeries(0)} strokeWidth={2} dot={{ r: 3 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <AkurisArea height={256} domain={[0, 100]} data={tendencia.map(d => ({ label: d.mes, value: d.eficacia }))} format={value => `${value}%`} />
                   </div>
                 )}
               </CardContent>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { AkurisBars } from '@/components/charts/AkurisCharts';
 import { IconSuccess, IconWarning, IconTime, IconTrendUp, IconTimer } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -25,7 +26,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
       const ini = new Date(); ini.setDate(ini.getDate() - (i + 1) * 7); ini.setHours(0, 0, 0, 0);
       const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
       const c = concluidas.filter((t) => {
-        const d = new Date(t.concluida_em!);
+        const d = new Date(t.concluida_em ?? 0);
         return d >= ini && d < fim;
       }).length;
       semanas.push({ label: `S-${i}`, concluidas: c });
@@ -66,19 +67,19 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
         <Card variant="elevated">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('projetos.metricas.velocityChart')}</div>
-            <BarChart data={m.semanas.map((s) => ({ label: s.label, valor: s.concluidas }))} max={Math.max(1, ...m.semanas.map((s) => s.concluidas))} />
+            <AkurisBars data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byColumn')}</div>
-            <BarChart data={m.porColuna.map((c) => ({ label: c.nome, valor: c.qtd }))} max={Math.max(1, ...m.porColuna.map((c) => c.qtd))} />
+            <AkurisBars data={m.porColuna.map((c) => ({ label: c.nome, value: c.qtd }))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byPriority')}</div>
-            <BarChart data={m.porPrior.map((p) => ({ label: getPrioridadeLabel(t, p.prior), valor: p.qtd }))} max={Math.max(1, ...m.porPrior.map((p) => p.qtd))} />
+            <AkurisBars data={m.porPrior.map((p) => ({ label: getPrioridadeLabel(t, p.prior), value: p.qtd }))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
@@ -123,18 +124,3 @@ function Row({ label, value, hint, tone }: { label: string; value: string; hint?
   );
 }
 
-function BarChart({ data, max }: { data: { label: string; valor: number }[]; max: number }) {
-  return (
-    <div className="space-y-1.5">
-      {data.map((d) => (
-        <div key={d.label} className="flex items-center gap-2 text-xs" title={d.label}>
-          <div className="w-28 flex-shrink-0 truncate text-muted-foreground" title={d.label}>{d.label}</div>
-          <div className="flex-1 min-h-0 h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-primary transition-ui" style={{ width: `${(d.valor / max) * 100}%` }} />
-          </div>
-          <div className="w-8 text-right tabular-nums font-medium">{d.valor}</div>
-        </div>
-      ))}
-    </div>
-  );
-}

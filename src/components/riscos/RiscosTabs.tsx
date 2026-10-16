@@ -24,12 +24,17 @@ export function resolveRiscosView(requested: string | null, _stored: string | nu
 }
 
 interface Props {
+  riskCount?: number;
+  acceptedCount?: number;
+  matrixCount?: number;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
   matrix: React.ReactNode;
   table: React.ReactNode;
   aceite: React.ReactNode;
 }
 
-export function RiscosTabs({ matrix, table, aceite }: Props) {
+export function RiscosTabs({ matrix, table, aceite, riskCount, acceptedCount, matrixCount, searchValue, onSearchChange }: Props) {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedView = searchParams.get('view');
@@ -57,16 +62,16 @@ export function RiscosTabs({ matrix, table, aceite }: Props) {
 
   return (
     <Tabs value={activeView} onValueChange={onChange} className="w-full">
-      <TabsList>
+      <TabsList moduleTitle={t('sidebar.riskManagement')} moduleIcon={<RiscosIcon className="h-4 w-4" />} searchValue={searchValue} onSearchChange={activeView === 'table' ? onSearchChange : undefined}>
         <TabsTrigger
-          value="table"
+          value="table" count={riskCount}
           className="text-xs"
         >
           <RiscosIcon />
           {t('riscosDetalhe.tabs.table')}
         </TabsTrigger>
         <TabsTrigger
-          value="matrix"
+          value="matrix" count={matrixCount}
           className="text-xs"
         >
           <IconGrid />
@@ -74,6 +79,7 @@ export function RiscosTabs({ matrix, table, aceite }: Props) {
         </TabsTrigger>
         <TabsTrigger
           value="aceite"
+          count={acceptedCount}
           className="text-xs"
         >
           <IconShieldCheck />

@@ -49,6 +49,7 @@ import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailD
 import { useContratoLigacoes } from '@/hooks/useDetalheLigacoes';
 import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';
 import { TrilhaAuditoria } from '@/components/common/TrilhaAuditoria';
+import { useSupplierCount } from '@/hooks/useSupplierCount';
 
 interface Contrato {
   id: string;
@@ -85,6 +86,7 @@ export default function Contratos() {
   useFocusRow();
   const [searchParams, setSearchParams] = useSearchParams();
   const { empresaId } = useEmpresaId();
+  const { data: supplierCount } = useSupplierCount();
   const queryClient = useQueryClient();
   const [selecionadosContratos, setSelecionadosContratos] = useState<Set<string>>(new Set());
   const bulkContratos = useBulkStatusUpdate({ table: 'contratos', queryKeys: ['contratos', 'contratos-stats'] });
@@ -498,7 +500,7 @@ export default function Contratos() {
         />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList>
+          <TabsList moduleTitle={t('modules.contratos.title')} searchValue={searchTerm} onSearchChange={setSearchTerm}>
             {/*
               O nome da aba fica, tambem no telemovel.
 
@@ -508,11 +510,11 @@ export default function Contratos() {
               icone nao distingue. Duas abas com nome cabem folgadas em 375px, e
               a `TabsList` ja rola na horizontal se algum dia nao couberem.
             */}
-            <TabsTrigger value="contratos" className="flex items-center gap-2">
+            <TabsTrigger value="contratos" count={contratos.length} className="flex items-center gap-2">
               <IconFile className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>
-            <TabsTrigger value="fornecedores" className="flex items-center gap-2">
+            <TabsTrigger value="fornecedores" count={supplierCount ?? undefined} className="flex items-center gap-2">
               <IconOrg className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.fornecedores')}</span>
             </TabsTrigger>
@@ -696,6 +698,8 @@ export default function Contratos() {
             */}
             <FornecedoresManager
               ref={gestorFornecedores}
+              headerSearch={searchTerm}
+              onHeaderSearchChange={setSearchTerm}
               botaoNovoNoCabecalho
               focoId={searchParams.get('focus')}
             />
@@ -807,13 +811,13 @@ export default function Contratos() {
               { label: t('fin.comum.fornecedor'), value: detalheContrato.fornecedores?.nome },
               { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
               { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato ? (nomePorUsuario.get(detalheContrato.gestor_contrato) || detalheContrato.gestor_contrato) : null },
-              { label: t('detalheRegisto.trilhaCampos.areaSolicitante'), value: (detalheContrato as any).area_solicitante },
-              { label: t('detalheRegisto.trilhaCampos.sla'), value: (detalheContrato as any).sla_principal, full: true },
+              { label: t('trilhaCampos.areaSolicitante'), value: (detalheContrato as any).area_solicitante },
+              { label: t('trilhaCampos.sla'), value: (detalheContrato as any).sla_principal, full: true },
             ] },
             { title: t('detalheRegisto.secPrazos'), fields: [
               { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
               { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
-              { label: t('detalheRegisto.trilhaCampos.dataAssinatura'), value: (detalheContrato as any).data_assinatura ? formatDateOnly((detalheContrato as any).data_assinatura) : null },
+              { label: t('trilhaCampos.dataAssinatura'), value: (detalheContrato as any).data_assinatura ? formatDateOnly((detalheContrato as any).data_assinatura) : null },
               { label: t('detalheRegisto.kRenovacao'), value: (detalheContrato as any).renovacao_automatica == null ? null : t((detalheContrato as any).renovacao_automatica ? 'detalheRegisto.sim' : 'detalheRegisto.nao') },
             ] },
             { title: t('detalheRegisto.secDescricao'), fields: [

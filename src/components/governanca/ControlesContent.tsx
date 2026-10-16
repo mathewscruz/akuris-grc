@@ -90,7 +90,7 @@ interface Categoria {
   cor: string;
 }
 
-export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
+export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSearchChange }: { actionsSlot?: HTMLElement | null; headerSearch?: string; onHeaderSearchChange?: (value: string) => void } = {}) {
   const { t } = useLanguage();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -115,7 +115,9 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
   const [tipoFilter, setTipoFilter] = useListState<string>('tipoFilter', "todos");
   const [criticidadeFilter, setCriticidadeFilter] = useListState<string>('criticidadeFilter', "todos");
   const [auditoriaFilter, setAuditoriaFilter] = useListState<string>('auditoriaFilter', "todas");
-  const [searchValue, setSearchValue] = useListState<string>('searchValue', "");
+  const [localSearch, setLocalSearch] = useListState<string>('searchValue', "");
+  const searchValue = headerSearch ?? localSearch;
+  const setSearchValue = onHeaderSearchChange ?? setLocalSearch;
   const [sortField, setSortField] = useListState<string>('sortField', "nome");
   const [sortDirection, setSortDirection] = useListState<'asc' | 'desc'>('sortDirection', 'asc');
   const { toast } = useToast();

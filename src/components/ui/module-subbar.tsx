@@ -1,0 +1,22 @@
+import { type ReactNode } from 'react';
+import { Input } from '@/components/ui/input';
+import { IconChevron, IconSearch } from '@/components/icons';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+export function ModuleSubbar({ title, activeLabel, icon, children, searchValue, onSearchChange }: {
+  title: string; activeLabel?: string; icon?: ReactNode; children: ReactNode;
+  searchValue?: string; onSearchChange?: (value: string) => void;
+}) {
+  const { t } = useLanguage();
+  return <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 border-b border-border bg-background py-1">
+    <div className="hidden shrink-0 items-center gap-2 text-xs lg:flex">
+      {icon}<span className="font-medium text-foreground">{title}</span>
+      {activeLabel && <><IconChevron aria-hidden className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">{activeLabel}</span></>}
+    </div>
+    <div className="min-w-0 flex-1">{children}</div>
+    {onSearchChange && <div className="relative hidden w-48 shrink-0 lg:block xl:w-56">
+      <IconSearch aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <Input value={searchValue ?? ''} onChange={event => onSearchChange(event.target.value)} aria-label={t('layout.search')} placeholder={t('layout.search')} className="h-9 pl-8" />
+    </div>}
+  </div>;
+}

@@ -10,6 +10,8 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthContext } from '@/components/AuthProvider';
 import { acumularPorSemana } from '@/hooks/useSerieSemanal';
+import { readAllPages } from '@/lib/read-all-pages';
+import { severidadeRiscoEfetiva } from '@/lib/metrics/riscos';
 
 const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 function sevDe(nivel: string | null): SevKey | null {
@@ -27,13 +29,14 @@ function useSeriesPorGravidade() {
   const empresaId = useContext(AuthContext)?.profile?.empresa_id;
   const [series, setSeries] = useState<Partial<Record<SevKey, number[]>>>({});
   useEffect(() => {
+    setSeries({});
     if (!empresaId) return;
     let vivo = true;
-    supabase.from('riscos').select('created_at, nivel_risco_inicial').eq('empresa_id', empresaId).limit(2000)
+    readAllPages((from, to) => supabase.from('riscos').select('created_at, nivel_risco_inicial, nivel_risco_residual, severidade_efetiva').eq('empresa_id', empresaId).is('arquivado_em', null).order('id').range(from, to))
       .then(({ data, error }) => {
         if (!vivo || error || !data) return;
         const grupos: Record<SevKey, string[]> = { critico: [], alto: [], medio: [], baixo: [] };
-        data.forEach((r) => { const k = sevDe(r.nivel_risco_inicial); if (k) grupos[k].push(r.created_at); });
+        data.forEach((r) => { const k = severidadeRiscoEfetiva(r); if (k in grupos) grupos[k as SevKey].push(r.created_at); });
         const out: Partial<Record<SevKey, number[]>> = {};
         (Object.keys(grupos) as SevKey[]).forEach((k) => { const s = acumularPorSemana(grupos[k]); if (s.some((v) => v > 0)) out[k] = s; });
         setSeries(out);

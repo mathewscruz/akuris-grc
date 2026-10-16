@@ -103,7 +103,6 @@ describe('identidade em pessoas e ações', () => {
     expect(avatar).toContain('object-cover');
     expect(avatar).toContain('ring-1 ring-border/80');
     expect(avatar).toContain('bg-muted font-semibold tracking-tight text-foreground');
-    expect(controles).toContain("controle.responsavel_nome.split(/\\s+/)[0]");
   });
 
   it('Categorias não é a única ação sem glifo', () => {

@@ -19,6 +19,9 @@ import { compararEscala } from '@/lib/ordem-de-escala'
 import { useRecorteDaUrl } from '@/hooks/useRecorteDaUrl'
 import { useListState } from '@/hooks/useListState'
 import { QueryError } from '@/components/ui/query-error'
+import { IconGrid, IconList, IconCalendar, IconSettings } from '@/components/icons'
+import { OwnerCell } from '@/components/ui/owner-cell'
+import { RecordProgress } from '@/components/ui/record-progress'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
@@ -73,6 +76,9 @@ export interface Column<T> {
   mobilePriority?: number
   /** Campo disponível na tabela larga, mas omitido do cartão de telemóvel. */
   mobileHidden?: boolean
+  kind?: 'owner' | 'progress' | 'date'
+  ownerName?: (item: T) => string | null | undefined
+  ownerPhoto?: (item: T) => string | null | undefined
 }
 
 export interface Filter {
@@ -115,6 +121,7 @@ interface DataTableProps<T> {
       label: string
       onClick: () => void
     }
+    shortcuts?: Array<{ icon?: React.ReactNode; label: string; description?: string; onClick: () => void }>
   }
   sortField?: string
   sortDirection?: 'asc' | 'desc'
@@ -176,6 +183,7 @@ export function DataTable<T extends Record<string, any>>({
   const showColumnPicker = allColumns.length > 7
   const [currentPage, setCurrentPage] = useListState(`table:${stateKey}:page`, 1)
   const [pageSize, setPageSize] = useListState(`table:${stateKey}:size`, initialPageSize)
+  const [recordView, setRecordView] = useListState<'list' | 'grid'>(`table:${stateKey}:view`, 'list')
   const [expandedMobileRows, setExpandedMobileRows] = React.useState<Set<string>>(() => new Set())
 
   /**
@@ -220,7 +228,8 @@ export function DataTable<T extends Record<string, any>>({
   */
   const dadosRecortados = React.useMemo(() => {
     if (!recorte.ids) return data
-    const recortados = data.filter((item) => recorte.ids!.has(String((item as any)?.id)))
+    const ids = recorte.ids
+    const recortados = data.filter((item) => ids.has(String((item as any)?.id)))
     return recortados.length > 0 ? recortados : data
   }, [data, recorte.ids])
 
@@ -314,7 +323,7 @@ export function DataTable<T extends Record<string, any>>({
     const next = new Set(selectedSet)
     if (next.has(id)) next.delete(id)
     else next.add(id)
-    onSelectionChange!(next)
+    onSelectionChange?.(next)
   }
   const pageRowIds = paginatedData.map((item, index) => rowId(item, index))
   const allPageSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedSet.has(id))
@@ -323,7 +332,7 @@ export function DataTable<T extends Record<string, any>>({
     const next = new Set(selectedSet)
     if (allPageSelected) pageRowIds.forEach((id) => next.delete(id))
     else pageRowIds.forEach((id) => next.add(id))
-    onSelectionChange!(next)
+    onSelectionChange?.(next)
   }
   const seenRows = React.useRef<Set<string>>(new Set())
   const rowsInitialized = React.useRef(false)
@@ -389,7 +398,16 @@ export function DataTable<T extends Record<string, any>>({
     (searchable && typeof onSearchChange === 'function') ||
     filters.length > 0 ||
     Boolean(onExport) ||
-    Boolean(onRefresh && showRefresh) || showColumnPicker
+    Boolean(onRefresh && showRefresh) || showColumnPicker || data.length > 0
+
+  const renderValue = (column: Column<T>, item: T) => {
+    const value = item[column.key as keyof T]
+    if (column.kind === 'owner') return <OwnerCell name={column.ownerName?.(item)} photo={column.ownerPhoto?.(item)} emptyLabel={t('experience.notAssigned')} />
+    if (column.kind === 'progress') return <RecordProgress value={value == null ? null : Number(value)} label={column.label} />
+    const content = column.render ? column.render(value, item) : column.key === 'status' ? formatStatus(String(value ?? '')) || '—' : String(value ?? '—')
+    const dateColumn = column.kind === 'date' || /^(data_|prazo$|deadline$|validade$|vencimento$)/.test(String(column.key))
+    return dateColumn && value ? <span className="inline-flex items-center gap-1.5"><IconCalendar aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />{content}</span> : content
+  }
 
   if (error) return <QueryError onRetry={onRefresh} />
 
@@ -445,7 +463,7 @@ export function DataTable<T extends Record<string, any>>({
           ))}
         >
           {showColumnPicker && <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="outline" size="sm">{t('experience.columns')}</Button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label={t('experience.columns')} title={t('experience.columns')}><IconSettings className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
               {allColumns.filter(canHideColumn).map((column) => <DropdownMenuCheckboxItem key={String(column.key)} checked={!hiddenColumns.includes(String(column.key))} onSelect={(event) => event.preventDefault()} onCheckedChange={(checked) => setHiddenColumns((hidden) => checked ? hidden.filter((key) => key !== String(column.key)) : [...hidden, String(column.key)])}>{column.label}</DropdownMenuCheckboxItem>)}
               <DropdownMenuSeparator />
@@ -457,11 +475,15 @@ export function DataTable<T extends Record<string, any>>({
               ecrã anunciava «botão», sem dizer qual. O nome fica sempre, a
               palavra continua a aparecer só quando há largura para ela. */}
           {onRefresh && showRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh} aria-label={t('common.refresh')}>
-              <IconRefresh className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('common.refresh')}</span>
+            <Button variant="outline" size="icon" onClick={onRefresh} aria-label={t('common.refresh')} title={t('common.refresh')}>
+              <IconRefresh className="h-4 w-4" />
             </Button>
           )}
+          <div role="group" aria-label={t('layout.view')} className="flex gap-1">
+            <Button variant={recordView === 'list' ? 'secondary' : 'ghost'} size="icon" aria-pressed={recordView === 'list'} aria-label={t('layout.listView')} title={t('layout.listView')} onClick={() => setRecordView('list')}><IconList className="h-4 w-4" /></Button>
+            <Button variant={recordView === 'grid' ? 'secondary' : 'ghost'} size="icon" aria-pressed={recordView === 'grid'} aria-label={t('layout.gridView')} title={t('layout.gridView')} onClick={() => setRecordView('grid')}><IconGrid className="h-4 w-4" /></Button>
+          </div>
+          {recordView === 'grid' && <Select value={activeSortField ?? ''} onValueChange={handleSort}><SelectTrigger className="w-40" aria-label={t('layout.sortBy')}><SelectValue placeholder={t('layout.sortBy')} /></SelectTrigger><SelectContent>{columns.filter(isSortable).map(column => <SelectItem key={String(column.key)} value={String(column.key)}>{column.label}</SelectItem>)}</SelectContent></Select>}
           {onExport && (
             <Button variant="outline" size="sm" onClick={onExport} aria-label={t('common.export')}>
               <IconDownload className="h-4 w-4 sm:mr-2" />
@@ -497,7 +519,7 @@ export function DataTable<T extends Record<string, any>>({
           A tabela tem até dez colunas e ~1190px; espremida em 375px, os
           cabeçalhos e os nomes partiam letra a letra ("Có/di/go"). O cartão
           empilha rótulo e valor e mantém as ações no canto. */}
-      <div className="md:hidden">
+      <div className={recordView === 'grid' ? 'block' : 'md:hidden'}>
         {!loading && data.length === 0 ? (
           ecraVazio && (
             <EmptyState
@@ -505,10 +527,11 @@ export function DataTable<T extends Record<string, any>>({
               title={ecraVazio.title}
               description={ecraVazio.description}
               action={ecraVazio.action}
+              shortcuts={aFiltrar ? undefined : emptyState?.shortcuts}
             />
           )
         ) : (
-          <div key={`mobile-${dataMotionKey}`} className="akuris-data-refresh divide-y border-t">
+          <div key={`mobile-${dataMotionKey}`} className={cn('akuris-data-refresh grid gap-3 p-3', recordView === 'grid' && 'md:grid-cols-2 xl:grid-cols-3')}>
             {paginatedData.map((item, index) => {
               const acoes = columns.find(isActionsColumn)
               const semAcoes = columns.filter((c) => !isActionsColumn(c))
@@ -524,24 +547,21 @@ export function DataTable<T extends Record<string, any>>({
                   a.originalIndex - b.originalIndex
                 )
                 .map(({ column }) => column)
-              const rowKey = String((item as any).id ?? index)
+              const rowKey = rowId(item, index)
               const expanded = expandedMobileRows.has(rowKey)
-              const visibleColumns = expanded ? resto : resto.slice(0, mobileCollapsedFields)
-              const hasMore = resto.length > mobileCollapsedFields
+              const visibleColumns = expanded || recordView === 'grid' ? resto : resto.slice(0, mobileCollapsedFields)
+              const hasMore = recordView !== 'grid' && resto.length > mobileCollapsedFields
               const abrir = onRowClick
                 ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
                 : null
-              const valor = (column: Column<T>) =>
-                column.render
-                  ? column.render(item[column.key as keyof T], item)
-                  : column.key === 'status' ? formatStatus(String(item[column.key as keyof T] ?? '')) || '-' : String(item[column.key as keyof T] ?? '-')
+              const valor = (column: Column<T>) => renderValue(column, item)
               return (
                 <div
                   key={rowId(item, index)}
                   data-focus-id={(item as any).id}
                   data-row-new={newRows.has(rowId(item, index)) || undefined}
                   {...(abrir ?? {})}
-                  className={cn('akuris-data-card p-4 space-y-3', abrir?.className)}
+                  className={cn('akuris-data-card min-w-0 rounded-lg border border-border bg-surface-1 p-4 space-y-3', abrir?.className)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     {selectionEnabled && (
@@ -553,7 +573,7 @@ export function DataTable<T extends Record<string, any>>({
                         />
                       </span>
                     )}
-                    <div className="min-w-0 font-medium">{principal && valor(principal)}</div>
+                    <div className="min-w-0 font-medium">{principal && valor(principal)}{typeof item.descricao === 'string' && <p className="mt-1 line-clamp-2 text-xs font-normal text-muted-foreground">{item.descricao}</p>}</div>
                     {acoes && <div className="shrink-0">{valor(acoes)}</div>}
                   </div>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
@@ -565,7 +585,7 @@ export function DataTable<T extends Record<string, any>>({
                     ))}
                   </dl>
                   {hasMore && (
-                    <button
+                    <Button variant="ghost" size="sm"
                       type="button"
                       className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       aria-expanded={expanded}
@@ -583,7 +603,7 @@ export function DataTable<T extends Record<string, any>>({
                       {expanded
                         ? <IconChevronUp className="h-4 w-4" strokeWidth={1.5} />
                         : <IconChevronDown className="h-4 w-4" strokeWidth={1.5} />}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )
@@ -593,7 +613,7 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Ecrã largo: a tabela densa, que continua a ser a melhor leitura. */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className={cn('overflow-x-auto', recordView === 'grid' ? 'hidden' : 'hidden md:block')}>
         <Table>
           <TableHeader className="sticky top-0 z-20">
             <TableRow>
@@ -630,14 +650,14 @@ export function DataTable<T extends Record<string, any>>({
                     )}
                   >
                     {sortable ? (
-                      <button
+                      <Button variant="ghost" size="sm"
                         type="button"
                         className="inline-flex w-full items-center gap-1.5 rounded-md py-2 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         onClick={() => handleSort(String(column.key))}
                       >
                         {column.label}
                         {getSortIcon(String(column.key))}
-                      </button>
+                      </Button>
                     ) : (
                       <div className="flex items-center gap-1.5">{column.label}</div>
                     )}
@@ -656,6 +676,7 @@ export function DataTable<T extends Record<string, any>>({
                       title={ecraVazio.title}
                       description={ecraVazio.description}
                       action={ecraVazio.action}
+                      shortcuts={aFiltrar ? undefined : emptyState?.shortcuts}
                     />
                   )}
                 </TableCell>
@@ -712,13 +733,11 @@ export function DataTable<T extends Record<string, any>>({
                         columnIndex === 0 && !selectionEnabled && 'sticky left-0 z-10 bg-inherit',
                       )}
                     >
-                      {(() => { const conteudo = column.render
-                        ? column.render(item[column.key as keyof T], item)
+                      {(() => { const conteudo = renderValue(column, item);
                         /* `??` e não `||`: um `0` (ou `false`) é um valor, não
                            uma ausência. Com `||`, uma licença com 0 postos lia-se
                            "—" na tabela e "0" no cartão do telemóvel -- o mesmo
                            dado com duas verdades conforme o tamanho do ecrã. */
-                        : column.key === 'status' ? formatStatus(String(item[column.key as keyof T] ?? '')) || '-' : String(item[column.key as keyof T] ?? '-');
                         if (column !== colunaPrincipal) return conteudo;
                         const desc = (item as any).descricao;
                         const sub = typeof desc === 'string' && desc.trim() ? desc.trim() : null;

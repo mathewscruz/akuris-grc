@@ -122,7 +122,7 @@ export function PageHeader({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {secondaryActions!.map((action, i) => (
+                  {secondaryActions?.map((action, i) => (
                     <React.Fragment key={`${action.label}-${i}`}>
                       {action.separatorBefore && i > 0 && <DropdownMenuSeparator />}
                       <DropdownMenuItem disabled={action.disabled} onClick={action.onClick}>

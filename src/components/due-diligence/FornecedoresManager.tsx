@@ -23,6 +23,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { resolveCriticidadeTone, resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor } from '@/lib/fornecedor-status';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
 import { useFornecedorLigacoes } from '@/hooks/useDetalheLigacoes';
 import { ConsultaReceita } from './ConsultaReceita';
@@ -138,6 +139,8 @@ interface Props {
    * encontra. A página abre o diálogo pelo `ref`.
    */
   botaoNovoNoCabecalho?: boolean;
+  headerSearch?: string;
+  onHeaderSearchChange?: (value: string) => void;
 }
 
 /** O que a página pode pedir ao gestor. */
@@ -146,7 +149,7 @@ export interface FornecedoresManagerHandle {
 }
 
 export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(function FornecedoresManager(
-  { acoesAvaliacao, focoId, botaoNovoNoCabecalho }: Props,
+  { acoesAvaliacao, focoId, botaoNovoNoCabecalho, headerSearch, onHeaderSearchChange }: Props,
   ref,
 ) {
   const { t } = useLanguage();
@@ -155,7 +158,9 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
   const [detalheFornecedor, setDetalheFornecedor] = useState<any>(null);
   const { data: fornLig, isLoading: fornLigLoading } = useFornecedorLigacoes(detalheFornecedor?.id);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
-  const [searchTerm, setSearchTerm] = useListState('supplierSearch', '');
+  const [localSearch, setLocalSearch] = useListState('supplierSearch', '');
+  const searchTerm = headerSearch ?? localSearch;
+  const setSearchTerm = onHeaderSearchChange ?? setLocalSearch;
   /**
    * Sem filtro por omissão.
    *
@@ -511,6 +516,10 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
       ),
     },
     {
+      key: 'contato_responsavel', label: t('dueDiligence.fornecedoresManager.fieldResponsibleContact'),
+      render: (_, row) => <OwnerCell name={row.contato_responsavel} emptyLabel={t('experience.notAssigned')} />,
+    },
+    {
       key: 'contratos',
       mobilePriority: 4,
       label: t('dueDiligence.fornecedoresManager.colContratos'),
@@ -618,6 +627,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
             onOpenChange={handleOpenChange}
             icon={IconOrg}
             title={editingFornecedor ? t('dueDiligence.fornecedoresManager.editTitle') : t('dueDiligence.fornecedoresManager.createTitle')}
+            description={t('layout.dialogDescription', { title: t('dueDiligence.fornecedoresManager.fieldName') })}
             size="md"
             onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
             submitLabel={editingFornecedor ? t('dueDiligence.fornecedoresManager.update') : t('dueDiligence.fornecedoresManager.create')}

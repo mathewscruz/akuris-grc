@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
 import { useListState } from '@/hooks/useListState';
@@ -303,28 +304,7 @@ export default function AtivosLicencas() {
       key: 'responsavel',
       mobilePriority: 2,
       label: t('fin.comum.responsavel'),
-      render: (_: any, licenca: Licenca) => {
-        if (!licenca.responsavel_nome) return '-';
-        
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
-                  <Avatar className="h-7 w-7 shrink-0">
-                    {licenca.responsavel_avatar && <AvatarImage src={licenca.responsavel_avatar} alt={licenca.responsavel_nome} />}
-                    <AvatarFallback className="text-xs">{licenca.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <span className="truncate text-sm">{licenca.responsavel_nome.split(/\s+/)[0]}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{licenca.responsavel_nome}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
+      render: (_: any, licenca: any) => <OwnerCell name={licenca.responsavel_nome} photo={licenca.responsavel_avatar} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: 'acoes',

@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { readAllPages, readAllPagesByIds } from "@/lib/read-all-pages";
 import { auditItemSummary } from '@/lib/auditoria-itens';
 import { useListState } from "@/hooks/useListState";
@@ -35,12 +36,14 @@ import { formatDateOnly, formatarDiaParaDB} from "@/lib/date-utils";
 import { formatPrioridade, formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
+export default function AuditoriasContent({ actionsSlot, headerSearch, onHeaderSearchChange }: { actionsSlot?: HTMLElement | null; headerSearch?: string; onHeaderSearchChange?: (value: string) => void } = {}) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const location = useLocation();
   const { empresaId } = useEmpresaId();
-  const [searchTerm, setSearchTerm] = useListState("searchTerm", "");
+  const [localSearch, setLocalSearch] = useListState("searchTerm", "");
+  const searchTerm = headerSearch ?? localSearch;
+  const setSearchTerm = onHeaderSearchChange ?? setLocalSearch;
   const [statusFilter, setStatusFilter] = useListState<string>("statusFilter", "todos");
   const [tipoFilter, setTipoFilter] = useListState<string>("tipoFilter", "todos");
   const [selectedAuditoria, setSelectedAuditoria] = useState<any>(null);
@@ -417,9 +420,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       sortable: true,
       render: (_v: any, a: any) => {
         const u = usuarios?.find((x: any) => x.user_id === a.auditor_responsavel);
-        return u?.nome
-          ? <span className="text-xs">{u.nome}</span>
-          : <span className="text-muted-foreground">-</span>;
+        return <OwnerCell name={u?.nome} emptyLabel={t('experience.notAssigned')} />;
       },
     },
     {

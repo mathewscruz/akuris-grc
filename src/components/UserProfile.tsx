@@ -1,7 +1,8 @@
+import { IconPerson } from '@/components/icons';
 import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Chip } from '@/components/ui/chip';
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfilePopover } from './UserProfilePopover';
@@ -99,7 +100,8 @@ const UserProfile: React.FC = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{t('residuos.geral.editarPerfil')}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><IconPerson className="h-5 w-5 text-primary" />{t('residuos.geral.editarPerfil')}</DialogTitle>
+          <DialogDescription>{t('layout.dialogDescription', { title: displayName })}</DialogDescription>
         </DialogHeader>
         <UserProfilePopover onClose={() => setPopoverOpen(false)} />
       </DialogContent>
