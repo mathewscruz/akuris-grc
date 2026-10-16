@@ -435,13 +435,15 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     <DialogShell
       open={open}
       onOpenChange={(newOpen) => {
-        // Prevenir fechamento durante análise
-        if (analysisState.isAnalyzing && !analysisState.isError) {
+        // Fechar durante a análise: ela continua em segundo plano e o sino avisa no fim.
+        if (!newOpen && analysisState.isAnalyzing && !analysisState.isError && analysisState.assessmentId) {
           toast({
             title: t('gapAnalysis.adherenceUi.dialog.analysisInProgressTitle'),
             description: t('gapAnalysis.adherenceUi.dialog.analysisInProgressDescription'),
           });
-          return;
+          setAnalysisState({ isAnalyzing: false, assessmentId: null, currentStep: '', progress: 0, isError: false, errorMessage: '' });
+          setProgressDetail('');
+          onSuccess();
         }
         onOpenChange(newOpen);
       }}
@@ -462,6 +464,9 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
               isError={analysisState.isError}
               errorMessage={analysisState.errorMessage}
             />
+            {analysisState.isAnalyzing && progressDetail && (
+              <p className="mt-3 text-center text-sm text-muted-foreground">{progressDetail}</p>
+            )}
             
             {/* Botão de fechar em caso de erro */}
             {analysisState.isError && (
