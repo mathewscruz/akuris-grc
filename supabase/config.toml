@@ -279,7 +279,8 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.populate-requirement-guidance]
-verify_jwt = true
+# Chamado pela rotina agendada com token interno; o código valida o token ou o JWT do utilizador.
+verify_jwt = false
 
 [functions.send-risco-aceite-notification]
 verify_jwt = true
