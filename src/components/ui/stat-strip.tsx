@@ -5,6 +5,7 @@ import { useKpiDrillDown } from "@/components/dashboard/KpiDrillDownProvider"
 import type { DrillDownKey } from "@/components/dashboard/KpiDrillDownDrawer"
 import type { LucideIcon } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { useSerieSemanal, type TabelaSerie } from "@/hooks/useSerieSemanal"
 
 /**
  * StatStrip (Envio 14 — faixa dentro de um cartão único).
@@ -66,6 +67,8 @@ export interface StatStripItem {
 
 interface StatStripProps extends React.HTMLAttributes<HTMLDivElement> {
   items: StatStripItem[]
+  /** Tabela do módulo: o 1º cartão ganha o mini gráfico com o total acumulado real. */
+  serieTabela?: TabelaSerie
   loading?: boolean
   error?: boolean
 }
@@ -185,7 +188,9 @@ export function AnimatedMetricValue({ value }: { value: number | string }) {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
-export function StatStrip({ items, loading = false, error = false, className, ...props }: StatStripProps) {
+export function StatStrip({ items: itemsIn, serieTabela, loading = false, error = false, className, ...props }: StatStripProps) {
+  const serie = useSerieSemanal(serieTabela)
+  const items = React.useMemo(() => serie && itemsIn?.length ? itemsIn.map((it, i) => i === 0 && !it.series ? { ...it, series: serie } : it) : itemsIn, [itemsIn, serie])
   const drill = useKpiDrillDown()
   const { t } = useLanguage()
   const [mobileExpanded, setMobileExpanded] = React.useState(false)
