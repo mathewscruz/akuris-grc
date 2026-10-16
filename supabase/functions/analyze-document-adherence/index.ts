@@ -267,35 +267,54 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
     // 5. Chamar a IA via gateway do Lovable (OpenAI-compatível), igual às
     //    demais funções. Antes chamava a API da Anthropic direto com um modelo
     //    que retornava 404 nesta conta.
-    console.log('Calling AI gateway...');
-    // Sem franquia, nem se chama o modelo: a chamada custa no instante
-    // em que sai. Ver `_shared/creditos.ts`.
+    // Sem franquia, nem se chama o modelo. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        // Mesmo modelo/qualidade que o docgen-chat usa em generate_document — juiz único.
-        model: MODELOS.LEITURA_LONGA,
-        max_tokens: 48000,
-        messages: [
-          { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
-          { role: 'user', content: prompt }
-        ],
-      }),
+    // Análise em lotes: um pedido único com 100+ requisitos levava ~3 min e
+    // o gateway devolvia 503. Lotes pequenos + repetição só para 429/5xx.
+    const lotes = dividirEmLotes(reqsForAnalysis, 25);
+    console.log(`Calling AI gateway em ${lotes.length} lotes...`);
+    let erroDefinitivo: Error | null = null;
+    const resultadosLotes = await emPool(lotes, 3, async (lote, idx) => {
+      try {
+        const resp = await comRepeticao(() => fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${lovableApiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: MODELOS.LEITURA_LONGA,
+            max_tokens: 12000,
+            messages: [
+              { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
+              { role: 'user', content: montarPrompt(lote) },
+            ],
+          }),
+        }, 100000));
+        if (!resp.ok) {
+          const txt = await resp.text();
+          console.error(`AI gateway error lote ${idx}:`, resp.status, txt);
+          if (resp.status === 402) erroDefinitivo = new Error('Créditos de IA insuficientes.');
+          else if (resp.status === 403) erroDefinitivo = new Error('Acesso à IA bloqueado para esta conta.');
+          return null;
+        }
+        const json = await resp.json();
+        const choice = json.choices?.[0];
+        let content = String(choice?.message?.content || '');
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const parsed = JSON.parse(content);
+        if (!Array.isArray(parsed?.requisitos_analisados)) throw new Error('JSON sem requisitos');
+        return parsed;
+      } catch (e) {
+        console.error(`Lote ${idx} falhou:`, e);
+        return null;
+      }
     });
+    if (erroDefinitivo) throw erroDefinitivo;
+    const junto = juntarLotes(resultadosLotes);
+    if (junto.lotes_ok === 0) throw new IaIndisponivelError();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      if (response.status === 429) throw new Error('Limite de requisições excedido. Aguarde e tente novamente.');
-      if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
-      throw new Error(`Erro na IA (${response.status}): ${errorText}`);
-    }
+    // Requisitos dos lotes falhados ficam fora da pontuação (não avaliados).
+    const reqsAvaliados = lotes.filter((_, i) => resultadosLotes[i]).flat();
+    const reqsNaoAvaliados = reqsForAnalysis.length - reqsAvaliados.length;
 
     // Consumir crédito apenas após sucesso da IA
     try {
@@ -304,83 +323,31 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         p_funcionalidade: 'analyze_document_adherence',
         p_descricao: `Análise de aderência do documento para framework`,
       });
-      /* Franquia esgotada entre a pergunta e o débito: quem chega
-         a seguir não leva a resposta. */
       if (creditoOk === false) return semCreditoIA(corsHeaders);
     } catch (e) { console.warn('consume_ai_credit falhou:', e); }
 
-    const aiResponse = await response.json();
-    const aiChoice = aiResponse.choices?.[0];
-    console.log('AI response received:', JSON.stringify({
-      hasContent: !!aiChoice?.message?.content,
-      contentLength: aiChoice?.message?.content?.length,
-      finishReason: aiChoice?.finish_reason
-    }));
-
-    if (aiChoice?.finish_reason === 'length') {
-      console.error('Response truncated');
-      throw new Error('Análise truncada. Tente com um framework com menos requisitos.');
-    }
-
-    if (!aiChoice?.message?.content) {
-      throw new Error('Resposta da IA inválida');
-    }
-
-    let analysisResult;
-    try {
-      let content = aiChoice.message.content;
-      console.log('AI response length:', content.length);
-      
-      // Remove markdown code blocks if present
-      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      
-      analysisResult = JSON.parse(content);
-      
-      if (!analysisResult.resultado_geral || !analysisResult.requisitos_analisados) {
-        throw new Error('JSON sem campos obrigatórios');
-      }
-      
-      // Truncar campos
-      if (analysisResult.requisitos_analisados) {
-        analysisResult.requisitos_analisados = analysisResult.requisitos_analisados.map((req: any) => ({
-          ...req,
-          evidencias_encontradas: (req.evidencias_encontradas || '').substring(0, 120),
-          gaps_especificos: (req.gaps_especificos || '').substring(0, 100),
-          observacoes_ia: (req.observacoes_ia || '').substring(0, 150),
-          justificativa_relevancia: (req.justificativa_relevancia || '').substring(0, 80)
-        }));
-      }
-
-      // === Fallback determinístico do score ===
-      // Se a IA devolveu 0/nulo mas há requisitos avaliados como conforme/parcial,
-      // recalculamos pela fórmula canônica (conforme=100, parcial=50, nao_conforme=0,
-      // N/A fora do denominador). Também sobrescrevemos quando a divergência do
-      // score reportado vs. o calculado é grande (>25 pontos) — evita o caso do
-      // usuário em que política com múltiplos "conforme" ficava com 0%.
-      const analisados: any[] = analysisResult.requisitos_analisados || [];
-      const missingReqs = Math.max(reqsForAnalysis.length - analisados.length, 0);
-      const { score: scoreCalc, contagem } = computeAnalyzedScore(analisados, missingReqs);
-      const reportado = Number(analysisResult.percentual_conformidade);
-      const { score: finalPct, source } = reconcileReportedScore(reportado, scoreCalc);
-      if (source === 'deterministic') {
-        console.log('Applying deterministic score fallback', { reportado, scoreCalc, missingReqs, contagem });
-        analysisResult._score_fonte = 'deterministic';
-      }
+    const analysisResult: any = { ...junto };
+    {
+      analysisResult.requisitos_analisados = analysisResult.requisitos_analisados.map((req: any) => ({
+        ...req,
+        evidencias_encontradas: (req.evidencias_encontradas || '').substring(0, 120),
+        gaps_especificos: (req.gaps_especificos || '').substring(0, 100),
+        observacoes_ia: (req.observacoes_ia || '').substring(0, 150),
+        justificativa_relevancia: (req.justificativa_relevancia || '').substring(0, 80)
+      }));
+      const analisados: any[] = analysisResult.requisitos_analisados;
+      const missingReqs = Math.max(reqsAvaliados.length - analisados.length, 0);
+      const { score: finalPct, contagem } = computeAnalyzedScore(analisados, missingReqs);
+      analysisResult._score_fonte = 'deterministic';
       analysisResult.percentual_conformidade = finalPct;
-      if (requirementsInScope.length > reqsForAnalysis.length) {
-        analysisResult._requisitos_nao_analisados = requirementsInScope.length - reqsForAnalysis.length;
-      }
       analysisResult.resultado_geral = resolveResultadoGeral(finalPct, contagem);
-
-      console.log('Parsed:', {
-        resultado: analysisResult.resultado_geral,
-        percentual: analysisResult.percentual_conformidade,
-        requisitos: analysisResult.requisitos_analisados?.length || 0,
-        score_fonte: analysisResult._score_fonte || 'ia',
-      });
-    } catch (e) {
-      console.error('Parse error:', e);
-      throw new Error('JSON inválido retornado pela IA');
+      if (reqsNaoAvaliados > 0) {
+        analysisResult.recomendacoes = [
+          `${reqsNaoAvaliados} requisitos não foram avaliados por indisponibilidade temporária da IA. Reanalise o documento para completar.`,
+          ...analysisResult.recomendacoes,
+        ];
+      }
+      console.log('Parsed:', { resultado: analysisResult.resultado_geral, percentual: finalPct, requisitos: analisados.length, lotes_falhados: junto.lotes_falhados });
     }
 
     // 6. Salvar resultado
@@ -485,6 +452,12 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
       console.error('Failed to update assessment with error:', updateErr);
     }
 
+    if (error instanceof IaIndisponivelError) {
+      return new Response(
+        JSON.stringify({ error: 'O serviço de análise está temporariamente indisponível. Tente novamente em alguns minutos.', code: 'ia_indisponivel' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
