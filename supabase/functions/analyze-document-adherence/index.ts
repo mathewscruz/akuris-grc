@@ -1,468 +1,408 @@
+// Análise de aderência de documento a um framework — em segundo plano.
+//
+// Antes: uma única chamada lia só os primeiros 30k caracteres e avaliava tudo
+// de uma vez; documentos/frameworks grandes estouravam o tempo (503).
+// Agora: o pedido do usuário cria um "trabalho" (analise_aderencia_jobs) e
+// responde na hora. Cada invocação interna faz uma fatia curta (até 3 trechos
+// ou 3 lotes), grava o progresso e chama a próxima. Sem limite de tamanho.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { MODELOS } from '../_shared/modelos.ts';
 import { fetchWithTimeout } from '../_shared/ai.ts';
-import { comRepeticao, dividirEmLotes, emPool, juntarLotes, IaIndisponivelError } from './lotes.ts';
-import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 import {
-  computeAnalyzedScore,
-  reconcileReportedScore,
-  resolveResultadoGeral,
-  resolveDocumentScope,
-  FRAMEWORK_REQ_CAP,
-
-} from "../_shared/compliance-score.ts";
+  comRepeticao, dividirEmLotes, emPool, juntarLotes, IaIndisponivelError,
+  dividirTexto, orcamentoResumo, proximosPendentes, LIMITE_TEXTO_DIRETO,
+} from './lotes.ts';
+import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
+import { computeAnalyzedScore, resolveResultadoGeral, resolveDocumentScope } from "../_shared/compliance-score.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+const json = (b: unknown, status = 200) =>
+  new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const AI_KEY = Deno.env.get('LOVABLE_API_KEY') || '';
+const GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const POR_FATIA = 3;
+const TAM_LOTE = 25;
+
+class BloqueioIA extends Error {}
+
+// ---------- encadeamento ----------
+function agendarProximo(jobId: string, atrasoMs = 1000) {
+  const p = (async () => {
+    await new Promise((r) => setTimeout(r, atrasoMs));
+    await fetch(`${SUPABASE_URL}/functions/v1/analyze-document-adherence`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_step: true, jobId }),
+    }).then((r) => r.text()).catch((e) => console.error('Falha ao agendar próxima fatia:', e));
+  })();
+  const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (rt?.waitUntil) rt.waitUntil(p);
+}
+
+// ---------- chamadas à IA ----------
+async function chamarIA(model: string, system: string, user: string, maxTokens: number, timeoutMs = 50000): Promise<string> {
+  const resp = await comRepeticao(() => fetchWithTimeout(GATEWAY, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${AI_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+  }, timeoutMs));
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => '');
+    console.error('AI gateway error:', resp.status, txt.slice(0, 300));
+    if (resp.status === 402) throw new BloqueioIA('Créditos de IA insuficientes.');
+    if (resp.status === 403) throw new BloqueioIA('Acesso à IA bloqueado para esta conta.');
+    throw new IaIndisponivelError();
   }
+  const j = await resp.json();
+  return String(j.choices?.[0]?.message?.content || '');
+}
 
-  let requestBody: any = null;
-  
-  try {
-    requestBody = await req.json();
-    const { assessmentId, frameworkId, storageFileName, source, docgenDocument, coverage_map: providedCoverageMap } = requestBody;
-    const isDocgen = source === 'docgen';
+async function resumirTrecho(trecho: string, idx: number, total: number, framework: string, limite: number): Promise<string> {
+  const txt = await chamarIA(MODELOS.PADRAO,
+    'Você extrai evidências de documentos corporativos para auditoria de conformidade. Responda só com o texto pedido.',
+    `Este é o trecho ${idx + 1} de ${total} de um documento que será auditado contra ${framework}.
+Extraia, em até ${limite} caracteres, tudo que possa servir de evidência de conformidade: políticas, responsabilidades, controles, prazos, procedimentos, papéis, revisões, registros, sanções. Cite frases literais entre aspas sempre que possível e indique o título da seção. Não invente nada.
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
-
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY não configurada');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // === AUTH: validate JWT and derive empresa_id from caller's profile ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey);
-    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    const userId = userData.user.id;
-    const { data: profile } = await supabase
-      .from('profiles').select('empresa_id').eq('user_id', userId).eq('ativo', true).maybeSingle();
-    const empresaId = profile?.empresa_id;
-    if (!empresaId) {
-      return new Response(JSON.stringify({ error: 'User profile missing empresa_id' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // === TENANT GUARD: assessment precisa pertencer à empresa do JWT ===
-    if (!assessmentId) {
-      return new Response(JSON.stringify({ error: 'assessmentId obrigatório' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    const { data: assessmentRow, error: assessmentErr } = await supabase
-      .from('gap_analysis_adherence_assessments')
-      .select('id, empresa_id, framework_id')
-      .eq('id', assessmentId)
-      .maybeSingle();
-    if (assessmentErr || !assessmentRow) {
-      return new Response(JSON.stringify({ error: 'Assessment não encontrado' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    if (assessmentRow.empresa_id !== empresaId) {
-      console.warn('Cross-tenant attempt on analyze-document-adherence', { userId, empresaId, targetEmpresa: assessmentRow.empresa_id, assessmentId });
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    // Framework é o persistido no assessment (não confiar no body)
-    const safeFrameworkId = assessmentRow.framework_id;
-
-    let safeStorageFileName = '';
-    if (!isDocgen) {
-      // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
-      safeStorageFileName = String(storageFileName || '');
-      if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
-        console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
-        return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    } else {
-      // source === 'docgen': validar que veio o documento em memória
-      if (!docgenDocument || !Array.isArray(docgenDocument?.secoes) || docgenDocument.secoes.length === 0) {
-        return new Response(JSON.stringify({ error: 'docgenDocument.secoes obrigatório quando source=docgen' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
-
-    // Crédito consumido só após sucesso da IA (ver bloco pós-response).
-
-
-    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, source: isDocgen ? 'docgen' : 'storage', storageFileName: safeStorageFileName });
-
-    // 1. Buscar framework e requisitos (framework é template global, não tem empresa_id)
-    const { data: framework, error: frameworkError } = await supabase
-      .from('gap_analysis_frameworks')
-      .select('*')
-      .eq('id', safeFrameworkId)
-      .single();
-
-    if (frameworkError || !framework) {
-      throw new Error(`Framework não encontrado: ${frameworkError?.message}`);
-    }
-
-    const { data: requirements, error: reqError } = await supabase
-      .from('gap_analysis_requirements')
-      .select('*')
-      .eq('framework_id', safeFrameworkId)
-      .order('ordem');
-
-    if (reqError) throw new Error(`Erro ao buscar requisitos: ${reqError.message}`);
-    if (!requirements || requirements.length === 0) throw new Error('Framework não possui requisitos cadastrados');
-
-    console.log(`Framework: ${framework.nome}, Requirements: ${requirements.length}`);
-
-    // 2. Obter texto do documento — do storage ou do payload docgen
-    let documentText = '';
-    if (isDocgen) {
-      const secoes = docgenDocument.secoes || [];
-      documentText = `# ${docgenDocument.titulo || 'Documento'}\n\n` +
-        secoes.map((s: any, i: number) => `## Seção ${i + 1}: ${s?.nome || ''}\n${String(s?.conteudo || '')}`).join('\n\n');
-    } else {
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('adherence-documents')
-        .download(safeStorageFileName);
-
-      if (downloadError || !fileData) {
-        throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
-      }
-
-      console.log('Document downloaded, size:', fileData.size);
-
-      // 3. Extrair texto
-      const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
-
-      if (fileExtension === 'txt') {
-        documentText = await fileData.text();
-      } else {
-        throw new Error(`Tipo de arquivo não suportado: ${fileExtension}. Apenas TXT pré-processados são aceitos.`);
-      }
-    }
-
-    if (!documentText || documentText.trim().length < 100) {
-      throw new Error('Documento não contém texto suficiente para análise (mínimo 100 caracteres)');
-    }
-
-    // 4. Montar prompt
-    // FRAMEWORK_REQ_CAP alinha o universo do analisador com o gerador (DocGen).
-    // Frameworks acima do cap (raro) processam parcialmente e o restante é
-    // computado como "silenciosamente omitido" pelo computeAnalyzedScore, o que
-    // penaliza corretamente a cobertura ao invés de inflar o score.
-    const MAX_REQS_POR_ANALISE = FRAMEWORK_REQ_CAP;
-    const docTextForAnalysis = documentText.substring(0, 30000);
-
-    // Documento vindo do DocGen: avalia contra o MESMO âmbito temático usado na
-    // geração. Sem isto, uma política isolada é comparada com o catálogo inteiro
-    // e nunca passa do gate, mesmo estando completa no seu tema.
-    let requirementsInScope = requirements;
-    if (isDocgen) {
-      const scope = resolveDocumentScope(
-        requirements,
-        docgenDocument?.titulo,
-        (docgenDocument?.secoes || []).map((s: any) => s?.nome),
-        Array.isArray(docgenDocument?.coverage_map) ? docgenDocument.coverage_map : [],
-      );
-      const scopeSet = new Set(scope.scopeCodes);
-      const filtered = requirements.filter((r: any) => scopeSet.has(String(r?.codigo || '').trim()));
-      if (filtered.length) requirementsInScope = filtered;
-      console.log(`Âmbito do documento: ${requirementsInScope.length}/${requirements.length} requisitos`);
-    }
-
-    const reqsForAnalysis = requirementsInScope.slice(0, MAX_REQS_POR_ANALISE);
-    if (requirementsInScope.length > MAX_REQS_POR_ANALISE) {
-      console.warn(`Framework com ${requirementsInScope.length} requisitos excede o cap ${MAX_REQS_POR_ANALISE}; ${requirementsInScope.length - MAX_REQS_POR_ANALISE} não foram analisados nesta rodada (contam como silenciosamente omitidos no score).`);
-    }
-
-
-    const montarReqsText = (lote: any[]) => lote.map((r: any, i: number) => {
-      let entry = `${i+1}. ID:${r.id} | ${r.codigo || 'N/A'}: ${r.titulo}`;
-      if (r.descricao) entry += `\n   Descrição: ${r.descricao.substring(0, 300)}`;
-      if (r.orientacao_implementacao) entry += `\n   O que a norma exige: ${r.orientacao_implementacao.substring(0, 200)}`;
-      if (r.exemplos_evidencias) entry += `\n   Evidências esperadas: ${r.exemplos_evidencias.substring(0, 150)}`;
-      return entry;
-    }).join('\n\n');
-
-    // Coverage_map do DocGen entra como âncora — não substitui a análise, apenas
-    // ajuda o auditor a validar que o autor DECLAROU a cobertura em determinada seção.
-    const coverageMap: any[] = (isDocgen && Array.isArray((docgenDocument as any)?.coverage_map))
-      ? (docgenDocument as any).coverage_map
-      : (Array.isArray(providedCoverageMap) ? providedCoverageMap : []);
-    const coverageBlock = coverageMap.length
-      ? `\n\nCOVERAGE_MAP DECLARADO PELO AUTOR (${coverageMap.length} itens — validar contra o texto):\n${coverageMap.map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → evidência declarada: "${(c.evidencia || '').slice(0, 160)}"`).join('\n')}\n\nAo validar, se a evidência declarada de fato está no documento, tenda para "conforme". Se não encontrar, marque como "nao_conforme" com o gap.`
-      : '';
-
-    const montarPrompt = (lote: any[]) => `Você é um AUDITOR SÊNIOR de conformidade regulatória com 15+ anos de experiência em frameworks como ISO 27001, LGPD, NIST CSF, SOC 2, GDPR, PCI DSS e outros.
-
-TAREFA PRINCIPAL: Analise o documento corporativo abaixo e compare ITEM A ITEM com os requisitos do framework ${framework.nome} (${framework.versao || ''}). Você deve agir exatamente como um auditor que recebe um documento (ex: Política de Mesa e Tela Limpa) e precisa verificar se ele atende a todos os pontos exigidos pela norma.
-
-MÉTODO DE ANÁLISE (siga rigorosamente):
-1. IDENTIFIQUE o tipo e escopo do documento (política, procedimento, manual, etc.)
-2. Para CADA requisito do framework, verifique se o documento contém cláusulas, parágrafos ou seções que atendem ao que é exigido
-3. CITE trechos específicos do documento como evidência de conformidade (entre aspas)
-4. Quando o documento NÃO abordar um requisito, indique claramente o GAP e o que deveria conter
-5. Marque como "nao_aplicavel" APENAS requisitos que genuinamente não se relacionam com o escopo do documento
-6. Seja CRITERIOSO: "conforme" = cobre adequadamente; "parcial" = menciona mas incompleto; "nao_conforme" = ausente ou inadequado
-7. OBRIGATÓRIO: devolver "requisitos_analisados" para TODOS os ${lote.length} requisitos abaixo (não pule nenhum) — o campo "total_requisitos_relevantes" deve refletir quantos são REALMENTE relevantes ao escopo (não conte "nao_aplicavel").
-${coverageBlock}
-
-DOCUMENTO ANALISADO:
+TRECHO:
 ---
-${docTextForAnalysis}${documentText.length > 30000 ? '\n\n[... documento continua - ' + (documentText.length - 30000) + ' caracteres adicionais ...]' : ''}
+${trecho}
+---`, Math.ceil(limite / 2.5));
+  return `### Trecho ${idx + 1}/${total}\n${txt.slice(0, limite + 400)}`;
+}
+
+function montarReqsText(lote: any[]) {
+  return lote.map((r: any, i: number) => {
+    let e = `${i + 1}. ID:${r.id} | ${r.codigo || 'N/A'}: ${r.titulo}`;
+    if (r.descricao) e += `\n   Descrição: ${String(r.descricao).substring(0, 300)}`;
+    if (r.orientacao_implementacao) e += `\n   O que a norma exige: ${String(r.orientacao_implementacao).substring(0, 200)}`;
+    if (r.exemplos_evidencias) e += `\n   Evidências esperadas: ${String(r.exemplos_evidencias).substring(0, 150)}`;
+    return e;
+  }).join('\n\n');
+}
+
+function montarPrompt(ctx: any, lote: any[], documento: string, resumido: boolean) {
+  return `Você é um AUDITOR SÊNIOR de conformidade regulatória (ISO 27001, LGPD, NIST CSF, SOC 2, GDPR, PCI DSS e outros).
+
+TAREFA: compare ITEM A ITEM o documento com os requisitos do framework ${ctx.framework_nome} (${ctx.framework_versao || ''}).
+${resumido ? 'O documento é extenso; abaixo estão as EVIDÊNCIAS EXTRAÍDAS de todos os seus trechos (citações literais entre aspas). Considere-as como o conteúdo do documento.\n' : ''}
+MÉTODO:
+1. Identifique tipo e escopo do documento
+2. Para CADA requisito, verifique se há cláusulas que o atendem e CITE trechos como evidência
+3. Se não aborda, indique o GAP
+4. "nao_aplicavel" APENAS se o requisito não se relaciona com o escopo
+5. "conforme" = cobre adequadamente; "parcial" = incompleto; "nao_conforme" = ausente
+6. OBRIGATÓRIO: "requisitos_analisados" para TODOS os ${lote.length} requisitos abaixo
+${ctx.coverage_block || ''}
+
+DOCUMENTO:
+---
+${documento}
 ---
 
-REQUISITOS DO FRAMEWORK ${framework.nome} (${lote.length} de ${requirements.length}):
+REQUISITOS (${lote.length} de ${ctx.total_escopo}):
 ${montarReqsText(lote)}
 
-FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
+FORMATO JSON OBRIGATÓRIO (apenas JSON válido, sem markdown):
 {
-  "documento_tipo_identificado": "string (política, procedimento, contrato, manual, etc)",
-  "documento_escopo_identificado": "string curta descrevendo escopo do documento",
+  "documento_tipo_identificado": "string",
+  "documento_escopo_identificado": "string curta",
   "total_requisitos_relevantes": número,
-  "resultado_geral": "conforme"|"nao_conforme"|"parcial",
-  "percentual_conformidade": 0-100,
-  "pontos_fortes": [
-    {"titulo": "max 60 chars", "descricao": "max 150 chars com detalhes específicos"}
-  ],
-  "pontos_melhoria": [
-    {"titulo": "max 60 chars", "descricao": "max 150 chars com ação recomendada", "prioridade": "alta|media|baixa"}
-  ],
-  "requisitos_analisados": [
-    {
-      "requirement_id": "UUID exato do requisito",
-      "requisito_codigo": "código do requisito",
-      "status_aderencia": "conforme"|"nao_conforme"|"parcial"|"nao_aplicavel",
-      "evidencias_encontradas": "citação ou referência específica do documento (max 120 chars)",
-      "gaps_especificos": "o que falta para conformidade total (max 100 chars)",
-      "score_conformidade": 0-10,
-      "observacoes_ia": "análise detalhada do auditor (max 150 chars)",
-      "justificativa_relevancia": "por que este requisito é relevante ao documento (max 80 chars)"
-    }
-  ],
-  "requisitos_nao_aplicaveis": ["array de UUIDs de requisitos não aplicáveis ao escopo do documento"],
-  "recomendacoes": ["recomendações acionáveis e específicas, max 150 chars cada, mínimo 3"],
-  "analise_detalhada": "resumo executivo da análise (max 500 palavras) incluindo: visão geral da conformidade, áreas de maior risco, prioridades de remediação"
+  "pontos_fortes": [{"titulo": "max 60", "descricao": "max 150"}],
+  "pontos_melhoria": [{"titulo": "max 60", "descricao": "max 150", "prioridade": "alta|media|baixa"}],
+  "requisitos_analisados": [{
+    "requirement_id": "UUID exato", "requisito_codigo": "código",
+    "status_aderencia": "conforme"|"nao_conforme"|"parcial"|"nao_aplicavel",
+    "evidencias_encontradas": "max 120", "gaps_especificos": "max 100",
+    "score_conformidade": 0-10, "observacoes_ia": "max 150", "justificativa_relevancia": "max 80"
+  }],
+  "requisitos_nao_aplicaveis": ["UUIDs"],
+  "recomendacoes": ["max 150 chars cada, mínimo 3"],
+  "analise_detalhada": "resumo executivo (max 300 palavras)"
 }`;
+}
 
-    // 5. Chamar a IA via gateway do Lovable (OpenAI-compatível), igual às
-    //    demais funções. Antes chamava a API da Anthropic direto com um modelo
-    //    que retornava 404 nesta conta.
-    // Sem franquia, nem se chama o modelo. Ver `_shared/creditos.ts`.
-    if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+async function avaliarLote(ctx: any, lote: any[], documento: string, resumido: boolean) {
+  const content = await chamarIA(MODELOS.LEITURA_LONGA,
+    'Você é um auditor sênior de conformidade regulatória. Retorne APENAS JSON válido seguindo exatamente o schema.',
+    montarPrompt(ctx, lote, documento, resumido), 12000, 100000);
+  const limpo = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  const parsed = JSON.parse(limpo);
+  if (!Array.isArray(parsed?.requisitos_analisados)) throw new Error('JSON sem requisitos');
+  return parsed;
+}
 
-    // Análise em lotes: um pedido único com 100+ requisitos levava ~3 min e
-    // o gateway devolvia 503. Lotes pequenos + repetição só para 429/5xx.
-    const lotes = dividirEmLotes(reqsForAnalysis, 25);
-    console.log(`Calling AI gateway em ${lotes.length} lotes...`);
-    let erroDefinitivo: Error | null = null;
-    const resultadosLotes = await emPool(lotes, 3, async (lote, idx) => {
-      try {
-        const resp = await comRepeticao(() => fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${lovableApiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: MODELOS.LEITURA_LONGA,
-            max_tokens: 12000,
-            messages: [
-              { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
-              { role: 'user', content: montarPrompt(lote) },
-            ],
-          }),
-        }, 100000));
-        if (!resp.ok) {
-          const txt = await resp.text();
-          console.error(`AI gateway error lote ${idx}:`, resp.status, txt);
-          if (resp.status === 402) erroDefinitivo = new Error('Créditos de IA insuficientes.');
-          else if (resp.status === 403) erroDefinitivo = new Error('Acesso à IA bloqueado para esta conta.');
-          return null;
-        }
-        const json = await resp.json();
-        const choice = json.choices?.[0];
-        let content = String(choice?.message?.content || '');
-        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        const parsed = JSON.parse(content);
-        if (!Array.isArray(parsed?.requisitos_analisados)) throw new Error('JSON sem requisitos');
-        return parsed;
-      } catch (e) {
-        console.error(`Lote ${idx} falhou:`, e);
-        return null;
-      }
-    });
-    if (erroDefinitivo) throw erroDefinitivo;
-    const junto = juntarLotes(resultadosLotes);
-    if (junto.lotes_ok === 0) throw new IaIndisponivelError();
+// ---------- uma fatia do trabalho ----------
+async function falharJob(supabase: SupabaseClient, job: any, msg: string) {
+  await supabase.from('analise_aderencia_jobs').update({ status: 'erro', erro: msg, locked_until: null, updated_at: new Date().toISOString() }).eq('id', job.id);
+  await supabase.from('gap_analysis_adherence_assessments').update({
+    status: 'erro', metadados_analise: { erro: msg, timestamp_erro: new Date().toISOString() },
+  }).eq('id', job.assessment_id).eq('empresa_id', job.empresa_id);
+}
 
-    // Requisitos dos lotes falhados ficam fora da pontuação (não avaliados).
-    const reqsAvaliados = lotes.filter((_, i) => resultadosLotes[i]).flat();
-    const reqsNaoAvaliados = reqsForAnalysis.length - reqsAvaliados.length;
+async function executarFatia(supabase: SupabaseClient, jobId: string) {
+  const agora = new Date();
+  // Lock: só uma invocação por vez processa o trabalho.
+  const { data: candidatos } = await supabase.from('analise_aderencia_jobs')
+    .select('id, locked_until, saltos_restantes, status').eq('id', jobId).maybeSingle();
+  if (!candidatos || candidatos.status !== 'processando') return;
+  if (candidatos.locked_until && new Date(candidatos.locked_until) > agora) return;
+  if (candidatos.saltos_restantes <= 0) {
+    await falharJob(supabase, { id: jobId, ...(await supabase.from('analise_aderencia_jobs').select('assessment_id, empresa_id').eq('id', jobId).single()).data }, 'Limite de etapas atingido.');
+    return;
+  }
+  let q = supabase.from('analise_aderencia_jobs')
+    .update({ locked_until: new Date(agora.getTime() + 150000).toISOString(), saltos_restantes: candidatos.saltos_restantes - 1 })
+    .eq('id', jobId).eq('status', 'processando');
+  q = candidatos.locked_until ? q.eq('locked_until', candidatos.locked_until) : q.is('locked_until', null);
+  const { data: job } = await q.select('*').maybeSingle();
+  if (!job) return; // outra invocação pegou
 
-    // Consumir crédito apenas após sucesso da IA
-    try {
-      const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresaId, p_user_id: userId,
-        p_funcionalidade: 'analyze_document_adherence',
-        p_descricao: `Análise de aderência do documento para framework`,
+  const ctx = job.contexto || {};
+  const trechos: string[] = job.trechos || [];
+  const resumos: any[] = job.resumos || [];
+  const lotes: any[][] = job.lotes || [];
+  const resultados: any[] = job.resultados || [];
+  let etapa: string = job.etapa;
+  let progresso: number = job.progresso;
+
+  try {
+    if (etapa === 'resumindo') {
+      const idx = proximosPendentes(resumos, trechos.length, POR_FATIA);
+      const limite = orcamentoResumo(trechos.length);
+      const feitos = await Promise.all(idx.map((i) => resumirTrecho(trechos[i], i, trechos.length, ctx.framework_nome, limite)));
+      idx.forEach((i, k) => { resumos[i] = feitos[k]; });
+      progresso += idx.length;
+      if (proximosPendentes(resumos, trechos.length, 1).length === 0) etapa = 'avaliando';
+    } else if (etapa === 'avaliando') {
+      const resumido = trechos.length > 1;
+      const documento = resumido ? resumos.join('\n\n') : trechos[0];
+      const idx = proximosPendentes(resultados, lotes.length, POR_FATIA);
+      const feitos = await emPool(idx, POR_FATIA, async (i) => {
+        try { return await avaliarLote(ctx, lotes[i], documento, resumido); }
+        catch (e) { if (e instanceof BloqueioIA) throw e; console.error(`Lote ${i} falhou:`, e); return { falhou: true }; }
       });
-      if (creditoOk === false) return semCreditoIA(corsHeaders);
-    } catch (e) { console.warn('consume_ai_credit falhou:', e); }
-
-    const analysisResult: any = { ...junto };
-    {
-      analysisResult.requisitos_analisados = analysisResult.requisitos_analisados.map((req: any) => ({
-        ...req,
-        evidencias_encontradas: (req.evidencias_encontradas || '').substring(0, 120),
-        gaps_especificos: (req.gaps_especificos || '').substring(0, 100),
-        observacoes_ia: (req.observacoes_ia || '').substring(0, 150),
-        justificativa_relevancia: (req.justificativa_relevancia || '').substring(0, 80)
-      }));
-      const analisados: any[] = analysisResult.requisitos_analisados;
-      const missingReqs = Math.max(reqsAvaliados.length - analisados.length, 0);
-      const { score: finalPct, contagem } = computeAnalyzedScore(analisados, missingReqs);
-      analysisResult._score_fonte = 'deterministic';
-      analysisResult.percentual_conformidade = finalPct;
-      analysisResult.resultado_geral = resolveResultadoGeral(finalPct, contagem);
-      if (reqsNaoAvaliados > 0) {
-        analysisResult.recomendacoes = [
-          `${reqsNaoAvaliados} requisitos não foram avaliados por indisponibilidade temporária da IA. Reanalise o documento para completar.`,
-          ...analysisResult.recomendacoes,
-        ];
-      }
-      console.log('Parsed:', { resultado: analysisResult.resultado_geral, percentual: finalPct, requisitos: analisados.length, lotes_falhados: junto.lotes_falhados });
+      idx.forEach((i, k) => { resultados[i] = feitos[k]; });
+      progresso += idx.length;
+      if (proximosPendentes(resultados, lotes.length, 1).length === 0) etapa = 'finalizando';
     }
 
-    // 6. Salvar resultado
-    console.log('Saving assessment results...');
-    const { error: updateError } = await supabase
-      .from('gap_analysis_adherence_assessments')
-      .update({
-        status: 'concluido',
-        resultado_geral: analysisResult.resultado_geral,
-        percentual_conformidade: analysisResult.percentual_conformidade,
-        pontos_fortes: analysisResult.pontos_fortes || [],
-        pontos_melhoria: analysisResult.pontos_melhoria || [],
-        recomendacoes: analysisResult.recomendacoes || [],
-        analise_detalhada: analysisResult.analise_detalhada,
-        metadados_analise: {
-          modelo_usado: MODELOS.LEITURA_LONGA,
-          provider: 'lovable-ai-gateway',
-          tempo_processamento: Date.now(),
-          total_requisitos: requirementsInScope?.length || 0,
-          total_requisitos_catalogo: requirements?.length || 0,
-          total_requisitos_analisados: reqsForAnalysis.length,
-          total_requisitos_nao_analisados: Math.max((requirementsInScope?.length || 0) - reqsForAnalysis.length, 0),
-          truncado: (requirementsInScope?.length || 0) > MAX_REQS_POR_ANALISE,
-          total_requisitos_relevantes: analysisResult.total_requisitos_relevantes || 0,
-          documento_tamanho: documentText.length,
-          documento_tipo: analysisResult.documento_tipo_identificado || null,
-          documento_escopo: analysisResult.documento_escopo_identificado || null,
-          requisitos_nao_aplicaveis: analysisResult.requisitos_nao_aplicaveis || []
-        },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', assessmentId);
-
-    if (updateError) {
-      console.error('Error updating assessment:', updateError);
-      throw updateError;
+    if (etapa === 'finalizando') {
+      await finalizar(supabase, job, ctx, lotes, resultados);
+      return;
     }
 
-    // 7. Salvar detalhes por requisito
-    if (analysisResult.requisitos_analisados && analysisResult.requisitos_analisados.length > 0) {
-      console.log('Saving requirement details...');
-      const detailsToInsert = analysisResult.requisitos_analisados.map((req: any) => {
-        const requirement = requirements?.find(r => r.id === req.requirement_id);
-        return {
-          assessment_id: assessmentId,
-          requirement_id: req.requirement_id,
-          requisito_codigo: requirement?.codigo || req.requisito_codigo || '',
-          requisito_titulo: requirement?.titulo || '',
-          status_aderencia: req.status_aderencia,
-          evidencias_encontradas: req.evidencias_encontradas,
-          gaps_especificos: req.gaps_especificos,
-          score_conformidade: req.score_conformidade,
-          observacoes_ia: req.observacoes_ia,
-          justificativa_relevancia: req.justificativa_relevancia || null
-        };
-      });
+    await supabase.from('analise_aderencia_jobs').update({
+      etapa, progresso, resumos, resultados, locked_until: null, updated_at: new Date().toISOString(),
+    }).eq('id', job.id);
+    agendarProximo(job.id);
+  } catch (e) {
+    console.error('Fatia falhou:', e);
+    if (e instanceof BloqueioIA) return await falharJob(supabase, job, e.message);
+    // Trecho de resumo que falhou mesmo após repetições: tenta de novo numa próxima fatia, com espera.
+    await supabase.from('analise_aderencia_jobs').update({ locked_until: null, erro: String((e as Error)?.message || e), updated_at: new Date().toISOString() }).eq('id', job.id);
+    if (job.saltos_restantes > 1) agendarProximo(job.id, 20000);
+    else await falharJob(supabase, job, new IaIndisponivelError().message);
+  }
+}
 
-      const { error: detailsError } = await supabase
-        .from('gap_analysis_adherence_details')
-        .insert(detailsToInsert);
+async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: any[][], resultados: any[]) {
+  const ok = resultados.map((r) => (r && !r.falhou ? r : null));
+  const junto = juntarLotes(ok);
+  if (junto.lotes_ok === 0) return await falharJob(supabase, job, new IaIndisponivelError().message);
 
-      if (detailsError) {
-        console.error('Error inserting details:', detailsError);
-      } else {
-        console.log(`Saved ${detailsToInsert.length} requirement details`);
-      }
+  const reqsAvaliados = lotes.filter((_, i) => ok[i]).flat();
+  const reqsNaoAvaliados = lotes.flat().length - reqsAvaliados.length;
+
+  const { data: recibo, error: credErr } = await supabase.rpc('consume_ai_credit_idempotente', {
+    p_empresa_id: job.empresa_id, p_user_id: job.user_id,
+    p_funcionalidade: 'analyze_document_adherence',
+    p_idempotency_key: `aderencia:${job.assessment_id}`,
+    p_descricao: 'Análise de aderência do documento para framework',
+  });
+  const r = recibo as { charged?: boolean; reason?: string } | null;
+  if (!credErr && r && r.charged !== true && r.reason === 'CREDITS_EXHAUSTED') {
+    return await falharJob(supabase, job, 'Créditos de IA insuficientes.');
+  }
+  if (credErr) console.warn('consume_ai_credit_idempotente falhou:', credErr);
+
+  const analisados = junto.requisitos_analisados.map((req: any) => ({
+    ...req,
+    evidencias_encontradas: (req.evidencias_encontradas || '').substring(0, 120),
+    gaps_especificos: (req.gaps_especificos || '').substring(0, 100),
+    observacoes_ia: (req.observacoes_ia || '').substring(0, 150),
+    justificativa_relevancia: (req.justificativa_relevancia || '').substring(0, 80),
+  }));
+  const missing = Math.max(reqsAvaliados.length - analisados.length, 0);
+  const { score, contagem } = computeAnalyzedScore(analisados, missing);
+  const recomendacoes = reqsNaoAvaliados > 0
+    ? [`${reqsNaoAvaliados} requisitos não foram avaliados por indisponibilidade temporária da IA. Reanalise o documento para completar.`, ...junto.recomendacoes]
+    : junto.recomendacoes;
+
+  const { error: upErr } = await supabase.from('gap_analysis_adherence_assessments').update({
+    status: 'concluido',
+    resultado_geral: resolveResultadoGeral(score, contagem),
+    percentual_conformidade: score,
+    pontos_fortes: junto.pontos_fortes, pontos_melhoria: junto.pontos_melhoria,
+    recomendacoes, analise_detalhada: junto.analise_detalhada,
+    metadados_analise: {
+      modelo_usado: MODELOS.LEITURA_LONGA, provider: 'lovable-ai-gateway', _score_fonte: 'deterministic',
+      tempo_processamento: Date.now(),
+      total_requisitos: ctx.total_escopo, total_requisitos_catalogo: ctx.total_catalogo,
+      total_requisitos_analisados: reqsAvaliados.length, total_requisitos_nao_analisados: reqsNaoAvaliados,
+      truncado: false, total_requisitos_relevantes: junto.total_requisitos_relevantes,
+      documento_tamanho: ctx.documento_tamanho, documento_trechos: (job.trechos || []).length,
+      documento_tipo: junto.documento_tipo_identificado, documento_escopo: junto.documento_escopo_identificado,
+      requisitos_nao_aplicaveis: junto.requisitos_nao_aplicaveis,
+    },
+    updated_at: new Date().toISOString(),
+  }).eq('id', job.assessment_id).eq('empresa_id', job.empresa_id);
+  if (upErr) return await falharJob(supabase, job, upErr.message);
+
+  const porId = new Map(lotes.flat().map((q: any) => [q.id, q]));
+  if (analisados.length) {
+    await supabase.from('gap_analysis_adherence_details').delete().eq('assessment_id', job.assessment_id);
+    const { error: detErr } = await supabase.from('gap_analysis_adherence_details').insert(analisados.map((req: any) => {
+      const q: any = porId.get(req.requirement_id);
+      return {
+        assessment_id: job.assessment_id, requirement_id: req.requirement_id,
+        requisito_codigo: q?.codigo || req.requisito_codigo || '', requisito_titulo: q?.titulo || '',
+        status_aderencia: req.status_aderencia, evidencias_encontradas: req.evidencias_encontradas,
+        gaps_especificos: req.gaps_especificos, score_conformidade: req.score_conformidade,
+        observacoes_ia: req.observacoes_ia, justificativa_relevancia: req.justificativa_relevancia || null,
+      };
+    }).filter((d: any) => porId.has(d.requirement_id)));
+    if (detErr) console.error('Erro ao gravar detalhes:', detErr);
+  }
+
+  await supabase.from('analise_aderencia_jobs').update({
+    status: 'concluido', etapa: 'concluido', progresso: job.total, resultados, locked_until: null, erro: null,
+    trechos: [], updated_at: new Date().toISOString(),
+  }).eq('id', job.id);
+
+  await supabase.from('notifications').insert({
+    user_id: job.user_id,
+    title: 'Análise de conformidade concluída',
+    message: `${ctx.nome_analise || ctx.framework_nome}: ${Number(score).toFixed(1)}% de conformidade`,
+    type: 'success', link_to: '/gap-analysis',
+  }).then(() => {}, () => {});
+}
+
+// ---------- pedido do usuário: cria o trabalho ----------
+async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, userId: string) {
+  const { assessmentId, storageFileName, source, docgenDocument, coverage_map: providedCoverageMap } = body;
+  const isDocgen = source === 'docgen';
+  if (!assessmentId) return json({ error: 'assessmentId obrigatório' }, 400);
+
+  const { data: a } = await supabase.from('gap_analysis_adherence_assessments')
+    .select('id, empresa_id, framework_id, nome_analise').eq('id', assessmentId).maybeSingle();
+  if (!a) return json({ error: 'Assessment não encontrado' }, 404);
+  if (a.empresa_id !== empresaId) return json({ error: 'Forbidden' }, 403);
+
+  // Retomar um trabalho parado (botão "Tentar novamente" / tela aberta).
+  if (body.acao === 'retomar') {
+    const { data: j } = await supabase.from('analise_aderencia_jobs').select('id, status, empresa_id')
+      .eq('assessment_id', assessmentId).eq('empresa_id', empresaId).maybeSingle();
+    if (!j) return json({ error: 'Análise não encontrada' }, 404);
+    if (j.status === 'processando') agendarProximo(j.id, 0);
+    return json({ success: true, jobId: j.id, status: j.status }, 202);
+  }
+
+  let documentText = '';
+  if (isDocgen) {
+    if (!Array.isArray(docgenDocument?.secoes) || !docgenDocument.secoes.length) return json({ error: 'docgenDocument.secoes obrigatório quando source=docgen' }, 400);
+    documentText = `# ${docgenDocument.titulo || 'Documento'}\n\n` +
+      docgenDocument.secoes.map((s: any, i: number) => `## Seção ${i + 1}: ${s?.nome || ''}\n${String(s?.conteudo || '')}`).join('\n\n');
+  } else {
+    const path = String(storageFileName || '');
+    if (!path.startsWith(`${empresaId}/`)) return json({ error: 'Arquivo inválido para esta empresa' }, 403);
+    if (!path.toLowerCase().endsWith('.txt')) return json({ error: 'Apenas TXT pré-processados são aceitos.' }, 400);
+    const { data: f, error } = await supabase.storage.from('adherence-documents').download(path);
+    if (error || !f) return json({ error: `Erro ao baixar documento: ${error?.message}` }, 400);
+    documentText = await f.text();
+  }
+  if (documentText.trim().length < 100) return json({ error: 'Documento não contém texto suficiente para análise (mínimo 100 caracteres)' }, 400);
+
+  const { data: framework } = await supabase.from('gap_analysis_frameworks').select('id, nome, versao').eq('id', a.framework_id).single();
+  if (!framework) return json({ error: 'Framework não encontrado' }, 404);
+  const { data: requirements } = await supabase.from('gap_analysis_requirements')
+    .select('id, codigo, titulo, descricao, orientacao_implementacao, exemplos_evidencias')
+    .eq('framework_id', a.framework_id).order('ordem');
+  if (!requirements?.length) return json({ error: 'Framework não possui requisitos cadastrados' }, 400);
+
+  let escopo: any[] = requirements;
+  if (isDocgen) {
+    const scope = resolveDocumentScope(requirements, docgenDocument?.titulo,
+      (docgenDocument?.secoes || []).map((s: any) => s?.nome),
+      Array.isArray(docgenDocument?.coverage_map) ? docgenDocument.coverage_map : []);
+    const set = new Set(scope.scopeCodes);
+    const f = requirements.filter((r: any) => set.has(String(r?.codigo || '').trim()));
+    if (f.length) escopo = f;
+  }
+
+  const coverageMap: any[] = isDocgen && Array.isArray(docgenDocument?.coverage_map) ? docgenDocument.coverage_map
+    : (Array.isArray(providedCoverageMap) ? providedCoverageMap : []);
+  const coverage_block = coverageMap.length
+    ? `\nCOVERAGE_MAP DECLARADO PELO AUTOR (validar contra o texto):\n${coverageMap.slice(0, 200).map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → "${String(c.evidencia || '').slice(0, 160)}"`).join('\n')}\nSe a evidência declarada estiver no documento, tenda para "conforme"; se não, "nao_conforme".`
+    : '';
+
+  if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
+
+  const trechos = documentText.length <= LIMITE_TEXTO_DIRETO ? [documentText] : dividirTexto(documentText);
+  const lotes = dividirEmLotes(escopo, TAM_LOTE);
+  const etapa = trechos.length > 1 ? 'resumindo' : 'avaliando';
+  const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
+
+  await supabase.from('analise_aderencia_jobs').delete().eq('assessment_id', assessmentId);
+  const { data: job, error: jobErr } = await supabase.from('analise_aderencia_jobs').insert({
+    assessment_id: assessmentId, empresa_id: empresaId, user_id: userId,
+    etapa, trechos, lotes, total, progresso: 0,
+    saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10,
+    contexto: {
+      framework_nome: framework.nome, framework_versao: framework.versao, nome_analise: a.nome_analise,
+      coverage_block, total_escopo: escopo.length, total_catalogo: requirements.length, documento_tamanho: documentText.length,
+    },
+  }).select('id').single();
+  if (jobErr || !job) return json({ error: `Não foi possível iniciar a análise: ${jobErr?.message}` }, 500);
+
+  await supabase.from('gap_analysis_adherence_assessments').update({ status: 'processando' }).eq('id', assessmentId).eq('empresa_id', empresaId);
+  agendarProximo(job.id, 0);
+  console.log('Análise iniciada', { assessmentId, trechos: trechos.length, lotes: lotes.length });
+  return json({ success: true, jobId: job.id, total, trechos: trechos.length, lotes: lotes.length }, 202);
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  try {
+    if (!AI_KEY) return json({ error: 'LOVABLE_API_KEY não configurada' }, 500);
+    const body = await req.json().catch(() => ({}));
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+
+    // Fatia interna (só o próprio sistema, com a chave de serviço).
+    if (body?.job_step === true) {
+      if (token !== SERVICE_KEY) return json({ error: 'Unauthorized' }, 401);
+      if (typeof body.jobId !== 'string') return json({ error: 'jobId obrigatório' }, 400);
+      await executarFatia(supabase, body.jobId);
+      return json({ ok: true });
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        data: {
-          assessmentId,
-          resultado_geral: analysisResult.resultado_geral,
-          percentual_conformidade: analysisResult.percentual_conformidade
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error: any) {
+    if (!authHeader.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
+    const verifier = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY') || SERVICE_KEY);
+    const { data: u, error: uErr } = await verifier.auth.getUser(token);
+    if (uErr || !u?.user) return json({ error: 'Unauthorized' }, 401);
+    const { data: profile } = await supabase.from('profiles').select('empresa_id').eq('user_id', u.user.id).eq('ativo', true).maybeSingle();
+    if (!profile?.empresa_id) return json({ error: 'User profile missing empresa_id' }, 403);
+    return await iniciar(supabase, body, profile.empresa_id, u.user.id);
+  } catch (error) {
     console.error('Error in analyze-document-adherence:', error);
-    
-    try {
-      if (requestBody?.assessmentId) {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        await supabase
-          .from('gap_analysis_adherence_assessments')
-          .update({
-            status: 'erro',
-            metadados_analise: { 
-              erro: (error instanceof Error ? error.message : String(error)),
-              timestamp_erro: new Date().toISOString()
-            }
-          })
-          .eq('id', requestBody.assessmentId);
-      }
-    } catch (updateErr) {
-      console.error('Failed to update assessment with error:', updateErr);
-    }
-
-    if (error instanceof IaIndisponivelError) {
-      return new Response(
-        JSON.stringify({ error: 'O serviço de análise está temporariamente indisponível. Tente novamente em alguns minutos.', code: 'ia_indisponivel' }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    return new Response(
-      JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
 });
