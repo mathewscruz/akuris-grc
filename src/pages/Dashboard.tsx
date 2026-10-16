@@ -117,12 +117,12 @@ export default function Dashboard() {
           {canAccess('dashboard') !== false && <IndiceTile delay={0} />}
           {canAccess('riscos') && <RiscosTile delay={60} />}
           {(canAccess('planos-acao') || canAccess('incidentes')) && (
-            <div className="flex min-w-0 flex-col gap-5">
-              {canAccess('planos-acao') && <PlanosTile delay={120}
+            <div className="flex min-w-0 flex-col gap-5 [&>section]:h-auto">
+              {canAccess('planos-acao') && <PlanosTile delay={120} className="flex-1"
                 pendentes={planosStats.data?.pendentes || 0}
                 atrasados={planosStats.data?.atrasados || 0}
                 concluidos={planosStats.data?.concluidos || 0} />}
-              {canAccess('incidentes') && <IncidentesTile delay={180}
+              {canAccess('incidentes') && <IncidentesTile delay={180} className="flex-1"
                 emCurso={activeIncidents}
                 criticos={incidentesStats.data?.criticosEmCurso || 0}
                 altos={incidentesStats.data?.altosEmCurso || 0}

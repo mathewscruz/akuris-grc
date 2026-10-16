@@ -14,12 +14,12 @@ export function BentoTile({ title, description, href, hrefLabel, footerHref, foo
   const { t } = useLanguage();
   return (
     <section
-      className={cn('flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6 animate-fade-in motion-reduce:animate-none dark:shadow-none', className)}
+      className={cn('flex min-w-0 flex-col h-full rounded-3xl border border-border bg-card p-6 sm:p-7 animate-fade-in motion-reduce:animate-none dark:shadow-none', className)}
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       <header className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
             {title}
             {description && (
               <Tooltip>
@@ -51,7 +51,12 @@ export function BentoTile({ title, description, href, hrefLabel, footerHref, foo
 }
 
 export function BentoEmpty({ children }: { children: ReactNode }) {
-  return <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-muted-foreground">{children}</p>;
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground"><IconInfo className="h-5 w-5" /></span>
+      <p className="max-w-[16rem] text-sm text-muted-foreground">{children}</p>
+    </div>
+  );
 }
 
 /** Número que conta de 0 até o valor (respeita reduced-motion). */
