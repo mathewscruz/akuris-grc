@@ -11,9 +11,7 @@ type ToasterProps = React.ComponentProps<typeof Sonner>
  *   │    Description (line-clamp)                  │
  *   │    Action (link inline em text-primary)      │
  *   └──────────────────────────────────────────────┘
- *     ▌ acento vertical 3px na cor do tom (before:)
- *     ● chip 32px circular sólido na cor do tom, glyph branco
- *     surface bg-card, borda fina, sem listras diagonais.
+ *     Pílula escura (bg-foreground), ícone colorido sem fundo, sem listras.
  */
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -43,29 +41,22 @@ const Toaster = ({ ...props }: ToasterProps) => {
       gap={12}
       offset={16}
       icons={{
-        success: <IconSuccess className="h-4 w-4 text-white" strokeWidth={2.25} />,
-        error: <IconError className="h-4 w-4 text-white" strokeWidth={2.25} />,
-        warning: <IconWarning className="h-4 w-4 text-white" strokeWidth={2.25} />,
-        info: <IconInfo className="h-4 w-4 text-white" strokeWidth={2.25} />,
+        success: <IconSuccess className="h-4 w-4" strokeWidth={2} />,
+        error: <IconError className="h-4 w-4" strokeWidth={2} />,
+        warning: <IconWarning className="h-4 w-4" strokeWidth={2} />,
+        info: <IconInfo className="h-4 w-4" strokeWidth={2} />,
       }}
       toastOptions={{
         classNames: {
           // Surface sólida + acento vertical 3px à esquerda via before
+          // Pílula escura: igual no tema claro e escuro
           toast: [
             "group toast relative w-[380px] max-w-[92vw]",
-            "!bg-card !text-foreground",
-            "!border !border-border rounded-lg",
-            "shadow-[0_18px_40px_-16px_hsl(0_0%_0%/0.55),0_2px_6px_-2px_hsl(0_0%_0%/0.25)]",
-            "!p-4 !pl-5 overflow-hidden",
+            "!bg-foreground !text-background !border-0 !rounded-2xl",
+            "shadow-[0_18px_40px_-16px_hsl(var(--foreground)/0.55)]",
+            "!px-4 !py-3 overflow-hidden",
             "data-[state=open]:animate-toast-enter data-[state=closed]:animate-toast-exit motion-reduce:animate-none",
-            "!items-start !gap-3",
-            // Acento vertical 3px — tons via data-type do Sonner
-            "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:content-['']",
-            "before:bg-primary",
-            "data-[type=success]:before:bg-success",
-            "data-[type=error]:before:bg-destructive",
-            "data-[type=warning]:before:bg-warning",
-            "data-[type=info]:before:bg-info",
+            "!items-center !gap-3",
           ].join(" "),
           // Só o ícone, na cor do tom (sem chip)
           icon: [
@@ -77,23 +68,23 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-data-[type=info]:!text-info",
           ].join(" "),
           content: "min-w-0 flex-1 pt-0.5",
-          title: "text-sm font-semibold leading-tight text-foreground",
-          description: "text-sm text-muted-foreground leading-relaxed mt-1 break-words",
+          title: "text-sm font-semibold leading-tight !text-background",
+          description: "text-xs !text-background/70 leading-relaxed mt-0.5 break-words",
           // Action como link inline (sem pill)
           actionButton: [
-            "!bg-transparent !text-primary hover:!text-primary/80",
+            "!bg-transparent !text-primary hover:!opacity-80",
             "!font-medium !text-xs !px-0 !py-0 !border-0 !shadow-none",
-            "!mt-3 !ml-0 !mr-0 !rounded-none",
+            "!mt-0 !ml-2 !mr-0 !rounded-none",
             "!h-auto !w-auto",
           ].join(" "),
           cancelButton: [
-            "!bg-transparent !text-muted-foreground hover:!text-foreground",
+            "!bg-transparent !text-background/60 hover:!text-background",
             "!font-medium !text-xs !px-0 !py-0 !border-0 !shadow-none",
-            "!mt-3 !ml-3 !rounded-none !h-auto !w-auto",
+            "!mt-0 !ml-3 !rounded-none !h-auto !w-auto",
           ].join(" "),
           closeButton: [
-            "!bg-transparent !border-0 !text-muted-foreground hover:!text-foreground",
-            "!top-3 !right-3 !left-auto !translate-x-0 !translate-y-0",
+            "!bg-transparent !border-0 !text-background/60 hover:!text-background",
+            "!top-1/2 !right-3 !left-auto !translate-x-0 !-translate-y-1/2",
             "!h-5 !w-5",
           ].join(" "),
         },

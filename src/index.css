@@ -2190,36 +2190,6 @@ input:-webkit-autofill:focus {
    pelo tom + botão "Action" branco. Usado em Sonner, akurisToast
    e NotificationCenter.
    ============================================================ */
-.akuris-stripes-success {
-  background-image:
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background)) 30%, hsl(var(--background) / 0) 100%),
-    repeating-linear-gradient(135deg, transparent 0 8px, hsl(var(--success) / 0.14) 8px 10px),
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--success) / 0.06) 100%);
-}
-.akuris-stripes-info {
-  background-image:
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background)) 30%, hsl(var(--background) / 0) 100%),
-    repeating-linear-gradient(135deg, transparent 0 8px, hsl(var(--info) / 0.14) 8px 10px),
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--info) / 0.06) 100%);
-}
-.akuris-stripes-warning {
-  background-image:
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background)) 30%, hsl(var(--background) / 0) 100%),
-    repeating-linear-gradient(135deg, transparent 0 8px, hsl(var(--warning) / 0.14) 8px 10px),
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--warning) / 0.06) 100%);
-}
-.akuris-stripes-destructive {
-  background-image:
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background)) 30%, hsl(var(--background) / 0) 100%),
-    repeating-linear-gradient(135deg, transparent 0 8px, hsl(var(--destructive) / 0.14) 8px 10px),
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--destructive) / 0.06) 100%);
-}
-.akuris-stripes-reminder {
-  background-image:
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background)) 30%, hsl(var(--background) / 0) 100%),
-    repeating-linear-gradient(135deg, transparent 0 8px, hsl(var(--primary) / 0.14) 8px 10px),
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--primary) / 0.06) 100%);
-}
 
 /* Botão "Action" branco que aparece dentro dos pills */
 .akuris-pill-action {
