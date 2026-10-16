@@ -106,7 +106,7 @@ const SEVERITY_STEPS: Record<SeverityLevel, number> = {
   none: 0,
 };
 
-const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
+export const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
   const activeSteps = SEVERITY_STEPS[level];
   const meterRef = useVisibleMotion<HTMLSpanElement>();
 
