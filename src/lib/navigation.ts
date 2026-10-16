@@ -3,6 +3,7 @@ import { MODULE_ICON } from '@/lib/module-icons';
 
 type MenuItem = {
   title: string;
+  shortTitle?: string;
   url?: string;
   icon: any;
   moduleName?: string;
