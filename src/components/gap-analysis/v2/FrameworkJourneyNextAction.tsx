@@ -133,7 +133,7 @@ export function FrameworkJourneyNextAction({
             {t('gapV2.journey.eyebrow')}
           </p>
           <div className="mt-1 flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/5 text-primary">
+            <span className="mt-0.5 flex shrink-0 items-center justify-center text-primary">
               <CurrentIcon className="h-5 w-5" strokeWidth={1.5} />
             </span>
             <div className="min-w-0">

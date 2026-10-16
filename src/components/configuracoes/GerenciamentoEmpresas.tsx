@@ -437,8 +437,8 @@ const GerenciamentoEmpresasInner = () => {
               className="h-9 w-9 rounded-lg border border-border bg-card object-contain p-1 shadow-sm"
             />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted/30">
-              <IconOrg className="h-4 w-4 text-primary/75" />
+            <div className="flex items-center justify-center shrink-0">
+              <IconOrg className="h-5 w-5 text-primary/75" />
             </div>
           )}
         </div>

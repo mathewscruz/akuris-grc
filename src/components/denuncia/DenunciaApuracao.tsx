@@ -338,8 +338,8 @@ export function DenunciaApuracao({ denunciaId, status, onAtualizado }: Props) {
                   i > 0 && 'border-t border-border',
                 )}
               >
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <Icone className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                <span className="mt-0.5 flex shrink-0 items-center justify-center">
+                  <Icone className="h-5 w-5.5 text-muted-foreground" strokeWidth={1.5} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
