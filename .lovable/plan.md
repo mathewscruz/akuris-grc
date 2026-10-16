@@ -36,3 +36,23 @@ Próximos passos (faixa compacta 1-2-3 no fim)
 - Detalhe por requisito: filtro por status sobre `gap_analysis_adherence_details` já carregado.
 - Análises antigas sem veredito continuam no layout atual.
 - Chaves PT/EN novas; sem mudanças no servidor.
+
+---
+
+# Framework LGPD — verificação e atualização
+
+## O que encontrei
+- 54 requisitos criados (Arts. 1º–27, 33–50, 52–55-L). Todos têm descrição, orientação e exemplos de evidência em português; 1 está sem perguntas de diagnóstico.
+- Faltam título/descrição em inglês nos 54 (a orientação em inglês existe).
+- Nenhum controle está ligado aos requisitos da LGPD (0 mapeamentos) — por isso a ligação requisito → controle não aparece.
+- Fora do framework: Art. 51 (boas práticas) e as resoluções da ANPD vigentes — Res. 2/2022 (pequenos agentes), 4/2023 (sanções), 18/2024 (encarregado) e 19/2024 (transferência internacional). Arts. 28–32 (poder público) e 55-E a 65 (estrutura da ANPD/transitórios) ficam de fora por não se aplicarem a empresas.
+- A ordem exibida está fora de sequência (Arts. 37–45 antes do 33; 22–27 no fim).
+
+## O que farei
+1. Preencher título e descrição em inglês dos 54 requisitos e as perguntas que faltam.
+2. Incluir Art. 51 e requisitos derivados das resoluções ANPD 2/2022, 4/2023, 18/2024 e 19/2024, com orientação e evidências PT/EN.
+3. Reordenar por capítulo da lei.
+4. Criar o mapeamento de controles de referência por requisito (ex.: registro de tratamentos, RIPD, encarregado, direitos do titular, incidentes, contratos com operadores), para que cada empresa veja os controles sugeridos sem misturar dados entre empresas.
+5. Validar: contagem, sem campos vazios, paridade PT/EN.
+
+Detalhes técnicos: atualização de dados no modelo global (empresa_id nulo) e em `control_framework_mappings`; nenhuma mudança visual.
