@@ -89,7 +89,7 @@ export function AjustesMasterDetail({ essenciais, recomendados, planosCriados, c
           <div className="min-w-0 max-w-[720px] space-y-2">
             <button type="button" className="text-xs text-primary md:hidden" onClick={() => setMobileDetalhe(false)}>← {u('tabAdjust')}</button>
             <div className="flex flex-wrap items-center gap-2">
-              <Chip tone={atual.essencial ? 'destructive' : 'warning'}>{atual.essencial ? u('essentials') : u('recommended')}</Chip>
+              <Chip family="severity" tone={atual.essencial ? 'high' : 'medium'}>{atual.essencial ? u('essentials') : u('recommended')}</Chip>
               {a.requisito_codigo && <Chip>{t('gapAnalysis.adherenceUi.verdict.requirement', { codigo: a.requisito_codigo })}</Chip>}
               <span className="text-xs text-muted-foreground">{u('itemOf', { n: sel + 1, total: itens.length })}</span>
             </div>
