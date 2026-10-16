@@ -106,7 +106,7 @@ export function AdherenceAnalysisProgress({
           <li
             key={e.id}
             className={cn(
-              'relative flex items-start gap-3 rounded-lg px-3 py-2.5 transition-all duration-500 animate-in fade-in slide-in-from-bottom-1',
+              'relative flex items-start gap-3 rounded-lg px-3 py-2.5 transition-ui duration-500 animate-in fade-in slide-in-from-bottom-1',
               e.status === 'active' && 'bg-primary/5 ring-1 ring-primary/20',
               e.status === 'pending' && 'opacity-50',
               e.status === 'error' && 'bg-destructive/5 ring-1 ring-destructive/20',

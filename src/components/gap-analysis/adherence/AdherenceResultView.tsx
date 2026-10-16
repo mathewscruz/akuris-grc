@@ -456,7 +456,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
                 {porPrioridade[p].map(({ acao, idx }, j) => (
                   <div
                     key={idx}
-                    className={cn('relative overflow-hidden rounded-lg border bg-card p-4 pl-5 transition-colors hover:bg-muted/30 animate-in fade-in slide-in-from-bottom-1',
+                    className={cn('relative overflow-hidden rounded-lg border bg-card p-4 pl-5 transition-colors hover:bg-accent animate-in fade-in slide-in-from-bottom-1',
                       planosCriados.has(idx) && 'opacity-70')}
                     style={{ animationDelay: `${j * 60}ms`, animationFillMode: 'both' }}
                   >
