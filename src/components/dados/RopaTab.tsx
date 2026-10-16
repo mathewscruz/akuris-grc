@@ -385,7 +385,7 @@ export function RopaTab({
       key: "responsavel_nome",
       label: t("dadosDashboard.ropaExercicios.colResponsavel"),
       sortable: true,
-      kind: 'owner',
+      kind: 'owner' as const,
       ownerName: row => row.responsavel_nome,
     },
     {

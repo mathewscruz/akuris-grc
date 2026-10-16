@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { environmentLabel } from '@/lib/environment-label';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
@@ -311,28 +312,7 @@ export default function AtivosChaves() {
       key: 'responsavel',
       mobilePriority: 3,
       label: t('fin.comum.responsavel'),
-      render: (_: any, chave: ChaveCriptografica) => {
-        if (!chave.responsavel_nome) return '-';
-        
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
-                  <Avatar className="h-7 w-7 shrink-0">
-                    {chave.responsavel_avatar && <AvatarImage src={chave.responsavel_avatar} alt={chave.responsavel_nome} />}
-                    <AvatarFallback className="text-xs">{chave.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <span className="truncate text-sm">{chave.responsavel_nome.split(/\s+/)[0]}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{chave.responsavel_nome}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
+      render: (_: any, chave: any) => <OwnerCell name={chave.responsavel_nome} photo={chave.responsavel_avatar} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: 'acoes',

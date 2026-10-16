@@ -1,3 +1,5 @@
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { IconFile } from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconExternal } from '@/components/icons';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -156,11 +158,9 @@ export default function BlogManager() {
         {posts.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">{t('configPlanos.blog.emptyState')}</p>}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing.id ? t('configPlanos.blog.dialogEditTitle') : t('configPlanos.blog.dialogNewTitle')}</DialogTitle>
-          </DialogHeader>
+      <DialogShell open={open} onOpenChange={setOpen} icon={IconFile}
+        title={editing.id ? t('configPlanos.blog.dialogEditTitle') : t('configPlanos.blog.dialogNewTitle')}
+        description={t('configPlanos.blog.fieldResumo')} size="lg" onSubmit={save} isSubmitting={saving} submitLabel={t('configPlanos.blog.save')}>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="titulo">{t('configPlanos.blog.fieldTitulo')}</Label>
@@ -211,12 +211,7 @@ export default function BlogManager() {
               <Label>{t('configPlanos.blog.fieldPublicado')}</Label>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>{t('configPlanos.blog.cancel')}</Button>
-            <Button onClick={save} disabled={saving}>{saving ? t('configPlanos.blog.saving') : t('configPlanos.blog.save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       <ConfirmDialog
         open={!!removendo}

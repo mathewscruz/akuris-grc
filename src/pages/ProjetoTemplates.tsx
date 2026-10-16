@@ -1,3 +1,4 @@
+import { DialogShell } from '@/components/ui/dialog-shell';
 import React from 'react';
 import { IconAdd, IconEdit, IconDelete, IconArrowLeft, IconLayers } from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
@@ -198,11 +199,10 @@ function TemplateEditor({ open, onOpenChange, template, isSuperAdmin }: { open: 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{template ? t('projetos.templates.editorTitleEdit') : t('projetos.templates.editorTitleNew')}</DialogTitle>
-        </DialogHeader>
+    <DialogShell open={open} onOpenChange={onOpenChange} icon={IconLayers}
+      title={template ? t('projetos.templates.editorTitleEdit') : t('projetos.templates.editorTitleNew')}
+      description={t('layout.dialogDescription', { title: t('projetos.templates.fieldNome') })}
+      size="md" onSubmit={submit} isSubmitting={upsert.isPending} submitLabel={t('projetos.templates.saveTemplate')}>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><Label htmlFor="nome">{t('projetos.templates.fieldNome')}</Label><Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
@@ -230,11 +230,6 @@ function TemplateEditor({ open, onOpenChange, template, isSuperAdmin }: { open: 
             <Textarea id="tarefas" rows={6} value={form.tarefas} onChange={(e) => setForm({ ...form, tarefas: e.target.value })} placeholder={t('projetos.templates.tarefasPlaceholder')} />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('projetos.templates.cancel')}</Button>
-          <Button onClick={submit} disabled={upsert.isPending}>{t('projetos.templates.saveTemplate')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

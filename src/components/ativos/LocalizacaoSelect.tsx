@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { IconAdd, IconCheck } from '@/components/icons';
+import { IconAdd, IconCheck, IconMapPin } from '@/components/icons';
 ;
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,6 +43,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
       const { data, error } = await supabase
         .from('ativos_localizacoes')
         .select('*')
+        .eq('empresa_id', profile?.empresa_id ?? '')
         .eq('ativo', true)
         .order('nome');
 
@@ -135,7 +136,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('contratosAtivos.localizacaoSelect.newLocationTitle')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><IconMapPin className="h-5 w-5 text-primary" />{t('contratosAtivos.localizacaoSelect.newLocationTitle')}</DialogTitle>
             <DialogDescription>
               {t('contratosAtivos.localizacaoSelect.newLocationDescription')}
             </DialogDescription>
@@ -161,7 +162,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
                 rows={3}
               />
             </div>
-            <div className="flex justify-end space-x-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 {t('contratosAtivos.common.cancel')}
               </Button>
@@ -169,7 +170,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
                 <IconCheck className="h-4 w-4 mr-2" />
                 {t('contratosAtivos.localizacaoSelect.createButton')}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
