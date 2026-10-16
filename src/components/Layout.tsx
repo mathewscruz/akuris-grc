@@ -219,10 +219,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Breadcrumb className="hidden sm:block">
                 <BreadcrumbList>
                   {breadcrumbs.map((breadcrumb, index) => (
-                    <div key={breadcrumb.path} className="flex items-center">
+                    <div key={`${index}-${breadcrumb.path}`} className="flex items-center">
                       <BreadcrumbItem>
-                        {index === breadcrumbs.length - 1 ? (
-                          <BreadcrumbPage className="font-semibold">
+                        {index === breadcrumbs.length - 1 || !breadcrumb.path ? (
+                          <BreadcrumbPage className={breadcrumb.path ? 'font-semibold' : 'text-muted-foreground'}>
                             {breadcrumb.title}
                           </BreadcrumbPage>
                         ) : (

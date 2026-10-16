@@ -16,6 +16,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEntityById, type EntityKey } from '@/lib/entity-search';
 import { logger } from '@/lib/logger';
+import { getModuleGroup } from '@/lib/navigation';
 import { regulatoryDb } from '@/lib/regulatory/types';
 
 interface BreadcrumbItem {
@@ -180,6 +181,9 @@ export const useBreadcrumb = () => {
     if (location.pathname !== '/dashboard') {
       items.push({ title: t('sweepCore.breadcrumb.dashboard'), path: '/dashboard' });
     }
+    // Grupo do menu lateral (sem página própria, logo sem link).
+    const group = getModuleGroup(location.pathname, t);
+    if (group) items.push({ title: group, path: '' });
 
     let currentPath = '';
     pathSegments.forEach((segment, index) => {
