@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ControlesContent from "@/components/governanca/ControlesContent";
 import AuditoriasContent from "@/components/governanca/AuditoriasContent";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 type GovernancaTab = 'controles' | 'auditorias';
 
@@ -86,12 +89,12 @@ export default function Governanca() {
       />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="max-w-md">
-          <TabsTrigger value="controles" className="flex items-center gap-2">
+        <TabsList>
+          <TabsTrigger value="controles" count={contagens?.controles} className="flex items-center gap-2">
             <ControlesIcon className="h-5 w-5" />
             {t('modules.governanca.controls')}
           </TabsTrigger>
-          <TabsTrigger value="auditorias" className="flex items-center gap-2">
+          <TabsTrigger value="auditorias" count={contagens?.auditorias} className="flex items-center gap-2">
             <AuditoriasIcon className="h-5 w-5" />
             {t('modules.governanca.audits')}
           </TabsTrigger>
