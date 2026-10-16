@@ -72,19 +72,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description: "text-xs !text-background/70 leading-relaxed mt-0.5 break-words",
           // Action como link inline (sem pill)
           actionButton: [
-            "!bg-transparent !text-[hsl(var(--primary-glow,var(--primary)))] hover:!opacity-80",
+            "!bg-transparent !text-primary hover:!opacity-80",
             "!font-medium !text-xs !px-0 !py-0 !border-0 !shadow-none",
-            "!mt-3 !ml-0 !mr-0 !rounded-none",
+            "!mt-0 !ml-2 !mr-0 !rounded-none",
             "!h-auto !w-auto",
           ].join(" "),
           cancelButton: [
-            "!bg-transparent !text-muted-foreground hover:!text-foreground",
+            "!bg-transparent !text-background/60 hover:!text-background",
             "!font-medium !text-xs !px-0 !py-0 !border-0 !shadow-none",
-            "!mt-3 !ml-3 !rounded-none !h-auto !w-auto",
+            "!mt-0 !ml-3 !rounded-none !h-auto !w-auto",
           ].join(" "),
           closeButton: [
-            "!bg-transparent !border-0 !text-muted-foreground hover:!text-foreground",
-            "!top-3 !right-3 !left-auto !translate-x-0 !translate-y-0",
+            "!bg-transparent !border-0 !text-background/60 hover:!text-background",
+            "!top-1/2 !right-3 !left-auto !translate-x-0 !-translate-y-1/2",
             "!h-5 !w-5",
           ].join(" "),
         },
