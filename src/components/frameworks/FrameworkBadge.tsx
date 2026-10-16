@@ -29,7 +29,7 @@ const SIZE_MAP: Record<Size, { box: string; sigla: string; icone: number }> = {
  * acima e, no tamanho grande, o tema escrito em arco. Sem marcas registadas.
  */
 export const FrameworkBadge = ({ name, versao, size = 'md', className, logoUrl }: FrameworkBadgeProps) => {
-  const { language } = useLanguage();
+  const { locale } = useLanguage();
   const brand = resolveFrameworkBrand(name, versao);
   const dims = SIZE_MAP[size];
   const id = React.useId().replace(/:/g, '');
@@ -44,7 +44,7 @@ export const FrameworkBadge = ({ name, versao, size = 'md', className, logoUrl }
     );
   }
 
-  const tema = TONE_THEME[brand.tone][language === 'en' ? 'en' : 'pt'].toUpperCase();
+  const tema = TONE_THEME[brand.tone][String(locale).startsWith('en') ? 'en' : 'pt'].toUpperCase();
   const sigla = brand.acronym === 'SOC2' ? 'SOC 2' : brand.acronym;
 
   return (
