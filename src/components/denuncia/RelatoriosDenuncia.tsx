@@ -16,6 +16,8 @@ import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, CHART_SEVERIT
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { datePattern, parseDataLocal } from '@/lib/date-utils';
+import { useAuth } from '@/components/AuthProvider';
+import { logger } from '@/lib/logger';
 interface RelatorioMetricas {
   total_denuncias: number;
   denuncias_periodo: number;
@@ -29,6 +31,7 @@ interface RelatorioMetricas {
 
 export function RelatoriosDenuncia() {
   const { t } = useLanguage();
+  const empresaId = useAuth().profile?.empresa_id;
   const [metricas, setMetricas] = useState<RelatorioMetricas | null>(null);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('30dias');
@@ -39,9 +42,10 @@ export function RelatoriosDenuncia() {
 
   useEffect(() => {
     carregarRelatorio();
-  }, [periodo, dateRange]);
+  }, [periodo, dateRange, empresaId]);
 
   const carregarRelatorio = async () => {
+    if (!empresaId) { setMetricas(null); setLoading(false); return; }
     setLoading(true);
     try {
       let dataInicio: Date;
@@ -77,6 +81,7 @@ export function RelatoriosDenuncia() {
           *,
           categoria:denuncias_categorias(nome, cor)
         `)
+        .eq('empresa_id', empresaId)
         .gte('created_at', dataInicio.toISOString())
         .lte('created_at', dataFim.toISOString())
         .order('created_at', { ascending: false });
@@ -86,7 +91,7 @@ export function RelatoriosDenuncia() {
       // Buscar total geral
       const { count: totalGeral } = await supabase
         .from('denuncias')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId);
 
       // Processar métricas
       const total_denuncias = totalGeral || 0;

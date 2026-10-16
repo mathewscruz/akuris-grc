@@ -347,7 +347,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={progressMax}
-                aria-valuenow={clamp(progressValue!, 0, progressMax)}
+                aria-valuenow={clamp(progressValue ?? 0, 0, progressMax)}
                 aria-label={`${item.label}: ${item.value}`}
                 className="mt-auto block h-1 overflow-hidden rounded-full bg-muted pt-0"
               >

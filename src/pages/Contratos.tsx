@@ -500,7 +500,7 @@ export default function Contratos() {
         />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList moduleTitle={t('modules.contratos.title')} searchValue={searchTerm} onSearchChange={currentTab === 'contratos' ? setSearchTerm : undefined}>
+          <TabsList moduleTitle={t('modules.contratos.title')} searchValue={searchTerm} onSearchChange={setSearchTerm}>
             {/*
               O nome da aba fica, tambem no telemovel.
 
@@ -698,6 +698,8 @@ export default function Contratos() {
             */}
             <FornecedoresManager
               ref={gestorFornecedores}
+              headerSearch={searchTerm}
+              onHeaderSearchChange={setSearchTerm}
               botaoNovoNoCabecalho
               focoId={searchParams.get('focus')}
             />

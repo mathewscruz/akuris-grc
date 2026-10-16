@@ -121,6 +121,7 @@ interface DataTableProps<T> {
       label: string
       onClick: () => void
     }
+    shortcuts?: Array<{ icon?: React.ReactNode; label: string; description?: string; onClick: () => void }>
   }
   sortField?: string
   sortDirection?: 'asc' | 'desc'
@@ -526,6 +527,7 @@ export function DataTable<T extends Record<string, any>>({
               title={ecraVazio.title}
               description={ecraVazio.description}
               action={ecraVazio.action}
+              shortcuts={temFiltros ? undefined : emptyState?.shortcuts}
             />
           )
         ) : (
@@ -674,6 +676,7 @@ export function DataTable<T extends Record<string, any>>({
                       title={ecraVazio.title}
                       description={ecraVazio.description}
                       action={ecraVazio.action}
+                      shortcuts={temFiltros ? undefined : emptyState?.shortcuts}
                     />
                   )}
                 </TableCell>

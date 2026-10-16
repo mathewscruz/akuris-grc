@@ -616,6 +616,10 @@ const Ativos = () => {
                  se há filtro activo e oferece limpá-lo. */
               title: t('fin.ativos.nenhumCadastrado'),
               description: t('fin.ativos.vazioDesc'),
+              shortcuts: [
+                { label: t('sweepCore.assets.newAsset'), onClick: () => setIsDialogOpen(true) },
+                { label: t('p3Import.importButtonLabel'), onClick: () => setImportDialog(true) },
+              ],
               action: {
                 label: t('sweepCore.assets.newAsset'),
                 onClick: () => setIsDialogOpen(true),
