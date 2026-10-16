@@ -47,3 +47,13 @@ describe('indicadores executivos', () => {
     expect(screen.getByRole('img').style.getPropertyValue('--score-color')).toBe('');
   });
 });
+
+describe('faixas de cor do índice operacional', () => {
+  it('usa uma cor fixa por faixa', () => {
+    expect(operationalScoreColor(85)).toBe('hsl(var(--success))');
+    expect(operationalScoreColor(67)).toBe('hsl(var(--good))');
+    expect(operationalScoreColor(45)).toBe('hsl(var(--warning))');
+    expect(operationalScoreColor(20)).toBe('hsl(var(--destructive))');
+    expect(operationalScoreColor(null)).toBe('hsl(var(--muted-foreground))');
+  });
+});
