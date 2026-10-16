@@ -67,7 +67,7 @@ export interface StatStripItem {
 
 interface StatStripProps extends React.HTMLAttributes<HTMLDivElement> {
   items: StatStripItem[]
-  /** Tabela do módulo: o 1º cartão ganha o mini gráfico com o total acumulado real. */
+  /** Tabela do módulo: o cartão de TOTAL ganha o mini gráfico com o total acumulado real. */
   serieTabela?: TabelaSerie
   loading?: boolean
   error?: boolean
@@ -190,7 +190,7 @@ const clamp = (value: number, min: number, max: number) =>
 
 export function StatStrip({ items: itemsIn, serieTabela, loading = false, error = false, className, ...props }: StatStripProps) {
   const serie = useSerieSemanal(serieTabela)
-  const items = React.useMemo(() => serie && itemsIn?.length ? itemsIn.map((it, i) => i === 0 && !it.series ? { ...it, series: serie } : it) : itemsIn, [itemsIn, serie])
+  const items = React.useMemo(() => serie && itemsIn?.length ? itemsIn.map((it) => !it.series && (/total/i.test(it.key ?? '') || /total/i.test(it.label)) ? { ...it, series: serie } : it) : itemsIn, [itemsIn, serie])
   const drill = useKpiDrillDown()
   const { t } = useLanguage()
   const [mobileExpanded, setMobileExpanded] = React.useState(false)
