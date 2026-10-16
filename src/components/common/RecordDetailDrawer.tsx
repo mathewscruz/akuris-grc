@@ -162,8 +162,8 @@ export function RecordDetailDrawer({
         <SheetHeader className="space-y-0 border-b border-border/70 bg-popover px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <div className="flex items-start gap-3 pr-10">
             {Icon && (
-              <span className="flex shrink-0 items-center justify-center text-primary">
-                <Icon className="h-5 w-5" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center text-primary">
+                <Icon className="h-6 w-6" />
               </span>
             )}
             <div className="min-w-0 flex-1">
@@ -193,9 +193,9 @@ export function RecordDetailDrawer({
         <ScrollArea className="flex-1">
           <div className="space-y-4 px-5 py-5 sm:px-6">
             {kpis && kpis.length > 0 && (
-              <div className={cn('grid gap-px overflow-hidden rounded-lg border border-border/80 bg-border/60', kpis.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : kpis.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
-                {kpis.map((k) => (
-                  <div key={k.label} className="bg-popover px-3.5 py-3">
+              <div className={cn('akuris-stagger grid gap-2.5', kpis.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : kpis.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+                {kpis.map((k, i) => (
+                  <div key={k.label} style={{ '--i': i } as React.CSSProperties} className="rounded-lg border border-border/80 bg-popover px-3.5 py-3 text-center">
                     <p className="text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground">{k.label}</p>
                     <p className={cn('mt-1 text-lg font-semibold tabular-nums leading-tight', kpiTone[k.tone || 'neutral'])}>{k.value}</p>
                     {k.hint && <p className="mt-0.5 text-micro text-muted-foreground">{k.hint}</p>}
@@ -233,6 +233,22 @@ export function RecordDetailDrawer({
                   </Panel>
                 ))}
                 {children}
+                {events.length > 0 && (
+                  <Panel title={t('detalheRegisto.atividadeRecente')}>
+                    <ol className="space-y-3 px-4 py-4">
+                      {events.slice(0, 3).map((e, i) => (
+                        <li key={`${e.date}-${i}`} className="relative pl-5">
+                          <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary" />
+                          <p className="text-sm text-foreground">{e.title}</p>
+                          <p className="text-micro text-muted-foreground">{formatDateOnly(e.date)}</p>
+                        </li>
+                      ))}
+                    </ol>
+                    <button type="button" onClick={() => setTab('atividade')} className="flex w-full items-center gap-1 border-t border-border/60 px-4 py-2.5 text-xs font-medium text-primary hover:bg-surface-1">
+                      {t('detalheRegisto.verTodaAtividade')} →
+                    </button>
+                  </Panel>
+                )}
               </TabsContent>
 
               {links && (
