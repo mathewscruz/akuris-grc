@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { MODELOS } from '../_shared/modelos.ts';
+import { fetchWithTimeout } from '../_shared/ai.ts';
+import { comRepeticao, dividirEmLotes, emPool, juntarLotes, IaIndisponivelError } from './lotes.ts';
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 import {
   computeAnalyzedScore,
@@ -195,7 +197,7 @@ serve(async (req) => {
     }
 
 
-    const reqsText = reqsForAnalysis.map((r: any, i: number) => {
+    const montarReqsText = (lote: any[]) => lote.map((r: any, i: number) => {
       let entry = `${i+1}. ID:${r.id} | ${r.codigo || 'N/A'}: ${r.titulo}`;
       if (r.descricao) entry += `\n   Descrição: ${r.descricao.substring(0, 300)}`;
       if (r.orientacao_implementacao) entry += `\n   O que a norma exige: ${r.orientacao_implementacao.substring(0, 200)}`;
@@ -212,7 +214,7 @@ serve(async (req) => {
       ? `\n\nCOVERAGE_MAP DECLARADO PELO AUTOR (${coverageMap.length} itens — validar contra o texto):\n${coverageMap.map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → evidência declarada: "${(c.evidencia || '').slice(0, 160)}"`).join('\n')}\n\nAo validar, se a evidência declarada de fato está no documento, tenda para "conforme". Se não encontrar, marque como "nao_conforme" com o gap.`
       : '';
 
-    const prompt = `Você é um AUDITOR SÊNIOR de conformidade regulatória com 15+ anos de experiência em frameworks como ISO 27001, LGPD, NIST CSF, SOC 2, GDPR, PCI DSS e outros.
+    const montarPrompt = (lote: any[]) => `Você é um AUDITOR SÊNIOR de conformidade regulatória com 15+ anos de experiência em frameworks como ISO 27001, LGPD, NIST CSF, SOC 2, GDPR, PCI DSS e outros.
 
 TAREFA PRINCIPAL: Analise o documento corporativo abaixo e compare ITEM A ITEM com os requisitos do framework ${framework.nome} (${framework.versao || ''}). Você deve agir exatamente como um auditor que recebe um documento (ex: Política de Mesa e Tela Limpa) e precisa verificar se ele atende a todos os pontos exigidos pela norma.
 
@@ -223,7 +225,7 @@ MÉTODO DE ANÁLISE (siga rigorosamente):
 4. Quando o documento NÃO abordar um requisito, indique claramente o GAP e o que deveria conter
 5. Marque como "nao_aplicavel" APENAS requisitos que genuinamente não se relacionam com o escopo do documento
 6. Seja CRITERIOSO: "conforme" = cobre adequadamente; "parcial" = menciona mas incompleto; "nao_conforme" = ausente ou inadequado
-7. OBRIGATÓRIO: devolver "requisitos_analisados" para TODOS os ${reqsForAnalysis.length} requisitos abaixo (não pule nenhum) — o campo "total_requisitos_relevantes" deve refletir quantos são REALMENTE relevantes ao escopo (não conte "nao_aplicavel").
+7. OBRIGATÓRIO: devolver "requisitos_analisados" para TODOS os ${lote.length} requisitos abaixo (não pule nenhum) — o campo "total_requisitos_relevantes" deve refletir quantos são REALMENTE relevantes ao escopo (não conte "nao_aplicavel").
 ${coverageBlock}
 
 DOCUMENTO ANALISADO:
@@ -231,8 +233,8 @@ DOCUMENTO ANALISADO:
 ${docTextForAnalysis}${documentText.length > 30000 ? '\n\n[... documento continua - ' + (documentText.length - 30000) + ' caracteres adicionais ...]' : ''}
 ---
 
-REQUISITOS DO FRAMEWORK ${framework.nome} (${reqsForAnalysis.length} de ${requirements.length}):
-${reqsText}
+REQUISITOS DO FRAMEWORK ${framework.nome} (${lote.length} de ${requirements.length}):
+${montarReqsText(lote)}
 
 FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
 {
