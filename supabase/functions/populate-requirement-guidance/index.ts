@@ -375,3 +375,50 @@ async function scheduledBody(supabase: any): Promise<Record<string, unknown> | n
   }
   return null;
 }
+
+/** Traduz até 25 requisitos de frameworks globais sem título/descrição/categoria em inglês. */
+async function traduzirCatalogo(supabase: any, apiKey: string | undefined): Promise<number> {
+  if (!apiKey) { console.error('traducao: LOVABLE_API_KEY ausente'); return 0; }
+  const { data: globais } = await supabase.from('gap_analysis_frameworks').select('id').is('empresa_id', null);
+  const ids = (globais ?? []).map((f: any) => f.id);
+  if (!ids.length) return 0;
+  const { data: rows, error: errRows } = await supabase.from('gap_analysis_requirements')
+    .select('id, codigo, titulo, descricao, categoria, titulo_en, descricao_en, categoria_en')
+    .in('framework_id', ids)
+    .or('titulo_en.is.null,titulo_en.eq.,descricao_en.is.null,descricao_en.eq.,categoria_en.is.null')
+    .limit(25);
+  if (errRows) console.error('traducao: leitura falhou', errRows.message);
+  if (!rows?.length) return 0;
+  const entrada = rows.map((r: any) => ({ id: r.id, codigo: r.codigo, titulo: r.titulo, descricao: r.descricao, categoria: r.categoria }));
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: MODELOS.PADRAO,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: 'You translate GRC framework requirement metadata from Portuguese to professional English. Keep official terminology of the standard (ISO, NIST, PCI, GDPR, etc.). Return JSON {"items":[{"id","titulo_en","descricao_en","categoria_en"}]} with exactly one item per input id. No extra text.' },
+        { role: 'user', content: JSON.stringify(entrada) },
+      ],
+    }),
+  });
+  if (!resp.ok) { console.error('traducao falhou', resp.status); return 0; }
+  const out = await resp.json();
+  let itens: any[] = [];
+  try { itens = JSON.parse(out.choices?.[0]?.message?.content ?? '{}').items ?? []; } catch (e) { console.error('traducao: json invalido', String(e)); return 0; }
+  const porId = new Map(rows.map((r: any) => [r.id, r]));
+  let n = 0;
+  for (const it of itens) {
+    const atual: any = porId.get(it?.id);
+    if (!atual) continue;
+    const patch: Record<string, string> = {};
+    if (!atual.titulo_en?.trim() && typeof it.titulo_en === 'string' && it.titulo_en.trim()) patch.titulo_en = it.titulo_en.trim().slice(0, 300);
+    if (!atual.descricao_en?.trim() && typeof it.descricao_en === 'string' && it.descricao_en.trim()) patch.descricao_en = it.descricao_en.trim();
+    if (!atual.categoria_en?.trim() && typeof it.categoria_en === 'string' && it.categoria_en.trim()) patch.categoria_en = it.categoria_en.trim().slice(0, 200);
+    if (!Object.keys(patch).length) continue;
+    const { error } = await supabase.from('gap_analysis_requirements').update(patch).eq('id', atual.id);
+    if (!error) n++;
+  }
+  console.log('traducao gravados', n, 'de', rows.length);
+  return n;
+}
