@@ -18,7 +18,7 @@ import { logger } from '@/lib/logger';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { exigirEscrita } from '@/lib/supabase-write';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { useAuth } from '@/components/AuthProvider';
 import { sugerirPrazoPorPrioridade } from '@/lib/preenchimento-inteligente';
