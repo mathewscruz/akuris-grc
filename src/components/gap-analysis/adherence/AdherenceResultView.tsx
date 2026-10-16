@@ -1,3 +1,4 @@
+import { AnaliseCompleta } from './AnaliseCompleta';
 import { VeredictoBadge } from './VeredictoBadge';
 import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -605,9 +606,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
 
           {assessment.analise_detalhada && (
             <TabsContent value="completa" className="mt-0 animate-in fade-in duration-300">
-              <Card className="p-6">
-                <div className="prose prose-sm max-w-[760px] whitespace-pre-wrap dark:prose-invert">{assessment.analise_detalhada}</div>
-              </Card>
+              <AnaliseCompleta texto={assessment.analise_detalhada} />
             </TabsContent>
           )}
         </Tabs>

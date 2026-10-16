@@ -339,7 +339,7 @@ export const gapAnalysis = {
           ui: {
             evaluated: 'Pontos avaliados', adjustments: 'Ajustes', good: 'Já atendidos', outScope: 'Fora do escopo',
             essentials: 'Essenciais', recommended: 'Recomendados', tabAdjust: 'Ajustes', tabGood: 'O que já atende',
-            tabDetail: 'Por requisito', tabOut: 'Fora do escopo', tabFull: 'Análise completa', all: 'Todos',
+            tabDetail: 'Por requisito', tabOut: 'Fora do escopo', tabFull: 'Análise completa', fullSummary: 'Resumo do veredito', fullSection: 'Análise', fullConclusion: 'Conclusão e recomendações', fullReading: 'min de leitura', all: 'Todos',
             adjustHint: 'Escolha um ajuste à esquerda para ver o que mudar e por quê.', prev: 'Anterior', next: 'Próximo',
             itemOf: '{n} de {total}', goodHint: 'Trechos do seu documento que já atendem à norma.',
             detailHint: 'Resultado de cada requisito avaliado nesta análise.', noAdjust: 'Nenhum ajuste necessário.',
@@ -1367,7 +1367,7 @@ export const gapAnalysis = {
           ui: {
             evaluated: 'Points evaluated', adjustments: 'Adjustments', good: 'Already good', outScope: 'Out of scope',
             essentials: 'Essential', recommended: 'Recommended', tabAdjust: 'Adjustments', tabGood: 'What already complies',
-            tabDetail: 'By requirement', tabOut: 'Out of scope', tabFull: 'Full analysis', all: 'All',
+            tabDetail: 'By requirement', tabOut: 'Out of scope', tabFull: 'Full analysis', fullSummary: 'Verdict summary', fullSection: 'Analysis', fullConclusion: 'Conclusion and recommendations', fullReading: 'min read', all: 'All',
             adjustHint: 'Pick an adjustment on the left to see what to change and why.', prev: 'Previous', next: 'Next',
             itemOf: '{n} of {total}', goodHint: 'Excerpts from your document that already meet the standard.',
             detailHint: 'Result for each requirement evaluated in this analysis.', noAdjust: 'No adjustments needed.',
