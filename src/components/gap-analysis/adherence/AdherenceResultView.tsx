@@ -26,7 +26,8 @@ import { AdherenceAssessmentDialog } from './AdherenceAssessmentDialog';
 import { Chip } from '@/components/ui/chip';
 import { cn } from '@/lib/utils';
 
-type Acao = { titulo: string; descricao?: string; prioridade?: string; requisito_codigo?: string | null; requirement_id?: string | null };
+import { agruparAjustes, type Acao } from './ajustes';
+import { AjusteCard } from './AjusteCard';
 type Comparacao = { resolvidos: number; pendentes: number; melhorados: number; piorados: number };
 const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
 
@@ -82,6 +83,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const foraIds: string[] = Array.isArray(meta.fora_escopo_ids) ? meta.fora_escopo_ids : [];
   const comparacao = meta.comparacao as Comparacao | null | undefined;
   const [verTodosFortes, setVerTodosFortes] = useState(false);
+  const grupos = agruparAjustes(acoes, veredito === 'em_compliance');
   const porPrioridade = { alta: [], media: [], baixa: [] } as Record<'alta' | 'media' | 'baixa', { acao: Acao; idx: number }[]>;
   acoes.forEach((acao, idx) => {
     const p = (['alta', 'media', 'baixa'].includes(acao.prioridade || '') ? acao.prioridade : 'media') as 'alta' | 'media' | 'baixa';
@@ -390,6 +392,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('gapAnalysis.adherenceUi.verdict.question', { norma: `${assessment.framework_nome ?? ''} ${assessment.framework_versao ?? ''}`.trim() })}
               </p>
+              <h2 className="mb-2 text-xl font-semibold text-foreground md:text-2xl">{t(`gapAnalysis.adherenceUi.verdict.guide.answer_${veredito}`, { norma: assessment.framework_nome ?? '', n: grupos.essenciais.length })}</h2>
               <div className="mb-3"><StatusBadge tone={TOM_VEREDITO[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge></div>
               {meta.veredito_resumo && <p className="text-sm leading-relaxed text-foreground">{meta.veredito_resumo}</p>}
               <p className="mt-3 text-xs text-muted-foreground">
