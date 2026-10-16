@@ -88,3 +88,18 @@ export function getSearchModules(t: (key: string) => string) {
     { title: t('sidebar.settings'), url: '/configuracoes', icon: MODULE_ICON['/configuracoes'], moduleName: 'configuracoes' },
   ].filter((item) => item.url);
 }
+
+/** Grupo do menu lateral que contém o caminho (null para itens de topo). */
+export function getModuleGroup(pathname: string, t: (key: string) => string): string | null {
+  const base = (url: string) => url.replace(/\/frameworks$/, '');
+  let best: { title: string; len: number } | null = null;
+  for (const item of getMenuSections(t).flatMap((s) => s.items)) {
+    for (const sub of item.subItems ?? []) {
+      const b = base(sub.url);
+      if ((pathname === sub.url || pathname === b || pathname.startsWith(b + '/')) && (!best || b.length > best.len)) {
+        best = { title: item.title, len: b.length };
+      }
+    }
+  }
+  return best?.title ?? null;
+}

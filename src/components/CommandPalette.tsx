@@ -17,7 +17,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { routeForEntity, type EntityRow, type EntityKey } from '@/lib/entity-search';
 import { formatStatus } from '@/lib/text-utils';
-import { getSearchModules } from '@/lib/navigation';
+import { getSearchModules, getModuleGroup } from '@/lib/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 
 
@@ -145,6 +145,9 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             >
               <module.icon className="h-4 w-4 text-muted-foreground" />
               <span>{module.title}</span>
+              {getModuleGroup(module.url!, t) && (
+                <span className="ml-auto text-xs text-muted-foreground">{getModuleGroup(module.url!, t)}</span>
+              )}
             </CommandItem>
           ))}
         </CommandGroup>

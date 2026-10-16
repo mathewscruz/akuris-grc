@@ -4,6 +4,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getMenuSections } from '@/lib/navigation';
 import { MODULE_ICON } from '@/lib/module-icons';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -37,25 +38,20 @@ export function MobileBottomNav() {
     { title: t('sidebar.documents'), url: '/documentos', icon: MODULE_ICON['/documentos'], moduleName: 'documentos' },
   ].filter(visible);
 
-  const moreNavItems: MobileNavItem[] = [
-    { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: MODULE_ICON['/planos-acao'], moduleName: 'planos-acao' },
-    { title: t('sidebar.projects'), url: '/projetos', icon: MODULE_ICON['/projetos'], moduleName: 'projetos' },
-    { title: t('sidebar.contracts'), url: '/contratos', icon: MODULE_ICON['/contratos'], moduleName: 'contratos' },
-    { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
-    { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
-    { title: t('sidebar.keys'), url: '/ativos/chaves', icon: MODULE_ICON['/ativos/chaves'], moduleName: 'ativos' },
-    { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'], moduleName: 'gap-analysis' },
-    { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
-    { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
-    { title: t('sidebar.accessReview'), url: '/revisao-acessos', icon: MODULE_ICON['/revisao-acessos'], moduleName: 'contas-privilegiadas' },
-    { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
-    { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'], moduleName: 'dados' },
-    { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
-    { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
-    { title: t('sidebar.businessContinuity'), url: '/continuidade', icon: MODULE_ICON['/continuidade'], moduleName: 'continuidade' },
-    { title: t('sidebar.reports'), url: '/relatorios', icon: MODULE_ICON['/relatorios'], moduleName: 'relatorios' },
-    { title: t('sidebar.settings'), url: '/configuracoes', icon: MODULE_ICON['/configuracoes'] },
-  ].filter(visible);
+  // Mesma organização do menu lateral: um bloco por grupo.
+  const moreSections = getMenuSections(t)
+    .flatMap((section) => section.items)
+    .filter((item) => item.url !== '/dashboard')
+    .map((item) => ({
+      title: item.subItems ? item.title : null,
+      items: (item.subItems ?? [item as MobileNavItem]).filter(visible) as MobileNavItem[],
+    }))
+    .filter((g) => g.items.length > 0);
+  const otherItems = moreSections.filter((g) => !g.title).flatMap((g) => g.items);
+  const groupedSections = [
+    ...moreSections.filter((g) => g.title),
+    { title: t('sidebar.sectionInsights'), items: [...otherItems, { title: t('sidebar.settings'), url: '/configuracoes', icon: MODULE_ICON['/configuracoes'] }] },
+  ];
 
   return (
     <>
@@ -88,19 +84,26 @@ export function MobileBottomNav() {
               <SheetHeader>
                 <SheetTitle>{t('notifications.moreModules')}</SheetTitle>
               </SheetHeader>
-              <div className="grid grid-cols-3 gap-3 mt-4 pb-4">
-                {moreNavItems.map(item => (
-                  <NavLink
-                    key={item.url}
-                    to={item.url}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
-                      isActive(item.url) ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-muted-foreground'
-                    }`}
-                  >
-                    <item.icon className="h-6 w-6" />
-                    <span className="text-xs font-medium text-center">{item.title}</span>
-                  </NavLink>
+              <div className="mt-4 space-y-4 pb-4">
+                {groupedSections.map((group) => (
+                  <section key={group.title ?? 'outros'}>
+                    <p className="mb-2 px-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{group.title}</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {group.items.map(item => (
+                        <NavLink
+                          key={item.url}
+                          to={item.url}
+                          onClick={() => setMoreOpen(false)}
+                          className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
+                            isActive(item.url) ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-muted-foreground'
+                          }`}
+                        >
+                          <item.icon className="h-6 w-6" />
+                          <span className="text-xs font-medium text-center">{item.title}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             </SheetContent>
