@@ -5,7 +5,9 @@
  */
 import { useEffect, useState } from 'react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
-import { KpiTiny } from './KpiTiny';
+import { StatStrip } from '@/components/ui/stat-strip';
+import { Chip } from '@/components/ui/chip';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -15,7 +17,9 @@ import { formatarDiaParaDB } from '@/lib/date-utils';
 interface Props {
   frameworkId: string;
   empresaId: string;
-  onUploadClick?: () => void;
+  /** Sem arquivo abre o diálogo; com arquivo (arrastado) já o entrega ao diálogo. */
+  onUploadClick?: (file?: File) => void;
+  frameworkNome?: string;
   /** Abre o gerador de documentos com o contexto deste framework. */
   onAIGenerate?: () => void;
 }
@@ -26,7 +30,8 @@ interface SuggestedType {
   status: string;
 }
 
-export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGenerate }: Props) {
+export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGenerate, frameworkNome }: Props) {
+  const [arrastando, setArrastando] = useState(false);
   const { t } = useLanguage();
   const [stats, setStats] = useState({
     analyzed: 0,
@@ -169,10 +174,8 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGener
           .sort((a, b) => b[1].length - a[1].length)
           .slice(0, 4)
           .map<SuggestedType>(([cat, codes]) => ({
-            label: t('gapAnalysis.v2.documentsHero.documentOf', { category: cat }),
-            covers: codes.length > 3
-              ? `~${codes.length} requisitos`
-              : codes.slice(0, 3).join(', '),
+            label: cat,
+            covers: String(codes.length),
             status: t('gapAnalysis.v2.documentsHero.missing'),
           }));
 
@@ -196,124 +199,78 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGener
     return () => { alive = false; };
   }, [frameworkId, empresaId]);
 
+  const k = (s: string, p?: Record<string, string | number>) => t(`gapAnalysis.v2.documentsHero.v3.${s}`, p);
+  const pctCobertura = stats.totalReqs ? Math.round((stats.coveredClauses / stats.totalReqs) * 100) : 0;
+
   return (
     <div className="space-y-4">
-      <article className="relative overflow-hidden rounded-lg border border-border bg-card">
+      <article className="relative overflow-hidden rounded-lg border border-border bg-card animate-in fade-in slide-in-from-bottom-2 duration-500">
         <CornerAccent position="top-right" size={14} />
-        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr]">
-          {/* Convite */}
-          <div className="p-6">
-            <h3 className="mt-2 text-xl font-semibold tracking-tight leading-snug text-foreground">
-              {t('gapAnalysis.v2.documentsHero.heroTitle')}
+        <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{k('eyebrow')}</p>
+            <h3 className="mt-2 text-xl font-semibold leading-snug tracking-tight text-foreground">
+              {k('title', { norma: frameworkNome || '' })}
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground max-w-xl leading-relaxed">
-              {t('gapAnalysis.v2.documentsHero.heroDescriptionLine1')}<br />
-              {t('gapAnalysis.v2.documentsHero.heroDescriptionLine2', { count: stats.totalReqs })}
-            </p>
-            <div className="mt-4 flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={onUploadClick}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                <IconUpload className="h-4 w-4" strokeWidth={1.5} />
-                {t('gapAnalysis.v2.documentsHero.attachFiles')}
-              </button>
-              {/*
-                Havia aqui um terceiro botão, "Adicionar link / URL".
-
-                Os três — anexar, link e gerar — chamavam exactamente o mesmo
-                `setDocUploadSignal(s => s + 1)` e abriam o mesmo seletor de
-                ficheiros. Três promessas, um comportamento.
-
-                O "gerar" tinha para onde ir: o gerador de documentos existe e
-                é global, e agora abre com o contexto do framework. O "link"
-                não tinha: o produto não sabe analisar um documento a partir de
-                um URL a este nível — a análise trabalha sobre ficheiro no
-                bucket. Um botão que promete uma coisa e faz outra é pior do
-                que não existir, por isso saiu. Volta quando houver a análise
-                por URL para o sustentar.
-              */}
-              <button
-                type="button"
-                onClick={onAIGenerate}
-                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-primary/40 transition-colors"
-              >
-                {t('gapAnalysis.v2.documentsHero.generateWithAi')}
-              </button>
-            </div>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{k('description')}</p>
+            <button
+              type="button"
+              onClick={onAIGenerate}
+              className="mt-4 text-sm text-primary underline-offset-4 transition-colors hover:underline"
+            >
+              {k('noPolicy')}
+            </button>
           </div>
 
-          {/* Lacunas documentais detectadas */}
-          <aside className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-muted/20">
-            <div className="text-xs text-muted-foreground">
-              {t('gapAnalysis.v2.documentsHero.gapsDetectedTitle')}
-            </div>
-            <ul className="mt-3 space-y-2.5">
-              {suggested.length === 0 ? (
-                <li className="text-xs text-muted-foreground italic">
-                  {t('gapAnalysis.v2.documentsHero.noGaps')}
-                </li>
-              ) : (
-                suggested.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {s.label}
-                        </span>
-                        <span className="text-xs text-destructive shrink-0">
-                          {s.status}
-                        </span>
-                      </div>
-                      <div className="text-micro text-muted-foreground truncate">
-                        {t('gapAnalysis.v2.documentsHero.covers', { items: s.covers })}
-                      </div>
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </aside>
+          <button
+            type="button"
+            onClick={() => onUploadClick?.()}
+            onDragOver={(e) => { e.preventDefault(); setArrastando(true); }}
+            onDragLeave={() => setArrastando(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setArrastando(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) onUploadClick?.(f);
+            }}
+            className={cn(
+              'group flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors',
+              arrastando ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent',
+            )}
+          >
+            <span className={cn('flex h-11 w-11 items-center justify-center rounded-full border bg-background transition-transform duration-300 group-hover:-translate-y-0.5 motion-reduce:transform-none', arrastando && '-translate-y-0.5')}>
+              <IconUpload className="h-5 w-5 text-primary" strokeWidth={1.5} />
+            </span>
+            <span className="text-sm font-medium text-foreground">{arrastando ? k('dropNow') : k('drop')}</span>
+            <span className="text-xs text-muted-foreground">{k('formats')}</span>
+          </button>
         </div>
       </article>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiTiny
-          eyebrow={t('gapAnalysis.v2.documentsHero.kpiAnalyzed')}
-          value={stats.analyzed}
-          foot={t('gapAnalysis.v2.documentsHero.kpiAnalyzedFoot')}
-          tone="info"
-        />
-        <KpiTiny
-          eyebrow={t('gapAnalysis.v2.documentsHero.kpiAvgCompliance')}
-          value={stats.avgConformity ? `${stats.avgConformity}%` : '—'}
-          foot={t('gapAnalysis.v2.documentsHero.kpiAvgComplianceFoot')}
-          tone={
-            stats.avgConformity >= 70 ? 'success' :
-            stats.avgConformity >= 40 ? 'warning' : 'neutral'
-          }
-        />
-        <KpiTiny
-          eyebrow={t('gapAnalysis.v2.documentsHero.kpiCoveredClauses')}
-          value={`${stats.coveredClauses}/${stats.totalReqs}`}
-          foot={stats.totalReqs > 0 ? t('gapAnalysis.v2.documentsHero.kpiCoveredClausesFoot', { pct: Math.round((stats.coveredClauses / stats.totalReqs) * 100) }) : '—'}
-          tone="warning"
-        />
-        <KpiTiny
-          eyebrow={t('gapAnalysis.v2.documentsHero.kpiUncovered')}
-          value={stats.uncoveredClauses}
-          foot={
-            stats.expiredClauses > 0
-              ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootExpired', { count: stats.expiredClauses })
-              : stats.uncoveredClauses > 0
-                ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootPending')
-                : t('gapAnalysis.v2.documentsHero.kpiUncoveredFootDone')
-          }
-          tone={stats.uncoveredClauses > 0 ? 'destructive' : 'success'}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'analisadas', label: k('kpiAnalyzed'), value: stats.analyzed },
+          { key: 'media', label: k('kpiAvg'), value: stats.avgConformity ? `${stats.avgConformity}%` : '—' },
+          { key: 'cobertos', label: k('kpiCovered'), value: `${stats.coveredClauses}/${stats.totalReqs}`, context: k('kpiCoveredCtx', { pct: pctCobertura }) },
+          {
+            key: 'sem', label: k('kpiUncovered'), value: stats.uncoveredClauses,
+            tone: stats.uncoveredClauses > 0 ? 'warning' : undefined,
+            context: stats.expiredClauses > 0 ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootExpired', { count: stats.expiredClauses }) : undefined,
+          },
+        ]}
+      />
+
+      {suggested.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 animate-in fade-in duration-500">
+          <span className="mr-1 text-xs text-muted-foreground">{k('missingDocs')}</span>
+          {suggested.map((s, i) => (
+            <button key={i} type="button" onClick={onAIGenerate} title={k('generateFor', { tema: s.label })}
+              className="rounded-full transition-opacity hover:opacity-80">
+              <Chip family="category">{k('missingChip', { tema: s.label, n: s.covers })}</Chip>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

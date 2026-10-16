@@ -90,6 +90,7 @@ function GapAnalysisFrameworkDetailInner() {
   const [selectedAdherenceAssessment, setSelectedAdherenceAssessment] = useState<any>(null);
   const [adherenceView, setAdherenceView] = useState<'list' | 'result'>('list');
   const [docUploadSignal, setDocUploadSignal] = useState(0);
+  const [docDroppedFile, setDocDroppedFile] = useState<File | null>(null);
   const [marcoDialogAberto, setMarcoDialogAberto] = useState(false);
 
   const abrirRequisitoCompleto = useCallback((requirementId: string) => {
@@ -758,7 +759,8 @@ function GapAnalysisFrameworkDetailInner() {
                       <DocumentsHero
                         frameworkId={frameworkId!}
                         empresaId={empresaId}
-                        onUploadClick={() => setDocUploadSignal(s => s + 1)}
+                        frameworkNome={`${framework.nome}${framework.versao ? ` ${framework.versao}` : ''}`}
+                        onUploadClick={(file) => { setDocDroppedFile(file ?? null); setDocUploadSignal(s => s + 1); }}
                         onAIGenerate={() => openDocGen({
                           frameworkId: frameworkId!,
                           frameworkName: framework.nome,
@@ -768,6 +770,7 @@ function GapAnalysisFrameworkDetailInner() {
                     <AdherenceAssessmentView
                       embedded
                       openSignal={docUploadSignal}
+                      initialFile={docDroppedFile}
                       onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
                       frameworkId={frameworkId}
                       frameworkNome={framework.nome}
