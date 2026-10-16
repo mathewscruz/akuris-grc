@@ -400,7 +400,7 @@ export function RelatoriosDenuncia() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    <Pie
+                    <Pie paddingAngle={3} cornerRadius={4}
                       data={metricas.denuncias_por_categoria}
                       cx="50%"
                       cy="50%"
