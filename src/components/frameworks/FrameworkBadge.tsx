@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { cn } from '@/lib/utils';
-import { resolveFrameworkBrand, TONE_THEME } from '@/lib/framework-brand';
-import { iconeDoSelo } from '@/components/frameworks/framework-seal-icon';
+import { resolveFrameworkBrand } from '@/lib/framework-brand';
+import { iconeDoSelo, seloDoFramework } from '@/components/frameworks/framework-seal-icon';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-type Size = 'sm' | 'md' | 'lg';
+type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 interface FrameworkBadgeProps {
   name: string;
@@ -18,64 +18,79 @@ interface FrameworkBadgeProps {
   logoUrl?: string | null;
 }
 
-const SIZE_MAP: Record<Size, { box: string; sigla: string; icone: number }> = {
-  sm: { box: 'h-8 w-8', sigla: 'text-micro', icone: 0 },
-  md: { box: 'h-12 w-12', sigla: 'text-micro', icone: 12 },
-  lg: { box: 'h-16 w-16', sigla: 'text-xs', icone: 14 },
-};
+const PX: Record<Size, number> = { sm: 32, md: 48, lg: 72, xl: 104 };
 
 /**
- * Selo do framework: aro na cor da família, sigla ao centro, ícone do assunto
- * acima e, no tamanho grande, o tema escrito em arco. Sem marcas registadas.
+ * Selo do framework (proposta B): disco escuro, aro brilhante na cor do
+ * framework, círculo interno com ícone + sigla, nome no arco de cima, tema no
+ * arco de baixo e dois pontos laterais. Abaixo de 72px fica a versão simples
+ * (sem arcos de texto), para continuar legível.
  */
 export const FrameworkBadge = ({ name, versao, size = 'md', className, logoUrl }: FrameworkBadgeProps) => {
   const { locale } = useLanguage();
   const brand = resolveFrameworkBrand(name, versao);
-  const dims = SIZE_MAP[size];
+  const selo = seloDoFramework(name, brand);
   const id = React.useId().replace(/:/g, '');
-  const cor = `hsl(var(--fw-${brand.tone}))`;
+  const px = PX[size];
+  const completo = px >= 72;
+  const cor = `hsl(var(${selo.cor}))`;
   const src = logoUrl || brand.logoSrc;
 
   if (src) {
     return (
-      <div className={cn('flex-shrink-0 flex items-center justify-center rounded-full bg-card ring-1 ring-border overflow-hidden', dims.box, className)} title={brand.fullName}>
+      <div className={cn('flex-shrink-0 flex items-center justify-center rounded-full bg-card ring-1 ring-border overflow-hidden', className)} style={{ width: px, height: px }} title={brand.fullName}>
         <img src={src} alt={brand.fullName} className="h-3/4 w-3/4 object-contain" />
       </div>
     );
   }
 
-  const tema = TONE_THEME[brand.tone][String(locale).startsWith('en') ? 'en' : 'pt'].toUpperCase();
+  const tema = selo.tema[String(locale).startsWith('en') ? 'en' : 'pt'].toUpperCase();
   const sigla = brand.acronym === 'SOC2' ? 'SOC 2' : brand.acronym;
+  const rInterno = completo ? 36 : 50;
+  const iconePx = Math.round(px * (completo ? 0.2 : 0.3));
 
   return (
     <div
       role="img"
       aria-label={brand.fullName}
       title={brand.fullName}
-      className={cn(
-        'relative flex-shrink-0 flex flex-col items-center justify-center rounded-full select-none',
-        'transition-transform duration-200 group-hover:scale-[1.04]',
-        dims.box,
-        className,
-      )}
-      style={{ color: cor, backgroundColor: `hsl(var(--fw-${brand.tone}) / 0.1)`, boxShadow: `inset 0 0 0 1.5px ${cor}` }}
+      className={cn('relative flex-shrink-0 select-none transition-transform duration-200 group-hover:scale-[1.04]', className)}
+      style={{ width: px, height: px, color: cor }}
     >
-      {size === 'lg' && (
-        <svg aria-hidden="true" viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full">
-          <defs>
-            <path id={`arco-${id}`} d="M 14 50 A 36 36 0 0 0 86 50" />
-          </defs>
-          <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" />
-          <text fontSize="7.5" fontWeight="600" letterSpacing="0.6" fill="currentColor" fillOpacity="0.85">
-            <textPath href={`#arco-${id}`} startOffset="50%" textAnchor="middle">{tema}</textPath>
-          </text>
-        </svg>
-      )}
-      {dims.icone > 0 && (
-        <HugeiconsIcon icon={iconeDoSelo(name, brand.tone)} size={dims.icone} strokeWidth={1.75} color="currentColor" className={size === 'lg' ? '-mt-2' : ''} />
-      )}
-      <span className={cn('relative font-bold leading-none tracking-tight text-foreground', dims.sigla, size === 'lg' && 'mb-2')}>
-        {sigla}
+      <svg viewBox="0 0 120 120" className="absolute inset-0 h-full w-full" aria-hidden="true">
+        <defs>
+          <path id={`top-${id}`} d="M 18 60 A 42 42 0 0 1 102 60" />
+          <path id={`bot-${id}`} d="M 14 60 A 46 46 0 0 0 106 60" />
+        </defs>
+        <circle cx="60" cy="60" r="57" fill="hsl(var(--fw-disc))" />
+        <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" strokeWidth={completo ? 2.5 : 5} style={{ filter: `drop-shadow(0 0 3px ${cor})` }} />
+        <circle cx="60" cy="60" r={rInterno} fill="hsl(var(--fw-disc-inner))" stroke="currentColor" strokeOpacity={completo ? 0.18 : 0} />
+        {completo && (
+          <>
+            <circle cx="9.5" cy="60" r="1.8" fill="currentColor" />
+            <circle cx="110.5" cy="60" r="1.8" fill="currentColor" />
+            <text fontSize="9" fontWeight="700" letterSpacing="1" fill="#fff" fillOpacity="0.92">
+              <textPath href={`#top-${id}`} startOffset="50%" textAnchor="middle">{selo.nome}</textPath>
+            </text>
+            <text fontSize="7.5" fontWeight="600" letterSpacing="1" fill="currentColor">
+              <textPath href={`#bot-${id}`} startOffset="50%" textAnchor="middle" dominantBaseline="hanging">{tema}</textPath>
+            </text>
+          </>
+        )}
+        <text
+          x="60"
+          y={completo ? 76 : 80}
+          textAnchor="middle"
+          fontSize={completo ? (sigla.length > 5 ? 13 : 17) : (sigla.length > 4 ? 20 : 26)}
+          fontWeight="800"
+          fill="#fff"
+          letterSpacing="-0.3"
+        >
+          {sigla}
+        </text>
+      </svg>
+      <span className="absolute left-1/2 -translate-x-1/2" style={{ top: completo ? '27%' : '17%' }}>
+        <HugeiconsIcon icon={iconeDoSelo(name, brand.tone)} size={iconePx} strokeWidth={1.75} color="currentColor" />
       </span>
     </div>
   );

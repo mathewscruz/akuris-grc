@@ -48,7 +48,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
       onClick={onClick}
     >
       <div className="flex justify-center pt-4 pb-2">
-        <FrameworkLogo nome={nome} tipo={tipo_framework} className="h-14 w-14" />
+        <FrameworkLogo nome={nome} tipo={tipo_framework} className="h-[104px] w-[104px]" />
       </div>
 
       <div className="text-center px-3 pb-1">
