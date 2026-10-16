@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
     if (countError) throw new GuidanceError('guidance_read_failed');
     return json({ processed, failed, pending, remaining: remaining ?? 0, total: requirements?.length || 0, locale });
   } catch (error) {
-    console.error('Requirement guidance failed', error instanceof GuidanceError ? error.code : 'internal_error');
+    console.error('Requirement guidance failed', error instanceof GuidanceError ? error.code : 'internal_error', error instanceof Error ? error.message : String(error));
     return json({ error: error instanceof GuidanceError ? error.code : 'guidance_temporarily_unavailable' }, error instanceof GuidanceError ? error.status : 500);
   }
 });
