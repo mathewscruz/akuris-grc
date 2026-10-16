@@ -371,7 +371,7 @@ async function scheduledBody(supabase: any): Promise<Record<string, unknown> | n
     const col = COLS[locale].orientacao;
     const { count } = await supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
       .or(`${col}.is.null,${col}.eq.`);
-    if ((count ?? 0) > 0) return { locale, batch_size: 4, offset: Math.floor(Math.random() * Math.min(count, 40)) };
+    if ((count ?? 0) > 0) return { locale, batch_size: 8, offset: Math.floor(Math.random() * Math.min(count, 40)) };
   }
   return null;
 }
