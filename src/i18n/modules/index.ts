@@ -43,6 +43,7 @@ import { relatoriosComp } from "./relatorios-comp";
 import { governancaComp } from "./governanca-comp";
 import { dadosDashboard } from "./dados-dashboard";
 import { dashboardWidgets } from "./dashboard-widgets";
+import { dashboardBento } from "./dashboard-bento";
 import { publicPortal } from "./public-portal";
 import { denunciasAdmin } from "./denuncias";
 import { admin } from "./admin-empresas";
@@ -162,6 +163,7 @@ const modules: Record<string, ModuleDict> = {
   dueDiligence,
   dadosDashboard,
   dashboardWidgets,
+  dashboardBento,
   incidentesComp,
   continuidadeComp,
   contasPrivilegiadasComp,
