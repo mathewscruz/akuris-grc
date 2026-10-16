@@ -48,6 +48,11 @@ Deno.serve(async (req) => {
       if (profileError || !profile?.empresa_id) return json({ error: 'Forbidden' }, 403);
     }
 
+    // Catálogo global: traduz títulos/descrições/categorias que ainda não têm inglês.
+    if (scheduled) {
+      const traduzidos = await traduzirCatalogo(supabase, Deno.env.get('LOVABLE_API_KEY'));
+      if (traduzidos > 0) return json({ translated: traduzidos });
+    }
     const body = scheduled ? await scheduledBody(supabase) : await req.json().catch(() => null);
     if (scheduled && !body) return json({ processed: 0, remaining: 0, idle: true });
     if (!body || typeof body !== 'object') return json({ error: 'invalid_request' }, 400);
