@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '@/components/AuthProvider';
 
 /** Tabelas que podem alimentar o mini gráfico (todas com empresa_id e created_at). */
@@ -26,23 +25,29 @@ export function acumularPorSemana(datas: string[], semanas = 8, agora = new Date
  * cartões de número. Sem dados (ou série plana com tudo zero) devolve
  * undefined: o cartão fica limpo em vez de mostrar uma curva falsa.
  */
+const cache = new Map<string, number[] | null>();
+
 export function useSerieSemanal(tabela?: TabelaSerie) {
   const empresaId = useContext(AuthContext)?.profile?.empresa_id;
-  const { data } = useQuery({
-    queryKey: ['serie-semanal', empresaId, tabela],
-    enabled: !!empresaId && !!tabela,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from(tabela as any) as any)
-        .select('created_at')
-        .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: false })
-        .limit(2000);
-      if (error) return null;
-      const serie = acumularPorSemana(((data ?? []) as { created_at: string }[]).map((r) => r.created_at));
-      return serie.some((v) => v > 0) ? serie : null;
-    },
-  });
-  return data ?? undefined;
+  const chave = empresaId && tabela ? `${empresaId}:${tabela}` : null;
+  const [serie, setSerie] = useState<number[] | null | undefined>(chave ? cache.get(chave) : undefined);
+  useEffect(() => {
+    if (!chave) return;
+    if (cache.has(chave)) { setSerie(cache.get(chave)); return; }
+    let vivo = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from(tabela as any) as any)
+      .select('created_at')
+      .eq('empresa_id', empresaId)
+      .order('created_at', { ascending: false })
+      .limit(2000)
+      .then(({ data, error }: { data: { created_at: string }[] | null; error: unknown }) => {
+        const s = error ? null : acumularPorSemana((data ?? []).map((r) => r.created_at));
+        const final = s && s.some((v) => v > 0) ? s : null;
+        cache.set(chave, final);
+        if (vivo) setSerie(final);
+      });
+    return () => { vivo = false; };
+  }, [chave, tabela, empresaId]);
+  return serie ?? undefined;
 }

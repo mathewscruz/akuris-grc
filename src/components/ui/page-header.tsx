@@ -6,7 +6,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import { useLanguage } from "@/contexts/LanguageContext"
-import { useLocation } from "react-router-dom"
+import { useInRouterContext, useLocation } from "react-router-dom"
 import { MODULE_ICON } from "@/lib/module-icons"
 import { getModuleGroup } from "@/lib/navigation"
 import { IconChevron, IconMore } from '@/components/icons';
@@ -54,7 +54,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   const { t } = useLanguage()
   const hasSecondary = !!secondaryActions && secondaryActions.length > 0
-  const { pathname } = useLocation()
+  const pathname = useCaminhoSeguro()
   const raiz = "/" + (pathname.split("/")[1] ?? "")
   const ModIcon = (MODULE_ICON as Record<string, React.ComponentType<{ className?: string }>>)[raiz]
   const grupo = getModuleGroup(pathname, t)
@@ -143,4 +143,13 @@ export function PageHeader({
       {children}
     </div>
   )
+}
+
+/** Caminho atual sem exigir Router (PageHeader também aparece fora de rotas). */
+function useCaminhoSeguro(): string {
+  return useInRouterContext() ? CaminhoComRouter() : ""
+}
+function CaminhoComRouter(): string {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useLocation().pathname
 }
