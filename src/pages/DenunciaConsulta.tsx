@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Eye, EyeOff, RefreshCw, LogOut } from 'lucide-react';
+import { IconArrowRight as ArrowRight, IconView as Eye, IconHide as EyeOff, IconRefresh as RefreshCw, IconLogout as LogOut } from '@/components/icons';
 import { CanalState } from '@/components/denuncia/CanalState';
 import { CanalEvidenceUpload } from '@/components/denuncia/CanalEvidenceUpload';
 import { IconSearch, IconView, IconSuccess, IconInfo, IconTime, IconFile, IconShield } from '@/components/icons';
