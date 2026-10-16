@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Area, AreaChart, Bar, BarChart, Cell, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useMotionAllowed } from '@/lib/motion-preferences';
-import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP_BG, CHART_TOOLTIP_BORDER, CHART_TREND, chartSeries } from '@/lib/chart-tokens';
+import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP_STYLE, CHART_FONT, CHART_TREND, chartSeries } from '@/lib/chart-tokens';
 import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 
@@ -13,7 +13,7 @@ export function ChartCard({ label, title, value, trend, actions, children, class
   actions?: React.ReactNode; children: React.ReactNode; className?: string;
 }) {
   return (
-    <section className={cn('rounded-xl border border-border bg-card p-5 dark:shadow-none', className)}>
+    <section className={cn('rounded-lg border border-border bg-card p-5 dark:shadow-none', className)}>
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {label && <p className="text-micro font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>}
@@ -36,7 +36,7 @@ export function ChartCard({ label, title, value, trend, actions, children, class
   );
 }
 
-const tooltipStyle = { background: CHART_TOOLTIP_BG, border: `1px solid ${CHART_TOOLTIP_BORDER}`, borderRadius: 8, fontSize: 12 };
+const tooltipStyle = CHART_TOOLTIP_STYLE;
 
 /** Evolução no tempo: área com degradê, balão e linha de meta opcional. */
 export function AkurisArea({ data, height = 200, target, targetLabel, format }: {
@@ -54,10 +54,10 @@ export function AkurisArea({ data, height = 200, target, targetLabel, format }: 
           </linearGradient>
         </defs>
         <CartesianGrid stroke={CHART_GRID} vertical={false} />
-        <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={false} tickLine={false} />
+        <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => (format ? format(v) : v)} />
-        {target !== undefined && <ReferenceLine y={target} stroke={CHART_AXIS} strokeDasharray="4 4" label={{ value: targetLabel, fill: CHART_AXIS, fontSize: 11, position: 'right' }} />}
+        {target !== undefined && <ReferenceLine y={target} stroke={CHART_AXIS} strokeDasharray="4 4" label={{ value: targetLabel, fill: CHART_AXIS, fontSize: CHART_FONT.axis, position: 'right' }} />}
         <Area type="monotone" dataKey="value" stroke={CHART_TREND} strokeWidth={2} fill={`url(#ar-${id})`} isAnimationActive={motion} animationDuration={900} activeDot={{ r: 5 }} />
       </AreaChart>
     </ResponsiveContainer>
@@ -65,8 +65,8 @@ export function AkurisArea({ data, height = 200, target, targetLabel, format }: 
 }
 
 /** Volumes por período: barras arredondadas, o último (atual) em destaque. */
-export function AkurisBars({ data, height = 200, highlightIndex }: {
-  data: Array<{ label: string; value: number }>; height?: number; highlightIndex?: number;
+export function AkurisBars({ data, height = 200, highlightIndex, format }: {
+  data: Array<{ label: string; value: number }>; height?: number; highlightIndex?: number; format?: (value: number) => string;
 }) {
   const motion = useMotionAllowed();
   const hi = highlightIndex ?? data.length - 1;
@@ -74,11 +74,11 @@ export function AkurisBars({ data, height = 200, highlightIndex }: {
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid stroke={CHART_GRID} vertical={false} />
-        <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+        <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <Tooltip contentStyle={tooltipStyle} formatter={format} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
         <Bar dataKey="value" radius={[6, 6, 6, 6]} maxBarSize={28} isAnimationActive={motion} animationDuration={700}>
-          {data.map((_, i) => <Cell key={i} fill={i === hi ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.35)'} />)}
+          {data.map((_, i) => <Cell key={i} fill={chartSeries(i === hi ? 0 : 2)} />)}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -96,9 +96,10 @@ export function AkurisDonut({ data, centerLabel, size = 180 }: {
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} dataKey="value" nameKey="label" innerRadius="64%" outerRadius="100%" paddingAngle={3} cornerRadius={4} stroke="none" isAnimationActive={motion} animationDuration={800}>
+            <Pie data={total ? data : [{ label: '', value: 1 }]} dataKey="value" nameKey="label" innerRadius="58%" outerRadius="100%" paddingAngle={total ? 3 : 0} cornerRadius={4} stroke="none" fill={chartSeries(2)} isAnimationActive={motion} animationDuration={800}>
               {data.map((d, i) => <Cell key={d.label} fill={d.color ?? chartSeries(i)} />)}
             </Pie>
+            <Tooltip contentStyle={tooltipStyle} />
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">

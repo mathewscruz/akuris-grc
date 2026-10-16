@@ -1,4 +1,5 @@
 import { matchesSearch as matchesText } from '@/lib/search-utils';
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { readAllPages } from '@/lib/read-all-pages';
 import { actionPlanOrigin } from '@/lib/action-plan-origin';
 import { fetchEntityById, routeForEntity } from '@/lib/entity-search';
@@ -188,6 +189,7 @@ export default function PlanosAcao() {
         const { data: profs } = await supabase
           .from('profiles')
           .select('user_id, nome, foto_url')
+          .eq('empresa_id', empresaId)
           .in('user_id', ids);
         profMap = Object.fromEntries((profs || []).map((p: any) => [p.user_id, { nome: p.nome, foto_url: p.foto_url }]));
       }
@@ -704,8 +706,8 @@ export default function PlanosAcao() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList moduleTitle={t('planosAcao.tabAll')} searchValue={search} onSearchChange={setSearch}>
           <TabsTrigger value="conexoes">{t('evidenceIntelligence.context')}</TabsTrigger>
-          <TabsTrigger value="meus" count={todosItens.filter(item => item.responsavel_id === profile?.user_id).length}><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="todos" count={todosItens.length}><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
+          <TabsTrigger value="meus" count={meusItens.length}><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="todos" count={processedPlanos.length}><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
         </TabsList>
         <TabsContent value="conexoes"><ComplianceContextPanel onDraft={(origin, draft) => {
           const existing = planos.find(p => origin.registroId && p.registro_origem_id === origin.registroId && p.modulo_origem === origin.modulo && !['cancelado','concluido'].includes(p.status));

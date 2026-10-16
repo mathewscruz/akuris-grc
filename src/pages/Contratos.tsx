@@ -807,13 +807,13 @@ export default function Contratos() {
               { label: t('fin.comum.fornecedor'), value: detalheContrato.fornecedores?.nome },
               { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
               { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato ? (nomePorUsuario.get(detalheContrato.gestor_contrato) || detalheContrato.gestor_contrato) : null },
-              { label: t('detalheRegisto.trilhaCampos.areaSolicitante'), value: (detalheContrato as any).area_solicitante },
-              { label: t('detalheRegisto.trilhaCampos.sla'), value: (detalheContrato as any).sla_principal, full: true },
+              { label: t('trilhaCampos.areaSolicitante'), value: (detalheContrato as any).area_solicitante },
+              { label: t('trilhaCampos.sla'), value: (detalheContrato as any).sla_principal, full: true },
             ] },
             { title: t('detalheRegisto.secPrazos'), fields: [
               { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
               { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
-              { label: t('detalheRegisto.trilhaCampos.dataAssinatura'), value: (detalheContrato as any).data_assinatura ? formatDateOnly((detalheContrato as any).data_assinatura) : null },
+              { label: t('trilhaCampos.dataAssinatura'), value: (detalheContrato as any).data_assinatura ? formatDateOnly((detalheContrato as any).data_assinatura) : null },
               { label: t('detalheRegisto.kRenovacao'), value: (detalheContrato as any).renovacao_automatica == null ? null : t((detalheContrato as any).renovacao_automatica ? 'detalheRegisto.sim' : 'detalheRegisto.nao') },
             ] },
             { title: t('detalheRegisto.secDescricao'), fields: [
