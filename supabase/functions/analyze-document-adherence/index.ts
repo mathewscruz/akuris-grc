@@ -12,6 +12,7 @@ import { fetchWithTimeout } from '../_shared/ai.ts';
 import {
   comRepeticao, dividirEmLotes, emPool, juntarLotes, IaIndisponivelError,
   dividirTexto, orcamentoResumo, proximosPendentes, LIMITE_TEXTO_DIRETO,
+  calcularVeredito, compararVersoes, extrairTitulos,
 } from './lotes.ts';
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 import { computeAnalyzedScore, resolveResultadoGeral, resolveDocumentScope } from "../_shared/compliance-score.ts";
@@ -173,6 +174,10 @@ async function executarFatia(supabase: SupabaseClient, jobId: string) {
   let progresso: number = job.progresso;
 
   try {
+    if (etapa === 'classificando') {
+      await classificar(supabase, job, ctx, trechos);
+      return;
+    }
     if (etapa === 'resumindo') {
       const idx = proximosPendentes(resumos, trechos.length, POR_FATIA);
       const limite = orcamentoResumo(trechos.length);
@@ -212,6 +217,78 @@ async function executarFatia(supabase: SupabaseClient, jobId: string) {
   }
 }
 
+
+// ---------- etapa 1: entender a política e escolher os requisitos aplicáveis ----------
+async function classificar(supabase: SupabaseClient, job: any, ctx: any, trechos: string[]) {
+  const catalogo: any[] = ctx.catalogo || [];
+  const inicio = trechos.join('\n').slice(0, 8000);
+  const titulos = extrairTitulos(trechos.join('\n'));
+  const lista = catalogo.map((r: any) => `${r.codigo}: ${r.titulo}`).join('\n');
+  let tipo = '', tema = '', codigos: string[] = [], justificativa = '';
+  try {
+    const out = await chamarIA(MODELOS.PADRAO,
+      'Você é um auditor sênior. Responda APENAS JSON válido.',
+      `Pergunta do usuário: "De acordo com a norma ${ctx.framework_nome} ${ctx.framework_versao || ''}, esta política está em compliance?"
+
+Para responder, primeiro identifique o tipo e o tema do documento e escolha, da lista de requisitos da norma, SOMENTE os que um documento com esse tema deve cobrir. Não inclua requisitos de outros temas (ex.: uma política de mesa limpa não precisa cobrir backup).
+
+TÍTULOS DO DOCUMENTO:
+${titulos.join('\n') || '(sem títulos detectados)'}
+
+INÍCIO DO DOCUMENTO:
+---
+${inicio}
+---
+
+REQUISITOS DA NORMA (código: título):
+${lista}
+
+JSON: {"documento_tipo": "string", "documento_tema": "string curta", "justificativa": "1 frase sobre por que esses requisitos", "requisitos_aplicaveis": ["códigos exatos da lista"]}`, 4000);
+    const p = JSON.parse(out.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+    tipo = String(p.documento_tipo || ''); tema = String(p.documento_tema || '');
+    justificativa = String(p.justificativa || '');
+    codigos = Array.isArray(p.requisitos_aplicaveis) ? p.requisitos_aplicaveis.map((c: any) => String(c).trim()) : [];
+  } catch (e) {
+    if (e instanceof BloqueioIA) return await falharJob(supabase, job, e.message);
+    console.error('Classificação falhou, usando correspondência por tema:', e);
+  }
+  const set = new Set(codigos);
+  let sugeridos = catalogo.filter((r: any) => set.has(String(r.codigo || '').trim())).map((r: any) => r.id);
+  if (!sugeridos.length) {
+    const scope = resolveDocumentScope(catalogo, tema || titulos[0] || '', titulos, []);
+    const sc = new Set(scope.scopeCodes);
+    sugeridos = catalogo.filter((r: any) => sc.has(String(r.codigo || '').trim())).map((r: any) => r.id);
+  }
+  await supabase.from('analise_aderencia_jobs').update({
+    status: 'aguardando_escopo', etapa: 'escopo', locked_until: null, updated_at: new Date().toISOString(),
+    contexto: { ...ctx, documento_tipo: tipo, documento_tema: tema, escopo_justificativa: justificativa, sugeridos },
+  }).eq('id', job.id);
+}
+
+// ---------- etapa final: interpretar em linguagem de consultor ----------
+async function interpretar(ctx: any, analisados: any[], porId: Map<string, any>, veredito: string, score: number) {
+  const linhas = analisados.slice(0, 150).map((d: any) => {
+    const q = porId.get(d.requirement_id);
+    return `- ${q?.codigo || d.requisito_codigo} ${q?.titulo || ''} | ${d.status_aderencia} | evidência: ${d.evidencias_encontradas || '-'} | falta: ${d.gaps_especificos || '-'}`;
+  }).join('\n');
+  const out = await chamarIA(MODELOS.PADRAO,
+    'Você é um consultor sênior de conformidade. Responda APENAS JSON válido, em português, direto e prático.',
+    `Pergunta: "De acordo com a norma ${ctx.framework_nome}, a política '${ctx.documento_tema || ctx.nome_analise || ''}' está em compliance?"
+Veredito calculado: ${veredito} (nota ${score}% no escopo desta política). NÃO mude o veredito.
+
+RESULTADO POR REQUISITO:
+${linhas}
+
+Explique o veredito ao usuário e diga exatamente o que ele precisa fazer.
+JSON: {
+ "resumo": "2-3 frases respondendo a pergunta e explicando o porquê",
+ "acoes": [{"titulo": "ajuste concreto, max 80", "descricao": "o que escrever/incluir na política, max 220", "prioridade": "alta|media|baixa", "requisito_codigo": "código"}],
+ "pontos_fortes": [{"titulo": "max 60", "descricao": "max 150", "citacao": "trecho literal curto da política"}]
+}
+Ordene as ações da mais importante para a menos importante. Máximo 12 ações e 6 pontos fortes. Se estiver tudo conforme, "acoes" pode trazer apenas melhorias opcionais com prioridade baixa.`, 4000);
+  return JSON.parse(out.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+}
+
 async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: any[][], resultados: any[]) {
   const ok = resultados.map((r) => (r && !r.falhou ? r : null));
   const junto = juntarLotes(ok);
@@ -241,17 +318,36 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
   }));
   const missing = Math.max(reqsAvaliados.length - analisados.length, 0);
   const { score, contagem } = computeAnalyzedScore(analisados, missing);
+  const veredito = calcularVeredito(score, contagem);
+  const porIdF = new Map(lotes.flat().map((q: any) => [q.id, q]));
+  let interp: any = null;
+  try { interp = await interpretar(ctx, analisados, porIdF, veredito, score); }
+  catch (e) { console.error('Interpretação falhou (usa pontos dos lotes):', e); }
+  const acoes = Array.isArray(interp?.acoes) && interp.acoes.length
+    ? interp.acoes.slice(0, 12).map((a: any) => ({ ...a, requirement_id: lotes.flat().find((q: any) => q.codigo === a.requisito_codigo)?.id || null }))
+    : (junto.pontos_melhoria || []).map((p: any) => ({ titulo: p.titulo, descricao: p.descricao, prioridade: p.prioridade || 'media', requisito_codigo: null, requirement_id: null }));
+  const pontosFortes = Array.isArray(interp?.pontos_fortes) && interp.pontos_fortes.length ? interp.pontos_fortes : junto.pontos_fortes;
+
+  let comparacao: any = null;
+  if (ctx.versao_anterior_id) {
+    const { data: prev } = await supabase.from('gap_analysis_adherence_details')
+      .select('requirement_id, status_aderencia').eq('assessment_id', ctx.versao_anterior_id);
+    if (prev?.length) comparacao = compararVersoes(prev as any, analisados);
+  }
+
   const recomendacoes = reqsNaoAvaliados > 0
     ? [`${reqsNaoAvaliados} requisitos não foram avaliados por indisponibilidade temporária da IA. Reanalise o documento para completar.`, ...junto.recomendacoes]
     : junto.recomendacoes;
 
+  const { data: atualMeta } = await supabase.from('gap_analysis_adherence_assessments').select('metadados_analise').eq('id', job.assessment_id).maybeSingle();
   const { error: upErr } = await supabase.from('gap_analysis_adherence_assessments').update({
     status: 'concluido',
     resultado_geral: resolveResultadoGeral(score, contagem),
     percentual_conformidade: score,
-    pontos_fortes: junto.pontos_fortes, pontos_melhoria: junto.pontos_melhoria,
-    recomendacoes, analise_detalhada: junto.analise_detalhada,
+    pontos_fortes: pontosFortes, pontos_melhoria: acoes.map((a: any) => ({ titulo: a.titulo, descricao: a.descricao, prioridade: a.prioridade })),
+    recomendacoes, analise_detalhada: interp?.resumo ? `${interp.resumo}\n\n${junto.analise_detalhada}` : junto.analise_detalhada,
     metadados_analise: {
+      ...((atualMeta?.metadados_analise as Record<string, unknown>) || {}),
       modelo_usado: MODELOS.LEITURA_LONGA, provider: 'lovable-ai-gateway', _score_fonte: 'deterministic',
       tempo_processamento: Date.now(),
       total_requisitos: ctx.total_escopo, total_requisitos_catalogo: ctx.total_catalogo,
@@ -260,12 +356,16 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
       documento_tamanho: ctx.documento_tamanho, documento_trechos: (job.trechos || []).length,
       documento_tipo: junto.documento_tipo_identificado, documento_escopo: junto.documento_escopo_identificado,
       requisitos_nao_aplicaveis: junto.requisitos_nao_aplicaveis,
+      veredito, veredito_resumo: interp?.resumo || null, acoes,
+      escopo_ids: lotes.flat().map((q: any) => q.id), fora_escopo_ids: ctx.fora_escopo_ids || [],
+      documento_tema: ctx.documento_tema || null, escopo_justificativa: ctx.escopo_justificativa || null,
+      versao_anterior_id: ctx.versao_anterior_id || null, comparacao,
     },
     updated_at: new Date().toISOString(),
   }).eq('id', job.assessment_id).eq('empresa_id', job.empresa_id);
   if (upErr) return await falharJob(supabase, job, upErr.message);
 
-  const porId = new Map(lotes.flat().map((q: any) => [q.id, q]));
+  const porId = porIdF;
   if (analisados.length) {
     await supabase.from('gap_analysis_adherence_details').delete().eq('assessment_id', job.assessment_id);
     const { error: detErr } = await supabase.from('gap_analysis_adherence_details').insert(analisados.map((req: any) => {
@@ -289,7 +389,7 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
   await supabase.from('notifications').insert({
     user_id: job.user_id,
     title: 'Análise de conformidade concluída',
-    message: `${ctx.nome_analise || ctx.framework_nome}: ${Number(score).toFixed(1)}% de conformidade`,
+    message: `${ctx.nome_analise || ctx.framework_nome}: ${veredito === 'em_compliance' ? 'em compliance' : veredito === 'com_ressalvas' ? 'em compliance com ressalvas' : 'não está em compliance'} (${Number(score).toFixed(1)}%)`,
     type: 'success', link_to: '/gap-analysis',
   }).then(() => {}, () => {});
 }
@@ -312,6 +412,29 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
     if (!j) return json({ error: 'Análise não encontrada' }, 404);
     if (j.status === 'processando') agendarProximo(j.id, 0);
     return json({ success: true, jobId: j.id, status: j.status }, 202);
+  }
+
+  // Usuário confirmou (ou ajustou) os requisitos que se aplicam à política.
+  if (body.acao === 'confirmar_escopo') {
+    const { data: j } = await supabase.from('analise_aderencia_jobs').select('*')
+      .eq('assessment_id', assessmentId).eq('empresa_id', empresaId).maybeSingle();
+    if (!j || j.status !== 'aguardando_escopo') return json({ error: 'Análise não está aguardando confirmação' }, 409);
+    const catalogo: any[] = j.contexto?.catalogo || [];
+    const pedidos = new Set<string>(Array.isArray(body.requisitos) ? body.requisitos.map(String) : (j.contexto?.sugeridos || []));
+    const escolhidos = catalogo.filter((r: any) => pedidos.has(r.id));
+    if (!escolhidos.length) return json({ error: 'Selecione ao menos um requisito' }, 400);
+    const trechos: string[] = j.trechos || [];
+    const lotes = dividirEmLotes(escolhidos, TAM_LOTE);
+    const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
+    await supabase.from('analise_aderencia_jobs').update({
+      status: 'processando', etapa: trechos.length > 1 ? 'resumindo' : 'avaliando',
+      lotes, total, progresso: 0, resumos: [], resultados: [],
+      saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10, locked_until: null, updated_at: new Date().toISOString(),
+      contexto: { ...j.contexto, catalogo: undefined, total_escopo: escolhidos.length,
+        fora_escopo_ids: catalogo.filter((r: any) => !pedidos.has(r.id)).map((r: any) => r.id) },
+    }).eq('id', j.id);
+    agendarProximo(j.id, 0);
+    return json({ success: true, jobId: j.id, total }, 202);
   }
 
   let documentText = '';
@@ -354,19 +477,30 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
 
   if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
+  // Versão anterior (mesma empresa e mesmo framework) para comparar no fim.
+  let versaoAnteriorId: string | null = null;
+  if (typeof body.versaoAnteriorId === 'string') {
+    const { data: prev } = await supabase.from('gap_analysis_adherence_assessments').select('id')
+      .eq('id', body.versaoAnteriorId).eq('empresa_id', empresaId).eq('framework_id', a.framework_id).maybeSingle();
+    versaoAnteriorId = prev?.id || null;
+  }
+
   const trechos = documentText.length <= LIMITE_TEXTO_DIRETO ? [documentText] : dividirTexto(documentText);
-  const lotes = dividirEmLotes(escopo, TAM_LOTE);
-  const etapa = trechos.length > 1 ? 'resumindo' : 'avaliando';
-  const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
+  // Upload: primeiro entende a política e propõe o escopo; DocGen já vem com escopo.
+  const precisaClassificar = !isDocgen;
+  const lotes = precisaClassificar ? [] : dividirEmLotes(escopo, TAM_LOTE);
+  const etapa = precisaClassificar ? 'classificando' : (trechos.length > 1 ? 'resumindo' : 'avaliando');
+  const total = precisaClassificar ? 1 : (trechos.length > 1 ? trechos.length : 0) + lotes.length;
 
   await supabase.from('analise_aderencia_jobs').delete().eq('assessment_id', assessmentId);
   const { data: job, error: jobErr } = await supabase.from('analise_aderencia_jobs').insert({
     assessment_id: assessmentId, empresa_id: empresaId, user_id: userId,
     etapa, trechos, lotes, total, progresso: 0,
-    saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10,
+    saltos_restantes: Math.ceil(Math.max(total, 1) / POR_FATIA) * 4 + 10,
     contexto: {
       framework_nome: framework.nome, framework_versao: framework.versao, nome_analise: a.nome_analise,
-      coverage_block, total_escopo: escopo.length, total_catalogo: requirements.length, documento_tamanho: documentText.length,
+      coverage_block, total_escopo: escopo.length, versao_anterior_id: versaoAnteriorId,
+      catalogo: precisaClassificar ? escopo.map((r: any) => ({ ...r, descricao: r.descricao ? String(r.descricao).slice(0, 300) : null })) : undefined, total_catalogo: requirements.length, documento_tamanho: documentText.length,
     },
   }).select('id').single();
   if (jobErr || !job) return json({ error: `Não foi possível iniciar a análise: ${jobErr?.message}` }, 500);

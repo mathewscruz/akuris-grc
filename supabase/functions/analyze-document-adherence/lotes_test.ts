@@ -69,3 +69,27 @@ Deno.test('proximosPendentes: retoma só o que falta', () => {
   const r = proximosPendentes(['ok', null, 'ok'], 5, 3);
   if (JSON.stringify(r) !== '[1,3,4]') throw new Error(JSON.stringify(r));
 });
+
+import { calcularVeredito, compararVersoes, extrairTitulos } from './lotes.ts';
+
+Deno.test('veredito: 85% com poucas não conformidades = em compliance', () => {
+  if (calcularVeredito(85, { conforme: 9, parcial: 1, nao_conforme: 0 }) !== 'em_compliance') throw new Error();
+});
+Deno.test('veredito: 85% mas 20% não conformes = com ressalvas', () => {
+  if (calcularVeredito(85, { conforme: 8, parcial: 0, nao_conforme: 2 }) !== 'com_ressalvas') throw new Error();
+});
+Deno.test('veredito: 60% = com ressalvas; 59% = não', () => {
+  if (calcularVeredito(60, { conforme: 5, parcial: 2, nao_conforme: 3 }) !== 'com_ressalvas') throw new Error();
+  if (calcularVeredito(59, { conforme: 5, parcial: 2, nao_conforme: 3 }) !== 'nao_compliance') throw new Error();
+});
+Deno.test('comparar versões: conta resolvidos e pendentes', () => {
+  const r = compararVersoes(
+    [{ requirement_id: 'a', status_aderencia: 'nao_conforme' }, { requirement_id: 'b', status_aderencia: 'parcial' }, { requirement_id: 'c', status_aderencia: 'nao_conforme' }],
+    [{ requirement_id: 'a', status_aderencia: 'conforme' }, { requirement_id: 'b', status_aderencia: 'conforme' }, { requirement_id: 'c', status_aderencia: 'parcial' }],
+  );
+  if (r.resolvidos !== 2 || r.pendentes !== 1 || r.melhorados !== 1) throw new Error(JSON.stringify(r));
+});
+Deno.test('extrairTitulos: pega cabeçalhos numerados e markdown', () => {
+  const t = extrairTitulos('# Política de Acesso\ntexto corrido longo que não é título porque tem muitas palavras e passa do limite de noventa caracteres facilmente\n1. Objetivo\n2.1 Revisão de acessos');
+  if (t.length !== 3) throw new Error(JSON.stringify(t));
+});

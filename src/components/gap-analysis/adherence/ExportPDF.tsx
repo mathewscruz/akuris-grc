@@ -222,6 +222,29 @@ export async function exportAssessmentToPDF(
     y += statBoxHeight + 30;
   }
 
+  // ========== VEREDITO ==========
+  const metaPdf = ((assessment as { metadados_analise?: Record<string, unknown> }).metadados_analise ?? {}) as Record<string, any>;
+  if (metaPdf.veredito) {
+    addSection(t('gapAnalysis.adherenceUi.verdict.question', { norma: `${assessment.framework_nome ?? ''} ${assessment.framework_versao ?? ''}`.trim() }));
+    checkAddPage(60);
+    pdf.setFontSize(13);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    pdf.text(`${t(`gapAnalysis.adherenceUi.verdict.${metaPdf.veredito}`)} · ${assessment.percentual_conformidade}%`, marginX, y);
+    y += 18;
+    if (metaPdf.veredito_resumo) {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      pdf.splitTextToSize(String(metaPdf.veredito_resumo), contentWidth).forEach((line: string) => {
+        checkAddPage(14);
+        pdf.text(line, marginX, y);
+        y += 12;
+      });
+    }
+    y += 14;
+  }
+
   // ========== PONTOS FORTES ==========
   if (assessment.pontos_fortes && assessment.pontos_fortes.length > 0) {
     addSection(t('gapAnalysis.adherenceUi.exportPdf.strongPointsTitle', { count: assessment.pontos_fortes.length }));
