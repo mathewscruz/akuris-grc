@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AjustesMasterDetail } from './AjustesMasterDetail';
+import { useAutoresDaEmpresa, abrirDocumentoAnalisado } from './autoria';
 import type { Json } from '@/integrations/supabase/types';
 import { IconDownload, IconSuccess, IconWarning, IconRefresh, IconFile, IconIdea, IconArrowLeft, IconTrendUp } from '@/components/icons';
 import { Card } from '@/components/ui/card';
@@ -73,6 +74,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const { t, locale } = useLanguage();
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
+  const autores = useAutoresDaEmpresa(empresaId, [assessment as { created_by?: string | null }]);
   const [applying, setApplying] = useState(false);
   const { openDocGen } = useDocGen();
   const { user } = useAuth();
@@ -385,6 +387,11 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               )}
             </Button>
           )}
+          {meta.arquivo_storage && (
+            <Button variant="outline" onClick={() => abrirDocumentoAnalisado(assessment, t)}>
+              <IconFile className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.view.openDocument')}
+            </Button>
+          )}
           <Button variant="outline" onClick={handleExportPDF}>
             <IconDownload className="mr-2 h-4 w-4" strokeWidth={1.5}/>
             {t('gapAnalysis.adherenceUi.result.exportPdf')}
@@ -408,6 +415,8 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               {meta.veredito_resumo && <p className="max-w-[760px] text-sm leading-relaxed text-foreground">{meta.veredito_resumo}</p>}
               <p className="mt-3 text-xs text-muted-foreground">
                 {meta.documento_tema ? `${meta.documento_tema} · ` : ''}{assessment.documento_nome}
+                {autores[(assessment as any).created_by] ? ` · ${t('gapAnalysis.adherenceUi.view.sentBy', { nome: autores[(assessment as any).created_by] })}` : ''}
+                {` · ${format(new Date(assessment.created_at), 'dd/MM/yyyy HH:mm', { locale: dateLocale })}`}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {veredito === 'em_compliance' && frameworkId && details && details.length > 0 && (

@@ -21,6 +21,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { agruparAjustes } from './ajustes';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/AuthProvider';
+import { useAutoresDaEmpresa, abrirDocumentoAnalisado } from './autoria';
 
 const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
 function veredictoDe(a: any): keyof typeof TOM_VEREDITO | null {
@@ -96,6 +98,11 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
     [frameworkId, empresaId],
     { cacheKey: `adherence-assessments-${empresaId || 'none'}-${frameworkId || 'all'}`, cacheDuration: 0 }
   );
+
+  const { user } = useAuth();
+  const [filtroAutor, setFiltroAutor] = useState<'todas' | 'minhas'>('todas');
+  const autores = useAutoresDaEmpresa(empresaId, (assessments as any[]) ?? []);
+  const listaVisivel = ((assessments as any[]) ?? []).filter(a => filtroAutor === 'todas' || a.created_by === user?.id);
 
   type Variant = 'success' | 'warning' | 'destructive' | 'secondary' | 'outline';
 
@@ -271,15 +278,24 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
       {/* Lista de Avaliações */}
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
+          <div className="flex gap-1">
+            {(['todas', 'minhas'] as const).map(f => (
+              <Button key={f} size="sm" variant={filtroAutor === f ? 'secondary' : 'ghost'} onClick={() => setFiltroAutor(f)}>
+                {t(`gapAnalysis.adherenceUi.view.filter_${f}`)}
+              </Button>
+            ))}
+          </div>
+        </div>
         {isLoading ? (
           <div className="flex min-h-[140px] flex-col items-center justify-center gap-2">
             <AkurisPulse size={40} />
             <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.loadingAssessments')}</p>
           </div>
-        ) : assessments && assessments.length > 0 ? (
+        ) : listaVisivel.length > 0 ? (
           <ul className="divide-y rounded-lg border">
-            {(assessments as any[]).map((assessment: any, i: number) => {
+            {listaVisivel.map((assessment: any, i: number) => {
               const concluida = assessment.status === 'concluido';
               const v = veredictoDe(assessment);
               const acoes = Array.isArray(assessment.metadados_analise?.acoes) ? assessment.metadados_analise.acoes : [];
@@ -298,7 +314,10 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-foreground">{assessment.nome_analise}</p>
-                    <p className="truncate text-xs text-muted-foreground">{assessment.documento_nome}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {assessment.documento_nome}
+                      {autores[assessment.created_by] ? ` · ${t('gapAnalysis.adherenceUi.view.sentBy', { nome: autores[assessment.created_by] })}` : ''}
+                    </p>
                   </div>
                   <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                     {concluida && v ? (
@@ -320,6 +339,9 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenuItem disabled={!concluida} onClick={() => onViewResult(assessment)}>
                         <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.viewDetails')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled={!assessment.metadados_analise?.arquivo_storage} onClick={() => abrirDocumentoAnalisado(assessment, t)}>
+                        <IconFileCheck className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.openDocument')}
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => setAssessmentToDelete(assessment.id)}>
                         <IconDelete className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.confirmDelete')}
