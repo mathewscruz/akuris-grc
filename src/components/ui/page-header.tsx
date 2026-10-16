@@ -6,6 +6,9 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import { useLanguage } from "@/contexts/LanguageContext"
+import { useLocation } from "react-router-dom"
+import { MODULE_ICON } from "@/lib/module-icons"
+import { getModuleGroup } from "@/lib/navigation"
 import { IconChevron, IconMore } from '@/components/icons';
 
 interface BreadcrumbItemType {
@@ -51,6 +54,10 @@ export function PageHeader({
 }: PageHeaderProps) {
   const { t } = useLanguage()
   const hasSecondary = !!secondaryActions && secondaryActions.length > 0
+  const { pathname } = useLocation()
+  const raiz = "/" + (pathname.split("/")[1] ?? "")
+  const ModIcon = (MODULE_ICON as Record<string, React.ComponentType<{ className?: string }>>)[raiz]
+  const grupo = getModuleGroup(pathname, t)
 
   return (
     <div className={cn("space-y-3", className)} {...props}>
@@ -85,6 +92,12 @@ export function PageHeader({
       {/* Main header content */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div className="min-w-0 space-y-1">
+          {(ModIcon || grupo) && !breadcrumbs?.length && (
+            <p className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {ModIcon && <ModIcon className="h-3.5 w-3.5 text-primary" />}
+              {grupo && <span>{grupo}</span>}
+            </p>
+          )}
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-balance text-2xl sm:text-3xl font-bold tracking-tight" title={title}>{title}</h1>
             {badge && (
