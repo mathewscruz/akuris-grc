@@ -76,6 +76,7 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
       onOpenChange={onOpenChange}
       icon={IconFolder}
       title={projeto ? t('projetos.dialog.titleEdit') : t('projetos.dialog.titleNew')}
+      description={t('layout.dialogDescription', { title: t('projetos.page.title') })}
       size="sm"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
       submitLabel={t('projetos.dialog.save')}

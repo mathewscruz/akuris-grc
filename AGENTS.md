@@ -5,3 +5,4 @@
 - List/grid views reuse the same DataTable columns, sorting, pagination and row actions; this prevents divergent results across representations.
 - Module tab bars use ModuleSubbar with the existing list search state; this keeps local filtering distinct from global search.
 - OwnerCell and RecordProgress are shared record-cell presentations; progress accepts measured values only, never inferred workflow percentages.
+- Supplier tab counts use useSupplierCount rather than assessment-email counts; this keeps navigation aligned with the actual supplier list.
