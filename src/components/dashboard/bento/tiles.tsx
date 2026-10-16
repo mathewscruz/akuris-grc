@@ -76,8 +76,8 @@ export function IndiceTile({ delay }: { delay?: number }) {
   return (
     <BentoTile title={t('bento.index.title')} description={t('bento.index.desc')} delay={delay}>
       {!temDados ? <BentoEmpty>{t('bento.index.empty')}</BentoEmpty> : (
-        <div className="flex flex-1 flex-col gap-2">
-          <div className="flex items-center gap-8">
+        <div className="flex flex-1 flex-col">
+          <div className="my-auto flex items-center gap-8">
             <div className="relative shrink-0">
               <GradientRing value={m.score} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -96,7 +96,7 @@ export function IndiceTile({ delay }: { delay?: number }) {
             )}
           </div>
           {serie.length >= 2 && (
-            <div className="mt-auto h-32 w-full">
+            <div className="mt-4 h-32 w-full shrink-0">
               <ResponsiveContainer>
                 <AreaChart data={serie} margin={{ top: 12, right: 10, left: 10, bottom: 0 }}>
                   <defs>
