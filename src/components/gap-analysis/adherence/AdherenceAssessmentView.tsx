@@ -1,3 +1,4 @@
+import { VeredictoBadge } from './VeredictoBadge';
 import { useState, useEffect } from 'react';
 import { IconAdd, IconDelete, IconView, IconWarning, IconFileCheck, IconTrendUp, IconTarget } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -321,7 +322,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                   </div>
                   <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                     {concluida && v ? (
-                      <StatusBadge tone={TOM_VEREDITO[v]}>{t(`gapAnalysis.adherenceUi.verdict.${v}`)}</StatusBadge>
+                      <VeredictoBadge veredito={v} />
                     ) : !concluida ? (
                       <span className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.processingHint')}</span>
                     ) : null}
