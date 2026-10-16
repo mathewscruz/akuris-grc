@@ -123,8 +123,14 @@ export function AppSidebar() {
     };
   }, [currentPath, openGroups, isCollapsed, fit]);
 
-  // Open group automatically when it contains the active route
+  // Mobile (lista expansível): expande o grupo da página atual.
+  // Rail (painel flutuante): mudar de página nunca abre o submenu — só o
+  // clique no ícone abre; qualquer navegação fecha o que estiver aberto.
   useEffect(() => {
+    if (!isMobile) {
+      setOpenGroups([]);
+      return;
+    }
     const activeGroup = getActiveGroup();
     if (activeGroup && !openGroups.includes(activeGroup)) {
       setOpenGroups([activeGroup]);
