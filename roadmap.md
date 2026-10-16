@@ -25,3 +25,10 @@
 - [x] 5a: pacote de auditoria em PDF com um clique na página do framework (requisitos + evidências + planos em aberto).
 - [x] 5b: Trust Center público por empresa (Configurações → Trust Center, página /trust/:endereço).
 - [x] 5c: resposta automática a questionários (Configurações → Trust Center, 1 crédito IA, CSV).
+# Análise de política "está em compliance?" (aprovado 16/10)
+- [ ] Escopo: IA identifica tema e requisitos aplicáveis; usuário confirma antes da avaliação.
+- [ ] Veredito (em compliance / com ressalvas / não) + ações priorizadas + fora do escopo.
+- [ ] Ações de um clique: criar plano de ação, usar como evidência, corrigir com DocGen.
+- [ ] Nova versão comparada com a anterior.
+- [ ] PDF do parecer com veredito e ações.
+- [ ] Aviso de PDF escaneado antes de gastar crédito.

@@ -113,3 +113,53 @@ export function proximosPendentes(feitos: unknown[], total: number, k: number): 
   for (let i = 0; i < total && out.length < k; i++) if (feitos[i] == null) out.push(i);
   return out;
 }
+
+// ---------- Veredito e comparação de versões ----------
+
+export type Veredito = 'em_compliance' | 'com_ressalvas' | 'nao_compliance';
+
+/**
+ * Veredito sobre o escopo da política.
+ * Em compliance: nota >= 80 e no máximo 10% dos requisitos relevantes não conformes.
+ * Com ressalvas: nota >= 60. Abaixo disso: não está em compliance.
+ */
+export function calcularVeredito(score: number, contagem: { conforme?: number; parcial?: number; nao_conforme?: number }): Veredito {
+  const relevantes = (contagem.conforme || 0) + (contagem.parcial || 0) + (contagem.nao_conforme || 0);
+  const pesoNC = relevantes ? (contagem.nao_conforme || 0) / relevantes : 1;
+  if (score >= 80 && pesoNC <= 0.1) return 'em_compliance';
+  if (score >= 60) return 'com_ressalvas';
+  return 'nao_compliance';
+}
+
+/** Compara status por requisito entre a versão anterior e a atual. */
+export function compararVersoes(
+  anterior: Array<{ requirement_id: string; status_aderencia: string }>,
+  atual: Array<{ requirement_id: string; status_aderencia: string }>,
+) {
+  const antes = new Map(anterior.map((d) => [d.requirement_id, d.status_aderencia]));
+  let resolvidos = 0, melhorados = 0, pendentes = 0, piorados = 0;
+  const ordem: Record<string, number> = { nao_conforme: 0, parcial: 1, conforme: 2 };
+  for (const d of atual) {
+    const a = antes.get(d.requirement_id);
+    if (a === undefined || ordem[a] === undefined || ordem[d.status_aderencia] === undefined) continue;
+    if (a !== 'conforme' && d.status_aderencia === 'conforme') resolvidos++;
+    else if (ordem[d.status_aderencia] > ordem[a]) melhorados++;
+    else if (ordem[d.status_aderencia] < ordem[a]) piorados++;
+    if (d.status_aderencia !== 'conforme' && a !== 'conforme') pendentes++;
+  }
+  return { resolvidos, melhorados, pendentes, piorados };
+}
+
+/** Títulos prováveis do documento (linhas curtas tipo cabeçalho), para a classificação. */
+export function extrairTitulos(texto: string, max = 80): string[] {
+  const out: string[] = [];
+  for (const l of (texto || '').split('\n')) {
+    const s = l.trim();
+    if (s.length < 3 || s.length > 90) continue;
+    if (/^#{1,4}\s/.test(s) || /^(\d+(\.\d+)*[.)]?|[IVX]+\.)\s+\S/.test(s) || (s === s.toUpperCase() && /[A-ZÀ-Ú]{3}/.test(s))) {
+      out.push(s.replace(/^#+\s*/, ''));
+      if (out.length >= max) break;
+    }
+  }
+  return out;
+}
