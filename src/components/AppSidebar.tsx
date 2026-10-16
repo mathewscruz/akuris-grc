@@ -73,16 +73,9 @@ export function AppSidebar() {
   const fit = useAutoFit(contentRef);
   const isCompact = fit !== 'comfortable';
   const isDense = fit === 'dense';
-  const itemH = isDense ? 'h-7' : isCompact ? 'h-8' : 'h-9';
-  const iconSize = isDense ? 'h-3.5 w-3.5' : 'h-4 w-4';
-  const itemSpace = isDense ? 'space-y-0' : isCompact ? 'space-y-0.5' : 'space-y-1';
-  const groupLabelCls = isDense
-    ? 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-0'
-    : isCompact
-    ? 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-0.5'
-    : 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-1';
-  const contentPad = isCompact ? 'py-1' : 'py-2';
-  const subWrapperCls = isDense ? 'space-y-0 mt-0.5 ml-4 pl-1.5' : 'space-y-1 mt-1 ml-6 pl-2';
+  /* Intervalo único entre itens: o mesmo em todo o menu, qualquer que seja
+     o grupo. Só o "Sair" fica destacado, por viver no rodapé. */
+  const itemGap = isDense ? 'gap-0' : isCompact ? 'gap-0.5' : 'gap-1';
   const [navIndicator, setNavIndicator] = useState({ top: 0, height: 0, visible: false });
 
   /* O marcador é um elemento único: quando muda o módulo, ele percorre a
@@ -252,6 +245,22 @@ export function AppSidebar() {
       .filter((section) => section.items.length > 0);
   };
 
+  /* Todos os módulos partilham exactamente o mesmo ritmo vertical: uma única
+     lista, sem divisórias entre grupos. A única separação mantida é a do
+     "Sair", que continua no rodapé. */
+  const menuItems = (() => {
+    const items = getVisibleSections().flatMap((section) => section.items);
+    if (canAccess('configuracoes')) {
+      items.push({
+        title: t('sidebar.settings'),
+        url: '/configuracoes',
+        icon: ConfiguracoesNavIcon,
+        moduleName: 'configuracoes',
+      });
+    }
+    return items;
+  })();
+
   return (
     <>
     {showLogoutOverlay && (
@@ -273,10 +282,8 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-3'}`}>
-        {getVisibleSections().map((section, sIdx) => (
-          <div key={section.id} className={sIdx > 0 ? (isDense ? 'mt-0.5 border-t border-sidebar-border/40 pt-0.5' : 'mt-2 border-t border-sidebar-border/40 pt-2') : ''}>
-            <ul className={`flex flex-col ${isDense ? 'gap-0' : 'gap-1'}`}>
-              {section.items.map((item) => {
+        <ul className={`flex flex-col ${itemGap}`}>
+          {menuItems.map((item) => {
                 if (item.subItems) {
                   const active = hasActiveSubItem(item.subItems);
                   return (
@@ -360,25 +367,8 @@ export function AppSidebar() {
                     </NavLink>
                   </li>
                 );
-              })}
-            </ul>
-          </div>
-        ))}
-
-        {canAccess('configuracoes') && (
-          <div className="mt-auto border-t border-sidebar-border/40 pt-2">
-            <NavLink
-              to="/configuracoes"
-              title={t('sidebar.settings')}
-              onClick={() => { handleNavClick(); closeMobile(); }}
-              className={railCls(isActive('/configuracoes'))}
-            >
-              {isActive('/configuracoes') && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
-              <ConfiguracoesNavIcon className={`${railIcon} ${isActive('/configuracoes') ? 'text-primary' : ''}`} />
-              <span className={labelCls}>{t('sidebar.settings')}</span>
-            </NavLink>
-          </div>
-        )}
+          })}
+        </ul>
       </SidebarContent>
 
       <SidebarFooter className={`border-t border-sidebar-border ${isDense && !isMobile ? 'p-1' : 'p-2'} pb-[max(0.5rem,env(safe-area-inset-bottom))]`}>
