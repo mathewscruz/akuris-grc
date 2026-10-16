@@ -121,6 +121,7 @@
     /* Success — L ajustado p/ WCAG AA (4.5:1 como texto e com fg branco) */
     --success: 152 55% 33%;
     --success-foreground: 0 0% 100%;
+    --good: 172 60% 34%;
     
     /* Warning — âmbar escurecido: o anterior falhava AA como cor de texto */
     /* Amarelo mais claro e mais amarelo: a 35°/34% lia-se castanho, não
@@ -336,6 +337,7 @@
     /* Success — mesma ordem perceptual, sem fluorescência */
     --success: 152 45% 56%;
     --success-foreground: 152 40% 10%;
+    --good: 170 50% 52%;
     
     /* Warning */
     --warning: 30 90% 60%;
