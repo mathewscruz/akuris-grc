@@ -26,9 +26,9 @@
 - [x] 5b: Trust Center público por empresa (Configurações → Trust Center, página /trust/:endereço).
 - [x] 5c: resposta automática a questionários (Configurações → Trust Center, 1 crédito IA, CSV).
 # Análise de política "está em compliance?" (aprovado 16/10)
-- [ ] Escopo: IA identifica tema e requisitos aplicáveis; usuário confirma antes da avaliação.
-- [ ] Veredito (em compliance / com ressalvas / não) + ações priorizadas + fora do escopo.
-- [ ] Ações de um clique: criar plano de ação, usar como evidência, corrigir com DocGen.
-- [ ] Nova versão comparada com a anterior.
-- [ ] PDF do parecer com veredito e ações.
-- [ ] Aviso de PDF escaneado antes de gastar crédito.
+- [x] Escopo: IA identifica tema e requisitos aplicáveis; usuário confirma antes da avaliação.
+- [x] Veredito (em compliance / com ressalvas / não) + ações priorizadas + fora do escopo.
+- [x] Ações de um clique: criar plano de ação, usar como evidência, corrigir com DocGen (DocGen abre no framework; ainda não recebe a lista de ajustes automaticamente).
+- [x] Nova versão comparada com a anterior.
+- [x] PDF do parecer com veredito e ações.
+- [x] Aviso de PDF escaneado antes de gastar crédito.
