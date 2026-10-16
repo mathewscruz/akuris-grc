@@ -36,10 +36,9 @@
  * pontuação de questionário: esses alimentam decisões de conformidade, e
  * poupar um cêntimo à custa de um juízo pior é o negócio ao contrário.
  *
- * `LEITURA_LONGA` fica em `3.1-pro-preview`. É o único ainda em preview, e
- * fica de propósito: não há um `pro` estável no catálogo, e descer o trabalho
- * mais difícil do produto para um nível `flash` seria trocar qualidade por
- * dinheiro — exactamente o que não se pediu.
+ * `LEITURA_LONGA` fica em `4-argon`: o modelo de topo do Google, estável
+ * (não é preview), com janela de 1M — o trabalho mais difícil do produto
+ * merece o melhor modelo, e não há nível `pro` melhor no catálogo.
  *
  * Os dois modelos novos **já corriam neste produto**: são o rápido e o bom da
  * `docgen-chat`. Não é uma aposta em nome desconhecido.
