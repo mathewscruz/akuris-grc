@@ -166,6 +166,12 @@ const CATALOG: FrameworkBrand[] = [
 
   // Environment
   { acronym: '14001', fullName: 'ISO 14001 — Environmental Management', tone: 'environment' },
+
+  // Regulação brasileira
+  { acronym: 'BACEN', fullName: 'Resolução BACEN/CMN 4.893 — Segurança Cibernética', tone: 'financial' },
+  { acronym: 'ANPD', fullName: 'Resolução ANPD 15/2024 — Incidentes de Segurança', tone: 'privacy' },
+  { acronym: 'SUSEP', fullName: 'Circular SUSEP 638 — Segurança Cibernética', tone: 'financial' },
+  { acronym: 'CVM', fullName: 'Resolução CVM 35 — Intermediários', tone: 'financial' },
 ];
 
 const LOOKUP: Record<string, FrameworkBrand> = {};
@@ -202,6 +208,24 @@ const DIRECT_KEYS: Record<string, FrameworkBrand> = {
   iso14001: CATALOG[23],
 };
 
+const BR_KEYS: Array<[RegExp, number]> = [
+  [/bacen|cmn4893|4893/, 24],
+  [/anpd/, 25],
+  [/susep/, 26],
+  [/cvm/, 27],
+];
+
+/** Tema escrito no aro do selo, por família. */
+export const TONE_THEME: Record<FrameworkTone, { pt: string; en: string }> = {
+  security: { pt: 'Segurança da informação', en: 'Information security' },
+  privacy: { pt: 'Privacidade de dados', en: 'Data protection' },
+  governance: { pt: 'Governança', en: 'Governance' },
+  risk: { pt: 'Gestão de riscos', en: 'Risk management' },
+  financial: { pt: 'Regulação financeira', en: 'Financial regulation' },
+  health: { pt: 'Saúde', en: 'Healthcare' },
+  environment: { pt: 'Meio ambiente', en: 'Environment' },
+};
+
 const FALLBACK: FrameworkBrand = {
   acronym: '?',
   fullName: 'Framework personalizado',
@@ -215,6 +239,8 @@ const FALLBACK: FrameworkBrand = {
 export function resolveFrameworkBrand(name: string, _versao?: string): FrameworkBrand {
   if (!name) return FALLBACK;
   const slug = normalize(name);
+
+  for (const [re, i] of BR_KEYS) if (re.test(slug)) return CATALOG[i];
 
   // Try direct keys first
   if (DIRECT_KEYS[slug]) return DIRECT_KEYS[slug];
