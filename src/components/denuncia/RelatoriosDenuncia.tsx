@@ -192,7 +192,7 @@ export function RelatoriosDenuncia() {
         timeline_denuncias
       });
     } catch (error) {
-      console.error('Erro ao carregar relatório:', error);
+      logger.error('Erro ao carregar relatório', { error });
     } finally {
       setLoading(false);
     }

@@ -527,7 +527,7 @@ export function DataTable<T extends Record<string, any>>({
               title={ecraVazio.title}
               description={ecraVazio.description}
               action={ecraVazio.action}
-              shortcuts={temFiltros ? undefined : emptyState?.shortcuts}
+              shortcuts={aFiltrar ? undefined : emptyState?.shortcuts}
             />
           )
         ) : (
@@ -676,7 +676,7 @@ export function DataTable<T extends Record<string, any>>({
                       title={ecraVazio.title}
                       description={ecraVazio.description}
                       action={ecraVazio.action}
-                      shortcuts={temFiltros ? undefined : emptyState?.shortcuts}
+                      shortcuts={aFiltrar ? undefined : emptyState?.shortcuts}
                     />
                   )}
                 </TableCell>

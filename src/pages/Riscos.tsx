@@ -1033,7 +1033,7 @@ export function Riscos() {
             </div>
           );
 
-          return <RiscosTabs riskCount={riscos.length} searchValue={searchTerm} onSearchChange={setSearchTerm} matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
+          return <RiscosTabs riskCount={riscos.length} matrixCount={riscos.filter(risco => !matrizConfig?.id || (risco as any).matriz_id === matrizConfig.id).length} acceptedCount={riscos.filter(risco => (risco as any).aceito || (risco as any).status_aceite === 'pendente' || ['expirado', 'invalidado'].includes((risco as any).status_aceite)).length} searchValue={searchTerm} onSearchChange={setSearchTerm} matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
         })()}
         
         {/* Dialogs */}
