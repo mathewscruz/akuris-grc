@@ -1,7 +1,12 @@
-// Gerado: ícones Akuris sobre Hugeicons Stroke Rounded. Ver huge.tsx.
-import {
-  SidebarLeftIcon,
-} from '@hugeicons/core-free-icons';
-import { huge } from './huge';
+import * as React from 'react';
+import { SidebarLeftIcon, SidebarRightIcon } from '@hugeicons/core-free-icons';
+import { huge, type HugeProps } from './huge';
 
-export const AkurisSidebarIcon = huge('AkurisSidebarIcon', SidebarLeftIcon, 18);
+const Aberto = huge('SidebarAberto', SidebarLeftIcon, 20);
+const Fechado = huge('SidebarFechado', SidebarRightIcon, 20);
+
+export const AkurisSidebarIcon = React.forwardRef<SVGSVGElement, HugeProps & { open?: boolean }>(
+  ({ open = true, ...props }, ref) =>
+    open ? <Aberto ref={ref} {...props} /> : <Fechado ref={ref} {...props} />,
+);
+AkurisSidebarIcon.displayName = 'AkurisSidebarIcon';
