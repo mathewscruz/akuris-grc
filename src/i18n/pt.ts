@@ -968,6 +968,9 @@ groupExecution: 'Execução', groupRisks: 'Riscos', groupCompliance: 'Conformida
     documentAdded: 'Documento adicionado',
     newAudit: 'Nova auditoria iniciada',
     newComplaint: 'Nova denúncia recebida',
+    newPlan: 'Novo plano de ação',
+    newIncident: 'Incidente registrado',
+    newContract: 'Contrato adicionado',
     recordUpdated: 'Registro atualizado',
     campo: {
       nivel_risco_residual: 'Severidade residual',
