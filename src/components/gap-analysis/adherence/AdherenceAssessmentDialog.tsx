@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconClose, IconUpload, IconFile, IconShield, IconSearch } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     isError: false,
     errorMessage: ''
   });
+  const [progressDetail, setProgressDetail] = useState('');
+  const lastResumeRef = useRef(0);
 
   // Buscar frameworks disponíveis
   const { data: frameworks, loading: loadingFrameworks } = useOptimizedQuery(
@@ -210,17 +212,30 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
 
           clearInterval(pollInterval);
         } else if (data.status === 'processando') {
-          // Atualizar progresso estimado baseado no tempo (entre 35% e 90%)
-          setAnalysisState(prev => {
-            const timeSinceStart = Date.now() - (prev as any).startTime || 0;
-            const estimatedProgress = Math.min(35 + (timeSinceStart / 120000) * 55, 90); // 2 minutos para ir de 35% a 90%
-            
-            return {
-              ...prev,
-              progress: Math.round(estimatedProgress),
-              currentStep: estimatedProgress < 60 ? 'identifying' : 'analyzing'
-            };
-          });
+          // Progresso real do trabalho em segundo plano.
+          const { data: job } = await supabase
+            .from('analise_aderencia_jobs')
+            .select('etapa, progresso, total, updated_at, trechos')
+            .eq('assessment_id', analysisState.assessmentId!)
+            .eq('empresa_id', empresaId!)
+            .maybeSingle();
+          if (job && job.total > 0) {
+            const pct = Math.round(35 + (Math.min(job.progresso, job.total) / job.total) * 60);
+            const nTrechos = Array.isArray(job.trechos) ? job.trechos.length : 0;
+            const done = job.etapa === 'resumindo' ? job.progresso : Math.max(job.progresso - (nTrechos > 1 ? nTrechos : 0), 0);
+            setProgressDetail(job.etapa === 'resumindo'
+              ? t('gapAnalysis.adherenceUi.dialog.progressReading', { done, total: nTrechos })
+              : t('gapAnalysis.adherenceUi.dialog.progressEvaluating', { done, total: job.total - (nTrechos > 1 ? nTrechos : 0) }));
+            setAnalysisState(prev => ({ ...prev, progress: pct, currentStep: job.etapa === 'resumindo' ? 'identifying' : 'analyzing' }));
+            // Trabalho parado há mais de 3 min: pede para retomar (no máximo a cada 3 min).
+            const parado = Date.now() - new Date(job.updated_at).getTime() > 180000;
+            if (parado && Date.now() - lastResumeRef.current > 180000) {
+              lastResumeRef.current = Date.now();
+              supabase.functions.invoke('analyze-document-adherence', {
+                body: { assessmentId: analysisState.assessmentId, acao: 'retomar' },
+              }).then(() => {}, () => {});
+            }
+          }
         }
       } catch (error: any) {
         logger.error('Error polling assessment status:', { error: error instanceof Error ? error.message : String(error) });
@@ -420,13 +435,15 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     <DialogShell
       open={open}
       onOpenChange={(newOpen) => {
-        // Prevenir fechamento durante análise
-        if (analysisState.isAnalyzing && !analysisState.isError) {
+        // Fechar durante a análise: ela continua em segundo plano e o sino avisa no fim.
+        if (!newOpen && analysisState.isAnalyzing && !analysisState.isError && analysisState.assessmentId) {
           toast({
             title: t('gapAnalysis.adherenceUi.dialog.analysisInProgressTitle'),
             description: t('gapAnalysis.adherenceUi.dialog.analysisInProgressDescription'),
           });
-          return;
+          setAnalysisState({ isAnalyzing: false, assessmentId: null, currentStep: '', progress: 0, isError: false, errorMessage: '' });
+          setProgressDetail('');
+          onSuccess();
         }
         onOpenChange(newOpen);
       }}
@@ -447,6 +464,9 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
               isError={analysisState.isError}
               errorMessage={analysisState.errorMessage}
             />
+            {analysisState.isAnalyzing && progressDetail && (
+              <p className="mt-3 text-center text-sm text-muted-foreground">{progressDetail}</p>
+            )}
             
             {/* Botão de fechar em caso de erro */}
             {analysisState.isError && (

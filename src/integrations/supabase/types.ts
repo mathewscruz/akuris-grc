@@ -303,6 +303,77 @@ export type Database = {
           },
         ]
       }
+      analise_aderencia_jobs: {
+        Row: {
+          assessment_id: string
+          contexto: Json
+          created_at: string
+          empresa_id: string
+          erro: string | null
+          etapa: string
+          id: string
+          locked_until: string | null
+          lotes: Json
+          progresso: number
+          resultados: Json
+          resumos: Json
+          saltos_restantes: number
+          status: string
+          total: number
+          trechos: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessment_id: string
+          contexto?: Json
+          created_at?: string
+          empresa_id: string
+          erro?: string | null
+          etapa?: string
+          id?: string
+          locked_until?: string | null
+          lotes?: Json
+          progresso?: number
+          resultados?: Json
+          resumos?: Json
+          saltos_restantes?: number
+          status?: string
+          total?: number
+          trechos?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assessment_id?: string
+          contexto?: Json
+          created_at?: string
+          empresa_id?: string
+          erro?: string | null
+          etapa?: string
+          id?: string
+          locked_until?: string | null
+          lotes?: Json
+          progresso?: number
+          resultados?: Json
+          resumos?: Json
+          saltos_restantes?: number
+          status?: string
+          total?: number
+          trechos?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analise_aderencia_jobs_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: true
+            referencedRelation: "gap_analysis_adherence_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_inbound_webhooks: {
         Row: {
           ativo: boolean | null

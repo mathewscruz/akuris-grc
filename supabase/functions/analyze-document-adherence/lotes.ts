@@ -77,3 +77,39 @@ export function juntarLotes(resultados: Array<any | null>) {
     lotes_falhados: resultados.length - ok.length,
   };
 }
+
+// ---------- Documentos de qualquer tamanho ----------
+
+/** Até este tamanho o documento vai inteiro para a avaliação (sem resumo). */
+export const LIMITE_TEXTO_DIRETO = 30000;
+
+/** Divide o texto em trechos de `tamanho` com `sobreposicao`, cortando em quebra de linha quando possível. */
+export function dividirTexto(texto: string, tamanho = 12000, sobreposicao = 500): string[] {
+  const t = texto || '';
+  if (t.length <= tamanho) return [t];
+  const out: string[] = [];
+  let ini = 0;
+  while (ini < t.length) {
+    let fim = Math.min(ini + tamanho, t.length);
+    if (fim < t.length) {
+      const quebra = t.lastIndexOf('\n', fim);
+      if (quebra > ini + tamanho * 0.6) fim = quebra;
+    }
+    out.push(t.slice(ini, fim));
+    if (fim >= t.length) break;
+    ini = Math.max(fim - sobreposicao, ini + 1);
+  }
+  return out;
+}
+
+/** Caracteres por resumo de trecho, para o conjunto caber numa avaliação (~60k). */
+export function orcamentoResumo(qtdTrechos: number): number {
+  return Math.max(1200, Math.floor(60000 / Math.max(qtdTrechos, 1)));
+}
+
+/** Índices ainda não processados (null/ausente) em `feitos`, até `k`. */
+export function proximosPendentes(feitos: unknown[], total: number, k: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < total && out.length < k; i++) if (feitos[i] == null) out.push(i);
+  return out;
+}

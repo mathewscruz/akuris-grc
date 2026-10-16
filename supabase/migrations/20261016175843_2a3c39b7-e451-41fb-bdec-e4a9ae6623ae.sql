@@ -1,0 +1,1 @@
+REVOKE ALL ON public.analise_aderencia_jobs FROM anon;
