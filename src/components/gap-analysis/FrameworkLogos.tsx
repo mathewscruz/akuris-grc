@@ -16,7 +16,7 @@ interface FrameworkLogoProps {
  */
 export const FrameworkLogo: React.FC<FrameworkLogoProps> = ({ nome, tipo, className = "h-10 w-10" }) => {
   // Heuristic: pick a size token based on className hints
-  const isXl = /h-2[0-9]|h-14|h-16/.test(className);
+  const isXl = /h-2[0-9]|h-14|h-16|h-\[10[0-9]px\]/.test(className);
   const isLarge = /h-1[2-9]/.test(className);
   const isSmall = /h-[5-7]|h-8/.test(className);
   const size = isXl ? "xl" : isLarge ? "lg" : isSmall ? "sm" : "md";
