@@ -51,17 +51,12 @@ function ScoreRing({ value, tone }: { value: number; tone: 'success' | 'warning'
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [alvo]);
-  const R = 52, C = 2 * Math.PI * R;
-  const cor = tone === 'success' ? 'stroke-success' : tone === 'warning' ? 'stroke-warning' : 'stroke-destructive';
+  void tone;
   return (
-    <div className="relative h-32 w-32 shrink-0 self-center">
-      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-        <circle cx="60" cy="60" r={R} className="fill-none stroke-muted" strokeWidth="9" />
-        <circle cx="60" cy="60" r={R} strokeWidth="9" strokeLinecap="round" className={cn('fill-none', cor)} strokeDasharray={C} strokeDashoffset={C - (v / 100) * C} />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-3xl font-bold tabular-nums text-foreground">{v}%</span>
-      </div>
+    <div className="shrink-0 self-center">
+      <GradientScoreRing value={alvo} size={128} strokeWidth={10}>
+        <span className="text-3xl font-semibold tabular-nums text-foreground">{v}%</span>
+      </GradientScoreRing>
     </div>
   );
 }

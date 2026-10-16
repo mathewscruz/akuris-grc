@@ -23,7 +23,8 @@
 * recursos seja qual for o framework escolhido.
 */
 import { useMemo } from 'react';
-import { ExecutivePanel, ExecutiveBar, ScoreRing } from '@/components/ui/executive-summary';
+import { ExecutivePanel, ExecutiveBar } from '@/components/ui/executive-summary';
+import { GradientScoreRing } from '@/components/charts/ScoreGradient';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMaturityLevel } from './MaturityScale';
