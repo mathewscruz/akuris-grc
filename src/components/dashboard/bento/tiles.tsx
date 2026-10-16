@@ -1,35 +1,126 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ScoreRing } from '@/components/ui/executive-summary';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Chip } from '@/components/ui/chip';
-import { CHART_SEVERITY } from '@/lib/chart-tokens';
-import { operationalScoreColor } from '@/lib/operational-score-color';
 import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
+import { useFrameworksOverview } from '@/hooks/useFrameworksOverview';
+import { fetchActivities, type Activity } from '@/components/dashboard/RecentActivities';
+import { IconArrowUp, IconFile, IconShield, IconCheck, IconWarning, IconMessage } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { BentoTile, BentoEmpty } from './BentoTile';
+import { BentoTile, BentoEmpty, CountUp, useMounted } from './BentoTile';
 import { diasAte, severidadeCelula, urgenciaContrato } from './bento-utils';
 
+const C = {
+  good: 'hsl(var(--good))', success: 'hsl(var(--success))', danger: 'hsl(var(--destructive))',
+  warn: 'hsl(var(--warning))', muted: 'hsl(var(--muted-foreground))', primary: 'hsl(var(--primary))',
+  track: 'hsl(var(--muted))',
+};
+
+/* ───────────── Índice operacional ───────────── */
+
+function GradientRing({ value, size = 180 }: { value: number; size?: number }) {
+  const mounted = useMounted();
+  const r = size / 2 - 12, circ = 2 * Math.PI * r;
+  const off = circ * (1 - (mounted ? value : 0) / 100);
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
+      <defs>
+        <linearGradient id="indice-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={C.good} />
+          <stop offset="100%" stopColor={C.success} />
+        </linearGradient>
+      </defs>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={C.track} strokeWidth={12} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="url(#indice-grad)" strokeWidth={12} strokeLinecap="round"
+        strokeDasharray={circ} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)' }} />
+    </svg>
+  );
+}
+
 export function IndiceTile({ delay }: { delay?: number }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const m = useGrcMaturityScore();
+  const empresaId = useAuth().profile?.empresa_id;
+  const { data: serie = [] } = useQuery({
+    queryKey: ['bento-indice-serie', empresaId],
+    enabled: !!empresaId,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const inicio = new Date(); inicio.setMonth(inicio.getMonth() - 5, 1); inicio.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase.from('gap_analysis_score_history')
+        .select('score, recorded_at').eq('empresa_id', empresaId!).gte('recorded_at', inicio.toISOString()).limit(5000);
+      if (error) throw error;
+      const fmt = new Intl.DateTimeFormat(locale, { month: 'short' });
+      return Array.from({ length: 6 }, (_, k) => {
+        const d = new Date(inicio); d.setMonth(inicio.getMonth() + k);
+        const doMes = (data ?? []).filter((r) => { const x = new Date(r.recorded_at); return x.getMonth() === d.getMonth() && x.getFullYear() === d.getFullYear(); });
+        const v = doMes.length ? Math.round(doMes.reduce((a, r) => a + Number(r.score), 0) / doMes.length) : null;
+        const label = fmt.format(d).replace('.', '');
+        return { mes: label.charAt(0).toUpperCase() + label.slice(1), v };
+      });
+    },
+  });
+  const comDado = serie.filter((s) => s.v != null);
+  const delta = comDado.length >= 2 ? (comDado[comDado.length - 1].v! - comDado[comDado.length - 2].v!) : null;
   const temDados = m.status !== 'no_data';
+
   return (
     <BentoTile title={t('bento.index.title')} description={t('bento.index.desc')} delay={delay}>
-      {temDados ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
-          <ScoreRing value={m.score} label={t('bento.index.title')} colorScale="operational" className="h-36 w-36" />
-          <p className="text-2xl font-semibold" style={{ color: operationalScoreColor(m.score) }}>{m.label}</p>
+      {!temDados ? <BentoEmpty>{t('bento.index.empty')}</BentoEmpty> : (
+        <div className="flex flex-1 flex-col gap-4">
+          <div className="flex items-center gap-6">
+            <div className="relative shrink-0">
+              <GradientRing value={m.score} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-5xl font-semibold tabular-nums text-foreground"><CountUp value={m.score} /></span>
+                <span className="text-sm text-muted-foreground">{t('bento.index.of100')}</span>
+              </div>
+            </div>
+            {delta != null && (
+              <div>
+                <p className={cn('flex items-center gap-1 text-xl font-semibold', delta >= 0 ? 'text-success' : 'text-destructive')}>
+                  <IconArrowUp className={cn('h-5 w-5', delta < 0 && 'rotate-180')} />
+                  {delta >= 0 ? '+' : ''}{delta}%
+                </p>
+                <p className="text-sm text-muted-foreground">{t('bento.index.vsLastMonth')}</p>
+              </div>
+            )}
+          </div>
+          {comDado.length > 0 && (
+            <div className="h-28 w-full">
+              <ResponsiveContainer>
+                <AreaChart data={serie} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="indice-area" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.good} stopOpacity={0.45} />
+                      <stop offset="100%" stopColor={C.good} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: C.muted, fontSize: 11 }} />
+                  <Area type="monotone" dataKey="v" connectNulls stroke={C.good} strokeWidth={2} fill="url(#indice-area)"
+                    dot={{ r: 3, fill: C.good, strokeWidth: 0 }} activeDot={{ r: 5 }} animationDuration={1400} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
-      ) : <BentoEmpty>{t('bento.index.empty')}</BentoEmpty>}
+      )}
     </BentoTile>
   );
 }
+
+/* ───────────── Riscos ───────────── */
+
+const SEV_FILL: Record<string, string> = {
+  baixo: 'color-mix(in oklab, hsl(var(--muted-foreground)) 45%, hsl(var(--card)))',
+  medio: 'color-mix(in oklab, hsl(var(--muted-foreground)) 25%, hsl(var(--card)))',
+  alto: 'color-mix(in oklab, hsl(var(--primary)) 55%, hsl(var(--card)))',
+  critico: 'hsl(var(--primary))',
+};
 
 export function RiscosTile({ delay }: { delay?: number }) {
   const { t } = useLanguage();
@@ -50,68 +141,50 @@ export function RiscosTile({ delay }: { delay?: number }) {
       return grid;
     },
   });
-  const total = data?.flat().reduce((a, b) => a + b, 0) ?? 0;
-  return (
-    <BentoTile title={t('bento.risks.title')} description={t('bento.risks.desc')} href="/riscos" delay={delay}>
-      {isLoading ? <AkurisPulse /> : total === 0 ? <BentoEmpty>{t('bento.risks.empty')}</BentoEmpty> : (
-        <div className="flex flex-1 items-stretch gap-2">
-          <span className="flex items-center text-[10px] uppercase tracking-wider text-muted-foreground [writing-mode:vertical-rl] rotate-180">{t('bento.risks.impact')}</span>
-          <div className="flex flex-1 flex-col gap-1.5">
-            <div className="grid flex-1 grid-cols-5 gap-1.5">
-              {[5, 4, 3, 2, 1].flatMap((i) => [1, 2, 3, 4, 5].map((p) => {
-                const n = data![i - 1][p - 1];
-                const sev = severidadeCelula(p, i);
-                return (
-                  <button key={`${p}-${i}`} type="button" onClick={() => navigate(`/riscos?prob=${p}&imp=${i}`)}
-                    aria-label={t('bento.risks.cell', { count: n, p, i })} title={t('bento.risks.cell', { count: n, p, i })}
-                    className="flex aspect-square min-h-8 items-center justify-center rounded-md border border-border text-sm font-semibold tabular-nums transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                    style={{ backgroundColor: n ? `color-mix(in oklab, ${CHART_SEVERITY[sev]} ${Math.min(25 + n * 12, 70)}%, transparent)` : undefined }}>
-                    {n || ''}
-                  </button>
-                );
-              }))}
-            </div>
-            <p className="text-center text-[10px] uppercase tracking-wider text-muted-foreground">{t('bento.risks.prob')}</p>
-          </div>
-        </div>
-      )}
-    </BentoTile>
-  );
-}
+  const niveis = ['vlow', 'low', 'mid', 'high', 'vhigh'] as const;
+  const legenda = useMemo(() => {
+    const c: Record<string, number> = { baixo: 0, medio: 0, alto: 0, critico: 0 };
+    data?.forEach((row, i) => row.forEach((n, p) => { c[severidadeCelula(p + 1, i + 1)] += n; }));
+    return c;
+  }, [data]);
+  const total = Object.values(legenda).reduce((a, b) => a + b, 0);
 
-export function PlanosTile({ pendentes, atrasados, concluidos, delay }: { pendentes: number; atrasados: number; concluidos: number; delay?: number }) {
-  const { t } = useLanguage();
-  const noPrazo = Math.max(0, pendentes - atrasados);
-  const total = noPrazo + atrasados + concluidos;
-  const fatias = [
-    { k: 'onTime', v: noPrazo, c: 'hsl(var(--good))' },
-    { k: 'late', v: atrasados, c: 'hsl(var(--destructive))' },
-    { k: 'done', v: concluidos, c: 'hsl(var(--muted-foreground))' },
-  ];
   return (
-    <BentoTile title={t('bento.plans.title')} description={t('bento.plans.desc')} href="/planos-acao" delay={delay}>
-      {total === 0 ? <BentoEmpty>{t('bento.plans.empty')}</BentoEmpty> : (
-        <div className="flex flex-1 items-center gap-5">
-          <div className="relative h-28 w-28 shrink-0">
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={fatias} dataKey="v" innerRadius="70%" outerRadius="100%" stroke="none" paddingAngle={2}>
-                  {fatias.map((f) => <Cell key={f.k} fill={f.c} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-semibold tabular-nums">{total}</span>
-              <span className="text-[10px] text-muted-foreground">{t('bento.plans.total')}</span>
+    <BentoTile title={t('bento.risks.title')} description={t('bento.risks.desc')} delay={delay}>
+      {isLoading ? <AkurisPulse /> : total === 0 ? <BentoEmpty>{t('bento.risks.empty')}</BentoEmpty> : (
+        <div className="flex flex-1 flex-col gap-4">
+          <div className="flex flex-1 gap-2">
+            <span className="flex items-center text-xs text-muted-foreground [writing-mode:vertical-rl] rotate-180">{t('bento.risks.impact')}</span>
+            <div className="grid flex-1 grid-cols-[auto_repeat(5,minmax(0,1fr))] gap-1.5 text-xs text-muted-foreground">
+              {[5, 4, 3, 2, 1].map((i, ri) => (
+                <div key={i} className="contents">
+                  <span className="flex items-center justify-end pr-1 text-right">{t(`bento.risks.levels.${niveis[i - 1]}`)}</span>
+                  {[1, 2, 3, 4, 5].map((p) => {
+                    const n = data![i - 1][p - 1];
+                    const sev = severidadeCelula(p, i);
+                    return (
+                      <button key={p} type="button" onClick={() => navigate(`/riscos?prob=${p}&imp=${i}`)}
+                        title={t('bento.risks.cell', { count: n, p, i })} aria-label={t('bento.risks.cell', { count: n, p, i })}
+                        className="aspect-[4/3] min-h-8 rounded-md text-sm font-semibold tabular-nums text-foreground opacity-0 animate-fade-in transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                        style={{ backgroundColor: SEV_FILL[sev], animationDelay: `${(ri * 5 + p) * 25}ms`, animationFillMode: 'both' }}>
+                        {n || ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+              <span />
+              {niveis.map((n) => <span key={n} className="text-center">{t(`bento.risks.levels.${n}`)}</span>)}
+              <span />
+              <span className="col-span-5 text-center">{t('bento.risks.prob')}</span>
             </div>
           </div>
-          <ul className="flex-1 space-y-2 text-sm">
-            {fatias.map((f) => (
-              <li key={f.k} className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: f.c }} />
-                <span className="flex-1 text-muted-foreground">{t(`bento.plans.${f.k}`)}</span>
-                <span className="font-semibold tabular-nums">{f.v}</span>
-                <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">{Math.round((f.v / total) * 100)}%</span>
+          <ul className="flex flex-wrap justify-between gap-3 text-sm">
+            {(['baixo', 'medio', 'alto', 'critico'] as const).map((s) => (
+              <li key={s} className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: SEV_FILL[s] }} />
+                <span className="text-foreground">{t(`bento.risks.sev.${s}`)}</span>
+                <span className="tabular-nums text-muted-foreground">{legenda[s]}</span>
               </li>
             ))}
           </ul>
@@ -121,24 +194,109 @@ export function PlanosTile({ pendentes, atrasados, concluidos, delay }: { penden
   );
 }
 
-export function IncidentesTile({ emCurso, criticos, altos, delay }: { emCurso: number; criticos: number; altos: number; delay?: number }) {
+/* ───────────── Planos de ação ───────────── */
+
+export function PlanosTile({ pendentes, atrasados, concluidos, delay }: { pendentes: number; atrasados: number; concluidos: number; delay?: number }) {
   const { t } = useLanguage();
-  const outros = Math.max(0, emCurso - criticos - altos);
+  const noPrazo = Math.max(0, pendentes - atrasados);
+  const total = noPrazo + atrasados + concluidos;
+  const fatias = [
+    { k: 'onTime', v: noPrazo, c: C.good },
+    { k: 'late', v: atrasados, c: C.danger },
+    { k: 'done', v: concluidos, c: C.muted },
+  ];
+  return (
+    <BentoTile title={t('bento.plans.title')} description={t('bento.plans.desc')} delay={delay}>
+      {total === 0 ? <BentoEmpty>{t('bento.plans.empty')}</BentoEmpty> : (
+        <div className="flex items-center gap-6">
+          <div className="relative h-32 w-32 shrink-0">
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={fatias} dataKey="v" innerRadius="68%" outerRadius="100%" stroke="none" startAngle={90} endAngle={-270} animationDuration={1200}>
+                  {fatias.map((f) => <Cell key={f.k} fill={f.c} />)}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-semibold tabular-nums"><CountUp value={total} /></span>
+              <span className="text-xs text-muted-foreground">{t('bento.plans.total')}</span>
+            </div>
+          </div>
+          <ul className="flex-1 space-y-3 text-sm">
+            {fatias.map((f) => (
+              <li key={f.k} className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: f.c }} />
+                <span className="flex-1 text-foreground">{t(`bento.plans.${f.k}`)}</span>
+                <span className="w-8 text-right font-semibold tabular-nums">{f.v}</span>
+                <span className="w-10 text-right tabular-nums text-muted-foreground">{Math.round((f.v / total) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </BentoTile>
+  );
+}
+
+/* ───────────── Incidentes ───────────── */
+
+export function IncidentesTile({ emCurso, criticos, altos, medios, baixos, delay }: { emCurso: number; criticos: number; altos: number; medios: number; baixos: number; delay?: number }) {
+  const { t } = useLanguage();
+  const chips = [
+    { k: 'critical', v: criticos, c: C.danger },
+    { k: 'high', v: altos, c: C.warn },
+    { k: 'medium', v: medios, c: 'hsl(var(--caution, 45 90% 55%))' },
+    { k: 'low', v: baixos, c: C.muted },
+  ];
   return (
     <BentoTile title={t('bento.incidents.title')} description={t('bento.incidents.desc')} href="/incidentes" delay={delay}>
       {emCurso === 0 ? <BentoEmpty>{t('bento.incidents.empty')}</BentoEmpty> : (
-        <div className="space-y-3">
-          <p className="flex items-baseline gap-2"><span className="text-4xl font-semibold tabular-nums">{emCurso}</span><span className="text-sm text-muted-foreground">{t('bento.incidents.inProgress')}</span></p>
-          <div className="flex flex-wrap gap-2">
-            <Chip family="severity" tone="critical">{t('bento.incidents.critical')} · {criticos}</Chip>
-            <Chip family="severity" tone="high">{t('bento.incidents.high')} · {altos}</Chip>
-            <Chip family="state" tone="neutral">{t('bento.incidents.others')} · {outros}</Chip>
+        <div className="space-y-4">
+          <p className="flex items-baseline gap-3"><span className="text-5xl font-semibold tabular-nums"><CountUp value={emCurso} /></span><span className="text-sm text-muted-foreground">{t('bento.incidents.inProgress')}</span></p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {chips.map((c) => (
+              <span key={c.k} className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-sm">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.c }} />
+                {t(`bento.incidents.${c.k}`)} <span className="tabular-nums" style={{ color: c.v ? c.c : undefined }}>{c.v}</span>
+              </span>
+            ))}
           </div>
         </div>
       )}
     </BentoTile>
   );
 }
+
+/* ───────────── Conformidade ───────────── */
+
+export function ConformidadeTile({ delay }: { delay?: number }) {
+  const { t } = useLanguage();
+  const { data, isLoading } = useFrameworksOverview() as any;
+  const mounted = useMounted(150);
+  const lista = ((data ?? []) as any[]).filter((f) => f.status !== 'nao_iniciado' || f.mediaConformidade > 0).slice(0, 3);
+  return (
+    <BentoTile title={t('bento.compliance.title')} description={t('bento.compliance.desc')} delay={delay}
+      footerHref="/gap-analysis/frameworks" footerLabel={t('bento.compliance.more')}>
+      {isLoading ? <AkurisPulse /> : !lista.length ? <BentoEmpty>{t('bento.compliance.empty')}</BentoEmpty> : (
+        <ul className="flex flex-1 flex-col justify-center gap-6">
+          {lista.map((f) => (
+            <li key={f.id}>
+              <div className="mb-2 flex items-center justify-between text-base">
+                <span className="truncate font-medium text-foreground">{f.nome}</span>
+                <span className="tabular-nums text-foreground">{Math.round(f.mediaConformidade)}%</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary" style={{ width: mounted ? `${f.mediaConformidade}%` : 0, transition: 'width 1.1s cubic-bezier(.4,0,.2,1)' }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BentoTile>
+  );
+}
+
+/* ───────────── Contratos ───────────── */
 
 export function ContratosTile({ delay }: { delay?: number }) {
   const { t, locale } = useLanguage();
@@ -157,37 +315,95 @@ export function ContratosTile({ delay }: { delay?: number }) {
         .select('id, nome, data_fim, fornecedores(nome)')
         .eq('empresa_id', empresaId!).eq('status', 'ativo')
         .gte('data_fim', hoje).lte('data_fim', limite)
-        .order('data_fim').limit(5);
+        .order('data_fim').limit(4);
       if (error) throw error;
       return data ?? [];
     },
   });
-  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short' });
+  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' });
   return (
-    <BentoTile title={t('bento.contracts.title')} description={t('bento.contracts.desc')} href="/contratos" delay={delay}>
+    <BentoTile title={t('bento.contracts.title')} description={t('bento.contracts.desc')} delay={delay}
+      footerHref="/contratos" footerLabel={t('bento.contracts.more')}>
       {isLoading ? <AkurisPulse /> : !data?.length ? <BentoEmpty>{t('bento.contracts.empty')}</BentoEmpty> : (
-        <ol className="relative space-y-3 border-l border-border pl-4">
-          {data.map((c: any) => {
+        <ol className="relative flex flex-1 flex-col justify-around gap-4 before:absolute before:bottom-3 before:left-[5px] before:top-3 before:w-px before:bg-border">
+          {data.map((c: any, idx: number) => {
             const dias = diasAte(c.data_fim);
             const urg = urgenciaContrato(dias);
+            const cor = urg === 'urgente' ? 'text-destructive' : urg === 'proximo' ? 'text-warning' : 'text-muted-foreground';
             return (
-              <li key={c.id}>
-                <button type="button" onClick={() => navigate(`/contratos?focus=${c.id}`)} className="group flex w-full items-center gap-3 text-left">
-                  <span aria-hidden className={cn('absolute -left-[5px] h-2.5 w-2.5 rounded-full border-2 border-card',
+              <li key={c.id} className="animate-fade-in" style={{ animationDelay: `${idx * 90}ms`, animationFillMode: 'both' }}>
+                <button type="button" onClick={() => navigate(`/contratos?focus=${c.id}`)} className="group relative flex w-full items-center gap-4 pl-6 text-left">
+                  <span aria-hidden className={cn('absolute left-0 h-3 w-3 rounded-full ring-4 ring-card',
                     urg === 'urgente' ? 'bg-destructive' : urg === 'proximo' ? 'bg-warning' : 'bg-muted-foreground')} />
-                  <span className="w-14 shrink-0 text-xs tabular-nums text-muted-foreground">{fmt.format(new Date(c.data_fim + 'T12:00:00'))}</span>
+                  <span className={cn('w-24 shrink-0 text-sm tabular-nums', cor)}>{fmt.format(new Date(c.data_fim + 'T12:00:00'))}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium group-hover:text-primary">{c.nome}</span>
-                    {c.fornecedores?.nome && <span className="block truncate text-xs text-muted-foreground">{c.fornecedores.nome}</span>}
+                    <span className="block truncate text-sm font-semibold text-foreground group-hover:text-primary">{c.fornecedores?.nome || c.nome}</span>
+                    {c.fornecedores?.nome && <span className="block truncate text-xs text-muted-foreground">{c.nome}</span>}
                   </span>
-                  <Chip family="severity" tone={urg === 'urgente' ? 'critical' : urg === 'proximo' ? 'medium' : 'none'} className="shrink-0">
+                  <span className={cn('shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium',
+                    urg === 'urgente' ? 'bg-destructive/15 text-destructive' : urg === 'proximo' ? 'bg-warning/15 text-warning' : 'bg-muted text-foreground')}>
                     {dias === 0 ? t('bento.contracts.today') : t('bento.contracts.inDays', { count: dias })}
-                  </Chip>
+                  </span>
                 </button>
               </li>
             );
           })}
         </ol>
+      )}
+    </BentoTile>
+  );
+}
+
+/* ───────────── Atividade recente ───────────── */
+
+const ICONE: Record<string, typeof IconFile> = {
+  riscos: IconShield, controles: IconCheck, documentos: IconFile, auditorias: IconCheck, denuncias: IconMessage, incidentes: IconWarning,
+};
+const ROTA: Record<string, string> = {
+  riscos: '/riscos', controles: '/governanca/controles', documentos: '/documentos', auditorias: '/governanca/auditorias', denuncias: '/denuncia',
+};
+
+function relativo(iso: string, locale: string) {
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  if (s < 3600) return rtf.format(-Math.max(1, Math.round(s / 60)), 'minute');
+  if (s < 86400) return rtf.format(-Math.round(s / 3600), 'hour');
+  return rtf.format(-Math.round(s / 86400), 'day');
+}
+
+export function AtividadeTile({ delay, dias }: { delay?: number; dias: number }) {
+  const { t, locale } = useLanguage();
+  const navigate = useNavigate();
+  const empresaId = useAuth().profile?.empresa_id;
+  const { data = [], isLoading } = useQuery({
+    queryKey: ['recent-activities', empresaId],
+    queryFn: () => fetchActivities(empresaId!, t),
+    enabled: !!empresaId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const corte = Date.now() - dias * 86400000;
+  const lista = (data as Activity[]).filter((a) => new Date(a.created_at).getTime() >= corte).slice(0, 5);
+  return (
+    <BentoTile title={t('bento.activity.title')} description={t('bento.activity.desc')} delay={delay}>
+      {isLoading ? <AkurisPulse /> : !lista.length ? <BentoEmpty>{t('bento.activity.empty')}</BentoEmpty> : (
+        <ul className="flex flex-1 flex-col justify-between gap-3">
+          {lista.map((a, idx) => {
+            const Icon = ICONE[a.module] ?? IconFile;
+            return (
+              <li key={a.id} className="animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: 'both' }}>
+                <button type="button" onClick={() => ROTA[a.module] && navigate(`${ROTA[a.module]}?${a.module === 'riscos' ? 'risco' : 'focus'}=${a.recordId}`)}
+                  className="group flex w-full items-start gap-3 text-left">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="h-4 w-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">{a.description}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{a.title}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{relativo(a.created_at, locale)}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </BentoTile>
   );
