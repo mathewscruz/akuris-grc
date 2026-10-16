@@ -557,7 +557,7 @@ export default function PlanosAcao() {
       mobilePriority: 3,
       label: t('planosAcao.columnResponsible'),
       render: (_: any, item: any) => (
-        <span className="text-sm">{item.profiles?.nome || '-'}</span>
+        <OwnerCell name={item.profiles?.nome} photo={item.profiles?.foto_url} emptyLabel={t('experience.notAssigned')} />
       ),
     },
     {
@@ -702,10 +702,10 @@ export default function PlanosAcao() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList moduleTitle={t('planosAcao.tabAll')} searchValue={search} onSearchChange={setSearch}>
           <TabsTrigger value="conexoes">{t('evidenceIntelligence.context')}</TabsTrigger>
-          <TabsTrigger value="meus"><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="todos"><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
+          <TabsTrigger value="meus" count={todosItens.filter(item => item.responsavel_id === profile?.user_id).length}><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="todos" count={todosItens.length}><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
         </TabsList>
         <TabsContent value="conexoes"><ComplianceContextPanel onDraft={(origin, draft) => {
           const existing = planos.find(p => origin.registroId && p.registro_origem_id === origin.registroId && p.modulo_origem === origin.modulo && !['cancelado','concluido'].includes(p.status));

@@ -19,6 +19,7 @@ import {
 } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OwnerCell } from '@/components/ui/owner-cell';
 
 /** Campos anuláveis espelham o schema do Supabase (colunas sem NOT NULL). */
 export interface DocumentoListaItem {
@@ -258,9 +259,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                     <span>{formatVersao(documento.versao)}</span>
                   </CampoCard>
                   <CampoCard label={t('documentos.lista.responsavel')}>
-                    <span className={documento.responsavel_nome ? '' : 'text-muted-foreground'}>
-                      {documento.responsavel_nome || SEM_VALOR}
-                    </span>
+                    <OwnerCell name={documento.responsavel_nome} emptyLabel={t('experience.notAssigned')} />
                   </CampoCard>
                 </dl>
               </li>
@@ -322,9 +321,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className={documento.responsavel_nome ? '' : 'text-muted-foreground'}>
-                      {documento.responsavel_nome || SEM_VALOR}
-                    </span>
+                    <OwnerCell name={documento.responsavel_nome} emptyLabel={t('experience.notAssigned')} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DocumentoAcoesMenu

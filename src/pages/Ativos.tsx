@@ -450,27 +450,9 @@ const Ativos = () => {
     {
       key: 'proprietario',
       label: t('fin.comum.proprietario'),
-      render: (_: any, ativo: Ativo) => {
-        if (!ativo.proprietario_nome) return '-';
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="inline-flex max-w-40 cursor-pointer items-center gap-2">
-                  <Avatar className="h-7 w-7 shrink-0">
-                    {ativo.proprietario_avatar && <AvatarImage src={ativo.proprietario_avatar} alt={ativo.proprietario_nome} />}
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                      {ativo.proprietario_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate text-sm">{ativo.proprietario_nome.split(/\s+/)[0]}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent><p>{ativo.proprietario_nome}</p></TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
+      kind: 'owner',
+      ownerName: ativo => ativo.proprietario_nome,
+      ownerPhoto: ativo => ativo.proprietario_avatar,
     },
     {
       key: 'localizacao',

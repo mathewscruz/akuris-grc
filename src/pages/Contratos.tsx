@@ -498,7 +498,7 @@ export default function Contratos() {
         />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList>
+          <TabsList moduleTitle={t('modules.contratos.title')} searchValue={searchTerm} onSearchChange={currentTab === 'contratos' ? setSearchTerm : undefined}>
             {/*
               O nome da aba fica, tambem no telemovel.
 
@@ -508,7 +508,7 @@ export default function Contratos() {
               icone nao distingue. Duas abas com nome cabem folgadas em 375px, e
               a `TabsList` ja rola na horizontal se algum dia nao couberem.
             */}
-            <TabsTrigger value="contratos" className="flex items-center gap-2">
+            <TabsTrigger value="contratos" count={contratos.length} className="flex items-center gap-2">
               <IconFile className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>

@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { useWizardShortcuts } from '@/hooks/useWizardShortcuts';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconSave } from '@/components/icons';
+import { IconSave, IconFile } from '@/components/icons';
 import {
   Tooltip,
   TooltipContent,
@@ -105,7 +105,7 @@ export function DialogShell({
   eyebrow,
   description,
   descriptionSrOnly = false,
-  icon: Icon,
+  icon: Icon = IconFile,
   children,
   footer,
   onSubmit,
@@ -178,11 +178,11 @@ export function DialogShell({
             */}
             <DialogDescription
               className={cn(
-                (!description || descriptionSrOnly) && 'sr-only',
+                descriptionSrOnly && 'sr-only',
                 description && !descriptionSrOnly && Icon && 'pl-[3.25rem]'
               )}
             >
-              {description || fallbackDialogDescription(title)}
+              {description || t('layout.dialogDescription', { title })}
             </DialogDescription>
           </DialogHeader>
 

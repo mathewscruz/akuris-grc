@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useMotionAllowed } from "@/lib/motion-preferences"
+import { ModuleSubbar } from '@/components/ui/module-subbar'
 
 const TabsValueContext = React.createContext<string | undefined>(undefined)
 
@@ -106,8 +107,8 @@ const ESBATIMENTO: Record<string, string | undefined> = {
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { showIndicator?: boolean }
->(({ className, style, children, showIndicator = true, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { showIndicator?: boolean; moduleTitle?: string; moduleIcon?: React.ReactNode; searchValue?: string; onSearchChange?: (value: string) => void }
+>(({ className, style, children, showIndicator = true, moduleTitle, moduleIcon, searchValue, onSearchChange, ...props }, ref) => {
   const { t } = useLanguage()
   const motionAllowed = useMotionAllowed()
   const interna = React.useRef<HTMLDivElement>(null)
@@ -163,8 +164,13 @@ const TabsList = React.forwardRef<
     if (list) list.scrollBy({ left: direction * Math.max(160, list.clientWidth * 0.65), behavior: motionAllowed ? "smooth" : "instant" })
   }
 
-  return (
-  <div className="akuris-tabs-viewport relative min-w-0 max-w-full shrink-0 mb-4">
+  const [activeLabel, setActiveLabel] = React.useState('')
+  React.useEffect(() => {
+    const active = interna.current?.querySelector('[role="tab"][data-state="active"]')
+    setActiveLabel(active?.getAttribute('data-tab-label') ?? active?.textContent ?? '')
+  }, [activeValue, children])
+  const listContent = (
+  <div className="relative min-w-0 max-w-full shrink-0">
   <TabsPrimitive.List
     ref={(no) => {
       ;(interna as React.MutableRefObject<HTMLDivElement | null>).current = no as HTMLDivElement | null
@@ -202,6 +208,7 @@ const TabsList = React.forwardRef<
   {horizontal && (lado === "fim" || lado === "ambos") && <button type="button" className="akuris-tabs-scroll right-0" aria-label={t("experience.tabsNext")} onClick={() => scrollTabs(1)}><ChevronRight aria-hidden="true" className="h-4 w-4" /></button>}
   </div>
   )
+  return <div className="akuris-tabs-viewport relative min-w-0 w-full max-w-full shrink-0 mb-4">{moduleTitle ? <ModuleSubbar title={moduleTitle} activeLabel={activeLabel} icon={moduleIcon} searchValue={searchValue} onSearchChange={onSearchChange}>{listContent}</ModuleSubbar> : listContent}</div>
 })
 TabsList.displayName = TabsPrimitive.List.displayName
 

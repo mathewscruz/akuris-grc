@@ -21,7 +21,7 @@ export function OwnerCell({ name, photo, emptyLabel }: { name?: string | null; p
               {photo && <AvatarImage src={photo} alt={name} />}
               <AvatarFallback className="text-micro">{initials}</AvatarFallback>
             </Avatar>
-            <span className="truncate text-xs font-medium text-foreground/85">{name.split(/\s+/)[0]}</span>
+            <span className="truncate text-xs font-medium text-foreground/85">{name}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent><p>{name}</p></TooltipContent>

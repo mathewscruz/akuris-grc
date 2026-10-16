@@ -11,3 +11,4 @@
 - [ ] Trocar gráficos dos módulos pelos novos padrões
 - [ ] Popups com cabeçalho/etapas em todos os formulários
 - [ ] Capturas com login de todos os módulos
+- [ ] Resolver falhas dos testes relacionadas às alterações aprovadas e validar PT/EN
