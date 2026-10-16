@@ -122,6 +122,13 @@
     --success: 152 55% 33%;
     --success-foreground: 0 0% 100%;
     --good: 172 60% 34%;
+    --fw-security: 214 62% 48%;
+    --fw-privacy: 172 60% 36%;
+    --fw-governance: 215 18% 46%;
+    --fw-risk: 26 78% 48%;
+    --fw-financial: 150 52% 34%;
+    --fw-health: 190 70% 38%;
+    --fw-environment: 128 42% 36%;
     --chart-teal: 186 70% 42%;
     --chart-green: 155 60% 42%;
     
@@ -340,6 +347,13 @@
     --success: 152 45% 56%;
     --success-foreground: 152 40% 10%;
     --good: 170 50% 52%;
+    --fw-security: 214 85% 66%;
+    --fw-privacy: 170 60% 52%;
+    --fw-governance: 215 22% 66%;
+    --fw-risk: 30 90% 60%;
+    --fw-financial: 150 50% 52%;
+    --fw-health: 190 70% 56%;
+    --fw-environment: 128 45% 55%;
     --chart-teal: 186 75% 55%;
     --chart-green: 155 62% 55%;
     
