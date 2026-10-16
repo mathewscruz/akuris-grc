@@ -487,10 +487,10 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
 
   const trechos = documentText.length <= LIMITE_TEXTO_DIRETO ? [documentText] : dividirTexto(documentText);
   // Upload: primeiro entende a política e propõe o escopo; DocGen já vem com escopo.
-  const classificar = !isDocgen;
-  const lotes = classificar ? [] : dividirEmLotes(escopo, TAM_LOTE);
-  const etapa = classificar ? 'classificando' : (trechos.length > 1 ? 'resumindo' : 'avaliando');
-  const total = classificar ? 1 : (trechos.length > 1 ? trechos.length : 0) + lotes.length;
+  const precisaClassificar = !isDocgen;
+  const lotes = precisaClassificar ? [] : dividirEmLotes(escopo, TAM_LOTE);
+  const etapa = precisaClassificar ? 'classificando' : (trechos.length > 1 ? 'resumindo' : 'avaliando');
+  const total = precisaClassificar ? 1 : (trechos.length > 1 ? trechos.length : 0) + lotes.length;
 
   await supabase.from('analise_aderencia_jobs').delete().eq('assessment_id', assessmentId);
   const { data: job, error: jobErr } = await supabase.from('analise_aderencia_jobs').insert({
@@ -500,7 +500,7 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
     contexto: {
       framework_nome: framework.nome, framework_versao: framework.versao, nome_analise: a.nome_analise,
       coverage_block, total_escopo: escopo.length, versao_anterior_id: versaoAnteriorId,
-      catalogo: classificar ? escopo.map((r: any) => ({ ...r, descricao: r.descricao ? String(r.descricao).slice(0, 300) : null })) : undefined, total_catalogo: requirements.length, documento_tamanho: documentText.length,
+      catalogo: precisaClassificar ? escopo.map((r: any) => ({ ...r, descricao: r.descricao ? String(r.descricao).slice(0, 300) : null })) : undefined, total_catalogo: requirements.length, documento_tamanho: documentText.length,
     },
   }).select('id').single();
   if (jobErr || !job) return json({ error: `Não foi possível iniciar a análise: ${jobErr?.message}` }, 500);
