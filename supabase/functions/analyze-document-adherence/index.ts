@@ -259,10 +259,20 @@ JSON: {"documento_tipo": "string", "documento_tema": "string curta", "justificat
     const sc = new Set(scope.scopeCodes);
     sugeridos = catalogo.filter((r: any) => sc.has(String(r.codigo || '').trim())).map((r: any) => r.id);
   }
+  // Segue direto para a avaliação com os requisitos que a IA considerou aplicáveis.
+  const pedidos = new Set<string>(sugeridos);
+  const escolhidos = catalogo.filter((r: any) => pedidos.has(r.id));
+  const lotes = dividirEmLotes(escolhidos.length ? escolhidos : catalogo, TAM_LOTE);
+  const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
   await supabase.from('analise_aderencia_jobs').update({
-    status: 'aguardando_escopo', etapa: 'escopo', locked_until: null, updated_at: new Date().toISOString(),
-    contexto: { ...ctx, documento_tipo: tipo, documento_tema: tema, escopo_justificativa: justificativa, sugeridos },
+    status: 'processando', etapa: trechos.length > 1 ? 'resumindo' : 'avaliando',
+    lotes, total, progresso: 0, resumos: [], resultados: [],
+    saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10, locked_until: null, updated_at: new Date().toISOString(),
+    contexto: { ...ctx, catalogo: undefined, documento_tipo: tipo, documento_tema: tema, escopo_justificativa: justificativa,
+      total_escopo: escolhidos.length || catalogo.length,
+      fora_escopo_ids: escolhidos.length ? catalogo.filter((r: any) => !pedidos.has(r.id)).map((r: any) => r.id) : [] },
   }).eq('id', job.id);
+  agendarProximo(job.id);
 }
 
 // ---------- etapa final: interpretar em linguagem de consultor ----------
@@ -412,29 +422,6 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
     if (!j) return json({ error: 'Análise não encontrada' }, 404);
     if (j.status === 'processando') agendarProximo(j.id, 0);
     return json({ success: true, jobId: j.id, status: j.status }, 202);
-  }
-
-  // Usuário confirmou (ou ajustou) os requisitos que se aplicam à política.
-  if (body.acao === 'confirmar_escopo') {
-    const { data: j } = await supabase.from('analise_aderencia_jobs').select('*')
-      .eq('assessment_id', assessmentId).eq('empresa_id', empresaId).maybeSingle();
-    if (!j || j.status !== 'aguardando_escopo') return json({ error: 'Análise não está aguardando confirmação' }, 409);
-    const catalogo: any[] = j.contexto?.catalogo || [];
-    const pedidos = new Set<string>(Array.isArray(body.requisitos) ? body.requisitos.map(String) : (j.contexto?.sugeridos || []));
-    const escolhidos = catalogo.filter((r: any) => pedidos.has(r.id));
-    if (!escolhidos.length) return json({ error: 'Selecione ao menos um requisito' }, 400);
-    const trechos: string[] = j.trechos || [];
-    const lotes = dividirEmLotes(escolhidos, TAM_LOTE);
-    const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
-    await supabase.from('analise_aderencia_jobs').update({
-      status: 'processando', etapa: trechos.length > 1 ? 'resumindo' : 'avaliando',
-      lotes, total, progresso: 0, resumos: [], resultados: [],
-      saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10, locked_until: null, updated_at: new Date().toISOString(),
-      contexto: { ...j.contexto, catalogo: undefined, total_escopo: escolhidos.length,
-        fora_escopo_ids: catalogo.filter((r: any) => !pedidos.has(r.id)).map((r: any) => r.id) },
-    }).eq('id', j.id);
-    agendarProximo(j.id, 0);
-    return json({ success: true, jobId: j.id, total }, 202);
   }
 
   let documentText = '';
