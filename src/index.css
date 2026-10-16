@@ -122,6 +122,12 @@
     --success: 152 55% 33%;
     --success-foreground: 0 0% 100%;
     --good: 172 60% 34%;
+    --fw-disc: 222 58% 11%;
+    --fw-disc-inner: 222 60% 8%;
+    --fw-blue: 220 85% 68%;
+    --fw-teal: 170 62% 52%;
+    --fw-violet: 258 85% 72%;
+    --fw-gold: 36 92% 60%;
     --fw-security: 214 62% 48%;
     --fw-privacy: 172 60% 36%;
     --fw-governance: 215 18% 46%;
@@ -347,6 +353,12 @@
     --success: 152 45% 56%;
     --success-foreground: 152 40% 10%;
     --good: 170 50% 52%;
+    --fw-disc: 222 58% 11%;
+    --fw-disc-inner: 222 60% 8%;
+    --fw-blue: 220 85% 68%;
+    --fw-teal: 170 62% 52%;
+    --fw-violet: 258 85% 72%;
+    --fw-gold: 36 92% 60%;
     --fw-security: 214 85% 66%;
     --fw-privacy: 170 60% 52%;
     --fw-governance: 215 22% 66%;
