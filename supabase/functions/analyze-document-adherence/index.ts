@@ -407,12 +407,19 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
     trechos: [], updated_at: new Date().toISOString(),
   }).eq('id', job.id);
 
-  await supabase.from('notifications').insert({
-    user_id: job.user_id,
+  // Avisa quem enviou e os administradores da MESMA empresa.
+  const { data: admins } = await supabase.from('profiles').select('user_id')
+    .eq('empresa_id', job.empresa_id).eq('ativo', true).in('role', ['admin', 'super_admin']);
+  const destinatarios = Array.from(new Set([job.user_id, ...((admins ?? []).map((p: any) => p.user_id))].filter(Boolean)));
+  const { data: asmt } = await supabase.from('gap_analysis_adherence_assessments').select('framework_id')
+    .eq('id', job.assessment_id).eq('empresa_id', job.empresa_id).maybeSingle();
+  const mensagem = `${ctx.nome_analise || ctx.framework_nome}: ${veredito === 'em_compliance' ? 'em compliance' : veredito === 'com_ressalvas' ? 'em compliance com ressalvas' : 'não está em compliance'} (${Number(score).toFixed(1)}%)`;
+  await supabase.from('notifications').insert(destinatarios.map((uid) => ({
+    user_id: uid,
     title: 'Análise de conformidade concluída',
-    message: `${ctx.nome_analise || ctx.framework_nome}: ${veredito === 'em_compliance' ? 'em compliance' : veredito === 'com_ressalvas' ? 'em compliance com ressalvas' : 'não está em compliance'} (${Number(score).toFixed(1)}%)`,
-    type: 'success', link_to: '/gap-analysis',
-  }).then(() => {}, () => {});
+    message: mensagem,
+    type: 'success', link_to: asmt?.framework_id ? `/gap-analysis/framework/${asmt.framework_id}` : '/gap-analysis',
+  }))).then(() => {}, () => {});
 }
 
 // ---------- pedido do usuário: cria o trabalho ----------
