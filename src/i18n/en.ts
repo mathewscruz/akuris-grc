@@ -172,6 +172,7 @@ export const en = {
     assets: 'Assets',
     licenses: 'Licenses',
     keys: 'Keys',
+    short: { riskManagement: 'Risks', assetManagement: 'Assets', accessManagement: 'Access', businessContinuity: 'Continuity', thirdParties: 'Third Parties', gapAnalysis: 'Gap Analysis', actionPlans: 'Action Plans' },
     riskManagement: 'Risk Management',
     risks: 'Risks',
     riskAcceptance: 'Risk Acceptance',

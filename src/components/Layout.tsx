@@ -174,7 +174,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <KpiDrillDownProvider>
-    <SidebarProvider style={{ '--sidebar-width': '6rem' } as React.CSSProperties}>
+    <SidebarProvider style={{ '--sidebar-width': '6.5rem' } as React.CSSProperties}>
       {/*
         `h-screen` e não `min-h-screen`: com altura mínima, o casco crescia com
         o conteúdo, o documento inteiro rolava e o cabeçalho subia com ele. Com

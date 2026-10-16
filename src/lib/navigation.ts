@@ -3,6 +3,7 @@ import { MODULE_ICON } from '@/lib/module-icons';
 
 type MenuItem = {
   title: string;
+  shortTitle?: string;
   url?: string;
   icon: any;
   moduleName?: string;
@@ -29,7 +30,7 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
     id: 'grc-core',
     label: t('sidebar.sectionGrcCore'),
     items: [
-      { title: t('sidebar.riskManagement'), url: '/riscos', icon: MODULE_ICON['/riscos'], moduleName: 'riscos' },
+      { title: t('sidebar.riskManagement'), shortTitle: t('sidebar.short.riskManagement'), url: '/riscos', icon: MODULE_ICON['/riscos'], moduleName: 'riscos' },
       {
         title: t('sidebar.governance'),
         url: '/governanca', icon: MODULE_ICON['/governanca'],
@@ -37,7 +38,7 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       },
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'], moduleName: 'gap-analysis' },
       {
-        title: t('sidebar.assetManagement'),
+        title: t('sidebar.assetManagement'), shortTitle: t('sidebar.short.assetManagement'),
         icon: GestaoAtivosIcon,
         subItems: [
           { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
@@ -55,7 +56,7 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.documents'), url: '/documentos', icon: MODULE_ICON['/documentos'], moduleName: 'documentos' },
       { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'], moduleName: 'dados' },
       {
-        title: t('sidebar.accessManagement'),
+        title: t('sidebar.accessManagement'), shortTitle: t('sidebar.short.accessManagement'),
         icon: GestaoAcessosIcon,
         subItems: [
           { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
@@ -65,14 +66,14 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       },
       { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
       {
-        title: t('experience.thirdPartiesEthics'),
+        title: t('experience.thirdPartiesEthics'), shortTitle: t('sidebar.short.thirdParties'),
         icon: ComplianceIcon,
         subItems: [
           { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
           { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
         ],
       },
-      { title: t('sidebar.businessContinuity'), url: '/continuidade', icon: MODULE_ICON['/continuidade'], moduleName: 'continuidade' },
+      { title: t('sidebar.businessContinuity'), shortTitle: t('sidebar.short.businessContinuity'), url: '/continuidade', icon: MODULE_ICON['/continuidade'], moduleName: 'continuidade' },
     ],
   },
   {

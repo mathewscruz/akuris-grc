@@ -175,6 +175,7 @@ export const pt = {
     assets: 'Ativos',
     licenses: 'Licenças',
     keys: 'Chaves',
+    short: { riskManagement: 'Riscos', assetManagement: 'Ativos', accessManagement: 'Acessos', businessContinuity: 'Continuidade', thirdParties: 'Terceiros', gapAnalysis: 'Gap Analysis', actionPlans: 'Planos de Ação' },
     riskManagement: 'Gestão de Riscos',
     risks: 'Riscos',
     riskAcceptance: 'Aceite de Risco',
