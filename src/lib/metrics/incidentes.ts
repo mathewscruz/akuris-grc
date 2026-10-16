@@ -82,4 +82,6 @@ export const contarIncidentes = (incidentes: IncidenteLike[] | null | undefined)
     incidentes,
     (i) => isIncidenteEmCurso(i) && severidadeIncidente(i) === 'alto',
   ),
+  mediosEmCurso: countBy(incidentes, (i) => isIncidenteEmCurso(i) && severidadeIncidente(i) === 'medio'),
+  baixosEmCurso: countBy(incidentes, (i) => isIncidenteEmCurso(i) && severidadeIncidente(i) === 'baixo'),
 });

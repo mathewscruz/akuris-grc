@@ -18,6 +18,8 @@ interface IncidentesStats {
   /** Severidade do que ainda está em curso — o que é exposição de hoje. */
   criticosEmCurso: number;
   altosEmCurso: number;
+  mediosEmCurso: number;
+  baixosEmCurso: number;
   mes: number;
 }
 
