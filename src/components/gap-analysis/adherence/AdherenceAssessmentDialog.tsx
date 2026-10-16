@@ -24,9 +24,11 @@ interface AdherenceAssessmentDialogProps {
   preSelectedFrameworkNome?: string;
   /** Nova versão de uma política já analisada: compara com a anterior no fim. */
   versaoAnterior?: { id: string; nome: string } | null;
+  /** Arquivo já escolhido (ex.: arrastado para a página). */
+  initialFile?: File | null;
 }
 
-export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSelectedFrameworkId, preSelectedFrameworkNome, versaoAnterior }: AdherenceAssessmentDialogProps) {
+export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSelectedFrameworkId, preSelectedFrameworkNome, versaoAnterior, initialFile }: AdherenceAssessmentDialogProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();

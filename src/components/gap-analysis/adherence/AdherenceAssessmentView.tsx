@@ -17,6 +17,34 @@ import { logger } from '@/lib/logger';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { agruparAjustes } from './ajustes';
+import { cn } from '@/lib/utils';
+
+const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
+function veredictoDe(a: any): keyof typeof TOM_VEREDITO | null {
+  const v = a?.metadados_analise?.veredito;
+  if (v && v in TOM_VEREDITO) return v;
+  if (a?.resultado_geral === 'conforme') return 'em_compliance';
+  if (a?.resultado_geral === 'parcial') return 'com_ressalvas';
+  if (a?.resultado_geral === 'nao_conforme') return 'nao_compliance';
+  return null;
+}
+function MiniRing({ value, tone }: { value: number; tone: 'success' | 'warning' | 'destructive' | null }) {
+  const R = 18, C = 2 * Math.PI * R, v = Math.max(0, Math.min(100, Math.round(value || 0)));
+  const cor = tone === 'success' ? 'stroke-success' : tone === 'warning' ? 'stroke-warning' : tone === 'destructive' ? 'stroke-destructive' : 'stroke-muted-foreground';
+  return (
+    <div className="relative h-12 w-12 shrink-0">
+      <svg viewBox="0 0 44 44" className="h-full w-full -rotate-90">
+        <circle cx="22" cy="22" r={R} strokeWidth="4" className="fill-none stroke-muted" />
+        <circle cx="22" cy="22" r={R} strokeWidth="4" strokeLinecap="round" className={cn('fill-none transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none', cor)}
+          strokeDasharray={C} strokeDashoffset={C - (v / 100) * C} />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums text-foreground">{v}%</span>
+    </div>
+  );
+}
 import { useLanguage } from '@/contexts/LanguageContext';
 interface AdherenceAssessmentViewProps {
   onViewResult: (assessment: AdherenceAssessment) => void;
@@ -27,9 +55,11 @@ interface AdherenceAssessmentViewProps {
   embedded?: boolean;
   /** Ao incrementar, abre o diálogo de nova avaliação (acionado pelos CTAs do hero). */
   openSignal?: number;
+  /** Arquivo arrastado para o hero: já entra no diálogo. */
+  initialFile?: File | null;
 }
 
-export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome, embedded, openSignal }: AdherenceAssessmentViewProps) {
+export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome, embedded, openSignal, initialFile }: AdherenceAssessmentViewProps) {
   const { t, tList } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
@@ -241,89 +271,71 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
       {/* Lista de Avaliações */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
-        
+        <h3 className="mb-4 text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
         {isLoading ? (
-          <div className="min-h-[180px] flex flex-col items-center justify-center gap-2">
-            <AkurisPulse size={48} />
+          <div className="flex min-h-[140px] flex-col items-center justify-center gap-2">
+            <AkurisPulse size={40} />
             <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.loadingAssessments')}</p>
           </div>
         ) : assessments && assessments.length > 0 ? (
-          <div className="space-y-4">
-            {(assessments as any[]).map((assessment: any) => (
-              <Card key={assessment.id} className="p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold">{assessment.nome_analise}</h4>
-                      <Badge variant={getStatusVariant(assessment.status)} className="whitespace-nowrap">{getStatusLabel(assessment.status)}</Badge>
-                      {assessment.resultado_geral && <Badge variant={getResultVariant(assessment.resultado_geral)} className="whitespace-nowrap">{getResultLabel(assessment.resultado_geral)}</Badge>}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground mb-3">
-                      <div>
-                        <span className="font-medium">{t('gapAnalysis.adherenceUi.view.frameworkLabel')}</span> {assessment.framework_nome} {assessment.framework_versao}
-                      </div>
-                      <div>
-                        <span className="font-medium">{t('gapAnalysis.adherenceUi.view.documentLabel')}</span> {assessment.documento_nome}
-                      </div>
-                    </div>
-
-                    {assessment.status === 'processando' && (
-                      <div className="flex items-center gap-2 text-info text-sm">
-                        <AkurisPulse size={16} />
-                        <span>{t('gapAnalysis.adherenceUi.view.processingHint')}</span>
-                      </div>
-                    )}
-
-                    {assessment.status === 'concluido' && (
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between text-sm mb-1">
-                            <span>{t('gapAnalysis.adherenceUi.view.compliance')}</span>
-                            <span className="font-semibold">{assessment.percentual_conformidade}%</span>
-                          </div>
-                          <Progress value={assessment.percentual_conformidade} className="h-2" />
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {t('gapAnalysis.adherenceUi.view.analyzedOn', { date: formatDateOnly(assessment.created_at) })}
-                    </p>
+          <ul className="divide-y rounded-lg border">
+            {(assessments as any[]).map((assessment: any, i: number) => {
+              const concluida = assessment.status === 'concluido';
+              const v = veredictoDe(assessment);
+              const acoes = Array.isArray(assessment.metadados_analise?.acoes) ? assessment.metadados_analise.acoes : [];
+              const essenciais = agruparAjustes(acoes, v === 'em_compliance').essenciais.length;
+              return (
+                <li key={assessment.id}
+                  className={cn('flex items-center gap-4 px-4 py-3 transition-colors animate-in fade-in slide-in-from-bottom-1', concluida && 'cursor-pointer hover:bg-accent')}
+                  style={{ animationDelay: `${Math.min(i, 8) * 50}ms`, animationFillMode: 'both' }}
+                  onClick={() => concluida && onViewResult(assessment)}
+                  role={concluida ? 'button' : undefined}
+                  tabIndex={concluida ? 0 : undefined}
+                  onKeyDown={(e) => { if (concluida && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onViewResult(assessment); } }}
+                >
+                  {concluida ? <MiniRing value={assessment.percentual_conformidade} tone={v ? TOM_VEREDITO[v] : null} /> : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center"><AkurisPulse size={22} /></div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">{assessment.nome_analise}</p>
+                    <p className="truncate text-xs text-muted-foreground">{assessment.documento_nome}</p>
                   </div>
-
-                  <div className="ml-4 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onViewResult(assessment)}
-                      disabled={assessment.status !== 'concluido'}
-                    >
-                      <IconView className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-                      {t('gapAnalysis.adherenceUi.view.viewDetails')}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setAssessmentToDelete(assessment.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <IconDelete className="h-4 w-4" strokeWidth={1.5}/>
-                    </Button>
+                  <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+                    {concluida && v ? (
+                      <StatusBadge tone={TOM_VEREDITO[v]}>{t(`gapAnalysis.adherenceUi.verdict.${v}`)}</StatusBadge>
+                    ) : !concluida ? (
+                      <span className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.processingHint')}</span>
+                    ) : null}
+                    <span className="text-xs text-muted-foreground">
+                      {concluida && essenciais > 0 ? `${t('gapAnalysis.v2.documentsHero.v3.essentialCount', { n: essenciais })} · ` : ''}
+                      {formatDateOnly(assessment.created_at)}
+                    </span>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={t('gapAnalysis.v2.documentsHero.v3.more')}>
+                        <span className="text-lg leading-none text-muted-foreground">⋯</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem disabled={!concluida} onClick={() => onViewResult(assessment)}>
+                        <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.viewDetails')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => setAssessmentToDelete(assessment.id)}>
+                        <IconDelete className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.confirmDelete')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
-          <div className="text-center py-12">
-            <IconFileCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5}/>
-            <p className={embedded ? 'text-muted-foreground' : 'text-muted-foreground mb-4'}>
-              {t('gapAnalysis.adherenceUi.view.noAssessmentsYet')}
-            </p>
+          <div className="py-10 text-center">
+            <IconFileCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground" strokeWidth={1.5}/>
+            <p className="text-sm text-muted-foreground">{t('gapAnalysis.v2.documentsHero.v3.empty')}</p>
             {!embedded && (
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
                 <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5}/>
                 {t('gapAnalysis.adherenceUi.view.createFirstAssessment')}
               </Button>
@@ -339,6 +351,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
         onSuccess={refetch}
         preSelectedFrameworkId={frameworkId}
         preSelectedFrameworkNome={frameworkNome}
+        initialFile={initialFile}
       />
       
       <ConfirmDialog
