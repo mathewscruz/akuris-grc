@@ -243,6 +243,36 @@ export async function exportAssessmentToPDF(
       });
     }
     y += 14;
+
+    // Ajustes com instrução: o que a norma exige, o que falta, por quê, como e texto sugerido.
+    const acoesPdf: any[] = Array.isArray(metaPdf.acoes) ? metaPdf.acoes : [];
+    if (acoesPdf.length) {
+      addSection(t('gapAnalysis.adherenceUi.verdict.whatToDo', { count: acoesPdf.length }));
+      const g = (s: string) => t(`gapAnalysis.adherenceUi.verdict.guide.${s}`);
+      const bloco = (rotulo: string, texto: string) => {
+        if (!texto) return;
+        checkAddPage(28);
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        pdf.text(rotulo.toUpperCase(), marginX + 10, y); y += 11;
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        pdf.splitTextToSize(texto, contentWidth - 20).forEach((l: string) => { checkAddPage(13); pdf.text(l, marginX + 10, y); y += 12; });
+        y += 4;
+      };
+      acoesPdf.forEach((a, i) => {
+        checkAddPage(40);
+        pdf.setFontSize(10.5); pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        pdf.splitTextToSize(`${i + 1}. ${a.titulo}${a.requisito_codigo ? ` (${a.requisito_codigo})` : ''}`, contentWidth).forEach((l: string) => { pdf.text(l, marginX, y); y += 14; });
+        bloco(g('requires'), a.exigencia_norma || a.descricao || '');
+        bloco(g('found'), a.evidencia_documento || '');
+        bloco(g('why'), a.impacto || '');
+        bloco(g('steps'), Array.isArray(a.passos) ? a.passos.map((p: string, j: number) => `${j + 1}) ${p}`).join('\n') : '');
+        bloco(g('suggested'), a.texto_sugerido || '');
+        y += 8;
+      });
+    }
   }
 
   // ========== PONTOS FORTES ==========

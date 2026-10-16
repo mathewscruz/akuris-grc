@@ -26,7 +26,8 @@ import { AdherenceAssessmentDialog } from './AdherenceAssessmentDialog';
 import { Chip } from '@/components/ui/chip';
 import { cn } from '@/lib/utils';
 
-type Acao = { titulo: string; descricao?: string; prioridade?: string; requisito_codigo?: string | null; requirement_id?: string | null };
+import { agruparAjustes, type Acao } from './ajustes';
+import { AjusteCard } from './AjusteCard';
 type Comparacao = { resolvidos: number; pendentes: number; melhorados: number; piorados: number };
 const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
 
@@ -82,6 +83,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const foraIds: string[] = Array.isArray(meta.fora_escopo_ids) ? meta.fora_escopo_ids : [];
   const comparacao = meta.comparacao as Comparacao | null | undefined;
   const [verTodosFortes, setVerTodosFortes] = useState(false);
+  const grupos = agruparAjustes(acoes, veredito === 'em_compliance');
   const porPrioridade = { alta: [], media: [], baixa: [] } as Record<'alta' | 'media' | 'baixa', { acao: Acao; idx: number }[]>;
   acoes.forEach((acao, idx) => {
     const p = (['alta', 'media', 'baixa'].includes(acao.prioridade || '') ? acao.prioridade : 'media') as 'alta' | 'media' | 'baixa';
@@ -390,6 +392,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('gapAnalysis.adherenceUi.verdict.question', { norma: `${assessment.framework_nome ?? ''} ${assessment.framework_versao ?? ''}`.trim() })}
               </p>
+              <h2 className="mb-2 text-xl font-semibold text-foreground md:text-2xl">{t(`gapAnalysis.adherenceUi.verdict.guide.answer_${veredito}`, { norma: assessment.framework_nome ?? '', n: grupos.essenciais.length })}</h2>
               <div className="mb-3"><StatusBadge tone={TOM_VEREDITO[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge></div>
               {meta.veredito_resumo && <p className="text-sm leading-relaxed text-foreground">{meta.veredito_resumo}</p>}
               <p className="mt-3 text-xs text-muted-foreground">
@@ -434,52 +437,73 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         </Card>
       )}
 
+      {/* Em compliance: parabéns + próximo passo */}
+      {veredito === 'em_compliance' && (
+        <Card className="flex flex-col items-start gap-4 border p-6 md:flex-row md:items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <IconSuccess className="h-10 w-10 shrink-0 text-success animate-in zoom-in-50 duration-700" strokeWidth={1.5} />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.congratsTitle', { norma: assessment.framework_nome ?? '' })}</h3>
+            <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.congratsText')}</p>
+          </div>
+          {frameworkId && details && details.length > 0 && (
+            <Button onClick={handleApplyToEvaluation} disabled={applying}>
+              {applying && <AkurisPulse size={16} className="mr-2" />}{t('gapAnalysis.adherenceUi.verdict.guide.useAsEvidence')}
+            </Button>
+          )}
+        </Card>
+      )}
+
       {/* O que precisa fazer */}
       {veredito && acoes.length > 0 && (
         <Card className="p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-              <IconWarning className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-              {t('gapAnalysis.adherenceUi.verdict.whatToDo', { count: acoes.length })}
-            </h3>
-            <div className="w-full max-w-[260px] space-y-1">
-              <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.plansProgress', { done: planosCriados.size, total: acoes.length })}</p>
-              <Progress value={(planosCriados.size / acoes.length) * 100} className="h-1.5" />
-            </div>
-          </div>
-          <div className="space-y-5">
-            {(['alta', 'media', 'baixa'] as const).filter(p => porPrioridade[p].length).map(p => (
-              <div key={p} className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {t('gapAnalysis.adherenceUi.verdict.ui.priorityGroup', { label: getPrioridadeLabel(p) })} · {porPrioridade[p].length}
-                </p>
-                {porPrioridade[p].map(({ acao, idx }, j) => (
-                  <div
-                    key={idx}
-                    className={cn('relative overflow-hidden rounded-lg border bg-card p-4 pl-5 transition-colors hover:bg-accent animate-in fade-in slide-in-from-bottom-1',
-                      planosCriados.has(idx) && 'opacity-70')}
-                    style={{ animationDelay: `${j * 60}ms`, animationFillMode: 'both' }}
-                  >
-                    <span className={cn('absolute inset-y-0 left-0 w-[3px]', p === 'alta' ? 'bg-destructive' : p === 'media' ? 'bg-warning' : 'bg-muted-foreground/40')} />
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-semibold text-foreground">{acao.titulo}</h4>
-                        {acao.descricao && <p className="mt-1 text-sm text-muted-foreground">{acao.descricao}</p>}
-                        {acao.requisito_codigo && (
-                          <div className="mt-2"><Chip>{t('gapAnalysis.adherenceUi.verdict.requirement', { codigo: acao.requisito_codigo })}</Chip></div>
-                        )}
-                      </div>
-                      <Button size="sm" variant={planosCriados.has(idx) ? 'ghost' : 'outline'} className="shrink-0" disabled={planosCriados.has(idx) || criandoPlano === idx} onClick={() => criarPlano(acao, idx)}>
-                        {criandoPlano === idx && <AkurisPulse size={14} className="mr-2" />}
-                        {planosCriados.has(idx) && <IconSuccess className="mr-1.5 h-4 w-4 text-success" strokeWidth={1.5} />}
-                        {planosCriados.has(idx) ? t('gapAnalysis.adherenceUi.verdict.planExists') : t('gapAnalysis.adherenceUi.verdict.createPlan')}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          {grupos.essenciais.length > 0 && (
+            <div className="mb-6 space-y-3">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                    <IconWarning className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
+                    {t('gapAnalysis.adherenceUi.verdict.guide.essentialTitle', { count: grupos.essenciais.length })}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.essentialHint')}</p>
+                </div>
+                <div className="w-full max-w-[260px] space-y-1">
+                  <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.plansProgress', { done: grupos.essenciais.filter(g => planosCriados.has(g.idx)).length, total: grupos.essenciais.length })}</p>
+                  <Progress value={(grupos.essenciais.filter(g => planosCriados.has(g.idx)).length / grupos.essenciais.length) * 100} className="h-1.5" />
+                </div>
               </div>
+              {grupos.essenciais.map(({ acao, idx }, j) => (
+                <AjusteCard key={idx} acao={acao} essencial delay={j * 60} defaultOpen={j === 0}
+                  planoCriado={planosCriados.has(idx)} criando={criandoPlano === idx} onCriarPlano={() => criarPlano(acao, idx)} />
+              ))}
+            </div>
+          )}
+          {grupos.recomendados.length > 0 && (
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.recommendedTitle', { count: grupos.recomendados.length })}</h3>
+                <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.recommendedHint')}</p>
+              </div>
+              {grupos.recomendados.map(({ acao, idx }, j) => (
+                <AjusteCard key={idx} acao={acao} essencial={false} delay={j * 60}
+                  planoCriado={planosCriados.has(idx)} criando={criandoPlano === idx} onCriarPlano={() => criarPlano(acao, idx)} />
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Próximos passos */}
+      {veredito && veredito !== 'em_compliance' && (
+        <Card className="p-6 animate-in fade-in duration-500">
+          <h3 className="mb-4 text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.nextTitle')}</h3>
+          <ol className="grid gap-3 md:grid-cols-3">
+            {(['next1', 'next2', 'next3'] as const).map((s, i) => (
+              <li key={s} className="flex gap-3 rounded-lg border p-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold">{i + 1}</span>
+                <p className="text-sm text-foreground">{t(`gapAnalysis.adherenceUi.verdict.guide.${s}`)}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </Card>
       )}
 
