@@ -207,8 +207,8 @@ TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & { count?: number }
+>(({ className, count, children, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
@@ -228,7 +228,14 @@ const TabsTrigger = React.forwardRef<
       className,
     )}
     {...props}
-  />
+  >
+    {children}
+    {count !== undefined && (
+      <span className="rounded-md bg-muted px-1.5 py-0.5 text-micro font-semibold tabular-nums text-muted-foreground group-data-[state=active]:bg-primary/15 group-data-[state=active]:text-primary">
+        {count}
+      </span>
+    )}
+  </TabsPrimitive.Trigger>
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
