@@ -2328,14 +2328,22 @@ input:-webkit-autofill:focus {
   .akuris-table tbody > tr:not([data-table-static]):hover > td {
     border-color: hsl(var(--primary) / 0.35);
   }
-  .akuris-table tbody > tr:has([data-chip-tone="critical"]),
-  .akuris-table tbody > tr:has([data-chip-tone="blocked"]) { --row-accent: hsl(var(--destructive)); }
-  .akuris-table tbody > tr:has([data-chip-tone="high"]) { --row-accent: hsl(var(--severity-high)); }
-  .akuris-table tbody > tr:has([data-chip-tone="medium"]),
-  .akuris-table tbody > tr:has([data-chip-tone="attention"]) { --row-accent: hsl(var(--warning)); }
-  .akuris-table tbody > tr:has([data-chip-tone="low"]),
-  .akuris-table tbody > tr:has([data-chip-tone="done"]) { --row-accent: hsl(var(--state-done)); }
-  .akuris-table tbody > tr:has([data-chip-tone="active"]) { --row-accent: hsl(var(--state-active)); }
+  /* Estado primeiro; gravidade por último para sempre mandar. */
+  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="done"]) { --row-accent: hsl(var(--state-done)); }
+  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="active"]) { --row-accent: hsl(var(--state-active)); }
+  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="attention"]) { --row-accent: hsl(var(--warning)); }
+  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="blocked"]) { --row-accent: hsl(var(--destructive)); }
+  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="low"]) { --row-accent: hsl(var(--state-done)); }
+  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="medium"]) { --row-accent: hsl(var(--warning)); }
+  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="high"]) { --row-accent: hsl(var(--severity-high)); }
+  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="critical"]) { --row-accent: hsl(var(--destructive)); }
+  /* Faixa reta de 3px em vez da curva do canto. */
+  .akuris-table tbody > tr:not([data-table-static]) > td:first-child { position: relative; box-shadow: none !important; }
+  .akuris-table tbody > tr:not([data-table-static]) > td:first-child::before {
+    content: ""; position: absolute; left: 0; top: 18%; bottom: 18%; width: 3px;
+    border-radius: 0 3px 3px 0; background: var(--row-accent);
+  }
+  .akuris-table tbody > tr:has(td[colspan]) > td::before { display: none; }
   .akuris-table tbody > tr:has(td[colspan]) > td { box-shadow: none; }
 }
 

@@ -1,7 +1,8 @@
 # Roadmap
-- [x] Resultado da análise: veredito + abas + lista/detalhe de ajustes
-- [x] LGPD: EN, Art. 51 + resoluções ANPD, ordem, mapeamento de controles
-
-- [~] Frameworks: feito 27701/GDPR/NIS2/ordem + rotina PT/EN corrigida. Falta: diff demais frameworks, normas BR artigo a artigo, controles de segurança
-- [x] Menu iPad: parar oscilação de tamanho
-- [x] Dashboard: borda roxa do filtro de dias incompleta
+- [x] Faixa das linhas: gravidade manda, barra reta 3px (todas as tabelas)
+- [x] Remover "Sem histórico comparável" sem variação real
+- [ ] Ícone/descrição/avatar nas linhas em cartão (por módulo)
+- [ ] Mini gráficos com histórico real nos cartões de número (por módulo)
+- [ ] Sub-barra com nome do módulo, caminho e busca
+- [ ] Trocar gráficos existentes pelos quatro padrões
+- [ ] Atalhos nas telas vazias de cada módulo
