@@ -1,7 +1,13 @@
 # Roadmap
-- [x] Faixa das linhas por gravidade, barra reta (todas as tabelas)
-- [x] Telas vazias com atalhos, barras arredondadas, donuts segmentados
-- [x] Ícone do módulo + descrição curta no nome das linhas (todas as tabelas comuns)
-- [x] Mini gráfico com histórico real no cartão de total (16 módulos)
-- [x] Ícone e grupo do módulo acima do título de cada página; abas fixas
-- [ ] Riscos: cartões são por gravidade (sem cartão de total), por isso sem mini gráfico
+- [x] Cartões de número sem "sem dados", alinhados; mini gráfico só com variação real
+- [x] Mini gráfico por gravidade em Riscos
+- [x] Selos de gravidade com ponto + texto; faixa das linhas na altura toda
+- [x] Avatar do responsável (Controles, Incidentes, Contratos, Sistemas, Contas privilegiadas)
+- [x] Filtros com rótulo dentro do campo
+- [x] Contadores nas abas Controles/Auditorias, sublinhado na largura toda
+- [ ] Avatar nos demais módulos (Planos, Documentos, Ativos, Fornecedores…)
+- [ ] Barra de progresso nas linhas; alternância lista/grade
+- [ ] Caminho + busca rápida na linha das abas; contadores em Matriz/Aceite
+- [ ] Trocar gráficos dos módulos pelos novos padrões
+- [ ] Popups com cabeçalho/etapas em todos os formulários
+- [ ] Capturas com login de todos os módulos

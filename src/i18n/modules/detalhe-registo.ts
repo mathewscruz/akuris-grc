@@ -12,7 +12,6 @@ export const detalheRegisto = {
      * "data_fim, valor, gestor_contrato" cru na tela.
      */
     trilhaCampos: {
-      areaSolicitante: 'Área solicitante', sla: 'SLA', dataAssinatura: 'Data de assinatura',
       moeda: 'Moeda',
       dataAssinatura: 'Data de assinatura',
       areaSolicitante: 'Área solicitante',
@@ -120,7 +119,6 @@ export const detalheRegisto = {
   },
   en: {
     trilhaCampos: {
-      areaSolicitante: 'Requesting area', sla: 'SLA', dataAssinatura: 'Signing date',
       moeda: 'Currency',
       dataAssinatura: 'Signature date',
       areaSolicitante: 'Requesting area',
