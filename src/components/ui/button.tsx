@@ -45,6 +45,8 @@ const buttonVariants = cva(
         gradient: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow hover:brightness-110",
         premium: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow hover:brightness-110",
         glow: "bg-primary text-primary-foreground shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]",
+        "outline-primary": "border border-primary/60 bg-transparent text-foreground hover:bg-primary/10",
+        "outline-destructive": "border border-destructive/60 bg-transparent text-destructive hover:bg-destructive/10",
         soft: "bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20",
       },
       /*
@@ -71,6 +73,7 @@ const buttonVariants = cva(
         icon: "h-10 w-10 max-lg:min-h-[44px] max-lg:min-w-[44px]",
         "icon-sm": "h-8 w-8 max-lg:min-h-[40px] max-lg:min-w-[40px]",
         "icon-lg": "h-12 w-12",
+        "icon-square": "h-9 w-9 rounded-lg border border-border",
       },
     },
     defaultVariants: {

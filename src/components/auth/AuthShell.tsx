@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import logoImage from '@/assets/akuris-logo.png';
-import { AuthProductPreview } from '@/components/auth/AuthProductPreview';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
+
+const SELOS = ['ISO/IEC 27001', 'SOC 2', 'LGPD', 'NIST CSF', 'PCI DSS'];
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,24 +27,30 @@ export function AuthShell({ children, showProductPreview = true }: AuthShellProp
     <main className="min-h-dvh w-full lg:grid lg:grid-cols-[minmax(0,54%)_minmax(25rem,46%)]">
       <aside className="sidebar-gradient relative hidden min-h-dvh overflow-hidden gap-10 p-[clamp(2rem,4vw,6rem)] lg:flex lg:flex-col lg:justify-between">
         <AkurisMarkPattern opacity={0.03} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(hsl(var(--primary))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--primary))_1px,transparent_1px)] [background-size:48px_48px] [mask-image:radial-gradient(ellipse_at_30%_40%,black,transparent_75%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-20 h-96 w-[48rem] rounded-full bg-primary/20 blur-3xl" />
 
         <img src={logoImage} alt="Akuris" className="relative z-10 h-9 w-fit object-contain auth-entra" />
 
         <div className="relative z-10 w-full max-w-[44rem] self-center auth-entra">
-          <h1 className="max-w-[14ch] text-[3.25rem] font-medium leading-[1.05] tracking-[-0.03em] text-white">
-            {t('auth.platformTitle')}{' '}
-            <span className="text-white/70">{t('auth.platformHighlight')}</span>
+          <p className="text-micro font-semibold uppercase tracking-[0.2em] text-white/60">{t('auth.splitEyebrow')}</p>
+          <h1 className="mt-4 max-w-[16ch] text-[3.25rem] font-semibold leading-[1.05] tracking-[-0.03em] text-white">
+            {t('auth.splitTitle')}{' '}
+            <span className="text-primary">{t('auth.splitHighlight')}</span>
           </h1>
+          <p className="mt-5 max-w-[34rem] text-base leading-relaxed text-white/70">{t('auth.splitBody')}</p>
 
           {showProductPreview && (
-            <div className="mt-10 w-full" aria-hidden="true">
-              <AuthProductPreview />
+            <div className="mt-12 flex flex-wrap gap-6" aria-hidden="true">
+              {SELOS.map((nome) => (
+                <FrameworkBadge key={nome} name={nome} size="xl" className="auth-entra" />
+              ))}
             </div>
           )}
         </div>
 
         <p className="relative z-10 text-xs text-white/70 auth-entra">
-          {t('auth.previewNote')}
+          {t('auth.splitFooter')}
         </p>
       </aside>
 

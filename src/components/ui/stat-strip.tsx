@@ -60,6 +60,8 @@ export interface StatStripItem {
   trend?: StatStripTrend
   /** Movimento único para um risco crítico recém-chegado. */
   attentionPulse?: boolean
+  /** Série real (mais antiga → mais recente) para o mini gráfico de área. */
+  series?: number[]
 }
 
 interface StatStripProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -253,7 +255,7 @@ export function StatStrip({ items, loading = false, error = false, className, ..
     <div
       id={summaryId}
       className={cn(
-        "grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.03)] sm:grid-cols-3 lg:flex lg:items-stretch dark:shadow-none",
+        "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:flex lg:items-stretch",
         className
       )}
       {...props}
@@ -330,6 +332,9 @@ export function StatStrip({ items, loading = false, error = false, className, ..
                 {item.trend.label}
               </span>
             )}
+            {!unavailable && item.series && item.series.length > 1 && (
+              <MiniArea series={item.series} tone={tone} />
+            )}
             {progressPercent !== null && (
               <span
                 role="progressbar"
@@ -354,8 +359,7 @@ export function StatStrip({ items, loading = false, error = false, className, ..
             data-mobile-hidden={!mobileExpanded && mobileOrder.indexOf(item) >= 2}
             style={{ '--metric-order': mobileOrder.indexOf(item) } as React.CSSProperties}
             className={cn(
-              separatorClasses(index, mobileOrder.indexOf(item)),
-              "akuris-stat-item relative min-h-[88px] sm:min-h-[104px]",
+              "akuris-stat-item relative min-h-[96px] overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.03)] dark:shadow-none sm:min-h-[112px] lg:flex-1 lg:min-w-0",
               mobileExpanded && mobileOrder.indexOf(item) === items.length - 1 && items.length % 2 === 1 && "col-span-2 sm:col-span-1"
             )}
           >
@@ -385,5 +389,36 @@ export function StatStrip({ items, loading = false, error = false, className, ..
         </button>
       )}
     </div>
+  )
+}
+
+const SPARK_TONE: Record<StatStripTone, string> = {
+  neutral: "hsl(var(--primary))",
+  destructive: "hsl(var(--destructive))",
+  orange: "hsl(var(--severity-high))",
+  warning: "hsl(var(--warning))",
+  success: "hsl(var(--state-done))",
+}
+
+/** Mini gráfico de área com degradê (padrão do dashboard). Só com série real. */
+export function MiniArea({ series, tone = "neutral" }: { series: number[]; tone?: StatStripTone }) {
+  const id = React.useId().replace(/:/g, "")
+  const w = 100, h = 28
+  const min = Math.min(...series), max = Math.max(...series)
+  const span = max - min || 1
+  const pts = series.map((v, i) => [ (i / (series.length - 1)) * w, h - 2 - ((v - min) / span) * (h - 6) ])
+  const line = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ")
+  const cor = SPARK_TONE[tone]
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true" className="mt-2 block h-7 w-full">
+      <defs>
+        <linearGradient id={`sa-${id}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={cor} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={cor} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#sa-${id})`} />
+      <path d={line} fill="none" stroke={cor} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }

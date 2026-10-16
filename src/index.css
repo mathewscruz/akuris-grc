@@ -2299,3 +2299,42 @@ input:-webkit-autofill:focus {
 }
 .akuris-tabs-scroll:hover { color: hsl(var(--primary)); }
 .akuris-tabs-scroll:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
+
+/* ── Onda: tabelas como "cartões em lista" ───────────────────────────────
+   Cada linha é um cartão arredondado com aresta e faixa à esquerda na cor
+   do estado/gravidade (lida do primeiro Chip da linha). */
+@layer components {
+  .akuris-table { border-collapse: separate; border-spacing: 0 6px; }
+  .akuris-table > thead th { background-image: none !important; background-color: transparent !important; }
+  .akuris-table tbody > tr:not([data-table-static]) {
+    --row-accent: hsl(var(--border));
+    border: 0 !important;
+    background-color: hsl(var(--surface-elevated, var(--card)));
+  }
+  .akuris-table tbody > tr:not([data-table-static]) > td {
+    border-top: 1px solid hsl(var(--border) / 0.7);
+    border-bottom: 1px solid hsl(var(--border) / 0.7);
+    background-color: inherit;
+  }
+  .akuris-table tbody > tr:not([data-table-static]) > td:first-child {
+    border-left: 1px solid hsl(var(--border) / 0.7);
+    border-top-left-radius: 0.625rem; border-bottom-left-radius: 0.625rem;
+    box-shadow: inset 3px 0 0 var(--row-accent);
+  }
+  .akuris-table tbody > tr:not([data-table-static]) > td:last-child {
+    border-right: 1px solid hsl(var(--border) / 0.7);
+    border-top-right-radius: 0.625rem; border-bottom-right-radius: 0.625rem;
+  }
+  .akuris-table tbody > tr:not([data-table-static]):hover > td {
+    border-color: hsl(var(--primary) / 0.35);
+  }
+  .akuris-table tbody > tr:has([data-chip-tone="critical"]),
+  .akuris-table tbody > tr:has([data-chip-tone="blocked"]) { --row-accent: hsl(var(--destructive)); }
+  .akuris-table tbody > tr:has([data-chip-tone="high"]) { --row-accent: hsl(var(--severity-high)); }
+  .akuris-table tbody > tr:has([data-chip-tone="medium"]),
+  .akuris-table tbody > tr:has([data-chip-tone="attention"]) { --row-accent: hsl(var(--warning)); }
+  .akuris-table tbody > tr:has([data-chip-tone="low"]),
+  .akuris-table tbody > tr:has([data-chip-tone="done"]) { --row-accent: hsl(var(--state-done)); }
+  .akuris-table tbody > tr:has([data-chip-tone="active"]) { --row-accent: hsl(var(--state-active)); }
+  .akuris-table tbody > tr:has(td[colspan]) > td { box-shadow: none; }
+}
