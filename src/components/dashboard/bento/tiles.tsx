@@ -180,7 +180,7 @@ export function ContratosTile({ delay }: { delay?: number }) {
                     <span className="block truncate text-sm font-medium group-hover:text-primary">{c.nome}</span>
                     {c.fornecedores?.nome && <span className="block truncate text-xs text-muted-foreground">{c.fornecedores.nome}</span>}
                   </span>
-                  <Chip family="state" tone={urg === 'urgente' ? 'critical' as any : urg === 'proximo' ? 'high' as any : 'neutral'} className="shrink-0">
+                  <Chip family="severity" tone={urg === 'urgente' ? 'critical' : urg === 'proximo' ? 'medium' : 'none'} className="shrink-0">
                     {dias === 0 ? t('bento.contracts.today') : t('bento.contracts.inDays', { count: dias })}
                   </Chip>
                 </button>

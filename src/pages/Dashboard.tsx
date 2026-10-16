@@ -5,8 +5,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOverviewCard';
 import { RecentActivities } from '@/components/dashboard/RecentActivities';
-import { RiskScoreTimeline } from '@/components/dashboard/RiskScoreTimeline';
-import { GrcHealthBreakdown } from '@/components/dashboard/GrcHealthBreakdown';
+import { IndiceTile, RiscosTile, PlanosTile, IncidentesTile, ContratosTile } from '@/components/dashboard/bento/tiles';
+import { usePermissions } from '@/hooks/usePermissions';
 import { DashboardMeta, type KpiKey } from '@/components/dashboard/DashboardMeta';
 import { KpiDrillDownDrawer, type DrillDownKey } from '@/components/dashboard/KpiDrillDownDrawer';
 import { useAtivosStats } from '@/hooks/useAtivosStats';
@@ -49,6 +49,7 @@ import { useDashboardLive } from '@/hooks/useDashboardLive';
 export default function Dashboard() {
   const { profile } = useAuth();
   const { t } = useLanguage();
+  const { canAccess } = usePermissions();
 
   // O toast de boas-vindas é disparado em /auth (Auth.tsx) antes do redirect
   // para o dashboard. Não disparamos aqui para evitar reaparecer ao navegar
@@ -167,24 +168,26 @@ export default function Dashboard() {
         />
 
 
-        <GrcHealthBreakdown />
-
-        {/* Para onde vai a carteira · o que está por avaliar */}
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 lg:gap-5 w-full">
-          <div className="min-w-0 xl:col-span-2">
-            <RiskScoreTimeline />
-          </div>
-          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-            <FrameworksOverviewCard />
-          </div>
+        {/* Painel em blocos: um bloco por pergunta, só módulos acessíveis. */}
+        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 lg:gap-5">
+          {canAccess('dashboard') !== false && <IndiceTile delay={0} />}
+          {canAccess('riscos') && <RiscosTile delay={60} />}
+          {(canAccess('planos-acao') || canAccess('incidentes')) && (
+            <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
+              {canAccess('planos-acao') && <PlanosTile delay={120}
+                pendentes={planosStats.data?.pendentes || 0}
+                atrasados={planosStats.data?.atrasados || 0}
+                concluidos={planosStats.data?.concluidos || 0} />}
+              {canAccess('incidentes') && <IncidentesTile delay={180}
+                emCurso={activeIncidents}
+                criticos={incidentesStats.data?.criticosEmCurso || 0}
+                altos={incidentesStats.data?.altosEmCurso || 0} />}
+            </div>
+          )}
+          {canAccess('gap-analysis') && <div className="min-w-0 animate-fade-in [&>*]:h-full"><FrameworksOverviewCard /></div>}
+          {canAccess('contratos') && <ContratosTile delay={240} />}
+          <RecentActivities className="min-h-[16rem]" />
         </div>
-
-
-
-        {/* O último bloco come o espaço que sobra, em vez de deixar uma faixa
-            de fundo vazia por baixo. */}
-        <RecentActivities className="flex-1 min-h-[16rem]" />
-
       </div>
     </TooltipProvider>
   );
