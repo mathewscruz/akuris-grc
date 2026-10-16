@@ -120,6 +120,7 @@ export default function Documentos() {
   const [documentSort, setDocumentSort] = useListState<SortState | null>('sort', null);
   const [currentPage, setCurrentPage] = useListState('currentPage', 1);
   const [itemsPerPage, setItemsPerPage] = useListState('itemsPerPage', 20);
+  const [recordView, setRecordView] = useListState<'list' | 'grid'>('recordView', 'list');
   
   // Buscar estatísticas dos documentos
   const { data: statsDocumentos, isLoading: statsLoading, isError: statsError } = useDocumentosStats();
@@ -618,6 +619,8 @@ export default function Documentos() {
             <IconSearch className="h-3 w-3 mr-1" />
             {t('documentos.lista.buscaAvancada')}
           </Button>
+          <Button variant={recordView === 'list' ? 'secondary' : 'ghost'} size="icon" aria-label={t('layout.listView')} title={t('layout.listView')} aria-pressed={recordView === 'list'} onClick={() => setRecordView('list')}><IconList className="h-4 w-4" /></Button>
+          <Button variant={recordView === 'grid' ? 'secondary' : 'ghost'} size="icon" aria-label={t('layout.gridView')} title={t('layout.gridView')} aria-pressed={recordView === 'grid'} onClick={() => setRecordView('grid')}><IconGrid className="h-4 w-4" /></Button>
           {temFiltrosAtivos && (
             <Button variant="ghost" size="sm" onClick={limparFiltros}>
               {t('documentos.lista.limpar')}
@@ -637,6 +640,7 @@ export default function Documentos() {
         )}
             </div>
             <DocumentosLista
+              view={recordView}
               documentos={paginadosComResponsavel}
               sort={documentSort}
               onSort={field => { setDocumentSort(previous => ({ field, direction: previous?.field === field && previous.direction === 'asc' ? 'desc' : 'asc' })); setCurrentPage(1); }}

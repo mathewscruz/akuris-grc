@@ -477,7 +477,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   </div>
                 ) : (
                   <div className="h-64">
-                    <AkurisArea height={256} data={tendencia.map(d => ({ label: d.mes, value: d.eficacia }))} format={value => `${value}%`} />
+                    <AkurisArea height={256} domain={[0, 100]} data={tendencia.map(d => ({ label: d.mes, value: d.eficacia }))} format={value => `${value}%`} />
                   </div>
                 )}
               </CardContent>

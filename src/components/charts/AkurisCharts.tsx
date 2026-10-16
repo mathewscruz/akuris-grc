@@ -39,8 +39,8 @@ export function ChartCard({ label, title, value, trend, actions, children, class
 const tooltipStyle = CHART_TOOLTIP_STYLE;
 
 /** Evolução no tempo: área com degradê, balão e linha de meta opcional. */
-export function AkurisArea({ data, height = 200, target, targetLabel, format }: {
-  data: Array<{ label: string; value: number }>; height?: number; target?: number; targetLabel?: string; format?: (v: number) => string;
+export function AkurisArea({ data, height = 200, target, targetLabel, format, domain }: {
+  data: Array<{ label: string; value: number }>; height?: number; target?: number; targetLabel?: string; format?: (v: number) => string; domain?: [number, number];
 }) {
   const id = React.useId().replace(/:/g, '');
   const motion = useMotionAllowed();
@@ -55,7 +55,7 @@ export function AkurisArea({ data, height = 200, target, targetLabel, format }: 
         </defs>
         <CartesianGrid stroke={CHART_GRID} vertical={false} />
         <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <YAxis domain={domain} tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => (format ? format(v) : v)} />
         {target !== undefined && <ReferenceLine y={target} stroke={CHART_AXIS} strokeDasharray="4 4" label={{ value: targetLabel, fill: CHART_AXIS, fontSize: CHART_FONT.axis, position: 'right' }} />}
         <Area type="monotone" dataKey="value" stroke={CHART_TREND} strokeWidth={2} fill={`url(#ar-${id})`} isAnimationActive={motion} animationDuration={900} activeDot={{ r: 5 }} />

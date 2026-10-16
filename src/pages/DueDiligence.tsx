@@ -11,11 +11,14 @@ import { DueDiligenceDashboard } from '@/components/due-diligence/DueDiligenceDa
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 
 export default function DueDiligence() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useListState('activeTab', 'fornecedores');
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const { data: stats } = useDueDiligenceStats();
   // O botão de criar vive no cabeçalho, como nos outros módulos; o gestor
   // abre o seu próprio diálogo quando a página lho pede.
   const gestorFornecedores = useRef<FornecedoresManagerHandle>(null);
@@ -97,10 +100,10 @@ export default function DueDiligence() {
       <DueDiligenceDashboard showAttention={activeTab !== 'assessments'} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="fornecedores"><IconOrg className="h-4 w-4" />{t('modules.dueDiligence.suppliers')}</TabsTrigger>
-          <TabsTrigger value="assessments"><IconChecklist className="h-4 w-4" />{t('modules.dueDiligence.newAssessment')}</TabsTrigger>
-          <TabsTrigger value="templates"><IconFile className="h-4 w-4" />{t('modules.dueDiligence.templates')}</TabsTrigger>
+        <TabsList moduleTitle={t('modules.dueDiligence.title')} searchValue={supplierSearch} onSearchChange={activeTab === 'fornecedores' ? setSupplierSearch : undefined}>
+          <TabsTrigger value="fornecedores" count={stats?.totalFornecedores}><IconOrg className="h-4 w-4" />{t('modules.dueDiligence.suppliers')}</TabsTrigger>
+          <TabsTrigger value="assessments" count={stats?.totalAssessments}><IconChecklist className="h-4 w-4" />{t('modules.dueDiligence.newAssessment')}</TabsTrigger>
+          <TabsTrigger value="templates" count={stats?.totalTemplates}><IconFile className="h-4 w-4" />{t('modules.dueDiligence.templates')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="fornecedores" className="space-y-6">
@@ -108,6 +111,8 @@ export default function DueDiligence() {
             ref={gestorFornecedores}
             focoId={focoFornecedor}
             botaoNovoNoCabecalho
+            headerSearch={supplierSearch}
+            onHeaderSearchChange={setSupplierSearch}
             acoesAvaliacao={{
               ver: (f) => {
                 setAssessmentFilter({ fornecedorId: f.id, fornecedorNome: f.nome });

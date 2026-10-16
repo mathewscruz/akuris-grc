@@ -512,7 +512,7 @@ export default function Contratos() {
               <IconFile className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>
-            <TabsTrigger value="fornecedores" className="flex items-center gap-2">
+            <TabsTrigger value="fornecedores" count={statsContratos?.totalFornecedores} className="flex items-center gap-2">
               <IconOrg className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.fornecedores')}</span>
             </TabsTrigger>
