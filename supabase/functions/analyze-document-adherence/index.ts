@@ -339,6 +339,7 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
     ? [`${reqsNaoAvaliados} requisitos não foram avaliados por indisponibilidade temporária da IA. Reanalise o documento para completar.`, ...junto.recomendacoes]
     : junto.recomendacoes;
 
+  const { data: atualMeta } = await supabase.from('gap_analysis_adherence_assessments').select('metadados_analise').eq('id', job.assessment_id).maybeSingle();
   const { error: upErr } = await supabase.from('gap_analysis_adherence_assessments').update({
     status: 'concluido',
     resultado_geral: resolveResultadoGeral(score, contagem),
@@ -346,6 +347,7 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
     pontos_fortes: pontosFortes, pontos_melhoria: acoes.map((a: any) => ({ titulo: a.titulo, descricao: a.descricao, prioridade: a.prioridade })),
     recomendacoes, analise_detalhada: interp?.resumo ? `${interp.resumo}\n\n${junto.analise_detalhada}` : junto.analise_detalhada,
     metadados_analise: {
+      ...((atualMeta?.metadados_analise as Record<string, unknown>) || {}),
       modelo_usado: MODELOS.LEITURA_LONGA, provider: 'lovable-ai-gateway', _score_fonte: 'deterministic',
       tempo_processamento: Date.now(),
       total_requisitos: ctx.total_escopo, total_requisitos_catalogo: ctx.total_catalogo,
@@ -358,7 +360,6 @@ async function finalizar(supabase: SupabaseClient, job: any, ctx: any, lotes: an
       escopo_ids: lotes.flat().map((q: any) => q.id), fora_escopo_ids: ctx.fora_escopo_ids || [],
       documento_tema: ctx.documento_tema || null, escopo_justificativa: ctx.escopo_justificativa || null,
       versao_anterior_id: ctx.versao_anterior_id || null, comparacao,
-      arquivo_storage: ctx.arquivo_storage || null, arquivo_original: ctx.arquivo_original || null,
     },
     updated_at: new Date().toISOString(),
   }).eq('id', job.assessment_id).eq('empresa_id', job.empresa_id);
@@ -413,6 +414,29 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
     return json({ success: true, jobId: j.id, status: j.status }, 202);
   }
 
+  // Usuário confirmou (ou ajustou) os requisitos que se aplicam à política.
+  if (body.acao === 'confirmar_escopo') {
+    const { data: j } = await supabase.from('analise_aderencia_jobs').select('*')
+      .eq('assessment_id', assessmentId).eq('empresa_id', empresaId).maybeSingle();
+    if (!j || j.status !== 'aguardando_escopo') return json({ error: 'Análise não está aguardando confirmação' }, 409);
+    const catalogo: any[] = j.contexto?.catalogo || [];
+    const pedidos = new Set<string>(Array.isArray(body.requisitos) ? body.requisitos.map(String) : (j.contexto?.sugeridos || []));
+    const escolhidos = catalogo.filter((r: any) => pedidos.has(r.id));
+    if (!escolhidos.length) return json({ error: 'Selecione ao menos um requisito' }, 400);
+    const trechos: string[] = j.trechos || [];
+    const lotes = dividirEmLotes(escolhidos, TAM_LOTE);
+    const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
+    await supabase.from('analise_aderencia_jobs').update({
+      status: 'processando', etapa: trechos.length > 1 ? 'resumindo' : 'avaliando',
+      lotes, total, progresso: 0, resumos: [], resultados: [],
+      saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10, locked_until: null, updated_at: new Date().toISOString(),
+      contexto: { ...j.contexto, catalogo: undefined, total_escopo: escolhidos.length,
+        fora_escopo_ids: catalogo.filter((r: any) => !pedidos.has(r.id)).map((r: any) => r.id) },
+    }).eq('id', j.id);
+    agendarProximo(j.id, 0);
+    return json({ success: true, jobId: j.id, total }, 202);
+  }
+
   let documentText = '';
   if (isDocgen) {
     if (!Array.isArray(docgenDocument?.secoes) || !docgenDocument.secoes.length) return json({ error: 'docgenDocument.secoes obrigatório quando source=docgen' }, 400);
@@ -453,19 +477,30 @@ async function iniciar(supabase: SupabaseClient, body: any, empresaId: string, u
 
   if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
+  // Versão anterior (mesma empresa e mesmo framework) para comparar no fim.
+  let versaoAnteriorId: string | null = null;
+  if (typeof body.versaoAnteriorId === 'string') {
+    const { data: prev } = await supabase.from('gap_analysis_adherence_assessments').select('id')
+      .eq('id', body.versaoAnteriorId).eq('empresa_id', empresaId).eq('framework_id', a.framework_id).maybeSingle();
+    versaoAnteriorId = prev?.id || null;
+  }
+
   const trechos = documentText.length <= LIMITE_TEXTO_DIRETO ? [documentText] : dividirTexto(documentText);
-  const lotes = dividirEmLotes(escopo, TAM_LOTE);
-  const etapa = trechos.length > 1 ? 'resumindo' : 'avaliando';
-  const total = (trechos.length > 1 ? trechos.length : 0) + lotes.length;
+  // Upload: primeiro entende a política e propõe o escopo; DocGen já vem com escopo.
+  const classificar = !isDocgen;
+  const lotes = classificar ? [] : dividirEmLotes(escopo, TAM_LOTE);
+  const etapa = classificar ? 'classificando' : (trechos.length > 1 ? 'resumindo' : 'avaliando');
+  const total = classificar ? 1 : (trechos.length > 1 ? trechos.length : 0) + lotes.length;
 
   await supabase.from('analise_aderencia_jobs').delete().eq('assessment_id', assessmentId);
   const { data: job, error: jobErr } = await supabase.from('analise_aderencia_jobs').insert({
     assessment_id: assessmentId, empresa_id: empresaId, user_id: userId,
     etapa, trechos, lotes, total, progresso: 0,
-    saltos_restantes: Math.ceil(total / POR_FATIA) * 4 + 10,
+    saltos_restantes: Math.ceil(Math.max(total, 1) / POR_FATIA) * 4 + 10,
     contexto: {
       framework_nome: framework.nome, framework_versao: framework.versao, nome_analise: a.nome_analise,
-      coverage_block, total_escopo: escopo.length, total_catalogo: requirements.length, documento_tamanho: documentText.length,
+      coverage_block, total_escopo: escopo.length, versao_anterior_id: versaoAnteriorId,
+      catalogo: classificar ? escopo.map((r: any) => ({ ...r, descricao: r.descricao ? String(r.descricao).slice(0, 300) : null })) : undefined, total_catalogo: requirements.length, documento_tamanho: documentText.length,
     },
   }).select('id').single();
   if (jobErr || !job) return json({ error: `Não foi possível iniciar a análise: ${jobErr?.message}` }, 500);
