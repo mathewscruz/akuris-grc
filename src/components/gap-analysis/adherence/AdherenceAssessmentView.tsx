@@ -271,15 +271,24 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
       {/* Lista de Avaliações */}
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
+          <div className="flex gap-1">
+            {(['todas', 'minhas'] as const).map(f => (
+              <Button key={f} size="sm" variant={filtroAutor === f ? 'secondary' : 'ghost'} onClick={() => setFiltroAutor(f)}>
+                {t(`gapAnalysis.adherenceUi.view.filter_${f}`)}
+              </Button>
+            ))}
+          </div>
+        </div>
         {isLoading ? (
           <div className="flex min-h-[140px] flex-col items-center justify-center gap-2">
             <AkurisPulse size={40} />
             <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.loadingAssessments')}</p>
           </div>
-        ) : assessments && assessments.length > 0 ? (
+        ) : listaVisivel.length > 0 ? (
           <ul className="divide-y rounded-lg border">
-            {(assessments as any[]).map((assessment: any, i: number) => {
+            {listaVisivel.map((assessment: any, i: number) => {
               const concluida = assessment.status === 'concluido';
               const v = veredictoDe(assessment);
               const acoes = Array.isArray(assessment.metadados_analise?.acoes) ? assessment.metadados_analise.acoes : [];
