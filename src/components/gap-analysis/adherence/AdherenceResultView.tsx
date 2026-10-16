@@ -18,6 +18,15 @@ import { logger } from '@/lib/logger';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { exigirEscrita } from '@/lib/supabase-write';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useDocGen } from '@/contexts/DocGenContext';
+import { useAuth } from '@/components/AuthProvider';
+import { sugerirPrazoPorPrioridade } from '@/lib/preenchimento-inteligente';
+import { AdherenceAssessmentDialog } from './AdherenceAssessmentDialog';
+
+type Acao = { titulo: string; descricao?: string; prioridade?: string; requisito_codigo?: string | null; requirement_id?: string | null };
+type Comparacao = { resolvidos: number; pendentes: number; melhorados: number; piorados: number };
+const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
 interface AdherenceResultViewProps {
   assessment: AdherenceAssessment;
   onBack: () => void;
@@ -30,6 +39,60 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
   const [applying, setApplying] = useState(false);
+  const { openDocGen } = useDocGen();
+  const { user } = useAuth();
+  const [planosCriados, setPlanosCriados] = useState<Set<number>>(new Set());
+  const [criandoPlano, setCriandoPlano] = useState<number | null>(null);
+  const [novaVersaoOpen, setNovaVersaoOpen] = useState(false);
+  const meta = ((assessment as { metadados_analise?: Record<string, unknown> }).metadados_analise ?? {}) as Record<string, any>;
+  const veredito = meta.veredito as keyof typeof TOM_VEREDITO | undefined;
+  const acoes: Acao[] = Array.isArray(meta.acoes) ? meta.acoes : [];
+  const foraIds: string[] = Array.isArray(meta.fora_escopo_ids) ? meta.fora_escopo_ids : [];
+  const comparacao = meta.comparacao as Comparacao | null | undefined;
+
+  const { data: foraEscopo } = useOptimizedQuery(
+    async () => {
+      if (!foraIds.length) return { data: [], error: null };
+      const { data, error } = await supabase
+        .from('gap_analysis_requirements')
+        .select('id, codigo, titulo')
+        .in('id', foraIds.slice(0, 500))
+        .order('ordem');
+      if (error) throw error;
+      return { data, error: null };
+    },
+    [assessment.id, foraIds.length],
+    { cacheKey: `adherence-fora-${assessment.id}`, cacheDuration: 300000 }
+  );
+
+  /** Um clique: plano de ação ligado ao framework, prazo pela prioridade, responsável = quem clicou. */
+  const criarPlano = async (acao: Acao, idx: number) => {
+    if (!empresaId) return;
+    setCriandoPlano(idx);
+    try {
+      const prioridade = ['alta', 'media', 'baixa'].includes(acao.prioridade || '') ? acao.prioridade! : 'media';
+      await exigirEscrita(supabase.from('planos_acao').insert({
+        empresa_id: empresaId,
+        titulo: acao.titulo.slice(0, 200),
+        descricao: [acao.descricao, `${assessment.framework_nome} · ${assessment.documento_nome}`].filter(Boolean).join('\n\n'),
+        prioridade,
+        status: 'pendente',
+        prazo: sugerirPrazoPorPrioridade(prioridade),
+        responsavel_id: user?.id ?? null,
+        created_by: user?.id ?? null,
+        modulo_origem: 'frameworks',
+        registro_origem_id: frameworkId ?? null,
+        registro_origem_titulo: `${assessment.framework_nome}${acao.requisito_codigo ? ` · ${acao.requisito_codigo}` : ''} · ${assessment.documento_nome}`,
+      }));
+      setPlanosCriados(prev => new Set(prev).add(idx));
+      toast({ title: t('gapAnalysis.adherenceUi.verdict.planCreated'), description: acao.titulo });
+    } catch (err) {
+      logger.error('Erro ao criar plano a partir da análise', { error: err instanceof Error ? err.message : String(err) });
+      toast({ title: t('gapAnalysis.adherenceUi.verdict.planError'), variant: 'destructive' });
+    } finally {
+      setCriandoPlano(null);
+    }
+  };
   const dateLocale = locale === 'en' ? enUS : ptBR;
   
   const { data: details } = useOptimizedQuery(
@@ -280,7 +343,74 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         </div>
       </div>
 
-      {/* Resultado Geral */}
+      {/* Veredito: responde a pergunta "está em compliance?" */}
+      {veredito && (
+        <Card className="p-6 md:p-8 border">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+            {t('gapAnalysis.adherenceUi.verdict.question', { norma: `${assessment.framework_nome ?? ''} ${assessment.framework_versao ?? ''}`.trim() })}
+          </p>
+          <div className="flex flex-wrap items-center gap-3 mb-3">
+            <StatusBadge tone={TOM_VEREDITO[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge>
+            <span className="text-3xl font-bold text-foreground">{assessment.percentual_conformidade}%</span>
+          </div>
+          {meta.veredito_resumo && <p className="text-sm text-foreground leading-relaxed">{meta.veredito_resumo}</p>}
+          <p className="text-xs text-muted-foreground mt-3">
+            {t('gapAnalysis.adherenceUi.verdict.scopeNote', { n: Array.isArray(meta.escopo_ids) ? meta.escopo_ids.length : 0 })}
+            {meta.documento_tema ? ` · ${meta.documento_tema}` : ''} · {assessment.documento_nome}
+          </p>
+          {comparacao && (
+            <p className="text-sm text-foreground mt-3 rounded-md border bg-muted/30 px-3 py-2">
+              {t('gapAnalysis.adherenceUi.verdict.comparison', { resolvidos: comparacao.resolvidos, pendentes: comparacao.pendentes })}
+              {comparacao.piorados > 0 ? ` · ${t('gapAnalysis.adherenceUi.verdict.comparisonWorse', { piorados: comparacao.piorados })}` : ''}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {frameworkId && acoes.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => openDocGen({ frameworkId, frameworkName: assessment.framework_nome ?? undefined, mode: 'generate' })}>
+                {t('gapAnalysis.adherenceUi.verdict.fixWithDocgen')}
+              </Button>
+            )}
+            {frameworkId && (
+              <Button variant="outline" size="sm" onClick={() => setNovaVersaoOpen(true)}>
+                <IconRefresh className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.verdict.newVersion')}
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* O que precisa fazer */}
+      {veredito && acoes.length > 0 && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+            <IconWarning className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
+            {t('gapAnalysis.adherenceUi.verdict.whatToDo', { count: acoes.length })}
+          </h3>
+          <div className="space-y-3">
+            {acoes.map((acao, idx) => (
+              <div key={idx} className="rounded-lg border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
+                  <h4 className="font-semibold text-foreground">{acao.titulo}</h4>
+                  <Badge variant={getPrioridadeBadgeVariant(acao.prioridade || '')} className="whitespace-nowrap">{getPrioridadeLabel(acao.prioridade || '')}</Badge>
+                </div>
+                {acao.descricao && <p className="text-sm text-muted-foreground">{acao.descricao}</p>}
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+                  <span className="text-xs text-muted-foreground">
+                    {acao.requisito_codigo ? t('gapAnalysis.adherenceUi.verdict.requirement', { codigo: acao.requisito_codigo }) : ''}
+                  </span>
+                  <Button size="sm" variant="ghost" disabled={planosCriados.has(idx) || criandoPlano === idx} onClick={() => criarPlano(acao, idx)}>
+                    {criandoPlano === idx && <AkurisPulse size={14} className="mr-2" />}
+                    {planosCriados.has(idx) ? t('gapAnalysis.adherenceUi.verdict.planExists') : t('gapAnalysis.adherenceUi.verdict.createPlan')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Resultado Geral (análises antigas, sem veredito) */}
+      {!veredito && (
       <Card className="p-8 border">
         <div className="text-center">
           <div className="inline-flex items-center justify-center mb-3">
@@ -306,27 +436,35 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           </p>
         </div>
       </Card>
+      )}
 
       {/* Pontos Fortes */}
       {assessment.pontos_fortes && assessment.pontos_fortes.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <IconSuccess className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-            {t('gapAnalysis.adherenceUi.result.strongPointsTitle', { count: assessment.pontos_fortes.length })}
+            {veredito
+              ? t('gapAnalysis.adherenceUi.verdict.whatsGood', { count: assessment.pontos_fortes.length })
+              : t('gapAnalysis.adherenceUi.result.strongPointsTitle', { count: assessment.pontos_fortes.length })}
           </h3>
           <div className="space-y-3">
             {assessment.pontos_fortes.map((ponto: PontoForte, index: number) => (
               <Card key={index} className="p-4">
                 <h4 className="font-semibold text-foreground mb-2">{ponto.titulo}</h4>
                 <p className="text-sm text-muted-foreground">{ponto.descricao}</p>
+                {(ponto as PontoForte & { citacao?: string }).citacao && (
+                  <blockquote className="mt-2 border-l-2 border-border pl-3 text-sm italic text-muted-foreground">
+                    “{(ponto as PontoForte & { citacao?: string }).citacao}”
+                  </blockquote>
+                )}
               </Card>
             ))}
           </div>
         </Card>
       )}
 
-      {/* Pontos de Melhoria */}
-      {assessment.pontos_melhoria && assessment.pontos_melhoria.length > 0 && (
+      {/* Pontos de Melhoria (análises antigas) */}
+      {!veredito && assessment.pontos_melhoria && assessment.pontos_melhoria.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <IconWarning className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
@@ -409,6 +547,40 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
             ))}
           </Accordion>
         </Card>
+      )}
+
+      {/* Fora do escopo desta política */}
+      {veredito && foraEscopo && foraEscopo.length > 0 && (
+        <Card className="p-6">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="fora" className="border-none">
+              <AccordionTrigger className="py-0">
+                <span className="text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.outOfScope', { count: foraEscopo.length })}</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground mb-3 pt-2">{t('gapAnalysis.adherenceUi.verdict.outOfScopeHint')}</p>
+                <ul className="space-y-1.5">
+                  {foraEscopo.map((r: any) => (
+                    <li key={r.id} className="text-sm text-foreground">
+                      <span className="mr-2 font-mono text-xs text-muted-foreground">{r.codigo}</span>{r.titulo}
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </Card>
+      )}
+
+      {frameworkId && (
+        <AdherenceAssessmentDialog
+          open={novaVersaoOpen}
+          onOpenChange={setNovaVersaoOpen}
+          onSuccess={() => onApplied?.()}
+          preSelectedFrameworkId={frameworkId}
+          preSelectedFrameworkNome={assessment.framework_nome ?? undefined}
+          versaoAnterior={{ id: assessment.id, nome: assessment.documento_nome ?? '' }}
+        />
       )}
 
       {/* Análise Completa */}
