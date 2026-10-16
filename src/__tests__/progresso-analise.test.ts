@@ -16,7 +16,7 @@ describe('progresso real da análise de compliance', () => {
   it('avaliação de documento com partes vai de 45 a 90%', () => {
     const p = calcularProgresso({ etapa: 'avaliando', progresso: 9, total: 10, trechos: new Array(8), contexto: { total_escopo: 40 } });
     expect(p.pct).toBe(68);
-    expect(p.pontos).toEqual({ feitos: 20, total: 40 });
+    expect(p.requisitos).toEqual({ feitos: 20, total: 40 });
   });
   it('documento de uma parte avalia de 20 a 90% (sem fase parada)', () => {
     const p = calcularProgresso({ etapa: 'avaliando', progresso: 1, total: 2, trechos: ['x'], contexto: { total_escopo: 38, fora_escopo_ids: new Array(83) } });

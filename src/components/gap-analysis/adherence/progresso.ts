@@ -19,7 +19,7 @@ export interface ProgressoAnalise {
   /** Teto da fase atual: a animação pode avançar devagar até aqui, nunca além. */
   teto: number;
   partes: { feitas: number; total: number } | null;
-  pontos: { feitos: number; total: number } | null;
+  requisitos: { feitos: number; total: number } | null;
   tema: string | null;
   escopo: { aplicaveis: number; total: number } | null;
 }
@@ -27,7 +27,7 @@ export interface ProgressoAnalise {
 const faixa = (ini: number, fim: number, frac: number) => Math.round(ini + (fim - ini) * Math.max(0, Math.min(1, frac)));
 
 export function calcularProgresso(job: JobAnalise | null | undefined): ProgressoAnalise {
-  const base: ProgressoAnalise = { fase: 'entendendo', pct: 10, teto: 19, partes: null, pontos: null, tema: null, escopo: null };
+  const base: ProgressoAnalise = { fase: 'entendendo', pct: 10, teto: 19, partes: null, requisitos: null, tema: null, escopo: null };
   if (!job) return base;
 
   const nTrechos = Array.isArray(job.trechos) ? job.trechos.length : 0;
@@ -41,7 +41,7 @@ export function calcularProgresso(job: JobAnalise | null | undefined): Progresso
   const escopo = aplicaveis ? { aplicaveis, total: aplicaveis + fora } : null;
   const nLotes = Math.max(0, total - (temPartes ? nTrechos : 0));
   const lotesFeitos = Math.max(0, Math.min(nLotes, progresso - (temPartes ? nTrechos : 0)));
-  const pontos = aplicaveis && nLotes ? { feitos: Math.min(aplicaveis, Math.round((lotesFeitos / nLotes) * aplicaveis)), total: aplicaveis } : null;
+  const requisitos = aplicaveis && nLotes ? { feitos: Math.min(aplicaveis, Math.round((lotesFeitos / nLotes) * aplicaveis)), total: aplicaveis } : null;
   const inicioAvaliar = temPartes ? 45 : 20;
 
   switch (job.etapa) {
@@ -49,17 +49,17 @@ export function calcularProgresso(job: JobAnalise | null | undefined): Progresso
       return { ...base, tema, escopo };
     case 'resumindo': {
       const feitas = Math.min(progresso, nTrechos);
-      return { fase: 'lendo', pct: faixa(20, 45, nTrechos ? feitas / nTrechos : 0), teto: 44, partes: { feitas, total: nTrechos }, pontos: null, tema, escopo };
+      return { fase: 'lendo', pct: faixa(20, 45, nTrechos ? feitas / nTrechos : 0), teto: 44, partes: { feitas, total: nTrechos }, requisitos: null, tema, escopo };
     }
     case 'avaliando':
       return {
         fase: 'avaliando', pct: faixa(inicioAvaliar, 90, nLotes ? lotesFeitos / nLotes : 0), teto: 89,
-        partes: temPartes ? { feitas: nTrechos, total: nTrechos } : null, pontos, tema, escopo,
+        partes: temPartes ? { feitas: nTrechos, total: nTrechos } : null, requisitos, tema, escopo,
       };
     case 'finalizando':
-      return { fase: 'montando', pct: 90, teto: 99, partes: temPartes ? { feitas: nTrechos, total: nTrechos } : null, pontos: pontos && { ...pontos, feitos: pontos.total }, tema, escopo };
+      return { fase: 'montando', pct: 90, teto: 99, partes: temPartes ? { feitas: nTrechos, total: nTrechos } : null, requisitos: requisitos && { ...requisitos, feitos: requisitos.total }, tema, escopo };
     case 'concluido':
-      return { fase: 'concluido', pct: 100, teto: 100, partes: null, pontos: pontos && { ...pontos, feitos: pontos.total }, tema, escopo };
+      return { fase: 'concluido', pct: 100, teto: 100, partes: null, requisitos: requisitos && { ...requisitos, feitos: requisitos.total }, tema, escopo };
     default:
       return { ...base, tema, escopo };
   }

@@ -67,7 +67,7 @@ export function AdherenceAnalysisProgress({ progresso, isError = false, errorMes
 
   const detalheFase = (f: string) => {
     if (f === 'lendo' && progresso.partes) return k('readingPart', { done: progresso.partes.feitas, total: progresso.partes.total });
-    if (f === 'avaliando' && progresso.pontos) return k('evaluatingPoints', { done: progresso.pontos.feitos, total: progresso.pontos.total });
+    if (f === 'avaliando' && progresso.requisitos) return k('evaluatingPoints', { done: progresso.requisitos.feitos, total: progresso.requisitos.total });
     return k(`${f}_d`);
   };
 
@@ -75,7 +75,7 @@ export function AdherenceAnalysisProgress({ progresso, isError = false, errorMes
     progresso.tema && { l: k('foundTheme'), v: progresso.tema },
     progresso.escopo && { l: k('foundScope'), v: k('ofTotal', { a: progresso.escopo.aplicaveis, b: progresso.escopo.total }) },
     progresso.partes && { l: k('foundParts'), v: k('ofTotal', { a: progresso.partes.feitas, b: progresso.partes.total }) },
-    progresso.pontos && { l: k('foundPoints'), v: k('ofTotal', { a: progresso.pontos.feitos, b: progresso.pontos.total }) },
+    progresso.requisitos && { l: k('foundPoints'), v: k('ofTotal', { a: progresso.requisitos.feitos, b: progresso.requisitos.total }) },
   ].filter(Boolean) as { l: string; v: string }[];
 
   const fmt = (s: number) => `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
