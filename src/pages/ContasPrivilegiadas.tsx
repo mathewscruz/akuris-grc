@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { loadPrivilegedAccounts } from '@/lib/queries/privileged-accounts';
 import { privilegedAccountStatus } from '@/lib/privileged-review';
@@ -280,7 +281,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'system_owner_name', label: t('experience.systemOwner'), mobilePriority: 1, sortable: true,
-      render: (_: unknown, c: ContaPrivilegiada) => c.system_owner_name || t('experience.notAssigned'),
+      render: (_: unknown, c: ContaPrivilegiada) => <OwnerCell name={c.system_owner_name} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: 'review_deadline', label: t('experience.systemReview'), mobilePriority: 3, sortable: true,

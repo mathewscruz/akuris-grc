@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
 import { norm } from '@/lib/metrics';
@@ -353,7 +354,7 @@ export default function Incidentes() {
       key: "responsavel_tratamento" as keyof Incidente,
       label: t("experience.assignedTo"),
       mobilePriority: 2,
-      render: (_value: any, item: Incidente) => nomeResponsavel(item.responsavel_tratamento) || t("experience.notAssigned"),
+      render: (_value: any, item: Incidente) => <OwnerCell name={nomeResponsavel(item.responsavel_tratamento)} emptyLabel={t("experience.notAssigned")} />,
     },
     {
       key: "proximo_prazo" as keyof Incidente,
