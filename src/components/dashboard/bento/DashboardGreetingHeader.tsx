@@ -15,7 +15,7 @@ export function DashboardGreetingHeader({ nome, periodo, onPeriodo }: { nome: st
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Select value={String(periodo)} onValueChange={(v) => onPeriodo(Number(v))}>
-          <SelectTrigger className="h-11 w-auto gap-2 rounded-xl border-border bg-card px-4" aria-label={t('bento.period.label')}>
+          <SelectTrigger className="h-11 w-auto gap-2 rounded-xl border-border bg-card px-4 focus:ring-1 focus:ring-inset focus:ring-primary focus:ring-offset-0 focus:border-primary data-[state=open]:border-primary" aria-label={t('bento.period.label')}>
             <IconCalendar className="h-4 w-4" />
             <SelectValue />
           </SelectTrigger>

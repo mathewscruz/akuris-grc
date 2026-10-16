@@ -28,16 +28,39 @@ export function useSidebarFit(): SidebarFit {
  * Escolhe a densidade pela altura disponível por item (nos dois sentidos),
  * recalculando em resize, rotação e mudanças do contêiner.
  */
+/**
+ * Escolhe a densidade com histerese: só sobe com folga acima do limite e só
+ * desce abaixo dele, para não oscilar quando a altura está no limite.
+ */
+export function escolherDensidade(per: number, atual: SidebarFit, folga = 4): SidebarFit {
+  const alvo: SidebarFit = per >= 64 ? 'comfortable' : per >= 54 ? 'compact' : 'dense';
+  const iAlvo = LEVELS.indexOf(alvo);
+  const iAtual = LEVELS.indexOf(atual);
+  if (iAlvo === iAtual) return atual;
+  if (iAlvo < iAtual) {
+    // subir (mais espaço): exige folga acima do limite
+    const limite = iAtual === 2 ? 54 : 64;
+    return per >= limite + folga ? alvo : atual;
+  }
+  // descer: exige ficar abaixo do limite menos a folga
+  const limite = iAtual === 0 ? 64 : 54;
+  return per < limite - folga ? alvo : atual;
+}
+
 export function useAutoFit(contentRef: RefObject<HTMLElement>): SidebarFit {
   const [fit, setFit] = useState<SidebarFit>(() => initialGuess());
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastH = useRef<number | null>(null);
 
   const measure = () => {
     const el = contentRef.current;
     if (!el) return;
+    const cs = getComputedStyle(el);
+    const h = el.clientHeight - parseFloat(cs.paddingTop || '0') - parseFloat(cs.paddingBottom || '0');
+    if (lastH.current !== null && Math.abs(h - lastH.current) < 8) return;
+    lastH.current = h;
     const items = el.querySelectorAll(':scope > ul > li').length || 1;
-    const per = (el.clientHeight - 16) / items;
-    setFit(per >= 64 ? 'comfortable' : per >= 54 ? 'compact' : 'dense');
+    setFit((atual) => escolherDensidade(h / items, atual));
   };
   const schedule = () => {
     if (tRef.current) clearTimeout(tRef.current);
