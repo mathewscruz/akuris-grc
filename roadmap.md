@@ -26,7 +26,7 @@
 - [x] 5b: Trust Center público por empresa (Configurações → Trust Center, página /trust/:endereço).
 - [x] 5c: resposta automática a questionários (Configurações → Trust Center, 1 crédito IA, CSV).
 # Análise de política "está em compliance?" (aprovado 16/10)
-- [x] Escopo: IA identifica tema e requisitos aplicáveis; usuário confirma antes da avaliação.
+- [x] Escopo: IA identifica tema e requisitos aplicáveis sozinha, sem pedir seleção ao usuário.
 - [x] Veredito (em compliance / com ressalvas / não) + ações priorizadas + fora do escopo.
 - [x] Ações de um clique: criar plano de ação, usar como evidência, corrigir com DocGen (DocGen abre no framework; ainda não recebe a lista de ajustes automaticamente).
 - [x] Nova versão comparada com a anterior.
