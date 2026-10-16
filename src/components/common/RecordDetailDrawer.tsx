@@ -162,7 +162,7 @@ export function RecordDetailDrawer({
         <SheetHeader className="space-y-0 border-b border-border/70 bg-popover px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <div className="flex items-start gap-3 pr-10">
             {Icon && (
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+              <span className="flex shrink-0 items-center justify-center text-primary">
                 <Icon className="h-5 w-5" />
               </span>
             )}

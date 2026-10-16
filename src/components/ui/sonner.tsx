@@ -67,15 +67,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "data-[type=warning]:before:bg-warning",
             "data-[type=info]:before:bg-info",
           ].join(" "),
-          // Chip circular 32px sólido na cor do tom
+          // Só o ícone, na cor do tom (sem chip)
           icon: [
-            "!m-0 shrink-0",
-            "flex h-8 w-8 items-center justify-center rounded-full",
-            "bg-primary text-white",
-            "group-data-[type=success]:!bg-success",
-            "group-data-[type=error]:!bg-destructive",
-            "group-data-[type=warning]:!bg-warning",
-            "group-data-[type=info]:!bg-info",
+            "!m-0 shrink-0 flex h-6 w-6 items-center justify-center [&_svg]:h-5 [&_svg]:w-5",
+            "text-primary",
+            "group-data-[type=success]:!text-success",
+            "group-data-[type=error]:!text-destructive",
+            "group-data-[type=warning]:!text-warning",
+            "group-data-[type=info]:!text-info",
           ].join(" "),
           content: "min-w-0 flex-1 pt-0.5",
           title: "text-sm font-semibold leading-tight text-foreground",

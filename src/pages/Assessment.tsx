@@ -264,8 +264,8 @@ const WelcomeScreen = ({
             {/* Stats grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
-                <div className="h-10 w-10 rounded-lg bg-[hsl(250,80%,60%)]/15 flex items-center justify-center shrink-0">
-                  <ListChecks className="h-5 w-5 text-[hsl(250,80%,55%)]" />
+                <div className="flex items-center justify-center shrink-0 text-primary">
+                  <ListChecks className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-slate-500">{t('publicPortal.assessment.questions')}</p>
@@ -277,8 +277,8 @@ const WelcomeScreen = ({
               </div>
 
               <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
-                <div className="h-10 w-10 rounded-lg bg-[hsl(250,80%,60%)]/15 flex items-center justify-center shrink-0">
-                  <Clock className="h-5 w-5 text-[hsl(250,80%,55%)]" />
+                <div className="flex items-center justify-center shrink-0 text-primary">
+                  <Clock className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-slate-500">{t('publicPortal.assessment.estimatedTime')}</p>

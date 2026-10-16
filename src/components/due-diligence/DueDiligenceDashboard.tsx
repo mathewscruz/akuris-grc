@@ -143,8 +143,8 @@ export function DueDiligenceDashboard({ showAttention = true }: { showAttention?
           <CardContent className="p-0">
             <details className="group/attention">
             <summary className="flex cursor-pointer list-none items-center gap-3 bg-warning/[0.045] px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-warning/25 bg-card text-warning">
-                <IconWarning className="h-4 w-4" />
+              <span className="flex shrink-0 items-center justify-center text-warning">
+                <IconWarning className="h-5 w-5" />
               </span>
               <h3 className="min-w-0 flex-1 text-sm font-semibold">
                 {t('dueDiligence.dashboard.attentionCardTitle')}

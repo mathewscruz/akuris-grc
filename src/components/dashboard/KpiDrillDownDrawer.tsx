@@ -1598,7 +1598,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
       <SheetContent side="right" className="akuris-insight-drawer w-full sm:max-w-[520px] p-0 gap-0 flex flex-col">
         <SheetHeader className="shrink-0 border-b border-border/70 bg-gradient-to-b from-primary/[0.035] to-background px-6 pb-5 pt-6 pr-14 text-left">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/5"><Icon as={config.icon as any} size="md" className="text-primary" /></span>
+            <span className="flex shrink-0 items-center justify-center"><Icon as={config.icon as any} size="md" className="text-primary" /></span>
             <div className="min-w-0">
               <SheetTitle className="break-words text-xl leading-snug">{config.title}</SheetTitle>
               <SheetDescription className="mt-1 text-sm leading-relaxed">{config.description}</SheetDescription>

@@ -139,8 +139,8 @@ export function GrcHealthBreakdown() {
               <button type="button" onClick={() => navigate(l.link)} aria-label={l.nome}
                 className="executive-row group flex-1 p-4 text-left">
                 <span className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/5 text-primary">
-                    <Glifo className="h-4 w-4" aria-hidden="true" />
+                  <span className="flex shrink-0 items-center justify-center text-primary">
+                    <Glifo className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <span className="text-sm font-semibold">{l.nome}</span>
                 </span>

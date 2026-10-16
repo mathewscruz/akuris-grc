@@ -179,8 +179,8 @@ const DefinirSenha = () => {
         <div className="space-y-8">
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-destructive">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-destructive/25 bg-destructive/10">
-                <IconWarning className="h-4 w-4" />
+              <span className="flex items-center justify-center shrink-0">
+                <IconWarning className="h-5 w-5" />
               </span>
               <span className="text-xs font-medium uppercase tracking-[0.16em]">{t('defineSenhaPage.linkStatus')}</span>
             </div>
@@ -211,8 +211,8 @@ const DefinirSenha = () => {
         <div className="space-y-8" aria-live="polite">
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-success">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-success/25 bg-success/10">
-                <IconSuccess className="h-4 w-4" />
+              <span className="flex items-center justify-center shrink-0">
+                <IconSuccess className="h-5 w-5" />
               </span>
               <span className="text-xs font-medium uppercase tracking-[0.16em]">{t('defineSenhaPage.completed')}</span>
             </div>

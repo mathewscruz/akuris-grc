@@ -408,7 +408,7 @@ export function AtividadeTile({ delay, dias }: { delay?: number; dias: number })
               <li key={a.id} className="animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: 'both' }}>
                 <button type="button" onClick={() => ROTA[a.module] && navigate(`${ROTA[a.module]}?${a.module === 'riscos' ? 'risco' : 'focus'}=${a.recordId}`)}
                   className="group flex w-full items-start gap-3 text-left">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="h-4 w-4" /></span>
+                  <span className="mt-0.5 flex shrink-0 items-center justify-center text-muted-foreground"><Icon className="h-5 w-5" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">{a.description}</span>
                     <span className="block truncate text-xs text-muted-foreground">{a.title}</span>

@@ -357,8 +357,8 @@ export function AppSidebar() {
                                 }`}
                               >
                                 {subActive && <span aria-hidden className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
-                                <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-sidebar-border ${subActive ? 'bg-primary/15 text-primary' : 'bg-sidebar-accent/40'}`}>
-                                  <subItem.icon strokeWidth={1.5} className="h-4 w-4" />
+                                <span className={`flex w-6 flex-shrink-0 items-center justify-center ${subActive ? 'text-primary' : ''}`}>
+                                  <subItem.icon strokeWidth={1.5} className="h-5 w-5" />
                                 </span>
                                 <span className="min-w-0 flex-1">
                                   <span className={`block truncate text-sm ${subActive ? 'font-semibold' : 'font-medium'}`}>{subItem.title}</span>

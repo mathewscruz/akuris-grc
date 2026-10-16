@@ -138,8 +138,8 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
               <CardContent className="pt-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/8 text-primary">
-                      <IconShield className="h-4 w-4" />
+                    <span className="grid shrink-0 place-items-center text-primary">
+                      <IconShield className="h-5 w-5" />
                     </span>
                     <h3 className="font-semibold">{profile.name}</h3>
                   </div>

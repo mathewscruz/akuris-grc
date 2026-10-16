@@ -679,7 +679,7 @@ function GapAnalysisFrameworkDetailInner() {
                     }} />
                 {empresaId && (
                   <section className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-4">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <span className="flex shrink-0 items-center justify-center text-muted-foreground">
                       <IconShieldCheck className="h-5 w-5" strokeWidth={1.5} />
                     </span>
                     <div className="min-w-0 flex-1 basis-40">

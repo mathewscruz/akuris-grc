@@ -213,8 +213,8 @@ export function DenunciaAnexos({ denunciaId, empresaId, status, onAtualizado }: 
           key={anexo.id}
           className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-border' : ''}`}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-            <IconFile className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+          <span className="flex shrink-0 items-center justify-center">
+            <IconFile className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-foreground">

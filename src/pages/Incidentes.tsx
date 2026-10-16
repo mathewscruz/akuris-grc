@@ -653,8 +653,8 @@ export default function Incidentes() {
                 className="group h-9 min-w-0 justify-start gap-2 px-2.5 text-muted-foreground hover:bg-popover hover:text-foreground hover:shadow-sm"
                 onClick={() => { setSelectedIncidente(detalheIncidente); setTratamentoDialogOpen(true); }}
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-primary/[0.07] text-primary">
-                  <IconChecklist className="h-3.5 w-3.5" />
+                <span className="flex shrink-0 items-center justify-center text-primary">
+                  <IconChecklist className="h-5 w-5.5" />
                 </span>
                 <span className="min-w-0 truncate">{t('sweepRiscos.incidentes.actionTratamentos')}</span>
                 <span className="ml-auto border-l border-border/70 pl-2 text-xs font-semibold tabular-nums text-muted-foreground">
@@ -667,8 +667,8 @@ export default function Incidentes() {
                 className="group h-9 min-w-0 justify-start gap-2 px-2.5 text-muted-foreground hover:bg-popover hover:text-foreground hover:shadow-sm"
                 onClick={() => { setSelectedIncidente(detalheIncidente); setEvidenciaDialogOpen(true); }}
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-primary/[0.07] text-primary">
-                  <IconAttach className="h-3.5 w-3.5" />
+                <span className="flex shrink-0 items-center justify-center text-primary">
+                  <IconAttach className="h-5 w-5.5" />
                 </span>
                 <span className="min-w-0 truncate">{t('sweepRiscos.incidentes.actionEvidencias')}</span>
                 <span className="ml-auto border-l border-border/70 pl-2 text-xs font-semibold tabular-nums text-muted-foreground">
@@ -681,8 +681,8 @@ export default function Incidentes() {
                 className="group h-9 min-w-0 justify-start gap-2 px-2.5 text-muted-foreground hover:bg-popover hover:text-foreground hover:shadow-sm"
                 onClick={() => { setSelectedIncidente(detalheIncidente); setComunicacaoDialogOpen(true); }}
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-primary/[0.07] text-primary">
-                  <IconMegaphone className="h-3.5 w-3.5" />
+                <span className="flex shrink-0 items-center justify-center text-primary">
+                  <IconMegaphone className="h-5 w-5.5" />
                 </span>
                 <span className="min-w-0 truncate">{t('sweepRiscos.incidentes.actionComunicacao')}</span>
                 <span className="ml-auto border-l border-border/70 pl-2 text-xs font-semibold tabular-nums text-muted-foreground">

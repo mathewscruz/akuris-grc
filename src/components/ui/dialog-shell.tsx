@@ -159,7 +159,7 @@ export function DialogShell({
           <DialogHeader className="flex-shrink-0 border-b border-border/70 bg-surface-1/55 px-5 pb-5 pt-5 sm:px-7 sm:pt-6">
             <DialogTitle className="flex items-center gap-3 pr-10 text-xl">
               {Icon && (
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary shadow-sm">
+                <span className="flex shrink-0 items-center justify-center text-primary">
                   <Icon className="h-5 w-5" />
                 </span>
               )}

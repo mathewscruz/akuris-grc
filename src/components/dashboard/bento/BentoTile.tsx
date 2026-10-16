@@ -53,7 +53,7 @@ export function BentoTile({ title, description, href, hrefLabel, footerHref, foo
 export function BentoEmpty({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground"><IconInfo className="h-5 w-5" /></span>
+      <span className="flex items-center justify-center text-muted-foreground shrink-0"><IconInfo className="h-5 w-5" /></span>
       <p className="max-w-[16rem] text-sm text-muted-foreground">{children}</p>
     </div>
   );

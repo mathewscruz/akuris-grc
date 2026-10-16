@@ -496,8 +496,8 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               </div>
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-muted/30 text-muted-foreground">
-                    <IconMonitor className="h-4 w-4" strokeWidth={1.5} />
+                  <span className="mt-0.5 flex shrink-0 items-center justify-center text-muted-foreground">
+                    <IconMonitor className="h-5 w-5" strokeWidth={1.5} />
                   </span>
                   <div>
                     <p className="text-sm font-medium">{t('userProfilePopover.activeSessions')}</p>

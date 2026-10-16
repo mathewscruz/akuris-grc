@@ -703,7 +703,7 @@ function Resumo({
   return (
     <div className="flex items-center gap-3">
       <span
-        className={`flex h-10 w-10 items-center justify-center rounded-lg ${attention ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"}`}
+        className={`flex items-center justify-center ${attention ? "text-warning" : "text-primary"}`}
       >
         <Icon className="h-5 w-5" />
       </span>
