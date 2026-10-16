@@ -148,8 +148,10 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
 
+  const railIcon = isDense ? 'h-[18px] w-[18px]' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
+  const labelCls = `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-[10.5px]' : 'text-[11px]'}`;
   const railCls = (active: boolean) =>
-    `relative flex w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 transition-colors duration-200 ${
+    `relative flex w-full flex-col items-center justify-center ${isDense ? 'gap-0.5' : 'gap-1'} rounded-xl px-1 ${isDense ? 'py-1' : isCompact ? 'py-1.5' : 'py-2.5'} transition-colors duration-200 ${
       active
         ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
         : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
@@ -263,14 +265,14 @@ export function AppSidebar() {
     <Sidebar className="sidebar-gradient" collapsible="offcanvas">
       <SidebarHeader className="mt-[calc(theme(spacing.2)+1px)] h-14 border-b border-sidebar-border p-0">
         <div className="flex h-full items-center justify-center">
-          <img src={akurisMark.url} alt="Akuris" className="h-10 w-10 rounded-xl object-contain" />
+          <img src={akurisMark.url} alt="Akuris" className={`${isDense ? 'h-8 w-8' : 'h-10 w-10'} rounded-xl object-contain`} />
         </div>
       </SidebarHeader>
 
-      <SidebarContent ref={contentRef as any} className="gap-0 px-2 py-3 scrollbar-thin">
+      <SidebarContent ref={contentRef as any} className={`gap-0 overflow-hidden px-2 ${isDense ? 'py-1' : 'py-3'}`}>
         {getVisibleSections().map((section, sIdx) => (
-          <div key={section.id} className={sIdx > 0 ? 'mt-2 border-t border-sidebar-border/40 pt-2' : ''}>
-            <ul className="flex flex-col gap-1">
+          <div key={section.id} className={sIdx > 0 ? (isDense ? 'mt-1 border-t border-sidebar-border/40 pt-1' : 'mt-2 border-t border-sidebar-border/40 pt-2') : ''}>
+            <ul className={`flex flex-col ${isDense ? 'gap-0' : 'gap-1'}`}>
               {section.items.map((item) => {
                 if (item.subItems) {
                   const active = hasActiveSubItem(item.subItems);
@@ -283,8 +285,8 @@ export function AppSidebar() {
                         <PopoverTrigger asChild>
                           <button type="button" title={item.title} className={railCls(active)}>
                             {active && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
-                            <item.icon strokeWidth={1.5} className={`h-[22px] w-[22px] ${active ? 'text-primary' : ''}`} />
-                            <span className="line-clamp-2 w-full break-words text-center text-[11px] leading-tight">{item.title}</span>
+                            <item.icon strokeWidth={1.5} className={`${railIcon} ${active ? 'text-primary' : ''}`} />
+                            <span className={labelCls}>{item.shortTitle ?? item.title}</span>
                           </button>
                         </PopoverTrigger>
                         <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5">
@@ -324,8 +326,8 @@ export function AppSidebar() {
                       className={railCls(active)}
                     >
                       {active && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
-                      <item.icon strokeWidth={1.5} className={`h-[22px] w-[22px] ${active ? 'text-primary' : ''}`} />
-                      <span className="line-clamp-2 w-full break-words text-center text-[11px] leading-tight">{item.title}</span>
+                      <item.icon strokeWidth={1.5} className={`${railIcon} ${active ? 'text-primary' : ''}`} />
+                      <span className={labelCls}>{item.shortTitle ?? item.title}</span>
                     </NavLink>
                   </li>
                 );
@@ -343,14 +345,14 @@ export function AppSidebar() {
               className={railCls(isActive('/configuracoes'))}
             >
               {isActive('/configuracoes') && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
-              <ConfiguracoesNavIcon className={`h-[22px] w-[22px] ${isActive('/configuracoes') ? 'text-primary' : ''}`} />
-              <span className="line-clamp-2 w-full text-center text-[11px] leading-tight">{t('sidebar.settings')}</span>
+              <ConfiguracoesNavIcon className={`${railIcon} ${isActive('/configuracoes') ? 'text-primary' : ''}`} />
+              <span className={labelCls}>{t('sidebar.settings')}</span>
             </NavLink>
           </div>
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-2">
+      <SidebarFooter className={`border-t border-sidebar-border ${isDense ? 'p-1' : 'p-2'}`}>
         <button
           type="button"
           onClick={handleSignOut}
@@ -358,8 +360,8 @@ export function AppSidebar() {
           title={t('sidebar.logout')}
           className={railCls(showLogoutConfirm || isSigningOut)}
         >
-          <SaidaIcon className="h-[22px] w-[22px]" />
-          <span className="text-center text-[11px] leading-tight">{t('sidebar.logout')}</span>
+          <SaidaIcon className={railIcon} />
+          <span className={labelCls}>{t('sidebar.logout')}</span>
         </button>
       </SidebarFooter>
 
