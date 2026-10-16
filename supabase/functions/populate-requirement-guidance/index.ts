@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
             p_fingerprint_hash: await fingerprint(`${row.id}:${locale}`),
             p_max_requests: 1, p_window_seconds: 120,
           });
-          if (error) throw new GuidanceError('guidance_temporarily_unavailable');
+          if (error) { console.error('rate limit rpc falhou', error.message); throw new GuidanceError('guidance_temporarily_unavailable'); }
           if (allowed !== true) return false;
           const { data: userAllowed, error: userLimitError } = await supabase.rpc('consume_security_rate_limit', {
             p_scope: 'requirement-guidance:user',
