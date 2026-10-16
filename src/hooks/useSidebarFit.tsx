@@ -25,82 +25,43 @@ export function useSidebarFit(): SidebarFit {
 }
 
 /**
- * Mede o overflow real do contêiner da sidebar e escala a densidade até caber.
- * Reage a resize do viewport, do próprio contêiner e a mutações internas
- * (sub-grupos abrindo/fechando).
+ * Escolhe a densidade pela altura disponível por item (nos dois sentidos),
+ * recalculando em resize, rotação e mudanças do contêiner.
  */
 export function useAutoFit(contentRef: RefObject<HTMLElement>): SidebarFit {
   const [fit, setFit] = useState<SidebarFit>(() => initialGuess());
-  const measuring = useRef(false);
-  const rafRef = useRef<number | null>(null);
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const measure = () => {
     const el = contentRef.current;
     if (!el) return;
-    if (measuring.current) return;
-    measuring.current = true;
-
-    // Pequeno atraso para o layout estabilizar após a transição (300ms no Sidebar).
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      const node = contentRef.current;
-      if (!node) { measuring.current = false; return; }
-      const overflow = node.scrollHeight - node.clientHeight;
-      setFit((current) => {
-        const idx = LEVELS.indexOf(current);
-        if (overflow > 1 && idx < LEVELS.length - 1) {
-          return LEVELS[idx + 1];
-        }
-        // Tenta voltar a um nível mais confortável: se o nível anterior coubesse, sobrariam
-        // ao menos ~80px de folga (aproximação do delta entre níveis).
-        if (overflow < -120 && idx > 0) {
-          return LEVELS[idx - 1];
-        }
-        return current;
-      });
-      measuring.current = false;
-    });
+    const items = el.querySelectorAll(':scope > ul > li').length || 1;
+    const per = (el.clientHeight - 16) / items;
+    setFit(per >= 64 ? 'comfortable' : per >= 54 ? 'compact' : 'dense');
   };
-
   const schedule = () => {
     if (tRef.current) clearTimeout(tRef.current);
-    tRef.current = setTimeout(measure, 80);
+    tRef.current = setTimeout(measure, 60);
   };
 
-  useLayoutEffect(() => {
-    measure();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Re-medir sempre que `fit` mudar (o próximo render pode ainda ter overflow).
-  useLayoutEffect(() => {
-    schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fit]);
+  useLayoutEffect(() => { measure(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-
-    const ro = new ResizeObserver(() => schedule());
+    const ro = new ResizeObserver(schedule);
     ro.observe(el);
-
-    const mo = new MutationObserver(() => schedule());
-    mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'class', 'style'] });
-
-    const onWin = () => schedule();
-    window.addEventListener('resize', onWin);
-
+    window.addEventListener('resize', schedule);
+    window.addEventListener('orientationchange', schedule);
+    window.visualViewport?.addEventListener('resize', schedule);
     return () => {
       ro.disconnect();
-      mo.disconnect();
-      window.removeEventListener('resize', onWin);
+      window.removeEventListener('resize', schedule);
+      window.removeEventListener('orientationchange', schedule);
+      window.visualViewport?.removeEventListener('resize', schedule);
       if (tRef.current) clearTimeout(tRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return fit;
 }

@@ -281,8 +281,11 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-3'}`}>
-        <ul className={`flex flex-col ${itemGap}`}>
+      <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-2'}`}>
+        <ul
+          className={`flex flex-col ${isMobile ? itemGap : 'flex-1 justify-between gap-0'}`}
+          style={isMobile ? undefined : { maxHeight: `${menuItems.length * 84}px` }}
+        >
           {menuItems.map((item) => {
                 if (item.subItems) {
                   const active = hasActiveSubItem(item.subItems);
