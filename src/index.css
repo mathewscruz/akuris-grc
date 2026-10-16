@@ -2338,3 +2338,34 @@ input:-webkit-autofill:focus {
   .akuris-table tbody > tr:has([data-chip-tone="active"]) { --row-accent: hsl(var(--state-active)); }
   .akuris-table tbody > tr:has(td[colspan]) > td { box-shadow: none; }
 }
+
+/* ── Onda: navegação fixa, cascata e profundidade ─────────────────────── */
+@layer components {
+  /* Sub-barra: abas de primeiro nível da página ficam fixas ao rolar. */
+  main .akuris-tabs-viewport:not(:is([role="dialog"], .bg-card, [data-radix-popper-content-wrapper]) .akuris-tabs-viewport) {
+    position: sticky; top: -1rem; z-index: 20;
+    background-color: hsl(var(--background) / 0.92);
+    backdrop-filter: blur(8px);
+    padding-top: 0.5rem;
+  }
+  @media (min-width: 768px) {
+    main .akuris-tabs-viewport:not(:is([role="dialog"], .bg-card, [data-radix-popper-content-wrapper]) .akuris-tabs-viewport) { top: -1.5rem; }
+  }
+
+  /* Cartões em cascata: filhos com --i aparecem em sequência (máx. 8). */
+  .akuris-stagger > * { animation: akuris-rise 420ms cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(min(var(--i, 0), 8) * 55ms); }
+  .akuris-stat-item { animation: akuris-rise 420ms cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(min(var(--metric-order, 0), 8) * 55ms); }
+  @keyframes akuris-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* Painel com profundidade: o conteúdo recua enquanto um painel lateral está aberto. */
+  body:has([role="dialog"][data-state="open"].akuris-sheet) main {
+    transform: scale(0.985); filter: brightness(0.9);
+    transition: transform 320ms cubic-bezier(.2,.8,.2,1), filter 320ms;
+  }
+  main { transition: transform 320ms cubic-bezier(.2,.8,.2,1), filter 320ms; transform-origin: 50% 30%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .akuris-stagger > *, .akuris-stat-item { animation: none; }
+    body:has([role="dialog"][data-state="open"].akuris-sheet) main { transform: none; filter: none; }
+  }
+}
