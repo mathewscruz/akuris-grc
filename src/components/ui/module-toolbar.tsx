@@ -160,9 +160,13 @@ export function ToolbarField({
     <div
       role="group"
       aria-labelledby={labelId}
-      className={cn("flex min-w-[168px] shrink-0 flex-col gap-1", "[&_button[role=combobox]]:w-full", className)}
+      className={cn(
+        "flex h-10 min-w-[168px] shrink-0 items-center rounded-md border border-input bg-background pl-3 transition-colors focus-within:border-primary/60",
+        "[&_button[role=combobox]]:h-9 [&_button[role=combobox]]:w-full [&_button[role=combobox]]:border-0 [&_button[role=combobox]]:bg-transparent [&_button[role=combobox]]:pl-1.5 [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:focus:ring-0",
+        className,
+      )}
     >
-      <span id={labelId} className="text-xs font-medium leading-4 text-muted-foreground">{label}</span>
+      <span id={labelId} className="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">{label}:</span>
       {children}
     </div>
   )
