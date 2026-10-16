@@ -20,7 +20,7 @@ interface Props {
 
 export function AjusteCard({ acao, essencial, delay, planoCriado, criando, onCriarPlano, defaultOpen }: Props) {
   const { t } = useLanguage();
-  const k = (s: string, p?: Record<string, unknown>) => t(`gapAnalysis.adherenceUi.verdict.guide.${s}`, p);
+  const k = (s: string, p?: Record<string, string | number>) => t(`gapAnalysis.adherenceUi.verdict.guide.${s}`, p);
   const detalhado = temInstrucao(acao);
   const [aberto, setAberto] = useState(!!defaultOpen);
 
