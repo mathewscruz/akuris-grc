@@ -23,10 +23,43 @@ import { useDocGen } from '@/contexts/DocGenContext';
 import { useAuth } from '@/components/AuthProvider';
 import { sugerirPrazoPorPrioridade } from '@/lib/preenchimento-inteligente';
 import { AdherenceAssessmentDialog } from './AdherenceAssessmentDialog';
+import { Chip } from '@/components/ui/chip';
+import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 
 type Acao = { titulo: string; descricao?: string; prioridade?: string; requisito_codigo?: string | null; requirement_id?: string | null };
 type Comparacao = { resolvidos: number; pendentes: number; melhorados: number; piorados: number };
 const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
+
+/** Anel da nota: conta de 0 até o valor (instantâneo com "reduzir movimento"). */
+function ScoreRing({ value, tone }: { value: number; tone: 'success' | 'warning' | 'destructive' }) {
+  const alvo = Math.max(0, Math.min(100, Math.round(value)));
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setV(alvo); return; }
+    let raf = 0; const t0 = performance.now();
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / 900);
+      setV(Math.round(alvo * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [alvo]);
+  const R = 52, C = 2 * Math.PI * R;
+  const cor = tone === 'success' ? 'stroke-success' : tone === 'warning' ? 'stroke-warning' : 'stroke-destructive';
+  return (
+    <div className="relative h-32 w-32 shrink-0 self-center">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <circle cx="60" cy="60" r={R} className="fill-none stroke-muted" strokeWidth="9" />
+        <circle cx="60" cy="60" r={R} strokeWidth="9" strokeLinecap="round" className={cn('fill-none', cor)} strokeDasharray={C} strokeDashoffset={C - (v / 100) * C} />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-3xl font-bold tabular-nums text-foreground">{v}%</span>
+      </div>
+    </div>
+  );
+}
 interface AdherenceResultViewProps {
   assessment: AdherenceAssessment;
   onBack: () => void;
@@ -49,6 +82,12 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const acoes: Acao[] = Array.isArray(meta.acoes) ? meta.acoes : [];
   const foraIds: string[] = Array.isArray(meta.fora_escopo_ids) ? meta.fora_escopo_ids : [];
   const comparacao = meta.comparacao as Comparacao | null | undefined;
+  const [verTodosFortes, setVerTodosFortes] = useState(false);
+  const porPrioridade = { alta: [], media: [], baixa: [] } as Record<'alta' | 'media' | 'baixa', { acao: Acao; idx: number }[]>;
+  acoes.forEach((acao, idx) => {
+    const p = (['alta', 'media', 'baixa'].includes(acao.prioridade || '') ? acao.prioridade : 'media') as 'alta' | 'media' | 'baixa';
+    porPrioridade[p].push({ acao, idx });
+  });
 
   const { data: foraEscopo } = useOptimizedQuery(
     async () => {
@@ -483,19 +522,27 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               ? t('gapAnalysis.adherenceUi.verdict.whatsGood', { count: assessment.pontos_fortes.length })
               : t('gapAnalysis.adherenceUi.result.strongPointsTitle', { count: assessment.pontos_fortes.length })}
           </h3>
-          <div className="space-y-3">
-            {assessment.pontos_fortes.map((ponto: PontoForte, index: number) => (
-              <Card key={index} className="p-4">
-                <h4 className="font-semibold text-foreground mb-2">{ponto.titulo}</h4>
-                <p className="text-sm text-muted-foreground">{ponto.descricao}</p>
-                {(ponto as PontoForte & { citacao?: string }).citacao && (
-                  <blockquote className="mt-2 border-l-2 border-border pl-3 text-sm italic text-muted-foreground">
-                    “{(ponto as PontoForte & { citacao?: string }).citacao}”
-                  </blockquote>
-                )}
-              </Card>
+          <div className="grid gap-3 md:grid-cols-2">
+            {(verTodosFortes ? assessment.pontos_fortes : assessment.pontos_fortes.slice(0, 4)).map((ponto: PontoForte, index: number) => (
+              <div key={index} className="flex gap-3 rounded-lg border bg-card p-4 animate-in fade-in slide-in-from-bottom-1" style={{ animationDelay: `${(index % 4) * 60}ms`, animationFillMode: 'both' }}>
+                <IconSuccess className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <h4 className="font-semibold text-foreground">{ponto.titulo}</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">{ponto.descricao}</p>
+                  {(ponto as PontoForte & { citacao?: string }).citacao && (
+                    <blockquote className="mt-2 rounded-r-md border-l-2 border-success/50 bg-muted/30 px-3 py-1.5 text-xs italic text-muted-foreground">
+                      “{(ponto as PontoForte & { citacao?: string }).citacao}”
+                    </blockquote>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
+          {assessment.pontos_fortes.length > 4 && (
+            <Button variant="ghost" size="sm" className="mt-3" onClick={() => setVerTodosFortes(v => !v)}>
+              {verTodosFortes ? t('gapAnalysis.adherenceUi.verdict.ui.showLess') : t('gapAnalysis.adherenceUi.verdict.ui.showAll', { count: assessment.pontos_fortes.length })}
+            </Button>
+          )}
         </Card>
       )}
 
