@@ -1,209 +1,140 @@
 import { useEffect, useState } from 'react';
-import { IconSuccess, IconInfo, IconDot } from '@/components/icons';
-import { Progress } from '@/components/ui/progress';
+import { IconSuccess, IconInfo } from '@/components/icons';
 import { cn } from '@/lib/utils';
-
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
-interface ProgressStep {
-  id: string;
-  label: string;
-  description: string;
-  percentage: number;
-  status: 'pending' | 'active' | 'completed' | 'error';
-}
+
+type StepStatus = 'pending' | 'active' | 'completed' | 'error';
 
 interface AdherenceAnalysisProgressProps {
   currentProgress: number;
   currentStep: string;
   isError?: boolean;
   errorMessage?: string;
+  detail?: string;
+  documentName?: string;
+  normaName?: string;
 }
 
-export function AdherenceAnalysisProgress({ 
-  currentProgress, 
-  currentStep,
-  isError = false,
-  errorMessage
+/** Índice (0..3) da etapa visível a partir da etapa técnica. */
+function etapaVisivel(step: string, progress: number, detail?: string, understanding?: string): number {
+  if (progress >= 100 || step === 'finalizing') return 3;
+  if (step === 'analyzing') return detail && understanding && detail === understanding ? 1 : 2;
+  if (step === 'identifying') return progress >= 35 ? 1 : 0;
+  return 0;
+}
+
+export function AdherenceAnalysisProgress({
+  currentProgress, currentStep, isError = false, errorMessage, detail, documentName, normaName,
 }: AdherenceAnalysisProgressProps) {
   const { t } = useLanguage();
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const done = currentProgress >= 100 && !isError;
 
-  // Timer para mostrar tempo decorrido
   useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
-    }, 1000);
+    if (done || isError) return;
+    const i = setInterval(() => setElapsed(p => p + 1), 1000);
+    return () => clearInterval(i);
+  }, [done, isError]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const k = (s: string) => t(`gapAnalysis.adherenceUi.verdict.ui.${s}`);
+  const ativo = etapaVisivel(currentStep, currentProgress, detail, t('gapAnalysis.adherenceUi.scope.understanding'));
+  const etapas = ['stepRead', 'stepTheme', 'stepEval', 'stepReport'].map((id, i) => {
+    let status: StepStatus = i < ativo || done ? 'completed' : i === ativo ? 'active' : 'pending';
+    if (isError && i === ativo) status = 'error';
+    return { id, status };
+  });
 
-  // Definir as etapas do processo
-  const steps: ProgressStep[] = [
-    {
-      id: 'extracting',
-      label: t('gapAnalysis.adherenceUi.progress.steps.extracting.label'),
-      description: t('gapAnalysis.adherenceUi.progress.steps.extracting.description'),
-      percentage: 15,
-      status: currentProgress >= 15 ? 'completed' : currentProgress > 0 ? 'active' : 'pending'
-    },
-    {
-      id: 'uploading',
-      label: t('gapAnalysis.adherenceUi.progress.steps.uploading.label'),
-      description: t('gapAnalysis.adherenceUi.progress.steps.uploading.description'),
-      percentage: 25,
-      status: currentProgress >= 25 ? 'completed' : currentProgress > 15 ? 'active' : 'pending'
-    },
-    {
-      id: 'preparing',
-      label: t('gapAnalysis.adherenceUi.progress.steps.preparing.label'),
-      description: t('gapAnalysis.adherenceUi.progress.steps.preparing.description'),
-      percentage: 35,
-      status: currentProgress >= 35 ? 'completed' : currentProgress > 25 ? 'active' : 'pending'
-    },
-    {
-      id: 'identifying',
-      label: t('gapAnalysis.adherenceUi.progress.steps.identifying.label'),
-      description: t('gapAnalysis.adherenceUi.progress.steps.identifying.description'),
-      percentage: 60,
-      status: currentProgress >= 60 ? 'completed' : currentProgress > 35 ? 'active' : 'pending'
-    },
-    {
-      id: 'analyzing',
-      label: t('gapAnalysis.adherenceUi.progress.steps.analyzing.label'),
-      description: t('gapAnalysis.adherenceUi.progress.steps.analyzing.description'),
-      percentage: 90,
-      status: currentProgress >= 90 ? 'completed' : currentProgress > 60 ? 'active' : 'pending'
-    },
-    {
-      id: 'finalizing',
-      label: t('gapAnalysis.adherenceUi.progress.steps.finalizing.label'),
-      description: t('gapAnalysis.adherenceUi.progress.steps.finalizing.description'),
-      percentage: 100,
-      status: currentProgress >= 100 ? 'completed' : currentProgress > 90 ? 'active' : 'pending'
-    }
-  ];
-
-  // Se houver erro, marcar etapa atual como erro
-  if (isError && currentStep) {
-    const errorStepIndex = steps.findIndex(s => s.id === currentStep);
-    if (errorStepIndex !== -1) {
-      steps[errorStepIndex].status = 'error';
-    }
-  }
-
-  // Formatar tempo decorrido
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
-  };
-
-  // Estimar tempo restante (aproximado)
-  const estimateRemainingTime = () => {
-    if (currentProgress >= 100) return '0s';
+  const fmt = (s: number) => `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+  const restante = () => {
     if (currentProgress < 10) return '~2m';
-    
-    const avgTimePerPercent = elapsedTime / currentProgress;
-    const remainingPercent = 100 - currentProgress;
-    const remainingSeconds = Math.round(avgTimePerPercent * remainingPercent);
-    
-    if (remainingSeconds < 60) return `~${remainingSeconds}s`;
-    return `~${Math.round(remainingSeconds / 60)}m`;
+    const r = Math.round((elapsed / currentProgress) * (100 - currentProgress));
+    return r < 60 ? `~${r}s` : `~${Math.round(r / 60)}m`;
   };
+
+  // Contagens "0 de 1" não informam nada: mostra a frase simples.
+  const detalhe = detail && /\b0\s+(de|of)\s+1\b/.test(detail) ? k('evaluatingPlain') : detail;
+
+  const pct = Math.max(0, Math.min(100, Math.round(currentProgress)));
+  const R = 52, C = 2 * Math.PI * R;
 
   return (
-    <div className="space-y-6 py-4">
-      {/* Título e status */}
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">
-          {isError ? t('gapAnalysis.adherenceUi.progress.errorTitle') : currentProgress >= 100 ? t('gapAnalysis.adherenceUi.progress.completedTitle') : t('gapAnalysis.adherenceUi.progress.analyzingTitle')}
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          {isError 
-            ? errorMessage || t('gapAnalysis.adherenceUi.progress.errorDefault') 
-            : currentProgress >= 100 
-              ? t('gapAnalysis.adherenceUi.progress.completedDescription') 
-              : t('gapAnalysis.adherenceUi.progress.waitDescription')}
-        </p>
-      </div>
-
-      {/* Barra de progresso */}
-      <div className="space-y-2">
-        <Progress value={currentProgress} className="h-3" />
-        <div className="flex justify-between items-center text-sm">
-          <span className="font-medium text-primary">
-            {Math.round(currentProgress)}%
-          </span>
-          {!isError && currentProgress < 100 && (
-            <span className="text-muted-foreground">
-              {t('gapAnalysis.adherenceUi.progress.elapsedRemaining', { elapsed: formatTime(elapsedTime), remaining: estimateRemainingTime() })}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Lista de etapas */}
-      <div className="space-y-3">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className={cn(
-              "flex items-start gap-3 p-3 rounded-lg transition-ui",
-              step.status === 'active' && "bg-primary/5 border border-primary/20",
-              step.status === 'completed' && "opacity-60",
-              step.status === 'error' && "bg-destructive/5 border border-destructive/20"
+    <div className="space-y-6 py-2">
+      {/* Anel de progresso */}
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="relative h-32 w-32">
+          <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+            <circle cx="60" cy="60" r={R} className="fill-none stroke-muted" strokeWidth="8" />
+            <circle
+              cx="60" cy="60" r={R} strokeWidth="8" strokeLinecap="round"
+              className={cn('fill-none transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none',
+                isError ? 'stroke-destructive' : done ? 'stroke-success' : 'stroke-primary')}
+              strokeDasharray={C} strokeDashoffset={C - (pct / 100) * C}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {done ? (
+              <IconSuccess className="h-10 w-10 text-success animate-in zoom-in-50 duration-500" strokeWidth={1.5} />
+            ) : isError ? (
+              <IconInfo className="h-10 w-10 text-destructive" strokeWidth={1.5} />
+            ) : (
+              <span className="text-3xl font-bold tabular-nums text-foreground">{pct}%</span>
             )}
-          >
-            {/* Ícone de status */}
-            <div className="flex-shrink-0 mt-0.5">
-              {step.status === 'completed' && (
-                <IconSuccess className="h-5 w-5 text-success" strokeWidth={1.5}/>
-              )}
-              {step.status === 'active' && (
-                <AkurisPulse size={20} className="text-primary" />
-              )}
-              {step.status === 'pending' && (
-                <IconDot className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-              )}
-              {step.status === 'error' && (
-                <IconInfo className="h-5 w-5 text-destructive" strokeWidth={1.5}/>
-              )}
-            </div>
-
-            {/* Conteúdo da etapa */}
-            <div className="flex-1 min-w-0">
-              <p className={cn(
-                "text-sm font-medium",
-                step.status === 'active' && "text-primary",
-                step.status === 'error' && "text-destructive"
-              )}>
-                {step.label}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {step.description}
-              </p>
-            </div>
-
-            {/* Percentual da etapa */}
-            <div className="flex-shrink-0 text-xs font-medium text-muted-foreground">
-              {step.percentage}%
-            </div>
           </div>
-        ))}
+        </div>
+        {(normaName || documentName) && (
+          <div className="space-y-0.5">
+            {normaName && <p className="text-sm font-semibold text-foreground">{normaName}</p>}
+            {documentName && <p className="max-w-[340px] truncate text-xs text-muted-foreground">{documentName}</p>}
+          </div>
+        )}
+        {isError && <p className="text-sm text-destructive">{errorMessage || t('gapAnalysis.adherenceUi.progress.errorDefault')}</p>}
+        {done && (
+          <p className="text-sm font-medium text-success animate-in fade-in duration-500">{t('gapAnalysis.adherenceUi.progress.successTitle')}</p>
+        )}
+        {!done && !isError && (
+          <div className="flex gap-4 text-xs text-muted-foreground tabular-nums">
+            <span>{k('elapsed')}: <span className="text-foreground">{fmt(elapsed)}</span></span>
+            <span>{k('remaining')}: <span className="text-foreground">{restante()}</span></span>
+          </div>
+        )}
       </div>
 
-      {/* Mensagem de conclusão */}
-      {currentProgress >= 100 && !isError && (
-        <div className="text-center p-4 bg-success/10 dark:bg-success/20 rounded-lg border border-success/30 dark:border-success/30">
-          <IconSuccess className="h-8 w-8 text-success mx-auto mb-2" strokeWidth={1.5}/>
-          <p className="text-sm font-medium text-success dark:text-success">
-            {t('gapAnalysis.adherenceUi.progress.successTitle')}
-          </p>
-          <p className="text-xs text-success dark:text-success mt-1">
-            {t('gapAnalysis.adherenceUi.progress.successDescription')}
-          </p>
-        </div>
+      {/* Etapas */}
+      <ol className="relative space-y-1">
+        {etapas.map((e, i) => (
+          <li
+            key={e.id}
+            className={cn(
+              'relative flex items-start gap-3 rounded-lg px-3 py-2.5 transition-ui duration-500 animate-in fade-in slide-in-from-bottom-1',
+              e.status === 'active' && 'bg-primary/5 ring-1 ring-primary/20',
+              e.status === 'pending' && 'opacity-50',
+              e.status === 'error' && 'bg-destructive/5 ring-1 ring-destructive/20',
+            )}
+            style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
+          >
+            <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center">
+              {e.status === 'completed' && <IconSuccess className="h-5 w-5 text-success animate-in zoom-in-50 duration-300" strokeWidth={1.5} />}
+              {e.status === 'active' && <AkurisPulse size={18} />}
+              {e.status === 'pending' && <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />}
+              {e.status === 'error' && <IconInfo className="h-5 w-5 text-destructive" strokeWidth={1.5} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className={cn('text-sm font-medium', e.status === 'active' ? 'text-foreground' : 'text-muted-foreground', e.status === 'error' && 'text-destructive')}>
+                {k(e.id)}
+              </p>
+              {e.status === 'active' && detalhe ? (
+                <p key={detalhe} className="mt-0.5 text-xs text-muted-foreground animate-in fade-in slide-in-from-left-1 duration-300">{detalhe}</p>
+              ) : (
+                <p className="mt-0.5 text-xs text-muted-foreground">{k(`${e.id}_d`)}</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      {!done && !isError && (
+        <p className="text-center text-xs text-muted-foreground">{k('canClose')}</p>
       )}
     </div>
   );

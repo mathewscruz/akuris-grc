@@ -472,10 +472,10 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
               currentStep={analysisState.currentStep}
               isError={analysisState.isError}
               errorMessage={analysisState.errorMessage}
+              detail={analysisState.isAnalyzing ? progressDetail || undefined : undefined}
+              documentName={uploadedFile?.name}
+              normaName={preSelectedFrameworkNome}
             />
-            {analysisState.isAnalyzing && progressDetail && (
-              <p className="mt-3 text-center text-sm text-muted-foreground">{progressDetail}</p>
-            )}
             
             {/* Botão de fechar em caso de erro */}
             {analysisState.isError && (
