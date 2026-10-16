@@ -439,7 +439,7 @@ export default function AtivosChaves() {
         ]}
       />
 
-      <StatStrip
+      <StatStrip serieTabela="ativos_chaves_criptograficas"
         error={isError || statsError}
         loading={statsLoading}
         items={[

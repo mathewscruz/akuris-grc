@@ -366,7 +366,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         />
       )}
 
-      <StatStrip
+      <StatStrip serieTabela="riscos"
         items={[
           { key: 'aceitos', label: t('riscos.aceite.stats.acceptedTitle'), value: totalAceitos, icon: IconSuccess, hint: t('riscos.aceite.stats.acceptedDesc'), drillDown: 'riscos_aceite' },
           { key: 'pendentes', label: t('riscos.aceite.stats.pendingTitle'), value: totalPendentes, icon: IconTime, tone: 'warning', hint: t('riscos.aceite.stats.pendingDesc'), drillDown: 'riscos_aceite_pendentes' },

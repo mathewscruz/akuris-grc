@@ -688,7 +688,7 @@ export default function PlanosAcao() {
       />
 
       {/* Stats — todos os itens abrem a mesma vista filtrada (lista + filtro de estado). */}
-      <StatStrip
+      <StatStrip serieTabela="planos_acao"
         loading={listLoading}
         error={listError}
         items={[

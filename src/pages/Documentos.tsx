@@ -517,7 +517,7 @@ export default function Documentos() {
           ]}
         />
 
-        <StatStrip
+        <StatStrip serieTabela="documentos"
           loading={statsLoading}
           error={statsError}
           items={[

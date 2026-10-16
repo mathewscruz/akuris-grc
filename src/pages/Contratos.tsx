@@ -517,7 +517,7 @@ export default function Contratos() {
             </TabsTrigger>
           </TabsList>
 
-        {currentTab === 'contratos' ? <StatStrip
+        {currentTab === 'contratos' ? <StatStrip serieTabela="contratos"
           loading={statsLoading}
           error={statsError}
           items={[

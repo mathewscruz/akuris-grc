@@ -118,7 +118,7 @@ export function DueDiligenceDashboard({ showAttention = true }: { showAttention?
 
   return (
     <div className="space-y-4">
-      <StatStrip
+      <StatStrip serieTabela="fornecedores"
         loading={loading}
         error={isError}
         items={[

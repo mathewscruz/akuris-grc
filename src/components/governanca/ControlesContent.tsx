@@ -606,7 +606,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     <div className="space-y-6">
       {statsError && !listError && <QueryError onRetry={retry} />}
       {/* KPIs */}
-      <StatStrip
+      <StatStrip serieTabela="controles"
         loading={statsLoading}
         error={statsError}
         items={[

@@ -417,7 +417,7 @@ export default function AtivosLicencas() {
         ]}
       />
 
-      <StatStrip
+      <StatStrip serieTabela="ativos_licencas"
         error={isError || statsError}
         loading={statsLoading}
         items={[

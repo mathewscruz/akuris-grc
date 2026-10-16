@@ -579,7 +579,7 @@ const Ativos = () => {
       />
 
       {/* Indicadores */}
-        <StatStrip
+        <StatStrip serieTabela="ativos"
           error={assetsError || statsError}
         loading={statsLoading}
         items={[
