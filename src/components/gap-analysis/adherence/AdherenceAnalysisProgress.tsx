@@ -1,3 +1,4 @@
+import { VeredictoBadge } from './VeredictoBadge';
 import { useEffect, useRef, useState } from 'react';
 import { IconSuccess, IconInfo } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -110,7 +111,7 @@ export function AdherenceAnalysisProgress({ progresso, isError = false, errorMes
         {done && (
           <div className="flex flex-col items-center gap-2 animate-in fade-in duration-500">
             <p className="text-sm font-medium text-foreground">{k('completed')}</p>
-            {veredito && <StatusBadge tone={TOM[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge>}
+            {veredito && <VeredictoBadge veredito={veredito} />}
           </div>
         )}
         {isError && <p className="text-sm text-destructive">{errorMessage || t('gapAnalysis.adherenceUi.progress.errorDefault')}</p>}

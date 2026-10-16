@@ -1,3 +1,4 @@
+import { VeredictoBadge } from './VeredictoBadge';
 import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AjustesMasterDetail } from './AjustesMasterDetail';
@@ -410,7 +411,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               </p>
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <h2 className="text-xl font-semibold text-foreground md:text-2xl">{t(`gapAnalysis.adherenceUi.verdict.guide.answer_${veredito}`, { norma: assessment.framework_nome ?? '', n: grupos.essenciais.length })}</h2>
-                <StatusBadge tone={TOM_VEREDITO[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge>
+                <VeredictoBadge veredito={veredito} />
               </div>
               {meta.veredito_resumo && <p className="max-w-[760px] text-sm leading-relaxed text-foreground">{meta.veredito_resumo}</p>}
               <p className="mt-3 text-xs text-muted-foreground">
