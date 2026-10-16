@@ -2,12 +2,9 @@ import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { QueryError } from '@/components/ui/query-error';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/components/AuthProvider';
-import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOverviewCard';
-import { RecentActivities } from '@/components/dashboard/RecentActivities';
-import { IndiceTile, RiscosTile, PlanosTile, IncidentesTile, ContratosTile } from '@/components/dashboard/bento/tiles';
+import { IndiceTile, RiscosTile, PlanosTile, IncidentesTile, ContratosTile, ConformidadeTile, AtividadeTile } from '@/components/dashboard/bento/tiles';
+import { DashboardGreetingHeader } from '@/components/dashboard/bento/DashboardGreetingHeader';
 import { usePermissions } from '@/hooks/usePermissions';
-import { DashboardMeta, type KpiKey } from '@/components/dashboard/DashboardMeta';
 import { KpiDrillDownDrawer, type DrillDownKey } from '@/components/dashboard/KpiDrillDownDrawer';
 import { useAtivosStats } from '@/hooks/useAtivosStats';
 import { useControlesStats } from '@/hooks/useControlesStats';
@@ -55,7 +52,7 @@ export default function Dashboard() {
   // para o dashboard. Não disparamos aqui para evitar reaparecer ao navegar
   // de volta para o dashboard a partir de outras páginas.
   const [drillKey, setDrillKey] = useState<DrillDownKey | null>(null);
-  const [showContext, setShowContext] = useState(false);
+  const [periodo, setPeriodo] = useState(30);
 
   /*
     O painel atualiza-se sozinho.
@@ -111,69 +108,16 @@ export default function Dashboard() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-5 animate-fade-in w-full max-w-full overflow-x-hidden flex flex-1 flex-col">
-        <DashboardHeader />
+      <div className="w-full max-w-full flex-1 space-y-6 overflow-x-hidden animate-fade-in">
+        <DashboardGreetingHeader nome={(profile?.nome || '').split(' ')[0]} periodo={periodo} onPeriodo={setPeriodo} />
 
-        {/*
-          Saudação e contexto, em texto corrido.
+        <KpiDrillDownDrawer open={!!drillKey} onOpenChange={(o) => !o && setDrillKey(null)} kpiKey={drillKey} />
 
-          Era uma faixa de oito pílulas com moldura, rolável, ocupando uma banda
-          inteira da página para dizer o tamanho do parque. A forma prometia
-          decisão e o conteúdo não tinha nenhuma — ninguém age sobre "8
-          documentos". Continua clicável; muda o peso, não a função.
-        */}
-        <div className="space-y-2">
-          <p className="text-sm font-bold text-foreground">
-            {t('dashboard_v3.hello', { name: profile?.nome || 'Usuário' })}
-          </p>
-
-          <button type="button" aria-expanded={showContext} aria-controls="dashboard-context"
-            onClick={() => setShowContext(v => !v)}
-            className="min-h-10 rounded-md text-xs font-medium text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring sm:hidden">
-            {t('executive.contextToggle')} {showContext ? '−' : '+'}
-          </button>
-          <div id="dashboard-context" className={showContext ? '' : 'hidden sm:block'}>
-          <DashboardMeta
-            ativos={ativosStats.data?.total || 0}
-            activeIncidents={activeIncidents}
-            incidentsThisMonth={incidentesStats.data?.mes || 0}
-            activeContracts={contratosStats.data?.ativos || 0}
-            contractsExpiring={contratosStats.data?.vencendo30Dias || 0}
-            contractsExpired={contratosStats.data?.vencidos || 0}
-            activeDocs={documentosStats.data?.ativos || 0}
-            totalDocs={documentosStats.data?.total || 0}
-            docsExpiring={documentosStats.data?.vencendo30Dias || 0}
-            docsPending={documentosStats.data?.pendentesAprovacao || 0}
-            totalRiscos={riscosStats.data?.total || 0}
-            riscosCriticos={riscosStats.data?.criticos || 0}
-            riscosAltos={riscosStats.data?.altos || 0}
-            planosPendentes={planosStats.data?.pendentes || 0}
-            planosAtrasados={planosStats.data?.atrasados || 0}
-            ddAtivos={ddStats.data?.activeAssessments || 0}
-            ddExpirados={ddStats.data?.expiredAssessments || 0}
-            denunciasAbertas={
-              (denunciasStats.data?.novas || 0) + (denunciasStats.data?.em_andamento || 0)
-            }
-            denunciasNovas={denunciasStats.data?.novas || 0}
-            onPillClick={(key: KpiKey) => setDrillKey(key as DrillDownKey)}
-          />
-          </div>
-        </div>
-
-
-        <KpiDrillDownDrawer
-          open={!!drillKey}
-          onOpenChange={(o) => !o && setDrillKey(null)}
-          kpiKey={drillKey}
-        />
-
-
-        {/* Painel em blocos: um bloco por pergunta, só módulos acessíveis. */}
-        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 lg:gap-5">
+        <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {canAccess('dashboard') !== false && <IndiceTile delay={0} />}
           {canAccess('riscos') && <RiscosTile delay={60} />}
           {(canAccess('planos-acao') || canAccess('incidentes')) && (
-            <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
+            <div className="flex min-w-0 flex-col gap-5">
               {canAccess('planos-acao') && <PlanosTile delay={120}
                 pendentes={planosStats.data?.pendentes || 0}
                 atrasados={planosStats.data?.atrasados || 0}
@@ -181,12 +125,14 @@ export default function Dashboard() {
               {canAccess('incidentes') && <IncidentesTile delay={180}
                 emCurso={activeIncidents}
                 criticos={incidentesStats.data?.criticosEmCurso || 0}
-                altos={incidentesStats.data?.altosEmCurso || 0} />}
+                altos={incidentesStats.data?.altosEmCurso || 0}
+                medios={incidentesStats.data?.mediosEmCurso || 0}
+                baixos={incidentesStats.data?.baixosEmCurso || 0} />}
             </div>
           )}
-          {canAccess('gap-analysis') && <div className="min-w-0 animate-fade-in [&>*]:h-full"><FrameworksOverviewCard /></div>}
-          {canAccess('contratos') && <ContratosTile delay={240} />}
-          <RecentActivities className="min-h-[16rem]" />
+          {canAccess('gap-analysis') && <ConformidadeTile delay={240} />}
+          {canAccess('contratos') && <ContratosTile delay={300} />}
+          <AtividadeTile delay={360} dias={periodo} />
         </div>
       </div>
     </TooltipProvider>

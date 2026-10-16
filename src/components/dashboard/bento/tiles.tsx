@@ -384,8 +384,7 @@ export function AtividadeTile({ delay, dias }: { delay?: number; dias: number })
   const corte = Date.now() - dias * 86400000;
   const lista = (data as Activity[]).filter((a) => new Date(a.created_at).getTime() >= corte).slice(0, 5);
   return (
-    <BentoTile title={t('bento.activity.title')} description={t('bento.activity.desc')} delay={delay}
-      footerHref="/notificacoes" footerLabel={t('bento.activity.more')}>
+    <BentoTile title={t('bento.activity.title')} description={t('bento.activity.desc')} delay={delay}>
       {isLoading ? <AkurisPulse /> : !lista.length ? <BentoEmpty>{t('bento.activity.empty')}</BentoEmpty> : (
         <ul className="flex flex-1 flex-col justify-between gap-3">
           {lista.map((a, idx) => {
