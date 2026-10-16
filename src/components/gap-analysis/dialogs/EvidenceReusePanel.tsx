@@ -189,7 +189,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                 <div className="space-y-2 pr-2">
                   {filteredLibrary.map((ev) => (
                     <div key={ev.id} className="rounded-md border border-border/60 bg-background p-3 flex items-start gap-3">
-                      <div className="mt-0.5 h-7 w-7 rounded-md bg-muted/50 flex items-center justify-center shrink-0">
+                      <div className="mt-0.5 flex items-center justify-center shrink-0">
                         {ev.link_externo ? (
                           <IconExternal className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                         ) : (
