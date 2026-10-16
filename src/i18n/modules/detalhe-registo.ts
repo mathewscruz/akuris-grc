@@ -26,6 +26,8 @@ export const detalheRegisto = {
     },
     detalheRegisto: {
       titulo: 'Detalhe do registro',
+      atividadeRecente: 'Atividade recente',
+      verTodaAtividade: 'Ver toda a atividade',
       abrirRegisto: 'Abrir registro',
       visao: 'Visão geral',
       criadoPor: 'Criado por',
@@ -131,6 +133,8 @@ export const detalheRegisto = {
     },
     detalheRegisto: {
       titulo: 'Record details',
+      atividadeRecente: 'Recent activity',
+      verTodaAtividade: 'View all activity',
       abrirRegisto: 'Open record',
       visao: 'Overview',
       criadoPor: 'Created by',
