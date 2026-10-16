@@ -172,6 +172,7 @@ export const en = {
     assets: 'Assets',
     licenses: 'Licenses',
     keys: 'Keys',
+    desc: { assets: 'Inventory and asset records', licenses: 'Expiry and renewals', keys: 'Certificates and secrets', systems: 'Systems and integrations', privilegedAccounts: 'Elevated-privilege access', accessReview: 'Periodic review campaigns', dueDiligence: 'Supplier assessments', whistleblowing: 'Reporting channel and cases' },
     short: { riskManagement: 'Risks', assetManagement: 'Assets', accessManagement: 'Access', businessContinuity: 'Continuity', thirdParties: 'Third Parties', gapAnalysis: 'Gap Analysis', actionPlans: 'Action Plans' },
     riskManagement: 'Risk Management',
     risks: 'Risks',

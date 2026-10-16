@@ -175,6 +175,7 @@ export const pt = {
     assets: 'Ativos',
     licenses: 'Licenças',
     keys: 'Chaves',
+    desc: { assets: 'Inventário e ficha técnica', licenses: 'Validade e renovações', keys: 'Certificados e segredos', systems: 'Sistemas e integrações', privilegedAccounts: 'Acessos com privilégio elevado', accessReview: 'Campanhas de revisão periódica', dueDiligence: 'Avaliação de fornecedores', whistleblowing: 'Canal e casos de denúncia' },
     short: { riskManagement: 'Riscos', assetManagement: 'Ativos', accessManagement: 'Acessos', businessContinuity: 'Continuidade', thirdParties: 'Terceiros', gapAnalysis: 'Gap Analysis', actionPlans: 'Planos de Ação' },
     riskManagement: 'Gestão de Riscos',
     risks: 'Riscos',

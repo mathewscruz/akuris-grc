@@ -7,7 +7,7 @@ type MenuItem = {
   url?: string;
   icon: any;
   moduleName?: string;
-  subItems?: { title: string; url: string; icon: any; moduleName?: string }[];
+  subItems?: { title: string; url: string; icon: any; moduleName?: string; description?: string }[];
 };
 
 type MenuSection = {
@@ -41,9 +41,9 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
         title: t('sidebar.assetManagement'), shortTitle: t('sidebar.short.assetManagement'),
         icon: GestaoAtivosIcon,
         subItems: [
-          { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
-          { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
-          { title: t('sidebar.keys'), url: '/ativos/chaves', icon: MODULE_ICON['/ativos/chaves'], moduleName: 'ativos' },
+          { title: t('sidebar.assets'), url: '/ativos', description: t('sidebar.desc.assets'), icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
+          { title: t('sidebar.licenses'), url: '/ativos/licencas', description: t('sidebar.desc.licenses'), icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
+          { title: t('sidebar.keys'), url: '/ativos/chaves', description: t('sidebar.desc.keys'), icon: MODULE_ICON['/ativos/chaves'], moduleName: 'ativos' },
         ],
       },
     ],
@@ -59,9 +59,9 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
         title: t('sidebar.accessManagement'), shortTitle: t('sidebar.short.accessManagement'),
         icon: GestaoAcessosIcon,
         subItems: [
-          { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
-          { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
-          { title: t('sidebar.accessReview'), url: '/revisao-acessos', icon: MODULE_ICON['/revisao-acessos'], moduleName: 'contas-privilegiadas' },
+          { title: t('sidebar.systems'), url: '/sistemas', description: t('sidebar.desc.systems'), icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
+          { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', description: t('sidebar.desc.privilegedAccounts'), icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
+          { title: t('sidebar.accessReview'), url: '/revisao-acessos', description: t('sidebar.desc.accessReview'), icon: MODULE_ICON['/revisao-acessos'], moduleName: 'contas-privilegiadas' },
         ],
       },
       { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
@@ -69,8 +69,8 @@ export const getMenuSections = (t: (key: string) => string): MenuSection[] => [
         title: t('experience.thirdPartiesEthics'), shortTitle: t('sidebar.short.thirdParties'),
         icon: ComplianceIcon,
         subItems: [
-          { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
-          { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
+          { title: t('sidebar.dueDiligence'), url: '/due-diligence', description: t('sidebar.desc.dueDiligence'), icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
+          { title: t('sidebar.whistleblowing'), url: '/denuncia', description: t('sidebar.desc.whistleblowing'), icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
         ],
       },
       { title: t('sidebar.businessContinuity'), shortTitle: t('sidebar.short.businessContinuity'), url: '/continuidade', icon: MODULE_ICON['/continuidade'], moduleName: 'continuidade' },
