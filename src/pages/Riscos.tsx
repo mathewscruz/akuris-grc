@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
 import { useListState } from '@/hooks/useListState';
@@ -705,31 +706,7 @@ export function Riscos() {
       key: 'responsavel',
       mobilePriority: 3,
       label: t('riscos.page.columns.responsible'),
-      render: (_value: string, risco: Risco) => {
-        if (!risco.responsavel_nome) {
-          // Distinguir os dois casos: "ninguém" e "alguém que não conseguimos
-          // resolver" pedem acções diferentes.
-          return risco.responsavel_por_resolver ? (
-            <span className="text-xs text-muted-foreground" title={risco.responsavel ?? undefined}>
-              {t('riscos.page.responsavelPorResolver')}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">—</span>
-          );
-        }
-        const first = risco.responsavel_nome.trim().split(/\s+/)[0];
-        return (
-          <div className="inline-flex items-center gap-1.5">
-            <Avatar className="h-5 w-5">
-              {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
-              <AvatarFallback className="bg-primary/10 text-primary text-micro">
-                {risco.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-foreground/85" title={risco.responsavel_nome}>{first}</span>
-          </div>
-        );
-      },
+      render: (_value: string, risco: Risco) => <OwnerCell name={risco.responsavel_nome} photo={risco.responsavel_foto} emptyLabel={t(risco.responsavel_por_resolver ? 'riscos.page.responsavelPorResolver' : 'experience.notAssigned')} />,
     },
     {
       key: 'updated',
@@ -1056,7 +1033,7 @@ export function Riscos() {
             </div>
           );
 
-          return <RiscosTabs matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
+          return <RiscosTabs riskCount={riscos.length} searchValue={searchTerm} onSearchChange={setSearchTerm} matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
         })()}
         
         {/* Dialogs */}

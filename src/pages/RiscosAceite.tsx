@@ -378,28 +378,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       />
 
       <Tabs defaultValue={totalPendentes > 0 ? "pendentes" : "aceitos"} className="space-y-4">
-        <TabsList className="h-auto bg-transparent p-0 gap-1 rounded-none border-b border-border w-full justify-start">
-          <TabsTrigger
-            value="pendentes"
-            className="relative text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
-          >
-            {t('riscos.aceite.tabs.pending')}
-            {totalPendentes > 0 && (
-              <StatusBadge tone="warning" className="ml-2">{totalPendentes}</StatusBadge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger
-            value="aceitos"
-            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
-          >
-            {t('riscos.aceite.tabs.accepted')} ({totalAceitos})
-          </TabsTrigger>
-          <TabsTrigger
-            value="expirados"
-            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
-          >
-            Aceites expirados ({totalExpirados})
-          </TabsTrigger>
+        <TabsList moduleTitle={t('riscos.aceite.title')}>
+          <TabsTrigger value="pendentes" count={totalPendentes}>{t('riscos.aceite.tabs.pending')}</TabsTrigger>
+          <TabsTrigger value="aceitos" count={totalAceitos}>{t('riscos.aceite.tabs.accepted')}</TabsTrigger>
+          <TabsTrigger value="expirados" count={totalExpirados}>{t('riscos.aceite.stats.expiredTitle')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pendentes">

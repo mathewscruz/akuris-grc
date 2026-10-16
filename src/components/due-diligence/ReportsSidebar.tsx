@@ -70,7 +70,7 @@ export function ReportsSidebar() {
             </CardHeader>
             <CardContent className="space-y-3">
               {statsLoading ? (
-                <AkurisPulse size="sm" />
+                <AkurisPulse size={40} />
               ) : (
                 <>
                   <div className="flex justify-between items-center">

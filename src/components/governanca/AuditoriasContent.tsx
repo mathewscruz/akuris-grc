@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { readAllPages, readAllPagesByIds } from "@/lib/read-all-pages";
 import { auditItemSummary } from '@/lib/auditoria-itens';
 import { useListState } from "@/hooks/useListState";
@@ -417,9 +418,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       sortable: true,
       render: (_v: any, a: any) => {
         const u = usuarios?.find((x: any) => x.user_id === a.auditor_responsavel);
-        return u?.nome
-          ? <span className="text-xs">{u.nome}</span>
-          : <span className="text-muted-foreground">-</span>;
+        return <OwnerCell name={u?.nome} photo={u?.foto_url} emptyLabel={t('experience.notAssigned')} />;
       },
     },
     {

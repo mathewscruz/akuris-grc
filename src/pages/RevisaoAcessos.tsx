@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { compareReviewRows } from '@/lib/access-review-sort';
 import { exportCSV, spreadsheetText } from '@/lib/csv-utils';
@@ -238,7 +239,7 @@ export default function RevisaoAcessos() {
       key: "responsavel.nome",
       label: t('fin.comum.responsavel'),
       sortable: true,
-      render: (_value: any, review: any) => review.responsavel?.nome || "-",
+      render: (_value: any, review: any) => <OwnerCell name={review.responsavel?.nome} photo={review.responsavel?.foto_url} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: "data_limite",
@@ -304,7 +305,7 @@ export default function RevisaoAcessos() {
     {
       key: "responsavel.nome",
       label: t('fin.comum.responsavel'),
-      render: (_value: any, review: any) => review.responsavel?.nome || "-",
+      render: (_value: any, review: any) => <OwnerCell name={review.responsavel?.nome} photo={review.responsavel?.foto_url} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: "data_conclusao",
