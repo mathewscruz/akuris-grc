@@ -178,7 +178,7 @@ export function DialogShell({
             */}
             <DialogDescription
               className={cn(
-                descriptionSrOnly && 'sr-only',
+                (!description || descriptionSrOnly) && 'sr-only',
                 description && !descriptionSrOnly && Icon && 'pl-[3.25rem]'
               )}
             >

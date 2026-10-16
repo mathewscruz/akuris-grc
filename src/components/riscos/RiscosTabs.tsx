@@ -83,7 +83,7 @@ export function RiscosTabs({ matrix, table, aceite, riskCount, searchValue, onSe
           {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="table" count={riskCount}>{table}</TabsContent>
+      <TabsContent value="table">{table}</TabsContent>
       <TabsContent value="matrix">{matrix}</TabsContent>
       <TabsContent value="aceite">{aceite}</TabsContent>
     </Tabs>

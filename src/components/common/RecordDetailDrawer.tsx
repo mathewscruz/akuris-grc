@@ -226,7 +226,7 @@ export function RecordDetailDrawer({
                 <TabsTrigger value="atividade">{t('detalheRegisto.atividade')}</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="visao" className="mt-4 space-y-4">
+              <TabsContent value="visao" className="space-y-4">
                 {groups.map((g) => (
                   <Panel key={g.title} title={g.title}>
                     <FieldGrid fields={g.fields} emptyText={t('detalheRegisto.semCampos')} />
@@ -252,7 +252,7 @@ export function RecordDetailDrawer({
               </TabsContent>
 
               {links && (
-                <TabsContent value="ligacoes" className="mt-4 space-y-4">
+                <TabsContent value="ligacoes" className="space-y-4">
                   {linksLoading ? (
                     <div className="flex justify-center py-10"><AkurisPulse size={28} /></div>
                   ) : links.map((g) => (
@@ -288,7 +288,7 @@ export function RecordDetailDrawer({
                 </TabsContent>
               )}
 
-              <TabsContent value="atividade" className="mt-4">
+              <TabsContent value="atividade">
                 <Panel title={t('detalheRegisto.atividade')}>
                   {events.length === 0 ? (
                     <p className="px-4 py-6 text-sm text-muted-foreground">{t('detalheRegisto.semAtividade')}</p>

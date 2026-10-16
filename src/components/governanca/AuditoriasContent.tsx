@@ -418,7 +418,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       sortable: true,
       render: (_v: any, a: any) => {
         const u = usuarios?.find((x: any) => x.user_id === a.auditor_responsavel);
-        return <OwnerCell name={u?.nome} photo={u?.foto_url} emptyLabel={t('experience.notAssigned')} />;
+        return <OwnerCell name={u?.nome} emptyLabel={t('experience.notAssigned')} />;
       },
     },
     {

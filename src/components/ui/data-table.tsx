@@ -545,10 +545,10 @@ export function DataTable<T extends Record<string, any>>({
                   a.originalIndex - b.originalIndex
                 )
                 .map(({ column }) => column)
-              const rowKey = String((item as any).id ?? index)
+              const rowKey = rowId(item, index)
               const expanded = expandedMobileRows.has(rowKey)
-              const visibleColumns = expanded ? resto : resto.slice(0, mobileCollapsedFields)
-              const hasMore = resto.length > mobileCollapsedFields
+              const visibleColumns = expanded || recordView === 'grid' ? resto : resto.slice(0, mobileCollapsedFields)
+              const hasMore = recordView !== 'grid' && resto.length > mobileCollapsedFields
               const abrir = onRowClick
                 ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
                 : null
