@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { AjustesMasterDetail } from './AjustesMasterDetail';
 import type { Json } from '@/integrations/supabase/types';
 import { IconDownload, IconSuccess, IconWarning, IconRefresh, IconFile, IconIdea, IconArrowLeft, IconTrendUp } from '@/components/icons';
 import { Card } from '@/components/ui/card';
@@ -83,6 +85,13 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const foraIds: string[] = Array.isArray(meta.fora_escopo_ids) ? meta.fora_escopo_ids : [];
   const comparacao = meta.comparacao as Comparacao | null | undefined;
   const [verTodosFortes, setVerTodosFortes] = useState(false);
+  const [aba, setAba] = useState('ajustes');
+  const [filtroReq, setFiltroReq] = useState<'todos' | 'conforme' | 'parcial' | 'nao_conforme'>('todos');
+  const abasRef = useRef<HTMLDivElement>(null);
+  const irPara = (k: string) => {
+    setAba(k);
+    requestAnimationFrame(() => abasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
   const grupos = agruparAjustes(acoes, veredito === 'em_compliance');
   const porPrioridade = { alta: [], media: [], baixa: [] } as Record<'alta' | 'media' | 'baixa', { acao: Acao; idx: number }[]>;
   acoes.forEach((acao, idx) => {
