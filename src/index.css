@@ -122,6 +122,8 @@
     --success: 152 55% 33%;
     --success-foreground: 0 0% 100%;
     --good: 172 60% 34%;
+    --chart-teal: 186 70% 42%;
+    --chart-green: 155 60% 42%;
     
     /* Warning — âmbar escurecido: o anterior falhava AA como cor de texto */
     /* Amarelo mais claro e mais amarelo: a 35°/34% lia-se castanho, não
@@ -338,6 +340,8 @@
     --success: 152 45% 56%;
     --success-foreground: 152 40% 10%;
     --good: 170 50% 52%;
+    --chart-teal: 186 75% 55%;
+    --chart-green: 155 62% 55%;
     
     /* Warning */
     --warning: 30 90% 60%;

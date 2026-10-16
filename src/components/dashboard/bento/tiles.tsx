@@ -22,23 +22,34 @@ const C = {
 
 /* ───────────── Índice operacional ───────────── */
 
+const TEAL = 'hsl(var(--chart-teal))', GREEN = 'hsl(var(--chart-green))';
+
 function GradientRing({ value, size = 190 }: { value: number; size?: number }) {
   const mounted = useMounted();
-  const r = size / 2 - 14, circ = 2 * Math.PI * r;
+  const sw = 12, r = size / 2 - sw, circ = 2 * Math.PI * r;
   const off = circ * (1 - (mounted ? value : 0) / 100);
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
       <defs>
-        <linearGradient id="indice-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={C.good} />
-          <stop offset="100%" stopColor={C.success} />
+        <linearGradient id="indice-ring-grad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={TEAL} />
+          <stop offset="100%" stopColor={GREEN} />
         </linearGradient>
       </defs>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={C.track} strokeWidth={14} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="url(#indice-grad)" strokeWidth={14} strokeLinecap="round"
-        strokeDasharray={circ} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)' }} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={sw} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="url(#indice-ring-grad)" strokeWidth={sw} strokeLinecap="round"
+        strokeDasharray={circ} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1)' }} />
     </svg>
   );
+}
+
+function UltimoPonto(props: any) {
+  const { cx, cy, index, dataLength } = props;
+  if (cx == null || cy == null) return null;
+  if (index === dataLength - 1) return (
+    <g><circle cx={cx} cy={cy} r={9} fill={GREEN} opacity={0.25} /><circle cx={cx} cy={cy} r={5} fill={GREEN} stroke="hsl(var(--card))" strokeWidth={2} /></g>
+  );
+  return <circle cx={cx} cy={cy} r={3} fill={TEAL} />;
 }
 
 export function IndiceTile({ delay }: { delay?: number }) {
@@ -46,63 +57,76 @@ export function IndiceTile({ delay }: { delay?: number }) {
   const m = useGrcMaturityScore();
   const empresaId = useAuth().profile?.empresa_id;
   const { data: serie = [] } = useQuery({
-    queryKey: ['bento-indice-serie', empresaId],
+    queryKey: ['bento-indice-serie-semanal', empresaId, locale],
     enabled: !!empresaId,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const inicio = new Date(); inicio.setMonth(inicio.getMonth() - 5, 1); inicio.setHours(0, 0, 0, 0);
       const { data, error } = await supabase.from('gap_analysis_score_history')
-        .select('score, recorded_at').eq('empresa_id', empresaId!).gte('recorded_at', inicio.toISOString()).limit(5000);
+        .select('score, recorded_at').eq('empresa_id', empresaId!).gte('recorded_at', inicio.toISOString())
+        .order('recorded_at').limit(5000);
       if (error) throw error;
+      // Média semanal (semana começa na segunda).
+      const semanas = new Map<number, { soma: number; n: number }>();
+      for (const r of data ?? []) {
+        const d = new Date(r.recorded_at); d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const k = d.getTime(); const acc = semanas.get(k) ?? { soma: 0, n: 0 };
+        acc.soma += Number(r.score); acc.n++; semanas.set(k, acc);
+      }
       const fmt = new Intl.DateTimeFormat(locale, { month: 'short' });
-      return Array.from({ length: 6 }, (_, k) => {
-        const d = new Date(inicio); d.setMonth(inicio.getMonth() + k);
-        const doMes = (data ?? []).filter((r) => { const x = new Date(r.recorded_at); return x.getMonth() === d.getMonth() && x.getFullYear() === d.getFullYear(); });
-        const v = doMes.length ? Math.round(doMes.reduce((a, r) => a + Number(r.score), 0) / doMes.length) : null;
-        const label = fmt.format(d).replace('.', '');
-        return { mes: label.charAt(0).toUpperCase() + label.slice(1), v };
+      let ultimoMes = -1;
+      return [...semanas.entries()].sort((a, b) => a[0] - b[0]).map(([k, { soma, n }]) => {
+        const d = new Date(k); const mes = d.getMonth();
+        const raw = fmt.format(d).replace('.', '');
+        const label = mes !== ultimoMes ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
+        ultimoMes = mes;
+        return { label, v: Math.round(soma / n) };
       });
     },
   });
-  const comDado = serie.filter((s) => s.v != null);
-  const delta = comDado.length >= 2 ? (comDado[comDado.length - 1].v! - comDado[comDado.length - 2].v!) : null;
+  const delta = serie.length >= 2 ? serie[serie.length - 1].v - serie[Math.max(0, serie.length - 5)].v : null;
   const temDados = m.status !== 'no_data';
 
   return (
     <BentoTile title={t('bento.index.title')} description={t('bento.index.desc')} delay={delay}>
       {!temDados ? <BentoEmpty>{t('bento.index.empty')}</BentoEmpty> : (
-        <div className="flex flex-1 flex-col gap-4">
-          <div className="flex items-center gap-6">
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="flex items-center gap-8">
             <div className="relative shrink-0">
               <GradientRing value={m.score} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-semibold tabular-nums text-foreground"><CountUp value={m.score} /></span>
-                <span className="text-sm text-muted-foreground">{t('bento.index.of100')}</span>
+                <span className="text-6xl font-semibold leading-none tabular-nums text-foreground"><CountUp value={m.score} /></span>
+                <span className="mt-2 text-base text-muted-foreground">{t('bento.index.of100')}</span>
               </div>
             </div>
             {delta != null && (
-              <div>
-                <p className={cn('flex items-center gap-1 text-xl font-semibold', delta >= 0 ? 'text-success' : 'text-destructive')}>
+              <div className="max-w-[9rem]">
+                <p className={cn('flex items-center gap-1.5 text-xl font-semibold', delta >= 0 ? 'text-success' : 'text-destructive')}>
                   <IconArrowUp className={cn('h-5 w-5', delta < 0 && 'rotate-180')} />
                   {delta >= 0 ? '+' : ''}{delta}%
                 </p>
-                <p className="text-sm text-muted-foreground">{t('bento.index.vsLastMonth')}</p>
+                <p className="mt-1 text-sm leading-snug text-muted-foreground">{t('bento.index.vsLastMonth')}</p>
               </div>
             )}
           </div>
-          {(
-            <div className="-mx-1 mt-auto h-36 w-auto">
+          {serie.length >= 2 && (
+            <div className="mt-auto h-32 w-full">
               <ResponsiveContainer>
-                <AreaChart data={serie} margin={{ top: 10, right: 6, left: 6, bottom: 0 }}>
+                <AreaChart data={serie} margin={{ top: 12, right: 10, left: 10, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="indice-area" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.good} stopOpacity={0.45} />
-                      <stop offset="100%" stopColor={C.good} stopOpacity={0} />
+                    <linearGradient id="indice-area-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={GREEN} stopOpacity={0.4} />
+                      <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="indice-line-grad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor={TEAL} />
+                      <stop offset="100%" stopColor={GREEN} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: C.muted, fontSize: 11 }} />
-                  <Area type="monotone" dataKey="v" connectNulls stroke={C.good} strokeWidth={2} fill="url(#indice-area)"
-                    dot={{ r: 3, fill: C.good, strokeWidth: 0 }} activeDot={{ r: 5 }} animationDuration={1400} />
+                  <XAxis dataKey="label" interval={0} axisLine={false} tickLine={false} tick={{ fill: C.muted, fontSize: 12 }} />
+                  <Area type="monotone" dataKey="v" stroke="url(#indice-line-grad)" strokeWidth={2} fill="url(#indice-area-grad)"
+                    dot={(p: any) => <UltimoPonto key={p.index} {...p} dataLength={serie.length} />} activeDot={{ r: 5 }} animationDuration={1500} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -125,8 +149,8 @@ const SEV_FILL: Record<string, string> = {
 /** Tom da célula: cinza claro (baixo) → roxo forte (P e I altos), como no modelo. */
 function cellFill(p: number, i: number) {
   const t = (p + i - 2) / 8;
-  if (t < 0.5) return `color-mix(in oklab, hsl(var(--muted-foreground)) ${Math.round(48 - t * 50)}%, hsl(var(--card)))`;
-  return `color-mix(in oklab, hsl(var(--primary)) ${Math.round(30 + (t - 0.5) * 140)}%, hsl(var(--card)))`;
+  if (p + i <= 6 || p <= 2) return `color-mix(in oklab, hsl(var(--muted-foreground)) ${Math.round(42 - t * 22)}%, hsl(var(--card)))`;
+  return `color-mix(in oklab, hsl(var(--primary)) ${Math.round(45 + (t - 0.5) * 110)}%, hsl(var(--card)))`;
 }
 
 export function RiscosTile({ delay }: { delay?: number }) {
@@ -206,7 +230,7 @@ export function PlanosTile({ pendentes, atrasados, concluidos, delay, className 
   const noPrazo = Math.max(0, pendentes - atrasados);
   const total = noPrazo + atrasados + concluidos;
   const fatias = [
-    { k: 'onTime', v: noPrazo, c: C.good },
+    { k: 'onTime', v: noPrazo, c: TEAL },
     { k: 'late', v: atrasados, c: C.danger },
     { k: 'done', v: concluidos, c: C.muted },
   ];
@@ -214,20 +238,20 @@ export function PlanosTile({ pendentes, atrasados, concluidos, delay, className 
     <BentoTile title={t('bento.plans.title')} description={t('bento.plans.desc')} delay={delay} className={className}>
       {(
         <div className="flex flex-1 items-center gap-6">
-          <div className="relative h-32 w-32 shrink-0">
+          <div className="relative h-36 w-36 shrink-0">
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={total ? fatias : [{ k: 'empty', v: 1, c: C.track }]} dataKey="v" innerRadius="68%" outerRadius="100%" stroke="none" startAngle={90} endAngle={-270} animationDuration={1200}>
+                <Pie data={total ? fatias : [{ k: 'empty', v: 1, c: C.track }]} dataKey="v" innerRadius="62%" outerRadius="100%" stroke="none" paddingAngle={total ? 3 : 0} cornerRadius={3} startAngle={90} endAngle={-270} animationDuration={1200}>
                   {(total ? fatias : [{ k: 'empty', v: 1, c: C.track }]).map((f) => <Cell key={f.k} fill={f.c} />)}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-semibold tabular-nums"><CountUp value={total} /></span>
+              <span className="text-3xl font-semibold leading-none tabular-nums"><CountUp value={total} /></span>
               <span className="text-xs text-muted-foreground">{t('bento.plans.total')}</span>
             </div>
           </div>
-          <ul className="flex-1 space-y-3 text-sm">
+          <ul className="flex-1 space-y-4 text-sm">
             {fatias.map((f) => (
               <li key={f.k} className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: f.c }} />
@@ -257,10 +281,10 @@ export function IncidentesTile({ emCurso, criticos, altos, medios, baixos, delay
     <BentoTile title={t('bento.incidents.title')} description={t('bento.incidents.desc')} href="/incidentes" delay={delay} className={className}>
       {(
         <div className="flex flex-1 flex-col justify-center space-y-4">
-          <p className="flex items-baseline gap-3"><span className="text-5xl font-semibold tabular-nums"><CountUp value={emCurso} /></span><span className="text-sm text-muted-foreground">{t('bento.incidents.inProgress')}</span></p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <p className="flex items-baseline gap-3"><span className="text-5xl font-semibold leading-none tabular-nums"><CountUp value={emCurso} /></span><span className="text-sm text-muted-foreground">{t('bento.incidents.inProgress')}</span></p>
+          <div className="flex flex-wrap gap-2">
             {chips.map((c) => (
-              <span key={c.k} className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-sm">
+              <span key={c.k} className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-sm">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.c }} />
                 {t(`bento.incidents.${c.k}`)} <span className="tabular-nums" style={{ color: c.v ? c.c : undefined }}>{c.v}</span>
               </span>
