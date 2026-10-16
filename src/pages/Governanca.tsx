@@ -24,6 +24,18 @@ export default function Governanca() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
+  const empresaId = useAuth().profile?.empresa_id;
+  const { data: contagens } = useQuery({
+    queryKey: ['governanca-contagens', empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const [c, a] = await Promise.all([
+        supabase.from('controles').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId!),
+        supabase.from('auditorias').select('id', { count: 'exact', head: true }).eq('empresa_id', empresaId!),
+      ]);
+      return { controles: c.count ?? 0, auditorias: a.count ?? 0 };
+    },
+  });
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
   // Detectar a aba inicial pelo caminho; `?tab=` fica suportado para os
