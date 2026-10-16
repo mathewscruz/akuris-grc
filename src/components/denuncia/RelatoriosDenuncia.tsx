@@ -7,20 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line
-} from 'recharts';
+import { AkurisArea, AkurisBars, AkurisDonut } from '@/components/charts/AkurisCharts';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
@@ -371,21 +358,7 @@ export function RelatoriosDenuncia() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={metricas.denuncias_por_status}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                    <XAxis 
-                      dataKey="label" 
-                      tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis tick={{ fill: CHART_AXIS }} />
-                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                    <Bar radius={[6, 6, 6, 6]} maxBarSize={32} dataKey="count" fill={chartSeries(0)} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <AkurisBars height={300} data={metricas.denuncias_por_status.map(d => ({ label: d.label, value: d.count }))} />
               </CardContent>
             </Card>
 
@@ -398,25 +371,7 @@ export function RelatoriosDenuncia() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie paddingAngle={3} cornerRadius={4}
-                      data={metricas.denuncias_por_categoria}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ categoria, count }) => `${categoria}: ${count}`}
-                      outerRadius={80}
-                      fill={chartSeries(0)}
-                      dataKey="count"
-                    >
-                      {metricas.denuncias_por_categoria.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.cor} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <AkurisDonut data={metricas.denuncias_por_categoria.map(d => ({ label: d.categoria, value: d.count }))} centerLabel={t('sidebar.whistleblowing')} />
               </CardContent>
             </Card>
 
@@ -462,24 +417,7 @@ export function RelatoriosDenuncia() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={metricas.timeline_denuncias}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="data" 
-                      tick={{ fontSize: CHART_FONT.axis }}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke={chartSeries(0)} 
-                      strokeWidth={2}
-                      dot={{ fill: chartSeries(0) }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <AkurisArea height={300} data={metricas.timeline_denuncias.map(d => ({ label: d.data, value: d.count }))} />
               </CardContent>
             </Card>
           </div>

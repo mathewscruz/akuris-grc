@@ -19,7 +19,7 @@ import { exportCSV } from "@/lib/csv-utils";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
+import { AkurisArea } from '@/components/charts/AkurisCharts';
 import { criticidadeControle, resultadoTeste } from '@/lib/metrics/controles';
 import { severidadeRiscoEfetiva, SEVERIDADES, type Severidade } from '@/lib/metrics/riscos';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
@@ -477,15 +477,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   </div>
                 ) : (
                   <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={tendencia} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
-                        <XAxis dataKey="mes" stroke={CHART_AXIS} fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis domain={[0, 100]} stroke={CHART_AXIS} fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                        <ChartTooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number) => [v + '%', t('controlesAuditorias.rdTendenciaEixo')]} />
-                        <Line type="monotone" dataKey="eficacia" stroke={chartSeries(0)} strokeWidth={2} dot={{ r: 3 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <AkurisArea height={256} data={tendencia.map(d => ({ label: d.mes, value: d.eficacia }))} format={value => `${value}%`} />
                   </div>
                 )}
               </CardContent>

@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useEmpresaMoeda, formatMoeda, formatMoedasSomadas, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
 import { somaPorMoeda } from '@/lib/metrics/contratos';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { AkurisArea, AkurisBars, AkurisDonut } from '@/components/charts/AkurisCharts';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
@@ -478,7 +478,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statExpiringMilestones')}</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <IconCalendar className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{estatisticasGerais.marcosVencendo}</div>
@@ -493,25 +493,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                     <CardTitle>{t('contratosAtivos.relatoriosContratos.chartContractsByStatus')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie paddingAngle={3} cornerRadius={4}
-                          data={dadosGraficoContratosStatus()}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill={chartSeries(0)}
-                          dataKey="value"
-                        >
-                          {dadosGraficoContratosStatus().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <AkurisDonut data={dadosGraficoContratosStatus().map(d => ({ label: formatStatus(d.name), value: Number(d.value) }))} centerLabel={t('cardsKpi.sweep.contratos.contratos')} />
                   </CardContent>
                 </Card>
 
@@ -520,20 +502,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                     <CardTitle>{t('contratosAtivos.relatoriosContratos.chartValueByType')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={dadosGraficoValorPorTipo()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                        <XAxis dataKey="tipo" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
-                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
-                        <Tooltip 
-                          formatter={(value: number) => [
-                            formatMoeda(value, moedaEmpresa),
-                            t('contratosAtivos.relatoriosContratos.tooltipValue')
-                          ]}
-                        />
-                        <Bar radius={[6, 6, 6, 6]} maxBarSize={32} dataKey="valor" fill={chartSeries(0)} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <AkurisBars height={300} data={dadosGraficoValorPorTipo().map(d => ({ label: formatStatus(d.tipo), value: Number(d.valor) }))} format={value => formatMoeda(value, moedaEmpresa)} />
                   </CardContent>
                 </Card>
 
@@ -542,15 +511,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                     <CardTitle>{t('contratosDialogs.relatoriosContratos.chartMilestonesByMonth')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={dadosGraficoMarcosPorMes()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                        <XAxis dataKey="mes" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
-                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
-                        <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                        <Line type="monotone" dataKey="marcos" stroke={chartSeries(0)} strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <AkurisArea height={300} data={dadosGraficoMarcosPorMes().map(d => ({ label: d.mes, value: Number(d.marcos) }))} />
                   </CardContent>
                 </Card>
               </div>
