@@ -186,6 +186,14 @@ export async function fetchActivities(empresaId: string, t: any): Promise<Activi
     supabase.from('auditorias').select('id, nome, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(2),
     supabase.from('denuncias').select('id, titulo, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(2),
   ]);
+  const [planosRes, incidentesRes, contratosRes] = await Promise.all([
+    supabase.from('planos_acao').select('id, titulo, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
+    supabase.from('incidentes').select('id, titulo, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
+    supabase.from('contratos').select('id, nome, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
+  ]);
+  planosRes.data?.forEach(p => activities.push({ id: `plano-${p.id}`, recordId: p.id, type: 'creation', title: p.titulo, description: t('activities.newPlan'), created_at: p.created_at, module: 'planos', iconName: 'planos' }));
+  incidentesRes.data?.forEach(i => activities.push({ id: `incidente-${i.id}`, recordId: i.id, type: 'creation', title: i.titulo, description: t('activities.newIncident'), created_at: i.created_at, module: 'incidentes', iconName: 'incidentes' }));
+  contratosRes.data?.forEach(c => activities.push({ id: `contrato-${c.id}`, recordId: c.id, type: 'creation', title: c.nome, description: t('activities.newContract'), created_at: c.created_at, module: 'contratos', iconName: 'contratos' }));
 
   riscosRes.data?.forEach(r => activities.push({ id: `risco-${r.id}`, recordId: r.id, type: 'creation', title: r.nome, description: t('activities.newRisk'), created_at: r.created_at, module: 'riscos', iconName: 'riscos' }));
   controlesRes.data?.forEach(c => activities.push({ id: `controle-${c.id}`, recordId: c.id, type: 'creation', title: c.nome, description: t('activities.newControl'), created_at: c.created_at, module: 'controles', iconName: 'controles' }));
@@ -269,7 +277,10 @@ export function RecentActivities({ className }: { className?: string }) {
     'controles': '/governanca/controles',
     'documentos': '/documentos',
     'auditorias': '/governanca/auditorias',
-    'denuncias': '/denuncia'
+    'denuncias': '/denuncia',
+    'planos': '/planos-acao',
+    'incidentes': '/incidentes',
+    'contratos': '/contratos',
   };
 
   /**

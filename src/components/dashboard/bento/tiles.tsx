@@ -12,7 +12,8 @@ import { fetchActivities, type Activity } from '@/components/dashboard/RecentAct
 import { IconArrowUp, IconFile, IconShield, IconCheck, IconWarning, IconMessage } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { BentoTile, BentoEmpty, CountUp, useMounted } from './BentoTile';
-import { diasAte, severidadeCelula, urgenciaContrato } from './bento-utils';
+import { diasAte, severidadeCelula, urgenciaContrato, serieSemanalConformidade, CONTRATO_VIGENTE } from './bento-utils';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 
 const C = {
   good: 'hsl(var(--good))', success: 'hsl(var(--success))', danger: 'hsl(var(--destructive))',
@@ -63,26 +64,10 @@ export function IndiceTile({ delay }: { delay?: number }) {
     queryFn: async () => {
       const inicio = new Date(); inicio.setMonth(inicio.getMonth() - 5, 1); inicio.setHours(0, 0, 0, 0);
       const { data, error } = await supabase.from('gap_analysis_score_history')
-        .select('score, recorded_at').eq('empresa_id', empresaId!).gte('recorded_at', inicio.toISOString())
+        .select('framework_id, score, recorded_at').eq('empresa_id', empresaId!).gte('recorded_at', inicio.toISOString())
         .order('recorded_at').limit(5000);
       if (error) throw error;
-      // Média semanal (semana começa na segunda).
-      const semanas = new Map<number, { soma: number; n: number }>();
-      for (const r of data ?? []) {
-        const d = new Date(r.recorded_at); d.setHours(0, 0, 0, 0);
-        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-        const k = d.getTime(); const acc = semanas.get(k) ?? { soma: 0, n: 0 };
-        acc.soma += Number(r.score); acc.n++; semanas.set(k, acc);
-      }
-      const fmt = new Intl.DateTimeFormat(locale, { month: 'short' });
-      let ultimoMes = -1;
-      return [...semanas.entries()].sort((a, b) => a[0] - b[0]).map(([k, { soma, n }]) => {
-        const d = new Date(k); const mes = d.getMonth();
-        const raw = fmt.format(d).replace('.', '');
-        const label = mes !== ultimoMes ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
-        ultimoMes = mes;
-        return { label, v: Math.round(soma / n) };
-      });
+      return serieSemanalConformidade(data ?? [], locale);
     },
   });
   const delta = serie.length >= 2 ? serie[serie.length - 1].v - serie[Math.max(0, serie.length - 5)].v : null;
@@ -310,8 +295,9 @@ export function ConformidadeTile({ delay }: { delay?: number }) {
         <ul className="flex flex-1 flex-col justify-center gap-6">
           {lista.map((f) => (
             <li key={f.id}>
-              <div className="mb-2 flex items-center justify-between text-base">
-                <span className="truncate font-medium text-foreground">{f.nome}</span>
+              <div className="mb-2 flex items-center gap-3 text-base">
+                <FrameworkBadge name={f.nome} versao={f.versao ?? undefined} tipo={f.tipo} size="sm" />
+                <span className="min-w-0 flex-1 truncate font-medium text-foreground">{f.nome}</span>
                 <span className="tabular-nums text-foreground">{Math.round(f.mediaConformidade)}%</span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
@@ -342,7 +328,7 @@ export function ContratosTile({ delay }: { delay?: number }) {
     queryFn: async () => {
       const { data, error } = await supabase.from('contratos')
         .select('id, nome, data_fim, fornecedores(nome)')
-        .eq('empresa_id', empresaId!).eq('status', 'ativo')
+        .eq('empresa_id', empresaId!).in('status', CONTRATO_VIGENTE as unknown as string[])
         .gte('data_fim', hoje).lte('data_fim', limite)
         .order('data_fim').limit(4);
       if (error) throw error;
@@ -386,10 +372,10 @@ export function ContratosTile({ delay }: { delay?: number }) {
 /* ───────────── Atividade recente ───────────── */
 
 const ICONE: Record<string, typeof IconFile> = {
-  riscos: IconShield, controles: IconCheck, documentos: IconFile, auditorias: IconCheck, denuncias: IconMessage, incidentes: IconWarning,
+  riscos: IconShield, planos: IconCheck, contratos: IconFile, controles: IconCheck, documentos: IconFile, auditorias: IconCheck, denuncias: IconMessage, incidentes: IconWarning,
 };
 const ROTA: Record<string, string> = {
-  riscos: '/riscos', controles: '/governanca/controles', documentos: '/documentos', auditorias: '/governanca/auditorias', denuncias: '/denuncia',
+  riscos: '/riscos', planos: '/planos-acao', incidentes: '/incidentes', contratos: '/contratos', controles: '/governanca/controles', documentos: '/documentos', auditorias: '/governanca/auditorias', denuncias: '/denuncia',
 };
 
 function relativo(iso: string, locale: string) {

@@ -23,6 +23,8 @@ const MAP_ESTADO: Record<string, EstadoIncidente> = {
   contido: 'contido',
   contencao: 'contido',
   em_contencao: 'contido',
+  em_tratamento: 'investigacao',
+  tratamento: 'investigacao',
   resolvido: 'resolvido',
   resolvida: 'resolvido',
   fechado: 'fechado',
