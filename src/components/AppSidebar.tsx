@@ -149,12 +149,12 @@ export function AppSidebar({ previewAllAccess = false }: { previewAllAccess?: bo
   const isActive = (path: string) => currentPath === path;
 
   const closeMobile = () => { if (isMobile) setOpenMobile(false); };
-  const railIcon = isDense ? 'h-[18px] w-[18px]' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
+  const railIcon = isDense ? 'h-4 w-4' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
   const labelCls = isMobile ? 'flex-1 text-left text-sm' : `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-[10.5px]' : 'text-[11px]'}`;
   const railCls = (active: boolean) => isMobile
     ? `relative flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'}`
     :
-    `relative flex w-full flex-col items-center justify-center ${isDense ? 'gap-0.5' : 'gap-1'} rounded-xl px-1 ${isDense ? 'py-1' : isCompact ? 'py-1.5' : 'py-2.5'} transition-colors duration-200 ${
+    `relative flex w-full flex-col items-center justify-center ${isDense ? 'gap-0' : 'gap-1'} rounded-lg px-1 ${isDense ? 'py-0.5' : isCompact ? 'py-1.5' : 'py-2.5'} transition-colors duration-200 ${
       active
         ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
         : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
@@ -274,7 +274,7 @@ export function AppSidebar({ previewAllAccess = false }: { previewAllAccess?: bo
 
       <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-3'}`}>
         {getVisibleSections().map((section, sIdx) => (
-          <div key={section.id} className={sIdx > 0 ? (isDense ? 'mt-1 border-t border-sidebar-border/40 pt-1' : 'mt-2 border-t border-sidebar-border/40 pt-2') : ''}>
+          <div key={section.id} className={sIdx > 0 ? (isDense ? 'mt-0.5 border-t border-sidebar-border/40 pt-0.5' : 'mt-2 border-t border-sidebar-border/40 pt-2') : ''}>
             <ul className={`flex flex-col ${isDense ? 'gap-0' : 'gap-1'}`}>
               {section.items.map((item) => {
                 if (item.subItems) {
