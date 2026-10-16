@@ -128,7 +128,7 @@
      * sobre branco e passa a cumprir o mínimo de 3:1 de componente de
      * interface (WCAG 1.4.11). Onde é texto, vem sempre acompanhado do
      * rótulo ou da letra, nunca a cor sozinha. */
-    --warning: 40 90% 38%;
+    --warning: 28 88% 46%;
     --warning-foreground: 0 0% 100%;
 
     /* Orange — severidade "Alto" (entre Warning e Destructive) */
@@ -157,7 +157,7 @@
        quatro segmentos no chip preserva a distinção sem depender da cor. */
     --severity-critical: 355 68% 39%;
     --severity-high: 24 86% 37%;
-    --severity-medium: 45 90% 38%;
+    --severity-medium: 30 85% 45%;
     --severity-low: 145 60% 30%;
     --severity-none: 200 12% 46%;
 
@@ -338,7 +338,7 @@
     --success-foreground: 152 40% 10%;
     
     /* Warning */
-    --warning: 38 70% 56%;
+    --warning: 30 90% 60%;
     --warning-foreground: 40 50% 10%;
 
     /* Orange — severidade "Alto" (dark) */
@@ -363,7 +363,7 @@
        Mesmas matizes do tema claro, com luminosidade suficiente no navy. */
     --severity-critical: 355 78% 68%;
     --severity-high: 24 92% 66%;
-    --severity-medium: 45 80% 60%;
+    --severity-medium: 32 88% 62%;
     --severity-low: 145 50% 58%;
     --severity-none: 200 12% 62%;
 
