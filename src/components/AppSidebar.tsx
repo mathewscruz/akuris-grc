@@ -260,7 +260,7 @@ export function AppSidebar() {
         <AkurisPulse size={80} />
       </div>
     )}
-    <Sidebar className="sidebar-gradient" collapsible="none">
+    <Sidebar className="sidebar-gradient" collapsible="offcanvas">
       <SidebarHeader className="mt-[calc(theme(spacing.2)+1px)] h-14 border-b border-sidebar-border p-0">
         <div className="flex h-full items-center justify-center">
           <img src={akurisMark.url} alt="Akuris" className="h-10 w-10 rounded-xl object-contain" />
