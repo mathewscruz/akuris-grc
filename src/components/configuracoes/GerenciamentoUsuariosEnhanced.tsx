@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -964,9 +964,10 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="flex items-center gap-2"><IconPerson className="h-5 w-5 text-primary" />
                 {editingUsuario ? t('admin.usuarios.dialogEditTitle') : t('admin.usuarios.dialogNewTitle')}
               </DialogTitle>
+              <DialogDescription>{t('layout.dialogDescription', { title: t('admin.usuarios.fieldNome') })}</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -1096,7 +1097,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   />
                 )}
                 
-                <div className="flex justify-end gap-2">
+                <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     {t('admin.usuarios.cancelar')}
                   </Button>
@@ -1106,7 +1107,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                     ) : null}
                     {editingUsuario ? t('admin.usuarios.atualizar') : t('admin.usuarios.criar')}
                   </Button>
-                </div>
+                </DialogFooter>
               </form>
             </Form>
           </DialogContent>
