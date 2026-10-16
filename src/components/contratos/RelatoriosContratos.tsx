@@ -495,7 +495,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
-                        <Pie
+                        <Pie paddingAngle={3} cornerRadius={4}
                           data={dadosGraficoContratosStatus()}
                           cx="50%"
                           cy="50%"
