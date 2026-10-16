@@ -8,13 +8,13 @@ const tokens = ler('src/index.css');
 const controles = ler('src/components/governanca/ControlesContent.tsx');
 
 describe('criticidade comunica intensidade, não uma inicial decorativa', () => {
-  it('usa um medidor ordenado de quatro níveis', () => {
+  it('mantém a escala de quatro níveis e mostra só ponto + texto', () => {
     expect(chip).toContain('SEVERITY_STEPS');
     expect(chip).toContain('critical: 4');
     expect(chip).toContain('high: 3');
     expect(chip).toContain('medium: 2');
     expect(chip).toContain('low: 1');
-    expect(chip).toContain('<SeverityMeter level={tone} />');
+    expect(chip).not.toContain('<SeverityMeter level={tone} />'); // aprovado: ponto + texto
     expect(chip).not.toContain('>{mark}</span>');
     expect(statusBadge).toContain('medidor de intensidade');
     expect(chip).toContain('data-chip-tone={tone}');

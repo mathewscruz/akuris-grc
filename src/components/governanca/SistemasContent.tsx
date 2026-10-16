@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages } from '@/lib/read-all-pages';
 import { useListState } from '@/hooks/useListState';
@@ -257,7 +258,7 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
       key: 'responsavel_sistema',
       label: t('experience.assignedTo'),
       mobilePriority: 2,
-      render: (_: any, sistema: SistemaPrivilegiado) => sistema.responsavel_sistema || t('experience.notAssigned'),
+      render: (_: any, sistema: SistemaPrivilegiado) => <OwnerCell name={sistema.responsavel_sistema} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: 'url_sistema',

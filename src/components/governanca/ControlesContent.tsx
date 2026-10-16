@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { loadControls } from '@/lib/queries/controls';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
@@ -470,38 +471,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       label: t("governancaComp.controles.columnResponsavel"),
       sortable: true,
       render: (value: any, controle: Controle) => {
-        if (controle.responsavel_nome) {
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="inline-flex max-w-40 cursor-default items-center gap-2">
-                    <Avatar className="h-8 w-8 shrink-0 ring-primary/20">
-                      {controle.responsavel_foto && (
-                        <AvatarImage src={controle.responsavel_foto} alt={controle.responsavel_nome} />
-                      )}
-                      <AvatarFallback className="text-micro">
-                        {controle.responsavel_nome
-                          .split(' ')
-                          .map(n => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate text-xs font-medium text-foreground/85">
-                      {controle.responsavel_nome.split(/\s+/)[0]}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{controle.responsavel_nome}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-        return <span className="text-muted-foreground">{t(controle.responsavel_id ? 'experience.ownerUnavailable' : 'experience.notAssigned')}</span>;
+        return <OwnerCell name={controle.responsavel_nome} photo={controle.responsavel_foto} emptyLabel={t(controle.responsavel_id ? 'experience.ownerUnavailable' : 'experience.notAssigned')} />;
       }
     },
     {

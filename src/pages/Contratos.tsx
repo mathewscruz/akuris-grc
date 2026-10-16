@@ -1,3 +1,4 @@
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
 import { useListState } from '@/hooks/useListState';
@@ -397,7 +398,7 @@ export default function Contratos() {
       key: 'gestor_contrato',
       label: t('experience.assignedTo'),
       mobilePriority: 2,
-      render: (_: any, c: any) => nomePorUsuario.get(c.gestor_contrato) || t('experience.notAssigned'),
+      render: (_: any, c: any) => <OwnerCell name={nomePorUsuario.get(c.gestor_contrato)} emptyLabel={t('experience.notAssigned')} />,
     },
     {
       key: 'tipo',
