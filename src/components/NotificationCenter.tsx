@@ -1,3 +1,4 @@
+import { agruparPorDia, ORDEM_GRUPOS, type GrupoDia } from '@/lib/notifications/agrupar-por-dia';
 import React, { useState } from 'react';
 import { NotificationTasks } from '@/components/notifications/NotificationTasks';
 import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
@@ -470,10 +471,10 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
-  const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string; chipSolid: string; stripes: string }> = {
+  const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string; chipSolid: string }> = {
     success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success',     chipSolid: 'bg-success',     stripes: 'akuris-stripes-success' },
     warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning',     chipSolid: 'bg-warning',     stripes: 'akuris-stripes-warning' },
-    destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive', chipSolid: 'bg-destructive', stripes: 'akuris-stripes-destructive' },
+    destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive', chipSolid: 'bg-destructive' },
     info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info',        chipSolid: 'bg-info',        stripes: 'akuris-stripes-info' },
   };
 
@@ -507,61 +508,42 @@ const NotificationCenter: React.FC = () => {
     const moduleLabel = t(moduleMeta.i18nKey);
     const { title: displayTitle, message: displayMessage } = getNotificationDisplay(notification, t);
 
+    const abrir = notification.link_to
+      ? (t('common.open') !== 'common.open' ? t('common.open') : 'Abrir')
+      : (t('notifications.viewDetails') !== 'notifications.viewDetails' ? t('notifications.viewDetails') : 'Ver');
     return (
-      <button
-        type="button"
-        key={notification.id}
-        onClick={() => handleNotificationClick(notification)}
-        className={cn(
-          'group relative w-full text-left rounded-lg border border-border/50 overflow-hidden',
-          'transition-ui hover:shadow-[0_8px_22px_-12px_hsl(var(--foreground)/0.18)]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-          'animate-notification-enter',
-          toneCls.stripes,
-          notification.read && 'opacity-70'
-        )}
-      >
-        <div className="flex items-center gap-3 p-3.5 pl-4">
-          {/* Chip sólido 24px */}
-          <span
-            aria-hidden
-            className={cn(
-              'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white',
-              toneCls.chipSolid
-            )}
-          >
-            <ModuleIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
-          </span>
-
+      <li key={notification.id} className="relative pl-6 animate-notification-enter">
+        <span
+          aria-hidden
+          className={cn(
+            'absolute left-[3px] top-2 h-2.5 w-2.5 rounded-full ring-4 ring-popover',
+            notification.read ? 'border-2 bg-popover' : toneCls.accent,
+            notification.read && toneCls.iconText.replace('text-', 'border-'),
+          )}
+        />
+        <button
+          type="button"
+          onClick={() => handleNotificationClick(notification)}
+          className="group flex w-full items-start gap-3 rounded-md py-1.5 pr-1 text-left transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-muted-foreground leading-none mb-1 truncate">
+            <p className="mb-0.5 flex items-center gap-1.5 truncate text-micro font-semibold text-muted-foreground">
+              <ModuleIcon className={cn('h-3.5 w-3.5', toneCls.iconText)} strokeWidth={1.75} />
               {moduleLabel}
             </p>
-            <p className={cn(
-              'text-sm font-semibold leading-snug tracking-tight break-words line-clamp-2',
-              !notification.read ? 'text-foreground' : 'text-muted-foreground'
-            )}>
+            <p className={cn('text-sm font-semibold leading-snug tracking-tight break-words line-clamp-2', notification.read ? 'text-muted-foreground' : 'text-foreground')}>
               {displayTitle}
             </p>
             {displayMessage && (
-              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 break-words line-clamp-3">
-                {displayMessage}
-              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground break-words line-clamp-2">{displayMessage}</p>
             )}
-            <span className="text-micro text-muted-foreground tabular-nums mt-1.5 block">
-              {formatRelative(notification.created_at)}
-            </span>
           </div>
-
-          {/* Botão "Action" branco — abre o detalhe / link */}
-          <span
-            className="akuris-pill-action shrink-0"
-            aria-hidden
-          >
-            {notification.link_to ? (t('common.open') !== 'common.open' ? t('common.open') : 'Abrir') : t('notifications.viewDetails') !== 'notifications.viewDetails' ? t('notifications.viewDetails') : 'Ver'}
-          </span>
-        </div>
-      </button>
+          <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
+            <span className="text-micro tabular-nums text-muted-foreground whitespace-nowrap">{formatRelative(notification.created_at)}</span>
+            <span className="text-xs font-semibold text-primary group-hover:underline">{abrir}</span>
+          </div>
+        </button>
+      </li>
     );
   };
 
@@ -687,7 +669,7 @@ const NotificationCenter: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 px-3 py-2 border-b border-border/60 bg-surface-1/40">
+          <div className="flex items-center gap-1 px-3 py-2 border-b border-border/60">
             {([
               { key: 'alerts' as const, label: t('changelog.tabAlerts'), dot: unreadCount > 0 },
               { key: 'tasks' as const, label: t('experience.notificationTasks'), dot: !tasks.isError && tasks.total > 0 },
@@ -702,10 +684,11 @@ const NotificationCenter: React.FC = () => {
                 }}
                 aria-pressed={tab === item.key}
                 className={cn(
-                  'relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                  'relative inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors',
+                  'after:absolute after:inset-x-2 after:-bottom-[9px] after:h-0.5 after:rounded-full',
                   tab === item.key
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    ? 'text-primary after:bg-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {item.label}
@@ -759,27 +742,24 @@ const NotificationCenter: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="px-3 py-3 space-y-4">
-                {groupMeta.map(({ key, label, tone }) => {
-                  const items = groups[key];
-                  if (items.length === 0) return null;
-                  return (
-                    <section key={key} aria-label={label} className="space-y-2">
-                      <header className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-2">
-                          <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', TONE_CLS[tone].accent)} />
-                          <p className="text-xs font-semibold text-muted-foreground">
-                            {label}
-                          </p>
-                        </div>
-                        <span className="text-micro font-semibold text-muted-foreground tabular-nums">
-                          {items.length}
-                        </span>
-                      </header>
-                      <div className="space-y-2">{items.map(renderItem)}</div>
+              <div className="px-4 py-3 space-y-4">
+                {(() => {
+                  const porDia = agruparPorDia(allNotifications);
+                  const rotulo: Record<GrupoDia, string> = {
+                    today: t('notifications.dayToday'),
+                    yesterday: t('notifications.dayYesterday'),
+                    week: t('notifications.dayWeek'),
+                    older: t('notifications.dayOlder'),
+                  };
+                  return ORDEM_GRUPOS.map((g) => porDia[g].length === 0 ? null : (
+                    <section key={g} aria-label={rotulo[g]}>
+                      <p className="mb-2 text-xs font-semibold text-muted-foreground">{rotulo[g]}</p>
+                      <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
+                        {porDia[g].map(renderItem)}
+                      </ol>
                     </section>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             )}
           </div>
@@ -799,13 +779,11 @@ const NotificationCenter: React.FC = () => {
                   <span
                     aria-hidden
                     className={cn(
-                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ring-1',
-                      detailToneCls.chipBg,
-                      detailToneCls.chipRing,
+                      'flex shrink-0 items-center justify-center pt-0.5',
                       detailToneCls.iconText
                     )}
                   >
-                    <DetailIcon className="h-5 w-5" strokeWidth={1.5} />
+                    <DetailIcon className="h-6 w-6" strokeWidth={1.5} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-primary/70 leading-none">
