@@ -289,13 +289,24 @@ Veredito calculado: ${veredito} (nota ${score}% no escopo desta política). NÃO
 RESULTADO POR REQUISITO:
 ${linhas}
 
-Explique o veredito ao usuário e diga exatamente o que ele precisa fazer.
+Explique o veredito ao usuário e ensine exatamente o que ele precisa fazer, como um consultor que instrui.
 JSON: {
  "resumo": "2-3 frases respondendo a pergunta e explicando o porquê",
- "acoes": [{"titulo": "ajuste concreto, max 80", "descricao": "o que escrever/incluir na política, max 220", "prioridade": "alta|media|baixa", "requisito_codigo": "código"}],
+ "acoes": [{
+   "titulo": "ajuste concreto, max 80",
+   "descricao": "resumo do ajuste, max 200",
+   "prioridade": "alta|media|baixa",
+   "essencial": true se sem isso a política não fica em compliance; false se é boa prática,
+   "requisito_codigo": "código",
+   "exigencia_norma": "o que a norma exige, em linguagem simples, max 220",
+   "evidencia_documento": "trecho LITERAL curto da política relacionado, ou 'Não encontramos menção a ...' — nunca invente citações",
+   "impacto": "por que importa / o que um auditor apontaria, max 180",
+   "passos": ["2 a 4 passos práticos, max 120 cada"],
+   "texto_sugerido": "parágrafo pronto para inserir na política, max 600"
+ }],
  "pontos_fortes": [{"titulo": "max 60", "descricao": "max 150", "citacao": "trecho literal curto da política"}]
 }
-Ordene as ações da mais importante para a menos importante. Máximo 12 ações e 6 pontos fortes. Se estiver tudo conforme, "acoes" pode trazer apenas melhorias opcionais com prioridade baixa.`, 4000);
+Ordene as ações da mais importante para a menos importante. Máximo 10 ações e 6 pontos fortes. Se estiver tudo conforme, "acoes" traz apenas boas práticas com essencial=false.`, 9000);
   return JSON.parse(out.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
 }
 
