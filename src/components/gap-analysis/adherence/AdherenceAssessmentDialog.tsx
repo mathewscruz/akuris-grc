@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconClose, IconUpload, IconFile, IconShield, IconSearch } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
