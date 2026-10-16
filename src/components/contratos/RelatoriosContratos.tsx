@@ -531,7 +531,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                             t('contratosAtivos.relatoriosContratos.tooltipValue')
                           ]}
                         />
-                        <Bar dataKey="valor" fill={chartSeries(0)} />
+                        <Bar radius={[6, 6, 6, 6]} maxBarSize={32} dataKey="valor" fill={chartSeries(0)} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>

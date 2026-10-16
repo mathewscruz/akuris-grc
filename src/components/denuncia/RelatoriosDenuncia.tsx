@@ -383,7 +383,7 @@ export function RelatoriosDenuncia() {
                     />
                     <YAxis tick={{ fill: CHART_AXIS }} />
                     <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                    <Bar dataKey="count" fill={chartSeries(0)} />
+                    <Bar radius={[6, 6, 6, 6]} maxBarSize={32} dataKey="count" fill={chartSeries(0)} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

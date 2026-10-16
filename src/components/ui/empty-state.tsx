@@ -25,7 +25,7 @@ interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
 const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
   ({ className, icon, title, description, action, variant = "default", shortcuts, ...props }, ref) => {
     const atalhos = shortcuts ?? (action ? [{ icon, label: action.label, description, onClick: action.onClick }] : []);
-    if (variant === "quickstart" || (variant === "default" && shortcuts?.length)) {
+    if (variant === "quickstart" || (variant === "default" && (shortcuts?.length || action))) {
       return (
         <div
           ref={ref}
