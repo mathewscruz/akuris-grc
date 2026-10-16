@@ -120,6 +120,14 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     setUploadedFile(null);
   };
 
+  // Arquivo arrastado para a página: passa pela mesma validação do seletor.
+  useEffect(() => {
+    if (open && initialFile) {
+      handleFileChange({ target: { files: [initialFile] } } as unknown as React.ChangeEvent<HTMLInputElement>);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialFile]);
+
   // Extrair texto de PDF
   const extractTextFromPDF = async (file: File): Promise<string> => {
     // PDF.js é grande; só o descarregamos quando um PDF realmente é enviado.
