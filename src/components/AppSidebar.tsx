@@ -48,12 +48,13 @@ export function AppSidebar() {
 
   // All items flat (used for active-group lookup)
   const allItems = menuSections.flatMap((s) => s.items);
+  const matchesPath = (url: string) => currentPath === url || currentPath.startsWith(url.replace(/\/frameworks$/, '') + '/');
 
   // Function to get which group contains the active route
   const getActiveGroup = () => {
     for (const item of allItems) {
       if (item.subItems) {
-        const hasActiveSubItem = item.subItems.some((subItem) => currentPath === subItem.url);
+        const hasActiveSubItem = item.subItems.some((subItem) => matchesPath(subItem.url));
         if (hasActiveSubItem) {
           return item.title;
         }
@@ -154,7 +155,7 @@ export function AppSidebar() {
     }`;
 
   const hasActiveSubItem = (subItems: any[]) => {
-    return subItems.some((subItem) => currentPath === subItem.url);
+    return subItems.some((subItem) => matchesPath(subItem.url));
   };
 
   // Função para fechar grupos ao navegar para item sem submenu
@@ -284,7 +285,7 @@ export function AppSidebar() {
       <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-2'}`}>
         <ul
           className={`flex flex-col ${isMobile ? itemGap : 'flex-1 justify-between gap-0'}`}
-          style={isMobile ? undefined : { maxHeight: `${menuItems.length * 84}px` }}
+          style={isMobile ? undefined : { maxHeight: `min(85%, ${menuItems.length * 84}px)` }}
         >
           {menuItems.map((item) => {
                 if (item.subItems) {
@@ -337,7 +338,7 @@ export function AppSidebar() {
                           <p className="border-b border-sidebar-border px-2.5 pb-2 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/55">{item.title}</p>
                           <div className="mt-1.5 flex flex-col gap-0.5">
                           {item.subItems.map((subItem) => {
-                            const subActive = isActive(subItem.url);
+                            const subActive = isActive(subItem.url) || (matchesPath(subItem.url) && !item.subItems.some((o) => o.url !== subItem.url && matchesPath(o.url) && o.url.length > subItem.url.length));
                             return (
                               <NavLink
                                 key={subItem.title}
