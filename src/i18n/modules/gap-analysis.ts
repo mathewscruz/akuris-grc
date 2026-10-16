@@ -304,6 +304,18 @@ export const gapAnalysis = {
           scannedPdf: 'Este PDF parece ser uma imagem escaneada e quase não tem texto legível. Envie uma versão com texto (Word ou PDF exportado) para não gastar crédito à toa.',
         },
         verdict: {
+          live: {
+            preparando: 'Preparando o arquivo', preparando_d: 'Lendo e enviando o documento com segurança',
+            entendendo: 'Entendendo a política', entendendo_d: 'Identificando o tema e o que a norma exige dela',
+            lendo: 'Lendo o documento', lendo_d: 'Documentos curtos são lidos de uma vez',
+            avaliando: 'Avaliando contra a norma', avaliando_d: 'Verificando cada ponto aplicável',
+            montando: 'Montando o resultado', montando_d: 'Veredito, ajustes e textos sugeridos',
+            readingPart: 'Lendo parte {done} de {total}', evaluatingPoints: 'Avaliados {done} de {total} pontos',
+            discovered: 'O que o Akuris já descobriu',
+            foundTheme: 'Tema identificado', foundScope: 'Pontos da norma que se aplicam', foundParts: 'Partes lidas', foundPoints: 'Pontos avaliados',
+            ofTotal: '{a} de {b}', elapsed: 'Decorrido', completed: 'Análise concluída',
+            stillWorking: 'Ainda trabalhando — documentos grandes levam mais tempo.',
+          },
           guide: {
             answer_em_compliance: 'Sim, sua política atende a {norma}',
             answer_com_ressalvas: 'Quase lá — faltam {n} ajustes para atender a {norma}',
@@ -1312,6 +1324,18 @@ export const gapAnalysis = {
           scannedPdf: 'This PDF looks like a scanned image with almost no readable text. Upload a text version (Word or exported PDF) to avoid wasting credits.',
         },
         verdict: {
+          live: {
+            preparando: 'Preparing the file', preparando_d: 'Reading and securely uploading the document',
+            entendendo: 'Understanding the policy', entendendo_d: 'Identifying the theme and what the standard requires',
+            lendo: 'Reading the document', lendo_d: 'Short documents are read in one go',
+            avaliando: 'Evaluating against the standard', avaliando_d: 'Checking each applicable point',
+            montando: 'Building the result', montando_d: 'Verdict, adjustments and suggested texts',
+            readingPart: 'Reading part {done} of {total}', evaluatingPoints: 'Evaluated {done} of {total} points',
+            discovered: 'What Akuris has found so far',
+            foundTheme: 'Theme identified', foundScope: 'Applicable points of the standard', foundParts: 'Parts read', foundPoints: 'Points evaluated',
+            ofTotal: '{a} of {b}', elapsed: 'Elapsed', completed: 'Analysis complete',
+            stillWorking: 'Still working — large documents take longer.',
+          },
           guide: {
             answer_em_compliance: 'Yes, your policy meets {norma}',
             answer_com_ressalvas: 'Almost there — {n} adjustments left to meet {norma}',

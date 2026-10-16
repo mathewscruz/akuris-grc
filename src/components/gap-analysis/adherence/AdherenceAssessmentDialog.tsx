@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { AdherenceAnalysisProgress } from './AdherenceAnalysisProgress';
+import { calcularProgresso, type ProgressoAnalise } from './progresso';
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -35,6 +36,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [jobProg, setJobProg] = useState<ProgressoAnalise | null>(null);
+  const [vereditoFinal, setVereditoFinal] = useState<'em_compliance' | 'com_ressalvas' | 'nao_compliance' | null>(null);
   const [formData, setFormData] = useState({
     nome_analise: '',
     descricao: '',
@@ -175,6 +178,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         if (error) throw error;
 
         if (data.status === 'concluido') {
+          setJobProg(prev => ({ ...(prev ?? calcularProgresso(null)), fase: 'concluido', pct: 100, teto: 100 }));
+          setVereditoFinal(((data.metadados_analise as any)?.veredito) ?? null);
           setAnalysisState(prev => ({
             ...prev,
             progress: 100,
@@ -235,6 +240,10 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             .eq('assessment_id', analysisState.assessmentId!)
             .eq('empresa_id', empresaId!)
             .maybeSingle();
+          if (job) setJobProg(prev => {
+            const novo = calcularProgresso(job as any);
+            return prev && prev.pct > novo.pct && prev.fase === novo.fase ? { ...novo, pct: prev.pct } : novo;
+          });
           if (job && job.total > 0) {
             const pct = Math.round(35 + (Math.min(job.progresso, job.total) / job.total) * 60);
             const nTrechos = Array.isArray(job.trechos) ? job.trechos.length : 0;
@@ -277,6 +286,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     }
 
     setIsSubmitting(true);
+    setJobProg(null);
+    setVereditoFinal(null);
 
     // Ativar estado de análise
     setAnalysisState({
@@ -468,8 +479,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
       }}
       icon={IconSearch}
       title={analysisState.isAnalyzing ? t('gapAnalysis.adherenceUi.dialog.analyzingTitle') : t('gapAnalysis.adherenceUi.dialog.newAssessmentTitle')}
-      description={analysisState.isAnalyzing
-        ? t('gapAnalysis.adherenceUi.dialog.analyzingDescription')
+      description={analysisState.isAnalyzing || analysisState.progress > 0
+        ? undefined
         : t('gapAnalysis.adherenceUi.dialog.newAssessmentDescription')}
       size="md"
       hideFooter
@@ -477,14 +488,18 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         {/* Mostrar progresso ou formulário */}
         {analysisState.isAnalyzing || analysisState.progress > 0 ? (
           <div className="min-h-[400px]">
-            <AdherenceAnalysisProgress 
-              currentProgress={analysisState.progress}
-              currentStep={analysisState.currentStep}
+            <AdherenceAnalysisProgress
+              progresso={jobProg ?? {
+                ...calcularProgresso(null),
+                fase: analysisState.progress >= 35 ? 'entendendo' : 'preparando',
+                pct: analysisState.progress >= 35 ? 10 : Math.round((analysisState.progress / 35) * 10),
+                teto: analysisState.progress >= 35 ? 19 : 9,
+              }}
               isError={analysisState.isError}
               errorMessage={analysisState.errorMessage}
-              detail={analysisState.isAnalyzing ? progressDetail || undefined : undefined}
               documentName={uploadedFile?.name}
               normaName={preSelectedFrameworkNome}
+              veredito={vereditoFinal}
             />
             
             {/* Botão de fechar em caso de erro */}
