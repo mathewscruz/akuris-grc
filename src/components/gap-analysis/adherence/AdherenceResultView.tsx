@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Json } from '@/integrations/supabase/types';
 import { IconDownload, IconSuccess, IconWarning, IconRefresh, IconFile, IconIdea, IconArrowLeft, IconTrendUp } from '@/components/icons';
 import { Card } from '@/components/ui/card';
@@ -25,7 +25,6 @@ import { sugerirPrazoPorPrioridade } from '@/lib/preenchimento-inteligente';
 import { AdherenceAssessmentDialog } from './AdherenceAssessmentDialog';
 import { Chip } from '@/components/ui/chip';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
 
 type Acao = { titulo: string; descricao?: string; prioridade?: string; requisito_codigo?: string | null; requirement_id?: string | null };
 type Comparacao = { resolvidos: number; pendentes: number; melhorados: number; piorados: number };
