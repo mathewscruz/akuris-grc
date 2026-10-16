@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, MessagesSquare } from 'lucide-react';
+import { IconArrowRight as ArrowRight, IconArrowUpRight as ArrowUpRight, IconMessage as MessagesSquare } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
 import { CanalLayout } from '@/components/denuncia/CanalLayout';

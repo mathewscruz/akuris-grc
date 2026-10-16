@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Fingerprint, CalendarCheck2, Signpost, Languages } from 'lucide-react';
+import { IconAccess as Fingerprint, IconCalendarClock as CalendarCheck2, IconPin as Signpost, IconGlobe as Languages } from '@/components/icons';
 import { useLanguage, type Locale } from '@/contexts/LanguageContext';
 import { LOCALE_OPTIONS } from '@/components/LanguageSelector';
 import type { ConfigCanal } from '@/hooks/useCanalDenuncia';

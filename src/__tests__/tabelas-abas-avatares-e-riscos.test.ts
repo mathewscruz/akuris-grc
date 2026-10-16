@@ -113,21 +113,18 @@ describe('identidade em pessoas e ações', () => {
   });
 
   it('relatórios, configurações e saída têm silhuetas próprias', () => {
-    expect(navegacao).toContain('folha analítica com três séries');
-    expect(navegacao).toContain('Configurações — engrenagem');
-    expect(navegacao).toContain('vão aberto e percurso para fora');
+    expect(navegacao).toContain("huge('RelatoriosIcon', ChartHistogramIcon");
+    expect(navegacao).toContain("huge('ConfiguracoesIcon', Settings02Icon");
+    expect(navegacao).toContain("huge('SaidaIcon', Logout03Icon");
   });
 
   it('riscos usa um sinal de atenção inequívoco', () => {
-    expect(riscosIcone).toContain('sinal de atenção com exclamação');
-    expect(riscosIcone).toContain('M12 3 21 20H3L12 3Z');
-    expect(riscosIcone).toContain('M12 9v5');
+    expect(riscosIcone).toContain("huge('RiscosIcon', Alert02Icon");
   });
 
   it('planos e projetos não são trajetos abstratos no menu', () => {
-    expect(navegacao).toContain('prancheta com duas entregas verificáveis');
-    expect(navegacao).toContain('pasta de trabalho com uma linha de três marcos');
-    expect(navegacao).not.toContain('M4 19h4v-4h4v-4h4V7h4');
+    expect(navegacao).toContain("huge('PlanosAcaoIcon', TaskDone01Icon");
+    expect(navegacao).toContain("huge('ProjetosIcon', Folder02Icon");
   });
 
   it('controles e auditorias usam metáforas próprias em todas as rotas', () => {
@@ -135,9 +132,9 @@ describe('identidade em pessoas e ações', () => {
     expect(governanca).toContain('<AuditoriasIcon className="h-5 w-5" />');
     expect(governanca).not.toContain('<IconShield');
     expect(governanca).not.toContain('<IconFile');
-    expect(controleIcone).toContain('consola operacional com três parâmetros regulados');
-    expect(auditoriaIcone).toContain('evidência documental observada por uma lente');
-    expect(governancaIcone).toContain('decisão central que orienta duas frentes de execução');
+    expect(controleIcone).toContain("huge('ControlesIcon'");
+    expect(auditoriaIcone).toContain("huge('AuditoriasIcon'");
+    expect(governancaIcone).toContain("huge('GovernancaIcon'");
     expect(catalogoModulos).toContain("'/governanca': GovernancaIcon");
     expect(catalogoModulos).toContain("'/governanca/controles': ControlesIcon");
     expect(catalogoModulos).toContain("'/governanca/auditorias': AuditoriasIcon");

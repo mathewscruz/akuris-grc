@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Paperclip, Check, X } from 'lucide-react';
+import { IconAttach as Paperclip, IconCheck as Check, IconClose as X } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { canalFileMime } from '@/lib/canal-report-form';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Paperclip, Download, Check } from 'lucide-react';
+import { IconArrowRight as ArrowRight, IconAttach as Paperclip, IconDownload as Download, IconCheck as Check } from '@/components/icons';
 import { CanalState } from '@/components/denuncia/CanalState';
 import { buildDenunciaSchema, canalFileMime } from '@/lib/canal-report-form';
 import { useCanalUnsavedChanges } from '@/hooks/useCanalUnsavedChanges';

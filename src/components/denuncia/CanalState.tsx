@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Unplug } from 'lucide-react';
+import { IconPlug as Unplug } from '@/components/icons';
 import { CanalLayout } from './CanalLayout';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Button } from '@/components/ui/button';

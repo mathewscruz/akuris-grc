@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { IconChevron as ChevronRight } from '@/components/icons';
 import { useMinhasPendencias } from '@/hooks/useMinhasPendencias';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly } from '@/lib/date-utils';
