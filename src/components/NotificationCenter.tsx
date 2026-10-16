@@ -472,10 +472,10 @@ const NotificationCenter: React.FC = () => {
   };
 
   const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string; chipSolid: string }> = {
-    success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success',     chipSolid: 'bg-success',     stripes: 'akuris-stripes-success' },
-    warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning',     chipSolid: 'bg-warning',     stripes: 'akuris-stripes-warning' },
+    success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success',     chipSolid: 'bg-success' },
+    warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning',     chipSolid: 'bg-warning' },
     destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive', chipSolid: 'bg-destructive' },
-    info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info',        chipSolid: 'bg-info',        stripes: 'akuris-stripes-info' },
+    info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info',        chipSolid: 'bg-info' },
   };
 
   const localeDeData = dateFnsLocale();
@@ -517,8 +517,7 @@ const NotificationCenter: React.FC = () => {
           aria-hidden
           className={cn(
             'absolute left-[3px] top-2 h-2.5 w-2.5 rounded-full ring-4 ring-popover',
-            notification.read ? 'border-2 bg-popover' : toneCls.accent,
-            notification.read && toneCls.iconText.replace('text-', 'border-'),
+            notification.read ? 'border-2 border-muted-foreground/50 bg-popover' : toneCls.accent,
           )}
         />
         <button
