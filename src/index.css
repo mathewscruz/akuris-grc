@@ -2190,12 +2190,6 @@ input:-webkit-autofill:focus {
    pelo tom + botão "Action" branco. Usado em Sonner, akurisToast
    e NotificationCenter.
    ============================================================ */
-.akuris-stripes-reminder {
-  background-image:
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background)) 30%, hsl(var(--background) / 0) 100%),
-    repeating-linear-gradient(135deg, transparent 0 8px, hsl(var(--primary) / 0.14) 8px 10px),
-    linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--primary) / 0.06) 100%);
-}
 
 /* Botão "Action" branco que aparece dentro dos pills */
 .akuris-pill-action {
