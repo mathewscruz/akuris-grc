@@ -130,7 +130,7 @@ export function ReportsSidebar() {
                     <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                     <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                     <Legend />
-                    <Bar dataKey="score" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
+                    <Bar radius={[6, 6, 6, 6]} maxBarSize={32} dataKey="score" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
