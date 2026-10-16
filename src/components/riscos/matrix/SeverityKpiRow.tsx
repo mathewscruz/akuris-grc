@@ -6,7 +6,42 @@
  */
 import { StatStrip, type StatStripItem, type StatStripTone } from '@/components/ui/stat-strip';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { AuthContext } from '@/components/AuthProvider';
+import { acumularPorSemana } from '@/hooks/useSerieSemanal';
+
+const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function sevDe(nivel: string | null): SevKey | null {
+  if (!nivel) return null;
+  const n = norm(nivel);
+  if (n.startsWith('crit') || n.includes('muito alto') || n.includes('very high')) return 'critico';
+  if (n.startsWith('alt') || n.startsWith('high')) return 'alto';
+  if (n.startsWith('med')) return 'medio';
+  if (n.startsWith('baix') || n.startsWith('low') || n.includes('muito baixo')) return 'baixo';
+  return null;
+}
+
+/** Histórico real (8 semanas) por gravidade, sempre isolado por empresa. */
+function useSeriesPorGravidade() {
+  const empresaId = useContext(AuthContext)?.profile?.empresa_id;
+  const [series, setSeries] = useState<Partial<Record<SevKey, number[]>>>({});
+  useEffect(() => {
+    if (!empresaId) return;
+    let vivo = true;
+    supabase.from('riscos').select('created_at, nivel_risco_inicial').eq('empresa_id', empresaId).limit(2000)
+      .then(({ data, error }) => {
+        if (!vivo || error || !data) return;
+        const grupos: Record<SevKey, string[]> = { critico: [], alto: [], medio: [], baixo: [] };
+        data.forEach((r) => { const k = sevDe(r.nivel_risco_inicial); if (k) grupos[k].push(r.created_at); });
+        const out: Partial<Record<SevKey, number[]>> = {};
+        (Object.keys(grupos) as SevKey[]).forEach((k) => { const s = acumularPorSemana(grupos[k]); if (s.some((v) => v > 0)) out[k] = s; });
+        setSeries(out);
+      });
+    return () => { vivo = false; };
+  }, [empresaId]);
+  return series;
+}
 
 type SevKey = 'critico' | 'alto' | 'medio' | 'baixo';
 
@@ -31,6 +66,7 @@ interface Props {
 export function SeverityKpiRow({ counts, trends, onSelect }: Props) {
   const { t } = useLanguage();
   const sevs: SevKey[] = ['critico', 'alto', 'medio', 'baixo'];
+  const series = useSeriesPorGravidade();
   const previousCritical = useRef(counts.critico ?? 0);
   const [criticalArrival, setCriticalArrival] = useState(false);
 
@@ -64,9 +100,10 @@ export function SeverityKpiRow({ counts, trends, onSelect }: Props) {
       label,
       value: counts[sev] ?? 0,
       tone: SEV_TONE[sev],
+      series: series[sev],
       attentionPulse: sev === 'critico' && criticalArrival,
       context: delta == null ? undefined : t('riscosVisoes.matrix.severityKpiRow.vsMesAnterior'),
-      hint: `${label} — ${t('riscosVisoes.matrix.severityKpiRow.vsMesAnterior')}: ${trendLabel(delta)}`,
+      hint: delta == null ? label : `${label} — ${t('riscosVisoes.matrix.severityKpiRow.vsMesAnterior')}: ${trendLabel(delta)}`,
       trend: delta === null || delta === undefined
         ? undefined
         : {
