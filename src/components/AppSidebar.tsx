@@ -37,7 +37,7 @@ import { getMenuSections } from '@/lib/navigation';
 const ConfiguracoesNavIcon = MODULE_ICON['/configuracoes'];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const { signOut, company, logoUpdateKey } = useAuth();
   const navigate = useNavigate();
   const { canAccess } = usePermissions();
@@ -148,9 +148,12 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
 
+  const closeMobile = () => { if (isMobile) setOpenMobile(false); };
   const railIcon = isDense ? 'h-[18px] w-[18px]' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
-  const labelCls = `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-[10.5px]' : 'text-[11px]'}`;
-  const railCls = (active: boolean) =>
+  const labelCls = isMobile ? 'flex-1 text-left text-sm' : `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-[10.5px]' : 'text-[11px]'}`;
+  const railCls = (active: boolean) => isMobile
+    ? `relative flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'}`
+    :
     `relative flex w-full flex-col items-center justify-center ${isDense ? 'gap-0.5' : 'gap-1'} rounded-xl px-1 ${isDense ? 'py-1' : isCompact ? 'py-1.5' : 'py-2.5'} transition-colors duration-200 ${
       active
         ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
@@ -269,7 +272,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent ref={contentRef as any} className={`gap-0 overflow-hidden px-2 ${isDense ? 'py-1' : 'py-3'}`}>
+      <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-3'}`}>
         {getVisibleSections().map((section, sIdx) => (
           <div key={section.id} className={sIdx > 0 ? (isDense ? 'mt-1 border-t border-sidebar-border/40 pt-1' : 'mt-2 border-t border-sidebar-border/40 pt-2') : ''}>
             <ul className={`flex flex-col ${isDense ? 'gap-0' : 'gap-1'}`}>
@@ -278,6 +281,31 @@ export function AppSidebar() {
                   const active = hasActiveSubItem(item.subItems);
                   return (
                     <li key={item.title}>
+                      {isMobile ? (
+                        <Collapsible open={openGroups.includes(item.title)} onOpenChange={() => toggleGroup(item.title)}>
+                          <CollapsibleTrigger asChild>
+                            <button type="button" className={railCls(active)}>
+                              <item.icon strokeWidth={1.5} className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
+                              <span className={labelCls}>{item.title}</span>
+                              <IconChevronDown className={`h-4 w-4 transition-transform ${openGroups.includes(item.title) ? 'rotate-180' : ''}`} />
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="ml-5 mt-1 space-y-1 border-l border-sidebar-border/40 pl-2">
+                            {item.subItems.map((subItem) => (
+                              <NavLink
+                                key={subItem.title}
+                                to={subItem.url}
+                                end
+                                onClick={closeMobile}
+                                className={railCls(isActive(subItem.url))}
+                              >
+                                <subItem.icon strokeWidth={1.5} className="h-4 w-4 flex-shrink-0" />
+                                <span className={labelCls}>{subItem.title}</span>
+                              </NavLink>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ) : (
                       <Popover
                         open={openGroups.includes(item.title)}
                         onOpenChange={(o) => setOpenGroups(o ? [item.title] : [])}
@@ -286,7 +314,7 @@ export function AppSidebar() {
                           <button type="button" title={item.title} className={railCls(active)}>
                             {active && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
                             <item.icon strokeWidth={1.5} className={`${railIcon} ${active ? 'text-primary' : ''}`} />
-                            <span className={labelCls}>{item.shortTitle ?? item.title}</span>
+                            <span className={labelCls}>{isMobile ? item.title : (item.shortTitle ?? item.title)}</span>
                           </button>
                         </PopoverTrigger>
                         <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5">
@@ -311,6 +339,7 @@ export function AppSidebar() {
                           })}
                         </PopoverContent>
                       </Popover>
+                      )}
                     </li>
                   );
                 }
@@ -321,13 +350,13 @@ export function AppSidebar() {
                       to={item.url!}
                       end
                       title={item.title}
-                      onClick={handleNavClick}
+                      onClick={() => { handleNavClick(); closeMobile(); }}
                       onMouseEnter={() => prefetchRoute(item.url!)}
                       className={railCls(active)}
                     >
                       {active && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
                       <item.icon strokeWidth={1.5} className={`${railIcon} ${active ? 'text-primary' : ''}`} />
-                      <span className={labelCls}>{item.shortTitle ?? item.title}</span>
+                      <span className={labelCls}>{isMobile ? item.title : (item.shortTitle ?? item.title)}</span>
                     </NavLink>
                   </li>
                 );
@@ -341,7 +370,7 @@ export function AppSidebar() {
             <NavLink
               to="/configuracoes"
               title={t('sidebar.settings')}
-              onClick={handleNavClick}
+              onClick={() => { handleNavClick(); closeMobile(); }}
               className={railCls(isActive('/configuracoes'))}
             >
               {isActive('/configuracoes') && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
@@ -352,7 +381,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className={`border-t border-sidebar-border ${isDense ? 'p-1' : 'p-2'}`}>
+      <SidebarFooter className={`border-t border-sidebar-border ${isDense && !isMobile ? 'p-1' : 'p-2'} pb-[max(0.5rem,env(safe-area-inset-bottom))]`}>
         <button
           type="button"
           onClick={handleSignOut}
