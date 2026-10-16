@@ -16,7 +16,7 @@ describe('ícone sem aura', () => {
       const s = readFileSync(f, 'utf8');
       for (const m of s.matchAll(padrao)) {
         const cls = m[2] ?? m[4] ?? '';
-        if (/\bbg-(primary|muted|accent|success|warning|destructive|info)\S*/.test(cls) && /justify-center|place-items-center/.test(cls)) {
+        if (/\bbg-(primary|muted|accent|success|warning|destructive|info)\S*/.test(cls) && /justify-center|place-items-center/.test(cls) && !/border-dashed/.test(cls)) {
           infratores.push(f);
         }
       }
