@@ -43,7 +43,7 @@ export function AuthShell({ children, showProductPreview = true }: AuthShellProp
           {showProductPreview && (
             <div className="mt-12 flex flex-wrap gap-6" aria-hidden="true">
               {SELOS.map((nome) => (
-                <FrameworkBadge key={nome} name={nome} size="lg" className="auth-entra" />
+                <FrameworkBadge key={nome} name={nome} size="xl" className="auth-entra" />
               ))}
             </div>
           )}
