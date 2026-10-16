@@ -1,7 +1,7 @@
 // Análise em lotes: divide requisitos, repete só falhas temporárias e junta resultados.
 
 export class IaIndisponivelError extends Error {
-  constructor(msg = 'ia_indisponivel') { super(msg); this.name = 'IaIndisponivelError'; }
+  constructor(msg = 'O serviço de análise está temporariamente indisponível. Tente novamente em alguns minutos. / The analysis service is temporarily unavailable. Please try again in a few minutes.') { super(msg); this.name = 'IaIndisponivelError'; }
 }
 
 export function dividirEmLotes<T>(itens: T[], tamanho: number): T[][] {
