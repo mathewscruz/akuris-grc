@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { AdherenceScopeConfirm, type EscopoProposto } from './AdherenceScopeConfirm';
 import { IconClose, IconUpload, IconFile, IconShield, IconSearch } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -65,22 +64,6 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
   });
   const [progressDetail, setProgressDetail] = useState('');
   const lastResumeRef = useRef(0);
-  const [escopo, setEscopo] = useState<EscopoProposto | null>(null);
-  const [confirmandoEscopo, setConfirmandoEscopo] = useState(false);
-
-  const confirmarEscopo = async (ids: string[], silencioso = false) => {
-    if (!analysisState.assessmentId) return;
-    setConfirmandoEscopo(true);
-    const { error } = await supabase.functions.invoke('analyze-document-adherence', {
-      body: { assessmentId: analysisState.assessmentId, acao: 'confirmar_escopo', requisitos: ids },
-    });
-    setConfirmandoEscopo(false);
-    if (error) {
-      if (!silencioso) toast({ title: t('gapAnalysis.adherenceUi.dialog.analysisErrorTitle'), description: error.message, variant: 'destructive' });
-      return;
-    }
-    setEscopo(null);
-  };
 
   // Buscar frameworks disponíveis
   const { data: frameworks, loading: loadingFrameworks } = useOptimizedQuery(
@@ -242,19 +225,13 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             .eq('assessment_id', analysisState.assessmentId!)
             .eq('empresa_id', empresaId!)
             .maybeSingle();
-          if (job?.status === 'aguardando_escopo') {
-            const ctx = (job.contexto || {}) as any;
-            setEscopo(prev => prev ?? {
-              catalogo: ctx.catalogo || [], sugeridos: ctx.sugeridos || [],
-              tema: ctx.documento_tema || '', justificativa: ctx.escopo_justificativa || '',
-            });
-            return;
-          }
           if (job && job.total > 0) {
             const pct = Math.round(35 + (Math.min(job.progresso, job.total) / job.total) * 60);
             const nTrechos = Array.isArray(job.trechos) ? job.trechos.length : 0;
             const done = job.etapa === 'resumindo' ? job.progresso : Math.max(job.progresso - (nTrechos > 1 ? nTrechos : 0), 0);
-            setProgressDetail(job.etapa === 'resumindo'
+            setProgressDetail(job.etapa === 'classificando'
+              ? t('gapAnalysis.adherenceUi.scope.understanding')
+              : job.etapa === 'resumindo'
               ? t('gapAnalysis.adherenceUi.dialog.progressReading', { done, total: nTrechos })
               : t('gapAnalysis.adherenceUi.dialog.progressEvaluating', { done, total: job.total - (nTrechos > 1 ? nTrechos : 0) }));
             setAnalysisState(prev => ({ ...prev, progress: pct, currentStep: job.etapa === 'resumindo' ? 'identifying' : 'analyzing' }));
@@ -469,8 +446,6 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
       onOpenChange={(newOpen) => {
         // Fechar durante a análise: ela continua em segundo plano e o sino avisa no fim.
         if (!newOpen && analysisState.isAnalyzing && !analysisState.isError && analysisState.assessmentId) {
-          if (escopo) void confirmarEscopo(escopo.sugeridos, true);
-          setEscopo(null);
           toast({
             title: t('gapAnalysis.adherenceUi.dialog.analysisInProgressTitle'),
             description: t('gapAnalysis.adherenceUi.dialog.analysisInProgressDescription'),
@@ -492,14 +467,6 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         {/* Mostrar progresso ou formulário */}
         {analysisState.isAnalyzing || analysisState.progress > 0 ? (
           <div className="min-h-[400px]">
-            {escopo ? (
-              <AdherenceScopeConfirm
-                proposta={escopo}
-                frameworkNome={preSelectedFrameworkNome}
-                confirmando={confirmandoEscopo}
-                onConfirm={(ids) => confirmarEscopo(ids)}
-              />
-            ) : (<>
             <AdherenceAnalysisProgress 
               currentProgress={analysisState.progress}
               currentStep={analysisState.currentStep}
@@ -509,7 +476,6 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             {analysisState.isAnalyzing && progressDetail && (
               <p className="mt-3 text-center text-sm text-muted-foreground">{progressDetail}</p>
             )}
-            </>)}
             
             {/* Botão de fechar em caso de erro */}
             {analysisState.isError && (
