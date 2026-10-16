@@ -258,7 +258,7 @@ export default function Relatorios() {
         ) : undefined}
       />
 
-      <StatStrip loading={isLoading} error={isError}
+      <StatStrip serieTabela="relatorios_customizados" loading={isLoading} error={isError}
         items={[
           { key: 'total', label: t('fin.relatorios.total'), value: stats.total },
           { key: 'publicados', label: t('sweepCore.reports.published'), value: stats.publicados },

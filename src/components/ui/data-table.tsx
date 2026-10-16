@@ -712,14 +712,27 @@ export function DataTable<T extends Record<string, any>>({
                         columnIndex === 0 && !selectionEnabled && 'sticky left-0 z-10 bg-inherit',
                       )}
                     >
-                      {column.render
+                      {(() => { const conteudo = column.render
                         ? column.render(item[column.key as keyof T], item)
                         /* `??` e não `||`: um `0` (ou `false`) é um valor, não
                            uma ausência. Com `||`, uma licença com 0 postos lia-se
                            "—" na tabela e "0" no cartão do telemóvel -- o mesmo
                            dado com duas verdades conforme o tamanho do ecrã. */
-                        : column.key === 'status' ? formatStatus(String(item[column.key as keyof T] ?? '')) || '-' : String(item[column.key as keyof T] ?? '-')
-                      }
+                        : column.key === 'status' ? formatStatus(String(item[column.key as keyof T] ?? '')) || '-' : String(item[column.key as keyof T] ?? '-');
+                        if (column !== colunaPrincipal) return conteudo;
+                        const desc = (item as any).descricao;
+                        const sub = typeof desc === 'string' && desc.trim() ? desc.trim() : null;
+                        const icone = emptyState?.icon;
+                        return (
+                          <span className="flex min-w-0 items-center gap-3">
+                            {icone && <span aria-hidden="true" className="hidden shrink-0 text-muted-foreground sm:inline-flex [&_svg]:h-[18px] [&_svg]:w-[18px]">{icone}</span>}
+                            <span className="min-w-0">
+                              <span className="block">{conteudo}</span>
+                              {sub && <span className="mt-0.5 block max-w-[42ch] truncate text-micro font-normal text-muted-foreground" title={sub}>{sub}</span>}
+                            </span>
+                          </span>
+                        );
+                      })()}
                     </TableCell>
                   ))}
                 </TableRow>

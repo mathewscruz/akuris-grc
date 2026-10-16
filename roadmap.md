@@ -1,8 +1,7 @@
 # Roadmap
-- [x] Faixa das linhas: gravidade manda, barra reta 3px (todas as tabelas)
-- [x] Remover "Sem histórico comparável" sem variação real
-- [x] Telas vazias com quadro de atalhos (todas que têm botão de ação)
-- [x] Barras arredondadas e donuts segmentados em todos os gráficos existentes
-- [ ] Ícone/descrição/avatar nas linhas em cartão (módulo a módulo)
-- [ ] Mini gráficos com histórico real nos cartões de número (precisa de consulta semanal por módulo)
-- [ ] Sub-barra com nome do módulo, caminho e busca
+- [x] Faixa das linhas por gravidade, barra reta (todas as tabelas)
+- [x] Telas vazias com atalhos, barras arredondadas, donuts segmentados
+- [x] Ícone do módulo + descrição curta no nome das linhas (todas as tabelas comuns)
+- [x] Mini gráfico com histórico real no cartão de total (16 módulos)
+- [x] Ícone e grupo do módulo acima do título de cada página; abas fixas
+- [ ] Riscos: cartões são por gravidade (sem cartão de total), por isso sem mini gráfico

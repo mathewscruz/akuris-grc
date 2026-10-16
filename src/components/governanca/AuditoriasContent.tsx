@@ -475,7 +475,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <StatStrip
+      <StatStrip serieTabela="auditorias"
         loading={statsLoading || countsLoading}
         error={statsError || countsError}
         items={[

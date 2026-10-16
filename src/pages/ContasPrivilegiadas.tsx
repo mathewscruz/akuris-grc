@@ -398,7 +398,7 @@ export default function ContasPrivilegiadas() {
         ]}
       />
 
-      <StatStrip
+      <StatStrip serieTabela="sistemas_privilegiados"
         loading={isLoading}
         error={isError}
         items={[

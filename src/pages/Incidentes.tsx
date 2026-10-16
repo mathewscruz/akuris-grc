@@ -532,7 +532,7 @@ export default function Incidentes() {
         ]}
       />
 
-      <StatStrip
+      <StatStrip serieTabela="incidentes"
         loading={loading || statsLoading}
         error={isError || statsError}
         items={[

@@ -216,7 +216,7 @@ export default function Continuidade() {
         ]}
       />
 
-      <StatStrip
+      <StatStrip serieTabela="continuidade_planos"
         loading={statsLoading}
         error={statsError || isError}
         items={[
