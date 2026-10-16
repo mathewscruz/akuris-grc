@@ -3,6 +3,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconChevronDown, SaidaIcon } from '@/components/icons';
 import logoMini from '@/assets/akuris-logo.png';
+import akurisMark from '@/assets/akuris-mark.png.asset.json';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
@@ -146,6 +148,13 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
 
+  const railCls = (active: boolean) =>
+    `relative flex w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 transition-colors duration-200 ${
+      active
+        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+        : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+    }`;
+
   const hasActiveSubItem = (subItems: any[]) => {
     return subItems.some((subItem) => currentPath === subItem.url);
   };
@@ -251,254 +260,107 @@ export function AppSidebar() {
         <AkurisPulse size={80} />
       </div>
     )}
-    <Sidebar
-      className="transition-ui duration-200 ease-out sidebar-gradient"
-      collapsible="icon"
-    >
-      {/*
-        O fio por baixo do logótipo tem de cair no MESMO y que o fio por baixo
-        do cabeçalho, e não caía: os dois blocos têm a mesma altura (`h-14`),
-        mas o painel de conteúdo flutua com `m-2` e uma borda de 1px, o que
-        empurrava o cabeçalho ~8px para baixo. As duas linhas ficavam
-        desencontradas na junção com a barra lateral.
-
-        A margem de topo repete exactamente esse desvio — o espaçamento vem do
-        `theme()`, para acompanhar a escala em vez de ser um número mágico.
-      */}
-      <SidebarHeader
-        className={`mt-[calc(theme(spacing.2)+1px)] border-b border-sidebar-border ${isDense ? 'h-12' : 'h-14'} overflow-hidden`}
-      >
-        <div className="flex items-center justify-center px-1 py-2 h-full">
-          <img 
-            key={`sidebar-logo-${logoUpdateKey}-${Date.now()}`}
-            src={getLogoSrc()} 
-            alt={getLogoAlt()} 
-            className={`object-contain transition-ui duration-200 ease-out ${
-              isCollapsed ? 'h-10 w-10' : 'h-[52px] w-auto max-w-full'
-            }`}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = logoMini;
-            }}
-          />
+    <Sidebar className="sidebar-gradient" collapsible="offcanvas">
+      <SidebarHeader className="mt-[calc(theme(spacing.2)+1px)] h-14 border-b border-sidebar-border p-0">
+        <div className="flex h-full items-center justify-center">
+          <img src={akurisMark.url} alt="Akuris" className="h-10 w-10 rounded-xl object-contain" />
         </div>
       </SidebarHeader>
 
-      <SidebarContent
-        ref={contentRef as any}
-        className={`relative ${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-ui duration-200 ease-out`}
-      >
-        <span
-          aria-hidden="true"
-          className="akuris-sidebar-indicator"
-          style={{
-            height: navIndicator.height,
-            opacity: navIndicator.visible ? 1 : 0,
-            transform: `translate3d(0, ${navIndicator.top}px, 0)`,
-          }}
-        />
-        {getVisibleSections().map((section) => (
-          <SidebarGroup key={section.id} className={isDense ? 'py-0' : isCompact ? 'py-1' : ''}>
-            {!isCollapsed && (
-              <SidebarGroupLabel className={groupLabelCls}>
-                {section.label}
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className={itemSpace}>
-                {section.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {item.subItems ? (
-                      <Collapsible
+      <SidebarContent ref={contentRef as any} className="gap-0 px-2 py-3 scrollbar-thin">
+        {getVisibleSections().map((section, sIdx) => (
+          <div key={section.id} className={sIdx > 0 ? 'mt-2 border-t border-sidebar-border/40 pt-2' : ''}>
+            <ul className="flex flex-col gap-1">
+              {section.items.map((item) => {
+                if (item.subItems) {
+                  const active = hasActiveSubItem(item.subItems);
+                  return (
+                    <li key={item.title}>
+                      <Popover
                         open={openGroups.includes(item.title)}
-                        onOpenChange={() => toggleGroup(item.title)}
+                        onOpenChange={(o) => setOpenGroups(o ? [item.title] : [])}
                       >
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton
-                            className={`w-full justify-between transition-colors duration-200 ${itemH} px-3 rounded-md group ${
-                              hasActiveSubItem(item.subItems)
-                                ? 'bg-primary/10 text-primary'
-                                : 'hover:bg-sidebar-accent/60'
-                            }`}
-                          >
-                            <div className="flex items-center min-w-0">
-                              <span className="relative flex-shrink-0 mr-3">
-                                <item.icon
-                                  className={`${iconSize} transition-colors duration-200 ${
-                                    hasActiveSubItem(item.subItems) || openGroups.includes(item.title)
-                                      ? 'text-primary'
-                                      : ''
-                                  }`}
-                                />
-                                {/* Dot indicator: filho ativo enquanto grupo está fechado */}
-                                {hasActiveSubItem(item.subItems) && !openGroups.includes(item.title) && (
-                                  <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary" />
-                                )}
-                              </span>
-                              {!isCollapsed && (
-                                <span
-                                  title={item.title}
-                                  className={`text-sm font-medium transition-colors duration-200 truncate ${
-                                    hasActiveSubItem(item.subItems)
-                                      ? 'text-primary font-semibold'
-                                      : openGroups.includes(item.title)
-                                      ? 'text-primary'
-                                      : ''
-                                  }`}
-                                >
-                                  {item.title}
-                                </span>
-                              )}
-                            </div>
-                            {!isCollapsed && (
-                              <IconChevronDown
-                                className={`${iconSize} transition-transform duration-200 flex-shrink-0 ${
-                                  openGroups.includes(item.title) ? 'rotate-180 text-primary' : ''
+                        <PopoverTrigger asChild>
+                          <button type="button" title={item.title} className={railCls(active)}>
+                            {active && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
+                            <item.icon strokeWidth={1.5} className={`h-[22px] w-[22px] ${active ? 'text-primary' : ''}`} />
+                            <span className="line-clamp-2 w-full break-words text-center text-[11px] leading-tight">{item.title}</span>
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5">
+                          <p className="px-2.5 pb-1.5 pt-1 text-xs font-semibold text-muted-foreground">{item.title}</p>
+                          {item.subItems.map((subItem) => {
+                            const subActive = isActive(subItem.url);
+                            return (
+                              <NavLink
+                                key={subItem.title}
+                                to={subItem.url}
+                                end
+                                onMouseEnter={() => prefetchRoute(subItem.url)}
+                                onClick={() => setOpenGroups([])}
+                                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+                                  subActive ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground hover:bg-muted'
                                 }`}
-                              />
-                            )}
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        {!isCollapsed && (
-                          <CollapsibleContent>
-                            <div className={`${subWrapperCls} border-l-2 border-sidebar-border/30`}>
-                              {item.subItems.map((subItem, idx) => {
-                                const active = isActive(subItem.url);
-                                return (
-                                  <SidebarMenuButton
-                                    key={subItem.title}
-                                    asChild
-                                    isActive={active}
-                                    className={`transition-colors duration-200 ${itemH} animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent`}
-                                    style={{ animationDelay: `${idx * 30}ms`, animationDuration: '220ms' }}
-                                  >
-                                    <NavLink
-                                      to={subItem.url}
-                                      end
-                                      onMouseEnter={() => prefetchRoute(subItem.url)}
-                                      className={`akuris-nav-link flex items-center w-full min-w-0 px-3 rounded-md ${
-                                        active
-                                          ? '!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary'
-                                          : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
-                                      }`}
-                                    >
-                                      <subItem.icon
-                                        strokeWidth={1.5}
-                                        className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
-                                          active ? '!text-primary-foreground' : ''
-                                        }`}
-                                      />
-                                      <span title={subItem.title} className={`text-sm truncate ${active ? '!text-primary-foreground' : ''}`}>{subItem.title}</span>
-                                    </NavLink>
-                                  </SidebarMenuButton>
-                                );
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        )}
-                      </Collapsible>
-                    ) : (
-                      (() => {
-                        const active = isActive(item.url!);
-                        return (
-                          <SidebarMenuButton
-                            asChild
-                            isActive={active}
-                            className={`transition-colors duration-200 ${itemH} min-w-0 px-2.5 data-[active=true]:bg-transparent`}
-                          >
-                            <NavLink
-                              to={item.url!}
-                              end
-                              onClick={handleNavClick}
-                              onMouseEnter={() => prefetchRoute(item.url!)}
-                              className={`akuris-nav-link flex items-center w-full min-w-0 px-3 rounded-md ${
-                                active
-                                  ? '!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary'
-                                  : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
-                              }`}
-                            >
-                              <div className="flex items-center min-w-0">
-                                <item.icon
-                                  className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
-                                    active ? '!text-primary-foreground' : ''
-                                  }`}
-                                />
-                                {!isCollapsed && (
-                                  <span
-                                    title={item.title}
-                                    className={`text-sm font-medium transition-colors duration-200 truncate ${
-                                      active ? '!text-primary-foreground font-semibold' : ''
-                                    }`}
-                                  >
-                                    {item.title}
-                                  </span>
-                                )}
-                              </div>
-                            </NavLink>
-                          </SidebarMenuButton>
-                        );
-                      })()
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                              >
+                                <subItem.icon strokeWidth={1.5} className="h-4 w-4 flex-shrink-0" />
+                                <span className="truncate">{subItem.title}</span>
+                              </NavLink>
+                            );
+                          })}
+                        </PopoverContent>
+                      </Popover>
+                    </li>
+                  );
+                }
+                const active = isActive(item.url!);
+                return (
+                  <li key={item.title}>
+                    <NavLink
+                      to={item.url!}
+                      end
+                      title={item.title}
+                      onClick={handleNavClick}
+                      onMouseEnter={() => prefetchRoute(item.url!)}
+                      className={railCls(active)}
+                    >
+                      {active && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
+                      <item.icon strokeWidth={1.5} className={`h-[22px] w-[22px] ${active ? 'text-primary' : ''}`} />
+                      <span className="line-clamp-2 w-full break-words text-center text-[11px] leading-tight">{item.title}</span>
+                    </NavLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         ))}
 
-        <SidebarGroup className={`mt-auto ${isDense ? 'py-0 border-t border-sidebar-border/30 pt-1' : isCompact ? 'py-1' : ''}`}>
-          <SidebarGroupContent>
-            <SidebarMenu className={itemSpace}>
-              {canAccess('configuracoes') && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive('/configuracoes')} className={`transition-colors duration-200 ${itemH} data-[active=true]:bg-transparent`}>
-                    <NavLink
-                      to="/configuracoes"
-                      onClick={handleNavClick}
-                      className={`akuris-nav-link flex items-center w-full px-3 ${getNavCls({ isActive: isActive('/configuracoes') })}`}
-                    >
-                      <ConfiguracoesNavIcon
-                        className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
-                          isActive('/configuracoes') ? '!text-primary-foreground' : ''
-                        }`}
-                      />
-                      {!isCollapsed && (
-                        <span
-                          className={`text-sm font-medium transition-colors duration-200 truncate ${
-                            isActive('/configuracoes') ? '!text-primary-foreground font-semibold' : ''
-                          }`}
-                        >
-                          {t('sidebar.settings')}
-                        </span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {canAccess('configuracoes') && (
+          <div className="mt-auto border-t border-sidebar-border/40 pt-2">
+            <NavLink
+              to="/configuracoes"
+              title={t('sidebar.settings')}
+              onClick={handleNavClick}
+              className={railCls(isActive('/configuracoes'))}
+            >
+              {isActive('/configuracoes') && <span aria-hidden className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
+              <ConfiguracoesNavIcon className={`h-[22px] w-[22px] ${isActive('/configuracoes') ? 'text-primary' : ''}`} />
+              <span className="line-clamp-2 w-full text-center text-[11px] leading-tight">{t('sidebar.settings')}</span>
+            </NavLink>
+          </div>
+        )}
       </SidebarContent>
 
-      <SidebarFooter className={`border-t border-sidebar-border ${isDense ? 'p-2' : 'p-3'}`}>
-        <div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleSignOut}
-            aria-expanded={showLogoutConfirm}
-            className={`w-full text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-200 ${itemH} px-3 ${
-              isCollapsed ? 'justify-center' : 'justify-start'
-            } ${showLogoutConfirm || isSigningOut ? '!bg-primary !text-primary-foreground hover:!bg-primary' : ''}`}
-          >
-            <SaidaIcon className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
-            {!isCollapsed && (
-              <span className="text-sm font-medium truncate">
-                {t('sidebar.logout')}
-              </span>
-            )}
-          </Button>
-        </div>
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <button
+          type="button"
+          onClick={handleSignOut}
+          aria-expanded={showLogoutConfirm}
+          title={t('sidebar.logout')}
+          className={railCls(showLogoutConfirm || isSigningOut)}
+        >
+          <SaidaIcon className="h-[22px] w-[22px]" />
+          <span className="text-center text-[11px] leading-tight">{t('sidebar.logout')}</span>
+        </button>
       </SidebarFooter>
 
       <ConfirmDialog

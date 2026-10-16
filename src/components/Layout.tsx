@@ -174,7 +174,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <KpiDrillDownProvider>
-    <SidebarProvider>
+    <SidebarProvider style={{ '--sidebar-width': '6rem' } as React.CSSProperties}>
       {/*
         `h-screen` e não `min-h-screen`: com altura mínima, o casco crescia com
         o conteúdo, o documento inteiro rolava e o cabeçalho subia com ele. Com
@@ -214,9 +214,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="h-7 cursor-pointer flex-shrink-0" 
                   onClick={() => navigate(rotaInicial)} 
                 />
-              ) : (
-                <SidebarTrigger />
-              )}
+              ) : null}
 
               <Breadcrumb className="hidden sm:block">
                 <BreadcrumbList>
