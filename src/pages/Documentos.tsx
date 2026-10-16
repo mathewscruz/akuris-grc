@@ -20,6 +20,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
+import { IconList, IconGrid } from '@/components/icons';
 import { CategoriasDialog } from '@/components/documentos/CategoriasDialog';
 import { VinculacoesDialog } from '@/components/documentos/VinculacoesDialog';
 import { AprovacaoDialog } from '@/components/documentos/AprovacaoDialog';

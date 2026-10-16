@@ -49,6 +49,7 @@ import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailD
 import { useContratoLigacoes } from '@/hooks/useDetalheLigacoes';
 import { diasAte, estadoVencimento } from '@/lib/detalhe-alertas';
 import { TrilhaAuditoria } from '@/components/common/TrilhaAuditoria';
+import { useSupplierCount } from '@/hooks/useSupplierCount';
 
 interface Contrato {
   id: string;
@@ -85,6 +86,7 @@ export default function Contratos() {
   useFocusRow();
   const [searchParams, setSearchParams] = useSearchParams();
   const { empresaId } = useEmpresaId();
+  const { data: supplierCount } = useSupplierCount();
   const queryClient = useQueryClient();
   const [selecionadosContratos, setSelecionadosContratos] = useState<Set<string>>(new Set());
   const bulkContratos = useBulkStatusUpdate({ table: 'contratos', queryKeys: ['contratos', 'contratos-stats'] });
@@ -512,7 +514,7 @@ export default function Contratos() {
               <IconFile className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>
-            <TabsTrigger value="fornecedores" count={statsContratos?.totalFornecedores} className="flex items-center gap-2">
+            <TabsTrigger value="fornecedores" count={supplierCount ?? undefined} className="flex items-center gap-2">
               <IconOrg className="h-4 w-4" />
               <span>{t('cardsKpi.sweep.contratos.fornecedores')}</span>
             </TabsTrigger>

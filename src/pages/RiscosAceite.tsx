@@ -261,7 +261,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (_v: string, r: any) => { const n = r.nivel_risco_residual || r.nivel_risco_inicial; return <StatusBadge {...resolveNivelRiscoTone(n)}>{formatStatus(n)}</StatusBadge>; } },
     { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
     { key: 'data_aceite', label: t('riscos.aceite.columns.acceptDate'), sortable: true, render: (value: string) => value ? formatDateOnly(value) : '-' },
-    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
+    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), kind: 'owner', ownerName: row => row.aprovador_nome },
     {
       key: 'data_proxima_revisao', label: t('riscos.aceite.columns.review'), sortable: true,
       /* Só a data: o selo por baixo repetia o que ela já diz. */
@@ -312,7 +312,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     // punha o mesmo risco com dois níveis diferentes em dois ecrãs.
     { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (_v: string, r: any) => { const n = r.nivel_risco_residual || r.nivel_risco_inicial; return <StatusBadge {...resolveNivelRiscoTone(n)}>{formatStatus(n)}</StatusBadge>; } },
     { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
-    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
+    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), kind: 'owner', ownerName: row => row.aprovador_nome },
     { key: 'data_proxima_revisao', label: t('riscos.aceite.columns.reviewDate'), render: (value: string) => value ? formatDateOnly(value) : '-' },
     {
       key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',

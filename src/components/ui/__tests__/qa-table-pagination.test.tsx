@@ -36,4 +36,14 @@ describe('QA — navegação real da tabela compartilhada', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Linhas por página' }), { target: { value: '10' } });
     expect(screen.getByRole('button', { name: 'Próximo' })).toBeEnabled();
   });
+  it('preserva a página e os mesmos registros ao alternar lista e grade', () => {
+    setup(21);
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Grade' }));
+    expect(screen.getAllByText('Item 10').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Item 0')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Lista' }));
+    expect(screen.getAllByText('Item 10').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Item 0')).not.toBeInTheDocument();
+  });
 });

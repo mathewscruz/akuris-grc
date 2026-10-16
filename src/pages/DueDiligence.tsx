@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
+import { useSupplierCount } from '@/hooks/useSupplierCount';
 
 export default function DueDiligence() {
   const { t } = useLanguage();
@@ -19,6 +20,7 @@ export default function DueDiligence() {
   const [activeTab, setActiveTab] = useListState('activeTab', 'fornecedores');
   const [supplierSearch, setSupplierSearch] = useState('');
   const { data: stats } = useDueDiligenceStats();
+  const { data: supplierCount } = useSupplierCount();
   // O botão de criar vive no cabeçalho, como nos outros módulos; o gestor
   // abre o seu próprio diálogo quando a página lho pede.
   const gestorFornecedores = useRef<FornecedoresManagerHandle>(null);
@@ -101,7 +103,7 @@ export default function DueDiligence() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList moduleTitle={t('modules.dueDiligence.title')} searchValue={supplierSearch} onSearchChange={activeTab === 'fornecedores' ? setSupplierSearch : undefined}>
-          <TabsTrigger value="fornecedores" count={stats?.totalFornecedores}><IconOrg className="h-4 w-4" />{t('modules.dueDiligence.suppliers')}</TabsTrigger>
+          <TabsTrigger value="fornecedores" count={supplierCount ?? undefined}><IconOrg className="h-4 w-4" />{t('modules.dueDiligence.suppliers')}</TabsTrigger>
           <TabsTrigger value="assessments" count={stats?.totalAssessments}><IconChecklist className="h-4 w-4" />{t('modules.dueDiligence.newAssessment')}</TabsTrigger>
           <TabsTrigger value="templates" count={stats?.totalTemplates}><IconFile className="h-4 w-4" />{t('modules.dueDiligence.templates')}</TabsTrigger>
         </TabsList>

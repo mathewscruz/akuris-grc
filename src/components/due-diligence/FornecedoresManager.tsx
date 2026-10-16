@@ -23,6 +23,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { resolveCriticidadeTone, resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import { opcoesStatusFornecedor, rotuloStatusFornecedor, tomDoStatusFornecedor } from '@/lib/fornecedor-status';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OwnerCell } from '@/components/ui/owner-cell';
 import { RecordDetailDrawer, recordNav } from '@/components/common/RecordDetailDrawer';
 import { useFornecedorLigacoes } from '@/hooks/useDetalheLigacoes';
 import { ConsultaReceita } from './ConsultaReceita';
