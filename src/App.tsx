@@ -1,3 +1,4 @@
+import SidebarPreview from '@/dev/SidebarPreview';
 import React, { Suspense } from "react";
 import {
   BrowserRouter as Router,
@@ -190,6 +191,7 @@ function App() {
                   <Suspense fallback={<RouteFallback />}><RouteDictionaryGate>
                   <Routes>
                     {/* Rotas públicas com Suspense individual (não tem sidebar para preservar) */}
+                    {import.meta.env.DEV && <Route path="/__sidebar-preview" element={<SidebarPreview />} />}
                     <Route
                       path="/auth"
                       element={
