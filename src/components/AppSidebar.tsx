@@ -36,7 +36,7 @@ import { getMenuSections } from '@/lib/navigation';
 
 const ConfiguracoesNavIcon = MODULE_ICON['/configuracoes'];
 
-export function AppSidebar({ previewAllAccess = false }: { previewAllAccess?: boolean } = {}) {
+export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const { signOut, company, logoUpdateKey } = useAuth();
   const navigate = useNavigate();
@@ -225,7 +225,7 @@ export function AppSidebar({ previewAllAccess = false }: { previewAllAccess?: bo
 
   // Função para verificar se um item tem acesso
   const hasAccess = (item: any) => {
-    if (!item.moduleName || previewAllAccess) return true;
+    if (!item.moduleName) return true;
     return canAccess(item.moduleName);
   };
 
