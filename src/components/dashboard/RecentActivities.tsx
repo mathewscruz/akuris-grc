@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { dateFnsLocale } from '@/lib/date-utils';
 
-interface Activity {
+export interface Activity {
   id: string;
   /**
    * O id do REGISTO, não o da linha do feed.
@@ -176,7 +176,7 @@ const AUDIT_TABLE_TO_MODULE: Record<string, { module: string; iconName: string }
   auditorias: { module: 'auditorias', iconName: 'auditorias' },
 };
 
-async function fetchActivities(empresaId: string, t: any): Promise<Activity[]> {
+export async function fetchActivities(empresaId: string, t: any): Promise<Activity[]> {
   const activities: Activity[] = [];
 
   const [riscosRes, controlesRes, documentosRes, auditoriasRes, denunciasRes] = await Promise.all([
