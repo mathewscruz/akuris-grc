@@ -392,27 +392,55 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('gapAnalysis.adherenceUi.verdict.question', { norma: `${assessment.framework_nome ?? ''} ${assessment.framework_versao ?? ''}`.trim() })}
               </p>
-              <h2 className="mb-2 text-xl font-semibold text-foreground md:text-2xl">{t(`gapAnalysis.adherenceUi.verdict.guide.answer_${veredito}`, { norma: assessment.framework_nome ?? '', n: grupos.essenciais.length })}</h2>
-              <div className="mb-3"><StatusBadge tone={TOM_VEREDITO[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge></div>
-              {meta.veredito_resumo && <p className="text-sm leading-relaxed text-foreground">{meta.veredito_resumo}</p>}
+              <div className="mb-2 flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-semibold text-foreground md:text-2xl">{t(`gapAnalysis.adherenceUi.verdict.guide.answer_${veredito}`, { norma: assessment.framework_nome ?? '', n: grupos.essenciais.length })}</h2>
+                <StatusBadge tone={TOM_VEREDITO[veredito]}>{t(`gapAnalysis.adherenceUi.verdict.${veredito}`)}</StatusBadge>
+              </div>
+              {meta.veredito_resumo && <p className="max-w-[760px] text-sm leading-relaxed text-foreground">{meta.veredito_resumo}</p>}
               <p className="mt-3 text-xs text-muted-foreground">
                 {meta.documento_tema ? `${meta.documento_tema} · ` : ''}{assessment.documento_nome}
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {veredito === 'em_compliance' && frameworkId && details && details.length > 0 && (
+                  <Button size="sm" onClick={handleApplyToEvaluation} disabled={applying}>
+                    {applying && <AkurisPulse size={16} className="mr-2" />}{t('gapAnalysis.adherenceUi.verdict.guide.useAsEvidence')}
+                  </Button>
+                )}
+                {frameworkId && acoes.length > 0 && (
+                  <Button size="sm" onClick={() => openDocGen({ frameworkId, frameworkName: assessment.framework_nome ?? undefined, mode: 'generate' })}>
+                    {t('gapAnalysis.adherenceUi.verdict.fixWithDocgen')}
+                  </Button>
+                )}
+                {frameworkId && (
+                  <Button variant="outline" size="sm" onClick={() => setNovaVersaoOpen(true)}>
+                    <IconRefresh className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.verdict.newVersion')}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4">
+          {/* Cartões-atalho: cada um leva à sua seção */}
+          <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { l: 'evaluated', v: Array.isArray(meta.escopo_ids) ? meta.escopo_ids.length : (details?.length ?? 0) },
-              { l: 'adjustments', v: acoes.length, sub: (['alta', 'media', 'baixa'] as const).filter(p => porPrioridade[p].length).map(p => `${porPrioridade[p].length} ${getPrioridadeLabel(p).toLowerCase()}`).join(' · ') },
-              { l: 'good', v: assessment.pontos_fortes?.length ?? 0 },
-              { l: 'outScope', v: foraIds.length },
+              { k: 'ajustes', l: 'essentials', v: grupos.essenciais.length, dot: 'bg-destructive' },
+              { k: 'ajustes', l: 'recommended', v: grupos.recomendados.length, dot: 'bg-warning' },
+              { k: 'atende', l: 'good', v: assessment.pontos_fortes?.length ?? 0, dot: 'bg-success' },
+              { k: 'fora', l: 'outScope', v: foraIds.length, dot: 'bg-muted-foreground/50' },
             ].map((s, i) => (
-              <div key={s.l} className="bg-card px-4 py-3 animate-in fade-in duration-500" style={{ animationDelay: `${150 + i * 70}ms`, animationFillMode: 'both' }}>
-                <p className="text-xs text-muted-foreground">{t(`gapAnalysis.adherenceUi.verdict.ui.${s.l}`)}</p>
-                <p className="text-2xl font-semibold tabular-nums text-foreground">{s.v}</p>
-                {s.sub && <p className="truncate text-xs text-muted-foreground">{s.sub}</p>}
-              </div>
+              <button
+                key={s.l}
+                type="button"
+                onClick={() => irPara(s.k)}
+                className="group rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-accent animate-in fade-in duration-500"
+                style={{ animationDelay: `${150 + i * 70}ms`, animationFillMode: 'both' }}
+              >
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className={cn('h-2 w-2 rounded-full', s.dot)} />{t(`gapAnalysis.adherenceUi.verdict.ui.${s.l}`)}
+                </span>
+                <span className="mt-1 block text-2xl font-semibold tabular-nums text-foreground">{s.v}</span>
+                <span className="block text-[11px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">{t('gapAnalysis.adherenceUi.verdict.ui.shortcutHint')} →</span>
+              </button>
             ))}
           </div>
 
@@ -422,89 +450,148 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               {comparacao.piorados > 0 ? ` · ${t('gapAnalysis.adherenceUi.verdict.comparisonWorse', { piorados: comparacao.piorados })}` : ''}
             </p>
           )}
-          <div className="mt-5 flex flex-wrap gap-2">
-            {frameworkId && acoes.length > 0 && (
-              <Button size="sm" onClick={() => openDocGen({ frameworkId, frameworkName: assessment.framework_nome ?? undefined, mode: 'generate' })}>
-                {t('gapAnalysis.adherenceUi.verdict.fixWithDocgen')}
-              </Button>
-            )}
-            {frameworkId && (
-              <Button variant="outline" size="sm" onClick={() => setNovaVersaoOpen(true)}>
-                <IconRefresh className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.verdict.newVersion')}
-              </Button>
-            )}
-          </div>
         </Card>
       )}
 
-      {/* Em compliance: parabéns + próximo passo */}
-      {veredito === 'em_compliance' && (
-        <Card className="flex flex-col items-start gap-4 border p-6 md:flex-row md:items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <IconSuccess className="h-10 w-10 shrink-0 text-success animate-in zoom-in-50 duration-700" strokeWidth={1.5} />
-          <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.congratsTitle', { norma: assessment.framework_nome ?? '' })}</h3>
-            <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.congratsText')}</p>
+      {/* Seções organizadas em abas */}
+      {veredito && (
+        <Tabs value={aba} onValueChange={setAba} className="space-y-4" ref={abasRef}>
+          <div className="sticky top-0 z-10 -mx-1 bg-background/95 px-1 py-2 backdrop-blur">
+            <TabsList className="h-auto flex-wrap justify-start">
+              <TabsTrigger value="ajustes">{t('gapAnalysis.adherenceUi.verdict.ui.tabAdjust')} <span className="ml-1.5 tabular-nums text-muted-foreground">{acoes.length}</span></TabsTrigger>
+              <TabsTrigger value="atende">{t('gapAnalysis.adherenceUi.verdict.ui.tabGood')} <span className="ml-1.5 tabular-nums text-muted-foreground">{assessment.pontos_fortes?.length ?? 0}</span></TabsTrigger>
+              {details && details.length > 0 && <TabsTrigger value="requisitos">{t('gapAnalysis.adherenceUi.verdict.ui.tabDetail')} <span className="ml-1.5 tabular-nums text-muted-foreground">{details.length}</span></TabsTrigger>}
+              <TabsTrigger value="fora">{t('gapAnalysis.adherenceUi.verdict.ui.tabOut')} <span className="ml-1.5 tabular-nums text-muted-foreground">{foraIds.length}</span></TabsTrigger>
+              {assessment.analise_detalhada && <TabsTrigger value="completa">{t('gapAnalysis.adherenceUi.verdict.ui.tabFull')}</TabsTrigger>}
+            </TabsList>
           </div>
-          {frameworkId && details && details.length > 0 && (
-            <Button onClick={handleApplyToEvaluation} disabled={applying}>
-              {applying && <AkurisPulse size={16} className="mr-2" />}{t('gapAnalysis.adherenceUi.verdict.guide.useAsEvidence')}
-            </Button>
-          )}
-        </Card>
-      )}
 
-      {/* O que precisa fazer */}
-      {veredito && acoes.length > 0 && (
-        <Card className="p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          {grupos.essenciais.length > 0 && (
-            <div className="mb-6 space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-3">
+          <TabsContent value="ajustes" className="mt-0 space-y-4 animate-in fade-in duration-300">
+            {acoes.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.adjustHint')}</p>
+                {grupos.essenciais.length > 0 && (
+                  <div className="w-full max-w-[260px] space-y-1">
+                    <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.plansProgress', { done: grupos.essenciais.filter(g => planosCriados.has(g.idx)).length, total: grupos.essenciais.length })}</p>
+                    <Progress value={(grupos.essenciais.filter(g => planosCriados.has(g.idx)).length / grupos.essenciais.length) * 100} className="h-1.5" />
+                  </div>
+                )}
+              </div>
+            )}
+            {veredito === 'em_compliance' && acoes.length === 0 ? (
+              <Card className="flex items-center gap-4 p-6">
+                <IconSuccess className="h-10 w-10 shrink-0 text-success animate-in zoom-in-50 duration-700" strokeWidth={1.5} />
                 <div>
-                  <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                    <IconWarning className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-                    {t('gapAnalysis.adherenceUi.verdict.guide.essentialTitle', { count: grupos.essenciais.length })}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.essentialHint')}</p>
+                  <h3 className="text-lg font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.congratsTitle', { norma: assessment.framework_nome ?? '' })}</h3>
+                  <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.congratsText')}</p>
                 </div>
-                <div className="w-full max-w-[260px] space-y-1">
-                  <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.plansProgress', { done: grupos.essenciais.filter(g => planosCriados.has(g.idx)).length, total: grupos.essenciais.length })}</p>
-                  <Progress value={(grupos.essenciais.filter(g => planosCriados.has(g.idx)).length / grupos.essenciais.length) * 100} className="h-1.5" />
-                </div>
-              </div>
-              {grupos.essenciais.map(({ acao, idx }, j) => (
-                <AjusteCard key={idx} acao={acao} essencial delay={j * 60} defaultOpen={j === 0}
-                  planoCriado={planosCriados.has(idx)} criando={criandoPlano === idx} onCriarPlano={() => criarPlano(acao, idx)} />
-              ))}
-            </div>
-          )}
-          {grupos.recomendados.length > 0 && (
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.recommendedTitle', { count: grupos.recomendados.length })}</h3>
-                <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.recommendedHint')}</p>
-              </div>
-              {grupos.recomendados.map(({ acao, idx }, j) => (
-                <AjusteCard key={idx} acao={acao} essencial={false} delay={j * 60}
-                  planoCriado={planosCriados.has(idx)} criando={criandoPlano === idx} onCriarPlano={() => criarPlano(acao, idx)} />
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
+              </Card>
+            ) : (
+              <AjustesMasterDetail essenciais={grupos.essenciais} recomendados={grupos.recomendados}
+                planosCriados={planosCriados} criandoPlano={criandoPlano} onCriarPlano={criarPlano} />
+            )}
+            {veredito !== 'em_compliance' && (
+              <ol className="grid gap-2 rounded-lg border bg-muted/20 p-3 md:grid-cols-3">
+                {(['next1', 'next2', 'next3'] as const).map((s, i) => (
+                  <li key={s} className="flex gap-2.5 text-sm text-foreground">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold">{i + 1}</span>
+                    {t(`gapAnalysis.adherenceUi.verdict.guide.${s}`)}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </TabsContent>
 
-      {/* Próximos passos */}
-      {veredito && veredito !== 'em_compliance' && (
-        <Card className="p-6 animate-in fade-in duration-500">
-          <h3 className="mb-4 text-base font-semibold text-foreground">{t('gapAnalysis.adherenceUi.verdict.guide.nextTitle')}</h3>
-          <ol className="grid gap-3 md:grid-cols-3">
-            {(['next1', 'next2', 'next3'] as const).map((s, i) => (
-              <li key={s} className="flex gap-3 rounded-lg border p-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold">{i + 1}</span>
-                <p className="text-sm text-foreground">{t(`gapAnalysis.adherenceUi.verdict.guide.${s}`)}</p>
-              </li>
-            ))}
-          </ol>
-        </Card>
+          <TabsContent value="atende" className="mt-0 space-y-3 animate-in fade-in duration-300">
+            <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.goodHint')}</p>
+            {(assessment.pontos_fortes?.length ?? 0) === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.noItems')}</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {assessment.pontos_fortes!.map((ponto: PontoForte, index: number) => (
+                  <div key={index} className="flex gap-3 rounded-lg border bg-card p-4 animate-in fade-in slide-in-from-bottom-1" style={{ animationDelay: `${(index % 6) * 50}ms`, animationFillMode: 'both' }}>
+                    <IconSuccess className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={1.5} />
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-foreground">{ponto.titulo}</h4>
+                      <p className="mt-1 text-sm text-muted-foreground">{ponto.descricao}</p>
+                      {(ponto as PontoForte & { citacao?: string }).citacao && (
+                        <blockquote className="mt-2 rounded-r-md border-l-2 border-success/50 bg-muted/30 px-3 py-1.5 text-xs italic text-muted-foreground">
+                          “{(ponto as PontoForte & { citacao?: string }).citacao}”
+                        </blockquote>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {details && details.length > 0 && (
+            <TabsContent value="requisitos" className="mt-0 space-y-3 animate-in fade-in duration-300">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.detailHint')}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(['todos', 'conforme', 'parcial', 'nao_conforme'] as const).map(f => {
+                    const n = f === 'todos' ? details.length : details.filter((d: any) => d.status_aderencia === f).length;
+                    return (
+                      <Button key={f} size="sm" variant={filtroReq === f ? 'secondary' : 'ghost'} onClick={() => setFiltroReq(f)}>
+                        {f === 'todos' ? t('gapAnalysis.adherenceUi.verdict.ui.all') : getResultLabel(f)} <span className="ml-1.5 tabular-nums text-muted-foreground">{n}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+              <Card className="p-2">
+                <Accordion type="single" collapsible className="w-full">
+                  {details.filter((d: any) => filtroReq === 'todos' || d.status_aderencia === filtroReq).map((detail: any) => (
+                    <AccordionItem key={detail.id} value={detail.id} className="px-2">
+                      <AccordionTrigger>
+                        <div className="flex w-full items-center justify-between gap-3 pr-4 text-left">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusColor(detail.status_aderencia)}`} />
+                            <span className="shrink-0 font-mono text-xs text-muted-foreground">{detail.requisito_codigo}</span>
+                            <span className="truncate text-sm">{detail.requisito_titulo}</span>
+                          </div>
+                          {detail.score_conformidade !== null && <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{detail.score_conformidade}/10</span>}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="max-w-[760px] space-y-3 pl-6">
+                          {detail.evidencias_encontradas && <div><h5 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('gapAnalysis.adherenceUi.result.evidenceFound')}</h5><p className="text-sm text-foreground">{detail.evidencias_encontradas}</p></div>}
+                          {detail.gaps_especificos && <div><h5 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('gapAnalysis.adherenceUi.result.gapsIdentified')}</h5><p className="text-sm text-foreground">{detail.gaps_especificos}</p></div>}
+                          {detail.observacoes_ia && <div><h5 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('gapAnalysis.adherenceUi.result.aiObservations')}</h5><p className="text-sm text-foreground">{detail.observacoes_ia}</p></div>}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </Card>
+            </TabsContent>
+          )}
+
+          <TabsContent value="fora" className="mt-0 space-y-3 animate-in fade-in duration-300">
+            <p className="text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.outOfScopeHint')}</p>
+            {!foraEscopo || foraEscopo.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">{t('gapAnalysis.adherenceUi.verdict.ui.noItems')}</p>
+            ) : (
+              <Card className="grid gap-x-6 gap-y-1.5 p-4 md:grid-cols-2">
+                {foraEscopo.map((r: any) => (
+                  <p key={r.id} className="truncate text-sm text-foreground">
+                    <span className="mr-2 font-mono text-xs text-muted-foreground">{r.codigo}</span>{r.titulo}
+                  </p>
+                ))}
+              </Card>
+            )}
+          </TabsContent>
+
+          {assessment.analise_detalhada && (
+            <TabsContent value="completa" className="mt-0 animate-in fade-in duration-300">
+              <Card className="p-6">
+                <div className="prose prose-sm max-w-[760px] whitespace-pre-wrap dark:prose-invert">{assessment.analise_detalhada}</div>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
       )}
 
       {/* Resultado Geral (análises antigas, sem veredito) */}
@@ -537,7 +624,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       )}
 
       {/* Pontos Fortes */}
-      {assessment.pontos_fortes && assessment.pontos_fortes.length > 0 && (
+      {!veredito && assessment.pontos_fortes && assessment.pontos_fortes.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <IconSuccess className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
@@ -591,7 +678,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       )}
 
       {/* Recomendações */}
-      {assessment.recomendacoes && assessment.recomendacoes.length > 0 && (
+      {!veredito && assessment.recomendacoes && assessment.recomendacoes.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <IconIdea className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
@@ -606,7 +693,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       )}
 
       {/* Análise Detalhada por Requisito */}
-      {details && details.length > 0 && (
+      {!veredito && details && details.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <IconFile className="h-5 w-5" strokeWidth={1.5}/>
@@ -656,7 +743,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       )}
 
       {/* Fora do escopo desta política */}
-      {veredito && foraEscopo && foraEscopo.length > 0 && (
+      {false && foraEscopo && foraEscopo.length > 0 && (
         <Card className="p-6">
           <Accordion type="single" collapsible>
             <AccordionItem value="fora" className="border-none">
@@ -690,7 +777,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       )}
 
       {/* Análise Completa */}
-      {assessment.analise_detalhada && (
+      {!veredito && assessment.analise_detalhada && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4">{t('gapAnalysis.adherenceUi.result.fullAnalysisTitle')}</h3>
           <div className="prose prose-sm max-w-none whitespace-pre-wrap dark:prose-invert">
