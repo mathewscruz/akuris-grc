@@ -349,13 +349,14 @@ export function RequirementDrawer({
 
                 <section>
                   <SectionHead title={t('gapUi.drawer.comoCumprir')} />
+                  <p className="text-micro text-muted-foreground mb-2">{t('gapUi.detail.guidancePlatformIncluded')}</p>
                   {orientacao.estado === 'gerando' && (
                     <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
                     </div>
                   )}
                   {orientacao.texto && prose(orientacao.texto)}
-                  {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
+                  {orientacao.estado !== 'gerando' && !orientacao.texto && (
                     <div role="status">
                       <p className="text-sm text-muted-foreground">
                         {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}

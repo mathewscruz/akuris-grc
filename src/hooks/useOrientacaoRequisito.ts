@@ -76,7 +76,13 @@ export function useOrientacaoRequisito(requirementId: string | null, ativo = tru
       client.setQueryData<GuidanceData>(key, previous => ({
         ...fallback, pending: true, attempts: previous?.attempts || 0,
       }));
-      return invoke(false, fallback);
+      try {
+        return await invoke(false, fallback);
+      } catch (e) {
+        // Já há texto salvo: mostra-o em vez de um erro. O resto completa-se noutra abertura.
+        if (fallback.texto) return { ...fallback, pending: false, attempts: 0 };
+        throw e;
+      }
     },
   });
   const gerar = async (forcar = false) => {
@@ -98,6 +104,6 @@ export function useOrientacaoRequisito(requirementId: string | null, ativo = tru
   const manualState = manual?.key === identity ? manual.state : null;
   return {
     texto: data.texto, evidencias: data.evidencias, perguntas: data.perguntas, gerar,
-    estado: manualState || (query.isError ? 'falha' : query.isLoading || data.pending ? 'gerando' : data.texto ? 'ok' : 'indisponivel'),
+    estado: (data.texto && manualState === 'falha' ? null : manualState) || (query.isError && !data.texto ? 'falha' : query.isLoading || data.pending ? 'gerando' : data.texto ? 'ok' : 'indisponivel'),
   };
 }
