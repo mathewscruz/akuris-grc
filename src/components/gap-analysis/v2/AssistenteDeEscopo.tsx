@@ -284,7 +284,7 @@ export function AssistenteDeEscopo({
                     aria-label={t('gapEscopo.perguntaN', { n: i + 1, total: assistente.perguntas.length })}
                     onClick={() => setAtual(i)}
                     className={cn(
-                      'h-2 rounded-full transition-all',
+                      'h-2 rounded-full transition-ui',
                       i === atual ? 'w-6 bg-primary' : respostas[p.id] ? 'w-2 bg-primary/50' : 'w-2 bg-muted-foreground/25',
                     )}
                   />
@@ -333,7 +333,7 @@ export function AssistenteDeEscopo({
                           )}
                         >
                           {t(`gapEscopo.resposta.${valor}`)}
-                          <kbd className="rounded border border-border px-1.5 font-mono text-[10px] text-muted-foreground">{k + 1}</kbd>
+                          <kbd className="rounded-md border border-border px-1.5 font-mono text-micro text-muted-foreground">{k + 1}</kbd>
                         </button>
                       );
                     })}
@@ -355,7 +355,7 @@ export function AssistenteDeEscopo({
                     <Button variant="ghost" size="sm" disabled={atual === 0} onClick={() => setAtual((a) => Math.max(0, a - 1))}>
                       {t('gapEscopo.anterior')}
                     </Button>
-                    <span className="hidden text-[11px] text-muted-foreground sm:inline">{t('gapEscopo.atalhos')}</span>
+                    <span className="hidden text-micro text-muted-foreground sm:inline">{t('gapEscopo.atalhos')}</span>
                     <Button
                       variant="ghost" size="sm"
                       disabled={atual >= assistente.perguntas.length - 1}
@@ -368,7 +368,7 @@ export function AssistenteDeEscopo({
               )}
 
               {/* Painel ao vivo */}
-              <aside className="space-y-3 rounded-xl border border-border bg-card p-4">
+              <aside className="space-y-3 rounded-lg border border-border bg-card p-4">
                 <div>
                   <p className="text-2xl font-semibold tabular-nums text-foreground">
                     {totalRequisitos - excluidos.length}
@@ -389,7 +389,7 @@ export function AssistenteDeEscopo({
                           <li key={p.id}>
                             <button type="button" onClick={() => setAtual(i)} className="text-left text-xs text-muted-foreground hover:text-foreground">
                               <span className="font-mono">{String(i + 1).padStart(2, '0')}</span> · {cods.length} {t('gapEscopo.controles')}
-                              <span className="mt-0.5 block font-mono text-[11px] leading-4">{cods.join(' · ')}</span>
+                              <span className="mt-0.5 block font-mono text-micro leading-4">{cods.join(' · ')}</span>
                             </button>
                           </li>
                         );
