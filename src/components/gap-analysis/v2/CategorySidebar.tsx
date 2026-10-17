@@ -40,7 +40,7 @@ export function CategorySidebar({ categories, active, onSelect, footer }: {
         </span>
         <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <span
-            className={cn('block h-full rounded-full transition-all duration-500', ativo ? 'bg-primary' : 'bg-primary/60')}
+            className={cn('block h-full rounded-full transition-[width] duration-500', ativo ? 'bg-primary' : 'bg-primary/60')}
             style={{ width: `${score ?? 0}%` }}
           />
         </span>
@@ -49,7 +49,7 @@ export function CategorySidebar({ categories, active, onSelect, footer }: {
   };
 
   return (
-    <aside className="rounded-xl border border-border bg-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] flex flex-col" data-keep-frame>
+    <aside className="rounded-lg border border-border bg-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] flex flex-col" data-keep-frame>
       <header className="px-4 pt-4 pb-3 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">{t('executive.categories')}</h2>
         <p className="text-xs text-muted-foreground">{t('gapUi.sidebar.count', { n: lista.length })}</p>
