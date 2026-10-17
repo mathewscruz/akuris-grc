@@ -46,6 +46,8 @@ interface RequirementDrawerProps {
   /** Ordem dos requisitos para navegar anterior/próximo. */
   sequence?: string[];
   onNavigate?: (id: string) => void;
+  /** Renderiza como página cheia (sem janela). */
+  asPage?: boolean;
 }
 
 interface RequirementCore {
@@ -79,7 +81,9 @@ export function RequirementDrawer({
   onSaved,
   sequence,
   onNavigate,
+  asPage = false,
 }: RequirementDrawerProps) {
+  const [verTudo, setVerTudo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requirement, setRequirement] = useState<RequirementCore | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationCore>({
@@ -311,7 +315,10 @@ export function RequirementDrawer({
 
   const arquivos = evidenciasQuery.data ?? [];
   const itensEsperados = parseItens(orientacao.evidencias);
-  const itensComo = parseItens(orientacao.texto);
+  const todosComo = parseItens(orientacao.texto);
+  const acoesComo = todosComo.filter((i) => !/\?\s*$/.test(i.titulo + i.descricao));
+  const itensComo = (acoesComo.length ? acoesComo : todosComo).slice(0, 6);
+  const temMaisComo = todosComo.length > itensComo.length;
   const avaliados = itensEsperados.map((item) => {
     const chaves = palavras(item.titulo + ' ' + item.descricao);
     const ligados = arquivos.filter((a) => {
@@ -345,7 +352,7 @@ export function RequirementDrawer({
     <section className="py-5 first:pt-0 border-b border-border last:border-0">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
-        <h3 className="text-base font-semibold text-foreground flex-1">{titulo}</h3>
+        <h3 className="text-sm font-semibold normal-case tracking-normal text-foreground flex-1">{titulo}</h3>
         {right}
       </div>
       {children}
@@ -355,10 +362,7 @@ export function RequirementDrawer({
   const textoJust = evaluation.observacoes || '';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full sm:max-w-6xl p-0 sm:p-0 gap-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[88vh] bg-popover">
-        <DialogTitle className="sr-only">{t('gapUi.drawer.title')}</DialogTitle>
-        <DialogDescription className="sr-only">{t('gapUi.drawer.whatStandardRequires')}</DialogDescription>
+    <Moldura asPage={asPage} open={open} onOpenChange={onOpenChange} titulo={t('gapUi.drawer.title')} descricao={t('gapUi.drawer.whatStandardRequires')}>
 
         {loading || !requirement || requirement.id !== requirementId ? (
           <div className="flex-1 flex items-center justify-center"><AkurisPulse size={48} /></div>
@@ -367,11 +371,11 @@ export function RequirementDrawer({
             <header className="border-b border-border px-6 py-4 pr-14 shrink-0">
               <div className="flex items-center gap-3 flex-wrap">
                 {fw && <FrameworkBadge name={fw.nome} versao={fw.versao} size="sm" />}
-                {fw && <span className="text-lg font-semibold text-foreground">{fw.nome}</span>}
+                {fw && <span className="text-base font-semibold text-foreground">{fw.nome}</span>}
                 {requirement.codigo && (
                   <span className="font-mono text-xs tabular-nums rounded-md bg-muted px-2 py-1 text-foreground/80">{requirement.codigo}</span>
                 )}
-                <h2 className="text-lg font-semibold text-foreground leading-snug min-w-0">{requirement.titulo}</h2>
+                <h2 className="text-base font-semibold text-foreground leading-snug min-w-0">{requirement.titulo}</h2>
                 {sequence && idx >= 0 && (
                   <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
                     <Button variant="ghost" size="sm" className="h-7 px-2" disabled={!prevId} aria-label={t('gapUi.drawer.previous')} onClick={() => prevId && onNavigate?.(prevId)}>‹</Button>
@@ -396,8 +400,7 @@ export function RequirementDrawer({
                   {requirement.descricao && prose(requirement.descricao)}
                 </Bloco>
 
-                <Bloco icon={IconIdea} titulo={t('gapUi.drawer.comoCumprir')}>
-                  <p className="text-micro text-muted-foreground mb-2">{t('gapUi.detail.guidancePlatformIncluded')}</p>
+                <Bloco icon={IconIdea} titulo={t('gapUi.drawer.comoCumprir')} right={<span className="text-micro text-muted-foreground hidden xl:inline" title={t('gapUi.detail.guidancePlatformIncluded')}>{t('gapUi.drawer.semCreditos')}</span>}>
                   {orientacao.estado === 'gerando' && (
                     <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
@@ -408,11 +411,19 @@ export function RequirementDrawer({
                       {itensComo.map((i, n) => (
                         <li key={n} className="flex gap-2.5 text-sm text-foreground/85">
                           <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                          <span>{i.titulo}{i.descricao && <span className="text-muted-foreground"> — {i.descricao}</span>}</span>
+                          <span className="text-sm">{i.titulo}{i.descricao && <span className="text-muted-foreground"> — {i.descricao}</span>}</span>
                         </li>
                       ))}
                     </ul>
                   ) : orientacao.texto ? prose(orientacao.texto) : null}
+                  {temMaisComo && orientacao.texto && (
+                    <div className="mt-3">
+                      <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setVerTudo((v) => !v)}>
+                        {verTudo ? t('gapUi.drawer.hideFullGuidance') : t('gapUi.drawer.showFullGuidance')}
+                      </button>
+                      {verTudo && <div className="mt-2">{prose(orientacao.texto)}</div>}
+                    </div>
+                  )}
                   {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
                     <div role="status">
                       <p className="text-sm text-muted-foreground">
@@ -490,7 +501,7 @@ export function RequirementDrawer({
                 <section>
                   <div className="flex items-center gap-2.5 mb-3">
                     <IconSettings className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
-                    <h3 className="text-base font-semibold text-foreground">{t('gapUi.drawer.decision')}</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{t('gapUi.drawer.decision')}</h3>
                   </div>
                   <div role="radiogroup" aria-label={t('gapUi.drawer.decision')} className="grid grid-cols-2 sm:grid-cols-4 rounded-lg border border-border overflow-hidden">
                     {OPCOES.map((o, n) => {
@@ -503,8 +514,8 @@ export function RequirementDrawer({
                           aria-checked={ativo}
                           title={`${n + 1}`}
                           onClick={() => setEvaluation((e) => ({ ...e, conformity_status: o }))}
-                          className={cn('px-2 py-2.5 text-xs sm:text-sm transition-colors border-border [&:not(:first-child)]:sm:border-l',
-                            ativo ? `${TOM[o]} font-medium` : 'text-foreground/80 hover:bg-accent')}
+                          className={cn('px-2 py-2 text-xs whitespace-nowrap transition-colors border-border [&:not(:first-child)]:sm:border-l',
+                            ativo ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/80 hover:bg-accent')}
                         >
                           {statusLabel(o)}
                         </button>
@@ -613,6 +624,27 @@ export function RequirementDrawer({
             </div>
           </>
         )}
+    </Moldura>
+  );
+}
+
+function Moldura({ asPage, open, onOpenChange, titulo, descricao, children }: {
+  asPage: boolean; open: boolean; onOpenChange: (v: boolean) => void; titulo: string; descricao: string; children: React.ReactNode;
+}) {
+  if (asPage) {
+    return (
+      <div className="-m-4 md:-m-6 flex flex-col h-[calc(100dvh-4rem)] bg-popover border-t border-border relative">
+        <button type="button" onClick={() => onOpenChange(false)} aria-label="close" className="absolute right-5 top-4 z-10 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground">✕</button>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full sm:max-w-6xl p-0 sm:p-0 gap-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[88vh] bg-popover">
+        <DialogTitle className="sr-only">{titulo}</DialogTitle>
+        <DialogDescription className="sr-only">{descricao}</DialogDescription>
+        {children}
       </DialogContent>
     </Dialog>
   );

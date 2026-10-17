@@ -3,6 +3,7 @@
  * a partir de qualquer ponto da app (PriorityQueue, CommandPalette, etc).
  */
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { RequirementDrawer } from './RequirementDrawer';
 
 interface DrawerState {
@@ -42,7 +43,14 @@ export function RequirementDrawerProvider({ children }: { children: ReactNode })
   });
   const [open, setOpen] = useState(false);
 
+  const navigate = useNavigate();
+  const { frameworkId } = useParams();
   const openRequirement = useCallback<ContextValue['openRequirement']>((params) => {
+    // Dentro de um framework, a revisão é uma página cheia com rota própria.
+    if (frameworkId) {
+      navigate(`/gap-analysis/framework/${frameworkId}/requisito/${params.requirementId}`, { state: { sequence: params.sequence } });
+      return;
+    }
     setState({
       requirementId: params.requirementId,
       empresaId: params.empresaId,
@@ -50,7 +58,7 @@ export function RequirementDrawerProvider({ children }: { children: ReactNode })
       sequence: params.sequence,
     });
     setOpen(true);
-  }, []);
+  }, [frameworkId, navigate]);
 
   const closeRequirement = useCallback(() => setOpen(false), []);
 
