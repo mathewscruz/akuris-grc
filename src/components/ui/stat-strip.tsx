@@ -407,25 +407,45 @@ const SPARK_TONE: Record<StatStripTone, string> = {
   success: "hsl(var(--state-done))",
 }
 
-/** Mini gráfico de área com degradê (padrão do dashboard). Só com série real. */
+/** Linha com contexto: um ponto por semana, valor inicial → atual, base tracejada e período. Só com série real. */
 export function MiniArea({ series, tone = "neutral" }: { series: number[]; tone?: StatStripTone }) {
+  const { t } = useLanguage()
   const id = React.useId().replace(/:/g, "")
-  const w = 100, h = 28
+  const w = 100, h = 40
   const min = Math.min(...series), max = Math.max(...series)
   const span = max - min || 1
-  const pts = series.map((v, i) => [ (i / (series.length - 1)) * w, h - 2 - ((v - min) / span) * (h - 6) ])
+  const pts = series.map((v, i) => [(i / (series.length - 1)) * w, h - 4 - ((v - min) / span) * (h - 10)])
   const line = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ")
   const cor = SPARK_TONE[tone]
+  const last = series.length - 1
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true" className="mt-2 block h-7 w-full">
-      <defs>
-        <linearGradient id={`sa-${id}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={cor} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={cor} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#sa-${id})`} />
-      <path d={line} fill="none" stroke={cor} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div className="mt-2">
+      <div className="flex items-baseline justify-between text-micro tabular-nums text-muted-foreground">
+        <span>{series[0]}</span>
+        <span className="font-semibold" style={{ color: cor }}>{series[last]}</span>
+      </div>
+      <div className="relative h-10 w-full">
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true" className="absolute inset-0 h-full w-full overflow-visible">
+          <defs>
+            <linearGradient id={`sa-${id}`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor={cor} stopOpacity="0.18" />
+              <stop offset="100%" stopColor={cor} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <line x1="0" x2={w} y1={h - 4} y2={h - 4} className="stroke-border" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+          <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#sa-${id})`} />
+          <path d={line} fill="none" stroke={cor} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {pts.map(([x, y], i) => (
+          <span
+            key={i}
+            title={`${t("experience.semanaN", { n: i + 1 })}: ${series[i]}`}
+            className={cn("absolute -translate-x-1/2 -translate-y-1/2 rounded-full", i === last ? "h-2 w-2 bg-card ring-2" : "h-1.5 w-1.5")}
+            style={{ left: `${x}%`, top: `${(y / h) * 100}%`, backgroundColor: i === last ? undefined : cor, ["--tw-ring-color" as string]: cor }}
+          />
+        ))}
+      </div>
+      <p className="mt-1 text-micro text-muted-foreground">{t("experience.ultimasSemanas", { n: series.length })}</p>
+    </div>
   )
 }
