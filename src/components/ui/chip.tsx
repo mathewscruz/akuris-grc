@@ -207,11 +207,12 @@ export const Chip: React.FC<ChipProps> = ({
 
   let chipClass = NEUTRAL_CHIP;
   let leading: React.ReactNode = null;
+  let trailing: React.ReactNode = null;
 
   if (family === 'severity' && isSeverity(tone)) {
     const s = SEVERITY_CLASSES[tone];
     chipClass = s.chip;
-    leading = <span aria-hidden="true" className={cn('rounded-full flex-shrink-0 bg-current', CHIP_SIZING.dot)} />;
+    trailing = <SeverityMeter level={tone} />;
   } else if (family === 'state') {
     /* Estado sem caixa: texto + mini anel que diz o significado (ou a proporção medida). */
     const level = isState(tone) ? tone : 'rest';
@@ -247,6 +248,7 @@ export const Chip: React.FC<ChipProps> = ({
     >
       {icon ? <span className="flex items-center [&_svg]:h-3 [&_svg]:w-3">{icon}</span> : leading}
       {children}
+      {trailing}
     </span>
   );
 };
