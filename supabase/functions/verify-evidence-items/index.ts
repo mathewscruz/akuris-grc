@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       p_empresa_id: empresa, p_user_id: ctx.userId, p_funcionalidade: "verificar_evidencias_itens",
       p_idempotency_key: creditoKey, p_descricao: `Verificar evidências ${reqRow.codigo ?? ""}`.trim(),
     });
-    const credOk = !credErr && (cred === true || (cred as any)?.success !== false);
+    const credOk = !credErr && (cred as any)?.charged === true;
     if (!credOk) return json({ error: "Créditos de IA esgotados.", code: "CREDITS_EXHAUSTED" }, 402);
 
     const key = Deno.env.get("LOVABLE_API_KEY");

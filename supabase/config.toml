@@ -318,3 +318,7 @@ verify_jwt = true
 
 [functions.email-action]
 verify_jwt = false
+
+[functions.verify-evidence-items]
+verify_jwt = true
+timeout = 60
