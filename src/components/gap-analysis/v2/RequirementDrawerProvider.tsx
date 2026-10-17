@@ -9,6 +9,7 @@ interface DrawerState {
   requirementId: string | null;
   empresaId: string | null;
   onSaved?: () => void;
+  sequence?: string[];
 }
 
 interface ContextValue {
@@ -16,6 +17,8 @@ interface ContextValue {
     requirementId: string;
     empresaId: string;
     onSaved?: () => void;
+    /** Ordem dos requisitos visíveis, para anterior/próximo. */
+    sequence?: string[];
   }) => void;
   closeRequirement: () => void;
 }
@@ -39,6 +42,7 @@ export function RequirementDrawerProvider({ children }: { children: ReactNode })
       requirementId: params.requirementId,
       empresaId: params.empresaId,
       onSaved: params.onSaved,
+      sequence: params.sequence,
     });
     setOpen(true);
   }, []);
@@ -57,6 +61,8 @@ export function RequirementDrawerProvider({ children }: { children: ReactNode })
         requirementId={state.requirementId}
         empresaId={state.empresaId || ''}
         onSaved={state.onSaved}
+        sequence={state.sequence}
+        onNavigate={(id) => setState((s) => ({ ...s, requirementId: id }))}
       />
     </RequirementDrawerContext.Provider>
   );

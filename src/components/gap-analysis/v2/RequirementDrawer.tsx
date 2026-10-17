@@ -16,7 +16,7 @@ import { UserSelect } from '@/components/riscos/UserSelect';
 import { DocumentosDoRequisito } from '@/components/gap-analysis/DocumentosDoRequisito';
 import { sugerirStatus, contarEvidenciasEsperadas } from '@/lib/gap-analysis/sugerir-status';
 import { scopedDraftKey } from '@/hooks/useWizardDraft';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -240,7 +240,7 @@ export function RequirementDrawer({
       const isEditable = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
       // Cmd/Ctrl+Enter salva mesmo dentro de textarea
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        if (evaluation.conformity_status && !saving) {
+        if (evaluation.conformity_status && !saving && !precisaJustificativa) {
           e.preventDefault();
           handleSave();
         }
@@ -264,4 +264,245 @@ export function RequirementDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, requirement, evaluation.conformity_status, saving]);
 
-__RENDER__
+  // Rascunho por empresa + utilizador enquanto se escreve.
+  useEffect(() => {
+    if (!open || !draftKey || loading || !requirement) return;
+    const id = window.setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          conformity_status: evaluation.conformity_status,
+          observacoes: evaluation.observacoes,
+          prazo_implementacao: evaluation.prazo_implementacao,
+          responsavel_avaliacao: evaluation.responsavel_avaliacao,
+        }));
+      } catch { /* armazenamento cheio: sem rascunho */ }
+    }, 600);
+    return () => window.clearTimeout(id);
+  }, [open, draftKey, loading, requirement, evaluation]);
+
+  const evidenciasQuery = useQuery({
+    queryKey: ['requisito-evidencias-count', requirementId, empresaId],
+    enabled: open && !!requirementId && !!empresaId,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('evidence_library_links')
+        .select('id', { count: 'exact', head: true })
+        .eq('requirement_id', requirementId!)
+        .eq('empresa_id', empresaId);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+  const encontradas = evidenciasQuery.data ?? 0;
+  const esperadas = contarEvidenciasEsperadas(orientacao.evidencias);
+  const sugestao = sugerirStatus({ esperadas, encontradas });
+  const statusLabel = (s: string) =>
+    s === 'conforme' ? t('gapUi.drawer.shortcutConforme') : t('gapUi.drawer.shortcutParcial');
+
+  const prose = (txt: string) => (
+    <div className={`text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>{txt}</ReactMarkdown>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-6xl p-0 gap-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[88vh] bg-popover">
+        <DialogTitle className="sr-only">{t('gapUi.drawer.title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('gapUi.drawer.whatStandardRequires')}</DialogDescription>
+
+        {loading || !requirement || requirement.id !== requirementId ? (
+          <div className="flex-1 flex items-center justify-center"><AkurisPulse size={48} /></div>
+        ) : (
+          <>
+            <header className="relative border-b border-border px-6 py-4 pr-14 shrink-0">
+              <CornerAccent position="top-left" size={12} />
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 text-xs text-muted-foreground">
+                    {requirement.codigo && (
+                      <span className="font-mono tabular-nums rounded-md border border-border px-1.5 py-0.5 text-foreground/80">{requirement.codigo}</span>
+                    )}
+                    {requirement.categoria && <span className="truncate">{requirement.categoria}</span>}
+                  </div>
+                  <h2 className="text-base font-semibold text-foreground leading-snug">{requirement.titulo}</h2>
+                </div>
+                {sequence && idx >= 0 && (
+                  <div className="flex items-center gap-1 shrink-0 text-xs text-muted-foreground tabular-nums">
+                    <Button variant="ghost" size="sm" className="h-7 px-2" disabled={!prevId} aria-label={t('gapUi.drawer.previous')} onClick={() => prevId && onNavigate?.(prevId)}>‹</Button>
+                    {idx + 1}/{sequence.length}
+                    <Button variant="ghost" size="sm" className="h-7 px-2" disabled={!nextId} aria-label={t('gapUi.drawer.next')} onClick={() => nextId && onNavigate?.(nextId)}>›</Button>
+                  </div>
+                )}
+              </div>
+            </header>
+
+            <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
+              {/* Esquerda: ler */}
+              <div className="lg:overflow-y-auto px-6 py-5 space-y-6 lg:border-r border-border">
+                {requirement.descricao && (
+                  <section>
+                    <SectionHead title={t('gapUi.drawer.whatStandardRequires')} />
+                    {prose(requirement.descricao)}
+                  </section>
+                )}
+
+                <section>
+                  <SectionHead title={t('gapUi.drawer.comoCumprir')} />
+                  {orientacao.estado === 'gerando' && (
+                    <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
+                    </div>
+                  )}
+                  {orientacao.texto && prose(orientacao.texto)}
+                  {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
+                    <div role="status">
+                      <p className="text-sm text-muted-foreground">
+                        {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
+                      </p>
+                      <Button variant="outline" size="sm" className="mt-2 h-7 text-xs" onClick={() => orientacao.gerar(false)}>
+                        {t('gapUi.detail.guidanceTentarDeNovo')}
+                      </Button>
+                    </div>
+                  )}
+                </section>
+
+                {orientacao.evidencias && (
+                  <section>
+                    <SectionHead
+                      title={t('gapUi.drawer.expectedEvidence')}
+                      right={esperadas > 0 ? <span className="text-xs text-muted-foreground tabular-nums">{Math.min(encontradas, esperadas)}/{esperadas}</span> : undefined}
+                    />
+                    {prose(orientacao.evidencias)}
+                  </section>
+                )}
+
+                <section>
+                  <SectionHead title={t('gapUi.drawer.linkedEvidence')} />
+                  <DocumentosDoRequisito
+                    requisitoId={requirement.id}
+                    frameworkId={requirement.framework_id}
+                    onChanged={() => qc.invalidateQueries({ queryKey: ['requisito-evidencias-count', requirementId, empresaId] })}
+                  />
+                </section>
+
+                <section className="pt-2 border-t border-border">
+                  <Button variant="ghost" size="sm" className="text-xs -ml-2" onClick={abrirEdicaoCompleta}>
+                    <IconExternal className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+                    {t('gapUi.drawer.moreOptions')}
+                  </Button>
+                </section>
+              </div>
+
+              {/* Direita: decidir */}
+              <aside className="lg:overflow-y-auto px-6 py-5 space-y-5 border-t lg:border-t-0 border-border">
+                <section>
+                  <SectionHead title={t('gapUi.drawer.decision')} />
+                  <StatusSeg
+                    value={(evaluation.conformity_status as any) || null}
+                    onChange={(v) => setEvaluation(e => ({ ...e, conformity_status: v }))}
+                  />
+                </section>
+
+                <section className="rounded-lg border border-primary/25 bg-primary/[0.04] p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">
+                        {sugestao ? `${t('gapUi.drawer.suggestion')}: ${statusLabel(sugestao)}` : t('gapUi.drawer.suggestion')}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {sugestao
+                          ? t('gapUi.drawer.suggestionBasis', { found: encontradas, expected: Math.max(esperadas, encontradas) })
+                          : t('gapUi.drawer.suggestionNone')}
+                      </p>
+                    </div>
+                    {sugestao && evaluation.conformity_status !== sugestao && (
+                      <Button size="sm" className="h-7 text-xs" onClick={() => setEvaluation(e => ({ ...e, conformity_status: sugestao }))}>
+                        {t('gapUi.drawer.useSuggestion')}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-primary/15">
+                    {diagnosing ? (
+                      <div className="flex justify-center py-4"><AkurisPulse size={28} /></div>
+                    ) : diagnostic ? (
+                      <AIDiagnosticCard
+                        result={diagnostic}
+                        onApplyStatus={(s) => setEvaluation(e => ({ ...e, conformity_status: s }))}
+                        onApplyJustification={(txt) => setEvaluation(e => ({ ...e, observacoes: txt }))}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-micro text-muted-foreground">{t('gapUi.drawer.diagnosticHint')}</p>
+                        <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={runDiagnostic}>
+                          {t('gapUi.drawer.generateDiagnostic')}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <SectionHead title={t('gapUi.drawer.justificationObservations')} />
+                  <Textarea
+                    value={evaluation.observacoes || ''}
+                    onChange={(e) => setEvaluation(prev => ({ ...prev, observacoes: e.target.value }))}
+                    placeholder={t('gapUi.drawer.observationsPlaceholder')}
+                    rows={5}
+                    aria-invalid={precisaJustificativa}
+                    className={cn('resize-y', precisaJustificativa && 'border-destructive/60')}
+                  />
+                  {precisaJustificativa && (
+                    <p className="text-xs text-destructive mt-1.5">{t('gapUi.drawer.justificationRequired')}</p>
+                  )}
+                </section>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <section>
+                    <SectionHead title={t('gapUi.drawer.implementationDeadline')} />
+                    <DateField
+                      id="prazo-drawer"
+                      value={evaluation.prazo_implementacao || null}
+                      onChange={(v) => setEvaluation(prev => ({ ...prev, prazo_implementacao: v || null }))}
+                      className="mt-1.5"
+                    />
+                  </section>
+                  <section>
+                    <SectionHead title={t('gapUi.drawer.owner')} />
+                    <div className="mt-1.5">
+                      <UserSelect
+                        value={evaluation.responsavel_avaliacao || undefined}
+                        onValueChange={(v) => setEvaluation(prev => ({ ...prev, responsavel_avaliacao: v || null }))}
+                      />
+                    </div>
+                  </section>
+                </div>
+              </aside>
+            </div>
+
+            <footer className="border-t border-border px-6 py-3 shrink-0 flex items-center justify-between gap-3">
+              <span className="text-micro text-muted-foreground hidden md:inline-flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">1–4</kbd>{t('gapUi.drawer.complianceStatus')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
+                <span aria-live="polite">· {t('gapUi.drawer.draftSaved')}</span>
+              </span>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
+                  {t('gapUi.drawer.cancel')}
+                </Button>
+                {nextId && onNavigate && (
+                  <Button variant="outline" size="sm" onClick={() => handleSave(true)} disabled={saving || !evaluation.conformity_status || precisaJustificativa}>
+                    {t('gapUi.drawer.saveAndNext')}
+                  </Button>
+                )}
+                <Button size="sm" onClick={() => handleSave()} disabled={saving || !evaluation.conformity_status || precisaJustificativa}>
+                  {saving ? t('gapUi.drawer.saving') : t('gapUi.drawer.saveEvaluation')}
+                </Button>
+              </div>
+            </footer>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
