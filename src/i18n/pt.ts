@@ -565,7 +565,6 @@ groupExecution: 'Execução', groupRisks: 'Riscos', groupCompliance: 'Conformida
     createFreeAccount: 'Criar conta grátis',
     privacyPolicy: 'Política de Privacidade',
     allRightsReserved: 'Todos os direitos reservados',
-    splitEyebrow: 'Conformidade hoje. Um amanhã mais seguro.',
     splitTitle: 'Governança, riscos e compliance',
     splitHighlight: 'em um só lugar.',
     splitBody: 'Tecnologia, processos e pessoas para uma organização mais segura, ética e preparada para auditorias.',
