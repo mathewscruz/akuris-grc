@@ -356,7 +356,7 @@ export function RequirementDrawer({
                     </div>
                   )}
                   {orientacao.texto && prose(orientacao.texto)}
-                  {orientacao.estado !== 'gerando' && !orientacao.texto && (
+                  {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
                     <div role="status">
                       <p className="text-sm text-muted-foreground">
                         {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
