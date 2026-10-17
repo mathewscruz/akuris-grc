@@ -11,4 +11,4 @@
 - [x] 12 Configurações: visão geral em cartões
 - [ ] Teste de armazenamento de login da pré-visualização (código da plataforma, não do Akuris)
 - [x] Estruturar conteúdo dos requisitos (rotina automática a completar)
-- [ ] Sugestões visuais para a tela do framework (image-354)
+- [x] Tela do framework no modelo A (categorias ao lado)

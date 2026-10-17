@@ -254,6 +254,7 @@ export const gapUi = {
         selectShort: 'Selecione...',
         selectedCount: '{count} selecionados',
       },
+      sidebar: { count: '{n} categorias', search: 'Buscar categoria', all: 'Todas as categorias' },
       drawer: {
         requisito: 'Requisito',
         showFullGuidance: 'Ver orientação completa',
@@ -566,6 +567,7 @@ export const gapUi = {
         selectShort: 'Select...',
         selectedCount: '{count} selected',
       },
+      sidebar: { count: '{n} categories', search: 'Search category', all: 'All categories' },
       drawer: {
         requisito: 'Requirement',
         showFullGuidance: 'Show full guidance',

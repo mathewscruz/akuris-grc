@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { calcularScoreFramework, type RequisitoParaScore } from '@/lib/gap-score';
-import { CategoryCoverage } from '@/components/gap-analysis/v2/CategoryCoverage';
 import { categorySearchParams } from '@/lib/gap-category-navigation';
 import { DefinirMarcoDialog } from '@/components/gap-analysis/v2/DefinirMarcoDialog';
 import { useMarcoCertificacao } from '@/hooks/useMarcoCertificacao';
@@ -13,6 +12,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck, IconFile } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
+import { CategorySidebar } from '@/components/gap-analysis/v2/CategorySidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
@@ -483,7 +484,10 @@ function GapAnalysisFrameworkDetailInner() {
           </Button>
         </div>
 
+        <div className="flex items-start gap-4">
+        <div className="hidden sm:block shrink-0"><FrameworkBadge name={framework.nome} versao={framework.versao} size="md" /></div>
         <PageHeader
+          className="flex-1 min-w-0"
           title={`${framework.nome} ${framework.versao}`}
           description={fwDescricao(framework) || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
           actions={
@@ -551,6 +555,7 @@ function GapAnalysisFrameworkDetailInner() {
             </div>
           }
         />
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full max-w-xl grid-cols-3">
@@ -608,134 +613,103 @@ function GapAnalysisFrameworkDetailInner() {
                   : undefined}
               />
             ) : (
-              <>
-                {/* Um cabeçalho, três perguntas: quanto está de pé, dá para ir
-                    à auditoria, e até quando. Eram dois cartões empilhados que
-                    respondiam à mesma coisa com os mesmos números — 556px e
-                    quatro botões formando dois pares idênticos. */}
-                <FrameworkJourneyNextAction
-                  scopeDeclared={jaDeclarouEscopo === true}
-                  unevaluated={contagem.naoAvaliado}
-                  openGaps={contagem.naoConforme + contagem.parcial}
-                  missingEvidence={conformesSemProva}
-                  applicable={totalRequirements}
-                  evaluated={contagem.conforme + contagem.parcial + contagem.naoConforme}
-                  compliant={contagem.conforme}
-                  proven={conformesSemProva === null ? null : Math.max(0, contagem.conforme - conformesSemProva)}
-                  onDefineScope={abrirEscopo}
-                  onContinueDiagnosis={() => {
-                    setActiveTab('diagnostico');
-                    requestAnimationFrame(() => document.getElementById('priority-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+              <div className="grid items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+                <CategorySidebar
+                  categories={categoryData}
+                  active={activeCategoryFilter}
+                  onSelect={(category) => {
+                    setActiveCategoryFilter(category);
+                    setSearchParams(categorySearchParams(searchParams, category), { replace: true });
+                    requestAnimationFrame(() => document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
                   }}
-                  onOpenAdaptation={() => setActiveTab('adequacao')}
-                  onOpenEvidence={() => {
-                    setEvidenceView('biblioteca');
-                    setActiveTab('evidencias');
-                  }}
+                  footer={empresaId ? (
+                    <div className="space-y-2">
+                      <p className="flex items-center gap-2 text-xs font-medium text-foreground">
+                        <IconShieldCheck className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                        {jaDeclarouEscopo ? t('gapV2.journey.scopeDefined') : t('gapV2.journey.scopePending')}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={abrirEscopo}>
+                          {jaDeclarouEscopo ? t('gapV2.journey.reviewScope') : t('gapV2.journey.defineScope')}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setActiveTab('soa')}>
+                          {t('gapV2.journey.viewApplicability')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : undefined}
                 />
 
-                <FrameworkHeader
-                  frameworkName={framework.nome}
-                  overallScore={overallScore}
-                  totalRequirements={catalogRequirements}
-                  conforme={contagem.conforme}
-                  parcial={contagem.parcial}
-                  naoConforme={contagem.naoConforme}
-                  naoAplicavel={contagem.naoAplicavel}
-                  conformesSemProva={conformesSemProva}
-                  naoAvaliado={contagem.naoAvaliado}
-                  marco={marco ? {
-                    rotulo: marco.rotulo,
-                    dataAlvo: marco.data_alvo,
-                    scoreAlvo: marco.score_alvo,
-                  } : null}
-                  onFiltrarPorEstado={filtrarPorEstado}
-                  onGoToRemediation={() => setActiveTab('adequacao')}
-                  onAbrirMarco={empresaId ? () => setMarcoDialogAberto(true) : undefined}
-                />
+                <div className="min-w-0 space-y-5 akuris-stagger">
+                  <FrameworkJourneyNextAction
+                    scopeDeclared={jaDeclarouEscopo === true}
+                    unevaluated={contagem.naoAvaliado}
+                    openGaps={contagem.naoConforme + contagem.parcial}
+                    missingEvidence={conformesSemProva}
+                    applicable={totalRequirements}
+                    evaluated={contagem.conforme + contagem.parcial + contagem.naoConforme}
+                    compliant={contagem.conforme}
+                    proven={conformesSemProva === null ? null : Math.max(0, contagem.conforme - conformesSemProva)}
+                    onDefineScope={abrirEscopo}
+                    onContinueDiagnosis={() => {
+                      setActiveTab('diagnostico');
+                      requestAnimationFrame(() => document.getElementById('priority-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                    }}
+                    onOpenAdaptation={() => setActiveTab('adequacao')}
+                    onOpenEvidence={() => {
+                      setEvidenceView('biblioteca');
+                      setActiveTab('evidencias');
+                    }}
+                  />
 
-                <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)]">
+                  <FrameworkHeader
+                    frameworkName={framework.nome}
+                    overallScore={overallScore}
+                    totalRequirements={catalogRequirements}
+                    conforme={contagem.conforme}
+                    parcial={contagem.parcial}
+                    naoConforme={contagem.naoConforme}
+                    naoAplicavel={contagem.naoAplicavel}
+                    conformesSemProva={conformesSemProva}
+                    naoAvaliado={contagem.naoAvaliado}
+                    marco={marco ? {
+                      rotulo: marco.rotulo,
+                      dataAlvo: marco.data_alvo,
+                      scoreAlvo: marco.score_alvo,
+                    } : null}
+                    onFiltrarPorEstado={filtrarPorEstado}
+                    onGoToRemediation={() => setActiveTab('adequacao')}
+                    onAbrirMarco={empresaId ? () => setMarcoDialogAberto(true) : undefined}
+                  />
+
                   {empresaId && (
-                  <div id="priority-queue" className="scroll-mt-4">
-                    <PriorityQueueCard
+                    <div id="priority-queue" className="scroll-mt-4">
+                      <PriorityQueueCard
+                        frameworkId={frameworkId!}
+                        empresaId={empresaId}
+                        refreshKey={scoreRefreshKey}
+                        limit={3}
+                        onRequirementClick={(req) => abrirRequisitoCompleto(req.id)}
+                        onSeeAll={() => {
+                          document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div id="reqs-table" className="scroll-mt-4">
+                    <GenericRequirementsTable
                       frameworkId={frameworkId!}
-                      empresaId={empresaId}
+                      frameworkName={framework.nome}
+                      config={config}
+                      onStatusChange={handleScoreChange}
                       refreshKey={scoreRefreshKey}
-                      limit={6}
-                      onRequirementClick={(req) => abrirRequisitoCompleto(req.id)}
-                      onSeeAll={() => {
-                        document.getElementById('reqs-table')?.scrollIntoView({
-                          behavior: 'smooth', block: 'start',
-                        });
-                      }}
+                      initialCategoryFilter={activeCategoryFilter}
+                      onCategoryFilterChange={setActiveCategoryFilter}
                     />
                   </div>
-                )}
-                  <div className="space-y-4">
-                    <CategoryCoverage categories={categoryData} onSelect={(category) => {
-                      setActiveCategoryFilter(category);
-                      setSearchParams(categorySearchParams(searchParams, category), { replace: true });
-                      requestAnimationFrame(() => document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-                    }} />
-                {empresaId && (
-                  <section className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-4">
-                    <span className="flex shrink-0 items-center justify-center text-muted-foreground">
-                      <IconShieldCheck className="h-5 w-5" strokeWidth={1.5} />
-                    </span>
-                    <div className="min-w-0 flex-1 basis-40">
-                      <p className="text-sm font-medium text-foreground">
-                        {jaDeclarouEscopo
-                          ? t('gapV2.journey.scopeDefined')
-                          : t('gapV2.journey.scopePending')}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {jaDeclarouEscopo
-                          ? t('gapV2.journey.scopeDefinedDescription')
-                          : t('gapV2.journey.scopePendingDescription', { total: totalRequirements })}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={abrirEscopo}>
-                      {jaDeclarouEscopo
-                        ? t('gapV2.journey.reviewScope')
-                        : t('gapV2.journey.defineScope')}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('soa')}>
-                      {t('gapV2.journey.viewApplicability')}
-                    </Button>
-                  </section>
-                )}
-
-
-                  </div>
                 </div>
-
-                {/* A comparação de categorias é compacta e usa a conta existente.
-                    O clique substitui a fase ativa; a tabela abre a seção pertinente. */}
-
-                {/* A barra de chips saiu daqui.
-
-                    Eram quatro atalhos de estado ("Todos / Sem evidência /
-                    Críticos / Parciais") a duplicar o filtro que já existe na
-                    tabela e a legenda que já existe no cabeçalho — três
-                    controlos para a mesma coisa, um deles com rótulo errado
-                    ("sem evidência" filtrava por `nao_avaliado`, que é outra
-                    coisa). Ao lado vinha um seletor Tabela/Quadro em que o
-                    Quadro estava permanentemente desativado com "em breve".
-
-                    Hoje a distribuição do cabeçalho é o atalho, e cobre os
-                    cinco estados em vez de três. */}
-                <div id="reqs-table">
-                  <GenericRequirementsTable
-                    frameworkId={frameworkId!}
-                    frameworkName={framework.nome}
-                    config={config}
-                    onStatusChange={handleScoreChange}
-                    refreshKey={scoreRefreshKey}
-                    initialCategoryFilter={activeCategoryFilter}
-                    onCategoryFilterChange={setActiveCategoryFilter}
-                  />
-                </div>
-              </>
+              </div>
             )}
           </TabsContent>
 
