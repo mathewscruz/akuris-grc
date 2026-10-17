@@ -336,9 +336,15 @@ export function RequirementDrawer({
   const OPCOES = ['conforme', 'parcial', 'nao_conforme', 'nao_aplicavel'] as const;
   const TOM: Record<string, string> = {
     conforme: 'bg-success text-success-foreground',
-    parcial: 'bg-primary text-primary-foreground',
+    parcial: 'bg-warning text-warning-foreground',
     nao_conforme: 'bg-destructive text-destructive-foreground',
     nao_aplicavel: 'bg-muted-foreground text-background',
+  };
+  const DOT: Record<string, string> = {
+    conforme: 'bg-success',
+    parcial: 'bg-warning',
+    nao_conforme: 'bg-destructive',
+    nao_aplicavel: 'bg-muted-foreground',
   };
 
   const prose = (txt: string) => (
@@ -525,9 +531,10 @@ export function RequirementDrawer({
                           aria-checked={ativo}
                           title={`${n + 1}`}
                           onClick={() => setEvaluation((e) => ({ ...e, conformity_status: o }))}
-                          className={cn('px-2 py-2 text-xs whitespace-nowrap transition-colors border-border [&:not(:first-child)]:sm:border-l',
-                            ativo ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/80 hover:bg-accent')}
+                          className={cn('px-2 py-2 text-xs whitespace-nowrap transition-colors border-border [&:not(:first-child)]:sm:border-l flex items-center justify-center gap-1.5',
+                            ativo ? cn('font-medium', TOM[o]) : 'text-foreground/80 hover:bg-accent')}
                         >
+                          <span aria-hidden="true" className={cn('h-1.5 w-1.5 rounded-full shrink-0', ativo ? 'bg-current opacity-90' : DOT[o])} />
                           {statusLabel(o)}
                         </button>
                       );
