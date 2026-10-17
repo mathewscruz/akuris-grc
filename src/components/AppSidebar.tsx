@@ -341,7 +341,7 @@ export function AppSidebar() {
                           side="right" align="start" sideOffset={8}
                           className="w-64 border-sidebar-border bg-sidebar p-2 text-sidebar-foreground shadow-lg dark:shadow-none data-[state=open]:slide-in-from-left-2 motion-reduce:animate-none"
                         >
-                          <p className="border-b border-sidebar-border px-2.5 pb-2 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/55">{item.title}</p>
+                          <p className="border-b border-sidebar-border px-2.5 pb-2 pt-1 text-micro font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/55">{item.title}</p>
                           <div className="mt-1.5 flex flex-col gap-0.5">
                           {item.subItems.map((subItem) => {
                             const subActive = isActive(subItem.url) || (matchesPath(subItem.url) && !item.subItems.some((o) => o.url !== subItem.url && matchesPath(o.url) && o.url.length > subItem.url.length));

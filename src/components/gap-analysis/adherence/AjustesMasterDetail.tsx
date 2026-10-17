@@ -65,7 +65,7 @@ export function AjustesMasterDetail({ essenciais, recomendados, planosCriados, c
 
   const Grupo = ({ titulo, de, ate }: { titulo: string; de: number; ate: number }) => ate > de ? (
     <div className="space-y-1">
-      <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{titulo} · {ate - de}</p>
+      <p className="px-3 pb-1 pt-2 text-micro font-medium uppercase tracking-wide text-muted-foreground">{titulo} · {ate - de}</p>
       {itens.slice(de, ate).map((it, j) => <Linha key={it.idx} it={it} i={de + j} />)}
     </div>
   ) : null;
@@ -116,7 +116,7 @@ export function AjustesMasterDetail({ essenciais, recomendados, planosCriados, c
               <ol className="space-y-2">
                 {a.passos.map((p, i) => (
                   <li key={i} className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold tabular-nums text-muted-foreground">{i + 1}</span>
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-micro font-semibold tabular-nums text-muted-foreground">{i + 1}</span>
                     <span>{p}</span>
                   </li>
                 ))}

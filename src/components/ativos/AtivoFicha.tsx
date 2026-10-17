@@ -156,7 +156,7 @@ export const AtivoFicha: React.FC<Props> = ({
                   className="h-40 w-40 rounded-lg border object-cover"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border bg-muted/40">
+                <div className="flex h-24 w-24 items-center justify-center rounded-lg border bg-muted/40">
                   <Icone className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
@@ -182,7 +182,7 @@ export const AtivoFicha: React.FC<Props> = ({
 
             <div className="rounded-lg border p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.etiquetas')}</span>
+                <span className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.etiquetas')}</span>
                 <button type="button" className="text-xs text-primary hover:underline" onClick={() => onEdit(ativo)}>{t('ativoFicha.editar')}</button>
               </div>
               {tags.length ? (
@@ -202,7 +202,7 @@ export const AtivoFicha: React.FC<Props> = ({
             )}
 
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.acoes')}</span>
+              <span className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.acoes')}</span>
               <Button className="justify-start" onClick={() => onManutencao(ativo)}>
                 <IconSettings className="mr-2 h-4 w-4" />{t('ativoFicha.registrarManutencao')}
               </Button>

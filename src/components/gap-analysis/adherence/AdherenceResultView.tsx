@@ -510,7 +510,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               <ol className="grid gap-2 rounded-lg border bg-muted/20 p-3 md:grid-cols-3">
                 {(['next1', 'next2', 'next3'] as const).map((s, i) => (
                   <li key={s} className="flex gap-2.5 text-sm text-foreground">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold">{i + 1}</span>
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-micro font-semibold">{i + 1}</span>
                     {t(`gapAnalysis.adherenceUi.verdict.guide.${s}`)}
                   </li>
                 ))}

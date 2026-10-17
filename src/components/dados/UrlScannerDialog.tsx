@@ -335,7 +335,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                       <div className="flex-1 min-w-0 space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm">{campo.label || campo.name || campo.id || t('dadosDialogs.urlScanner.semNome')}</span>
-                          <code className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{campo.type}</code>
+                          <code className="text-micro text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{campo.type}</code>
                         </div>
                         {campo.placeholder && <p className="text-xs text-muted-foreground truncate">"{campo.placeholder}"</p>}
                         <p className="text-xs text-muted-foreground">
