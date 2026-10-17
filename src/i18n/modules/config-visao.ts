@@ -9,6 +9,16 @@ const pt = {
     resolver: 'Resolver',
     voltar: 'Configurações',
     grupos: { conta: 'Conta', plataforma: 'Plataforma', admin: 'Administração Akuris' },
+    itensDesc: {
+      usuarios: 'Traga sua equipe para colaborar na plataforma.',
+      logo: 'Adicione o logo para personalizar a plataforma.',
+      slug: 'Defina o endereço usado nos links públicos.',
+      integracao: 'Conecte ferramentas para coletar evidências.',
+      denuncia: 'Disponibilize o canal seguro para denúncias.',
+      trust: 'Mostre sua postura de segurança a clientes.',
+    },
+    concluidas: '{n} concluídas',
+    pendentesN: '{n} pendentes',
     itens: {
       usuarios: 'Convidar outros usuários',
       logo: 'Enviar o logo da empresa',
@@ -58,6 +68,16 @@ const en = {
     resolver: 'Resolve',
     voltar: 'Settings',
     grupos: { conta: 'Account', plataforma: 'Platform', admin: 'Akuris administration' },
+    itensDesc: {
+      usuarios: 'Bring your team to collaborate on the platform.',
+      logo: 'Add your logo to personalize the platform.',
+      slug: 'Set the address used in public links.',
+      integracao: 'Connect tools to collect evidence.',
+      denuncia: 'Offer a secure whistleblowing channel.',
+      trust: 'Show customers your security posture.',
+    },
+    concluidas: '{n} completed',
+    pendentesN: '{n} pending',
     itens: {
       usuarios: 'Invite other users',
       logo: 'Upload the company logo',
