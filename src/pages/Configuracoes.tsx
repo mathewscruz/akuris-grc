@@ -2,7 +2,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/ui/page-header';
-import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconMoney, IconPackage, IconBook, IconGlobe, IconFileText, IconMegaphone, IconChevronLeft } from '@/components/icons';
+import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconMoney, IconPackage, IconBook, IconGlobe, IconFileText, IconMegaphone, IconChevronLeft, IconBriefcase, IconMail, IconShieldCheck } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import GerenciamentoEmpresas from '@/components/configuracoes/GerenciamentoEmpresas';
@@ -45,17 +45,17 @@ const Configuracoes = () => {
     ...(isAdmin ? [
       { id: 'integracoes', grupo: 'plataforma' as const, titulo: t('configGeral.page.tabIntegracoes'), icon: IconPlug, palavras: 'aws intune azure api webhook' },
       { id: 'denuncia', grupo: 'plataforma' as const, titulo: t('configGeral.page.tabDenuncia'), icon: IconMessage, palavras: 'whistleblowing etica comite canal' },
-      { id: 'trust-center', grupo: 'plataforma' as const, titulo: t('trustCenter.tab'), icon: IconGlobe, palavras: 'questionario seguranca publico' },
+      { id: 'trust-center', grupo: 'plataforma' as const, titulo: t('trustCenter.tab'), icon: IconShieldCheck, palavras: 'questionario seguranca publico' },
     ] : []),
     ...(isSuperAdmin ? [
-      { id: 'empresas', grupo: 'admin' as const, titulo: t('configGeral.page.tabEmpresas'), icon: IconOrg },
+      { id: 'empresas', grupo: 'admin' as const, titulo: t('configGeral.page.tabEmpresas'), icon: IconBriefcase },
       { id: 'planos', grupo: 'admin' as const, titulo: t('configGeral.page.tabPlanos'), icon: IconPackage },
       { id: 'financeiro-ia', grupo: 'admin' as const, titulo: t('configGeral.page.tabFinanceiroIA'), icon: IconMoney },
       { id: 'novidades', grupo: 'admin' as const, titulo: t('configGeral.page.tabNovidades'), icon: IconMegaphone },
       { id: 'noticias', grupo: 'admin' as const, titulo: t('configGeral.page.tabNoticias'), icon: IconFileText },
       { id: 'traducoes', grupo: 'admin' as const, titulo: t('configGeral.page.tabTraducoes'), icon: IconGlobe },
       { id: 'blog', grupo: 'admin' as const, titulo: t('configGeral.page.tabBlog'), icon: IconBook },
-      { id: 'solicitacoes-site', grupo: 'admin' as const, titulo: t('site.leads'), icon: IconMessage },
+      { id: 'solicitacoes-site', grupo: 'admin' as const, titulo: t('site.leads'), icon: IconMail },
     ] : []),
   ];
   const allowedTabs = secoes.map((s) => s.id);
