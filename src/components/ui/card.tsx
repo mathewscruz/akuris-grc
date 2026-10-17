@@ -35,6 +35,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant, interactive, ...props }, ref) => (
     <div
       ref={ref}
+      data-slot="card"
       className={cn(cardVariants({ variant, interactive }), className)}
       {...props}
     />
