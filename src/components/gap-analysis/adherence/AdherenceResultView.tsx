@@ -417,11 +417,6 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
                 {` · ${format(new Date(assessment.created_at), 'dd/MM/yyyy HH:mm', { locale: dateLocale })}`}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {veredito === 'em_compliance' && frameworkId && details && details.length > 0 && (
-                  <Button size="sm" onClick={handleApplyToEvaluation} disabled={applying}>
-                    {applying && <AkurisPulse size={16} className="mr-2" />}{t('gapAnalysis.adherenceUi.verdict.guide.useAsEvidence')}
-                  </Button>
-                )}
                 {frameworkId && acoes.length > 0 && (
                   <Button size="sm" onClick={() => openDocGen({ frameworkId, frameworkName: assessment.framework_nome ?? undefined, mode: 'generate' })}>
                     {t('gapAnalysis.adherenceUi.verdict.fixWithDocgen')}

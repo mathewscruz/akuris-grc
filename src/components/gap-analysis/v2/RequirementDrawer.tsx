@@ -10,11 +10,12 @@
  */
 import { parseOrientacao } from '@/lib/gap/parse-orientacao';
 import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { DocumentosDoRequisito } from '@/components/gap-analysis/DocumentosDoRequisito';
+import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
+import { RequirementReviewPanel } from '@/components/gap-analysis/RequirementReviewPanel';
 import { sugerirStatus, contarEvidenciasEsperadas } from '@/lib/gap-analysis/sugerir-status';
 import { EvidenciasEsperadasLista, useMarcacoesEvidencia } from './EvidenciasEsperadasLista';
 import { contarAtendidos } from '@/lib/gap-analysis/evidencia-itens';
@@ -28,7 +29,7 @@ import { DateField } from '@/components/ui/date-field';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { IconExternal, IconFileText, IconIdea, IconChecklist, IconSuccess, IconAttach, IconSettings, IconCalendar, IconPerson, IconSave } from '@/components/icons';
+import { IconFileText, IconIdea, IconChecklist, IconSuccess, IconAttach, IconSettings, IconCalendar, IconPerson, IconSave } from '@/components/icons';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
@@ -99,21 +100,7 @@ export function RequirementDrawer({
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<AIDiagnosticResult | null>(null);
   const { t } = useLanguage();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // "Edição completa": fecha a triagem e pede à tabela da página que abra o
-  // diálogo do mesmo requisito. Passa pela URL de propósito — o diálogo vive
-  // dentro da tabela e este painel é global, portanto não há como lhe entregar
-  // uma função sem arrastar propriedades por três telas. Foi o que se tentou
-  // antes, com `onOpenFullDialog`: a propriedade existia, ninguém a passava, e
-  // o botão nunca chegou a ser desenhado.
-  const abrirEdicaoCompleta = useCallback(() => {
-    if (!requirementId) return;
-    const sp = new URLSearchParams(searchParams);
-    sp.set('req', requirementId);
-    setSearchParams(sp, { replace: true });
-    onOpenChange(false);
-  }, [requirementId, searchParams, setSearchParams, onOpenChange]);
 
   /*
     A mesma orientação do diálogo completo, no caminho principal.
@@ -489,10 +476,35 @@ export function RequirementDrawer({
                       onChanged={() => qc.invalidateQueries({ queryKey: ['requisito-evidencias-count', requirementId, empresaId] })}
                     />
                   </div>
-                  <Button variant="ghost" size="sm" className="text-xs -ml-2 mt-3" onClick={abrirEdicaoCompleta}>
-                    <IconExternal className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-                    {t('gapUi.drawer.moreOptions')}
-                  </Button>
+                  {requirement.framework_id && evaluation.id && (
+                    <details className="mt-4 rounded-lg border border-border p-3">
+                      <summary className="cursor-pointer list-none text-xs font-medium text-primary hover:underline">
+                        {t('gapUi.drawer.reuseEvidence')}
+                      </summary>
+                      <div className="mt-3">
+                        <EvidenceReusePanel
+                          requirementId={requirement.id}
+                          frameworkId={requirement.framework_id}
+                          evaluationId={evaluation.id}
+                          onLinked={() => qc.invalidateQueries({ queryKey: ['requisito-evidencias-count', requirementId, empresaId] })}
+                        />
+                      </div>
+                    </details>
+                  )}
+                  {evaluation.id && (
+                    <details className="mt-3 rounded-lg border border-border p-3">
+                      <summary className="cursor-pointer list-none text-xs font-medium text-primary hover:underline">
+                        {t('gapUi.drawer.reviewAndPlan')}
+                      </summary>
+                      <div className="mt-3">
+                        <RequirementReviewPanel
+                          key={requirement.id}
+                          evaluationId={evaluation.id}
+                          onPlanLinked={() => { qc.invalidateQueries(); }}
+                        />
+                      </div>
+                    </details>
+                  )}
                 </Bloco>
               </div>
 
