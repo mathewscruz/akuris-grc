@@ -108,14 +108,11 @@ const SEVERITY_STEPS: Record<SeverityLevel, number> = {
 
 export const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
   const activeSteps = SEVERITY_STEPS[level];
-  const meterRef = useVisibleMotion<HTMLSpanElement>();
-
   return (
     <span
-      ref={meterRef}
-      data-motion-visible="false"
       aria-hidden="true"
-      className={cn('inline-flex items-end gap-px flex-shrink-0', CHIP_SIZING.mark)}
+      data-severity-meter={activeSteps}
+      className="inline-flex items-center gap-[2px] flex-shrink-0"
     >
       {[1, 2, 3, 4].map((step) => (
         <span
@@ -123,12 +120,8 @@ export const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
           data-severity-step={step}
           data-active={step <= activeSteps || undefined}
           className={cn(
-            'akuris-severity-step w-[3px] origin-bottom -skew-y-12 bg-current',
-            step === 1 && 'h-1.5',
-            step === 2 && 'h-2',
-            step === 3 && 'h-2.5',
-            step === 4 && 'h-3',
-            step <= activeSteps ? 'opacity-100' : 'opacity-20 [animation:none]',
+            'h-1 w-1.5 rounded-[1px]',
+            step <= activeSteps ? 'bg-current' : 'bg-muted-foreground/25',
           )}
         />
       ))}
