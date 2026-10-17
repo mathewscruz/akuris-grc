@@ -2387,14 +2387,10 @@ input:-webkit-autofill:focus {
     box-shadow: none;
     background: transparent;
   }
-  [data-slot="card"] .grid > [data-slot="card"]:not([data-keep-frame]),
-  [data-slot="card"] [data-slot="card"]:not([data-keep-frame]) + [data-slot="card"]:not([data-keep-frame]) {
-    box-shadow: inset 0 0 0 0 transparent;
-  }
   [data-slot="card"] [data-slot="card"]:not([data-keep-frame]) + [data-slot="card"]:not([data-keep-frame]) {
     border-top: 1px solid hsl(var(--border));
   }
-  [data-slot="card"] [role="dialog"] [data-slot="card"] { border-width: 1px; }
+  [data-slot="card"] .grid > [data-slot="card"]:not([data-keep-frame]) { border-top-width: 0; }
 }
 
 /* Item recém-salvo: destaque breve na lista. */
