@@ -444,7 +444,7 @@ async function traduzirCatalogo(supabase: any, apiKey: string | undefined): Prom
   return n;
 }
 
-/** Descrição curta (≈ só o título) não diz ao usuário o que a norma exige: amplia até 20 por vez. */
+/** Descrição curta (≈ só o título) não diz ao usuário o que a norma exige: amplia até 40 por vez. */
 // deno-lint-ignore no-explicit-any
 async function ampliarDescricoes(supabase: any, apiKey: string | undefined): Promise<number> {
   if (!apiKey) return 0;
@@ -452,7 +452,7 @@ async function ampliarDescricoes(supabase: any, apiKey: string | undefined): Pro
   const nomes = new Map((globais ?? []).map((f: any) => [f.id, f.nome]));
   if (!nomes.size) return 0;
   const curtas: any[] = [];
-  for (let from = 0; from < 4000 && curtas.length < 20; from += 1000) {
+  for (let from = 0; from < 4000 && curtas.length < 40; from += 1000) {
     const { data, error } = await supabase.from('gap_analysis_requirements')
       .select('id, framework_id, codigo, titulo, descricao, descricao_en')
       .in('framework_id', [...nomes.keys()]).order('id').range(from, from + 999);
@@ -460,7 +460,7 @@ async function ampliarDescricoes(supabase: any, apiKey: string | undefined): Pro
     for (const r of data) {
       const d = (r.descricao || '').trim();
       if (d.length < 40 || d.toLowerCase() === (r.titulo || '').trim().toLowerCase()) curtas.push(r);
-      if (curtas.length >= 20) break;
+      if (curtas.length >= 40) break;
     }
     if (data.length < 1000) break;
   }
