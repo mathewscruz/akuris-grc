@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getCategory } from '@/lib/gap-analysis-tokens';
-import { getOperationalScoreColor } from '@/lib/operational-score-color';
+import { getFwCategory } from './fw-utils';
+import { operationalScoreColor } from '@/lib/operational-score-color';
 import { IconChevronDown } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +22,7 @@ export interface LinhaComparativo {
 
 type Ordem = 'score' | 'naoConformes' | 'criticos' | 'marco';
 
-const cor = (s: number, total: number) => (total > 0 ? getOperationalScoreColor(s) : 'hsl(var(--muted-foreground))');
+const cor = (s: number, total: number) => (total > 0 ? operationalScoreColor(s) : 'hsl(var(--muted-foreground))');
 
 export function FrameworksComparativo({ linhas, onOpen }: { linhas: LinhaComparativo[]; onOpen: (id: string) => void }) {
   const { t, locale } = useLanguage();
@@ -53,7 +53,7 @@ export function FrameworksComparativo({ linhas, onOpen }: { linhas: LinhaCompara
 
   const fmtData = (d?: string | null) =>
     d ? new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString(locale === 'en' ? 'en-US' : locale) : null;
-  const cat = (tipo?: string | null) => t(`gapV2.fwCategory.${getCategory(tipo ?? '')}`);
+  const cat = (tipo?: string | null) => t(`gapV2.fwCategory.${getFwCategory(tipo ?? '')}`);
 
   return (
     <div className="space-y-4">
