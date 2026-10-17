@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { IconCheck, IconCalendar, IconFile, IconChevron, IconChevronLeft, IconMoney, IconUsers, IconChecklist } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { toast as sonnerToast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,6 +105,10 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
   const { toast } = useToast();
   const { t } = useLanguage();
   const STEPS = buildSteps(t);
+  const { savedAt: draftSavedAt, loadDraft, clearDraft } = useWizardDraft({
+    storageKey: 'contrato', recordId: contrato?.id, values: formData,
+    enabled: open && JSON.stringify(formData) !== initialForm.current,
+  });
 
   useEffect(() => {
     if (open) {
@@ -155,8 +161,17 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           sla_principal: '',
           confidencial: false
         });
+        const rascunho = loadDraft();
+        if (rascunho && (rascunho.nome || rascunho.objeto || rascunho.numero_contrato)) {
+          setFormData({ ...rascunho, moeda: rascunho.moeda || moedaDaEmpresa });
+          sonnerToast(t('common.draftFound'), {
+            duration: 8000,
+            action: { label: t('common.draftDiscard'), onClick: () => { clearDraft(); resetForm({ ...JSON.parse(initialForm.current) }); } },
+          });
+        }
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contrato, open]);
 
   const fetchUsuarios = async () => {
@@ -300,6 +315,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
         description: t('contratosAtivos.contratoDialogWizard.toastSaveSuccess').replace('{action}', contrato ? t('contratosAtivos.contratoDialogWizard.actionUpdated') : t('contratosAtivos.contratoDialogWizard.actionCreated')),
       });
 
+      clearDraft();
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -710,7 +726,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
       title={contrato ? t('contratosAtivos.contratoDialogWizard.dialogTitleEdit') : t('contratosAtivos.contratoDialogWizard.dialogTitleNew')}
       description={contrato
         ? t('contratosAtivos.contratoDialogWizard.dialogDescriptionEdit')
-        : t('contratosAtivos.contratoDialogWizard.dialogDescriptionNew')}
+        : `${t('contratosAtivos.contratoDialogWizard.dialogDescriptionNew')}${draftSavedAt ? ` · ${t('common.draftSaved')}` : ''}`}
       size="lg"
       noScroll
       footer={({ requestClose }) => (
