@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { formatarDiaParaDB } from '@/lib/date-utils';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis } from 'recharts';
@@ -275,7 +276,7 @@ export function ContratosTile({ delay }: { delay?: number }) {
   const empresaId = useAuth().profile?.empresa_id;
   const { hoje, limite } = useMemo(() => {
     const d = new Date(); const f = new Date(); f.setDate(f.getDate() + 90);
-    const iso = (x: Date) => x.toISOString().slice(0, 10);
+    const iso = (x: Date) => formatarDiaParaDB(x);
     return { hoje: iso(d), limite: iso(f) };
   }, []);
   const { data, isLoading } = useQuery({
