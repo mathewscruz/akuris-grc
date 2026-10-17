@@ -47,9 +47,12 @@ function montar(locale: 'pt-BR' | 'en') {
   );
 }
 
-/** O cartão de uma pergunta, encontrado pelo número de ordem. */
+/** Uma pergunta por vez: navega pelos pontos até à pergunta n e devolve o cartão. */
 function cartao(n: string) {
-  return screen.getByText(n).closest('div.rounded-lg') as HTMLElement;
+  const i = Number(n);
+  const ponto = screen.getAllByRole('button', { name: new RegExp(`^(Pergunta|Question) ${i} (de|of) 9$`) })[0];
+  fireEvent.click(ponto);
+  return screen.getByRole('heading', { level: 3 }).closest('div.rounded-xl') as HTMLElement;
 }
 
 beforeEach(() => localStorage.clear());
@@ -71,19 +74,19 @@ describe('"Não sei" no ecrã', () => {
     montar('pt-BR');
     expect(screen.getByText(/0 de 9 respondidas/)).toBeTruthy();
 
-    const botao = within(cartao('01')).getByRole('button', { name: 'Não sei' });
+    const botao = within(cartao('01')).getByRole('button', { name: /Não sei/ });
     expect(botao.className, 'já vinha marcado').not.toContain('bg-primary/10');
 
     fireEvent.click(botao);
 
-    expect(botao.className, 'o botão não ficou marcado').toContain('bg-primary/10');
+    expect(within(cartao('01')).getByRole('button', { name: /Não sei/ }).className, 'o botão não ficou marcado').toContain('bg-primary/10');
     expect(screen.getByText(/1 de 9 respondidas/), 'o contador não subiu').toBeTruthy();
   });
 
   it('confirma o escopo quando todas as respostas mantêm tudo aplicável', async () => {
     montar('pt-BR');
     for (const n of ['01', '02', '03', '04', '05', '06', '07', '08', '09']) {
-      fireEvent.click(within(cartao(n)).getByRole('button', { name: 'Não sei' }));
+      fireEvent.click(within(cartao(n)).getByRole('button', { name: /^Não sei\s*\d$/ }));
     }
     expect(screen.getByText(/9 de 9 respondidas/)).toBeTruthy();
     expect(screen.queryByText(/saem, restam/)).toBeNull();
@@ -95,7 +98,7 @@ describe('"Não sei" no ecrã', () => {
 
   it('"Não" continua a excluir e a dizer quantos', () => {
     montar('pt-BR');
-    fireEvent.click(within(cartao('06')).getByRole('button', { name: 'Não' }));
+    fireEvent.click(within(cartao('06')).getByRole('button', { name: /^Não\s*\d$/ }));
     // desenvolvimento_interno: A.8.25, A.8.27, A.8.28
     expect(screen.getByText(/3 requisito\(s\) saem do escopo/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Revisar o que sai/ }).hasAttribute('disabled')).toBe(true);
@@ -103,13 +106,13 @@ describe('"Não sei" no ecrã', () => {
 
   it('a trava muda a resposta e diz porquê, sem apagar as outras', () => {
     montar('pt-BR');
-    fireEvent.click(within(cartao('07')).getByRole('button', { name: 'Não sei' }));
-    fireEvent.click(within(cartao('01')).getByRole('button', { name: 'Não' }));
+    fireEvent.click(within(cartao('07')).getByRole('button', { name: /^Não sei\s*\d$/ }));
+    fireEvent.click(within(cartao('01')).getByRole('button', { name: /^Não\s*\d$/ }));
 
     expect(screen.getByText(/todo mundo trabalha fora dele/)).toBeTruthy();
-    expect(within(cartao('04')).getByRole('button', { name: 'Sim' }).className).toContain('bg-primary/10');
+    expect(within(cartao('04')).getByRole('button', { name: /^Sim\s*\d$/ }).className).toContain('bg-primary/10');
     expect(
-      within(cartao('07')).getByRole('button', { name: 'Não sei' }).className,
+      within(cartao('07')).getByRole('button', { name: /^Não sei\s*\d$/ }).className,
       'a trava apagou uma resposta que não era sua',
     ).toContain('bg-primary/10');
   });
@@ -120,7 +123,7 @@ describe('em inglês, o ecrã é inglês inteiro', () => {
     montar('en');
     expect(screen.getByText(/0 of 9 answered/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Confirm scope/ })).toBeTruthy();
-    expect(within(cartao('01')).getByRole('button', { name: 'Not sure' })).toBeTruthy();
+    expect(within(cartao('01')).getByRole('button', { name: /^Not sure\s*\d$/ })).toBeTruthy();
     expect(screen.getByText(/Does the company occupy any physical address/)).toBeTruthy();
     expect(screen.queryByText(/A empresa ocupa algum endereço/), 'pergunta em português').toBeNull();
   });
@@ -132,16 +135,16 @@ describe('em inglês, o ecrã é inglês inteiro', () => {
 
   it('o que só aparece depois de responder também está traduzido', () => {
     montar('en');
-    fireEvent.click(within(cartao('06')).getByRole('button', { name: 'No' }));
+    fireEvent.click(within(cartao('06')).getByRole('button', { name: /^No\s*\d$/ }));
     expect(screen.getByText(/3 requirement\(s\) leave the scope/)).toBeTruthy();
     expect(screen.getByText(/they apply to off-the-shelf systems too/)).toBeTruthy();
   });
 
   it('a justificativa que a empresa assina está em inglês', async () => {
     montar('en');
-    fireEvent.click(within(cartao('06')).getByRole('button', { name: 'No' }));
+    fireEvent.click(within(cartao('06')).getByRole('button', { name: /^No\s*\d$/ }));
     for (const n of ['01', '02', '03', '04', '05', '07', '08', '09']) {
-      fireEvent.click(within(cartao(n)).getByRole('button', { name: 'Not sure' }));
+      fireEvent.click(within(cartao(n)).getByRole('button', { name: /^Not sure\s*\d$/ }));
     }
     const review = screen.getByRole('button', { name: /Review what leaves/ });
     await waitFor(() => expect(review.hasAttribute('disabled')).toBe(false));

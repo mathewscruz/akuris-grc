@@ -36,6 +36,17 @@ const PT = {
   gravado: '{n} requisitos marcados como não aplicáveis, com justificativa.',
   gravadoSemExclusoes: 'Escopo confirmado: todos os requisitos permanecem aplicáveis.',
   erroGravar: 'Não foi possível gravar o escopo. Tente novamente.',
+  introCurta: '{n} perguntas rápidas. Cada "Não" tira da lista os controles que não se aplicam, com justificativa pronta para o auditor.',
+  saibaMais: 'Saiba mais',
+  comoResponder: 'Como responder?',
+  perguntaN: 'Pergunta {n} de {total}',
+  anterior: 'Anterior',
+  proxima: 'Próxima',
+  atalhos: 'Atalhos: 1, 2, 3 para responder · ← → para navegar',
+  noEscopo: 'no escopo',
+  controles: 'controles',
+  saemAqui: 'O que sai',
+  nadaSaiAinda: 'Nada saiu ainda. Cada "Não" aparece aqui.',
   resposta: { sim: 'Sim', nao: 'Não', nao_sei: 'Não sei' },
 };
 
@@ -65,6 +76,17 @@ const EN: typeof PT = {
   erroGravar: 'The scope could not be saved. Please try again.',
   /* «Not sure» e não «I do not know»: é a mesma resposta e cabe no botão, que
      está numa fila de três e não pode partir a linha. */
+  introCurta: '{n} quick questions. Each "No" removes controls that do not apply, with a justification ready for the auditor.',
+  saibaMais: 'Learn more',
+  comoResponder: 'How to answer?',
+  perguntaN: 'Question {n} of {total}',
+  anterior: 'Previous',
+  proxima: 'Next',
+  atalhos: 'Shortcuts: 1, 2, 3 to answer · ← → to navigate',
+  noEscopo: 'in scope',
+  controles: 'controls',
+  saemAqui: 'What leaves',
+  nadaSaiAinda: 'Nothing has left yet. Each "No" shows up here.',
   resposta: { sim: 'Yes', nao: 'No', nao_sei: 'Not sure' },
 };
 

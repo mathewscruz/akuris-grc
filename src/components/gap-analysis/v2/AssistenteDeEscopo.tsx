@@ -64,12 +64,13 @@ export function AssistenteDeEscopo({
   const [etapa, setEtapa] = useState<'perguntas' | 'confirmar'>('perguntas');
   const [justificativas, setJustificativas] = useState<Record<string, string>>({});
   const [gravando, setGravando] = useState(false);
+  const [atual, setAtual] = useState(0);
   const [forcadas, setForcadas] = useState<TravaDeEscopo[]>([]);
   /** codigo -> requirement_id, para escrever no SoA sem consultar duas vezes. */
   const [idsPorCodigo, setIdsPorCodigo] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!open) { setEtapa('perguntas'); setRespostas({}); setForcadas([]); }
+    if (!open) { setEtapa('perguntas'); setRespostas({}); setForcadas([]); setAtual(0); }
   }, [open]);
 
   useEffect(() => {
@@ -119,6 +120,32 @@ export function AssistenteDeEscopo({
   // Frameworks sem roteiro próprio continuam acessíveis pela tabela/SoA.
   // O diálogo pode estar montado (mesmo fechado) antes desta guarda.
   const todasRespondidas = !!assistente && respondidas === assistente.perguntas.length;
+
+  const pergunta = assistente?.perguntas[atual];
+
+  const escolher = (valor: Resposta) => {
+    if (!assistente || !pergunta) return;
+    responder(pergunta.id, valor);
+    if (atual < assistente.perguntas.length - 1) {
+      window.setTimeout(() => setAtual((a) => Math.min(assistente.perguntas.length - 1, a + 1)), 280);
+    }
+  };
+
+  useEffect(() => {
+    if (!open || etapa !== 'perguntas') return;
+    const onKey = (e: KeyboardEvent) => {
+      const alvo = e.target as HTMLElement | null;
+      if (alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.isContentEditable)) return;
+      const total = assistente?.perguntas.length ?? 0;
+      if (e.key === '1') escolher('sim');
+      else if (e.key === '2') escolher('nao');
+      else if (e.key === '3') escolher('nao_sei');
+      else if (e.key === 'ArrowRight') setAtual((a) => Math.min(total - 1, a + 1));
+      else if (e.key === 'ArrowLeft') setAtual((a) => Math.max(0, a - 1));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   if (!assistente) return null;
 
@@ -224,89 +251,166 @@ export function AssistenteDeEscopo({
       <DialogContent className="sm:max-w-5xl max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('gapEscopo.titulo')}</DialogTitle>
-          <DialogDescription className="leading-6">{assistente.intro}</DialogDescription>
+          <DialogDescription className="leading-6">
+            {t('gapEscopo.introCurta', { n: assistente.perguntas.length })}
+          </DialogDescription>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer list-none font-medium text-primary hover:underline">
+              {t('gapEscopo.saibaMais')}
+            </summary>
+            <p className="mt-2 leading-5">{assistente.intro}</p>
+          </details>
         </DialogHeader>
 
         {etapa === 'perguntas' ? (
           <>
-            {/* Duas colunas a partir de `lg`: cada pergunta é um cartão
-                fechado, e em fila indiana somavam mais de 2000 px. */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-              {assistente.perguntas.map((p, i) => {
-                const r = respostas[p.id];
-                const sai = porPergunta.get(p.id)?.length ?? 0;
-                return (
-                  <div key={p.id} className="rounded-lg border border-border bg-card p-4">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium leading-6 text-foreground">{p.pergunta}</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{p.ajuda}</p>
-
-                        {p.aviso && (
-                          <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-warning">
-                            <IconWarning className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-                            {p.aviso}
-                          </p>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {(['sim', 'nao', 'nao_sei'] as Resposta[]).map((valor) => (
-                            <button
-                              key={valor}
-                              type="button"
-                              onClick={() => responder(p.id, valor)}
-                              className={cn(
-                                'rounded-md border px-3 py-1.5 text-xs font-medium transition-ui',
-                                r === valor
-                                  ? 'border-primary/60 bg-primary/10 text-primary'
-                                  : 'border-border bg-background text-muted-foreground hover:border-primary/40',
-                              )}
-                            >
-                              {t(`gapEscopo.resposta.${valor}`)}
-                            </button>
-                          ))}
-                        </div>
-
-                        {r === 'nao' && sai > 0 && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {t('gapEscopo.saiDoEscopo', { n: sai })}
-                          </p>
-                        )}
-                        {r === 'nao' && p.nuncaExcluir && (
-                          <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
-                            <IconIdea className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-                            {p.nuncaExcluir}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {forcadas.length > 0 && (
-              /* A trava é dita em voz alta: a resposta mudou e a pessoa lê porquê. */
-              <div className="rounded-lg border border-warning/40 bg-warning/5 p-3">
-                {forcadas.map((f, i) => (
-                  <p key={i} className="flex items-start gap-1.5 text-xs leading-5 text-warning">
-                    <IconWarning className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-                    {f.porque}
-                  </p>
+            {/* Barra de progresso + pontos clicáveis */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs tabular-nums text-muted-foreground">
+                <span>{t('gapEscopo.perguntaN', { n: atual + 1, total: assistente.perguntas.length })}</span>
+                <span>{t('gapEscopo.progresso', { feitas: respondidas, total: assistente.perguntas.length })}</span>
+              </div>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${(respondidas / assistente.perguntas.length) * 100}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {assistente.perguntas.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-label={t('gapEscopo.perguntaN', { n: i + 1, total: assistente.perguntas.length })}
+                    onClick={() => setAtual(i)}
+                    className={cn(
+                      'h-2 rounded-full transition-all',
+                      i === atual ? 'w-6 bg-primary' : respostas[p.id] ? 'w-2 bg-primary/50' : 'w-2 bg-muted-foreground/25',
+                    )}
+                  />
                 ))}
               </div>
-            )}
+            </div>
 
-            <div className="flex items-center justify-between border-t border-border pt-4">
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {t('gapEscopo.progresso', { feitas: respondidas, total: assistente.perguntas.length })}
-                {excluidos.length > 0 && ` · ${t('gapEscopo.resumoParcial', {
-                  fora: excluidos.length, resta: totalRequisitos - excluidos.length,
-                })}`}
-              </span>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
+              {/* Pergunta atual */}
+              {pergunta && (
+                <div key={pergunta.id} className="animate-fade-in rounded-xl border border-border bg-card p-6 sm:p-8">
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {String(atual + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="mt-2 text-lg font-semibold leading-7 text-foreground sm:text-xl">
+                    {pergunta.pergunta}
+                  </h3>
+
+                  <details className="group mt-3">
+                    <summary className="cursor-pointer list-none text-xs font-medium text-primary hover:underline">
+                      {t('gapEscopo.comoResponder')}
+                    </summary>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{pergunta.ajuda}</p>
+                  </details>
+
+                  {pergunta.aviso && (
+                    <p className="mt-3 flex items-start gap-1.5 text-xs leading-5 text-warning">
+                      <IconWarning className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+                      {pergunta.aviso}
+                    </p>
+                  )}
+
+                  <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
+                    {(['sim', 'nao', 'nao_sei'] as Resposta[]).map((valor, k) => {
+                      const ativo = respostas[pergunta.id] === valor;
+                      return (
+                        <button
+                          key={valor}
+                          type="button"
+                          onClick={() => escolher(valor)}
+                          className={cn(
+                            'relative flex flex-col items-center gap-1 rounded-lg border px-3 py-4 text-sm font-medium transition-ui',
+                            ativo
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border bg-background text-foreground hover:border-primary/50',
+                          )}
+                        >
+                          {t(`gapEscopo.resposta.${valor}`)}
+                          <kbd className="rounded border border-border px-1.5 font-mono text-[10px] text-muted-foreground">{k + 1}</kbd>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {respostas[pergunta.id] === 'nao' && (porPergunta.get(pergunta.id)?.length ?? 0) > 0 && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {t('gapEscopo.saiDoEscopo', { n: porPergunta.get(pergunta.id)?.length ?? 0 })}
+                    </p>
+                  )}
+                  {respostas[pergunta.id] === 'nao' && pergunta.nuncaExcluir && (
+                    <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
+                      <IconIdea className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+                      {pergunta.nuncaExcluir}
+                    </p>
+                  )}
+
+                  <div className="mt-6 flex items-center justify-between">
+                    <Button variant="ghost" size="sm" disabled={atual === 0} onClick={() => setAtual((a) => Math.max(0, a - 1))}>
+                      {t('gapEscopo.anterior')}
+                    </Button>
+                    <span className="hidden text-[11px] text-muted-foreground sm:inline">{t('gapEscopo.atalhos')}</span>
+                    <Button
+                      variant="ghost" size="sm"
+                      disabled={atual >= assistente.perguntas.length - 1}
+                      onClick={() => setAtual((a) => Math.min(assistente.perguntas.length - 1, a + 1))}
+                    >
+                      {t('gapEscopo.proxima')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Painel ao vivo */}
+              <aside className="space-y-3 rounded-xl border border-border bg-card p-4">
+                <div>
+                  <p className="text-2xl font-semibold tabular-nums text-foreground">
+                    {totalRequisitos - excluidos.length}
+                    <span className="ml-1 text-sm font-normal text-muted-foreground">/ {totalRequisitos}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t('gapEscopo.controles')} {t('gapEscopo.noEscopo')}</p>
+                </div>
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-medium text-foreground">{t('gapEscopo.saemAqui')}</p>
+                  {excluidos.length === 0 ? (
+                    <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{t('gapEscopo.nadaSaiAinda')}</p>
+                  ) : (
+                    <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto">
+                      {assistente.perguntas.map((p, i) => {
+                        const cods = porPergunta.get(p.id);
+                        if (!cods?.length) return null;
+                        return (
+                          <li key={p.id}>
+                            <button type="button" onClick={() => setAtual(i)} className="text-left text-xs text-muted-foreground hover:text-foreground">
+                              <span className="font-mono">{String(i + 1).padStart(2, '0')}</span> · {cods.length} {t('gapEscopo.controles')}
+                              <span className="mt-0.5 block font-mono text-[11px] leading-4">{cods.join(' · ')}</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+                {forcadas.length > 0 && (
+                  <div className="space-y-1.5 border-t border-border pt-3">
+                    {forcadas.map((f, i) => (
+                      <p key={i} className="flex items-start gap-1.5 text-xs leading-5 text-warning">
+                        <IconWarning className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+                        {f.porque}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </aside>
+            </div>
+
+            <div className="flex items-center justify-end border-t border-border pt-4">
               <Button
                 onClick={() => {
                   setJustificativas(Object.fromEntries(
