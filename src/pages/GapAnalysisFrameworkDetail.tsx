@@ -478,19 +478,18 @@ function GapAnalysisFrameworkDetailInner() {
     <ErrorBoundary>
       <div className="space-y-6">
         {scoreError && <QueryError onRetry={() => setScoreRefreshKey(key => key + 1)} />}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/gap-analysis/frameworks')}>
-            <IconChevronLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />{t('gapAnalysis.detail.back')}
-          </Button>
-        </div>
-
-        <div className="flex items-start gap-4">
-        <div className="hidden sm:block shrink-0"><FrameworkBadge name={framework.nome} versao={framework.versao} size="md" /></div>
-        <PageHeader
-          className="flex-1 min-w-0"
-          title={`${framework.nome} ${framework.versao}`}
-          description={fwDescricao(framework) || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
-          actions={
+        <FrameworkTopo
+          framework={framework}
+          descricao={fwDescricao(framework) || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
+          score={overallScore}
+          etapa={activeTab}
+          onEtapa={setActiveTab}
+          concluidas={{
+            diagnostico: contagem.naoAvaliado === 0 && (contagem.conforme + contagem.parcial + contagem.naoConforme) > 0,
+            adequacao: (contagem.parcial + contagem.naoConforme) === 0 && contagem.conforme > 0,
+            evidencias: conformesSemProva === 0 && contagem.conforme > 0,
+          }}
+          acoes={
             <div className="flex items-center gap-2 flex-wrap">
               {/* Ação primária — Consultor IA (ícone proprietário Akuris) */}
               {empresaId && totalRequirements > 0 && (
@@ -555,14 +554,8 @@ function GapAnalysisFrameworkDetailInner() {
             </div>
           }
         />
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-xl grid-cols-3">
-            <TabsTrigger value="diagnostico">{t('gapAnalysis.detail.tabs.diagnosis')}</TabsTrigger>
-            <TabsTrigger value="adequacao">{t('gapAnalysis.detail.tabs.adaptation')}</TabsTrigger>
-            <TabsTrigger value="evidencias">{t('gapAnalysis.detail.tabs.evidence')}</TabsTrigger>
-          </TabsList>
 
           <TabsContent value="diagnostico" className="space-y-5">
             {/* Fica FORA do condicional de onboarding de propósito.
