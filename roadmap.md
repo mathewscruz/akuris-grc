@@ -1,11 +1,12 @@
 # Roadmap
-- [ ] 1 Largura da janela do requisito
-- [ ] 2 Status em lote Planos de Ação
-- [ ] 3 QR code do ativo
-- [ ] 4 Orientação com falso erro
-- [ ] 5 Questionário IA sem crédito (402)
-- [ ] 6 Datas com fuso
-- [ ] 7 Severidade residual
-- [ ] 8 Formulário de contratos
-- [ ] 9-11 Guardas visuais e testes desatualizados
-- [ ] 12 Configurações: visão geral em cartões
+- [x] 1 Largura da janela do requisito
+- [x] 2 Status em lote Planos de Ação
+- [x] 3 QR code do ativo
+- [ ] 4 Orientação com falso erro: mantido aviso discreto + texto preservado (comportamento coberto por testes); decidir com o usuário se some de vez
+- [x] 5 Questionário IA sem crédito (já respeitava; ajustado ao padrão)
+- [x] 6 Datas com fuso
+- [x] 7 Severidade residual
+- [x] 8 Formulário de contratos (teste desatualizado)
+- [x] 9-11 Guardas visuais e testes desatualizados
+- [x] 12 Configurações: visão geral em cartões
+- [ ] Teste de armazenamento de login da pré-visualização (código da plataforma, não do Akuris)
