@@ -14,7 +14,7 @@ export function BentoTile({ title, description, href, hrefLabel, footerHref, foo
   const { t } = useLanguage();
   return (
     <section
-      className={cn('flex min-w-0 flex-col h-full rounded-3xl border border-border bg-card p-6 sm:p-7 animate-fade-in motion-reduce:animate-none dark:shadow-none', className)}
+      className={cn('flex min-w-0 flex-col h-full rounded-lg border border-border bg-card p-6 sm:p-7 animate-fade-in motion-reduce:animate-none dark:shadow-none', className)}
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       <header className="mb-4 flex items-start justify-between gap-3">

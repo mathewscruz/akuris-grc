@@ -154,7 +154,7 @@ const ScanProgressSteps = ({ url, mode, t }: { url: string; mode: 'single' | 'do
             <li key={label} className={cn('flex items-center gap-3 text-sm transition-opacity duration-300', !done && !active && 'opacity-40')}>
               <span
                 className={cn(
-                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold',
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-micro font-semibold',
                   done && 'border-primary bg-primary text-primary-foreground',
                   active && 'border-primary text-primary motion-safe:animate-pulse',
                 )}
@@ -328,7 +328,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                     <label
                       className={cn(
                         'flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors',
-                        marcado ? 'border-primary/50 bg-primary/5' : 'hover:bg-muted/40',
+                        marcado ? 'border-primary/50 bg-primary/5' : 'hover:bg-accent',
                       )}
                     >
                       <Checkbox checked={marcado} onCheckedChange={(c) => toggleKeys([key], !!c)} className="mt-0.5" />

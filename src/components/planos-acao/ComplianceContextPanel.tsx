@@ -95,7 +95,7 @@ export function ComplianceContextPanel(
                 <li
                   key={item.key}
                   className={cn(
-                    "grid gap-3 border-l-[3px] py-3.5 pl-4 pr-2 transition-colors hover:bg-muted/40 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-6",
+                    "grid gap-3 border-l-[3px] py-3.5 pl-4 pr-2 transition-colors hover:bg-accent md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-6",
                     origin?.prioridade === "alta" ? "border-l-warning" : "border-l-border",
                   )}
                 >

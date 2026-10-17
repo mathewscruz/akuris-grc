@@ -150,7 +150,7 @@ export function AppSidebar() {
 
   const closeMobile = () => { if (isMobile) setOpenMobile(false); };
   const railIcon = isDense ? 'h-4 w-4' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
-  const labelCls = isMobile ? 'flex-1 text-left text-sm' : `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-[10.5px]' : 'text-[11px]'}`;
+  const labelCls = isMobile ? 'flex-1 text-left text-sm' : `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-micro' : 'text-micro'}`;
   const railCls = (active: boolean) => isMobile
     ? `relative flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'}`
     :
@@ -284,7 +284,7 @@ export function AppSidebar() {
     <Sidebar className="sidebar-gradient" collapsible="offcanvas">
       <SidebarHeader className="mt-[calc(theme(spacing.2)+1px)] h-14 border-b border-sidebar-border p-0">
         <div className="flex h-full items-center justify-center">
-          <img src={akurisMark.url} alt="Akuris" className={`${isDense ? 'h-8 w-8' : 'h-10 w-10'} rounded-xl object-contain`} />
+          <img src={akurisMark.url} alt="Akuris" className={`${isDense ? 'h-8 w-8' : 'h-10 w-10'} rounded-lg object-contain`} />
         </div>
       </SidebarHeader>
 

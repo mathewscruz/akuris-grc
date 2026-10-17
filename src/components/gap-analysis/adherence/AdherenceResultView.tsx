@@ -455,7 +455,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
                   <span className={cn('h-2 w-2 rounded-full', s.dot)} />{t(`gapAnalysis.adherenceUi.verdict.ui.${s.l}`)}
                 </span>
                 <span className="mt-1 block text-2xl font-semibold tabular-nums text-foreground">{s.v}</span>
-                <span className="block text-[11px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">{t('gapAnalysis.adherenceUi.verdict.ui.shortcutHint')} →</span>
+                <span className="block text-micro text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">{t('gapAnalysis.adherenceUi.verdict.ui.shortcutHint')} →</span>
               </button>
             ))}
           </div>

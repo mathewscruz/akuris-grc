@@ -153,7 +153,7 @@ export const AtivoFicha: React.FC<Props> = ({
                   width={160}
                   height={160}
                   loading="lazy"
-                  className="h-40 w-40 rounded-2xl border object-cover"
+                  className="h-40 w-40 rounded-lg border object-cover"
                 />
               ) : (
                 <div className="flex h-24 w-24 items-center justify-center rounded-2xl border bg-muted/40">
@@ -170,7 +170,7 @@ export const AtivoFicha: React.FC<Props> = ({
                 {ativo.fornecedor && <Chip family="category">{ativo.fornecedor}</Chip>}
               </div>
               {origem && (
-                <div className="mt-1 flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] text-muted-foreground">
+                <div className="mt-1 flex items-center gap-1.5 rounded-md border px-2 py-1 text-micro text-muted-foreground">
                   <IconPlug className="h-3.5 w-3.5" />
                   <span>
                     {t('ativoFicha.sincronizado', { fonte: FONTES[origem] ?? origem })}
@@ -291,7 +291,7 @@ export const AtivoFicha: React.FC<Props> = ({
                   <ul className="divide-y overflow-hidden rounded-lg border bg-card">
                     {riscos.map((r: any) => (
                       <li key={r.id}>
-                        <button type="button" onClick={() => navigate(`/riscos?risco=${r.id}`)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
+                        <button type="button" onClick={() => navigate(`/riscos?risco=${r.id}`)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-accent">
                           <IconShieldAlert className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="font-mono text-xs text-muted-foreground">{r.codigo}</span>
                           <span className="flex-1 font-medium">{r.nome}</span>

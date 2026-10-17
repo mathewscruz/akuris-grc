@@ -13,7 +13,7 @@ function realcar(texto: string) {
     }
     if (/^\(PO \d+\)$/.test(parte) || /^[A-Z]?\.?\d+(?:\.\d+)+$/.test(parte)) {
       return (
-        <span key={i} className="mx-0.5 inline-flex items-center rounded border border-border bg-muted px-1.5 py-px font-mono text-[11px] text-foreground align-[1px]">
+        <span key={i} className="mx-0.5 inline-flex items-center rounded border border-border bg-muted px-1.5 py-px font-mono text-micro text-foreground align-[1px]">
           {parte.replace(/[()]/g, '')}
         </span>
       );

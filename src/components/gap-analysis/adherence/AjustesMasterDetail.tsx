@@ -56,7 +56,7 @@ export function AjustesMasterDetail({ essenciais, recomendados, planosCriados, c
         <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', it.essencial ? 'bg-destructive' : 'bg-warning')} />
         <span className="min-w-0 flex-1">
           <span className={cn('line-clamp-2 text-sm', ativo ? 'font-semibold text-foreground' : 'text-foreground')}>{it.acao.titulo}</span>
-          {it.acao.requisito_codigo && <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">{it.acao.requisito_codigo}</span>}
+          {it.acao.requisito_codigo && <span className="mt-0.5 block font-mono text-micro text-muted-foreground">{it.acao.requisito_codigo}</span>}
         </span>
         {feito && <IconSuccess className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={1.5} />}
       </button>
