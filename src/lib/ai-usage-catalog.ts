@@ -266,6 +266,15 @@ export const AI_FEATURES: AiFeature[] = [
     edgeFunction: 'answer-security-questionnaire',
   },
   {
+    key: 'verificar_evidencias_itens',
+    labelPt: 'Verificação de evidências esperadas por item',
+    labelEn: 'Expected evidence check per item',
+    modulePt: 'Gap Analysis',
+    moduleEn: 'Gap Analysis',
+    model: 'google/gemini-3.6-flash',
+    edgeFunction: 'verify-evidence-items',
+  },
+  {
     key: 'generate_email_content',
     labelPt: 'Geração de conteúdo de e-mail',
     labelEn: 'Email content generation',

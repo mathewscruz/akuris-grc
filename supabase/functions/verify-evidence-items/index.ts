@@ -3,6 +3,7 @@
 import { z } from "npm:zod@3.23.8";
 import { AuthError, requireUserContext, requireValidMfa } from "../_shared/auth.ts";
 import { MODELOS } from "../_shared/modelos.ts";
+import { temCreditoIA } from "../_shared/creditos.ts";
 import { boundedDownload, extractEvidence, storageReference } from "../_shared/evidence-document.ts";
 
 const cors = {
@@ -75,6 +76,7 @@ Deno.serve(async (req) => {
     texto = texto.slice(0, MAX_CHARS);
     if (!texto.trim()) return json({ error: "Não foi possível ler o conteúdo dos documentos ligados.", code: "UNREADABLE" }, 422);
 
+    if (!(await temCreditoIA(db, empresa))) return json({ error: "Créditos de IA esgotados.", code: "CREDITS_EXHAUSTED" }, 402);
     const assinatura = await sha(JSON.stringify({ itens, fontes: fontes.map((f) => f.url + f.versao), r: requirementId }));
     creditoKey = `verify-items:${empresa}:${assinatura}`;
     const { data: cred, error: credErr } = await db.rpc("consume_ai_credit_idempotente", {
