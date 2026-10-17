@@ -104,7 +104,7 @@ export function ConfiguracoesVisaoGeral({ empresaId, secoes, isAdmin, onOpen }: 
       </div>
 
       {isAdmin && progresso && !busca && (
-        <section className="rounded-xl border border-border bg-card p-5 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)] items-center">
+        <section className="rounded-lg border border-border bg-card p-5 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)] items-center">
           <div className="flex items-center gap-4">
             <AnelProgresso valor={progresso.feitos / progresso.total} />
             <div className="min-w-0">
@@ -167,7 +167,7 @@ export function ConfiguracoesVisaoGeral({ empresaId, secoes, isAdmin, onOpen }: 
                     key={s.id}
                     type="button"
                     onClick={() => onOpen(s.id)}
-                    className="group text-left rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex flex-col gap-3 min-h-[132px]"
+                    className="group text-left rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex flex-col gap-3 min-h-[132px]"
                   >
                     <div className="flex items-start gap-3">
                       <span className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">

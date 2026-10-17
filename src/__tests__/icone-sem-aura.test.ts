@@ -10,9 +10,11 @@ const ficheiros = (globSync as unknown as (p: string) => string[])('src/**/*.tsx
 const padrao = /<(div|span) className="([^"]*)">\s*<[A-Z]\w*Icon\b[^<>]*\/>\s*<\/\1>|<(div|span) className="([^"]*)">\s*<Icon[A-Z]\w*\b[^<>]*\/>\s*<\/\3>/g;
 
 describe('ícone sem aura', () => {
+// Configurações: quadrado tonal pedido explicitamente pelo modelo aprovado.
+const EXCECOES = new Set(['src/components/configuracoes/ConfiguracoesVisaoGeral.tsx']);
   it('nenhum ícone sozinho dentro de caixa com fundo tonal', () => {
     const infratores: string[] = [];
-    for (const f of ficheiros) {
+    for (const f of ficheiros.filter((x) => !EXCECOES.has(x))) {
       const s = readFileSync(f, 'utf8');
       for (const m of s.matchAll(padrao)) {
         const cls = m[2] ?? m[4] ?? '';

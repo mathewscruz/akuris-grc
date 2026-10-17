@@ -60,7 +60,7 @@ export function useAutoFit(contentRef: RefObject<HTMLElement>): SidebarFit {
     if (lastH.current !== null && Math.abs(h - lastH.current) < 8) return;
     lastH.current = h;
     const items = el.querySelectorAll(':scope > ul > li').length || 1;
-    setFit((atual) => escolherDensidade(h / items, atual));
+    setFit((atual) => escolherDensidade((h / items) * (16 / (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16)), atual));
   };
   const schedule = () => {
     if (tRef.current) clearTimeout(tRef.current);
