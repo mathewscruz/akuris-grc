@@ -119,7 +119,7 @@ export const SeverityMeter = ({ level }: { level: SeverityLevel }) => {
           data-severity-step={step}
           data-active={step <= activeSteps || undefined}
           className={cn(
-            'h-1 w-1.5 rounded-[1px]',
+            'h-1 w-1.5 rounded-sm',
             step <= activeSteps ? 'bg-current' : 'bg-muted-foreground/25',
           )}
         />
