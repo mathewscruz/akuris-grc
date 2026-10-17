@@ -1,4 +1,5 @@
 import { AnaliseCompleta } from './AnaliseCompleta';
+import { GradientScoreRing } from '@/components/charts/ScoreGradient';
 import { VeredictoBadge } from './VeredictoBadge';
 import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';

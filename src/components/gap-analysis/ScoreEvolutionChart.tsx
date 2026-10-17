@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { useScoreHistory, ScoreHistoryPeriod } from '@/hooks/useScoreHistory';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { TrendAreaChart } from '@/components/ui/trend-area-chart';
+import { GradientScoreArea } from '@/components/charts/ScoreGradient';
 import { PeriodoSelect, type OpcaoPeriodo } from '@/components/ui/periodo-select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';

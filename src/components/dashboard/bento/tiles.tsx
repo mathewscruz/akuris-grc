@@ -171,7 +171,7 @@ export function PlanosTile({ pendentes, atrasados, concluidos, delay, className 
   const noPrazo = Math.max(0, pendentes - atrasados);
   const total = noPrazo + atrasados + concluidos;
   const fatias = [
-    { k: 'onTime', v: noPrazo, c: TEAL },
+    { k: 'onTime', v: noPrazo, c: 'hsl(var(--chart-teal))' },
     { k: 'late', v: atrasados, c: C.danger },
     { k: 'done', v: concluidos, c: C.muted },
   ];
