@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { useScoreHistory, ScoreHistoryPeriod } from '@/hooks/useScoreHistory';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { TrendAreaChart } from '@/components/ui/trend-area-chart';
+import { GradientScoreArea } from '@/components/charts/ScoreGradient';
 import { PeriodoSelect, type OpcaoPeriodo } from '@/components/ui/periodo-select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
@@ -111,17 +111,26 @@ export const ScoreEvolutionChart = ({ frameworkId }: ScoreEvolutionChartProps) =
     );
   }
 
+  const Seta = delta?.dir === 'up' ? IconTrendUp : delta?.dir === 'down' ? IconTrendDown : IconMinus;
   return (
-    <TrendAreaChart
-      eyebrow={t('residuos.score.evolucao')}
-      valor={latestScore !== null ? formatValue(latestScore) : '—'}
-      delta={delta ? Math.round(delta.value * 10) / 10 : null}
-      // Aqui, ao contrário do risco, SUBIR é bom: mais conformidade.
-      menorEMelhor={false}
-      pontos={displayData.map((d) => ({ label: d.date, valor: d.score }))}
-      tooltipLabel={t('residuos.score.evolucao')}
-      altura={260}
-      seletor={seletorPeriodo}
-    />
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div>
+          <CardTitle className="text-base">{t('residuos.score.evolucao')}</CardTitle>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-3xl font-semibold tabular-nums text-foreground">{latestScore !== null ? formatValue(latestScore) : '—'}</span>
+            {delta && (
+              <span className={delta.dir === 'up' ? 'flex items-center gap-1 text-sm font-semibold text-success' : delta.dir === 'down' ? 'flex items-center gap-1 text-sm font-semibold text-destructive' : 'flex items-center gap-1 text-sm text-muted-foreground'}>
+                <Seta className="h-4 w-4" />{delta.value > 0 ? '+' : ''}{Math.round(delta.value * 10) / 10}%
+              </span>
+            )}
+          </div>
+        </div>
+        {seletorPeriodo}
+      </CardHeader>
+      <CardContent>
+        <GradientScoreArea data={displayData.map((d) => ({ label: d.date, value: d.score }))} height={240} domain={domain} showTooltip tooltipLabel={t('residuos.score.evolucao')} />
+      </CardContent>
+    </Card>
   );
 }

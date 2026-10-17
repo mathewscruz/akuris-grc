@@ -23,7 +23,8 @@
 * recursos seja qual for o framework escolhido.
 */
 import { useMemo } from 'react';
-import { ExecutivePanel, ExecutiveBar, ScoreRing } from '@/components/ui/executive-summary';
+import { ExecutivePanel, ExecutiveBar } from '@/components/ui/executive-summary';
+import { GradientScoreRing } from '@/components/charts/ScoreGradient';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMaturityLevel } from './MaturityScale';
@@ -251,7 +252,10 @@ export function FrameworkHeader({
       <div className="grid grid-cols-1 md:grid-cols-[minmax(240px,.85fr)_minmax(0,1.4fr)] xl:grid-cols-[minmax(230px,.85fr)_minmax(0,1.4fr)_minmax(230px,.9fr)]">
         <div className="executive-tint flex flex-col justify-center gap-4 p-5">
           <div className="flex items-center gap-4">
-            <ScoreRing value={avaliados > 0 ? score : null} label={t('gapAnalysis.v2.conformityCard.title')} suffix="%" />
+            <GradientScoreRing value={avaliados > 0 ? score : null} size={128} strokeWidth={10} label={t('gapAnalysis.v2.conformityCard.title')}>
+              <span data-score-value className="text-4xl font-semibold leading-none tracking-tight tabular-nums text-foreground">{avaliados > 0 ? Math.round(score) : '—'}</span>
+              {avaliados > 0 && <span className="mt-1.5 text-xs text-muted-foreground">%</span>}
+            </GradientScoreRing>
             <div className="min-w-0">
               <p className="executive-label">{t('gapAnalysis.v2.conformityCard.title')}</p>
               <p className="mt-1.5 text-sm font-medium leading-relaxed">

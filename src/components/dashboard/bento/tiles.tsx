@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { BentoTile, BentoEmpty, CountUp, useMounted } from './BentoTile';
 import { diasAte, severidadeCelula, urgenciaContrato, serieSemanalConformidade, CONTRATO_VIGENTE } from './bento-utils';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
+import { GradientScoreRing, GradientScoreArea } from '@/components/charts/ScoreGradient';
 
 const C = {
   good: 'hsl(var(--good))', success: 'hsl(var(--success))', danger: 'hsl(var(--destructive))',
@@ -23,35 +24,6 @@ const C = {
 
 /* ───────────── Índice operacional ───────────── */
 
-const TEAL = 'hsl(var(--chart-teal))', GREEN = 'hsl(var(--chart-green))';
-
-function GradientRing({ value, size = 190 }: { value: number; size?: number }) {
-  const mounted = useMounted();
-  const sw = 12, r = size / 2 - sw, circ = 2 * Math.PI * r;
-  const off = circ * (1 - (mounted ? value : 0) / 100);
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
-      <defs>
-        <linearGradient id="indice-ring-grad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={TEAL} />
-          <stop offset="100%" stopColor={GREEN} />
-        </linearGradient>
-      </defs>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={sw} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="url(#indice-ring-grad)" strokeWidth={sw} strokeLinecap="round"
-        strokeDasharray={circ} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1)' }} />
-    </svg>
-  );
-}
-
-function UltimoPonto(props: any) {
-  const { cx, cy, index, dataLength } = props;
-  if (cx == null || cy == null) return null;
-  if (index === dataLength - 1) return (
-    <g><circle cx={cx} cy={cy} r={9} fill={GREEN} opacity={0.25} /><circle cx={cx} cy={cy} r={5} fill={GREEN} stroke="hsl(var(--card))" strokeWidth={2} /></g>
-  );
-  return <circle cx={cx} cy={cy} r={3} fill={TEAL} />;
-}
 
 export function IndiceTile({ delay }: { delay?: number }) {
   const { t, locale } = useLanguage();
@@ -79,7 +51,7 @@ export function IndiceTile({ delay }: { delay?: number }) {
         <div className="flex flex-1 flex-col">
           <div className="my-auto flex items-center gap-8">
             <div className="relative shrink-0">
-              <GradientRing value={m.score} />
+              <GradientScoreRing value={m.score} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-6xl font-semibold leading-none tabular-nums text-foreground"><CountUp value={m.score} /></span>
                 <span className="mt-2 text-base text-muted-foreground">{t('bento.index.of100')}</span>
@@ -96,24 +68,8 @@ export function IndiceTile({ delay }: { delay?: number }) {
             )}
           </div>
           {serie.length >= 2 && (
-            <div className="mt-4 h-32 w-full shrink-0">
-              <ResponsiveContainer>
-                <AreaChart data={serie} margin={{ top: 12, right: 10, left: 10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="indice-area-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={GREEN} stopOpacity={0.4} />
-                      <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="indice-line-grad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor={TEAL} />
-                      <stop offset="100%" stopColor={GREEN} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="label" interval={0} axisLine={false} tickLine={false} tick={{ fill: C.muted, fontSize: 12 }} />
-                  <Area type="monotone" dataKey="v" stroke="url(#indice-line-grad)" strokeWidth={2} fill="url(#indice-area-grad)"
-                    dot={(p: any) => <UltimoPonto key={p.index} {...p} dataLength={serie.length} />} activeDot={{ r: 5 }} animationDuration={1500} />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="mt-4 w-full shrink-0">
+              <GradientScoreArea data={serie.map((p: any) => ({ label: p.label, value: p.v }))} height={128} />
             </div>
           )}
         </div>
@@ -215,7 +171,7 @@ export function PlanosTile({ pendentes, atrasados, concluidos, delay, className 
   const noPrazo = Math.max(0, pendentes - atrasados);
   const total = noPrazo + atrasados + concluidos;
   const fatias = [
-    { k: 'onTime', v: noPrazo, c: TEAL },
+    { k: 'onTime', v: noPrazo, c: 'hsl(var(--chart-teal))' },
     { k: 'late', v: atrasados, c: C.danger },
     { k: 'done', v: concluidos, c: C.muted },
   ];
