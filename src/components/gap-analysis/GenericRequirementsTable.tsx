@@ -28,6 +28,7 @@ import { toast } from "@/lib/toast";
 import { logger } from "@/lib/logger";
 import { FrameworkConfig, NIST_PILLAR_NAMES } from "@/lib/framework-configs";
 import { RequirementDetailDialog } from "./dialogs/RequirementDetailDialog";
+import { useOptionalRequirementDrawer } from "./v2/RequirementDrawerProvider";
 import { saveScoreHistory } from "@/hooks/useScoreHistory";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { reqTitulo, reqDescricao, reqOrientacao, reqEvidencias } from "@/lib/gap-i18n";
@@ -102,6 +103,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const tableContext = `${empresaId || ''}:${frameworkId}`;
   const currentContext = useRef(tableContext);
   currentContext.current = tableContext;
+  const workspace = useOptionalRequirementDrawer();
   const loadedContext = useRef<string | null>(null);
   const loadSequence = useRef(0);
   // Categoria em foco. Chamava-se `activeTab` de quando havia uma fileira de
@@ -458,6 +460,17 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   };
 
   const handleRowClick = (requirement: Requirement) => {
+    // Caminho principal: janela "ler e decidir". A edição completa (vínculos,
+    // plano de ação) continua acessível a partir dela via ?req=.
+    if (workspace && empresaId) {
+      workspace.openRequirement({
+        requirementId: requirement.id,
+        empresaId,
+        sequence: getFilteredRequirements(requirements).map((r) => r.id),
+        onSaved: () => { loadRequirements(); onStatusChange?.(); },
+      });
+      return;
+    }
     setSelectedRequirement(requirement);
     setDetailDialogOpen(true);
   };
