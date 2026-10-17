@@ -143,8 +143,42 @@ export interface ChipProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, '
   /** Mantida por compatibilidade e para selecionar a família de severidade. */
   mark?: string;
   icon?: React.ReactNode;
+  /** Proporção medida (0–1) para o anel de estado, ex.: 2 de 3 conectadas. Nunca inferida. */
+  progress?: number;
   children: React.ReactNode;
 }
+
+/* Anel de estado: preenchimento padrão por nível quando não há proporção medida. */
+const RING: Record<StateLevel, { color: string; fill: number; spin?: boolean; text: string }> = {
+  rest: { color: 'text-state-rest', fill: 0, text: 'text-muted-foreground' },
+  active: { color: 'text-state-active', fill: 25, spin: true, text: 'text-foreground' },
+  attention: { color: 'text-severity-medium', fill: 50, text: 'text-foreground' },
+  done: { color: 'text-state-done', fill: 100, text: 'text-foreground' },
+  blocked: { color: 'text-destructive', fill: 88, text: 'text-destructive' },
+};
+
+export const StateRing = ({ level, progress }: { level: StateLevel; progress?: number }) => {
+  const r = RING[level];
+  const medido = typeof progress === 'number' && Number.isFinite(progress);
+  const fill = medido ? Math.round(Math.min(1, Math.max(0, progress!)) * 100) : r.fill;
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className={cn('h-3 w-3 flex-shrink-0 -rotate-90', r.color, r.spin && !medido && 'akuris-ring-spin')}
+    >
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeOpacity={0.25} strokeWidth="2.5" />
+      {fill > 0 && (
+        <circle
+          cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2.5"
+          strokeLinecap="round" pathLength={100}
+          strokeDasharray={`${fill} 100`}
+          className="akuris-ring-fill"
+        />
+      )}
+    </svg>
+  );
+};
 
 const isSeverity = (tone: ChipTone): tone is SeverityLevel =>
   tone === 'critical' || tone === 'high' || tone === 'medium' || tone === 'low' || tone === 'none';
@@ -157,6 +191,7 @@ export const Chip: React.FC<ChipProps> = ({
   tone = 'neutral',
   mark,
   icon,
+  progress,
   children,
   className,
   ...props
@@ -185,9 +220,23 @@ export const Chip: React.FC<ChipProps> = ({
     chipClass = s.chip;
     leading = <span aria-hidden="true" className={cn('rounded-full flex-shrink-0 bg-current', CHIP_SIZING.dot)} />;
   } else if (family === 'state') {
-    const s = STATE_CLASSES[isState(tone) ? tone : 'rest'];
-    chipClass = s.chip;
-    leading = <span aria-hidden="true" className={cn('rounded-full flex-shrink-0', CHIP_SIZING.dot, s.dot)} />;
+    /* Estado sem caixa: texto + mini anel que diz o significado (ou a proporção medida). */
+    const level = isState(tone) ? tone : 'rest';
+    return (
+      <span
+        data-chip-family={family}
+        data-chip-tone={tone}
+        className={cn(
+          'inline-flex h-6 items-center gap-1.5 text-xs font-medium leading-none whitespace-nowrap',
+          RING[level].text,
+          className,
+        )}
+        {...props}
+      >
+        {icon ? <span className="flex items-center [&_svg]:h-3 [&_svg]:w-3">{icon}</span> : <StateRing level={level} progress={progress} />}
+        {children}
+      </span>
+    );
   }
 
   return (
