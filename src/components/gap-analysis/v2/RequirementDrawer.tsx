@@ -504,7 +504,7 @@ export function RequirementDrawer({
                           title={`${n + 1}`}
                           onClick={() => setEvaluation((e) => ({ ...e, conformity_status: o }))}
                           className={cn('px-2 py-2.5 text-xs sm:text-sm transition-colors border-border [&:not(:first-child)]:sm:border-l',
-                            ativo ? `${TOM[o]} font-medium` : 'text-foreground/80 hover:bg-muted/60')}
+                            ativo ? `${TOM[o]} font-medium` : 'text-foreground/80 hover:bg-accent')}
                         >
                           {statusLabel(o)}
                         </button>
@@ -513,7 +513,7 @@ export function RequirementDrawer({
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-primary/30 bg-primary/10 p-4">
+                <section className="rounded-lg border border-primary/30 bg-primary/10 p-4">
                   <div className="flex items-start gap-3">
                     <IconIdea className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                     <div className="flex-1 min-w-0">
