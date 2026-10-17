@@ -13,6 +13,9 @@ import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHisto
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
+import { RequisitosPorCategoria } from '@/components/gap-analysis/v2/RequisitosPorCategoria';
+import { FrameworkTopo } from '@/components/gap-analysis/v2/FrameworkTopo';
+import { useRequirementDrawer } from '@/components/gap-analysis/v2/RequirementDrawerProvider';
 import { CategorySidebar } from '@/components/gap-analysis/v2/CategorySidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -93,6 +96,8 @@ function GapAnalysisFrameworkDetailInner() {
   const [docUploadSignal, setDocUploadSignal] = useState(0);
   const [docDroppedFile, setDocDroppedFile] = useState<File | null>(null);
   const [marcoDialogAberto, setMarcoDialogAberto] = useState(false);
+  const [visaoTabela, setVisaoTabela] = useState(false);
+  const reqDrawer = useRequirementDrawer();
 
   const abrirRequisitoCompleto = useCallback((requirementId: string) => {
     const next = new URLSearchParams(searchParams);
@@ -633,63 +638,8 @@ function GapAnalysisFrameworkDetailInner() {
                   ) : undefined}
                 />
 
-                <div className="min-w-0 space-y-5 akuris-stagger">
-                  <FrameworkJourneyNextAction
-                    scopeDeclared={jaDeclarouEscopo === true}
-                    unevaluated={contagem.naoAvaliado}
-                    openGaps={contagem.naoConforme + contagem.parcial}
-                    missingEvidence={conformesSemProva}
-                    applicable={totalRequirements}
-                    evaluated={contagem.conforme + contagem.parcial + contagem.naoConforme}
-                    compliant={contagem.conforme}
-                    proven={conformesSemProva === null ? null : Math.max(0, contagem.conforme - conformesSemProva)}
-                    onDefineScope={abrirEscopo}
-                    onContinueDiagnosis={() => {
-                      setActiveTab('diagnostico');
-                      requestAnimationFrame(() => document.getElementById('priority-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-                    }}
-                    onOpenAdaptation={() => setActiveTab('adequacao')}
-                    onOpenEvidence={() => {
-                      setEvidenceView('biblioteca');
-                      setActiveTab('evidencias');
-                    }}
-                  />
-
-                  <FrameworkHeader
-                    frameworkName={framework.nome}
-                    overallScore={overallScore}
-                    totalRequirements={catalogRequirements}
-                    conforme={contagem.conforme}
-                    parcial={contagem.parcial}
-                    naoConforme={contagem.naoConforme}
-                    naoAplicavel={contagem.naoAplicavel}
-                    conformesSemProva={conformesSemProva}
-                    naoAvaliado={contagem.naoAvaliado}
-                    marco={marco ? {
-                      rotulo: marco.rotulo,
-                      dataAlvo: marco.data_alvo,
-                      scoreAlvo: marco.score_alvo,
-                    } : null}
-                    onFiltrarPorEstado={filtrarPorEstado}
-                    onGoToRemediation={() => setActiveTab('adequacao')}
-                    onAbrirMarco={empresaId ? () => setMarcoDialogAberto(true) : undefined}
-                  />
-
-                  {empresaId && (
-                    <div id="priority-queue" className="scroll-mt-4">
-                      <PriorityQueueCard
-                        frameworkId={frameworkId!}
-                        empresaId={empresaId}
-                        refreshKey={scoreRefreshKey}
-                        limit={3}
-                        onRequirementClick={(req) => abrirRequisitoCompleto(req.id)}
-                        onSeeAll={() => {
-                          document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }}
-                      />
-                    </div>
-                  )}
-
+                <div className="min-w-0 space-y-3">
+                  {visaoTabela ? (
                   <div id="reqs-table" className="scroll-mt-4">
                     <GenericRequirementsTable
                       frameworkId={frameworkId!}
@@ -700,6 +650,22 @@ function GapAnalysisFrameworkDetailInner() {
                       initialCategoryFilter={activeCategoryFilter}
                       onCategoryFilterChange={setActiveCategoryFilter}
                     />
+                  </div>
+                  ) : empresaId && (
+                    <div id="reqs-table" className="scroll-mt-4">
+                      <RequisitosPorCategoria
+                        frameworkId={frameworkId!}
+                        empresaId={empresaId}
+                        refreshKey={scoreRefreshKey}
+                        categoriaAtiva={activeCategoryFilter}
+                        onAbrir={(id, sequence) => reqDrawer.openRequirement({ requirementId: id, empresaId, sequence, onSaved: handleScoreChange })}
+                      />
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => setVisaoTabela((v) => !v)}>
+                      {visaoTabela ? t('gapUi.cat.verPorCategoria') : t('gapUi.cat.verTabelaCompleta')}
+                    </Button>
                   </div>
                 </div>
               </div>
