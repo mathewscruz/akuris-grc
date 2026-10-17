@@ -52,5 +52,15 @@ export function parseGeneratedGuidance(content: string, finishReason?: string): 
   const questions = guidanceQuestions(parsed);
   if (!Array.isArray(parsed) || parsed.length !== 5 || questions.length !== 5) return null;
   const value = { orientacao_implementacao: orientation, exemplos_evidencias: evidence, perguntas_diagnostico: JSON.stringify(questions) };
-  return completeGuidance(value) ? value : null;
+  return completeGuidance(value) && guidanceStyleOk(orientation) ? value : null;
+}
+
+/** Catalogue style: no greeting/emoji preamble and the ordered-steps section is present. */
+export function guidanceStyleOk(content: string | null | undefined): boolean {
+  if (!content?.trim()) return false;
+  const head = content.trim().slice(0, 80).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/^(com certeza|claro|ola|aqui esta|certamente|sure|of course|here is|hello)/.test(head)) return false;
+  if (/\p{Extended_Pictographic}/u.test(content)) return false;
+  const norm = content.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return /^#{1,3}\s+(faca nesta ordem|do this in order)/m.test(norm);
 }
