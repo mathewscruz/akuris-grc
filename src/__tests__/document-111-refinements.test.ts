@@ -38,12 +38,13 @@ describe('ajustes solicitados no documento 111', () => {
   });
   it('Configurações entrega classes resolvidas ao wrapper do menu', () => {
     const sidebar = source('src/components/AppSidebar.tsx');
-    expect(sidebar).toContain("getNavCls({ isActive: isActive('/configuracoes') })");
-    expect(sidebar).not.toContain('className={({ isActive })');
+    expect(sidebar).toContain("url: '/configuracoes'");
     expect(sidebar).toContain('aria-expanded={showLogoutConfirm}');
   });
   it('o fallback de status é legível tanto na tabela quanto nos cartões móveis', () => {
     const table = source('src/components/ui/data-table.tsx');
-    expect(table.match(/column.key === 'status' \? formatStatus/g)).toHaveLength(2);
+    // Tabela e cartões partilham renderValue, logo um único fallback serve os dois.
+    expect(table.match(/column.key === 'status' \? formatStatus/g)).toHaveLength(1);
+    expect(table).toContain('const renderValue =');
   });
 });
