@@ -21,8 +21,8 @@ export function GradientScoreRing({ value, size = 190, strokeWidth = 12, label, 
   const r = size / 2 - strokeWidth, circ = 2 * Math.PI * r;
   const off = circ * (1 - (mounted && v != null ? v : 0) / 100);
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={label ? `${label}: ${v == null ? '—' : `${Math.round(v)}%`}` : undefined}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
+    <div className="relative shrink-0" style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }} role="img" aria-label={label ? `${label}: ${v == null ? '—' : `${Math.round(v)}%`}` : undefined}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
         <defs>
           <linearGradient id={`ring-${id}`} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor={TEAL} /><stop offset="100%" stopColor={GREEN} />
@@ -56,7 +56,7 @@ export function GradientScoreArea({ data, height = 128, domain, showTooltip, for
 }) {
   const id = useId().replace(/:/g, '');
   return (
-    <div className="w-full" style={{ height }}>
+    <div className="w-full" style={{ height: `${height / 16}rem` }}>
       <ResponsiveContainer>
         <AreaChart data={data} margin={{ top: 12, right: 10, left: 10, bottom: 0 }}>
           <defs>

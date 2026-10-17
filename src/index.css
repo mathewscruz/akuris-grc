@@ -511,6 +511,9 @@ input:-webkit-autofill:focus {
   html {
     font-size: 16px;
   }
+  @media (min-width: 1024px) {
+    html { font-size: clamp(14px, calc(11.5px + 0.2vw), 17.5px); }
+  }
 
   body {
     @apply bg-background font-sans text-foreground antialiased;
