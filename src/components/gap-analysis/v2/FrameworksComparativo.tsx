@@ -83,7 +83,7 @@ export function FrameworksComparativo({
   return (
     <div className="space-y-5">
       {/* Aderência + comparativo */}
-      <div className="rounded-xl border bg-card p-6 flex flex-col sm:flex-row items-center gap-8">
+      <div className="rounded-lg border bg-card p-6 flex flex-col sm:flex-row items-center gap-8">
         <div className="flex flex-col items-center gap-1 sm:pr-8 sm:border-r border-border">
           <Anel valor={aderenciaGeral} />
           <span className="text-xs text-muted-foreground -mt-1">{t('gapAnalysis.frameworks.comparativo.geral')}</span>
@@ -105,7 +105,7 @@ export function FrameworksComparativo({
       </div>
 
       {/* Tabela */}
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="rounded-lg border bg-card overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b bg-muted/30">
           <span className="text-sm text-foreground/80">{t('gapAnalysis.frameworks.tabela.count', { count: linhas.length })}</span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -138,7 +138,7 @@ export function FrameworksComparativo({
               {ordenadas.map((l) => {
                 const cor = corDoFramework(l.nome, l.versao);
                 return (
-                  <tr key={l.id} onClick={() => onOpen(l.id)} className="border-b last:border-0 cursor-pointer hover:bg-muted/40">
+                  <tr key={l.id} onClick={() => onOpen(l.id)} className="border-b last:border-0 cursor-pointer hover:bg-accent">
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         <FrameworkBadge name={l.nome} versao={l.versao} size="sm" />
