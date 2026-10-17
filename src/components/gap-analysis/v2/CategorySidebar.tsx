@@ -31,7 +31,7 @@ export function CategorySidebar({ categories, active, onSelect, footer }: {
         aria-current={ativo ? 'true' : undefined}
         className={cn(
           'group w-full rounded-lg px-3 py-2.5 text-left transition-colors',
-          ativo ? 'bg-primary/10' : 'hover:bg-muted/60',
+          ativo ? 'bg-primary/10' : 'hover:bg-accent',
         )}
       >
         <span className="flex items-baseline justify-between gap-2">
