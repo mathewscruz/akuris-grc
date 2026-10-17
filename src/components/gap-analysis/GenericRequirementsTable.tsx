@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { matchesSearch } from '@/lib/search-utils';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { fasesDe, chaveDoFramework } from '@/lib/gap-fases';
@@ -1056,8 +1057,9 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         {renderPaginationControls(filtered.length)}
 
         {/* Floating Bulk Action Bar */}
-        {selectedIds.size > 0 && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border shadow-lg rounded-lg px-4 py-2.5 flex items-center gap-3 animate-in slide-in-from-bottom-4">
+        {selectedIds.size > 0 && <div aria-hidden className="h-24" />}
+        {selectedIds.size > 0 && createPortal(
+          <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] max-md:bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-1rem)] overflow-x-auto bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border shadow-lg rounded-lg px-4 py-2.5 flex items-center gap-3 animate-in slide-in-from-bottom-4">
             <div className="flex items-center gap-2">
               <IconCheckbox className="h-4 w-4 text-primary" strokeWidth={1.5}/>
               <span className="text-sm font-medium">{t('gapUi.table.selectedCount', { count: selectedIds.size })}</span>
@@ -1148,7 +1150,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
               <IconClose className="h-3.5 w-3.5 mr-1" />{t('gapUi.common.clear')}
             </Button>
           </div>
-        )}
+        , document.body)}
       </>
     );
   };
