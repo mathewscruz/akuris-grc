@@ -87,7 +87,6 @@ export const evidenceIntelligence = {
         "Apontamentos baseados nos registros da empresa. Abra as fontes antes de decidir.",
       refresh: "Atualizar",
       checkedAt: "Verificado em {date}",
-      sources: "Fontes",
       empty:
         "Nenhum apontamento encontrado nas regras verificadas. Isso não significa conformidade integral.",
       source: "Abrir fonte",
@@ -188,7 +187,6 @@ export const evidenceIntelligence = {
         "Findings based on company records. Open the sources before making a decision.",
       refresh: "Refresh",
       checkedAt: "Checked on {date}",
-      sources: "Sources",
       empty:
         "No findings for the evaluated rules. This does not mean full compliance.",
       source: "Open source",
