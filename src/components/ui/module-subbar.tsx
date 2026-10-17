@@ -9,7 +9,7 @@ export function ModuleSubbar({ children, searchValue, onSearchChange }: {
   searchValue?: string; onSearchChange?: (value: string) => void;
 }) {
   const { t } = useLanguage();
-  return <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 border-b border-border bg-background py-1">
+  return <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 bg-background">
     <div className="min-w-0 flex-1">{children}</div>
     {onSearchChange && <div className="relative hidden w-48 shrink-0 lg:block xl:w-56">
       <IconSearch aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
