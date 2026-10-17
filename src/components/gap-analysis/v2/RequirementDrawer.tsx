@@ -10,7 +10,14 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserSelect } from '@/components/riscos/UserSelect';
+import { DocumentosDoRequisito } from '@/components/gap-analysis/DocumentosDoRequisito';
+import { sugerirStatus, contarEvidenciasEsperadas } from '@/lib/gap-analysis/sugerir-status';
+import { scopedDraftKey } from '@/hooks/useWizardDraft';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -39,6 +46,9 @@ interface RequirementDrawerProps {
   requirementId: string | null;
   empresaId: string;
   onSaved?: () => void;
+  /** Ordem dos requisitos para navegar anterior/próximo. */
+  sequence?: string[];
+  onNavigate?: (id: string) => void;
 }
 
 interface RequirementCore {
@@ -57,6 +67,7 @@ interface EvaluationCore {
   conformity_status: string | null;
   observacoes: string | null;
   prazo_implementacao: string | null;
+  responsavel_avaliacao?: string | null;
 }
 
 /** Estilo de prosa para conteúdo em Markdown (orientação da norma, evidências). */
@@ -69,12 +80,17 @@ export function RequirementDrawer({
   requirementId,
   empresaId,
   onSaved,
+  sequence,
+  onNavigate,
 }: RequirementDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [requirement, setRequirement] = useState<RequirementCore | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationCore>({
-    conformity_status: null, observacoes: '', prazo_implementacao: null,
+    conformity_status: null, observacoes: '', prazo_implementacao: null, responsavel_avaliacao: null,
   });
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const draftKey = requirementId ? scopedDraftKey(empresaId, user?.id, `gap-req-${requirementId}`) : null;
   const [saving, setSaving] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<AIDiagnosticResult | null>(null);
@@ -119,7 +135,7 @@ export function RequirementDrawer({
             .maybeSingle(),
           supabase
             .from('gap_analysis_evaluations')
-            .select('id, conformity_status, observacoes, prazo_implementacao')
+            .select('id, conformity_status, observacoes, prazo_implementacao, responsavel_avaliacao')
             .eq('requirement_id', requirementId)
             .eq('empresa_id', empresaId)
             .maybeSingle(),
@@ -136,7 +152,12 @@ export function RequirementDrawer({
           conformity_status: evalRes.data?.conformity_status || null,
           observacoes: evalRes.data?.observacoes || '',
           prazo_implementacao: evalRes.data?.prazo_implementacao || null,
+          responsavel_avaliacao: (evalRes.data as any)?.responsavel_avaliacao || null,
         });
+        try {
+          const rascunho = draftKey ? localStorage.getItem(draftKey) : null;
+          if (rascunho) setEvaluation((prev) => ({ ...prev, ...JSON.parse(rascunho) }));
+        } catch { /* rascunho inválido é ignorado */ }
       } catch (e) {
         logger.error('Erro ao carregar requisito no drawer', {
           error: e instanceof Error ? e.message : String(e),
@@ -146,6 +167,7 @@ export function RequirementDrawer({
       }
     })();
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, requirementId, empresaId, onOpenChange]);
 
   const runDiagnostic = useCallback(async () => {
@@ -160,8 +182,13 @@ export function RequirementDrawer({
     setDiagnostic(data);
   }, [requirementId]);
 
-  const handleSave = async () => {
-    if (!requirement || !empresaId) return;
+  const precisaJustificativa = (evaluation.conformity_status === 'parcial' || evaluation.conformity_status === 'nao_conforme') && !(evaluation.observacoes || '').trim();
+  const idx = sequence && requirementId ? sequence.indexOf(requirementId) : -1;
+  const prevId = idx > 0 ? sequence![idx - 1] : null;
+  const nextId = idx >= 0 && idx < (sequence!.length - 1) ? sequence![idx + 1] : null;
+
+  const handleSave = async (avancar = false) => {
+    if (!requirement || !empresaId || precisaJustificativa) return;
     setSaving(true);
     try {
       const payload = {
@@ -171,6 +198,7 @@ export function RequirementDrawer({
         conformity_status: evaluation.conformity_status,
         observacoes: evaluation.observacoes || null,
         prazo_implementacao: evaluation.prazo_implementacao || null,
+        responsavel_avaliacao: evaluation.responsavel_avaliacao || null,
       };
       let saveError: any = null;
       if (evaluation.id) {
@@ -188,8 +216,10 @@ export function RequirementDrawer({
       }
       if (saveError) throw saveError;
       toast.success(t('gapUi.drawer.evaluationSaved'));
+      if (draftKey) localStorage.removeItem(draftKey);
       onSaved?.();
-      onOpenChange(false);
+      if (avancar && nextId && onNavigate) onNavigate(nextId);
+      else onOpenChange(false);
     } catch (e) {
       logger.error('Erro ao salvar avaliação no drawer', {
         error: e instanceof Error ? e.message : String(e),
@@ -234,234 +264,4 @@ export function RequirementDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, requirement, evaluation.conformity_status, saving]);
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:w-[640px] lg:w-[820px] sm:max-w-[820px] p-0 overflow-hidden flex flex-col bg-popover"
-      >
-        <SheetTitle className="sr-only">{t('gapUi.drawer.title')}</SheetTitle>
-        <SheetDescription className="sr-only">
-          {t('gapUi.drawer.whatStandardRequires')}
-        </SheetDescription>
-
-        {loading || !requirement || requirement.id !== requirementId ? (
-          <div className="flex-1 flex items-center justify-center">
-            <AkurisPulse size={48} />
-          </div>
-        ) : (
-          <>
-            {/* Header editorial */}
-            <header className="relative border-b border-border bg-card px-6 py-5 shrink-0">
-              <CornerAccent position="top-left" size={12} />
-              <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">
-                      {t('gapUi.drawer.quickTriage')}
-                    </span>
-                    {requirement.codigo && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="font-mono text-xs tabular-nums text-foreground/80">
-                          {requirement.codigo}
-                        </span>
-                      </>
-                    )}
-                    {requirement.categoria && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="text-xs text-muted-foreground truncate">
-                          {requirement.categoria}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <h2 className="text-base font-semibold text-foreground leading-snug">
-                    {requirement.titulo}
-                  </h2>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs shrink-0"
-                  onClick={abrirEdicaoCompleta}
-                >
-                  <IconExternal className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-                  {t('gapUi.drawer.fullEdit')}
-                </Button>
-              </div>
-            </header>
-
-            {/* Body */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
-              {/* O que a norma exige — sempre o texto da própria norma, e nada mais. */}
-              {requirement.descricao && (
-                <section>
-                  <SectionHead title={t('gapUi.drawer.whatStandardRequires')} />
-                  <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                      {requirement.descricao}
-                    </ReactMarkdown>
-                  </div>
-                </section>
-              )}
-
-              {/*
-                  A decisão que a pessoa veio tomar fica antes do material de
-                  consulta. A orientação pode ter várias páginas; deixá-la
-                  antes do status obrigava o utilizador a atravessar todo o
-                  texto para encontrar a ação principal da triagem.
-              */}
-              <section>
-                <SectionHead title={t('gapUi.drawer.complianceStatus')} />
-                <StatusSeg
-                  value={(evaluation.conformity_status as any) || null}
-                  onChange={(v) => setEvaluation(e => ({ ...e, conformity_status: v }))}
-                />
-              </section>
-
-              {/*
-                  Como cumprir — secção própria, separada da norma.
-
-                  Antes, a orientação e o texto da norma partilhavam a mesma
-                  caixa com o mesmo rótulo: não havendo orientação, a frase da
-                  norma era servida como se fosse a instrução. São coisas
-                  diferentes e passam a ocupar lugares diferentes.
-              */}
-              <section>
-                <SectionHead title={t('gapUi.drawer.comoCumprir')} />
-                <p className="text-micro text-muted-foreground">{t('gapUi.detail.guidancePlatformIncluded')}</p>
-                {orientacao.estado === 'gerando' && (
-                  <div role="status" className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
-                    <AkurisPulse size={14} />
-                    {t('gapUi.drawer.comoCumprirGerando')}
-                  </div>
-                )}
-                {orientacao.texto && (
-                  <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                      {orientacao.texto}
-                    </ReactMarkdown>
-                  </div>
-                )}
-                {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
-                  <div role="status" className="rounded-lg border border-dashed border-border bg-card p-4">
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
-                    </p>
-                    {
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3 h-7 text-xs"
-                        onClick={() => orientacao.gerar(false)}
-                      >
-                        {t('gapUi.detail.guidanceTentarDeNovo')}
-                      </Button>
-                    }
-                  </div>
-                )}
-              </section>
-
-              {/* Evidências esperadas — que prova o auditor aceita para este requisito. */}
-              {orientacao.evidencias && (
-                <section>
-                  <SectionHead title={t('gapUi.drawer.expectedEvidence')} />
-                  <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                      {orientacao.evidencias}
-                    </ReactMarkdown>
-                  </div>
-                </section>
-              )}
-
-              {/* Diagnóstico IA */}
-              <section>
-                <SectionHead
-                  title={t('gapUi.drawer.aiDiagnostic')}
-                  right={
-                    !diagnostic && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        disabled={diagnosing}
-                        onClick={runDiagnostic}
-                      >
-                        {diagnosing ? t('gapUi.drawer.analyzing') : t('gapUi.drawer.generateDiagnostic')}
-                      </Button>
-                    )
-                  }
-                />
-                {diagnosing && (
-                  <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-primary/30 bg-primary/[0.03]">
-                    <AkurisPulse size={36} />
-                  </div>
-                )}
-                {!diagnosing && (
-                  <p className="text-xs text-muted-foreground italic px-1">
-                    {t('gapUi.drawer.diagnosticHint')}
-                  </p>
-                )}
-                {diagnostic && (
-                  <AIDiagnosticCard
-                    result={diagnostic}
-                    onApplyStatus={(s) => setEvaluation(e => ({ ...e, conformity_status: s }))}
-                    onApplyJustification={(t) => setEvaluation(e => ({ ...e, observacoes: t }))}
-                  />
-                )}
-              </section>
-
-              {/* Justificativa */}
-              <section>
-                <SectionHead title={t('gapUi.drawer.justificationObservations')} />
-                <Textarea
-                  value={evaluation.observacoes || ''}
-                  onChange={(e) => setEvaluation(prev => ({ ...prev, observacoes: e.target.value }))}
-                  placeholder={t('gapUi.drawer.observationsPlaceholder')}
-                  rows={5}
-                  className="resize-y"
-                />
-              </section>
-
-              {/* Prazo — só aparece para o que precisa ser implementado */}
-              {(evaluation.conformity_status === 'nao_conforme' || evaluation.conformity_status === 'parcial') && (
-                <section>
-                  <SectionHead title={t('gapUi.drawer.implementationDeadline')} />
-                  <DateField
-                    id="prazo-drawer"
-                    value={evaluation.prazo_implementacao || null}
-                    onChange={(v) => setEvaluation(prev => ({ ...prev, prazo_implementacao: v || null }))}
-                    className="mt-1.5 max-w-[200px]"
-                  />
-                </section>
-              )}
-            </div>
-
-            {/* Footer */}
-            <footer className="border-t border-border px-6 py-4 shrink-0 flex items-center justify-between gap-3">
-              <span className="text-micro text-muted-foreground hidden sm:inline-flex items-center gap-2">
-                {t('gapUi.drawer.shortcuts')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">1</kbd>{t('gapUi.drawer.shortcutConforme')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">2</kbd>{t('gapUi.drawer.shortcutParcial')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">3</kbd>{t('gapUi.drawer.shortcutNaoConforme')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">4</kbd>{t('gapUi.status.na')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
-              </span>
-
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-                  {t('gapUi.drawer.cancel')}
-                </Button>
-                <Button size="sm" onClick={handleSave} disabled={saving || !evaluation.conformity_status}>
-                  {saving ? t('gapUi.drawer.saving') : t('gapUi.drawer.saveEvaluation')}
-                </Button>
-              </div>
-            </footer>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
+__RENDER__
