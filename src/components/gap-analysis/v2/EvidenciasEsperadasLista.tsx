@@ -96,9 +96,10 @@ export function EvidenciasEsperadasLista({
         itens: itens.map((i) => (i.descricao ? `${i.titulo}: ${i.descricao}` : i.titulo)),
         idioma: String(locale).startsWith('en') ? 'en' : 'pt',
       },
+      isAiCall: true,
     }),
     onSuccess: (res: any) => {
-      if (res?.error) { toast.error(res.error); return; }
+      if (res?.error || res?.data?.error) { if (res?.data?.error) toast.error(res.data.error); return; }
       toast.success(t('gapUi.drawer.verifyDone'));
       qc.invalidateQueries({ queryKey: key });
     },

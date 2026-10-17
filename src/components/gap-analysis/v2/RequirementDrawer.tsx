@@ -16,6 +16,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { DocumentosDoRequisito } from '@/components/gap-analysis/DocumentosDoRequisito';
 import { sugerirStatus, contarEvidenciasEsperadas } from '@/lib/gap-analysis/sugerir-status';
+import { EvidenciasEsperadasLista, useMarcacoesEvidencia } from './EvidenciasEsperadasLista';
+import { contarAtendidos } from '@/lib/gap-analysis/evidencia-itens';
 import { scopedDraftKey } from '@/hooks/useWizardDraft';
 import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
@@ -314,6 +316,7 @@ export function RequirementDrawer({
     },
   });
 
+  const marcacoesQuery = useMarcacoesEvidencia(open ? requirementId : null, empresaId);
   const arquivos = evidenciasQuery.data ?? [];
   const itensEsperados = parseItens(orientacao.evidencias);
   const estrutura = parseOrientacao(orientacao.texto);
@@ -329,8 +332,10 @@ export function RequirementDrawer({
   const usados = new Set(avaliados.flatMap((i) => i.ligados.map((l) => l.id)));
   const outrosArquivos = arquivos.filter((a) => !usados.has(a.id));
   const esperadas = itensEsperados.length || contarEvidenciasEsperadas(orientacao.evidencias);
-  const encontradas = itensEsperados.length > 0 ? avaliados.filter((i) => i.ligados.length > 0).length : arquivos.length;
-  const sugestao = sugerirStatus({ esperadas, encontradas: encontradas || arquivos.length });
+  const encontradas = itensEsperados.length > 0
+    ? contarAtendidos(avaliados.length, marcacoesQuery.data ?? [], (i) => avaliados[i].ligados.length > 0)
+    : arquivos.length;
+  const sugestao = sugerirStatus({ esperadas, encontradas });
   const statusLabel = (s: string) => t(`gapUi.drawer.status.${s}`);
   const fw = frameworkQuery.data;
   const OPCOES = ['conforme', 'parcial', 'nao_conforme', 'nao_aplicavel'] as const;
@@ -459,35 +464,13 @@ export function RequirementDrawer({
                   right={esperadas > 0 ? <span className="text-xs text-muted-foreground tabular-nums">{t('gapUi.drawer.foundOf', { found: Math.min(encontradas, esperadas), expected: esperadas })}</span> : undefined}
                 >
                   {avaliados.length > 0 ? (
-                    <ul className="divide-y divide-border">
-                      {avaliados.map((i, n) => {
-                        const ok = i.ligados.length > 0;
-                        return (
-                          <li key={n} className="flex items-start gap-3 py-3.5">
-                            {ok
-                              ? <IconSuccess className="h-5 w-5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
-                              : <span className="h-5 w-5 rounded-full border-[1.5px] border-muted-foreground/60 shrink-0 mt-0.5" />}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground">{i.titulo}</p>
-                              {i.descricao && <p className="text-xs text-muted-foreground mt-0.5">{i.descricao}</p>}
-                              {i.ligados.length > 0 && (
-                                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                                  {i.ligados.map((l) => (
-                                    <a key={l.id} href={l.url || undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                                      <IconAttach className="h-3.5 w-3.5" strokeWidth={1.5} />{l.arquivo}
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
-                              ok ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground')}>
-                              {ok ? t('gapUi.drawer.found') : t('gapUi.drawer.missing')}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <EvidenciasEsperadasLista
+                      requirementId={requirement.id}
+                      empresaId={empresaId}
+                      userId={user?.id}
+                      itens={avaliados}
+                      provas={Array.from(new Set(arquivos.map((a) => a.nome).filter(Boolean)))}
+                    />
                   ) : orientacao.evidencias ? prose(orientacao.evidencias) : (
                     <p className="text-sm text-muted-foreground">{t('gapUi.drawer.noExpectedEvidence')}</p>
                   )}
