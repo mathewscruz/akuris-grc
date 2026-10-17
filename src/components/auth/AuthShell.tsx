@@ -33,7 +33,6 @@ export function AuthShell({ children, showProductPreview = true }: AuthShellProp
         <img src={logoImage} alt="Akuris" className="relative z-10 h-9 w-fit object-contain auth-entra" />
 
         <div className="relative z-10 w-full max-w-[44rem] self-center auth-entra">
-          <p className="text-micro font-semibold uppercase tracking-[0.2em] text-white/60">{t('auth.splitEyebrow')}</p>
           <h1 className="mt-4 max-w-[16ch] text-[3.25rem] font-semibold leading-[1.05] tracking-[-0.03em] text-white">
             {t('auth.splitTitle')}{' '}
             <span className="text-primary">{t('auth.splitHighlight')}</span>
