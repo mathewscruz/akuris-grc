@@ -903,7 +903,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {generatingGuidance && <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
                     <AkurisPulse size={16} />{t('gapUi.detail.guidancePreparing')}
                   </div>}
-                  {!generatingGuidance && (guidanceErro || !guidanceText) && <div role="status" className="space-y-2">
+                  {!generatingGuidance && !guidanceText && <div role="status" className="space-y-2">
                     <p className="text-sm text-muted-foreground">{t('gapUi.detail.guidanceFalhou')}</p>
                     <Button variant="outline" size="sm" onClick={() => orientacao.gerar(false)}>{t('gapUi.detail.guidanceTentarDeNovo')}</Button>
                   </div>}
