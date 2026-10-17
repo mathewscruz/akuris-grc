@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/components/AuthProvider';
 
 interface UseWizardDraftOptions<T> {
   /** Unique key per form type (e.g. "incidente", "controle") */
@@ -15,6 +16,11 @@ interface UseWizardDraftOptions<T> {
 }
 
 const DRAFT_PREFIX = 'akuris:draft:';
+/** Rascunho isolado por empresa e usuário: num navegador partilhado, uma empresa nunca vê o rascunho de outra. */
+export function scopedDraftKey(empresaId: string | null | undefined, userId: string | null | undefined, storageKey: string) {
+  return `${DRAFT_PREFIX}${empresaId ?? 'sem-empresa'}:${userId ?? 'anon'}:${storageKey}`;
+}
+
 const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface DraftEnvelope<T> {
@@ -33,7 +39,8 @@ export function useWizardDraft<T extends object>({
   enabled = true,
   debounceMs = 800,
 }: UseWizardDraftOptions<T>) {
-  const fullKey = `${DRAFT_PREFIX}${storageKey}`;
+  const { profile, user } = useAuth() as { profile?: { empresa_id?: string | null } | null; user?: { id?: string } | null };
+  const fullKey = scopedDraftKey(profile?.empresa_id, user?.id, storageKey);
   const [hasDraft, setHasDraft] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const timer = useRef<NodeJS.Timeout | null>(null);
