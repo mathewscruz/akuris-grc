@@ -13,4 +13,4 @@
 - [x] Estruturar conteúdo dos requisitos (rotina automática a completar)
 - [x] Tela do framework no modelo A (categorias ao lado)
 - [x] Status com anel (Chip)
-- [ ] Gap Analysis: analisar e unificar itens redundantes/confusos (plano)
+- [x] Gap Analysis: limpeza e unificação
