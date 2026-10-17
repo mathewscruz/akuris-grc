@@ -105,7 +105,9 @@ describe('a barra de abas nunca esconde uma aba', () => {
     expect(lista).toContain('{showIndicator && (');
 
     const configuracoes = readFileSync(resolve(__dirname, '../pages/Configuracoes.tsx'), 'utf8');
-    expect(configuracoes.match(/<TabsList showIndicator=\{false\}/g)).toHaveLength(2);
+    // Um TabsList por grupo, gerado a partir do catálogo de seções; nenhum desenha indicador.
+    expect(configuracoes.match(/<TabsList(?! showIndicator=\{false\})/g)).toBeNull();
+    expect(configuracoes).toContain('<TabsList showIndicator={false}');
   });
 
   it('a barra vertical do assistente não quebra', () => {
