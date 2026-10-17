@@ -1,0 +1,1 @@
+REVOKE ALL ON public.gap_evidencia_itens FROM anon;
