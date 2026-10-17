@@ -1,38 +1,42 @@
-# Lançamento do Akuris 4.0: Novidades, notificação no app e e-mail
+# Janela do requisito idêntica ao modelo escolhido (Ler e decidir)
 
-## O que o usuário vai ver
-1. **Novidades:** uma nova entrada "v4.0", com a data de hoje e os itens abaixo.
-2. **Sino:** cada usuário de empresa ativa recebe a notificação "Nova versão v4.0". Isso acontece automaticamente, pela regra que já existe nas Novidades. Clicar na notificação abre o painel de Novidades.
-3. **E-mail:** um comunicado com a identidade visual Akuris é enviado uma única vez a todos os usuários de empresas ativas. O envio respeita quem desativou comunicados, e o e-mail traz o link de descadastro.
+## O que muda para o usuário
+Ao clicar num requisito, abre uma janela larga e escura, igual à imagem enviada.
 
-## Resumo da versão 4.0 (texto das Novidades e do e-mail)
-**Novo visual**
-- Menu lateral redesenhado, com ícones mais modernos e arredondados, agrupado em 10 áreas e adaptado a iPad e celular.
-- Dashboard novo em blocos: índice operacional com gradiente, mapa de calor de riscos, planos de ação, conformidade com o selo de cada framework, contratos e atividade.
-- Novos selos para cada framework, e cores de nota mais fiéis ao que significam (Excelente, Bom, Atenção e Crítico).
-- Tabelas em cartões, com indicadores de tendência, alternância lista/grade, avatar do responsável e progresso real.
-- Notificações, alertas e avisos redesenhados, e nova tela de login.
-- Configurações reorganizadas numa visão geral em cartões, com progresso e pendências.
+**Cabeçalho**
+- Selo do framework, nome, chip com o código (ex. A.9.2.3) e o título do requisito.
+- Logo abaixo, uma linha de resumo e o botão de fechar à direita.
 
-**Gap Analysis e conformidade**
-- Tela inicial com comparativo entre frameworks e tabela ordenável.
-- Nova janela de requisito: ler a norma de um lado e decidir do outro, com sugestão de status e "Salvar e próximo".
-- Análise de políticas ("Comprovar"): a IA diz se o documento está em conformidade com a norma, para documentos de qualquer tamanho, com resultado estruturado e ajustes prontos para copiar. As análises ficam visíveis para toda a empresa.
-- Frameworks revisados e completos, com novos templates regulatórios (BACEN 4.893, ANPD 15/2024, SUSEP 638 e CVM 35).
-- Orientações dos requisitos salvas, sem gastar créditos de IA de novo.
+**Coluna esquerda (ler)**, em três blocos separados por linhas, cada um com o seu ícone:
+- **Requisito:** código, título e o texto da norma.
+- **Como cumprir:** a orientação em lista de marcadores roxos. O texto longo é quebrado em itens curtos.
+- **Evidências esperadas:** contador "X de Y encontradas" no topo. Cada evidência traz:
+  - um ícone de check verde ou de círculo vazio;
+  - o nome e uma descrição curta;
+  - os arquivos ligados como links, e o controle ligado quando existir;
+  - um chip "Encontrada" (verde) ou "Faltando" (neutro).
 
-**Novas funcionalidades**
-- Trust Center público, respostas automáticas a questionários de segurança e pacote de auditoria em PDF.
-- Ações em lote e preenchimento inteligente de formulários.
-- Painéis laterais padronizados em todos os módulos.
+  A ligação de documentos continua aqui.
+
+**Coluna direita (decidir)**
+- **Decisão:** controle segmentado com Conforme, Parcial, Não conforme e Não aplicável. As teclas 1 a 4 continuam funcionando.
+- **Cartão de sugestão** roxo, com brilho: "Sugerido: Parcial — 2 de 3 evidências encontradas", uma explicação curta e o botão **Aplicar**. A sugestão é local e não gasta créditos.
+- **Justificativa:** caixa de texto com contador de 500 caracteres. Continua obrigatória em Parcial e Não conforme.
+- **Prazo:** campo com ícone de calendário.
+- **Responsável:** avatar, nome e cargo.
+- **Salvar:** botão largo no rodapé, com "Salvar e próximo" e as setas de anterior/próximo discretas. O link "Vínculos e plano de ação" continua disponível.
+
+**Celular:** as colunas ficam uma embaixo da outra, e o botão Salvar fica fixo no rodapé.
+
+## Regras
+- Só dados reais. "Encontrada" só aparece quando existe um arquivo ligado de fato. Quando a norma não traz uma lista de evidências, aparece um estado vazio honesto.
+- Os rascunhos continuam separados por empresa e por usuário. Todo texto novo terá versão em português e em inglês. A janela segue as cores e os selos do Akuris.
 
 ## Detalhes técnicos
-- **Novidades:** uma migration insere a linha em `changelog_entries` (versão `v4.0`, com os itens no formato `{type, text}` já usado). O trigger `notify_changelog_entry` existente cria as notificações no sino. Os textos ficam em PT, como nas versões anteriores.
-- **E-mail:** uma nova Edge Function, `send-release-announcement`.
-  - Só um super-admin pode chamá-la (verify_jwt, com checagem de `has_super_admin_role`).
-  - Recebe a versão e envia por Resend, em lotes, a todos os profiles de empresas ativas com `receber_comunicados` diferente de false.
-  - Usa o template HTML Akuris e o link de descadastro por `email_unsubscribe_token`.
-  - É idempotente: uma marca de envio na própria linha do changelog impede o segundo envio.
-  - Não consome créditos de IA, porque não usa IA.
-- **Disparo:** botão "Enviar por e-mail" na lista de Novidades em Configurações (só para super-admin). Também vou executá-lo uma vez para a v4.0, depois de confirmar com um envio de teste para o seu e-mail.
-- **Validação:** conferir no banco a quantidade de notificações criadas e os logs da Edge Function (enviados e falhas).
+- Reescrever o layout de `src/components/gap-analysis/v2/RequirementDrawer.tsx`, mantendo as consultas, `sugerirStatus`, o rascunho, a sequência e o salvamento.
+- A lista de evidências esperadas vem de `exemplos_evidencias`, dividida em itens. Cada item é cruzado com `evidence_library_links` do requisito (filtrado por empresa) para marcar Encontrada ou Faltando e listar os arquivos.
+- O segmentado usa os tons do `StatusBadge`. O cartão de sugestão usa tokens `primary`, sem cores cruas.
+- Chaves i18n PT/EN em `gapUi.drawer`. Atualizar os testes existentes que leem este arquivo.
+
+## Depois desta tarefa
+Retomar o lançamento da versão 4.0 já aprovado: Novidades, aviso no sino e e-mail.
