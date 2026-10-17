@@ -6786,6 +6786,81 @@ export type Database = {
           },
         ]
       }
+      gap_evidencia_itens: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          ia_assinatura: string | null
+          ia_em: string | null
+          ia_fonte: string | null
+          ia_motivo: string | null
+          ia_status: string | null
+          ia_trecho: string | null
+          id: string
+          item_index: number
+          item_texto: string
+          marcado: boolean
+          marcado_por: string | null
+          nota: string | null
+          prova_nome: string | null
+          requirement_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          ia_assinatura?: string | null
+          ia_em?: string | null
+          ia_fonte?: string | null
+          ia_motivo?: string | null
+          ia_status?: string | null
+          ia_trecho?: string | null
+          id?: string
+          item_index: number
+          item_texto: string
+          marcado?: boolean
+          marcado_por?: string | null
+          nota?: string | null
+          prova_nome?: string | null
+          requirement_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          ia_assinatura?: string | null
+          ia_em?: string | null
+          ia_fonte?: string | null
+          ia_motivo?: string | null
+          ia_status?: string | null
+          ia_trecho?: string | null
+          id?: string
+          item_index?: number
+          item_texto?: string
+          marcado?: boolean
+          marcado_por?: string | null
+          nota?: string | null
+          prova_nome?: string | null
+          requirement_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gap_evidencia_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gap_evidencia_itens_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       implementacao_programas: {
         Row: {
           created_at: string
