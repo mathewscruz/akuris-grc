@@ -25,16 +25,13 @@ import { DateField } from '@/components/ui/date-field';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { IconExternal } from '@/components/icons';
-;
+import { IconExternal, IconFileText, IconIdea, IconChecklist, IconSuccess, IconAttach, IconSettings, IconCalendar, IconPerson, IconSave } from '@/components/icons';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { CornerAccent } from '@/components/identity/CornerAccent';
-import { StatusSeg } from './StatusSeg';
-import { SectionHead } from './SectionHead';
 import { AIDiagnosticCard, type AIDiagnosticResult } from './AIDiagnosticCard';
 import { localizeRequirement } from "@/lib/gap-i18n";
 import { useOrientacaoRequisito } from '@/hooks/useOrientacaoRequisito';
@@ -284,26 +281,78 @@ export function RequirementDrawer({
     queryKey: ['requisito-evidencias-count', requirementId, empresaId],
     enabled: open && !!requirementId && !!empresaId,
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('evidence_library_links')
-        .select('id', { count: 'exact', head: true })
+        .select('id, evidence_library(nome, arquivo_nome, arquivo_url)')
         .eq('requirement_id', requirementId!)
         .eq('empresa_id', empresaId);
       if (error) throw error;
-      return count ?? 0;
+      return ((data ?? []) as any[]).map((l) => ({
+        id: l.id as string,
+        nome: (l.evidence_library?.nome || l.evidence_library?.arquivo_nome || '') as string,
+        arquivo: (l.evidence_library?.arquivo_nome || l.evidence_library?.nome || '') as string,
+        url: (l.evidence_library?.arquivo_url || null) as string | null,
+      }));
     },
   });
-  const encontradas = evidenciasQuery.data ?? 0;
-  const esperadas = contarEvidenciasEsperadas(orientacao.evidencias);
-  const sugestao = sugerirStatus({ esperadas, encontradas });
-  const statusLabel = (s: string) =>
-    s === 'conforme' ? t('gapUi.drawer.shortcutConforme') : t('gapUi.drawer.shortcutParcial');
+  const frameworkQuery = useQuery({
+    queryKey: ['gap-framework-nome', requirement?.framework_id],
+    enabled: open && !!requirement?.framework_id,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('gap_analysis_frameworks')
+        .select('nome, versao')
+        .eq('id', requirement!.framework_id)
+        .maybeSingle();
+      return data as { nome: string; versao?: string } | null;
+    },
+  });
+
+  const arquivos = evidenciasQuery.data ?? [];
+  const itensEsperados = parseItens(orientacao.evidencias);
+  const itensComo = parseItens(orientacao.texto);
+  const avaliados = itensEsperados.map((item) => {
+    const chaves = palavras(item.titulo + ' ' + item.descricao);
+    const ligados = arquivos.filter((a) => {
+      const pa = palavras(a.nome + ' ' + a.arquivo);
+      return chaves.some((c) => pa.includes(c));
+    });
+    return { ...item, ligados };
+  });
+  const usados = new Set(avaliados.flatMap((i) => i.ligados.map((l) => l.id)));
+  const outrosArquivos = arquivos.filter((a) => !usados.has(a.id));
+  const esperadas = itensEsperados.length || contarEvidenciasEsperadas(orientacao.evidencias);
+  const encontradas = itensEsperados.length > 0 ? avaliados.filter((i) => i.ligados.length > 0).length : arquivos.length;
+  const sugestao = sugerirStatus({ esperadas, encontradas: encontradas || arquivos.length });
+  const statusLabel = (s: string) => t(`gapUi.drawer.status.${s}`);
+  const fw = frameworkQuery.data;
+  const OPCOES = ['conforme', 'parcial', 'nao_conforme', 'nao_aplicavel'] as const;
+  const TOM: Record<string, string> = {
+    conforme: 'bg-success text-success-foreground',
+    parcial: 'bg-primary text-primary-foreground',
+    nao_conforme: 'bg-destructive text-destructive-foreground',
+    nao_aplicavel: 'bg-muted-foreground text-background',
+  };
 
   const prose = (txt: string) => (
     <div className={`text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>{txt}</ReactMarkdown>
     </div>
   );
+
+  const Bloco = ({ icon: Icon, titulo, right, children }: { icon: React.ComponentType<any>; titulo: string; right?: React.ReactNode; children: React.ReactNode }) => (
+    <section className="py-5 first:pt-0 border-b border-border last:border-0">
+      <div className="flex items-center gap-2.5 mb-3">
+        <Icon className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
+        <h3 className="text-base font-semibold text-foreground flex-1">{titulo}</h3>
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+
+  const textoJust = evaluation.observacoes || '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -315,47 +364,55 @@ export function RequirementDrawer({
           <div className="flex-1 flex items-center justify-center"><AkurisPulse size={48} /></div>
         ) : (
           <>
-            <header className="relative border-b border-border px-6 py-4 pr-14 shrink-0">
-              <CornerAccent position="top-left" size={12} />
-              <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 text-xs text-muted-foreground">
-                    {requirement.codigo && (
-                      <span className="font-mono tabular-nums rounded-md border border-border px-1.5 py-0.5 text-foreground/80">{requirement.codigo}</span>
-                    )}
-                    {requirement.categoria && <span className="truncate">{requirement.categoria}</span>}
-                  </div>
-                  <h2 className="text-base font-semibold text-foreground leading-snug">{requirement.titulo}</h2>
-                </div>
+            <header className="border-b border-border px-6 py-4 pr-14 shrink-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                {fw && <FrameworkBadge name={fw.nome} versao={fw.versao} size="sm" />}
+                {fw && <span className="text-lg font-semibold text-foreground">{fw.nome}</span>}
+                {requirement.codigo && (
+                  <span className="font-mono text-xs tabular-nums rounded-md bg-muted px-2 py-1 text-foreground/80">{requirement.codigo}</span>
+                )}
+                <h2 className="text-lg font-semibold text-foreground leading-snug min-w-0">{requirement.titulo}</h2>
                 {sequence && idx >= 0 && (
-                  <div className="flex items-center gap-1 shrink-0 text-xs text-muted-foreground tabular-nums">
+                  <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
                     <Button variant="ghost" size="sm" className="h-7 px-2" disabled={!prevId} aria-label={t('gapUi.drawer.previous')} onClick={() => prevId && onNavigate?.(prevId)}>‹</Button>
                     {idx + 1}/{sequence.length}
                     <Button variant="ghost" size="sm" className="h-7 px-2" disabled={!nextId} aria-label={t('gapUi.drawer.next')} onClick={() => nextId && onNavigate?.(nextId)}>›</Button>
                   </div>
                 )}
               </div>
+              {requirement.descricao && (
+                <p className="mt-1.5 text-xs text-muted-foreground line-clamp-1">{requirement.descricao.replace(/[#*_`>]/g, '')}</p>
+              )}
             </header>
 
-            <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
+            <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,1fr)]">
               {/* Esquerda: ler */}
-              <div className="lg:overflow-y-auto px-6 py-5 space-y-6 lg:border-r border-border">
-                {requirement.descricao && (
-                  <section>
-                    <SectionHead title={t('gapUi.drawer.whatStandardRequires')} />
-                    {prose(requirement.descricao)}
-                  </section>
-                )}
+              <div className="lg:overflow-y-auto px-6 py-5 lg:border-r border-border">
+                <Bloco icon={IconFileText} titulo={t('gapUi.drawer.requisito')}>
+                  <p className="text-sm font-medium text-foreground mb-1.5">
+                    {requirement.codigo && <span className="font-mono text-primary mr-2">{requirement.codigo}</span>}
+                    {requirement.titulo}
+                  </p>
+                  {requirement.descricao && prose(requirement.descricao)}
+                </Bloco>
 
-                <section>
-                  <SectionHead title={t('gapUi.drawer.comoCumprir')} />
+                <Bloco icon={IconIdea} titulo={t('gapUi.drawer.comoCumprir')}>
                   <p className="text-micro text-muted-foreground mb-2">{t('gapUi.detail.guidancePlatformIncluded')}</p>
                   {orientacao.estado === 'gerando' && (
                     <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
                     </div>
                   )}
-                  {orientacao.texto && prose(orientacao.texto)}
+                  {itensComo.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {itensComo.map((i, n) => (
+                        <li key={n} className="flex gap-2.5 text-sm text-foreground/85">
+                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                          <span>{i.titulo}{i.descricao && <span className="text-muted-foreground"> — {i.descricao}</span>}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : orientacao.texto ? prose(orientacao.texto) : null}
                   {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
                     <div role="status">
                       <p className="text-sm text-muted-foreground">
@@ -366,64 +423,116 @@ export function RequirementDrawer({
                       </Button>
                     </div>
                   )}
-                </section>
+                </Bloco>
 
-                {orientacao.evidencias && (
-                  <section>
-                    <SectionHead
-                      title={t('gapUi.drawer.expectedEvidence')}
-                      right={esperadas > 0 ? <span className="text-xs text-muted-foreground tabular-nums">{Math.min(encontradas, esperadas)}/{esperadas}</span> : undefined}
+                <Bloco
+                  icon={IconChecklist}
+                  titulo={t('gapUi.drawer.expectedEvidence')}
+                  right={esperadas > 0 ? <span className="text-xs text-muted-foreground tabular-nums">{t('gapUi.drawer.foundOf', { found: Math.min(encontradas, esperadas), expected: esperadas })}</span> : undefined}
+                >
+                  {avaliados.length > 0 ? (
+                    <ul className="divide-y divide-border">
+                      {avaliados.map((i, n) => {
+                        const ok = i.ligados.length > 0;
+                        return (
+                          <li key={n} className="flex items-start gap-3 py-3.5">
+                            {ok
+                              ? <IconSuccess className="h-5 w-5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
+                              : <span className="h-5 w-5 rounded-full border-[1.5px] border-muted-foreground/60 shrink-0 mt-0.5" />}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground">{i.titulo}</p>
+                              {i.descricao && <p className="text-xs text-muted-foreground mt-0.5">{i.descricao}</p>}
+                              {i.ligados.length > 0 && (
+                                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                                  {i.ligados.map((l) => (
+                                    <a key={l.id} href={l.url || undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                                      <IconAttach className="h-3.5 w-3.5" strokeWidth={1.5} />{l.arquivo}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
+                              ok ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground')}>
+                              {ok ? t('gapUi.drawer.found') : t('gapUi.drawer.missing')}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : orientacao.evidencias ? prose(orientacao.evidencias) : (
+                    <p className="text-sm text-muted-foreground">{t('gapUi.drawer.noExpectedEvidence')}</p>
+                  )}
+                  {outrosArquivos.length > 0 && avaliados.length > 0 && (
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      {t('gapUi.drawer.otherLinked')}:{' '}
+                      {outrosArquivos.map((l, n) => (
+                        <a key={l.id} href={l.url || undefined} target="_blank" rel="noreferrer" className="text-primary hover:underline">{n > 0 ? ', ' : ''}{l.arquivo}</a>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <DocumentosDoRequisito
+                      requisitoId={requirement.id}
+                      frameworkId={requirement.framework_id}
+                      onChanged={() => qc.invalidateQueries({ queryKey: ['requisito-evidencias-count', requirementId, empresaId] })}
                     />
-                    {prose(orientacao.evidencias)}
-                  </section>
-                )}
-
-                <section>
-                  <SectionHead title={t('gapUi.drawer.linkedEvidence')} />
-                  <DocumentosDoRequisito
-                    requisitoId={requirement.id}
-                    frameworkId={requirement.framework_id}
-                    onChanged={() => qc.invalidateQueries({ queryKey: ['requisito-evidencias-count', requirementId, empresaId] })}
-                  />
-                </section>
-
-                <section className="pt-2 border-t border-border">
-                  <Button variant="ghost" size="sm" className="text-xs -ml-2" onClick={abrirEdicaoCompleta}>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-xs -ml-2 mt-3" onClick={abrirEdicaoCompleta}>
                     <IconExternal className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
                     {t('gapUi.drawer.moreOptions')}
                   </Button>
-                </section>
+                </Bloco>
               </div>
 
               {/* Direita: decidir */}
-              <aside className="lg:overflow-y-auto px-6 py-5 space-y-5 border-t lg:border-t-0 border-border">
+              <aside className="lg:overflow-y-auto px-6 py-5 space-y-6 border-t lg:border-t-0 border-border flex flex-col">
                 <section>
-                  <SectionHead title={t('gapUi.drawer.decision')} />
-                  <StatusSeg
-                    value={(evaluation.conformity_status as any) || null}
-                    onChange={(v) => setEvaluation(e => ({ ...e, conformity_status: v }))}
-                  />
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <IconSettings className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
+                    <h3 className="text-base font-semibold text-foreground">{t('gapUi.drawer.decision')}</h3>
+                  </div>
+                  <div role="radiogroup" aria-label={t('gapUi.drawer.decision')} className="grid grid-cols-2 sm:grid-cols-4 rounded-lg border border-border overflow-hidden">
+                    {OPCOES.map((o, n) => {
+                      const ativo = evaluation.conformity_status === o;
+                      return (
+                        <button
+                          key={o}
+                          type="button"
+                          role="radio"
+                          aria-checked={ativo}
+                          title={`${n + 1}`}
+                          onClick={() => setEvaluation((e) => ({ ...e, conformity_status: o }))}
+                          className={cn('px-2 py-2.5 text-xs sm:text-sm transition-colors border-border [&:not(:first-child)]:sm:border-l',
+                            ativo ? `${TOM[o]} font-medium` : 'text-foreground/80 hover:bg-muted/60')}
+                        >
+                          {statusLabel(o)}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </section>
 
-                <section className="rounded-lg border border-primary/25 bg-primary/[0.04] p-3">
+                <section className="rounded-xl border border-primary/30 bg-primary/10 p-4">
                   <div className="flex items-start gap-3">
+                    <IconIdea className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {sugestao ? `${t('gapUi.drawer.suggestion')}: ${statusLabel(sugestao)}` : t('gapUi.drawer.suggestion')}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-sm font-semibold text-foreground">
                         {sugestao
-                          ? t('gapUi.drawer.suggestionBasis', { found: encontradas, expected: Math.max(esperadas, encontradas) })
-                          : t('gapUi.drawer.suggestionNone')}
+                          ? `${t('gapUi.drawer.suggestion')}: ${statusLabel(sugestao)} — ${t('gapUi.drawer.foundOf', { found: Math.min(encontradas, Math.max(esperadas, encontradas)), expected: Math.max(esperadas, encontradas) })}`
+                          : t('gapUi.drawer.suggestion')}
+                      </p>
+                      <p className="text-xs text-primary/90 mt-1">
+                        {sugestao ? t(`gapUi.drawer.suggestionWhy.${sugestao}`) : t('gapUi.drawer.suggestionNone')}
                       </p>
                     </div>
                     {sugestao && evaluation.conformity_status !== sugestao && (
-                      <Button size="sm" className="h-7 text-xs" onClick={() => setEvaluation(e => ({ ...e, conformity_status: sugestao }))}>
-                        {t('gapUi.drawer.useSuggestion')}
+                      <Button size="sm" onClick={() => setEvaluation(e => ({ ...e, conformity_status: sugestao }))}>
+                        {t('gapUi.drawer.apply')}
                       </Button>
                     )}
                   </div>
-                  <div className="mt-3 pt-3 border-t border-primary/15">
+                  <div className="mt-3 pt-3 border-t border-primary/20">
                     {diagnosing ? (
                       <div className="flex justify-center py-4"><AkurisPulse size={28} /></div>
                     ) : diagnostic ? (
@@ -435,7 +544,7 @@ export function RequirementDrawer({
                     ) : (
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-micro text-muted-foreground">{t('gapUi.drawer.diagnosticHint')}</p>
-                        <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={runDiagnostic}>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs shrink-0" onClick={runDiagnostic}>
                           {t('gapUi.drawer.generateDiagnostic')}
                         </Button>
                       </div>
@@ -444,66 +553,88 @@ export function RequirementDrawer({
                 </section>
 
                 <section>
-                  <SectionHead title={t('gapUi.drawer.justificationObservations')} />
+                  <label htmlFor="just-drawer" className="text-sm font-medium text-foreground">{t('gapUi.drawer.justification')}</label>
                   <Textarea
-                    value={evaluation.observacoes || ''}
+                    id="just-drawer"
+                    value={textoJust}
+                    maxLength={500}
                     onChange={(e) => setEvaluation(prev => ({ ...prev, observacoes: e.target.value }))}
                     placeholder={t('gapUi.drawer.observationsPlaceholder')}
                     rows={5}
                     aria-invalid={precisaJustificativa}
-                    className={cn('resize-y', precisaJustificativa && 'border-destructive/60')}
+                    className={cn('mt-2 resize-y', precisaJustificativa && 'border-destructive/60')}
                   />
-                  {precisaJustificativa && (
-                    <p className="text-xs text-destructive mt-1.5">{t('gapUi.drawer.justificationRequired')}</p>
-                  )}
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-destructive">{precisaJustificativa ? t('gapUi.drawer.justificationRequired') : ''}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{textoJust.length}/500</span>
+                  </div>
                 </section>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <section>
-                    <SectionHead title={t('gapUi.drawer.implementationDeadline')} />
-                    <DateField
-                      id="prazo-drawer"
-                      value={evaluation.prazo_implementacao || null}
-                      onChange={(v) => setEvaluation(prev => ({ ...prev, prazo_implementacao: v || null }))}
-                      className="mt-1.5"
+                <section>
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <IconCalendar className="h-4 w-4" strokeWidth={1.5} />{t('gapUi.drawer.deadline')}
+                  </div>
+                  <DateField
+                    id="prazo-drawer"
+                    value={evaluation.prazo_implementacao || null}
+                    onChange={(v) => setEvaluation(prev => ({ ...prev, prazo_implementacao: v || null }))}
+                    className="mt-2"
+                  />
+                </section>
+
+                <section>
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <IconPerson className="h-4 w-4" strokeWidth={1.5} />{t('gapUi.drawer.owner')}
+                  </div>
+                  <div className="mt-2">
+                    <UserSelect
+                      value={evaluation.responsavel_avaliacao || undefined}
+                      onValueChange={(v) => setEvaluation(prev => ({ ...prev, responsavel_avaliacao: v || null }))}
                     />
-                  </section>
-                  <section>
-                    <SectionHead title={t('gapUi.drawer.owner')} />
-                    <div className="mt-1.5">
-                      <UserSelect
-                        value={evaluation.responsavel_avaliacao || undefined}
-                        onValueChange={(v) => setEvaluation(prev => ({ ...prev, responsavel_avaliacao: v || null }))}
-                      />
-                    </div>
-                  </section>
+                  </div>
+                </section>
+
+                <div className="mt-auto pt-2 space-y-2 sticky bottom-0 bg-popover pb-1">
+                  <Button className="w-full h-11" onClick={() => handleSave(!!(nextId && onNavigate))} disabled={saving || !evaluation.conformity_status || precisaJustificativa}>
+                    <IconSave className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    {saving ? t('gapUi.drawer.saving') : nextId && onNavigate ? t('gapUi.drawer.saveAndNext') : t('gapUi.drawer.save')}
+                  </Button>
+                  {nextId && onNavigate && (
+                    <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => handleSave(false)} disabled={saving || !evaluation.conformity_status || precisaJustificativa}>
+                      {t('gapUi.drawer.saveAndClose')}
+                    </Button>
+                  )}
+                  <p className="hidden md:flex items-center justify-center gap-2 text-micro text-muted-foreground">
+                    <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">1–4</kbd>{t('gapUi.drawer.complianceStatus')}
+                    <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
+                  </p>
                 </div>
               </aside>
             </div>
-
-            <footer className="border-t border-border px-6 py-3 shrink-0 flex items-center justify-between gap-3">
-              <span className="text-micro text-muted-foreground hidden md:inline-flex items-center gap-2">
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">1–4</kbd>{t('gapUi.drawer.complianceStatus')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
-                <span aria-live="polite">· {t('gapUi.drawer.draftSaved')}</span>
-              </span>
-              <div className="flex items-center gap-2 ml-auto">
-                <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-                  {t('gapUi.drawer.cancel')}
-                </Button>
-                {nextId && onNavigate && (
-                  <Button variant="outline" size="sm" onClick={() => handleSave(true)} disabled={saving || !evaluation.conformity_status || precisaJustificativa}>
-                    {t('gapUi.drawer.saveAndNext')}
-                  </Button>
-                )}
-                <Button size="sm" onClick={() => handleSave()} disabled={saving || !evaluation.conformity_status || precisaJustificativa}>
-                  {saving ? t('gapUi.drawer.saving') : t('gapUi.drawer.saveEvaluation')}
-                </Button>
-              </div>
-            </footer>
           </>
         )}
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Quebra um texto (markdown) em itens de lista: "Título: descrição" ou "**Título** — descrição". */
+function parseItens(texto: string | null | undefined): { titulo: string; descricao: string }[] {
+  if (!texto) return [];
+  return texto
+    .split('\n')
+    .filter((l) => /^\s*([-*•]|\d+[.)])\s+\S/.test(l))
+    .map((l) => {
+      const limpo = l.replace(/^\s*([-*•]|\d+[.)])\s+/, '').replace(/\*\*/g, '').replace(/[`_]/g, '').trim();
+      const m = limpo.match(/^(.{3,90}?)\s*(?::|—|–| - )\s+(.+)$/);
+      return m ? { titulo: m[1].trim(), descricao: m[2].trim() } : { titulo: limpo, descricao: '' };
+    });
+}
+
+function palavras(txt: string): string[] {
+  return txt
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 5);
 }
