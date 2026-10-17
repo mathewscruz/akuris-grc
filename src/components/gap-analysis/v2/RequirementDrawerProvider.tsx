@@ -31,6 +31,11 @@ export function useRequirementDrawer() {
   return ctx;
 }
 
+/** Versão tolerante: devolve null fora do provider. */
+export function useOptionalRequirementDrawer() {
+  return useContext(RequirementDrawerContext);
+}
+
 export function RequirementDrawerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DrawerState>({
     requirementId: null, empresaId: null,
