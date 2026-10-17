@@ -352,7 +352,7 @@ export function RequirementDrawer({
     <section className="py-5 first:pt-0 border-b border-border last:border-0">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
-        <h3 className="text-[15px] font-semibold normal-case tracking-normal text-foreground flex-1">{titulo}</h3>
+        <h3 className="text-sm font-semibold normal-case tracking-normal text-foreground flex-1">{titulo}</h3>
         {right}
       </div>
       {children}
@@ -411,7 +411,7 @@ export function RequirementDrawer({
                       {itensComo.map((i, n) => (
                         <li key={n} className="flex gap-2.5 text-sm text-foreground/85">
                           <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                          <span className="text-[13px]">{i.titulo}{i.descricao && <span className="text-muted-foreground"> — {i.descricao}</span>}</span>
+                          <span className="text-sm">{i.titulo}{i.descricao && <span className="text-muted-foreground"> — {i.descricao}</span>}</span>
                         </li>
                       ))}
                     </ul>
@@ -501,7 +501,7 @@ export function RequirementDrawer({
                 <section>
                   <div className="flex items-center gap-2.5 mb-3">
                     <IconSettings className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
-                    <h3 className="text-[15px] font-semibold text-foreground">{t('gapUi.drawer.decision')}</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{t('gapUi.drawer.decision')}</h3>
                   </div>
                   <div role="radiogroup" aria-label={t('gapUi.drawer.decision')} className="grid grid-cols-2 sm:grid-cols-4 rounded-lg border border-border overflow-hidden">
                     {OPCOES.map((o, n) => {
