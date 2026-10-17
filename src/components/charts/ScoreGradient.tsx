@@ -1,6 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-import { CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
+import { CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
 
 const TEAL = 'hsl(var(--chart-teal))';
 const GREEN = 'hsl(var(--chart-green))';
@@ -67,7 +67,7 @@ export function GradientScoreArea({ data, height = 128, domain, showTooltip, for
               <stop offset="0%" stopColor={TEAL} /><stop offset="100%" stopColor={GREEN} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="label" axisLine={false} tickLine={false} minTickGap={16} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+          <XAxis dataKey="label" axisLine={false} tickLine={false} minTickGap={16} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: CHART_FONT.axis }} />
           {domain && <YAxis hide domain={domain} />}
           {showTooltip && <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number) => [format(v), tooltipLabel ?? '']} />}
           <Area type="monotone" dataKey="value" stroke={`url(#line-${id})`} strokeWidth={2} fill={`url(#area-${id})`}

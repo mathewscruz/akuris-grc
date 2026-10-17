@@ -1,9 +1,8 @@
 import { useAuth } from '@/components/AuthProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconMoney, IconPackage, IconBook, IconGlobe, IconFileText, IconMegaphone, IconBolt } from '@/components/icons';
+import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconMoney, IconPackage, IconBook, IconGlobe, IconFileText, IconMegaphone, IconChevronLeft, IconBriefcase, IconMail, IconShieldCheck } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import GerenciamentoEmpresas from '@/components/configuracoes/GerenciamentoEmpresas';
@@ -27,32 +26,49 @@ import { TrustCenterTab } from '@/components/configuracoes/TrustCenterTab';
 import { ContactRequests } from '@/components/configuracoes/ContactRequests';
 
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
-import { useEffect, useState } from 'react';
+import { ConfiguracoesVisaoGeral, type SecaoConfig } from '@/components/configuracoes/ConfiguracoesVisaoGeral';
 const Configuracoes = () => {
   const { t } = useLanguage();
   const { profile, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get('tab') || 'usuarios';
+  const rawTab = searchParams.get('tab');
   const selectedUserId = searchParams.get('userId') || undefined;
 
   const userRole = profile?.role || 'user';
   const isSuperAdmin = userRole === 'super_admin';
   const isAdmin = userRole === 'admin' || isSuperAdmin;
-  const customerTabs = ['usuarios', 'organizacao', 'integracoes', 'denuncia', 'trust-center', 'assinatura'];
-  const platformTabs = ['empresas', 'planos', 'financeiro-ia', 'novidades', 'noticias', 'traducoes', 'blog', 'solicitacoes-site'];
-  const allowedTabs = isSuperAdmin
-    ? [...customerTabs, ...platformTabs]
-    : isAdmin
-      ? customerTabs
-      : ['usuarios', 'assinatura'];
-  const defaultTab = allowedTabs.includes(requestedTab) ? requestedTab : 'usuarios';
-  const [activeTab, setActiveTab] = useState(defaultTab);
 
-  useEffect(() => setActiveTab(defaultTab), [defaultTab]);
-  const selectSection = (tab: string) => {
-    if (!allowedTabs.includes(tab)) return;
-    setActiveTab(tab);
-    setSearchParams(current => { const next = new URLSearchParams(current); next.set('tab', tab); next.delete('userId'); return next; });
+  const secoes: SecaoConfig[] = [
+    { id: 'usuarios', grupo: 'conta', titulo: t('configGeral.page.tabUsuarios'), icon: IconUsers, palavras: 'mfa permissao perfil convite acesso senha' },
+    ...(isAdmin ? [{ id: 'organizacao', grupo: 'conta' as const, titulo: t('configGeral.page.tabOrganizacao'), icon: IconOrg, palavras: 'logo empresa cnpj endereco slug contexto' }] : []),
+    { id: 'assinatura', grupo: 'conta', titulo: t('configGeral.page.tabAssinatura'), icon: IconCard, palavras: 'plano creditos ia fatura' },
+    ...(isAdmin ? [
+      { id: 'integracoes', grupo: 'plataforma' as const, titulo: t('configGeral.page.tabIntegracoes'), icon: IconPlug, palavras: 'aws intune azure api webhook' },
+      { id: 'denuncia', grupo: 'plataforma' as const, titulo: t('configGeral.page.tabDenuncia'), icon: IconMessage, palavras: 'whistleblowing etica comite canal' },
+      { id: 'trust-center', grupo: 'plataforma' as const, titulo: t('trustCenter.tab'), icon: IconShieldCheck, palavras: 'questionario seguranca publico' },
+    ] : []),
+    ...(isSuperAdmin ? [
+      { id: 'empresas', grupo: 'admin' as const, titulo: t('configGeral.page.tabEmpresas'), icon: IconBriefcase },
+      { id: 'planos', grupo: 'admin' as const, titulo: t('configGeral.page.tabPlanos'), icon: IconPackage },
+      { id: 'financeiro-ia', grupo: 'admin' as const, titulo: t('configGeral.page.tabFinanceiroIA'), icon: IconMoney },
+      { id: 'novidades', grupo: 'admin' as const, titulo: t('configGeral.page.tabNovidades'), icon: IconMegaphone },
+      { id: 'noticias', grupo: 'admin' as const, titulo: t('configGeral.page.tabNoticias'), icon: IconFileText },
+      { id: 'traducoes', grupo: 'admin' as const, titulo: t('configGeral.page.tabTraducoes'), icon: IconGlobe },
+      { id: 'blog', grupo: 'admin' as const, titulo: t('configGeral.page.tabBlog'), icon: IconBook },
+      { id: 'solicitacoes-site', grupo: 'admin' as const, titulo: t('site.leads'), icon: IconMail },
+    ] : []),
+  ];
+  const allowedTabs = secoes.map((s) => s.id);
+  const activeTab = rawTab && allowedTabs.includes(rawTab) ? rawTab : null;
+
+  const selectSection = (tab: string | null) => {
+    if (tab && !allowedTabs.includes(tab)) return;
+    setSearchParams(current => {
+      const next = new URLSearchParams(current);
+      if (tab) next.set('tab', tab); else next.delete('tab');
+      next.delete('userId');
+      return next;
+    });
   };
 
   if (loading) {
@@ -66,80 +82,63 @@ const Configuracoes = () => {
     );
   }
 
-  const navTriggerClass = 'min-h-10 w-full justify-start gap-2 rounded-md px-3 text-left data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:after:hidden';
-  const tabLabels: Record<string, string> = {
-    usuarios: t('configGeral.page.tabUsuarios'),
-    organizacao: t('configGeral.page.tabOrganizacao'),
-    integracoes: t('configGeral.page.tabIntegracoes'),
-    denuncia: t('configGeral.page.tabDenuncia'),
-    assinatura: t('configGeral.page.tabAssinatura'),
-    'trust-center': t('trustCenter.tab'),
-    empresas: t('configGeral.page.tabEmpresas'),
-    planos: t('configGeral.page.tabPlanos'),
-    'financeiro-ia': t('configGeral.page.tabFinanceiroIA'),
-    novidades: t('configGeral.page.tabNovidades'),
-    noticias: t('configGeral.page.tabNoticias'),
-    traducoes: t('configGeral.page.tabTraducoes'),
-    blog: t('configGeral.page.tabBlog'),
-    'solicitacoes-site': t('site.leads'),
-  };
+  if (!activeTab) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('configGeral.page.headerTitle')} description={t('configGeral.page.headerDescription')} />
+        <ConfiguracoesVisaoGeral empresaId={profile?.empresa_id || ''} secoes={secoes} isAdmin={isAdmin} onOpen={selectSection} />
+      </div>
+    );
+  }
+
+  const atual = secoes.find((s) => s.id === activeTab)!;
+  const AtualIcon = atual.icon;
+  const navTriggerClass = 'min-h-9 w-full justify-start gap-2 rounded-md px-3 text-left text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:after:hidden';
+  const grupos: SecaoConfig['grupo'][] = ['conta', 'plataforma', 'admin'];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t('configGeral.page.headerTitle')}
-        description={t('configGeral.page.headerDescription')}
-      />
+      <header className="space-y-3">
+        <button type="button" onClick={() => selectSection(null)} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+          <IconChevronLeft className="h-3.5 w-3.5" aria-hidden />{t('configVisao.voltar')}
+        </button>
+        <div className="flex items-start gap-3">
+          <AtualIcon className="h-6 w-6 text-foreground/80 mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold text-foreground">{atual.titulo}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{t(`configVisao.desc.${atual.id}`)}</p>
+          </div>
+        </div>
+      </header>
 
-      <Tabs orientation="vertical" value={activeTab} onValueChange={selectSection} className="grid gap-6 xl:grid-cols-[224px_minmax(0,1fr)] xl:items-start">
-        <div className="rounded-lg border bg-card p-3 md:hidden">
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            {t('configGeral.page.sectionPicker')}
-          </label>
+      <Tabs orientation="vertical" value={activeTab} onValueChange={selectSection} className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
+        <div className="xl:hidden">
           <Select value={activeTab} onValueChange={selectSection}>
-            <SelectTrigger className="w-full" aria-label={t('configGeral.page.sectionPicker')}>
+            <SelectTrigger className="w-full sm:max-w-xs" aria-label={t('configGeral.page.sectionPicker')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {allowedTabs.map((tab) => (
-                <SelectItem key={tab} value={tab}>{tabLabels[tab]}</SelectItem>
-              ))}
+              {secoes.map((s) => <SelectItem key={s.id} value={s.id}>{s.titulo}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
-        <aside className="hidden gap-3 md:grid md:grid-cols-2 xl:sticky xl:top-0 xl:grid-cols-1" aria-label={t('configGeral.page.headerTitle')}>
-          <section aria-labelledby="config-company-tabs" className="min-w-0 rounded-lg border bg-card p-3">
-            <p id="config-company-tabs" className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t('configGeral.page.groupCompany')}
-            </p>
-            <TabsList showIndicator={false} className="grid h-auto w-full grid-cols-2 gap-1 overflow-visible border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
-              <TabsTrigger className={navTriggerClass} value="usuarios"><IconUsers />{t('configGeral.page.tabUsuarios')}</TabsTrigger>
-              {isAdmin && <TabsTrigger className={navTriggerClass} value="organizacao"><IconOrg />{t('configGeral.page.tabOrganizacao')}</TabsTrigger>}
-              {isAdmin && <TabsTrigger className={navTriggerClass} value="integracoes"><IconPlug />{t('configGeral.page.tabIntegracoes')}</TabsTrigger>}
-              {isAdmin && <TabsTrigger className={navTriggerClass} value="denuncia"><IconMessage />{t('configGeral.page.tabDenuncia')}</TabsTrigger>}
-              {isAdmin && <TabsTrigger className={navTriggerClass} value="trust-center"><IconGlobe />{t('trustCenter.tab')}</TabsTrigger>}
-              <TabsTrigger className={navTriggerClass} value="assinatura"><IconCard />{t('configGeral.page.tabAssinatura')}</TabsTrigger>
-            </TabsList>
-          </section>
-
-          {isSuperAdmin && (
-            <section aria-labelledby="config-platform-tabs" className="min-w-0 rounded-lg border bg-muted/20 p-3">
-              <p id="config-platform-tabs" className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('configGeral.page.groupPlatform')}
-              </p>
-              <TabsList showIndicator={false} className="grid h-auto w-full grid-cols-2 gap-1 overflow-visible border-0 bg-transparent p-0 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-1">
-                <TabsTrigger className={navTriggerClass} value="empresas"><IconOrg />{t('configGeral.page.tabEmpresas')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="planos"><IconPackage />{t('configGeral.page.tabPlanos')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="financeiro-ia"><IconMoney />{t('configGeral.page.tabFinanceiroIA')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="novidades"><IconMegaphone />{t('configGeral.page.tabNovidades')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="noticias"><IconFileText />{t('configGeral.page.tabNoticias')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="traducoes"><IconGlobe />{t('configGeral.page.tabTraducoes')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="blog"><IconBook />{t('configGeral.page.tabBlog')}</TabsTrigger>
-                <TabsTrigger className={navTriggerClass} value="solicitacoes-site"><IconMessage />{t('site.leads')}</TabsTrigger>
-              </TabsList>
-            </section>
-          )}
+        <aside className="hidden xl:block xl:sticky xl:top-0 space-y-5" aria-label={t('configGeral.page.headerTitle')}>
+          {grupos.map((g) => {
+            const lista = secoes.filter((s) => s.grupo === g);
+            if (!lista.length) return null;
+            return (
+              <section key={g}>
+                <p className="mb-1.5 px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(`configVisao.grupos.${g}`)}</p>
+                <TabsList showIndicator={false} className="grid h-auto w-full grid-cols-1 gap-0.5 overflow-visible border-0 bg-transparent p-0">
+                  {lista.map((s) => {
+                    const I = s.icon;
+                    return <TabsTrigger key={s.id} className={navTriggerClass} value={s.id}><I className="h-4 w-4" />{s.titulo}</TabsTrigger>;
+                  })}
+                </TabsList>
+              </section>
+            );
+          })}
         </aside>
 
         <div className="min-w-0">
@@ -153,17 +152,7 @@ const Configuracoes = () => {
 
         {isSuperAdmin && (
           <TabsContent value="planos">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconPackage className="h-5 w-5" />
-                  {t('configGeral.page.planosCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <GerenciamentoPlanos />
-              </CardContent>
-            </Card>
+            <GerenciamentoPlanos />
           </TabsContent>
         )}
 
@@ -183,17 +172,7 @@ const Configuracoes = () => {
 
         {isAdmin && (
           <TabsContent value="integracoes">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconPlug className="h-5 w-5" />
-                  {t('configGeral.page.integracoesCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <IntegrationHub />
-              </CardContent>
-            </Card>
+            <IntegrationHub />
           </TabsContent>
         )}
 
@@ -216,17 +195,7 @@ const Configuracoes = () => {
           <div className="space-y-6">
             <AssinaturaTab />
             {isSuperAdmin && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconBolt className="h-5 w-5" />
-                    {t('configGeral.page.creditosIACardTitle')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CreditosIAManager />
-                </CardContent>
-              </Card>
+              <CreditosIAManager />
             )}
           </div>
         </TabsContent>
@@ -237,62 +206,22 @@ const Configuracoes = () => {
         )}
         {isSuperAdmin && (
           <TabsContent value="novidades">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconMegaphone className="h-5 w-5" />
-                  {t('configGeral.page.novidadesCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <GerenciamentoChangelog />
-              </CardContent>
-            </Card>
+            <GerenciamentoChangelog />
           </TabsContent>
         )}
         {isSuperAdmin && (
           <TabsContent value="noticias">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconFileText className="h-5 w-5" />
-                  {t('configGeral.page.noticiasCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <NoticiasTab />
-              </CardContent>
-            </Card>
+            <NoticiasTab />
           </TabsContent>
         )}
         {isSuperAdmin && (
           <TabsContent value="traducoes">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconGlobe className="h-5 w-5" />
-                  {t('configGeral.page.traducoesCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TraducaoFrameworksTab />
-              </CardContent>
-            </Card>
+            <TraducaoFrameworksTab />
           </TabsContent>
         )}
         {isSuperAdmin && (
           <TabsContent value="blog">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconBook className="h-5 w-5" />
-                  {t('configGeral.page.blogCardTitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BlogManager />
-              </CardContent>
-            </Card>
+            <BlogManager />
           </TabsContent>
         )}
         </div>

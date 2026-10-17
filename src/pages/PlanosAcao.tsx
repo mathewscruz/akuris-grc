@@ -840,7 +840,7 @@ export default function PlanosAcao() {
                   // Só os planos próprios mudam de situação aqui; os itens
                   // espelhados de controles, auditorias e incidentes são
                   // geridos no módulo de origem.
-                  const elegiveis = filteredPlanos.filter((p: any) => selecionados.has(p.id) && (!p.modulo_origem || p.modulo_origem === 'planos_acao'));
+                  const elegiveis = filteredPlanos.filter((p: any) => selecionados.has(p.id) && !p._isExternal);
                   const ignorados = selecionados.size - elegiveis.length;
                   if (elegiveis.length === 0) {
                     toast.error(t('bulkActions.statusAppliedPartial', { done: 0, skipped: ignorados }));

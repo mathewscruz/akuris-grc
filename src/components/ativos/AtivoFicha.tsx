@@ -92,7 +92,7 @@ export const AtivoFicha: React.FC<Props> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos_ativos')
-        .select('risco_id, riscos!inner(id, codigo, nome, nivel_risco_inicial, severidade_efetiva, empresa_id)')
+        .select('risco_id, riscos!inner(id, codigo, nome, severidade_efetiva, empresa_id)')
         .eq('ativo_id', ativo!.id)
         .eq('riscos.empresa_id', empresaId!);
       if (error) throw error;
@@ -153,10 +153,10 @@ export const AtivoFicha: React.FC<Props> = ({
                   width={160}
                   height={160}
                   loading="lazy"
-                  className="h-40 w-40 rounded-2xl border object-cover"
+                  className="h-40 w-40 rounded-lg border object-cover"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border bg-muted/40">
+                <div className="flex h-24 w-24 items-center justify-center rounded-lg border bg-muted/40">
                   <Icone className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
@@ -170,7 +170,7 @@ export const AtivoFicha: React.FC<Props> = ({
                 {ativo.fornecedor && <Chip family="category">{ativo.fornecedor}</Chip>}
               </div>
               {origem && (
-                <div className="mt-1 flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] text-muted-foreground">
+                <div className="mt-1 flex items-center gap-1.5 rounded-md border px-2 py-1 text-micro text-muted-foreground">
                   <IconPlug className="h-3.5 w-3.5" />
                   <span>
                     {t('ativoFicha.sincronizado', { fonte: FONTES[origem] ?? origem })}
@@ -182,7 +182,7 @@ export const AtivoFicha: React.FC<Props> = ({
 
             <div className="rounded-lg border p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.etiquetas')}</span>
+                <span className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.etiquetas')}</span>
                 <button type="button" className="text-xs text-primary hover:underline" onClick={() => onEdit(ativo)}>{t('ativoFicha.editar')}</button>
               </div>
               {tags.length ? (
@@ -197,12 +197,12 @@ export const AtivoFicha: React.FC<Props> = ({
             </Button>
             {showQr && (
               <div className="flex justify-center rounded-lg border bg-background p-3">
-                <QRCodeCanvas value={`${window.location.origin}/ativos?ativo=${ativo.id}`} size={140} />
+                <QRCodeCanvas value={`${window.location.origin}/ativos?focus=${ativo.id}`} size={140} />
               </div>
             )}
 
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.acoes')}</span>
+              <span className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">{t('ativoFicha.acoes')}</span>
               <Button className="justify-start" onClick={() => onManutencao(ativo)}>
                 <IconSettings className="mr-2 h-4 w-4" />{t('ativoFicha.registrarManutencao')}
               </Button>
@@ -291,11 +291,11 @@ export const AtivoFicha: React.FC<Props> = ({
                   <ul className="divide-y overflow-hidden rounded-lg border bg-card">
                     {riscos.map((r: any) => (
                       <li key={r.id}>
-                        <button type="button" onClick={() => navigate(`/riscos?risco=${r.id}`)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
+                        <button type="button" onClick={() => navigate(`/riscos?risco=${r.id}`)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-accent">
                           <IconShieldAlert className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="font-mono text-xs text-muted-foreground">{r.codigo}</span>
                           <span className="flex-1 font-medium">{r.nome}</span>
-                          {r.severidade_efetiva && <StatusBadge {...resolveCriticidadeTone(r.severidade_efetiva)}>{r.nivel_risco_inicial ?? r.severidade_efetiva}</StatusBadge>}
+                          {r.severidade_efetiva && <StatusBadge {...resolveCriticidadeTone(r.severidade_efetiva)}>{r.severidade_efetiva}</StatusBadge>}
                         </button>
                       </li>
                     ))}

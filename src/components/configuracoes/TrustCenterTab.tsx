@@ -78,9 +78,9 @@ export function TrustCenterTab() {
             <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: normalizarSlug(e.target.value) })} />
           </div>
         </div>
-        <div className="space-y-2"><Label>{t('trustCenter.titulo')}</Label><Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} /></div>
-        <div className="space-y-2"><Label>{t('trustCenter.descricao')}</Label><Textarea rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
-        <div className="space-y-2"><Label>{t('trustCenter.contato')}</Label><Input type="email" value={form.contato_email} onChange={(e) => setForm({ ...form, contato_email: e.target.value })} /></div>
+        <div className="space-y-2"><Label htmlFor="tc-titulo">{t('trustCenter.titulo')}</Label><Input id="tc-titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} /></div>
+        <div className="space-y-2"><Label htmlFor="tc-descricao">{t('trustCenter.descricao')}</Label><Textarea id="tc-descricao" rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
+        <div className="space-y-2"><Label htmlFor="tc-contato">{t('trustCenter.contato')}</Label><Input id="tc-contato" type="email" value={form.contato_email} onChange={(e) => setForm({ ...form, contato_email: e.target.value })} /></div>
         <div className="space-y-2">
           <Label>{t('trustCenter.frameworks')}</Label>
           <div className="grid gap-2 sm:grid-cols-2">

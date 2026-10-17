@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ContratoDialogWizard } from '../ContratoDialogWizard';
 
 vi.mock('@/hooks/useEmpresaMoeda', () => ({ useEmpresaMoeda: () => ({ moeda: 'BRL' }), MOEDAS: ['BRL'], SIMBOLO_MOEDA: { BRL: 'R$' } }));
+vi.mock('@/components/AuthProvider', () => ({ useAuth: () => ({ user: { id: 'u1' }, profile: { empresa_id: 'e1' } }) }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   auth: { getUser: async () => ({ data: { user: null } }) },
   from: () => { const query = { select: () => query, eq: () => query, single: async () => ({ data: null }) }; return query; },

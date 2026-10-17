@@ -22,7 +22,7 @@ import {
   AKURIS_COLORS,
 } from '@/lib/pdf-utils';
 import { tGlobal } from '@/lib/i18n-global';
-import { dateFnsLocale } from '@/lib/date-utils';
+import { dateFnsLocale, parseDataLocal } from '@/lib/date-utils';
 
 export interface PacoteRequisito {
   codigo: string;
@@ -194,7 +194,7 @@ export async function exportPacoteAuditoriaPDF(params: PacoteAuditoriaParams) {
       const titulo = doc.splitTextToSize(plano.titulo, 80);
       doc.text(titulo[0], planoX.titulo, yPos);
       doc.text(plano.responsavel || '—', planoX.responsavel, yPos);
-      doc.text(plano.prazo ? format(new Date(plano.prazo), 'dd/MM/yyyy') : '—', planoX.prazo, yPos);
+      doc.text(plano.prazo ? format(parseDataLocal(String(plano.prazo).slice(0, 10)), 'dd/MM/yyyy') : '—', planoX.prazo, yPos);
       doc.text(formatLabel(plano.prioridade || ''), planoX.prioridade, yPos);
       yPos += 5.5;
       doc.setDrawColor(AKURIS_COLORS.border);

@@ -52,7 +52,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // Pílula escura: igual no tema claro e escuro
           toast: [
             "group toast relative w-[380px] max-w-[92vw]",
-            "!bg-foreground !text-background !border-0 !rounded-2xl",
+            "!bg-foreground !text-background !border-0 !rounded-lg",
             "shadow-[0_18px_40px_-16px_hsl(var(--foreground)/0.55)]",
             "!px-4 !py-3 overflow-hidden",
             "data-[state=open]:animate-toast-enter data-[state=closed]:animate-toast-exit motion-reduce:animate-none",

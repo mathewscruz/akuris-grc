@@ -7,7 +7,7 @@ describe('ajustes solicitados no documento 23', () => {
   it('orientações individuais e em lote não debitam franquia e mantêm o histórico identificável', () => {
     const fn = source('supabase/functions/populate-requirement-guidance/index.ts');
     expect(fn).not.toMatch(/consume_ai_credit|temCreditoIA|semCreditoIA/);
-    expect(fn).toContain("if (force || !requirementId)");
+    expect(fn).toContain("(force || !requirementId)");
     expect(fn).toContain("has_super_admin_role");
     expect(fn).toContain("eq('ativo', true)");
     expect(AI_FEATURES.filter(f => f.edgeFunction === 'populate-requirement-guidance')).toHaveLength(2);

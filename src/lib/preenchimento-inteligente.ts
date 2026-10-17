@@ -1,3 +1,4 @@
+import { formatarDiaParaDB } from '@/lib/date-utils';
 /**
  * Preenchimento inteligente (item 4 do plano "menos interações").
  *
@@ -34,9 +35,9 @@ export const DIAS_POR_PRIORIDADE: Record<string, number> = {
 export function sugerirPrazoPorPrioridade(prioridade: string, hoje: Date = new Date()): string | null {
   const dias = DIAS_POR_PRIORIDADE[normalizarTexto(prioridade)];
   if (!dias) return null;
-  const data = new Date(hoje);
+  const data = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   data.setDate(data.getDate() + dias);
-  return data.toISOString().slice(0, 10);
+  return formatarDiaParaDB(data);
 }
 
 /**

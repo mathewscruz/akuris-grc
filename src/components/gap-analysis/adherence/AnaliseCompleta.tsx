@@ -13,7 +13,7 @@ function realcar(texto: string) {
     }
     if (/^\(PO \d+\)$/.test(parte) || /^[A-Z]?\.?\d+(?:\.\d+)+$/.test(parte)) {
       return (
-        <span key={i} className="mx-0.5 inline-flex items-center rounded border border-border bg-muted px-1.5 py-px font-mono text-[11px] text-foreground align-[1px]">
+        <span key={i} className="mx-0.5 inline-flex items-center rounded border border-border bg-muted px-1.5 py-px font-mono text-micro text-foreground align-[1px]">
           {parte.replace(/[()]/g, '')}
         </span>
       );
@@ -43,10 +43,10 @@ export function AnaliseCompleta({ texto }: { texto: string }) {
     <div className="mx-auto max-w-[820px] space-y-4">
       <Card className="relative overflow-hidden border-l-[3px] border-l-primary p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">{k('fullSummary')}</p>
+          <p className="text-micro font-semibold uppercase tracking-wider text-primary">{k('fullSummary')}</p>
           <span className="text-xs text-muted-foreground">{minutos} {k('fullReading')}</span>
         </div>
-        <p className="text-[15px] leading-7 text-foreground">{realcar(resumo ?? '')}</p>
+        <p className="text-sm leading-7 text-foreground">{realcar(resumo ?? '')}</p>
       </Card>
 
       {meio.length > 0 && (
@@ -58,7 +58,7 @@ export function AnaliseCompleta({ texto }: { texto: string }) {
                   {i + 1}
                 </span>
                 <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-muted-foreground">
                     {k('fullSection')} {i + 1}
                   </p>
                   <p className="text-sm leading-7 text-muted-foreground">{realcar(p)}</p>
@@ -71,7 +71,7 @@ export function AnaliseCompleta({ texto }: { texto: string }) {
 
       {conclusao && (
         <Card className="bg-muted/40 p-6">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{k('fullConclusion')}</p>
+          <p className="mb-2 text-micro font-semibold uppercase tracking-wider text-muted-foreground">{k('fullConclusion')}</p>
           <p className="text-sm leading-7 text-foreground">{realcar(conclusao)}</p>
         </Card>
       )}

@@ -87,7 +87,7 @@ export function MobileBottomNav() {
               <div className="mt-4 space-y-4 pb-4">
                 {groupedSections.map((group) => (
                   <section key={group.title ?? 'outros'}>
-                    <p className="mb-2 px-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{group.title}</p>
+                    <p className="mb-2 px-1 text-micro font-semibold uppercase tracking-[0.08em] text-muted-foreground">{group.title}</p>
                     <div className="grid grid-cols-3 gap-3">
                       {group.items.map(item => (
                         <NavLink
