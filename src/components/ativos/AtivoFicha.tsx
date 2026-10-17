@@ -197,7 +197,7 @@ export const AtivoFicha: React.FC<Props> = ({
             </Button>
             {showQr && (
               <div className="flex justify-center rounded-lg border bg-background p-3">
-                <QRCodeCanvas value={`${window.location.origin}/ativos?ativo=${ativo.id}`} size={140} />
+                <QRCodeCanvas value={`${window.location.origin}/ativos?focus=${ativo.id}`} size={140} />
               </div>
             )}
 
