@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { useVisibleMotion } from '@/hooks/useVisibleMotion';
 
 /**
  * Chip Akuris — componente ÚNICO de pílula (Envio 9).
