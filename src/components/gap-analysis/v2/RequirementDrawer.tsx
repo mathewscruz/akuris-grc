@@ -336,9 +336,15 @@ export function RequirementDrawer({
   const OPCOES = ['conforme', 'parcial', 'nao_conforme', 'nao_aplicavel'] as const;
   const TOM: Record<string, string> = {
     conforme: 'bg-success text-success-foreground',
-    parcial: 'bg-primary text-primary-foreground',
+    parcial: 'bg-warning text-warning-foreground',
     nao_conforme: 'bg-destructive text-destructive-foreground',
     nao_aplicavel: 'bg-muted-foreground text-background',
+  };
+  const DOT: Record<string, string> = {
+    conforme: 'bg-success',
+    parcial: 'bg-warning',
+    nao_conforme: 'bg-destructive',
+    nao_aplicavel: 'bg-muted-foreground',
   };
 
   const prose = (txt: string) => (
