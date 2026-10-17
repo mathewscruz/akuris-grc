@@ -264,10 +264,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGener
         <div className="flex flex-wrap items-center gap-2 animate-in fade-in duration-500">
           <span className="mr-1 text-xs text-muted-foreground">{k('missingDocs')}</span>
           {suggested.map((s, i) => (
-            <button key={i} type="button" onClick={onAIGenerate} title={k('generateFor', { tema: s.label })}
-              className="rounded-full transition-opacity hover:opacity-80">
-              <Chip family="category">{k('missingChip', { tema: s.label, n: s.covers })}</Chip>
-            </button>
+            <Chip key={i} family="category">{k('missingChip', { tema: s.label, n: s.covers })}</Chip>
           ))}
         </div>
       )}
