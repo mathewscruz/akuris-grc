@@ -179,7 +179,7 @@ export function ConfiguracoesVisaoGeral({ empresaId, secoes, isAdmin, onOpen }: 
                       </div>
                     </div>
                     <div className="mt-auto flex items-center justify-between gap-2">
-                      {c ? <Chip family="state" tone={c.tone} className="ml-[52px]"><span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${c.tone === 'done' ? 'bg-success' : c.tone === 'attention' ? 'bg-warning' : c.tone === 'active' ? 'bg-primary' : 'bg-muted-foreground'}`} />{c.label}</Chip> : <span />}
+                      {c ? <Chip family="state" tone={c.tone} className="ml-[52px]">{c.label}</Chip> : <span />}
                       <IconArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden />
                     </div>
                   </button>
