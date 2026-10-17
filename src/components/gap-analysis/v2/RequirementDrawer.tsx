@@ -25,7 +25,7 @@ import { DateField } from '@/components/ui/date-field';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { IconExternal, IconFileText, IconLightbulb, IconClipboard, IconCheckCircle, IconPaperclip, IconSliders, IconSparkles, IconCalendar, IconUser, IconSave } from '@/components/icons';
+import { IconExternal, IconFileText, IconIdea, IconChecklist, IconSuccess, IconAttach, IconSettings, IconCalendar, IconPerson, IconSave } from '@/components/icons';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
@@ -396,7 +396,7 @@ export function RequirementDrawer({
                   {requirement.descricao && prose(requirement.descricao)}
                 </Bloco>
 
-                <Bloco icon={IconLightbulb} titulo={t('gapUi.drawer.comoCumprir')}>
+                <Bloco icon={IconIdea} titulo={t('gapUi.drawer.comoCumprir')}>
                   {orientacao.estado === 'gerando' && (
                     <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
@@ -425,7 +425,7 @@ export function RequirementDrawer({
                 </Bloco>
 
                 <Bloco
-                  icon={IconClipboard}
+                  icon={IconChecklist}
                   titulo={t('gapUi.drawer.expectedEvidence')}
                   right={esperadas > 0 ? <span className="text-xs text-muted-foreground tabular-nums">{t('gapUi.drawer.foundOf', { found: Math.min(encontradas, esperadas), expected: esperadas })}</span> : undefined}
                 >
@@ -436,7 +436,7 @@ export function RequirementDrawer({
                         return (
                           <li key={n} className="flex items-start gap-3 py-3.5">
                             {ok
-                              ? <IconCheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
+                              ? <IconSuccess className="h-5 w-5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
                               : <span className="h-5 w-5 rounded-full border-[1.5px] border-muted-foreground/60 shrink-0 mt-0.5" />}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground">{i.titulo}</p>
@@ -445,7 +445,7 @@ export function RequirementDrawer({
                                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
                                   {i.ligados.map((l) => (
                                     <a key={l.id} href={l.url || undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                                      <IconPaperclip className="h-3.5 w-3.5" strokeWidth={1.5} />{l.arquivo}
+                                      <IconAttach className="h-3.5 w-3.5" strokeWidth={1.5} />{l.arquivo}
                                     </a>
                                   ))}
                                 </div>
@@ -488,7 +488,7 @@ export function RequirementDrawer({
               <aside className="lg:overflow-y-auto px-6 py-5 space-y-6 border-t lg:border-t-0 border-border flex flex-col">
                 <section>
                   <div className="flex items-center gap-2.5 mb-3">
-                    <IconSliders className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
+                    <IconSettings className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
                     <h3 className="text-base font-semibold text-foreground">{t('gapUi.drawer.decision')}</h3>
                   </div>
                   <div role="radiogroup" aria-label={t('gapUi.drawer.decision')} className="grid grid-cols-2 sm:grid-cols-4 rounded-lg border border-border overflow-hidden">
@@ -514,7 +514,7 @@ export function RequirementDrawer({
 
                 <section className="rounded-xl border border-primary/30 bg-primary/10 p-4">
                   <div className="flex items-start gap-3">
-                    <IconSparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
+                    <IconIdea className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">
                         {sugestao
@@ -583,7 +583,7 @@ export function RequirementDrawer({
 
                 <section>
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <IconUser className="h-4 w-4" strokeWidth={1.5} />{t('gapUi.drawer.owner')}
+                    <IconPerson className="h-4 w-4" strokeWidth={1.5} />{t('gapUi.drawer.owner')}
                   </div>
                   <div className="mt-2">
                     <UserSelect
