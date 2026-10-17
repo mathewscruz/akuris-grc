@@ -8,3 +8,4 @@
 - Supplier tab counts use useSupplierCount rather than assessment-email counts; this keeps navigation aligned with the actual supplier list.
 - A Card nested in another Card loses its frame via global CSS (`data-slot="card"`; opt out with `data-keep-frame`); this keeps one rounded border per area.
 - Form drafts use useWizardDraft with keys scoped by empresa + user, and deletes use undoableAction (commit after the undo window); this keeps drafts tenant-isolated and deletions reversible.
+- Gap Analysis requirement review opens the shared split RequirementDrawer (read left / decide right) via RequirementDrawerProvider with a sequence for prev/next; the full RequirementDetailDialog stays reachable through ?req= for links and action plans, so one decision surface is primary.
