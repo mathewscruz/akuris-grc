@@ -338,9 +338,6 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenuItem disabled={!concluida} onClick={() => onViewResult(assessment)}>
-                        <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.viewDetails')}
-                      </DropdownMenuItem>
                       <DropdownMenuItem disabled={!assessment.metadados_analise?.arquivo_storage} onClick={() => abrirDocumentoAnalisado(assessment, t)}>
                         <IconFileCheck className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.openDocument')}
                       </DropdownMenuItem>
