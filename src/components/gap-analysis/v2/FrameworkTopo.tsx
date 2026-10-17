@@ -43,7 +43,7 @@ export function FrameworkTopo({ framework, descricao, score, etapa, onEtapa, con
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{descricao}</p>
             {tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {tags.map((tg) => <span key={tg} className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-foreground/80">{formatStatus(tg)}</span>)}
+                {tags.map((tg) => <span key={tg} className="rounded-md bg-muted px-2.5 py-0.5 text-xs text-foreground/80">{formatStatus(tg)}</span>)}
               </div>
             )}
           </div>
