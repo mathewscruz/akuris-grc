@@ -302,10 +302,10 @@ export function RequirementDrawer({
     queryFn: async () => {
       const { data } = await supabase
         .from('gap_analysis_frameworks')
-        .select('nome, versao, logo_url')
+        .select('nome, versao')
         .eq('id', requirement!.framework_id)
         .maybeSingle();
-      return data as { nome: string; versao?: string; logo_url?: string | null } | null;
+      return data as { nome: string; versao?: string } | null;
     },
   });
 
@@ -366,7 +366,7 @@ export function RequirementDrawer({
           <>
             <header className="border-b border-border px-6 py-4 pr-14 shrink-0">
               <div className="flex items-center gap-3 flex-wrap">
-                {fw && <FrameworkBadge name={fw.nome} versao={fw.versao} logoUrl={fw.logo_url} size="sm" />}
+                {fw && <FrameworkBadge name={fw.nome} versao={fw.versao} size="sm" />}
                 {fw && <span className="text-lg font-semibold text-foreground">{fw.nome}</span>}
                 {requirement.codigo && (
                   <span className="font-mono text-xs tabular-nums rounded-md bg-muted px-2 py-1 text-foreground/80">{requirement.codigo}</span>
@@ -397,6 +397,7 @@ export function RequirementDrawer({
                 </Bloco>
 
                 <Bloco icon={IconIdea} titulo={t('gapUi.drawer.comoCumprir')}>
+                  <p className="text-micro text-muted-foreground mb-2">{t('gapUi.detail.guidancePlatformIncluded')}</p>
                   {orientacao.estado === 'gerando' && (
                     <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
