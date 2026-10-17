@@ -20,7 +20,7 @@ export function undoableAction({
   onRestore?: () => void;
   onCommit: () => Promise<unknown> | unknown;
 }): Promise<boolean> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let settled = false;
     onHide?.();
     const timer = setTimeout(async () => {
@@ -31,7 +31,7 @@ export function undoableAction({
         resolve(true);
       } catch (e) {
         onRestore?.();
-        throw e;
+        reject(e);
       }
     }, durationMs);
     toast(message, {
