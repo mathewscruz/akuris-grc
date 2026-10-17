@@ -2377,3 +2377,21 @@ input:-webkit-autofill:focus {
     body:has([role="dialog"][data-state="open"].akuris-sheet) main { transform: none; filter: none; }
   }
 }
+
+/* Menos camadas: um cartão dentro de outro perde a própria moldura.
+   Fica uma única borda arredondada por área; dentro dela, só linhas finas. */
+@layer components {
+  [data-slot="card"] [data-slot="card"]:not([data-keep-frame]) {
+    border-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  [data-slot="card"] [data-slot="card"]:not([data-keep-frame]) + [data-slot="card"]:not([data-keep-frame]) {
+    border-top: 1px solid hsl(var(--border));
+  }
+  [data-slot="card"] .grid > [data-slot="card"]:not([data-keep-frame]) { border-top-width: 0; }
+}
+
+/* Item recém-salvo: destaque breve na lista. */
+[data-just-saved="true"] { animation: akuris-row-new 900ms var(--motion-ease) both; }

@@ -96,6 +96,12 @@ export const pt = {
     showDetails: 'Ver detalhes',
     hideDetails: 'Ocultar detalhes',
     undo: 'Desfazer',
+    contractDeleted: 'Contrato excluído',
+    contractDeleteError: 'Erro ao excluir contrato',
+    draftSaved: 'Rascunho guardado',
+    draftFound: 'Há um rascunho não salvo deste formulário.',
+    draftRestore: 'Recuperar rascunho',
+    draftDiscard: 'Descartar',
   },
   validation: {
     required: 'Campo obrigatório',

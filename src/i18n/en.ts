@@ -93,6 +93,12 @@ export const en = {
     showDetails: 'View details',
     hideDetails: 'Hide details',
     undo: 'Undo',
+    contractDeleted: 'Contract deleted',
+    contractDeleteError: 'Error deleting contract',
+    draftSaved: 'Draft saved',
+    draftFound: 'There is an unsaved draft of this form.',
+    draftRestore: 'Restore draft',
+    draftDiscard: 'Discard',
   },
   validation: {
     required: 'Required field',

@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { undoableAction } from '@/lib/undoable-action';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatStatus } from '@/lib/text-utils';
@@ -263,30 +264,22 @@ export default function Incidentes() {
   };
 
   const confirmDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('incidentes')
-        .delete()
-        .eq('id', deleteConfirm.incidenteId);
-
-      if (error) throw error;
-
-      toast({
-        title: t('fin.comum.sucesso'),
-        description: t('fin.incidentes.excluido'),
-      });
-
-      invalidateIncidentes();
-      setDeleteConfirm({ open: false, incidenteId: '' });
-    } catch (error: any) {
-      logger.error(t('fin.incidentes.erroExcluir'), { error: error instanceof Error ? error.message : String(error) });
-      toast({
-        title: t('fin.comum.erro'),
-        description: error.message || t('fin.incidentes.erroExcluir'),
-        variant: "destructive",
-      });
-    }
+    const targetId = deleteConfirm.incidenteId;
+    setDeleteConfirm({ open: false, incidenteId: '' });
+    undoableAction({
+      message: t('fin.incidentes.excluido'),
+      undoLabel: t('common.undo'),
+      onCommit: async () => {
+        const { error } = await supabase.from('incidentes').delete().eq('id', targetId).eq('empresa_id', empresaId!);
+        if (error) throw error;
+        invalidateIncidentes();
+      },
+    }).catch((error) => {
+      logger.error('Erro ao excluir', { error: error instanceof Error ? error.message : String(error) });
+      toast({ title: t('fin.comum.erro'), description: t('fin.incidentes.erroExcluir'), variant: 'destructive' });
+    });
   };
+
 
   const getStatusIcon = (status: string) => {
     const icons = {

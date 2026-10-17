@@ -15,3 +15,7 @@
 - [ ] Conferência visual de todos os formulários/módulos em claro, escuro e celular — depende da sessão autenticada
 
 Nota: Planos de Ação não guarda progresso percentual nem subtarefas; não foi inventada uma barra de 50% por status.
+- [x] Menos camadas: cartão dentro de cartão sem moldura (global)
+- [x] "Desfazer" ao excluir Incidentes e Contratos (Planos já tinha); rascunho isolado por empresa/usuário; rascunho em Contratos
+- [ ] Rascunho automático em Riscos, Controles e ROPA
+- [ ] Varredura de estados vazios sem botão de próxima ação; destaque do item recém-salvo nas listas
