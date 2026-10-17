@@ -307,7 +307,7 @@ export function RequirementDrawer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-6xl p-0 gap-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[88vh] bg-popover">
+      <DialogContent className="w-full sm:max-w-6xl p-0 sm:p-0 gap-0 overflow-hidden flex flex-col h-[100dvh] sm:h-[88vh] bg-popover">
         <DialogTitle className="sr-only">{t('gapUi.drawer.title')}</DialogTitle>
         <DialogDescription className="sr-only">{t('gapUi.drawer.whatStandardRequires')}</DialogDescription>
 

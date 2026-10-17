@@ -92,7 +92,7 @@ export const AtivoFicha: React.FC<Props> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos_ativos')
-        .select('risco_id, riscos!inner(id, codigo, nome, nivel_risco_inicial, severidade_efetiva, empresa_id)')
+        .select('risco_id, riscos!inner(id, codigo, nome, severidade_efetiva, empresa_id)')
         .eq('ativo_id', ativo!.id)
         .eq('riscos.empresa_id', empresaId!);
       if (error) throw error;
@@ -295,7 +295,7 @@ export const AtivoFicha: React.FC<Props> = ({
                           <IconShieldAlert className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="font-mono text-xs text-muted-foreground">{r.codigo}</span>
                           <span className="flex-1 font-medium">{r.nome}</span>
-                          {r.severidade_efetiva && <StatusBadge {...resolveCriticidadeTone(r.severidade_efetiva)}>{r.nivel_risco_inicial ?? r.severidade_efetiva}</StatusBadge>}
+                          {r.severidade_efetiva && <StatusBadge {...resolveCriticidadeTone(r.severidade_efetiva)}>{r.severidade_efetiva}</StatusBadge>}
                         </button>
                       </li>
                     ))}

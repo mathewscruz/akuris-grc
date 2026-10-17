@@ -165,7 +165,6 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
         if (rascunho && (rascunho.nome || rascunho.objeto || rascunho.numero_contrato)) {
           setFormData({ ...rascunho, moeda: rascunho.moeda || moedaDaEmpresa });
           sonnerToast(t('common.draftFound'), {
-            duration: 8000,
             action: { label: t('common.draftDiscard'), onClick: () => { clearDraft(); resetForm({ ...JSON.parse(initialForm.current) }); } },
           });
         }
