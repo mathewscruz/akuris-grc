@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { calcularScoreFramework, type RequisitoParaScore } from '@/lib/gap-score';
 import { categorySearchParams } from '@/lib/gap-category-navigation';
-import { useMarcoCertificacao } from '@/hooks/useMarcoCertificacao';
 import { fasesDe, chaveDoFramework } from '@/lib/gap-fases';
 import { escopoDe } from '@/lib/gap-escopo';
 import { provasPorRequisito } from '@/lib/gap-provas';
@@ -34,7 +33,6 @@ import {
   FrameworkHeader,
   FrameworkJourneyNextAction,
   RequirementDrawerProvider,
-  CommandPalette,
   DocumentsHero,
   RemediationTabV2,
   SoATabV2,
@@ -399,7 +397,6 @@ function GapAnalysisFrameworkDetailInner() {
     naoAvaliado: categoryData.reduce((s, c) => s + c.nao_avaliado, 0),
   }), [categoryData]);
 
-  const { data: marco } = useMarcoCertificacao(empresaId ?? undefined, frameworkId);
 
   /*
     O assistente de escopo aparece antes da lista, e só enquanto faz sentido.
@@ -458,10 +455,6 @@ function GapAnalysisFrameworkDetailInner() {
     loadCategoryData();
   }, [loadCategoryData]);
 
-  const abrirEscopo = useCallback(() => {
-    if (temAssistente) setEscopoAberto(true);
-    else setActiveTab('soa');
-  }, [temAssistente]);
 
   // O score também determina se a primeira experiência deve abrir o onboarding.
   // Sem aguardar essa leitura, o utilizador novo vê por alguns instantes a tela
@@ -482,6 +475,19 @@ function GapAnalysisFrameworkDetailInner() {
     <ErrorBoundary>
       <div className="space-y-6">
         {scoreError && <QueryError onRetry={() => setScoreRefreshKey(key => key + 1)} />}
+        {/* Montado fora do ramo: o onboarding pode abri-lo, e o dialogo
+            precisa de existir nos dois estados. */}
+        {empresaId && (
+          <AssistenteDeEscopo
+            open={escopoAberto}
+            onOpenChange={setEscopoAberto}
+            frameworkId={frameworkId!}
+            frameworkName={framework.nome}
+            empresaId={empresaId}
+            totalRequisitos={catalogRequirements}
+            onAplicado={() => { setJaDeclarouEscopo(true); handleScoreChange(); }}
+          />
+        )}
         <FrameworkTopo
           framework={framework}
           descricao={fwDescricao(framework) || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
@@ -594,19 +600,6 @@ function GapAnalysisFrameworkDetailInner() {
               />
             )}
 
-            {/* Montado fora do ramo: o onboarding pode abri-lo, e o dialogo
-                precisa de existir nos dois estados. */}
-            {empresaId && (
-              <AssistenteDeEscopo
-                open={escopoAberto}
-                onOpenChange={setEscopoAberto}
-                frameworkId={frameworkId!}
-                frameworkName={framework.nome}
-                empresaId={empresaId}
-                totalRequisitos={catalogRequirements}
-                onAplicado={() => { setJaDeclarouEscopo(true); handleScoreChange(); }}
-              />
-            )}
 
             {showOnboarding ? (
               <FrameworkOnboarding
