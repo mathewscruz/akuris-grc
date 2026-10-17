@@ -1,6 +1,6 @@
 /**
  * Topo do framework (modelo aprovado): selo + nome + descrição + etiquetas |
- * anel de conformidade geral | etapas Diagnosticar → Adequar → Comprovar,
+ * anel de conformidade geral | etapas Escopo → Diagnosticar → Adequar → Comprovar,
  * que também servem de navegação entre as abas.
  */
 import type { ReactNode } from 'react';
@@ -10,8 +10,9 @@ import { cn } from '@/lib/utils';
 import { IconCheck } from '@/components/icons';
 import { formatStatus } from '@/lib/text-utils';
 
-type Etapa = 'diagnostico' | 'adequacao' | 'evidencias';
+type Etapa = 'soa' | 'diagnostico' | 'adequacao' | 'evidencias';
 const ETAPAS: { id: Etapa; titulo: string; desc: string }[] = [
+  { id: 'soa', titulo: 'gapUi.topo.scope', desc: 'gapUi.topo.scopeDesc' },
   { id: 'diagnostico', titulo: 'gapAnalysis.detail.tabs.diagnosis', desc: 'gapUi.topo.diagnoseDesc' },
   { id: 'adequacao', titulo: 'gapAnalysis.detail.tabs.adaptation', desc: 'gapUi.topo.adaptDesc' },
   { id: 'evidencias', titulo: 'gapAnalysis.detail.tabs.evidence', desc: 'gapUi.topo.proveDesc' },
@@ -23,7 +24,7 @@ export function FrameworkTopo({ framework, descricao, score, etapa, onEtapa, con
   score: number | null | undefined;
   etapa: string;
   onEtapa: (e: string) => void;
-  concluidas: Record<Etapa, boolean>;
+  concluidas: Partial<Record<Etapa, boolean>>;
   acoes?: ReactNode;
 }) {
   const { t } = useLanguage();
@@ -64,7 +65,7 @@ export function FrameworkTopo({ framework, descricao, score, etapa, onEtapa, con
           </div>
         </div>
 
-        <ol className="grid grid-cols-3 gap-2" aria-label={t('gapUi.topo.etapas')}>
+        <ol className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-2" aria-label={t('gapUi.topo.etapas')}>
           {ETAPAS.map((e, i) => {
             const ativa = e.id === etapa;
             const feita = concluidas[e.id] && !ativa;
