@@ -20,6 +20,7 @@ import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { undoableAction } from '@/lib/undoable-action';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -254,30 +255,22 @@ export default function Contratos() {
   };
 
   const confirmDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('contratos')
-        .delete()
-        .eq('id', deleteConfirm.id);
-
-      if (error) throw error;
-
-      toast({
-        title: t('fin.comum.sucesso'),
-        description: `Contrato excluído com sucesso`,
-      });
-
-      invalidateData();
-      setDeleteConfirm({ open: false, id: '' });
-    } catch (error) {
+    const targetId = deleteConfirm.id;
+    setDeleteConfirm({ open: false, id: '' });
+    undoableAction({
+      message: t('contratos.deleted'),
+      undoLabel: t('common.undo'),
+      onCommit: async () => {
+        const { error } = await supabase.from('contratos').delete().eq('id', targetId).eq('empresa_id', empresaId!);
+        if (error) throw error;
+        invalidateData();
+      },
+    }).catch((error) => {
       logger.error('Erro ao excluir', { error: error instanceof Error ? error.message : String(error) });
-      toast({
-        title: t('fin.comum.erro'),
-        description: `Erro ao excluir contrato`,
-        variant: "destructive",
-      });
-    }
+      toast({ title: t('fin.comum.erro'), description: t('contratos.deleteError'), variant: 'destructive' });
+    });
   };
+
 
   /** Estado derivado (camada única de métricas): vencido não fica "ativo". */
   const getContratoStatusBadge = (contrato: { status: string; data_fim: string | null }) => {
