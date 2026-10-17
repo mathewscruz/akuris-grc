@@ -24,6 +24,7 @@ import { gapAnalysis } from "./gap-analysis";
 import { gapAdherence } from "./gap-adherence";
 import { gapV2 } from "./gap-v2";
 import { gapUi } from "./gap-ui";
+import { configVisao } from "./config-visao";
 import { gapExports } from "./gap-exports";
 import { gapFases } from "./gap-fases";
 import { gapProntidao } from "./gap-prontidao";
@@ -151,6 +152,7 @@ const modules: Record<string, ModuleDict> = {
   gapAdherence,
   gapV2,
   gapUi,
+  configVisao,
   gapExports,
   gapFases,
   gapProntidao,
