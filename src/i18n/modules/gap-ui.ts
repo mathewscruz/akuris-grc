@@ -255,7 +255,9 @@ export const gapUi = {
         selectedCount: '{count} selecionados',
       },
       sidebar: { count: '{n} categorias', search: 'Buscar categoria', all: 'Todas as categorias' },
-      drawer: {
+      cat: { requisito: 'Requisito', status: 'Status', responsavel: 'Responsável', evidencias: 'Evidências', semResponsavel: 'Sem responsável', verTabelaCompleta: 'Ver tabela completa (edição em lote)', verPorCategoria: 'Ver por categoria' },
+    topo: { overall: 'Conformidade geral', etapas: 'Etapas', diagnoseDesc: 'Entenda seu estado atual', adaptDesc: 'Implemente os controles', proveDesc: 'Comprove e mantenha evidências' },
+    drawer: {
         requisito: 'Requisito',
         showFullGuidance: 'Ver orientação completa',
         hideFullGuidance: 'Ocultar orientação completa',
@@ -583,7 +585,9 @@ export const gapUi = {
         selectedCount: '{count} selected',
       },
       sidebar: { count: '{n} categories', search: 'Search category', all: 'All categories' },
-      drawer: {
+      cat: { requisito: 'Requirement', status: 'Status', responsavel: 'Owner', evidencias: 'Evidence', semResponsavel: 'No owner', verTabelaCompleta: 'View full table (bulk edit)', verPorCategoria: 'View by category' },
+    topo: { overall: 'Overall compliance', etapas: 'Steps', diagnoseDesc: 'Understand your current state', adaptDesc: 'Implement controls', proveDesc: 'Show and maintain evidence' },
+    drawer: {
         requisito: 'Requirement',
         showFullGuidance: 'Show full guidance',
         hideFullGuidance: 'Hide full guidance',

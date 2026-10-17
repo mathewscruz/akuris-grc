@@ -15,7 +15,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { RequisitosPorCategoria } from '@/components/gap-analysis/v2/RequisitosPorCategoria';
 import { FrameworkTopo } from '@/components/gap-analysis/v2/FrameworkTopo';
-import { useRequirementDrawer } from '@/components/gap-analysis/v2/RequirementDrawerProvider';
+import { useOptionalRequirementDrawer } from '@/components/gap-analysis/v2/RequirementDrawerProvider';
 import { CategorySidebar } from '@/components/gap-analysis/v2/CategorySidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -97,7 +97,7 @@ function GapAnalysisFrameworkDetailInner() {
   const [docDroppedFile, setDocDroppedFile] = useState<File | null>(null);
   const [marcoDialogAberto, setMarcoDialogAberto] = useState(false);
   const [visaoTabela, setVisaoTabela] = useState(false);
-  const reqDrawer = useRequirementDrawer();
+  const reqDrawer = useOptionalRequirementDrawer();
 
   const abrirRequisitoCompleto = useCallback((requirementId: string) => {
     const next = new URLSearchParams(searchParams);
@@ -658,7 +658,7 @@ function GapAnalysisFrameworkDetailInner() {
                         empresaId={empresaId}
                         refreshKey={scoreRefreshKey}
                         categoriaAtiva={activeCategoryFilter}
-                        onAbrir={(id, sequence) => reqDrawer.openRequirement({ requirementId: id, empresaId, sequence, onSaved: handleScoreChange })}
+                        onAbrir={(id, sequence) => reqDrawer ? reqDrawer.openRequirement({ requirementId: id, empresaId, sequence, onSaved: handleScoreChange }) : abrirRequisitoCompleto(id)}
                       />
                     </div>
                   )}

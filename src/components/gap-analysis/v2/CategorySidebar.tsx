@@ -66,9 +66,9 @@ export function CategorySidebar({ categories, active, onSelect, footer }: {
       </header>
       <nav className="flex-1 min-h-0 overflow-y-auto p-2 space-y-0.5">
         <Item id={undefined} label={t('gapUi.sidebar.all')} done={avaliados} of={total} score={total ? Math.round((avaliados / total) * 100) : 0} />
-        {lista.map((c) => {
+        {lista.map((c, n) => {
           const done = c.conforme + c.parcial + c.nao_conforme;
-          return <Item key={c.categoria} id={c.filterCategory ?? c.categoria} label={c.categoria} done={done} of={c.total - c.nao_aplicavel} score={done ? c.score : null} />;
+          return <Item key={c.categoria} id={c.filterCategory ?? c.categoria} label={`${n + 1}. ${c.categoria}`} done={done} of={c.total - c.nao_aplicavel} score={done ? c.score : null} />;
         })}
       </nav>
       {footer && <div className="border-t border-border p-3">{footer}</div>}
