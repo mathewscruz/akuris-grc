@@ -104,7 +104,7 @@ export function ComplianceContextPanel(
                     <p className="line-clamp-2 text-sm text-muted-foreground" title={explanation}>{explanation}</p>
                     {sources.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        {t("evidenceIntelligence.sources")}:{" "}
+                        {t("evidenceIntelligence.sourcesLabel")}:{" "}
                         {sources.map((s, i) => (
                           <span key={i}>
                             {i > 0 && ", "}
