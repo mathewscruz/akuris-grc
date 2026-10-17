@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { MODELOS } from '../_shared/modelos.ts';
-import { guidanceQuestions, implementationSection, parseGeneratedGuidance } from '../_shared/requirement-guidance-content.ts';
+import { guidanceQuestions, guidanceStyleOk, implementationSection, parseGeneratedGuidance } from '../_shared/requirement-guidance-content.ts';
 import { authorizedScheduledJob } from '../_shared/scheduled-job.ts';
 import { getOrCreateGuidance, GuidanceError, type GuidanceResult } from './guidance-service.ts';
 
@@ -10,6 +10,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 type Locale = "pt" | "en";
+const PASSOS: Record<Locale, string> = { pt: 'aça nesta ordem', en: 'do this in order' };
+const EVIDENCIA_EM_LISTA = /(^|\n)\s*([-*•]|\d+[.)])\s/;
+// Referenced so the style contract stays shared with the generator parser.
+void guidanceStyleOk;
 const COLS = {
   pt: { orientacao: "orientacao_implementacao", evidencias: "exemplos_evidencias", perguntas: "perguntas_diagnostico" },
   en: { orientacao: "orientacao_implementacao_en", evidencias: "exemplos_evidencias_en", perguntas: "perguntas_diagnostico_en" },
@@ -52,6 +56,8 @@ Deno.serve(async (req) => {
     if (scheduled) {
       const traduzidos = await traduzirCatalogo(supabase, Deno.env.get('LOVABLE_API_KEY'));
       if (traduzidos > 0) return json({ translated: traduzidos });
+      const ampliadas = await ampliarDescricoes(supabase, Deno.env.get('LOVABLE_API_KEY'));
+      if (ampliadas > 0) return json({ descriptions_expanded: ampliadas });
     }
     const body = scheduled ? await scheduledBody(supabase) : await req.json().catch(() => null);
     if (scheduled && !body) return json({ processed: 0, remaining: 0, idle: true });
@@ -62,7 +68,9 @@ Deno.serve(async (req) => {
     const rawBatch = Number(body.batch_size);
     const batchSize = Number.isFinite(rawBatch) ? Math.min(Math.max(Math.trunc(rawBatch), 1), 25) : 10;
     const locale: Locale = body.locale === 'en' ? 'en' : 'pt';
-    const force = body.force === true;
+    // Platform cron rewrites legacy catalogue guidance (greetings, emojis, no ordered steps).
+    const legacy = scheduled && body.legacy === true;
+    const force = body.force === true || legacy;
     // Lets the batch caller step past items that failed or are mid-generation,
     // instead of re-reading the same first rows forever.
     const rawOffset = Number(body.offset);
@@ -114,7 +122,12 @@ Deno.serve(async (req) => {
           // Repair missing pieces without rewriting valid catalogue content or
           // changing question order beneath evaluations already answered by users.
           const currentRow = await readRow(row.id!);
-          if (!force) {
+          if (legacy) {
+            const oldQ = currentRow[cols.perguntas] || null;
+            const oldEv = currentRow[cols.evidencias] || '';
+            if (guidanceQuestions(oldQ).length) guidance = { ...guidance, perguntas_diagnostico: oldQ };
+            if (EVIDENCIA_EM_LISTA.test(oldEv)) guidance = { ...guidance, exemplos_evidencias: oldEv };
+          } else if (!force) {
             const previous = {
               orientacao_implementacao: currentRow[cols.orientacao] || '',
               exemplos_evidencias: currentRow[cols.evidencias] || '',
@@ -143,8 +156,10 @@ Deno.serve(async (req) => {
     }
 
     // Missing guidance only; both null and legacy blank values need preparation.
-    let query = supabase.from('gap_analysis_requirements').select(selectCols)
-      .or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`).order('ordem').order('id').range(offset, offset + batchSize - 1);
+    let query = supabase.from('gap_analysis_requirements').select(selectCols).order('ordem').order('id');
+    query = legacy
+      ? query.not(cols.orientacao, 'ilike', `%${PASSOS[locale]}%`).not(cols.orientacao, 'is', null).neq(cols.orientacao, '').range(0, batchSize - 1)
+      : query.or(`${cols.orientacao}.is.null,${cols.orientacao}.eq.`).range(offset, offset + batchSize - 1);
     if (frameworkId) query = query.eq('framework_id', frameworkId);
     const { data: requirements, error: fetchError } = await query;
     if (fetchError) throw new GuidanceError('guidance_read_failed');
@@ -373,6 +388,12 @@ async function scheduledBody(supabase: any): Promise<Record<string, unknown> | n
       .or(`${col}.is.null,${col}.eq.`);
     if ((count ?? 0) > 0) return { locale, batch_size: 8, offset: Math.floor(Math.random() * Math.min(count, 40)) };
   }
+  for (const locale of ['pt', 'en'] as const) {
+    const col = COLS[locale].orientacao;
+    const { count } = await supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
+      .not(col, 'ilike', `%${PASSOS[locale]}%`).not(col, 'is', null).neq(col, '');
+    if ((count ?? 0) > 0) return { locale, batch_size: 6, legacy: true };
+  }
   return null;
 }
 
@@ -420,5 +441,56 @@ async function traduzirCatalogo(supabase: any, apiKey: string | undefined): Prom
     if (!error) n++;
   }
   console.log('traducao gravados', n, 'de', rows.length);
+  return n;
+}
+
+/** Descrição curta (≈ só o título) não diz ao usuário o que a norma exige: amplia até 40 por vez. */
+// deno-lint-ignore no-explicit-any
+async function ampliarDescricoes(supabase: any, apiKey: string | undefined): Promise<number> {
+  if (!apiKey) return 0;
+  const { data: globais } = await supabase.from('gap_analysis_frameworks').select('id, nome').is('empresa_id', null);
+  const nomes = new Map((globais ?? []).map((f: any) => [f.id, f.nome]));
+  if (!nomes.size) return 0;
+  const curtas: any[] = [];
+  for (let from = 0; from < 4000 && curtas.length < 40; from += 1000) {
+    const { data, error } = await supabase.from('gap_analysis_requirements')
+      .select('id, framework_id, codigo, titulo, descricao, descricao_en')
+      .in('framework_id', [...nomes.keys()]).order('id').range(from, from + 999);
+    if (error || !data?.length) break;
+    for (const r of data) {
+      const d = (r.descricao || '').trim();
+      if (d.length < 40 || d.toLowerCase() === (r.titulo || '').trim().toLowerCase()) curtas.push(r);
+      if (curtas.length >= 40) break;
+    }
+    if (data.length < 1000) break;
+  }
+  if (!curtas.length) return 0;
+  const entrada = curtas.map((r) => ({ id: r.id, framework: nomes.get(r.framework_id), codigo: r.codigo, titulo: r.titulo, descricao_atual: r.descricao }));
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: MODELOS.PADRAO,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: 'You are a senior GRC specialist. For each framework requirement, write what the organization must do, in your own words (never copy the official text verbatim). descricao: Brazilian Portuguese, 1-2 sentences, 120-320 characters, starting with "A organização deve". descricao_en: same meaning in English, starting with "The organization must". No greetings, emojis, markdown or requirement codes. Return JSON {"items":[{"id","descricao","descricao_en"}]} with one item per input id.' },
+        { role: 'user', content: JSON.stringify(entrada) },
+      ],
+    }),
+  });
+  if (!resp.ok) { console.error('descricoes falhou', resp.status); return 0; }
+  const out = await resp.json();
+  let itens: any[] = [];
+  try { itens = JSON.parse(out.choices?.[0]?.message?.content ?? '{}').items ?? []; } catch { return 0; }
+  const ids = new Set(curtas.map((r) => r.id));
+  let n = 0;
+  for (const it of itens) {
+    const pt = typeof it?.descricao === 'string' ? it.descricao.trim() : '';
+    const en = typeof it?.descricao_en === 'string' ? it.descricao_en.trim() : '';
+    if (!ids.has(it?.id) || pt.length < 40 || en.length < 40) continue;
+    const { error } = await supabase.from('gap_analysis_requirements').update({ descricao: pt, descricao_en: en }).eq('id', it.id);
+    if (!error) n++;
+  }
+  console.log('descricoes ampliadas', n, 'de', curtas.length);
   return n;
 }

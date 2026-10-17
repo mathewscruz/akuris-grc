@@ -8,6 +8,7 @@
  *
  * Acionado via RequirementDrawerProvider em qualquer ponto da app.
  */
+import { parseOrientacao } from '@/lib/gap/parse-orientacao';
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -315,10 +316,8 @@ export function RequirementDrawer({
 
   const arquivos = evidenciasQuery.data ?? [];
   const itensEsperados = parseItens(orientacao.evidencias);
-  const todosComo = parseItens(orientacao.texto);
-  const acoesComo = todosComo.filter((i) => !/\?\s*$/.test(i.titulo + i.descricao));
-  const itensComo = (acoesComo.length ? acoesComo : todosComo).slice(0, 6);
-  const temMaisComo = todosComo.length > itensComo.length;
+  const estrutura = parseOrientacao(orientacao.texto);
+  const temMaisComo = estrutura.estruturada && estrutura.extras.length > 0;
   const avaliados = itensEsperados.map((item) => {
     const chaves = palavras(item.titulo + ' ' + item.descricao);
     const ligados = arquivos.filter((a) => {
@@ -406,22 +405,34 @@ export function RequirementDrawer({
                       <AkurisPulse size={14} />{t('gapUi.drawer.comoCumprirGerando')}
                     </div>
                   )}
-                  {itensComo.length > 0 ? (
-                    <ul className="space-y-1.5">
-                      {itensComo.map((i, n) => (
-                        <li key={n} className="flex gap-2.5 text-sm text-foreground/85">
-                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                          <span className="text-sm">{i.titulo}{i.descricao && <span className="text-muted-foreground"> — {i.descricao}</span>}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  {estrutura.estruturada ? (
+                    <>
+                      {estrutura.entenda && <div className="mb-3">{prose(estrutura.entenda)}</div>}
+                      <ol className="space-y-2">
+                        {estrutura.passos.map((p, n) => (
+                          <li key={n} className="flex gap-2.5 text-sm text-foreground/85">
+                            <span className="mt-0.5 h-5 w-5 rounded-full bg-primary/15 text-primary text-xs font-semibold tabular-nums flex items-center justify-center shrink-0">{n + 1}</span>
+                            <span className="text-sm leading-relaxed">{p}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </>
                   ) : orientacao.texto ? prose(orientacao.texto) : null}
-                  {temMaisComo && orientacao.texto && (
+                  {temMaisComo && (
                     <div className="mt-3">
                       <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setVerTudo((v) => !v)}>
                         {verTudo ? t('gapUi.drawer.hideFullGuidance') : t('gapUi.drawer.showFullGuidance')}
                       </button>
-                      {verTudo && <div className="mt-2">{prose(orientacao.texto)}</div>}
+                      {verTudo && (
+                        <div className="mt-2 space-y-3">
+                          {estrutura.extras.map((e) => (
+                            <div key={e.titulo}>
+                              <p className="text-sm font-semibold text-foreground mb-1">{e.titulo}</p>
+                              {prose(e.corpo)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                   {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
