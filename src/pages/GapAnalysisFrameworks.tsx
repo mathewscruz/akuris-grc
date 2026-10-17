@@ -604,6 +604,7 @@ export default function GapAnalysisFrameworks() {
               />
             ) : (
               <section id="frameworks-ativos" className="space-y-4">
+                {FilterBar}
                 {filteredActiveFrameworks.length > 0 || !hasFilters ? (
                   <FrameworksComparativo
                     aderenciaGeral={heroData?.overallScore ?? 0}
@@ -633,7 +634,6 @@ export default function GapAnalysisFrameworks() {
                     {t('gapAnalysis.frameworks.active.noneMatchFilters')}
                   </p>
                 )}
-                {FilterBar}
               </section>
             )}
             <CraEntry />
