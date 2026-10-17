@@ -258,7 +258,7 @@ export default function Contratos() {
     const targetId = deleteConfirm.id;
     setDeleteConfirm({ open: false, id: '' });
     undoableAction({
-      message: t('contratos.deleted'),
+      message: t('common.contractDeleted'),
       undoLabel: t('common.undo'),
       onCommit: async () => {
         const { error } = await supabase.from('contratos').delete().eq('id', targetId).eq('empresa_id', empresaId!);
@@ -267,7 +267,7 @@ export default function Contratos() {
       },
     }).catch((error) => {
       logger.error('Erro ao excluir', { error: error instanceof Error ? error.message : String(error) });
-      toast({ title: t('fin.comum.erro'), description: t('contratos.deleteError'), variant: 'destructive' });
+      toast({ title: t('fin.comum.erro'), description: t('common.contractDeleteError'), variant: 'destructive' });
     });
   };
 
