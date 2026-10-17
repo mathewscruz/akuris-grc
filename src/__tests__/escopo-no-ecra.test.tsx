@@ -52,7 +52,7 @@ function cartao(n: string) {
   const i = Number(n);
   const ponto = screen.getAllByRole('button', { name: new RegExp(`^(Pergunta|Question) ${i} (de|of) 9$`) })[0];
   fireEvent.click(ponto);
-  return screen.getByRole('heading', { level: 3 }).closest('div.rounded-xl') as HTMLElement;
+  return screen.getByRole('heading', { level: 3 }).closest('div.rounded-lg') as HTMLElement;
 }
 
 beforeEach(() => localStorage.clear());

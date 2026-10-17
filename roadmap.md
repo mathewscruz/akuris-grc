@@ -12,3 +12,5 @@
 - [ ] Teste de armazenamento de login da pré-visualização (código da plataforma, não do Akuris)
 - [x] Estruturar conteúdo dos requisitos (rotina automática a completar)
 - [x] Tela do framework no modelo A (categorias ao lado)
+- [x] Status com anel (Chip)
+- [ ] Gap Analysis: analisar e unificar itens redundantes/confusos (plano)

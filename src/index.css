@@ -1216,6 +1216,15 @@ input:-webkit-autofill:focus {
   .akuris-loader { animation: akuris-breathe 2s ease-in-out infinite; }
 }
 
+/* ===== Anel de estado (Chip) ===== */
+@keyframes akuris-ring-spin { to { transform: rotate(270deg); } }
+@keyframes akuris-ring-grow { from { stroke-dasharray: 0 100; } }
+.akuris-ring-spin { animation: akuris-ring-spin 2.4s linear infinite; }
+.akuris-ring-fill { animation: akuris-ring-grow 0.6s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .akuris-ring-spin, .akuris-ring-fill { animation: none !important; }
+}
+
 /* ===== AkurisComplete — selo oficial de conclusão ===== */
 @keyframes akuris-complete-pop {
   0%   { transform: scale(0.4); opacity: 0; }
