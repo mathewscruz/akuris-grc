@@ -89,12 +89,12 @@ Retorne APENAS JSON válido:
     }
     const aiJson = await ai.json();
     try {
-      const { data: ok } = await supabase.rpc('consume_ai_credit', {
+      const { data: creditoOk } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresaId, p_user_id: userId,
         p_funcionalidade: 'responder_questionario',
         p_descricao: `Questionário de segurança — ${perguntas.length} perguntas`,
       });
-      if (ok === false) return semCreditoIA(corsHeaders);
+      if (creditoOk === false) return semCreditoIA(corsHeaders);
     } catch (e) { console.warn('consume_ai_credit falhou:', e); }
 
     let content: string = aiJson?.choices?.[0]?.message?.content ?? '{}';
