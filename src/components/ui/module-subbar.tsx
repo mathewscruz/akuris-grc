@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
-import { IconChevron, IconSearch } from '@/components/icons';
+import { IconSearch } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /** O caminho do módulo já aparece no header; title/activeLabel/icon são aceitos mas não exibidos. */
