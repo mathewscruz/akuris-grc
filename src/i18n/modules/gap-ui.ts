@@ -256,6 +256,9 @@ export const gapUi = {
       },
       drawer: {
         requisito: 'Requisito',
+        showFullGuidance: 'Ver orientação completa',
+        hideFullGuidance: 'Ocultar orientação completa',
+        semCreditos: 'Incluído, sem créditos',
         foundOf: '{found} de {expected} encontradas',
         found: 'Encontrada',
         missing: 'Faltando',
@@ -565,6 +568,9 @@ export const gapUi = {
       },
       drawer: {
         requisito: 'Requirement',
+        showFullGuidance: 'Show full guidance',
+        hideFullGuidance: 'Hide full guidance',
+        semCreditos: 'Included, no credits',
         foundOf: '{found} of {expected} found',
         found: 'Found',
         missing: 'Missing',
