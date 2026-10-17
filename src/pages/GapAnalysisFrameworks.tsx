@@ -6,6 +6,7 @@ import { useReusoFrameworks } from '@/hooks/useReusoFramework';
 import { useMaturityTrend } from '@/hooks/useMaturityTrend';
 import { useProximoMarcoDaEmpresa } from '@/hooks/useMarcoCertificacao';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -16,7 +17,7 @@ import { CraEntry } from '@/components/regulatory/CraEntry';
 import {
   MaturityHero,
   AIRecommendedTile,
-  ActiveFrameworkRow,
+  FrameworksComparativo,
   SectionHead,
 } from '@/components/gap-analysis/v2';
 import type { StackSegment } from '@/components/gap-analysis/v2';
@@ -427,6 +428,23 @@ export default function GapAnalysisFrameworks() {
   // O marco pertence ao framework. Aqui mostra-se só o mais próximo entre os
   // frameworks ativos, dizendo de qual é — definir acontece lá dentro.
   const { data: marco } = useProximoMarcoDaEmpresa(empresaId ?? undefined);
+  const { data: marcosPorFramework } = useQuery({
+    queryKey: ['gap-marcos-abertos', empresaId ?? null],
+    enabled: !!empresaId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gap_analysis_marcos')
+        .select('framework_id, data_alvo')
+        .eq('empresa_id', empresaId!)
+        .is('concluido_em', null)
+        .order('data_alvo', { ascending: true });
+      if (error) throw error;
+      const m: Record<string, string> = {};
+      (data || []).forEach((r: { framework_id: string; data_alvo: string }) => { if (!m[r.framework_id]) m[r.framework_id] = r.data_alvo; });
+      return m;
+    },
+  });
 
   // Recomendados: ordenados por jurisdição e por adequação ao negócio.
   //
@@ -583,70 +601,66 @@ export default function GapAnalysisFrameworks() {
               />
             )}
 
-            {/* Recomendados para sua empresa */}
-            {aiRecommended.length > 0 && !hasFilters && (
-              <section>
-                <SectionHead
-                  title={t('gapAnalysis.frameworks.recommended.title')}
-                  count={aiRecommended.length}
-                  right={
-                    <span className="text-xs text-muted-foreground">
-                      {t('gapAnalysis.frameworks.recommended.basedOn')}
-                    </span>
-                  }
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {aiRecommended.map(({ fw }) => (
-                    <AIRecommendedTile
-                      key={fw.id}
-                      nome={fw.nome}
-                      versao={fw.versao}
-                      tipo_framework={fw.tipo_framework}
-                      descricao={fwDescricao(fw as any) || fw.descricao}
-                      reuso={reusoPorFramework[fw.id]}
-                      requirementCount={requirementCounts[fw.id] || 0}
-                      onClick={() => handleFrameworkClick(fw)}
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="space-y-4 min-w-0">
+                {FilterBar}
+                <section id="frameworks-ativos">
+                  <SectionHead
+                    title={t('gapAnalysis.frameworks.active.title')}
+                    count={hasFilters ? `${filteredActiveFrameworks.length}/${activeFrameworks.length}` : activeFrameworks.length}
+                  />
+                  {filteredActiveFrameworks.length > 0 ? (
+                    <FrameworksComparativo
+                      linhas={filteredActiveFrameworks.map((fw) => {
+                        const p = frameworkProgress[fw.id];
+                        const g = frameworkGapSummary[fw.id];
+                        return {
+                          id: fw.id,
+                          nome: fw.nome,
+                          versao: fw.versao,
+                          tipo_framework: fw.tipo_framework,
+                          score: Math.round(p?.averageScore || 0),
+                          total: p?.totalRequirements || 0,
+                          avaliados: p?.evaluatedRequirements || 0,
+                          naoConformes: frameworkStatusCounts[fw.id]?.nao_conforme || 0,
+                          criticos: g?.criticos || 0,
+                          atrasados: g?.atrasados || 0,
+                          marco: marcosPorFramework?.[fw.id] ?? null,
+                        };
+                      })}
+                      onOpen={(id) => { const fw = activeFrameworks.find((f) => f.id === id); if (fw) handleFrameworkClick(fw); }}
                     />
-                  ))}
-                </div>
-              </section>
-            )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      {t('gapAnalysis.frameworks.active.noneMatchFilters')}
+                    </p>
+                  )}
+                </section>
+              </div>
 
-            {/* Barra de filtros */}
-            {FilterBar}
-
-            {/* Frameworks ativos — linhas editoriais */}
-            <section id="frameworks-ativos">
-              <SectionHead
-                title={t('gapAnalysis.frameworks.active.title')}
-                count={hasFilters ? `${filteredActiveFrameworks.length}/${activeFrameworks.length}` : activeFrameworks.length}
-              />
-              {filteredActiveFrameworks.length > 0 ? (
-                <div className="space-y-3">
-                  {filteredActiveFrameworks.map((framework) => {
-                    const sc = frameworkStatusCounts[framework.id];
-                    const p = frameworkProgress[framework.id];
-                    return (
-                      <ActiveFrameworkRow
-                        key={framework.id}
-                        nome={framework.nome}
-                        versao={framework.versao}
-                        tipo_framework={framework.tipo_framework}
-                        totalRequirements={p?.totalRequirements || 0}
-                        evaluatedRequirements={p?.evaluatedRequirements || 0}
-                        averageScore={p?.averageScore || 0}
-                        segments={sc ? buildSegments(sc) : []}
-                        onClick={() => handleFrameworkClick(framework)}
+              {aiRecommended.length > 0 && (
+                <aside className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">{t('gapAnalysis.frameworks.recommended.title')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('gapAnalysis.frameworks.recommended.basedOn')}</p>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+                    {aiRecommended.map(({ fw }) => (
+                      <AIRecommendedTile
+                        key={fw.id}
+                        nome={fw.nome}
+                        versao={fw.versao}
+                        tipo_framework={fw.tipo_framework}
+                        descricao={fwDescricao(fw as any) || fw.descricao}
+                        reuso={reusoPorFramework[fw.id]}
+                        requirementCount={requirementCounts[fw.id] || 0}
+                        onClick={() => handleFrameworkClick(fw)}
                       />
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  {t('gapAnalysis.frameworks.active.noneMatchFilters')}
-                </p>
+                    ))}
+                  </div>
+                </aside>
               )}
-            </section>
+            </div>
           </>
         )}
 

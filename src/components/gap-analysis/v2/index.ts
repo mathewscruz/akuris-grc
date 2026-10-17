@@ -29,3 +29,5 @@ export { SoATabV2 } from './SoATabV2';
 export { BulkActionBar } from './BulkActionBar';
 export { getFwCategory, getFwCategoryLabel } from './fw-utils';
 export type { FwCategory } from './fw-utils';
+export { FrameworksComparativo } from './FrameworksComparativo';
+export type { LinhaComparativo } from './FrameworksComparativo';
