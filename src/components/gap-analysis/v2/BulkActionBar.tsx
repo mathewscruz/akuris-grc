@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 /**
  * BulkActionBar — barra dark sticky para ações em lote (Onda 5 SoA).
  * Aparece quando 1+ linhas selecionadas; oferece alterar status, atribuir,
@@ -37,8 +38,9 @@ export function BulkActionBar({
 
   if (selectedCount === 0) return null;
 
-  return (
-    <div className="sticky bottom-4 z-30 mx-auto max-w-4xl">
+  return (<>
+    <div aria-hidden className="h-24" />
+    {createPortal(<div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(1rem+env(safe-area-inset-bottom))] max-md:bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 w-[calc(100%-2rem)] max-w-4xl animate-in slide-in-from-bottom-4 overflow-x-auto">
       <div className="flex items-center gap-2 rounded-lg border border-foreground/20 bg-foreground text-background shadow-lg px-4 py-2.5">
         <IconCheckbox className="h-4 w-4 text-primary" strokeWidth={1.5} />
         <span className="text-sm font-medium">
@@ -109,6 +111,6 @@ export function BulkActionBar({
           <IconClose className="h-3.5 w-3.5" strokeWidth={1.5} />
         </button>
       </div>
-    </div>
-  );
+    </div>, document.body)}
+  </>);
 }
