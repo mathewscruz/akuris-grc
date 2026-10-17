@@ -8,6 +8,7 @@
  *
  * Acionado via RequirementDrawerProvider em qualquer ponto da app.
  */
+import { parseOrientacao } from '@/lib/gap/parse-orientacao';
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
