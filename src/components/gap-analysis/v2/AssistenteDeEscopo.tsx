@@ -272,7 +272,7 @@ export function AssistenteDeEscopo({
               </div>
               <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  className="h-full rounded-full bg-primary transition-ui duration-500"
                   style={{ width: `${(respondidas / assistente.perguntas.length) * 100}%` }}
                 />
               </div>
@@ -295,7 +295,7 @@ export function AssistenteDeEscopo({
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
               {/* Pergunta atual */}
               {pergunta && (
-                <div key={pergunta.id} className="animate-fade-in rounded-xl border border-border bg-card p-6 sm:p-8">
+                <div key={pergunta.id} className="animate-fade-in rounded-lg border border-border bg-card p-6 sm:p-8">
                   <span className="font-mono text-xs tabular-nums text-muted-foreground">
                     {String(atual + 1).padStart(2, '0')}
                   </span>
