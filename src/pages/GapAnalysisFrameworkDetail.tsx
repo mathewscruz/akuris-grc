@@ -13,6 +13,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IconDownload, IconMore, IconChevronLeft, IconChart, IconHelp, IconHistory, IconShieldCheck, IconFile } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
+import { CategorySidebar } from '@/components/gap-analysis/v2/CategorySidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
@@ -554,6 +556,7 @@ function GapAnalysisFrameworkDetailInner() {
             </div>
           }
         />
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full max-w-xl grid-cols-3">
