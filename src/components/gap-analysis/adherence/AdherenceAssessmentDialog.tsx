@@ -134,10 +134,20 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
   // Extrair texto de PDF
   const extractTextFromPDF = async (file: File): Promise<string> => {
     // PDF.js é grande; só o descarregamos quando um PDF realmente é enviado.
-    const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    // O worker vem do próprio bundle (sem CDN externo, que a CSP/rede pode bloquear).
+    let pdf: Awaited<ReturnType<typeof import('pdfjs-dist')['getDocument']>['promise']>;
+    try {
+      const [pdfjsLib, worker] = await Promise.all([
+        import('pdfjs-dist'),
+        import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+      ]);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = worker.default;
+      const arrayBuffer = await file.arrayBuffer();
+      pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    } catch (err) {
+      logger.error('Falha ao ler PDF', { err: err instanceof Error ? err.message : String(err) });
+      throw new Error(t('gapAnalysis.adherenceUi.scope.pdfReadError'));
+    }
     let fullText = '';
     
     for (let i = 1; i <= pdf.numPages; i++) {
