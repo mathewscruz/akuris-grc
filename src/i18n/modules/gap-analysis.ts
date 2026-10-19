@@ -303,6 +303,7 @@ export const gapAnalysis = {
         },
         scope: {
           understanding: 'Entendendo a política e identificando o que a norma exige dela',
+          pdfReadError: 'Não foi possível ler este PDF. Tente novamente ou envie outro arquivo (Word ou PDF exportado).',
           scannedPdf: 'Este PDF parece ser uma imagem escaneada e quase não tem texto legível. Envie uma versão com texto (Word ou PDF exportado) para não gastar crédito à toa.',
         },
         verdict: {
@@ -1333,6 +1334,7 @@ export const gapAnalysis = {
         },
         scope: {
           understanding: 'Understanding the policy and identifying what the standard requires of it',
+          pdfReadError: 'This PDF could not be read. Try again or upload another file (Word or exported PDF).',
           scannedPdf: 'This PDF looks like a scanned image with almost no readable text. Upload a text version (Word or exported PDF) to avoid wasting credits.',
         },
         verdict: {
