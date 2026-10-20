@@ -149,7 +149,7 @@ export async function handleEvidenceAnalysis(req: Request) {
         requirement: requirement.data,
         reader: EVIDENCE_READER_VERSION,
         name: body.fileName,
-        model: MODELOS.PADRAO,
+        model: MODELOS.ANALISE,
       }),
     );
     const claimed = await admin.rpc("evidence_analysis_claim", {
@@ -189,7 +189,7 @@ export async function handleEvidenceAnalysis(req: Request) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: MODELOS.PADRAO,
+            model: MODELOS.ANALISE,
             messages: [
               {
                 role: "system",

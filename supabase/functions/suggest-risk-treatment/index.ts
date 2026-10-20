@@ -85,7 +85,7 @@ Seja específico e prático, focando em ações implementáveis no contexto empr
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODELOS.PADRAO,
+        model: MODELOS.ANALISE,
         messages: [
           { 
             role: 'system', 

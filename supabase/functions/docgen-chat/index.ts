@@ -172,7 +172,7 @@ function tituloCurto(titulo: unknown): string {
 /* Os mesmos níveis do resto do produto — aqui com nomes próprios porque a
    escolha entre rápido e bom é feita a cada pedido, e isso é desta função. */
 const MODEL_FAST = MODELOS.MECANICO;
-const MODEL_QUALITY = MODELOS.PADRAO;
+const MODEL_QUALITY = MODELOS.ANALISE;
 const MODEL_FALLBACK = MODELOS.RESERVA;
 
 async function callClaudeRaw(
