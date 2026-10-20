@@ -96,7 +96,7 @@ const copy: Record<string, [string, string]> = {
   heroBody: ['Avalie sua aderência aos frameworks, priorize riscos e conecte controles, pessoas e evidências. Governança, privacidade e operação no mesmo ambiente de trabalho.', 'Assess framework alignment, prioritize risks and connect controls, people and evidence. Governance, privacy and operations in one workspace.'],
   trustLabel: ['Frameworks prontos a usar, com requisitos e orientações', 'Ready-to-use frameworks, with requirements and guidance'],
   statFrameworks: ['frameworks e normas', 'frameworks and standards'], statRisks: ['cenários na biblioteca de riscos', 'scenarios in the risk library'], statModules: ['módulos ligados entre si', 'connected modules'],
-  howTitle: ['Como funciona', 'How it works'], howBody: ['Do requisito à avaliação, cada passo fica registado e ligado ao seguinte.', 'From requirement to assessment, every step is recorded and linked to the next.'],
+  howTitle: ['Como funciona', 'How it works'], howBody: ['Do risco ao painel, cada passo fica registado e ligado ao seguinte.', 'From risk to dashboard, every step is recorded and linked to the next.'],
   explore: ['Explorar os fluxos', 'Explore the workflows'], heroNote: ['Para equipes de governança, segurança, privacidade e compliance.', 'For governance, security, privacy and compliance teams.'],
   tourLabel: ['Explore o produto', 'Explore the product'], tourTitle: ['Veja como o trabalho se conecta.', 'See how the work connects.'],
   tourNote: ['Interface ilustrativa com dados demonstrativos. Não representa resultados de clientes.', 'Illustrative interface with demonstration data. It does not represent customer results.'],
