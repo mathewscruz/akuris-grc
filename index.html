@@ -31,6 +31,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/akuris-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>try{var t=localStorage.getItem('akuris.theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
+    <style>html,body{background:#06060e;margin:0}#boot-loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#06060e}#boot-loader svg{width:80px;height:80px;animation:bootpulse 1.4s ease-in-out infinite}@keyframes bootpulse{0%,100%{opacity:.35}50%{opacity:1}}@media (prefers-reduced-motion:reduce){#boot-loader svg{animation:none}}</style>
     <meta name="theme-color" content="#0a1628" />
     <meta name="application-name" content="Akuris" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -73,7 +75,7 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="boot-loader" aria-label="Akuris" role="status"><svg viewBox="0 0 64 64" fill="none" stroke="#7552FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 54 32 10l20 44"/><path d="M20 38h24"/></svg></div></div>
     <script type="module" src="/src/main.tsx"></script>
     <noscript>
       <main style="max-width:760px;margin:0 auto;padding:48px 24px;font-family:Arial,sans-serif;color:#182235">
