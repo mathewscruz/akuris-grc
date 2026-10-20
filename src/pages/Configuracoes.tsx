@@ -2,28 +2,21 @@ import { useAuth } from '@/components/AuthProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/ui/page-header';
-import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconMoney, IconPackage, IconBook, IconGlobe, IconFileText, IconMegaphone, IconChevronLeft, IconBriefcase, IconMail, IconShieldCheck } from '@/components/icons';
-import { useSearchParams } from 'react-router-dom';
+import { IconUsers, IconOrg, IconPlug, IconMessage, IconCard, IconChevronLeft, IconShieldCheck } from '@/components/icons';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { ADMIN_AKURIS_TABS } from '@/pages/AdminAkuris';
 import { useLanguage } from '@/contexts/LanguageContext';
-import GerenciamentoEmpresas from '@/components/configuracoes/GerenciamentoEmpresas';
 import { IntegrationHub } from '@/components/configuracoes/IntegrationHub';
 import { ConfiguracoesDenuncia } from '@/components/denuncia/ConfiguracoesDenuncia';
 import { CategoriasDenuncia } from '@/components/denuncia/CategoriasDenuncia';
 import { CanalMarcaEComite } from '@/components/denuncia/CanalMarcaEComite';
 import { CanalConsultoria } from '@/components/denuncia/CanalConsultoria';
 import { AssinaturaTab } from '@/components/configuracoes/AssinaturaTab';
-import { CreditosIAManager } from '@/components/configuracoes/CreditosIAManager';
 import { UsersAccessTab } from '@/components/configuracoes/UsersAccessTab';
 import { OrganizacaoTab } from '@/components/configuracoes/OrganizacaoTab';
-import { FinanceiroIATab } from '@/components/configuracoes/FinanceiroIATab';
-import { GerenciamentoPlanos } from '@/components/configuracoes/GerenciamentoPlanos';
-import GerenciamentoChangelog from '@/components/configuracoes/GerenciamentoChangelog';
-import NoticiasTab from '@/components/configuracoes/NoticiasTab';
-import BlogManager from '@/components/configuracoes/BlogManager';
-import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
 import { QuestionarioSegurancaCard } from '@/components/configuracoes/QuestionarioSegurancaCard';
 import { TrustCenterTab } from '@/components/configuracoes/TrustCenterTab';
-import { ContactRequests } from '@/components/configuracoes/ContactRequests';
 
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { ConfiguracoesVisaoGeral, type SecaoConfig } from '@/components/configuracoes/ConfiguracoesVisaoGeral';
@@ -47,16 +40,6 @@ const Configuracoes = () => {
       { id: 'denuncia', grupo: 'plataforma' as const, titulo: t('configGeral.page.tabDenuncia'), icon: IconMessage, palavras: 'whistleblowing etica comite canal' },
       { id: 'trust-center', grupo: 'plataforma' as const, titulo: t('trustCenter.tab'), icon: IconShieldCheck, palavras: 'questionario seguranca publico' },
     ] : []),
-    ...(isSuperAdmin ? [
-      { id: 'empresas', grupo: 'admin' as const, titulo: t('configGeral.page.tabEmpresas'), icon: IconBriefcase },
-      { id: 'planos', grupo: 'admin' as const, titulo: t('configGeral.page.tabPlanos'), icon: IconPackage },
-      { id: 'financeiro-ia', grupo: 'admin' as const, titulo: t('configGeral.page.tabFinanceiroIA'), icon: IconMoney },
-      { id: 'novidades', grupo: 'admin' as const, titulo: t('configGeral.page.tabNovidades'), icon: IconMegaphone },
-      { id: 'noticias', grupo: 'admin' as const, titulo: t('configGeral.page.tabNoticias'), icon: IconFileText },
-      { id: 'traducoes', grupo: 'admin' as const, titulo: t('configGeral.page.tabTraducoes'), icon: IconGlobe },
-      { id: 'blog', grupo: 'admin' as const, titulo: t('configGeral.page.tabBlog'), icon: IconBook },
-      { id: 'solicitacoes-site', grupo: 'admin' as const, titulo: t('site.leads'), icon: IconMail },
-    ] : []),
   ];
   const allowedTabs = secoes.map((s) => s.id);
   const activeTab = rawTab && allowedTabs.includes(rawTab) ? rawTab : null;
@@ -70,6 +53,10 @@ const Configuracoes = () => {
       return next;
     });
   };
+
+  // Seções da equipe Akuris mudaram para /admin-akuris; links antigos seguem para lá.
+  const legado = rawTab === 'financeiro-ia' || (rawTab && (ADMIN_AKURIS_TABS as readonly string[]).includes(rawTab));
+  if (legado && isSuperAdmin) return <Navigate to={`/admin-akuris?tab=${rawTab}`} replace />;
 
   if (loading) {
     return (
@@ -85,7 +72,8 @@ const Configuracoes = () => {
   if (!activeTab) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('configGeral.page.headerTitle')} description={t('configGeral.page.headerDescription')} />
+        <PageHeader title={t('configGeral.page.headerTitle')} description={t('configGeral.page.headerDescription')}
+          actions={isSuperAdmin ? <Button asChild variant="outline"><Link to="/admin-akuris">{t('adminAkuris.title')}</Link></Button> : undefined} />
         <ConfiguracoesVisaoGeral empresaId={profile?.empresa_id || ''} secoes={secoes} isAdmin={isAdmin} onOpen={selectSection} />
       </div>
     );
@@ -94,7 +82,7 @@ const Configuracoes = () => {
   const atual = secoes.find((s) => s.id === activeTab)!;
   const AtualIcon = atual.icon;
   const navTriggerClass = 'min-h-9 w-full justify-start gap-2 rounded-md px-3 text-left text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:after:hidden';
-  const grupos: SecaoConfig['grupo'][] = ['conta', 'plataforma', 'admin'];
+  const grupos: SecaoConfig['grupo'][] = ['conta', 'plataforma'];
 
   return (
     <div className="space-y-6">
@@ -142,19 +130,6 @@ const Configuracoes = () => {
         </aside>
 
         <div className="min-w-0">
-        {isSuperAdmin && <TabsContent value="solicitacoes-site"><ContactRequests /></TabsContent>}
-
-        {isSuperAdmin && (
-          <TabsContent value="empresas">
-            <GerenciamentoEmpresas />
-          </TabsContent>
-        )}
-
-        {isSuperAdmin && (
-          <TabsContent value="planos">
-            <GerenciamentoPlanos />
-          </TabsContent>
-        )}
 
         <TabsContent value="usuarios">
           <UsersAccessTab 
@@ -194,36 +169,8 @@ const Configuracoes = () => {
         <TabsContent value="assinatura">
           <div className="space-y-6">
             <AssinaturaTab />
-            {isSuperAdmin && (
-              <CreditosIAManager />
-            )}
           </div>
         </TabsContent>
-        {isSuperAdmin && (
-          <TabsContent value="financeiro-ia">
-            <FinanceiroIATab />
-          </TabsContent>
-        )}
-        {isSuperAdmin && (
-          <TabsContent value="novidades">
-            <GerenciamentoChangelog />
-          </TabsContent>
-        )}
-        {isSuperAdmin && (
-          <TabsContent value="noticias">
-            <NoticiasTab />
-          </TabsContent>
-        )}
-        {isSuperAdmin && (
-          <TabsContent value="traducoes">
-            <TraducaoFrameworksTab />
-          </TabsContent>
-        )}
-        {isSuperAdmin && (
-          <TabsContent value="blog">
-            <BlogManager />
-          </TabsContent>
-        )}
         </div>
       </Tabs>
     </div>

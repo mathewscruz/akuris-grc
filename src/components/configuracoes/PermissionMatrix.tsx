@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionProfilesList } from './PermissionProfilesList';
-import { UserPermissionsList } from './UserPermissionsList';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconShield, IconUsers } from '@/components/icons';
+
 interface PermissionMatrixProps {
   selectedUserId?: string;
 }
 
-export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUserId }) => {
+export const PermissionMatrix: React.FC<PermissionMatrixProps> = () => {
   const { t } = useLanguage();
   const [empresaId, setEmpresaId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -51,30 +49,10 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
     );
   }
 
+  // Permissões só por perfil: cada usuário recebe um perfil; casos especiais ganham um perfil próprio.
   return (
-    <div className="rounded-lg border border-border/80 bg-card p-4 shadow-sm sm:p-5">
-      <Tabs defaultValue={selectedUserId ? 'usuarios' : 'perfis'}>
-        <div className="mb-5 flex items-center justify-between gap-4 border-b border-border/70">
-        <TabsList className="mb-0 w-auto border-0">
-          <TabsTrigger value="perfis" className="flex items-center gap-2">
-            <IconShield className="h-4 w-4" />
-            {t('configPerms.matrix.tabProfiles')}
-          </TabsTrigger>
-          <TabsTrigger value="usuarios" className="flex items-center gap-2">
-            <IconUsers className="h-4 w-4" />
-            {t('configPerms.matrix.tabUsers')}
-          </TabsTrigger>
-        </TabsList>
-        </div>
-
-        <TabsContent value="perfis">
-          <PermissionProfilesList empresaId={empresaId} />
-        </TabsContent>
-
-        <TabsContent value="usuarios">
-          <UserPermissionsList empresaId={empresaId} selectedUserId={selectedUserId} />
-        </TabsContent>
-      </Tabs>
+    <div className="rounded-lg bg-card p-4 sm:p-5">
+      <PermissionProfilesList empresaId={empresaId} />
     </div>
   );
 };

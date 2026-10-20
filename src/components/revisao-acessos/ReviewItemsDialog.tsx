@@ -104,13 +104,12 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
             <Progress value={progress} aria-label={t('revisaoAcessosComp.itemsDialog.progressoTitle')} />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={!filtered.length} onClick={exportReview}><IconDownload className="mr-2 h-4 w-4" />{t('revisaoAcessosComp.itemsDialog.buttonExportar')}</Button>
             {!closed && <Button disabled={!!pending || !items.length || finalizing} onClick={() => setConfirm(true)}><IconSuccess className="mr-2 h-4 w-4" />{t('revisaoAcessosComp.itemsDialog.buttonFinalizar')}</Button>}
           </div>
         </div>}
         <p className="text-sm leading-relaxed text-muted-foreground">{t(closed ? 'experience.reviewClosed' : 'experience.reviewEffectHint')}</p>
         {!closed && pending > 0 && <p className="text-sm text-muted-foreground">{t('experience.reviewPendingItems')}</p>}
-        <DataTable paginated pageSize={20} data={filtered} columns={columns} loading={loading} error={failed} onRefresh={retry}
+        <DataTable onExport={exportReview} paginated pageSize={20} data={filtered} columns={columns} loading={loading} error={failed} onRefresh={retry}
           sortField={sort?.field} sortDirection={sort?.direction} onSort={field => setSort(current => nextReviewSort(current, field))}
           searchValue={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder={t('revisaoAcessosComp.itemsDialog.searchPlaceholder')}
           onRowClick={closed ? undefined : setSelectedItem} emptyState={{ title: t('revisaoAcessosComp.itemsDialog.emptyItems') }} />

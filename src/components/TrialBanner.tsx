@@ -1,10 +1,15 @@
 import React from 'react';
 import { IconInfo } from '@/components/icons';
-;
 import { useAuth } from '@/components/AuthProvider';
 import { differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/** Dias de teste restantes (0 quando não há teste ativo). */
+export function diasRestantesTrial(company: { status_licenca?: string | null; data_inicio_trial?: string | null } | null | undefined, hoje = new Date()): number {
+  if (!company || company.status_licenca !== 'trial' || !company.data_inicio_trial) return 0;
+  return Math.max(0, 14 - differenceInDays(hoje, new Date(company.data_inicio_trial)));
+}
 
 const TrialBanner: React.FC = () => {
   const { company } = useAuth();

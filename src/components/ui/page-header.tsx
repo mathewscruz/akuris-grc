@@ -94,7 +94,7 @@ export function PageHeader({
         <div className="min-w-0 space-y-1">
           {(ModIcon || grupo) && !breadcrumbs?.length && (
             <p className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              {ModIcon && <ModIcon className="h-3.5 w-3.5 text-primary" />}
+              {ModIcon && <ModIcon className="h-3.5 w-3.5 text-muted-foreground" />}
               {grupo && <span>{grupo}</span>}
             </p>
           )}

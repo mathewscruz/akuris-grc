@@ -319,6 +319,10 @@ export default {
 				'tab-enter': 'tab-enter var(--motion-surface) var(--motion-ease) both'
 			},
 			spacing: {
+				/* Escala única de distâncias entre blocos: pequena, média, grande. */
+				'bloco-p': '0.75rem',
+				'bloco-m': '1.5rem',
+				'bloco-g': '2.5rem',
 				'xs': 'var(--spacing-xs)',
 				'sm-custom': 'var(--spacing-sm)',
 				'md-custom': 'var(--spacing-md)',

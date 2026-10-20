@@ -212,25 +212,8 @@ export default function Continuidade() {
     },
   ];
 
-  return (
-    <div className="space-y-6 p-4 md:p-6">
-      <PageHeader
-        title={t('fin.continuidade.title')}
-        description={t('fin.continuidade.desc')}
-        actions={
-          <Button onClick={() => setPlanoDialog({ open: true })}>
-            <IconAdd className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
-          </Button>
-        }
-        secondaryActions={[
-          {
-            label: t('sweepDenuncias.contas.exportCsv'),
-            icon: <IconDownload className="h-4 w-4" />,
-            // Exportar o que está no ecrã: iterava `planos` (tudo) enquanto a
-            // tabela mostra `planosFiltrados`. Quem filtra e exporta age sobre
-            // a lista que exportou.
-            disabled: planosFiltrados.length === 0,
-            onClick: () => {
+  // Exportar fica no botão padrão da tabela (CSV/PDF).
+  const exportarDaPagina = () => {
               exportCSV(
                 [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
                 planosFiltrados.map((p: any) => [
@@ -244,8 +227,19 @@ export default function Continuidade() {
                 ]),
                 'continuidade_planos'
               );
-            },
-          },
+            };
+
+  return (
+    <div className="space-y-6 p-4 md:p-6">
+      <PageHeader
+        title={t('fin.continuidade.title')}
+        description={t('fin.continuidade.desc')}
+        actions={
+          <Button onClick={() => setPlanoDialog({ open: true })}>
+            <IconAdd className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
+          </Button>
+        }
+        secondaryActions={[
         ]}
       />
 
@@ -324,7 +318,7 @@ export default function Continuidade() {
       {/* Lista de Planos com DataTable */}
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <DataTable
+          <DataTable onExport={exportarDaPagina}
             paginated
             pageSize={20}
             data={planosFiltrados}

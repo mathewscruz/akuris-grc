@@ -21,3 +21,8 @@
 - [x] Simplificação: rota de Planos de Ação (já era única; /planos é a página de planos de assinatura)
 - [x] Simplificação: canal de denúncia com as duas ações lado a lado
 - [x] Simplificação visual: 3 estilos de botão, borda só em cartões clicáveis, 4 tamanhos de texto
+- [x] Administração Akuris separada das Configurações
+- [x] Permissões só por perfil (ajustes individuais convertidos em perfis)
+- [x] Um único espaço de avisos no topo
+- [x] Exportar padrão (CSV/PDF) em todas as tabelas
+- [x] Ícones de módulo neutros e escala única de espaçamentos
