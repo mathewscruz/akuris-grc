@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
 import { PublicShell, DemoButton } from '@/components/public/PublicShell';
 import { ProductScreens } from '@/components/landing/ProductScreens';
-import { ProductStory } from '@/components/landing/ProductStory';
-import { GapWalkthrough } from '@/components/landing/GapWalkthrough';
+import { TrustStrip, HowItWorks } from '@/components/landing/LandingProof';
 import { ModuleCatalog } from '@/components/landing/ModuleCatalog';
 import { useLandingReveal } from '@/hooks/useLandingAnimations';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,12 +21,12 @@ export default function LandingPage() {
       <svg className="hero-signature" viewBox="0 0 80 80" aria-hidden="true"><path d={AKURIS_PATH} pathLength="1" /></svg>
       <div className="site-hero-grid"><div><h1><span>{t('site.heroLine1')}</span> <span className="hero-title-accent">{t('site.heroLine2')}</span></h1><p>{t('site.heroBody')}</p><div className="site-actions"><DemoButton /><a className="lp-btn lp-btn-ghost" href="#produto">{t('site.explore')} ↓</a></div><p className="site-muted">{t('site.heroNote')}</p><PublicMotionToggle /></div><div><ProductScreens autoplay /></div></div>
     </section>
-    <GapWalkthrough />
-    <ProductStory />
+    <TrustStrip />
+    <HowItWorks />
     <ModuleCatalog />
     <section className="site-section" id="frameworks"><div className="lp-container"><div className="site-heading" data-reveal><h2>{t('site.guidesTitle')}</h2><p>{t('site.guidesNote')}</p></div><div className="site-guides">{frameworksSeo.slice(0, 6).map(f => <Link to={'/frameworks/' + f.slug} key={f.slug} className="site-guide"><FrameworkGlyph nome={f.nome} size={25} /><strong>{f.nome}</strong><span aria-hidden="true">↗</span></Link>)}</div><div className="site-actions"><Link className="site-text-link" to="/frameworks">{t('site.allGuides')} →</Link></div></div></section>
     <section className="site-section" id="seguranca"><div className="lp-container"><div className="site-heading"><h2>{t('site.trustTitle')}</h2><p>{t('site.trustBody')}</p></div><div className="site-resource-links"><Link className="site-text-link" to="/seguranca">{t('site.trust')} →</Link><Link className="site-text-link" to="/migracao">{t('site.migration')} →</Link><Link className="site-text-link" to="/politica-privacidade">{t('publico.landing.footer.politica')} →</Link></div></div></section>
     <section className="site-section"><div className="lp-container"><div className="site-heading"><h2>{t('publico.landing.faq.eyebrow')}</h2></div><div className="lp-faq-list">{faqs.map(f => <details className="lp-faq" key={f.question}><summary>{f.question}<span className="plus" aria-hidden="true" /></summary><div className="body">{f.answer}</div></details>)}</div></div></section>
-    <section className="site-cta lp-container" id="contato"><div><h2>{t('site.ctaTitle')}</h2><p>{t('site.ctaBody')}</p></div><DemoButton /></section>
+    <section className="site-cta lp-container" id="contato"><div className="site-cta-card"><div><h2>{t('site.ctaTitle')}</h2><p>{t('site.ctaBody')}</p></div><DemoButton /></div></section>
   </PublicShell>;
 }
