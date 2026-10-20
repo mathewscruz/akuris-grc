@@ -62,7 +62,7 @@ function harness(initial: Record<string, unknown> = {}) {
   const ai = vi.fn(async () => new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: providerText } }] })));
   const context: any = {
     testClient: { from: query, rpc, auth: { getUser: async (token: string) => ({ data: { user: { id: token } }, error: null }) } },
-    fetch: ai, Request, Response, Headers, AbortSignal, TextEncoder, crypto,
+    fetch: (url: any, init: any) => String(url).includes('ai.gateway') ? (ai as any)(url, init) : Promise.resolve(new Response('{}', { status: 201 })), Request, Response, Headers, AbortSignal, TextEncoder, crypto,
     console: { error: vi.fn() },
     Deno: { env: { get: () => 'synthetic-test-only' }, serve: (handler: unknown) => { context.handler = handler; } },
   };

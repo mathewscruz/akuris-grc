@@ -53,7 +53,7 @@ export const MODELOS = {
   /** Transformação literal: tradução. Nível `lite` chega e custa um terço. */
   MECANICO: 'google/gemini-3.1-flash-lite',
   /** Há juízo e alguém lê. A maior parte do produto. */
-  PADRAO: 'google/gemini-3.6-flash',
+  PADRAO: 'google/gemini-3.8-flash',
   /** Documento inteiro contra requisito. O mais caro, e o que o justifica. */
   LEITURA_LONGA: 'google/gemini-4-argon',
   /** Geração de imagem para campanhas. Sem equivalente nos outros níveis. */
