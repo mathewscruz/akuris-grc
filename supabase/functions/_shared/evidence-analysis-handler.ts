@@ -1,3 +1,4 @@
+import { fetchAnaliseComReserva } from './ai.ts';
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { AuthError, requireUserContext, requireValidMfa } from "./auth.ts";
 import { MODELOS } from "./modelos.ts";
@@ -179,7 +180,7 @@ export async function handleEvidenceAnalysis(req: Request) {
       if (!(await temCreditoIA(admin!, ctx.empresaId!))) {
         throw new Error("credits_exhausted");
       }
-      const response = await fetch(
+      const response = await fetchAnaliseComReserva(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
         {
           method: "POST",
