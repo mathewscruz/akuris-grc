@@ -42,6 +42,8 @@ Deno.serve(async (req) => {
     })
 
     // Links are sent only to the owner of the address, never returned to admins.
+    // Email is sent in the background so the admin is not blocked waiting for it.
+    const enviarConvite = async () => {
     // Existing passwords and MFA factors remain unchanged until the owner acts.
     const siteUrl = (Deno.env.get('APP_URL') || Deno.env.get('SITE_URL') || 'https://akuris.pt').replace(/\/$/, '')
     let setupPasswordUrl: string | null = null
@@ -74,7 +76,12 @@ Deno.serve(async (req) => {
         }
       } catch { console.error('Could not send registration email') }
     }
-    return json({ success: true, user: { id: user.id, email, nome }, restored: user.restored, emailSent })
+    }
+    const tarefa = enviarConvite().catch(() => console.error('Background invitation failed'))
+    // deno-lint-ignore no-explicit-any
+    const rt = (globalThis as any).EdgeRuntime
+    if (rt?.waitUntil) rt.waitUntil(tarefa); else await tarefa
+    return json({ success: true, user: { id: user.id, email, nome }, restored: user.restored, emailStatus: 'pending' })
   } catch (error) {
     if (error instanceof RegistrationError) {
       const status = error.code === 'REGISTRATION_UNAVAILABLE' ? 503
