@@ -1,4 +1,5 @@
 import { exportCSV } from '@/lib/csv-utils';
+import { formatarDiaParaDB } from '@/lib/date-utils';
 
 /** Coluna exportável: rótulo e como obter o valor em texto. */
 export interface ColunaExportavel<T> {
@@ -9,7 +10,7 @@ export interface ColunaExportavel<T> {
 export function textoDaCelula(v: unknown): string {
   if (v == null) return '';
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return formatarDiaParaDB(v);
   if (Array.isArray(v)) return v.map(textoDaCelula).filter(Boolean).join(', ');
   if (typeof v === 'object') {
     const o = v as Record<string, unknown>;
@@ -24,7 +25,7 @@ export function linhasParaExportar<T>(dados: T[], colunas: ColunaExportavel<T>[]
 
 const slug = (base: string) =>
   `${base.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'exportacao'}`;
-const nomeDoArquivo = (base: string) => `${slug(base)}-${new Date().toISOString().slice(0, 10)}`;
+const nomeDoArquivo = (base: string) => `${slug(base)}-${formatarDiaParaDB(new Date())}`;
 
 export function exportarTabelaCSV<T>(dados: T[], colunas: ColunaExportavel<T>[], base: string) {
   exportCSV(colunas.map((c) => c.label), linhasParaExportar(dados, colunas), slug(base));
