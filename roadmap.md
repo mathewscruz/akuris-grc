@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Monitoring: impedir rascunhos antigos de substituir avaliações gravadas
+- [ ] Monitoring: manter painéis de evidência montados durante a edição
+- [ ] Monitoring: não apresentar falha geral quando há orientação disponível
 - [x] 1 Largura da janela do requisito
 - [x] 2 Status em lote Planos de Ação
 - [x] 3 QR code do ativo
