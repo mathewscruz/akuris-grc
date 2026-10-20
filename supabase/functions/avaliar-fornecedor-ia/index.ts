@@ -28,6 +28,7 @@ import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { exigeInternaOuUtilizador, respostaAcessoNegado, AcessoNegado } from '../_shared/interna.ts';
 import { MODELOS } from '../_shared/modelos.ts';
+import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
