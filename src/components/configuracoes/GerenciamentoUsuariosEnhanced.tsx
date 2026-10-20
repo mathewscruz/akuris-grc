@@ -138,6 +138,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const [accessLoading, setAccessLoading] = useState(true);
   const accessRequest = useRef(0);
   const [creating, setCreating] = useState(false);
+  const [etapa, setEtapa] = useState<'validar' | 'criar' | null>(null);
+  const continuarRef = useRef(false);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -371,6 +373,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const handleSubmit = async (data: UsuarioForm) => {
     try {
       setCreating(true);
+      setEtapa('validar');
 
       if (isSuperAdmin && data.role !== 'super_admin' && !data.empresa_id) {
         form.setError('empresa_id', {
@@ -414,6 +417,12 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           return;
         }
 
+        const emailNorm = data.email.trim().toLowerCase();
+        if (usuarios.some((u) => (u.email || '').toLowerCase() === emailNorm)) {
+          form.setError('email', { type: 'manual', message: t('admin.usuarios.emailJaExiste') });
+          return;
+        }
+        setEtapa('criar');
         const { data: resposta, error } = await supabase.functions.invoke('create-user', {
           body: {
             email: data.email,
@@ -447,17 +456,28 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         }
         toast.success(t(resposta?.restored ? 'admin.usuarios.toastUserRestored' : 'admin.usuarios.toastUserCreated'));
         if (resposta?.emailSent === false) toast.warning(t('admin.usuarios.toastInvitationNotSent'));
+        else if (resposta?.emailStatus === 'pending') toast.info(t('admin.usuarios.conviteEmEnvio'));
+        // O convite sai em segundo plano: atualizar a lista quando já deve ter saído.
+        setTimeout(() => { void fetchUsuarios(); }, 6000);
+        if (continuarRef.current) {
+          const { empresa_id, permission_profile_id, role } = data;
+          form.reset({ ...form.getValues(), nome: '', email: '', empresa_id, permission_profile_id, role });
+          void fetchUsuarios();
+          return;
+        }
       }
 
-      await fetchUsuarios();
       setDialogOpen(false);
       form.reset();
       setEditingUsuario(null);
+      void fetchUsuarios();
     } catch (error: any) {
       console.error('Erro ao salvar usuário:', error);
       toast.error(error.message || t('admin.usuarios.toastErrorSave'));
     } finally {
       setCreating(false);
+      setEtapa(null);
+      continuarRef.current = false;
     }
   };
 
@@ -1046,11 +1066,18 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     {t('admin.usuarios.cancelar')}
                   </Button>
-                  <Button type="submit" disabled={creating}>
+                  {!editingUsuario && (
+                    <Button type="submit" variant="outline" disabled={creating} onClick={() => { continuarRef.current = true; }}>
+                      {t('admin.usuarios.criarEOutro')}
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={creating} aria-live="polite">
                     {creating ? (
                       <AkurisPulse size={16} className="mr-2" />
                     ) : null}
-                    {editingUsuario ? t('admin.usuarios.atualizar') : t('admin.usuarios.criar')}
+                    {creating && etapa && !editingUsuario
+                      ? t(etapa === 'validar' ? 'admin.usuarios.etapaValidar' : 'admin.usuarios.etapaCriar')
+                      : editingUsuario ? t('admin.usuarios.atualizar') : t('admin.usuarios.criar')}
                   </Button>
                 </DialogFooter>
               </form>
