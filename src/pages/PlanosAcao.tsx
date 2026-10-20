@@ -15,6 +15,7 @@ import { useFocusRow } from '@/hooks/useFocusRow';
 import { exportCSV } from '@/lib/csv-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
+import MinhasTarefas from '@/pages/MinhasTarefas';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
@@ -169,6 +170,13 @@ export default function PlanosAcao() {
   */
   const [searchParams, setSearchParams] = useSearchParams();
   const planoNoUrl = searchParams.get('plano');
+  // `?aba=tarefas` vem do antigo endereço de "Minhas tarefas".
+  const abaNoUrl = searchParams.get('aba');
+  useEffect(() => {
+    if (abaNoUrl !== 'tarefas') return;
+    setActiveTab('tarefas');
+    const next = new URLSearchParams(searchParams); next.delete('aba'); setSearchParams(next, { replace: true });
+  }, [abaNoUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: planos = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['planos-acao', empresaId],
@@ -707,14 +715,16 @@ export default function PlanosAcao() {
         <TabsList moduleTitle={t('planosAcao.tabAll')} searchValue={search} onSearchChange={setSearch}>
           <TabsTrigger value="conexoes">{t('evidenceIntelligence.context')}</TabsTrigger>
           <TabsTrigger value="meus" count={meusItens.length}><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
+          <TabsTrigger value="tarefas"><IconTime className="h-4 w-4" />{t('minhasTarefas.title')}</TabsTrigger>
           {isAdmin && <TabsTrigger value="todos" count={processedPlanos.length}><IconList className="h-4 w-4" />{t('planosAcao.tabAll')}</TabsTrigger>}
         </TabsList>
+        <TabsContent value="tarefas"><MinhasTarefas embedded /></TabsContent>
         <TabsContent value="conexoes"><ComplianceContextPanel onDraft={(origin, draft) => {
           const existing = planos.find(p => origin.registroId && p.registro_origem_id === origin.registroId && p.modulo_origem === origin.modulo && !['cancelado','concluido'].includes(p.status));
           if (existing) { setDetailPlano(existing); return; }
           setEditingPlano(null); setContextDraft({ origin, draft }); setDialogOpen(true);
         }} /></TabsContent>
-        <TabsContent value={activeTab === 'conexoes' ? '__list' : activeTab} className="space-y-4">
+        <TabsContent value={activeTab === 'conexoes' || activeTab === 'tarefas' ? '__list' : activeTab} className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <div className="border-b border-border/60 p-4">

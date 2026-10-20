@@ -42,7 +42,8 @@ type Row = {
   href: string;
 };
 
-export default function MinhasTarefas() {
+/** `embedded`: mostrada como aba dentro de Planos de Ação (sem cabeçalho próprio). */
+export default function MinhasTarefas({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
   const { user, profile } = useAuth();
@@ -197,10 +198,10 @@ export default function MinhasTarefas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {!embedded && <PageHeader
         title={t('minhasTarefas.title')}
         description={t('minhasTarefas.subtitle')}
-      />
+      />}
 
       <StatStrip
         loading={isLoading}

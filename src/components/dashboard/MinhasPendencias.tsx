@@ -107,7 +107,7 @@ export function MinhasPendencias() {
           ))}
         </ul>
       </CardContent>
-      <PanelAction onClick={() => navigate('/projetos/minhas-tarefas')}>
+      <PanelAction onClick={() => navigate('/planos-acao?aba=tarefas')}>
         {t('dashWidgets.pendencias.verTodas', { count: total })}
       </PanelAction>
     </Card>

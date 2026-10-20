@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "akuris-motion-micro rounded-lg border border-border text-card-foreground transition-ui dark:shadow-none",
+  "akuris-motion-micro rounded-lg border border-transparent text-card-foreground transition-ui dark:shadow-none",
   {
     variants: {
       variant: {
@@ -16,7 +16,7 @@ const cardVariants = cva(
         accent: "bg-card shadow-card",
       },
       interactive: {
-        true: "cursor-pointer governaii-card-hover hover:border-primary/30",
+        true: "cursor-pointer governaii-card-hover border-border hover:border-primary/30",
         false: "",
       }
     },

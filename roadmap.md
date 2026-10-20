@@ -17,3 +17,7 @@
 - [x] Tela do framework no modelo A (categorias ao lado)
 - [x] Status com anel (Chip)
 - [x] Gap Analysis: limpeza e unificação
+- [x] Simplificação: Minhas tarefas como aba de Planos de Ação
+- [x] Simplificação: rota de Planos de Ação (já era única; /planos é a página de planos de assinatura)
+- [x] Simplificação: canal de denúncia com as duas ações lado a lado
+- [x] Simplificação visual: 3 estilos de botão, borda só em cartões clicáveis, 4 tamanhos de texto

@@ -114,7 +114,7 @@ export default function Projetos() {
         description={t('projetos.page.subtitle')}
         actions={
           <>
-            <Button variant="outline" onClick={() => navigate('/projetos/minhas-tarefas')}>{t('projetos.page.myTasks')}</Button>
+            <Button variant="outline" onClick={() => navigate('/planos-acao?aba=tarefas')}>{t('projetos.page.myTasks')}</Button>
             <Button onClick={openNovo}><IconAdd className="h-4 w-4" /> {t('projetos.page.newProject')}</Button>
           </>
         }
