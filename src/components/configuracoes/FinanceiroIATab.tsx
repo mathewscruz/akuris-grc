@@ -14,12 +14,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { ModelosIAUsoCard } from './ModelosIAUsoCard';
 import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_FONT } from '@/lib/chart-tokens';
 // --- Catálogo único de funcionalidades/modelos de IA (src/lib/ai-usage-catalog.ts) ---
 import {
   AI_MODELS,
   AI_FEATURES,
-  featuresUsingModel,
   resolveAiFeature,
   aiFeatureLabel,
   type AiModelId,
@@ -298,79 +298,12 @@ export function FinanceiroIATab() {
 
   return (
     <div className="space-y-6">
-      {/* Card: Modelos IA em Uso */}
+      <ModelosIAUsoCard />
+
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconChip className="h-5 w-5" />
-            {t('configPlanos.financeiroIA.modelosTitle')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="overflow-x-auto">
-            <table className="akuris-table w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colModelo')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colProvider')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colInputTokens')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colOutputTokens')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colCustoMedioReq')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncoes')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colReqsMes')}</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colCustoTotal')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(MODEL_PRICING).map(([key, info]) => {
-                  const stat = modelStats.find(m => m.model === key);
-                  const feats = featuresUsingModel(key as AiModelId);
-                  return (
-                    <tr key={key} className="border-b border-border/50">
-                      <td className="py-2 font-medium">
-                        {info.label}
-                        {info.fallbackOnly && (
-                          <span className="ml-2 text-xs text-muted-foreground">fallback</span>
-                        )}
-                      </td>
-                      <td className="py-2">
-                        <Badge variant="outline" className="text-xs">{info.provider}</Badge>
-                      </td>
-                      <td className="py-2 font-mono text-xs">${info.inputPer1kTokens.toFixed(5)}</td>
-                      <td className="py-2 font-mono text-xs">${info.outputPer1kTokens.toFixed(4)}</td>
-                      <td className="py-2 font-mono text-xs">R$ {info.avgCostPerReqBRL.toFixed(3)}</td>
-                      <td className="py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {feats.length === 0 ? (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          ) : feats.map(f => (
-                            <Badge key={f.key} variant="secondary" className="text-micro">
-                              {aiFeatureLabel(f.key, locale)}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-2 text-right font-semibold">{stat?.reqs || 0}</td>
-                      <td className="py-2 text-right font-semibold">R$ {(stat?.totalCostBRL || 0).toFixed(2)}</td>
-                    </tr>
-                  );
-                })}
-
-              </tbody>
-              <tfoot>
-                <tr className="font-semibold">
-                  <td colSpan={4} className="pt-2">{t('configPlanos.financeiroIA.custoMedioPonderado')}</td>
-                  <td className="pt-2 font-mono">R$ {avgCostPerReq.toFixed(3)}</td>
-                  <td></td>
-                  <td className="pt-2 text-right">{totals.totalReqs}</td>
-                  <td className="pt-2 text-right">R$ {totals.custo.toFixed(2)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
+        <CardContent className="pt-6 space-y-4">
           {/* Override toggle */}
-          <div className="flex items-center gap-4 pt-2 border-t border-border">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Switch checked={overrideEnabled} onCheckedChange={setOverrideEnabled} id="override" />
               <Label htmlFor="override" className="text-xs text-muted-foreground">{t('configPlanos.financeiroIA.simularCustoFixo')}</Label>
