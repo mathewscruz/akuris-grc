@@ -61,11 +61,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
     try {
-      if (userId) {
-        window.localStorage.setItem(userKey(userId), theme);
-      } else {
-        window.localStorage.setItem(GLOBAL_KEY, theme);
-      }
+      if (userId) window.localStorage.setItem(userKey(userId), theme);
+      // Sempre grava o global: o index.html lê-o antes do React arrancar.
+      window.localStorage.setItem(GLOBAL_KEY, theme);
     } catch {
       /* ignore */
     }
