@@ -10,6 +10,7 @@
  */
 
 export type AiModelId =
+  | 'google/gemini-3.8-flash'
   | 'google/gemini-3.6-flash'
   | 'google/gemini-4-argon'
   | 'google/gemini-3.1-pro-preview'
@@ -44,9 +45,18 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
     outputPer1kTokens: 0.01,
     avgCostPerReqBRL: 0.25,
   },
+  'google/gemini-3.8-flash': {
+    id: 'google/gemini-3.8-flash',
+    label: 'Gemini 3.8 Flash',
+    provider: 'Google',
+    inputPer1kTokens: 0.00075,
+    outputPer1kTokens: 0.00375,
+    avgCostPerReqBRL: 0.06,
+  },
   'google/gemini-3.6-flash': {
     id: 'google/gemini-3.6-flash',
     label: 'Gemini 3.6 Flash',
+    descontinuado: true,
     provider: 'Google',
     inputPer1kTokens: 0.00075,
     outputPer1kTokens: 0.00375,
@@ -186,7 +196,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Requirement guidance (single)',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'populate-requirement-guidance',
   },
   {
@@ -196,7 +206,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Requirement guidance (batch)',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'populate-requirement-guidance',
   },
   {
@@ -250,7 +260,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Dashboard summary (AI)',
     modulePt: 'Painel',
     moduleEn: 'Dashboard',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'dashboard-ai-summary',
   },
   {
@@ -259,7 +269,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Akuria assistant (chat)',
     modulePt: 'Assistente',
     moduleEn: 'Assistant',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'akuria-chat',
   },
   {
@@ -268,7 +278,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Module assistant (insights)',
     modulePt: 'Transversal',
     moduleEn: 'Cross-module',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'ai-module-assistant',
   },
   {
@@ -277,7 +287,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Project status report',
     modulePt: 'Projetos',
     moduleEn: 'Projects',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'projeto-status-report',
   },
   {
@@ -286,7 +296,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Project task suggestions',
     modulePt: 'Projetos',
     moduleEn: 'Projects',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'projeto-suggest-tasks',
   },
   {
@@ -313,7 +323,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Email content generation',
     modulePt: 'Campanhas',
     moduleEn: 'Campaigns',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-3.8-flash',
     edgeFunction: 'generate-email-content',
   },
 ];

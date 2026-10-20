@@ -7,6 +7,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconChip } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+import { intlLocale } from '@/lib/date-utils';
 import {
   AI_MODELS, USD_BRL, custoRealUSD, featuresUsingModel, aiFeatureLabel, type AiModelId,
 } from '@/lib/ai-usage-catalog';
@@ -54,7 +55,7 @@ function inicioDoPeriodo(p: Periodo): string {
   return d.toISOString();
 }
 
-const fmtInt = (n: number) => n.toLocaleString('pt-BR');
+const fmtInt = (n: number) => n.toLocaleString(intlLocale());
 const fmtBRL = (n: number, casas = 2) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}`;
 
 export function ModelosIAUsoCard() {

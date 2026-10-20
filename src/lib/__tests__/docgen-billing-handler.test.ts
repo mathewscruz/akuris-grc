@@ -64,7 +64,7 @@ function harness() {
   }));
   const client = { from: query, rpc, auth: { getUser: async () => ({ data: { user: { id: 'user-test' } }, error: null }) } };
   const context: any = {
-    testClient: client, fetch: ai, Response, Request, Headers, AbortController, AbortSignal,
+    testClient: client, fetch: (url: any, init: any) => String(url).includes('ai.gateway') ? (ai as any)(url, init) : Promise.resolve(new Response('{}', { status: 201 })), Response, Request, Headers, AbortController, AbortSignal,
     setTimeout, clearTimeout, crypto, console: { log: vi.fn(), error: vi.fn(), warn: vi.fn() },
     Deno: { env: { get: () => 'test-only' } }, require: createRequire(import.meta.url), module: { exports: {} },
   };
