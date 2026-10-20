@@ -59,3 +59,25 @@ export async function callAiGateway(payload: {
     }),
   }, timeoutMs);
 }
+
+/**
+ * Chamada das análises de topo com plano B. Tenta o modelo pedido; se o
+ * fornecedor falhar (5xx, 408 ou timeout/rede), repete UMA vez em
+ * `MODELOS.RESERVA`, noutro fornecedor. A resposta da reserva traz o
+ * cabeçalho `x-akuris-reserva: 1` (resultado simplificado).
+ * 402/403/429/4xx não mudam de modelo: não são avaria do fornecedor.
+ */
+export async function fetchAnaliseComReserva(url: string, init: RequestInit, timeoutMs = 90000): Promise<Response> {
+  try {
+    const r = await fetchWithTimeout(url, init, timeoutMs);
+    if (r.status < 500 && r.status !== 408) return r;
+    await r.body?.cancel().catch(() => {});
+  } catch (_) { /* rede/timeout: segue para a reserva */ }
+  const corpo = JSON.parse(String(init.body ?? '{}'));
+  corpo.model = MODELOS.RESERVA;
+  if (corpo.max_tokens !== undefined) { corpo.max_completion_tokens = corpo.max_tokens; delete corpo.max_tokens; }
+  delete corpo.temperature;
+  const r2 = await fetchWithTimeout(url, { ...init, body: JSON.stringify(corpo) }, timeoutMs);
+  const h = new Headers(r2.headers); h.set('x-akuris-reserva', '1');
+  return new Response(r2.body, { status: r2.status, statusText: r2.statusText, headers: h });
+}
