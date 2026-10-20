@@ -7,8 +7,8 @@ import { DemoButton } from '@/components/public/PublicShell';
 export function ModuleCatalog() {
   const { t } = useLanguage();
   return <section className="site-section site-catalog" id="solucoes"><div className="lp-container">
-    <div className="site-heading"><h2>{t('site.catalogTitle')}</h2><p>{t('site.catalogBody')}</p></div>
-    <div className="catalog-compact">
+    <div className="site-heading" data-reveal><h2>{t('site.catalogTitle')}</h2><p>{t('site.catalogBody')}</p></div>
+    <div className="catalog-compact" data-reveal onPointerMove={e => { const card = (e.target as HTMLElement).closest<HTMLElement>('.catalog-area'); if (!card) return; const r = card.getBoundingClientRect(); card.style.setProperty('--mx', `${e.clientX - r.left}px`); card.style.setProperty('--my', `${e.clientY - r.top}px`); }}>
       {(['Assess', 'Protect', 'Operate', 'Assets'] as const).map(group => {
         const modules = PUBLIC_MODULES.filter(module => module.group === group);
         const Icon = MODULE_ICON[modules[0].route];
