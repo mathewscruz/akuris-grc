@@ -1,0 +1,1 @@
+REVOKE ALL ON public.ia_uso_modelos FROM anon;

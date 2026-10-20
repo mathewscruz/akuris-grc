@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('projeto_suggest_tasks');
 // Edge Function: projeto-suggest-tasks
 // Sugere quebra de tarefas para um objetivo dentro de um projeto.
 // Consome 1 crédito via consume_ai_credit. 402 quando esgotado.
@@ -93,7 +95,7 @@ Sem saudações. Retorne APENAS JSON válido (sem markdown):
     // em que sai. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResp = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

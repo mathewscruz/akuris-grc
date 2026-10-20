@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('evidence_cross_match');
 import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Edge Function: evidence-cross-match
 // Recebe { evidence_id } e analisa em quais requisitos da empresa essa evidência também serve.

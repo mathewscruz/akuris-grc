@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('akuria_chat');
 import { readAllPages } from '../_shared/read-all-pages.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -426,7 +428,7 @@ ${specificDetails}`;
     */
     if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: "POST",
       headers: {
         Authorization: `Bearer ${lovableApiKey}`,

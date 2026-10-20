@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('analyze_document_adherence');
 // Análise de aderência de documento a um framework — em segundo plano.
 //
 // Antes: uma única chamada lia só os primeiros 30k caracteres e avaliava tudo

@@ -15,3 +15,4 @@
 - Module permissions are assigned only through permission profiles (user_module_permissions is derived from the profile); there is no per-user override UI, keeping access reviews tractable.
 - Every DataTable offers the standard Export menu (CSV/PDF of the filtered rows); modules with custom CSV pass it via onExport instead of their own header button.
 - Judgement-heavy AI (evidence, documents, diagnostics, DocGen, questionnaires, supplier/risk suggestions) uses MODELOS.ANALISE; chat/quick tasks stay on PADRAO, so quality spend goes where users decide on the output.
+- Every AI Gateway call goes through _shared/ai.ts helpers (fetchIA, fetchAnaliseComReserva, callAiGateway), which log model, tokens, latency and fallback to ia_uso_modelos (super-admin read); Financeiro IA costs come from that log, not from credit rows.

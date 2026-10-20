@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('responder_questionario');
 import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Edge Function: answer-security-questionnaire
 // Rascunha respostas a questionários de segurança de clientes usando

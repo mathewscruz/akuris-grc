@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('generate_email_content');
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { temCreditoIA, semCreditoIA } from '../_shared/creditos.ts';
@@ -34,7 +36,7 @@ REGRAS OBRIGATÓRIAS:
 RETORNE APENAS O HTML, SEM MARKDOWN, SEM EXPLICAÇÕES.`;
 
 async function generateText(prompt: string): Promise<string> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -56,7 +58,7 @@ async function generateText(prompt: string): Promise<string> {
 async function generateImage(theme: string): Promise<string | null> {
   const imagePrompt = `Ilustração editorial moderna e corporativa sobre: ${theme}. Estilo: flat design profissional, cores predominantes navy escuro (#0a1628) e roxo (#7552ff), sem texto na imagem, formato widescreen, alta qualidade, visual elegante para topo de e-mail marketing de uma plataforma de Governança Risco e Compliance.`;
 
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -151,7 +153,7 @@ serve(async (req) => {
     let subject: string | null = null;
     if (includeSubject) {
       try {
-        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const r = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
