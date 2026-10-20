@@ -39,6 +39,11 @@ Proposta: criar um nível "Análise" com o modelo de topo (o mesmo da análise d
 | Questionário de segurança | rápido | topo | respostas citando políticas/controles reais da empresa |
 | Tratamento de risco sugerido | rápido | topo | tratamento ligado a controles existentes, com custo/esforço |
 | DocGen (geração do documento) | rápido | topo | documento mais completo e coerente com a norma |
+| Análise de evidência contra requisito | rápido | topo | veredito por requisito com trechos citados |
+| Cruzamento de evidências entre requisitos | rápido | topo | reuso de evidência mais confiável |
+| Análise de documento (Comprovar) | topo na leitura, rápido no resumo | topo em todas as etapas | resultado final tão bom quanto a leitura |
+
+**Modelo escolhido para evidências e documentos:** Gemini 4 (o mais forte do Google disponível hoje). Antes de trocar, a lista de modelos disponíveis será consultada. Se houver um modelo comprovadamente melhor para leitura de documentos longos, ele será usado em todas essas análises, com o Gemini 4 como reserva.
 
 Continuam no modelo rápido (resposta imediata importa mais): chat AkurIA, assistente de módulo, tarefas de projeto, status report, e-mails, traduções.
 
