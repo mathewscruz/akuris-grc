@@ -57,7 +57,7 @@ export const MODELOS = {
   /** Documento inteiro contra requisito. O mais caro, e o que o justifica. */
   LEITURA_LONGA: 'google/gemini-4-argon',
   /** Geração de imagem para campanhas. Sem equivalente nos outros níveis. */
-  IMAGEM: 'google/gemini-2.5-flash-image',
+  IMAGEM: 'google/gemini-3.1-flash-image',
   /** Rede de segurança, noutro fornecedor. */
   RESERVA: 'openai/gpt-5.4-mini',
   /** Julgamento que o usuário usa para decidir (evidências, documentos, diagnósticos). Mesmo topo da leitura longa. */

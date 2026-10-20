@@ -1,3 +1,4 @@
+import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Edge Function: evidence-cross-match
 // Recebe { evidence_id } e analisa em quais requisitos da empresa essa evidência também serve.
 // Persiste sugestões em evidence_library_links com vinculo_tipo='sugestao_ia'.
@@ -244,7 +245,7 @@ Score é somente ordenação de relevância, nunca percentual de conformidade. C
     // em que sai. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(supabase, empresa_id))) return semCreditoIA(corsHeaders);
 
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResp = await fetchAnaliseComReserva('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       signal: AbortSignal.timeout(35000),
       headers: {

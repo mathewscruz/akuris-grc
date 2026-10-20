@@ -1,3 +1,4 @@
+import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Edge Function: gap-analysis-ai-diagnostic
 // Diagnóstico editorial rápido de um requisito específico.
 // Recebe contexto da empresa + dados do requisito, retorna veredito IA com
@@ -143,7 +144,7 @@ Sem saudações ou introduções. Retorne APENAS JSON válido (sem markdown), ne
     // em que sai. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResp = await fetchAnaliseComReserva('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${lovableKey}`,

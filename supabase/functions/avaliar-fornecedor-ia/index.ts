@@ -1,3 +1,4 @@
+import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 /**
  * Lê o questionário que o fornecedor devolveu e dá um parecer.
  *
@@ -183,7 +184,7 @@ Deno.serve(async (req: Request) => {
     // em que sai. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(admin, avaliacao.empresa_id))) return semCreditoIA(corsHeaders);
 
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResp = await fetchAnaliseComReserva('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({

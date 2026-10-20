@@ -8,7 +8,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { MODELOS } from '../_shared/modelos.ts';
-import { fetchWithTimeout } from '../_shared/ai.ts';
+import { fetchWithTimeout, fetchAnaliseComReserva } from '../_shared/ai.ts';
 import {
   comRepeticao, dividirEmLotes, emPool, juntarLotes, IaIndisponivelError,
   dividirTexto, orcamentoResumo, proximosPendentes, LIMITE_TEXTO_DIRETO,
@@ -49,7 +49,7 @@ function agendarProximo(jobId: string, atrasoMs = 1000) {
 
 // ---------- chamadas à IA ----------
 async function chamarIA(model: string, system: string, user: string, maxTokens: number, timeoutMs = 50000): Promise<string> {
-  const resp = await comRepeticao(() => fetchWithTimeout(GATEWAY, {
+  const resp = await comRepeticao(() => fetchAnaliseComReserva(GATEWAY, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${AI_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),

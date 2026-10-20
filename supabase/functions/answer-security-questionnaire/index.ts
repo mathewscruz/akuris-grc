@@ -1,3 +1,4 @@
+import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Edge Function: answer-security-questionnaire
 // Rascunha respostas a questionários de segurança de clientes usando
 // SOMENTE dados da empresa (controles, frameworks, documentos).
@@ -71,7 +72,7 @@ ${perguntas.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 Retorne APENAS JSON válido:
 {"respostas":[{"n":1,"resposta":"sim|parcial|nao|na","justificativa":"1-3 frases","evidencias":["nome do controle ou documento"]}]}`;
 
-    const ai = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const ai = await fetchAnaliseComReserva('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

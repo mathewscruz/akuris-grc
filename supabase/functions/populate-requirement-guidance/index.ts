@@ -220,7 +220,7 @@ async function generateGuidance(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: MODELOS.PADRAO,
+        model: MODELOS.ANALISE,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
         max_tokens: 4000,
@@ -415,7 +415,7 @@ async function traduzirCatalogo(supabase: any, apiKey: string | undefined): Prom
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODELOS.PADRAO,
+      model: MODELOS.ANALISE,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: 'You translate GRC framework requirement metadata from Portuguese to professional English. Keep official terminology of the standard (ISO, NIST, PCI, GDPR, etc.). Return JSON {"items":[{"id","titulo_en","descricao_en","categoria_en"}]} with exactly one item per input id. No extra text.' },
@@ -470,7 +470,7 @@ async function ampliarDescricoes(supabase: any, apiKey: string | undefined): Pro
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODELOS.PADRAO,
+      model: MODELOS.ANALISE,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: 'You are a senior GRC specialist. For each framework requirement, write what the organization must do, in your own words (never copy the official text verbatim). descricao: Brazilian Portuguese, 1-2 sentences, 120-320 characters, starting with "A organização deve". descricao_en: same meaning in English, starting with "The organization must". No greetings, emojis, markdown or requirement codes. Return JSON {"items":[{"id","descricao","descricao_en"}]} with one item per input id.' },
