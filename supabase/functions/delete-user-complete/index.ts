@@ -69,7 +69,8 @@ Deno.serve(async (req) => {
       if (targetProfile.empresa_id !== currentUserProfile.empresa_id) {
         throw new AuthError('FORBIDDEN', 403)
       }
-      if (['admin', 'super_admin'].includes(targetProfile.role)) {
+      // Admins da empresa podem excluir outros admins da mesma empresa; super_admin nunca.
+      if (targetProfile.role === 'super_admin') {
         throw new AuthError('FORBIDDEN', 403)
       }
     }
