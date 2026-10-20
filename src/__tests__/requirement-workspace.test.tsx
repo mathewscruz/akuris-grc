@@ -58,13 +58,11 @@ describe('requirement workspace', () => {
     expect(await screen.findByText('Preparando a orientação completa deste requisito…')).toBeVisible();
     expect(screen.queryByText('O que implementar')).not.toBeInTheDocument();
   });
-  it('offers a visible retry after a failure while preserving existing instructions', async () => {
+  it('keeps existing instructions without a general failure warning when a refresh fails', async () => {
     mocks.guidanceText = '## Faça nesta ordem\nConfira os ativos devolvidos.'; mocks.guidanceState = 'falha';
     show();
     expect(await screen.findByText('Confira os ativos devolvidos.')).toBeVisible();
-    expect(screen.getByText(/conteúdo já salvo foi preservado/)).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Tentar gerar novamente' }));
-    expect(mocks.generate).toHaveBeenCalledWith(false);
+    expect(screen.queryByText(/conteúdo já salvo foi preservado/)).not.toBeInTheDocument();
   });
   it('starts with a concise brief, optional full guidance and one visible step', async () => {
     const { container } = show();

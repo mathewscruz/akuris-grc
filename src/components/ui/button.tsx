@@ -8,17 +8,11 @@ import { cn } from "@/lib/utils"
  * classes de fundo/borda soltas em `className`, para manter consistência e
  * facilitar manutenção). Todas usam tokens de tema, funcionando em claro/escuro.
  *
- * Hierarquia de uso:
- *  - default    → ação primária da tela/diálogo (só UMA por contexto): Salvar, Criar.
- *  - outline    → ação secundária com fundo sólido (branco no claro): Cancelar,
- *                 Exportar, Filtrar. NÃO é transparente — tem `bg-background`.
- *  - secondary  → alternativa neutra preenchida (cinza) a `outline`.
- *  - ghost      → ação terciária SEM fundo: botões só-ícone, itens de toolbar/menu,
- *                 ações de linha em tabela. Fundo aparece só no hover.
- *  - destructive→ ação destrutiva (Excluir).
- *  - link       → navegação inline com aparência de texto.
- *  - success/warning → confirmações/alertas semânticos preenchidos.
- *  - soft/gradient/premium/glow → variantes de destaque; usar com parcimônia.
+ * Hierarquia de uso (só três estilos):
+ *  - default → principal (uma por tela)
+ *  - outline → secundário
+ *  - ghost/link → discreto
+ *  - destructive → excluir
  */
 const buttonVariants = cva(
   // `shrink-0`: um botão não encolhe abaixo do seu tamanho.
@@ -30,24 +24,24 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-elegant",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        // Secundário com fundo sólido (branco puro via bg-card) — contrasta com a
-        // página (bg-background ~98%) nos dois temas; não fica transparente.
+        // Três estilos apenas: principal, secundário e discreto.
+        // `destructive` mantém o vermelho para excluir; os nomes antigos
+        // continuam aceites e apontam para um dos três.
+        default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         outline: "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        // Terciário sem fundo — ícones, toolbars, itens de menu, ações de linha.
         ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        // Aliases legados
+        secondary: "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
+        "outline-primary": "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
+        soft: "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
+        "outline-destructive": "border border-border bg-card text-destructive shadow-sm hover:bg-destructive/10",
         link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-success text-success-foreground shadow-sm hover:bg-success/90",
-        warning: "bg-warning text-warning-foreground shadow-sm hover:bg-warning/90",
-        // GovernAII Signature Variants
-        gradient: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow hover:brightness-110",
-        premium: "bg-gradient-primary text-primary-foreground shadow-elegant hover:shadow-glow hover:brightness-110",
-        glow: "bg-primary text-primary-foreground shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]",
-        "outline-primary": "border border-primary/60 bg-transparent text-foreground hover:bg-primary/10",
-        "outline-destructive": "border border-destructive/60 bg-transparent text-destructive hover:bg-destructive/10",
-        soft: "bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20",
+        success: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+        warning: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+        gradient: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+        premium: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+        glow: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
       },
       /*
         O alvo de toque mede-se em PIXELS, não em `rem`.

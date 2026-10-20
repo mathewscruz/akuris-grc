@@ -86,7 +86,6 @@ const SolicitacaoPrivacidadePublica = React.lazy(
 const PlanosAcao = React.lazy(() => import("@/pages/PlanosAcao"));
 const Projetos = React.lazy(() => import("@/pages/Projetos"));
 const ProjetoDetalhe = React.lazy(() => import("@/pages/ProjetoDetalhe"));
-const MinhasTarefas = React.lazy(() => import("@/pages/MinhasTarefas"));
 const ProjetoTemplates = React.lazy(() => import("@/pages/ProjetoTemplates"));
 const Relatorios = React.lazy(() => import("@/pages/Relatorios"));
 const FrameworkSEO = React.lazy(() => import("@/pages/FrameworkSEO"));
@@ -378,11 +377,7 @@ function App() {
                       />
                       <Route
                         path="/projetos/minhas-tarefas"
-                        element={
-                          <ProtectedRoute moduleName="projetos">
-                            <MinhasTarefas />
-                          </ProtectedRoute>
-                        }
+                        element={<Navigate to="/planos-acao?aba=tarefas" replace />}
                       />
                       <Route
                         path="/projetos/templates"

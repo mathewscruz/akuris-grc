@@ -40,16 +40,16 @@ export default {
         ui: 'color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow, transform, opacity',
       },
       fontSize: {
-        /** Escala em rem com raiz estável de 16px: leitura preservada também no celular. */
-        micro: ['0.75rem', { lineHeight: '1rem' }],
+        /** Quatro tamanhos: legenda (micro/xs), corpo (sm/base), subtítulo (lg/xl/2xl), título (3xl/4xl). 5xl só no site público. */
+        micro: ['0.75rem', { lineHeight: '1.0625rem' }],
         xs: ['0.75rem', { lineHeight: '1.0625rem' }],
         sm: ['0.875rem', { lineHeight: '1.25rem' }],
-        base: ['0.9375rem', { lineHeight: '1.5rem' }],
-        lg: ['1rem', { lineHeight: '1.375rem' }],
+        base: ['0.875rem', { lineHeight: '1.375rem' }],
+        lg: ['1.125rem', { lineHeight: '1.5rem' }],
         xl: ['1.125rem', { lineHeight: '1.5rem' }],
-        '2xl': ['1.25rem', { lineHeight: '1.625rem' }],
+        '2xl': ['1.125rem', { lineHeight: '1.5rem' }],
         '3xl': ['1.5rem', { lineHeight: '1.875rem' }],
-        '4xl': ['1.75rem', { lineHeight: '2.125rem' }],
+        '4xl': ['1.5rem', { lineHeight: '1.875rem' }],
         '5xl': ['2.125rem', { lineHeight: '2.375rem' }],
       },
 			colors: {
