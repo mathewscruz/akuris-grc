@@ -20,6 +20,7 @@ import { sugerirStatus, contarEvidenciasEsperadas } from '@/lib/gap-analysis/sug
 import { EvidenciasEsperadasLista, useMarcacoesEvidencia } from './EvidenciasEsperadasLista';
 import { contarAtendidos } from '@/lib/gap-analysis/evidencia-itens';
 import { scopedDraftKey } from '@/hooks/useWizardDraft';
+import { answerFingerprint, restoreRequirementDraft } from '@/lib/gap-analysis/requirement-draft';
 import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,19 @@ interface EvaluationCore {
 const PROSE_CLASS =
   'prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-headings:text-sm prose-headings:mt-3 prose-headings:mb-1.5 prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-strong:text-foreground';
 
+function Bloco({ icon: Icon, titulo, right, children }: { icon: React.ComponentType<any>; titulo: string; right?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="py-5 first:pt-0 border-b border-border last:border-0">
+      <div className="flex items-center gap-2.5 mb-3">
+        <Icon className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
+        <h3 className="text-sm font-semibold normal-case tracking-normal text-foreground flex-1">{titulo}</h3>
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 export function RequirementDrawer({
   open,
   onOpenChange,
@@ -96,6 +110,7 @@ export function RequirementDrawer({
   const { user } = useAuth();
   const qc = useQueryClient();
   const draftKey = requirementId ? scopedDraftKey(empresaId, user?.id, `gap-req-${requirementId}`) : null;
+  const [savedAnswer, setSavedAnswer] = useState<{ key: string | null; fingerprint: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<AIDiagnosticResult | null>(null);
@@ -116,6 +131,7 @@ export function RequirementDrawer({
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setSavedAnswer(null);
       setDiagnostic(null);
       try {
         const [reqRes, evalRes] = await Promise.all([
@@ -137,18 +153,22 @@ export function RequirementDrawer({
           onOpenChange(false);
           return;
         }
+        if (evalRes.error) throw evalRes.error;
         setRequirement(localizeRequirement(reqRes.data as any) as any);
-        setEvaluation({
+        const saved: EvaluationCore = {
           id: evalRes.data?.id,
           conformity_status: evalRes.data?.conformity_status || null,
           observacoes: evalRes.data?.observacoes || '',
           prazo_implementacao: evalRes.data?.prazo_implementacao || null,
           responsavel_avaliacao: (evalRes.data as any)?.responsavel_avaliacao || null,
-        });
+        };
+        let restored = saved;
         try {
           const rascunho = draftKey ? localStorage.getItem(draftKey) : null;
-          if (rascunho) setEvaluation((prev) => ({ ...prev, ...JSON.parse(rascunho) }));
+          restored = { ...saved, ...restoreRequirementDraft(rascunho, saved) };
         } catch { /* rascunho inválido é ignorado */ }
+        setEvaluation(restored);
+        setSavedAnswer({ key: draftKey, fingerprint: answerFingerprint(saved) });
       } catch (e) {
         logger.error('Erro ao carregar requisito no drawer', {
           error: e instanceof Error ? e.message : String(e),
@@ -159,7 +179,7 @@ export function RequirementDrawer({
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, requirementId, empresaId, onOpenChange]);
+  }, [open, requirementId, empresaId, onOpenChange, draftKey]);
 
   const runDiagnostic = useCallback(async () => {
     if (!requirementId) return;
@@ -179,7 +199,7 @@ export function RequirementDrawer({
   const nextId = idx >= 0 && idx < (sequence!.length - 1) ? sequence![idx + 1] : null;
 
   const handleSave = async (avancar = false) => {
-    if (!requirement || !empresaId || precisaJustificativa) return;
+    if (!requirement || !empresaId || precisaJustificativa || loading || !savedAnswer || savedAnswer.key !== draftKey) return;
     setSaving(true);
     try {
       const payload = {
@@ -206,6 +226,7 @@ export function RequirementDrawer({
         saveError = error;
       }
       if (saveError) throw saveError;
+      setSavedAnswer({ key: draftKey, fingerprint: answerFingerprint(evaluation) });
       toast.success(t('gapUi.drawer.evaluationSaved'));
       if (draftKey) localStorage.removeItem(draftKey);
       onSaved?.();
@@ -257,19 +278,21 @@ export function RequirementDrawer({
 
   // Rascunho por empresa + utilizador enquanto se escreve.
   useEffect(() => {
-    if (!open || !draftKey || loading || !requirement) return;
+    if (!open || !draftKey || loading || requirement?.id !== requirementId || savedAnswer?.key !== draftKey) return;
+    const values = answerFingerprint(evaluation);
+    if (values === savedAnswer.fingerprint) {
+      try { localStorage.removeItem(draftKey); } catch { /* storage unavailable */ }
+      return;
+    }
     const id = window.setTimeout(() => {
       try {
         localStorage.setItem(draftKey, JSON.stringify({
-          conformity_status: evaluation.conformity_status,
-          observacoes: evaluation.observacoes,
-          prazo_implementacao: evaluation.prazo_implementacao,
-          responsavel_avaliacao: evaluation.responsavel_avaliacao,
+          version: 1, base: savedAnswer.fingerprint, values,
         }));
       } catch { /* armazenamento cheio: sem rascunho */ }
     }, 600);
     return () => window.clearTimeout(id);
-  }, [open, draftKey, loading, requirement, evaluation]);
+  }, [open, draftKey, loading, requirement, requirementId, evaluation, savedAnswer]);
 
   const evidenciasQuery = useQuery({
     queryKey: ['requisito-evidencias-count', requirementId, empresaId],
@@ -343,17 +366,6 @@ export function RequirementDrawer({
     <div className={`text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>{txt}</ReactMarkdown>
     </div>
-  );
-
-  const Bloco = ({ icon: Icon, titulo, right, children }: { icon: React.ComponentType<any>; titulo: string; right?: React.ReactNode; children: React.ReactNode }) => (
-    <section className="py-5 first:pt-0 border-b border-border last:border-0">
-      <div className="flex items-center gap-2.5 mb-3">
-        <Icon className="h-5 w-5 text-foreground/80" strokeWidth={1.5} />
-        <h3 className="text-sm font-semibold normal-case tracking-normal text-foreground flex-1">{titulo}</h3>
-        {right}
-      </div>
-      {children}
-    </section>
   );
 
   const textoJust = evaluation.observacoes || '';
@@ -433,7 +445,7 @@ export function RequirementDrawer({
                       )}
                     </div>
                   )}
-                  {orientacao.estado !== 'gerando' && (orientacao.estado === 'falha' || !orientacao.texto) && (
+                  {orientacao.estado !== 'gerando' && !orientacao.texto?.trim() && (
                     <div role="status">
                       <p className="text-sm text-muted-foreground">
                         {orientacao.estado === 'falha' ? t('gapUi.detail.guidanceFalhou') : t('gapUi.detail.guidanceIndisponivel')}
