@@ -8,5 +8,6 @@
 - Supplier tab counts use useSupplierCount rather than assessment-email counts; this keeps navigation aligned with the actual supplier list.
 - A Card nested in another Card loses its frame via global CSS (`data-slot="card"`; opt out with `data-keep-frame`); this keeps one rounded border per area.
 - Form drafts use useWizardDraft with keys scoped by empresa + user, and deletes use undoableAction (commit after the undo window); this keeps drafts tenant-isolated and deletions reversible.
+- Requirement answer drafts contain only edits and the saved-answer fingerprint; restore only against the same saved answer, rejecting legacy snapshots, so colleague and bulk updates remain authoritative.
 - Gap Analysis requirement editing lives only on the full page /gap-analysis/framework/:frameworkId/requisito/:requirementId (RequirementDrawer asPage, which also hosts evidence reuse, review/exception and action-plan sections); legacy ?req= links redirect there and the framework page has no local ⌘K, so there is one shareable editing surface and one search.
 - Global requirement catalogue quality is self-healed by the populate-requirement-guidance cron (expands title-only descriptions, rewrites guidance lacking the ordered-steps section) and the drawer renders guidance via parseOrientacao sections; this keeps every framework instructive without manual data fixes.

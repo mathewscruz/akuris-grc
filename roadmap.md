@@ -1,8 +1,11 @@
 # Roadmap
+- [x] Monitoring: impedir rascunhos antigos de substituir avaliações gravadas
+- [x] Monitoring: manter painéis de evidência montados durante a edição
+- [x] Monitoring: não apresentar falha geral quando há orientação disponível
 - [x] 1 Largura da janela do requisito
 - [x] 2 Status em lote Planos de Ação
 - [x] 3 QR code do ativo
-- [ ] 4 Orientação com falso erro: mantido aviso discreto + texto preservado (comportamento coberto por testes); decidir com o usuário se some de vez
+- [x] 4 Orientação com falso erro: aviso geral só quando falta texto; conclusão automática e conteúdo preservados
 - [x] 5 Questionário IA sem crédito (já respeitava; ajustado ao padrão)
 - [x] 6 Datas com fuso
 - [x] 7 Severidade residual

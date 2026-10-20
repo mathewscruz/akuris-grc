@@ -55,7 +55,7 @@ export function useOrientacaoRequisito(requirementId: string | null, ativo = tru
     queryFn: async ({ signal }) => {
       const { data, error } = await supabase.from('gap_analysis_requirements')
         .select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico, orientacao_implementacao_en, exemplos_evidencias_en, perguntas_diagnostico_en')
-        .eq('id', requirementId!).abortSignal(signal).single();
+        .eq('id', requirementId ?? '').abortSignal(signal).single();
       if (error) throw error;
       const row = (data || {}) as Record<string, string | null>;
       const suffix = locale === 'en' ? '_en' : '';
