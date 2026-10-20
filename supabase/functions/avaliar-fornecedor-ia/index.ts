@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('avaliar_fornecedor_ia');
 import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 /**
  * Lê o questionário que o fornecedor devolveu e dá um parecer.

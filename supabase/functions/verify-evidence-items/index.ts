@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('verificar_evidencias_itens');
 import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Verifica, item a item, se os documentos/arquivos ligados a um requisito
 // comprovam cada evidência esperada. Resultado salvo por empresa e reaproveitado.

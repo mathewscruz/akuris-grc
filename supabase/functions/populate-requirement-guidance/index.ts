@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('populate-requirement-guidance');
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { MODELOS } from '../_shared/modelos.ts';
 import { guidanceQuestions, guidanceStyleOk, implementationSection, parseGeneratedGuidance } from '../_shared/requirement-guidance-content.ts';
@@ -212,7 +214,7 @@ async function generateGuidance(
     : buildPortuguesePrompt(req);
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: "POST",
       signal: AbortSignal.timeout(60_000),
       headers: {
@@ -411,7 +413,7 @@ async function traduzirCatalogo(supabase: any, apiKey: string | undefined): Prom
   if (errRows) console.error('traducao: leitura falhou', errRows.message);
   if (!rows?.length) return 0;
   const entrada = rows.map((r: any) => ({ id: r.id, codigo: r.codigo, titulo: r.titulo, descricao: r.descricao, categoria: r.categoria }));
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const resp = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -466,7 +468,7 @@ async function ampliarDescricoes(supabase: any, apiKey: string | undefined): Pro
   }
   if (!curtas.length) return 0;
   const entrada = curtas.map((r) => ({ id: r.id, framework: nomes.get(r.framework_id), codigo: r.codigo, titulo: r.titulo, descricao_atual: r.descricao }));
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const resp = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({

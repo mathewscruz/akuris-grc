@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('gap_analysis_ai_diagnostic');
 import { fetchAnaliseComReserva } from '../_shared/ai.ts';
 // Edge Function: gap-analysis-ai-diagnostic
 // Diagnóstico editorial rápido de um requisito específico.

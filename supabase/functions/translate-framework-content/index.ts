@@ -1,3 +1,5 @@
+import { fetchIA, rotularFuncaoIA } from '../_shared/ai.ts';
+rotularFuncaoIA('translate_framework_content');
 // Edge Function: translate-framework-content
 // Traduz para inglês o conteúdo (título, descrição, categoria e textos de apoio)
 // dos requisitos de um framework global do Gap Analysis, gravando nas colunas *_en.
@@ -129,7 +131,7 @@ ${JSON.stringify(payload)}`;
     // em que sai. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(supabase, empresaId))) return semCreditoIA(corsHeaders);
 
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResp = await fetchIA('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
