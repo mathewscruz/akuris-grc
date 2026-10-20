@@ -16,6 +16,7 @@ export type AiModelId =
   | 'google/gemini-3.1-flash-lite'
   | 'google/gemini-3-flash-preview'
   | 'google/gemini-2.5-flash'
+  | 'google/gemini-3-pro-image'
   | 'openai/gpt-5.4-mini';
 
 export interface AiModelInfo {
@@ -30,6 +31,8 @@ export interface AiModelInfo {
   avgCostPerReqBRL: number;
   /** Modelo usado só como fallback automático (não aparece como primário). */
   fallbackOnly?: boolean;
+  /** Já não é usado por nenhuma função; só aparece se houver uso no período. */
+  descontinuado?: boolean;
 }
 
 export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
@@ -38,15 +41,15 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
     label: 'Gemini 4',
     provider: 'Google',
     inputPer1kTokens: 0.002,
-    outputPer1kTokens: 0.012,
+    outputPer1kTokens: 0.01,
     avgCostPerReqBRL: 0.25,
   },
   'google/gemini-3.6-flash': {
     id: 'google/gemini-3.6-flash',
     label: 'Gemini 3.6 Flash',
     provider: 'Google',
-    inputPer1kTokens: 0.0003,
-    outputPer1kTokens: 0.0025,
+    inputPer1kTokens: 0.00075,
+    outputPer1kTokens: 0.00375,
     avgCostPerReqBRL: 0.06,
   },
   'google/gemini-3.1-pro-preview': {
@@ -56,13 +59,14 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
     inputPer1kTokens: 0.00125,
     outputPer1kTokens: 0.01,
     avgCostPerReqBRL: 0.18,
+    descontinuado: true,
   },
   'google/gemini-3.1-flash-lite': {
     id: 'google/gemini-3.1-flash-lite',
     label: 'Gemini 3.1 Flash Lite',
     provider: 'Google',
-    inputPer1kTokens: 0.0001,
-    outputPer1kTokens: 0.0004,
+    inputPer1kTokens: 0.00025,
+    outputPer1kTokens: 0.0015,
     avgCostPerReqBRL: 0.01,
   },
   'google/gemini-3-flash-preview': {
@@ -72,6 +76,7 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
     inputPer1kTokens: 0.00015,
     outputPer1kTokens: 0.0006,
     avgCostPerReqBRL: 0.03,
+    descontinuado: true,
   },
   'google/gemini-2.5-flash': {
     id: 'google/gemini-2.5-flash',
@@ -80,17 +85,36 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
     inputPer1kTokens: 0.0003,
     outputPer1kTokens: 0.0025,
     avgCostPerReqBRL: 0.05,
+    descontinuado: true,
+  },
+  'google/gemini-3-pro-image': {
+    id: 'google/gemini-3-pro-image',
+    label: 'Gemini 3 Pro Image',
+    provider: 'Google',
+    inputPer1kTokens: 0.002,
+    outputPer1kTokens: 0.12,
+    avgCostPerReqBRL: 0.7,
   },
   'openai/gpt-5.4-mini': {
     id: 'openai/gpt-5.4-mini',
     label: 'GPT-5.4 Mini',
     provider: 'OpenAI',
-    inputPer1kTokens: 0.00025,
-    outputPer1kTokens: 0.002,
+    inputPer1kTokens: 0.00075,
+    outputPer1kTokens: 0.0045,
     avgCostPerReqBRL: 0.05,
     fallbackOnly: true,
   },
 };
+
+/** Cotação usada para converter USD → BRL no Financeiro IA. */
+export const USD_BRL = 5.5;
+
+/** Custo real em USD de uma chamada, a partir dos tokens medidos. Null se faltar medição ou modelo. */
+export function custoRealUSD(modelo: string, tokensEntrada: number | null, tokensSaida: number | null): number | null {
+  const m = AI_MODELS[modelo as AiModelId];
+  if (!m || tokensEntrada == null || tokensSaida == null) return null;
+  return (tokensEntrada / 1000) * m.inputPer1kTokens + (tokensSaida / 1000) * m.outputPer1kTokens;
+}
 
 export interface AiFeature {
   /** Valor gravado em creditos_consumo.funcionalidade (ou o seu prefixo antes de ":"). */
