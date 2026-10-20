@@ -6861,6 +6861,48 @@ export type Database = {
           },
         ]
       }
+      ia_uso_modelos: {
+        Row: {
+          created_at: string
+          duracao_ms: number | null
+          empresa_id: string | null
+          funcionalidade: string
+          id: string
+          modelo: string
+          reserva: boolean
+          status_http: number | null
+          sucesso: boolean
+          tokens_entrada: number | null
+          tokens_saida: number | null
+        }
+        Insert: {
+          created_at?: string
+          duracao_ms?: number | null
+          empresa_id?: string | null
+          funcionalidade?: string
+          id?: string
+          modelo: string
+          reserva?: boolean
+          status_http?: number | null
+          sucesso?: boolean
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+        }
+        Update: {
+          created_at?: string
+          duracao_ms?: number | null
+          empresa_id?: string | null
+          funcionalidade?: string
+          id?: string
+          modelo?: string
+          reserva?: boolean
+          status_http?: number | null
+          sucesso?: boolean
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+        }
+        Relationships: []
+      }
       implementacao_programas: {
         Row: {
           created_at: string
