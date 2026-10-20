@@ -18,6 +18,7 @@ interface Profile {
   is_default: boolean;
   empresa_id: string;
   user_count: number;
+  users: { user_id: string; nome: string }[];
 }
 
 interface Props {
@@ -47,19 +48,20 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
       // Count users per profile
       const { data: usersData } = await supabase
         .from('profiles')
-        .select('permission_profile_id')
+        .select('permission_profile_id, user_id, nome')
         .eq('empresa_id', empresaId)
         .not('permission_profile_id', 'is', null);
 
-      const countMap = new Map<string, number>();
+      const usersMap = new Map<string, { user_id: string; nome: string }[]>();
       usersData?.forEach(u => {
         const pid = u.permission_profile_id;
-        if (pid) countMap.set(pid, (countMap.get(pid) || 0) + 1);
+        if (pid) usersMap.set(pid, [...(usersMap.get(pid) || []), { user_id: u.user_id, nome: u.nome }]);
       });
 
       setProfiles((profilesData || []).map(p => ({
         ...p,
-        user_count: countMap.get(p.id) || 0,
+        user_count: usersMap.get(p.id)?.length || 0,
+        users: usersMap.get(p.id) || [],
       })));
     } catch (error) {
       console.error('Error fetching profiles:', error);
@@ -76,6 +78,23 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile);
     setDialogOpen(true);
+  };
+
+  const [reapplying, setReapplying] = useState<string | null>(null);
+  /** Reaplica os módulos do perfil a todos que o usam (substitui o antigo "restaurar todas"). */
+  const handleReapply = async (profile: Profile) => {
+    setReapplying(profile.id);
+    try {
+      for (const u of profile.users) {
+        const { error } = await supabase.rpc('apply_permission_profile', { _profile_id: profile.id, _user_id: u.user_id } as any);
+        if (error) throw error;
+      }
+      toast.success(t('configPerms.profilesList.reapplied', { count: String(profile.users.length) }));
+    } catch {
+      toast.error(t('configPerms.profilesList.reapplyError'));
+    } finally {
+      setReapplying(null);
+    }
   };
 
   const handleDelete = async () => {
@@ -157,6 +176,11 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                   {profile.description || t('configPerms.profilesList.noDescription')}
                 </p>
 
+                {profile.users.length > 0 && (
+                  <p className="mb-3 line-clamp-2 text-xs text-muted-foreground" title={profile.users.map(u => u.nome).join(', ')}>
+                    {profile.users.map(u => u.nome).join(', ')}
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-xs">
                     <IconUsers className="h-3 w-3 mr-1" />
@@ -164,6 +188,11 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                   </Badge>
 
                   <div className="flex gap-1">
+                    {profile.users.length > 0 && (
+                      <Button variant="ghost" size="sm" disabled={reapplying === profile.id} onClick={() => handleReapply(profile)} title={t('configPerms.profilesList.reapplyHint')}>
+                        {reapplying === profile.id ? <AkurisPulse size={16} /> : t('configPerms.profilesList.reapply')}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(profile)} aria-label={t('configPerms.profilesList.edit')}>
                       <IconEdit className="h-4 w-4" />
                     </Button>

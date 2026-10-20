@@ -60,6 +60,8 @@ export const MODELOS = {
   IMAGEM: 'google/gemini-2.5-flash-image',
   /** Rede de segurança, noutro fornecedor. */
   RESERVA: 'openai/gpt-5.4-mini',
+  /** Julgamento que o usuário usa para decidir (evidências, documentos, diagnósticos). Mesmo topo da leitura longa. */
+  ANALISE: 'google/gemini-4-argon',
 } as const;
 
 export type ModeloAkuris = typeof MODELOS[keyof typeof MODELOS];

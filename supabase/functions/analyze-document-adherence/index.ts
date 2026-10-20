@@ -66,7 +66,7 @@ async function chamarIA(model: string, system: string, user: string, maxTokens: 
 }
 
 async function resumirTrecho(trecho: string, idx: number, total: number, framework: string, limite: number): Promise<string> {
-  const txt = await chamarIA(MODELOS.PADRAO,
+  const txt = await chamarIA(MODELOS.ANALISE,
     'Você extrai evidências de documentos corporativos para auditoria de conformidade. Responda só com o texto pedido.',
     `Este é o trecho ${idx + 1} de ${total} de um documento que será auditado contra ${framework}.
 Extraia, em até ${limite} caracteres, tudo que possa servir de evidência de conformidade: políticas, responsabilidades, controles, prazos, procedimentos, papéis, revisões, registros, sanções. Cite frases literais entre aspas sempre que possível e indique o título da seção. Não invente nada.
@@ -226,7 +226,7 @@ async function classificar(supabase: SupabaseClient, job: any, ctx: any, trechos
   const lista = catalogo.map((r: any) => `${r.codigo}: ${r.titulo}`).join('\n');
   let tipo = '', tema = '', codigos: string[] = [], justificativa = '';
   try {
-    const out = await chamarIA(MODELOS.PADRAO,
+    const out = await chamarIA(MODELOS.ANALISE,
       'Você é um auditor sênior. Responda APENAS JSON válido.',
       `Pergunta do usuário: "De acordo com a norma ${ctx.framework_nome} ${ctx.framework_versao || ''}, esta política está em compliance?"
 
@@ -281,7 +281,7 @@ async function interpretar(ctx: any, analisados: any[], porId: Map<string, any>,
     const q = porId.get(d.requirement_id);
     return `- ${q?.codigo || d.requisito_codigo} ${q?.titulo || ''} | ${d.status_aderencia} | evidência: ${d.evidencias_encontradas || '-'} | falta: ${d.gaps_especificos || '-'}`;
   }).join('\n');
-  const out = await chamarIA(MODELOS.PADRAO,
+  const out = await chamarIA(MODELOS.ANALISE,
     'Você é um consultor sênior de conformidade. Responda APENAS JSON válido, em português, direto e prático.',
     `Pergunta: "De acordo com a norma ${ctx.framework_nome}, a política '${ctx.documento_tema || ctx.nome_analise || ''}' está em compliance?"
 Veredito calculado: ${veredito} (nota ${score}% no escopo desta política). NÃO mude o veredito.

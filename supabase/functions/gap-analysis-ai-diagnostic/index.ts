@@ -150,7 +150,7 @@ Sem saudações ou introduções. Retorne APENAS JSON válido (sem markdown), ne
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODELOS.PADRAO,
+        model: MODELOS.ANALISE,
         messages: [
           { role: 'system', content: 'Você é um auditor de compliance sênior. Responda APENAS com JSON válido, sem saudações.' },
           { role: 'user', content: prompt },

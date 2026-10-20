@@ -85,7 +85,7 @@ Seja específico e prático, focando em ações implementáveis no contexto empr
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODELOS.PADRAO,
+        model: MODELOS.ANALISE,
         messages: [
           { 
             role: 'system', 
@@ -94,7 +94,6 @@ Seja específico e prático, focando em ações implementáveis no contexto empr
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
       }),
     });
 

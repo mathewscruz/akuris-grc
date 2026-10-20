@@ -75,7 +75,7 @@ Retorne APENAS JSON válido:
       method: 'POST',
       headers: { Authorization: `Bearer ${lovableKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODELOS.PADRAO,
+        model: MODELOS.ANALISE,
         messages: [
           { role: 'system', content: 'Você é um analista de segurança da informação. Responda APENAS JSON válido, sem saudações.' },
           { role: 'user', content: prompt },
