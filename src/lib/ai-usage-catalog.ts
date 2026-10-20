@@ -11,6 +11,7 @@
 
 export type AiModelId =
   | 'google/gemini-3.6-flash'
+  | 'google/gemini-4-argon'
   | 'google/gemini-3.1-pro-preview'
   | 'google/gemini-3.1-flash-lite'
   | 'google/gemini-3-flash-preview'
@@ -32,6 +33,14 @@ export interface AiModelInfo {
 }
 
 export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
+  'google/gemini-4-argon': {
+    id: 'google/gemini-4-argon',
+    label: 'Gemini 4',
+    provider: 'Google',
+    inputPer1kTokens: 0.002,
+    outputPer1kTokens: 0.012,
+    avgCostPerReqBRL: 0.25,
+  },
   'google/gemini-3.6-flash': {
     id: 'google/gemini-3.6-flash',
     label: 'Gemini 3.6 Flash',
@@ -106,7 +115,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'AI document generator',
     modulePt: 'Documentos',
     moduleEn: 'Documents',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     fallbackModel: 'openai/gpt-5.4-mini',
     edgeFunction: 'docgen-chat',
   },
@@ -116,7 +125,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Document adherence analysis',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.1-pro-preview',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'analyze-document-adherence',
   },
   {
@@ -125,7 +134,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Evidence vs. requirement validation',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'analyze-evidence-against-requirement',
   },
   {
@@ -134,7 +143,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Evidence cross-match',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'evidence-cross-match',
   },
   {
@@ -143,7 +152,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Gap Analysis AI diagnostic',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'gap-analysis-ai-diagnostic',
   },
   {
@@ -194,7 +203,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Risk treatment suggestion',
     modulePt: 'Riscos',
     moduleEn: 'Risks',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'suggest-risk-treatment',
   },
   {
@@ -206,7 +215,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'AI opinion on supplier',
     modulePt: 'Due Diligence',
     moduleEn: 'Due diligence',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'avaliar-fornecedor-ia',
   },
   {
@@ -262,7 +271,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Automatic security questionnaire answers',
     modulePt: 'Trust Center',
     moduleEn: 'Trust Center',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'answer-security-questionnaire',
   },
   {
@@ -271,7 +280,7 @@ export const AI_FEATURES: AiFeature[] = [
     labelEn: 'Expected evidence check per item',
     modulePt: 'Gap Analysis',
     moduleEn: 'Gap Analysis',
-    model: 'google/gemini-3.6-flash',
+    model: 'google/gemini-4-argon',
     edgeFunction: 'verify-evidence-items',
   },
   {
