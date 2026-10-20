@@ -8,7 +8,6 @@ import { useLandingReveal } from '@/hooks/useLandingAnimations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AKURIS_PATH } from '@/components/ui/AkurisPulse';
 import { FrameworkGlyph } from '@/components/frameworks/FrameworkGlyph';
-import { PublicMotionToggle } from '@/components/landing/PublicMotionToggle';
 import { frameworksSeo } from '@/data/frameworks-seo';
 
 export default function LandingPage() {
@@ -19,7 +18,7 @@ export default function LandingPage() {
     <SEO title={t('site.seoTitle')} description={t('site.seoDescription')} canonical="/" jsonLd={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
     <section className="site-hero lp-container">
       <svg className="hero-signature" viewBox="0 0 80 80" aria-hidden="true"><path d={AKURIS_PATH} pathLength="1" /></svg>
-      <div className="site-hero-grid"><div><h1><span>{t('site.heroLine1')}</span> <span className="hero-title-accent">{t('site.heroLine2')}</span></h1><p>{t('site.heroBody')}</p><div className="site-actions"><DemoButton /><a className="lp-btn lp-btn-ghost" href="#produto">{t('site.explore')} ↓</a></div><p className="site-muted">{t('site.heroNote')}</p><PublicMotionToggle /></div><div><ProductScreens autoplay /></div></div>
+      <div className="site-hero-grid"><div><h1><span>{t('site.heroLine1')}</span> <span className="hero-title-accent">{t('site.heroLine2')}</span></h1><p>{t('site.heroBody')}</p><div className="site-actions"><DemoButton /><a className="lp-btn lp-btn-ghost" href="#produto">{t('site.explore')} ↓</a></div><p className="site-muted">{t('site.heroNote')}</p></div><div><ProductScreens autoplay /></div></div>
     </section>
     <TrustStrip />
     <HowItWorks />
