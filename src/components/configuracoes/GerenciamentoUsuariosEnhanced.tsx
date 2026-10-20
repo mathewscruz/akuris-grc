@@ -682,14 +682,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       label: t('admin.usuarios.columnPerfilPermissao'),
       sortable: false,
       render: (_, usuario) => {
-        const profileName = usuario.permission_profiles?.name;
-        return profileName ? (
-          <Badge variant="outline" className="whitespace-nowrap">
-            <IconShield className="h-3 w-3 mr-1" />
-            {profileName}
-          </Badge>
-        ) : (
-          <span className="text-sm text-muted-foreground">{t('admin.usuarios.semPerfil')}</span>
+        const opcoes = permissionProfiles.filter((p) => !p.empresa_id || !usuario.empresa_id || p.empresa_id === usuario.empresa_id);
+        return (
+          <Select
+            value={usuario.permission_profile_id || 'none'}
+            onValueChange={(v) => changeProfile(usuario, v === 'none' ? null : v)}
+          >
+            <SelectTrigger className="h-8 w-44" aria-label={t('admin.usuarios.columnPerfilPermissao')} onClick={(e) => e.stopPropagation()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t('admin.usuarios.semPerfil')}</SelectItem>
+              {opcoes.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       },
     },
