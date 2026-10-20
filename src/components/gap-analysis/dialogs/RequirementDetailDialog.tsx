@@ -370,7 +370,6 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const evidenciasText = orientacao.evidencias;
   const diagnosticQuestions = orientacao.perguntas;
   const generatingGuidance = orientacao.estado === 'gerando';
-  const guidanceErro = orientacao.estado === 'falha' ? 'falha' : null;
   const [guidanceOpen, setGuidanceOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const workspaceSteps = ['understand', 'evaluate', 'prove', 'review'] as const;

@@ -26,6 +26,12 @@ export function restoreRequirementDraft(raw: string | null, saved: RequirementAn
     for (const key of ['conformity_status', 'observacoes', 'prazo_implementacao', 'responsavel_avaliacao']) {
       if (values[key] !== null && typeof values[key] !== 'string') return saved;
     }
-    return { ...saved, ...values };
+    return {
+      ...saved,
+      conformity_status: values.conformity_status,
+      observacoes: values.observacoes,
+      prazo_implementacao: values.prazo_implementacao,
+      responsavel_avaliacao: values.responsavel_avaliacao,
+    };
   } catch { return saved; }
 }
