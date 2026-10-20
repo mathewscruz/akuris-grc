@@ -11,6 +11,7 @@
 import { CompanyContextSettings } from './CompanyContextSettings';
 import { CompanySlugSettings } from './CompanySlugSettings';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
+import { ReminderSettings } from './ReminderSettings';
 
 export function OrganizacaoTab() {
   return (
@@ -20,6 +21,8 @@ export function OrganizacaoTab() {
       <CompanySlugSettings />
 
       <CompanyLogoUpload />
+
+      <ReminderSettings />
     </div>
   );
 }

@@ -36,6 +36,10 @@ export const configPerms = {
         propagateLabel: 'Aplicar alterações a todos os usuários deste perfil',
       },
       profilesList: {
+        reapply: 'Reaplicar',
+        reapplyHint: 'Reaplicar os módulos deste perfil a todos que o usam',
+        reapplied: 'Perfil reaplicado a {count} usuário(s)',
+        reapplyError: 'Não foi possível reaplicar o perfil',
         newProfile: 'Novo Perfil',
         errorFetch: 'Erro ao carregar perfis',
         profileDeleted: 'Perfil excluído',
@@ -172,6 +176,10 @@ export const configPerms = {
         propagateLabel: 'Apply changes to all users of this profile',
       },
       profilesList: {
+        reapply: 'Reapply',
+        reapplyHint: 'Reapply this profile\'s modules to everyone who uses it',
+        reapplied: 'Profile reapplied to {count} user(s)',
+        reapplyError: 'Could not reapply the profile',
         newProfile: 'New Profile',
         errorFetch: 'Error loading profiles',
         profileDeleted: 'Profile deleted',
