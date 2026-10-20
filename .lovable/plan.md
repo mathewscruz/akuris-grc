@@ -1,35 +1,39 @@
-# Novas sugestões de simplificação visual
+# Simplificação do Akuris: funcionalidade + visual
 
-Sugestões diferentes das anteriores (indicadores, cartões do dashboard e cabeçalhos ficam como estão). Escolha quais quer aplicar.
+## Funcionalidade (do plano anterior: itens 1, 3 e 4)
 
-1. **Menos variações de botão**
-   Hoje há vários estilos (sólido, contorno, fantasma, suave, link, novos variantes). Proposta: só três — principal (roxo, uma por tela), secundário (contorno) e discreto (texto).
-   Por quê: o usuário encontra a ação principal sem pensar.
+1. **Uma só lista de pendências pessoais**
+   "Minhas tarefas" vira uma aba "Atribuídas a mim" dentro de Planos de Ação; o link antigo continua funcionando.
+   Por quê: o usuário passa a ter um único lugar para ver o que precisa fazer.
 
-2. **Formulários em uma coluna**
-   Os formulários dos módulos misturam duas e três colunas. Proposta: uma coluna com campos opcionais recolhidos em "Mais detalhes".
-   Por quê: leitura de cima para baixo, menos erros e funciona igual no celular.
+2. **Uma só rota para Planos de Ação**
+   Hoje existem dois endereços (/planos e /planos-acao). Fica um oficial; o outro redireciona.
+   Por quê: links compartilhados e atalhos deixam de divergir.
 
-3. **Menos bordas, mais espaço**
-   Muitas áreas têm borda + fundo + divisória ao mesmo tempo. Proposta: separar blocos só por espaçamento e um tom de fundo; bordas apenas em cartões clicáveis.
-   Por quê: a tela fica mais leve e o que é clicável fica óbvio.
+3. **Canal de denúncia com menos telas públicas**
+   Uma página com duas opções: "Fazer denúncia" e "Consultar protocolo". Links antigos redirecionam.
+   Por quê: o denunciante só precisa dessas duas ações.
 
-4. **Hierarquia de texto com 4 tamanhos**
-   Existem muitos tamanhos e pesos de fonte. Proposta: título, subtítulo, corpo e legenda — nada além disso.
-   Por quê: consistência imediata entre módulos.
+## Visual
 
-5. **Painel lateral com menos abas**
-   O painel de detalhe tem abas Detalhes/Ligações/Atividade. Proposta: uma rolagem única com âncoras no topo.
-   Por quê: tudo visível sem cliques escondidos.
+4. **Menos variações de botão** — só principal (roxo, uma por tela), secundário (contorno) e discreto (texto).
+5. **Formulários em uma coluna** — campos opcionais recolhidos em "Mais detalhes".
+6. **Menos bordas, mais espaço** — blocos separados por espaçamento e tom de fundo; borda só em cartões clicáveis.
+7. **Hierarquia de texto com 4 tamanhos** — título, subtítulo, corpo e legenda.
+8. **Painel lateral sem abas** — rolagem única com atalhos no topo para Detalhes, Ligações e Atividade.
+9. **Ícones só onde ajudam** — mantidos em navegação e ações; retirados de títulos de seção e células de tabela.
 
-6. **Ícones só onde ajudam**
-   Ícones aparecem em títulos, colunas, linhas e botões ao mesmo tempo. Proposta: manter em navegação e ações; retirar de títulos de seção e células de tabela.
-   Por quê: reduz ruído visual e destaca o conteúdo.
+## Fora do escopo
+- Sem mudanças em permissões, isolamento por empresa ou dados.
+- Favoritos e links antigos continuam funcionando.
 
 ## Detalhes técnicos
-- 1: reduzir variantes em `button.tsx`, mapear as antigas para as três novas.
-- 2: padrão de formulário compartilhado com seção recolhível.
-- 3–4: tokens em `index.css`/`tailwind.config.ts` e CSS global; atualizar regra de linguagem visual na memória.
-- 5: `RecordDetailDrawer` passa de abas para seções com âncoras.
-- 6: ajustes em `PageHeader`, `DataTable` e cabeçalhos de seção.
-- Rodar a suíte de testes ao final.
+- 1: `MinhasTarefas` passa a ser filtro `responsavel = usuário` em `PlanosAcao`; `/projetos/minhas-tarefas` redireciona.
+- 2: manter `/planos-acao`; `/planos` vira `<Navigate replace>`.
+- 3: unificar `DenunciaMenu`/`DenunciaPublicLanding`/`DenunciaRouter` numa página; RPCs públicas inalteradas.
+- 4: reduzir variantes em `button.tsx`, mapeando as antigas para as três novas.
+- 5: padrão de formulário compartilhado com seção recolhível.
+- 6–7: tokens em `index.css`/`tailwind.config.ts` e CSS global; atualizar regra de linguagem visual na memória.
+- 8: `RecordDetailDrawer` passa de abas para seções com âncoras.
+- 9: ajustes em `PageHeader`, `DataTable` e cabeçalhos de seção.
+- Registrar no roadmap e rodar a suíte de testes ao final.
