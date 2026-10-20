@@ -93,7 +93,7 @@ export const configPerms = {
       usersAccessTab: {
         title: 'Usuários & Acessos',
         tabUsers: 'Usuários',
-        tabPermissions: 'Permissões',
+        tabPermissions: 'Perfis',
         tabReminders: 'Lembretes',
       },
       reminderSettings: {
@@ -229,7 +229,7 @@ export const configPerms = {
       usersAccessTab: {
         title: 'Users & Access',
         tabUsers: 'Users',
-        tabPermissions: 'Permissions',
+        tabPermissions: 'Profiles',
         tabReminders: 'Reminders',
       },
       reminderSettings: {
