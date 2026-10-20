@@ -137,9 +137,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const [acessoIndisponivel, setAcessoIndisponivel] = useState(false);
   const [accessLoading, setAccessLoading] = useState(true);
   const accessRequest = useRef(0);
-  const [showPermissionMatrix, setShowPermissionMatrix] = useState(false);
-  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<string | undefined>();
-  const [restoringPermissions, setRestoringPermissions] = useState(false);
   const [creating, setCreating] = useState(false);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<string>('nome');
@@ -474,26 +471,21 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     setDialogOpen(true);
   };
 
-  const handleManagePermissions = (userId?: string) => {
-    setSelectedUserForPermissions(userId);
-    setShowPermissionMatrix(true);
-  };
-
-  const handleRestoreAllPermissions = async () => {
-    try {
-      setRestoringPermissions(true);
-      
-      const { data, error } = await supabase.functions.invoke('apply-default-permissions-all-users');
-      
-      if (error) throw error;
-      
-      toast.success(t('admin.usuarios.toastPermissionsRestored', { count: data?.successful || 0 }));
-      await fetchUsuarios();
-    } catch (error: any) {
-      console.error('Erro ao restaurar permissões:', error);
-      toast.error(error.message || t('admin.usuarios.toastErrorRestorePermissions'));
-    } finally {
-      setRestoringPermissions(false);
+  /** Troca o perfil na própria linha; o aviso permite desfazer. Sempre limitado à empresa do usuário. */
+  const changeProfile = async (usuario: Usuario, profileId: string | null, silent = false) => {
+    const anterior = usuario.permission_profile_id || null;
+    let q = supabase.from('profiles').update({ permission_profile_id: profileId }).eq('user_id', usuario.user_id);
+    if (usuario.empresa_id) q = q.eq('empresa_id', usuario.empresa_id);
+    const { error } = await q;
+    if (error) { toast.error(t('admin.usuarios.toastErrorProfileChange')); return; }
+    if (profileId) {
+      await supabase.rpc('apply_permission_profile', { _profile_id: profileId, _user_id: usuario.user_id } as any);
+    }
+    await fetchUsuarios();
+    if (!silent) {
+      toast.success(t('admin.usuarios.toastProfileChanged', { nome: usuario.nome }), {
+        action: { label: t('common.undo'), onClick: () => changeProfile({ ...usuario, permission_profile_id: profileId || undefined }, anterior, true) },
+      });
     }
   };
 
@@ -652,28 +644,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
   };
 
-  if (showPermissionMatrix) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium">{t('admin.usuarios.managePermissionsTitle')}</h3>
-            <p className="text-sm text-muted-foreground">
-              {t('admin.usuarios.managePermissionsDesc')}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowPermissionMatrix(false)}
-          >
-            {t('admin.usuarios.back')}
-          </Button>
-        </div>
-        <PermissionMatrix selectedUserId={selectedUserForPermissions} />
-      </div>
-    );
-  }
-
   const columns: Column<Usuario>[] = [
     {
       key: 'nome',
@@ -819,10 +789,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
               <IconEdit className="h-4 w-4 mr-2" />
               {t('admin.usuarios.actionEditar')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleManagePermissions(usuario.user_id)}>
-              <IconShield className="h-4 w-4 mr-2" />
-              {t('admin.usuarios.actionGerenciarPermissoes')}
-            </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => resetPassword(usuario)}
               disabled={actionLoading[`reset-${usuario.id}`]}
@@ -928,33 +894,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         )}
 
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                onClick={handleRestoreAllPermissions}
-                disabled={restoringPermissions}
-              >
-                {restoringPermissions ? (
-                  <AkurisPulse size={16} className="mr-2" />
-                ) : (
-                  <IconShield className="h-4 w-4 mr-2" />
-                )}
-                {t('admin.usuarios.restorePermissionsButton')}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {t('admin.usuarios.restorePermissionsTooltip')}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <Button variant="outline" onClick={() => handleManagePermissions()}>
-          <IconShield className="h-4 w-4 mr-2" />
-          {t('admin.usuarios.managePermissionsButton')}
-        </Button>
-        
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
