@@ -1,4 +1,5 @@
 const pt = {
+  adminAkuris: { title: 'Administração Akuris', description: 'Ferramentas da equipe Akuris: empresas, planos, créditos de IA, conteúdo e contatos.', creditos: 'Créditos de IA' },
   configVisao: {
     buscar: 'Buscar uma configuração',
     semResultados: 'Nenhuma configuração encontrada para essa busca.',
@@ -58,6 +59,7 @@ const pt = {
 };
 
 const en = {
+  adminAkuris: { title: 'Akuris Administration', description: 'Akuris team tools: companies, plans, AI credits, content and contacts.', creditos: 'AI credits' },
   configVisao: {
     buscar: 'Search a setting',
     semResultados: 'No setting matches this search.',

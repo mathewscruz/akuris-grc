@@ -335,6 +335,13 @@ export default function RevisaoAcessos() {
     },
   ];
 
+  // Exportar fica no botão padrão da tabela (CSV/PDF).
+  const exportarDaPagina = () => exportCSV(
+              [t('sweepDenuncias.revisao.colNomeRevisao'), t('sweepDenuncias.revisao.colSistema'), t('fin.comum.responsavel'), t('sweepDenuncias.revisao.colPrazo'), t('sweepDenuncias.revisao.colStatus'), t('sweepDenuncias.revisao.colProgresso')],
+              exportRows.map(item => [item.nome_revisao, item.sistema?.nome_sistema, item.responsavel?.nome, formatDateOnly(item.data_limite), formatStatus(item.status), item.contas_revisadas + '/' + item.total_contas].map(spreadsheetText)),
+              'campanhas-revisao-acessos',
+            );
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -350,16 +357,6 @@ export default function RevisaoAcessos() {
           </Button>
         }
         secondaryActions={[
-          {
-            label: t('sweepDenuncias.revisao.exportar'),
-            icon: <IconDownload className="h-4 w-4" />,
-            disabled: exportFailed || !exportRows.length || activeTab === 'usuarios',
-            onClick: () => exportCSV(
-              [t('sweepDenuncias.revisao.colNomeRevisao'), t('sweepDenuncias.revisao.colSistema'), t('fin.comum.responsavel'), t('sweepDenuncias.revisao.colPrazo'), t('sweepDenuncias.revisao.colStatus'), t('sweepDenuncias.revisao.colProgresso')],
-              exportRows.map(item => [item.nome_revisao, item.sistema?.nome_sistema, item.responsavel?.nome, formatDateOnly(item.data_limite), formatStatus(item.status), item.contas_revisadas + '/' + item.total_contas].map(spreadsheetText)),
-              'campanhas-revisao-acessos',
-            ),
-          },
         ]}
       />
 
@@ -390,7 +387,7 @@ export default function RevisaoAcessos() {
         <TabsContent value="ativas" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
-              <DataTable
+              <DataTable onExport={exportarDaPagina}
                 paginated
                 pageSize={20}
                 data={filteredAndSortedReviews}
@@ -440,7 +437,7 @@ export default function RevisaoAcessos() {
         <TabsContent value="historico" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
-              <DataTable
+              <DataTable onExport={exportarDaPagina}
                 paginated
                 pageSize={20}
                 data={visibleHistory}

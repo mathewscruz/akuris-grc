@@ -358,30 +358,8 @@ export default function ContasPrivilegiadas() {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('modules.contasPrivilegiadas.title')}
-        description={t('modules.contasPrivilegiadas.description')}
-        actions={
-          <Button onClick={() => setShowContaDialog(true)}>
-            <IconAdd className="mr-2 h-4 w-4" />
-            {t('sweepDenuncias.contas.novaConta')}
-          </Button>
-        }
-        secondaryActions={[
-          {
-            label: t('sweepDenuncias.contas.exportCsv'),
-            icon: <IconDownload className="h-4 w-4" />,
-            /*
-               Exportar o que está no ecrã, escrito como está no ecrã: iterava
-               `contas` (tudo) enquanto a tabela mostra `filteredAndSortedContas`,
-               e escrevia os valores crus da base. Aqui isso não era só feio —
-               a coluna de estado mostra «Expirado» a quem já passou da data,
-               e o ficheiro dizia «ativo» das mesmas linhas.
-            */
-            disabled: filteredAndSortedContas.length === 0,
-            onClick: () => {
+  // Exportar fica no botão padrão da tabela (CSV/PDF).
+  const exportarDaPagina = () => {
               exportCSV(
                 [t('sweepDenuncias.contas.csvUsuario'), t('sweepDenuncias.contas.csvEmail'), t('sweepDenuncias.contas.csvTipoAcesso'), t('sweepDenuncias.contas.csvNivel'), t('sweepDenuncias.contas.csvStatus'), t('sweepDenuncias.contas.csvDataConcessao'), t('sweepDenuncias.contas.csvDataExpiracao'), t('sweepDenuncias.contas.csvSistema')],
                 filteredAndSortedContas.map((c: any) => [
@@ -394,8 +372,20 @@ export default function ContasPrivilegiadas() {
                 ]),
                 'contas_privilegiadas'
               );
-            },
-          },
+            };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t('modules.contasPrivilegiadas.title')}
+        description={t('modules.contasPrivilegiadas.description')}
+        actions={
+          <Button onClick={() => setShowContaDialog(true)}>
+            <IconAdd className="mr-2 h-4 w-4" />
+            {t('sweepDenuncias.contas.novaConta')}
+          </Button>
+        }
+        secondaryActions={[
         ]}
       />
 
@@ -412,7 +402,7 @@ export default function ContasPrivilegiadas() {
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <DataTable
+          <DataTable onExport={exportarDaPagina}
             paginated
             pageSize={20}
             data={filteredAndSortedContas}

@@ -73,6 +73,7 @@ const DenunciaFormulario = React.lazy(
 );
 const DenunciaConsulta = React.lazy(() => import("@/pages/DenunciaConsulta"));
 const Configuracoes = React.lazy(() => import("@/pages/Configuracoes"));
+const AdminAkuris = React.lazy(() => import("@/pages/AdminAkuris"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 const LandingPage = React.lazy(() => import("@/pages/LandingPage"));
 const PublicResource = React.lazy(() => import("@/pages/PublicResource"));
@@ -630,6 +631,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route path="/admin-akuris" element={<AdminAkuris />} />
                     </Route>
 
                     {/* Redirecionamentos legados não precisam montar o casco antes de navegar. */}

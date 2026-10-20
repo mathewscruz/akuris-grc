@@ -649,36 +649,8 @@ export default function PlanosAcao() {
   const listLoading = isLoading || (activeTab === 'meus' && (controlsLoading || auditsLoading || incidentsLoading));
   const listError = isError || (activeTab === 'meus' && (controlsError || auditsError || incidentsError));
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('modules.planosAcao.title')}
-        description={t('modules.planosAcao.description')}
-        actions={
-          <Button onClick={() => { setEditingPlano(null); setDialogOpen(true); }}>
-            <IconAdd className="h-4 w-4 mr-2" />
-            {t('planosAcao.newAction')}
-          </Button>
-        }
-        secondaryActions={[
-          {
-            label: t('planosAcao.csv'),
-            icon: <IconDownload className="h-4 w-4" />,
-            /*
-               Exportar o que está no ecrã, escrito como está no ecrã.
-
-               Medido: com o filtro em «Crítica» a tabela mostrava 1 linha e o
-               ficheiro trazia 6, de todas as prioridades. Quem filtra e exporta
-               age sobre a lista que exportou — e recebia outra.
-
-               E o conteúdo era o da base, não o da tabela: «em_andamento»,
-               «media», «frameworks», onde o ecrã escreve «Em Andamento»,
-               «Média», «Frameworks». As duas datas vinham em formatos
-               diferentes na mesma linha: `prazo` cru da base (2026-06-25) ao
-               lado de `created_at` já formatado (26/05/2026). Os rótulos já
-               existiam na página; o CSV era o único sítio que não os usava.
-            */
-            onClick: () => {
+  // Exportar fica no botão padrão da tabela (CSV/PDF).
+  const exportarDaPagina = () => {
               if (filteredPlanos.length === 0) return;
               exportCSV(
                 [t('planosAcao.csvHeaderTitle'), t('planosAcao.csvHeaderStatus'), t('planosAcao.csvHeaderPriority'), t('planosAcao.csvHeaderModule'), t('planosAcao.csvHeaderDeadline'), t('planosAcao.csvHeaderCreatedAt')],
@@ -692,8 +664,20 @@ export default function PlanosAcao() {
                 ]),
                 'planos_acao'
               );
-            },
-          },
+            };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t('modules.planosAcao.title')}
+        description={t('modules.planosAcao.description')}
+        actions={
+          <Button onClick={() => { setEditingPlano(null); setDialogOpen(true); }}>
+            <IconAdd className="h-4 w-4 mr-2" />
+            {t('planosAcao.newAction')}
+          </Button>
+        }
+        secondaryActions={[
         ]}
       />
 
@@ -803,7 +787,7 @@ export default function PlanosAcao() {
               </div>
           {viewMode === 'lista' ? (
             <>
-              <DataTable
+              <DataTable onExport={exportarDaPagina}
                 data={filteredPlanos}
                 columns={columns}
                 selectable

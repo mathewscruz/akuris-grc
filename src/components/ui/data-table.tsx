@@ -22,6 +22,7 @@ import { QueryError } from '@/components/ui/query-error'
 import { IconGrid, IconList, IconCalendar, IconSettings } from '@/components/icons'
 import { OwnerCell } from '@/components/ui/owner-cell'
 import { RecordProgress } from '@/components/ui/record-progress'
+import { exportarTabelaCSV, exportarTabelaPDF } from '@/lib/exportar-tabela'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 
 /** Colunas utilitárias que nunca são ordenáveis. */
@@ -101,6 +102,10 @@ interface DataTableProps<T> {
   onSearchChange?: (value: string) => void
   filters?: Filter[]
   onExport?: () => void
+  /** Nome usado nos arquivos exportados; com ele, a tabela oferece Exportar (CSV/PDF) mesmo sem `onExport`. */
+  exportName?: string
+  /** Desliga o botão Exportar padrão. */
+  exportable?: boolean
   onRefresh?: () => void
   /** Hide the duplicate toolbar action when the parent already offers refresh. Error retry remains available. */
   showRefresh?: boolean
@@ -157,6 +162,8 @@ export function DataTable<T extends Record<string, any>>({
   onSearchChange,
   filters = [],
   onExport,
+  exportName,
+  exportable = true,
   onRefresh,
   showRefresh = true,
   filtering,
@@ -282,6 +289,12 @@ export function DataTable<T extends Record<string, any>>({
   const colunaPrincipal =
     colunasSemAcoes.find((c) => TITLE_KEYS.has(String(c.key).toLowerCase())) ?? colunasSemAcoes[0]
 
+
+  const nomeExport = () => exportName ?? (document.title.split('|')[0].trim() || t('common.export'))
+  const colunasExportaveis = React.useMemo(() => colunasSemAcoes.map((c) => ({
+    label: c.label,
+    valor: (item: T) => c.ownerName ? c.ownerName(item) : c.sortAccessor ? c.sortAccessor(item) : (item as any)?.[c.key as string],
+  })), [colunasSemAcoes])
 
   const sortedData = React.useMemo(() => {
     if (externalSort || !internalSort) return dadosRecortados
@@ -484,11 +497,19 @@ export function DataTable<T extends Record<string, any>>({
             <Button variant={recordView === 'grid' ? 'secondary' : 'ghost'} size="icon" aria-pressed={recordView === 'grid'} aria-label={t('layout.gridView')} title={t('layout.gridView')} onClick={() => setRecordView('grid')}><IconGrid className="h-4 w-4" /></Button>
           </div>
           {recordView === 'grid' && <Select value={activeSortField ?? ''} onValueChange={handleSort}><SelectTrigger className="w-40" aria-label={t('layout.sortBy')}><SelectValue placeholder={t('layout.sortBy')} /></SelectTrigger><SelectContent>{columns.filter(isSortable).map(column => <SelectItem key={String(column.key)} value={String(column.key)}>{column.label}</SelectItem>)}</SelectContent></Select>}
-          {onExport && (
-            <Button variant="outline" size="sm" onClick={onExport} aria-label={t('common.export')}>
-              <IconDownload className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('common.export')}</span>
-            </Button>
+          {exportable && sortedData.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" aria-label={t('common.export')}>
+                  <IconDownload className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('common.export')}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => onExport ? onExport() : exportarTabelaCSV(sortedData, colunasExportaveis, nomeExport())}>CSV</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => { void exportarTabelaPDF(sortedData, colunasExportaveis, nomeExport()) }}>PDF</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </ModuleToolbar>
       </div>}

@@ -489,19 +489,6 @@ export default function AuditoriasContent({ actionsSlot, headerSearch, onHeaderS
 
       {actionsSlot && createPortal(
         <>
-          <ActionsMenu>
-            <ActionsMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
-                <IconMore className="h-4 w-4" strokeWidth={1.5} />
-              </Button>
-            </ActionsMenuTrigger>
-            <ActionsMenuContent align="end" className="w-56">
-              <ActionsMenuItem onClick={handleExportCSV} disabled={!auditorias || auditorias.length === 0}>
-                <IconDownload className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                {t("governancaComp.auditorias.buttonExportar")}
-              </ActionsMenuItem>
-            </ActionsMenuContent>
-          </ActionsMenu>
           <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
             <IconAdd className="h-4 w-4 mr-2" />
             {t("governancaComp.auditorias.buttonNova")}
@@ -513,6 +500,7 @@ export default function AuditoriasContent({ actionsSlot, headerSearch, onHeaderS
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <DataTable
+            onExport={handleExportCSV}
             paginated
             pageSize={20}
             data={auditorias || []}

@@ -15,7 +15,7 @@ import PasswordChangeRequired from '@/components/PasswordChangeRequired';
 import { CommandPalette, CommandPaletteButton } from '@/components/CommandPalette';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import PageTransition from '@/components/PageTransition';
-import TrialBanner from '@/components/TrialBanner';
+import TrialBanner, { diasRestantesTrial } from '@/components/TrialBanner';
 import { AiCreditsExhaustedBanner } from '@/components/ui/ai-credits-banner';
 import { AvisoDeCreditoUsado } from '@/components/AvisoDeCreditoUsado';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
@@ -57,6 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     developmentCompanySwitchEnabled,
   } = useAuth();
   const navigate = useNavigate();
+  const trialAtivo = diasRestantesTrial(company) > 0;
   /* O logótipo leva ao início de QUEM está: um cliente só-canal não tem painel. */
   const { rota: rotaInicial } = useRotaInicial();
   const location = useLocation();
@@ -197,10 +198,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         />
         
         <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-background rounded-lg m-2 border border-[hsl(230,20%,20%)]/30">
-          {/* Banner de Trial */}
-          <TrialBanner />
-          {/* Faixa global do saldo de IA: a acabar, últimos, esgotado. */}
-          <AiCreditsExhaustedBanner />
+          {/* Um único espaço de avisos: período de teste tem prioridade sobre o saldo de IA. */}
+          {trialAtivo ? <TrialBanner /> : <AiCreditsExhaustedBanner />}
           {/* Avisa, na hora, que uma acção gastou um crédito. Não desenha nada. */}
           <AvisoDeCreditoUsado />
           
@@ -332,7 +331,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {isMobile && <MobileBottomNav />}
 
         {/* Convite para criar o atalho do Akuris no ecrã inicial */}
-        <InstallAppPrompt />
+        {!trialAtivo && <InstallAppPrompt />}
 
         {/* O assistente só baixa o editor Markdown e o histórico depois do
             primeiro clique. O botão vive no cabeçalho e não cobre tabelas. */}
