@@ -183,7 +183,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
       open={open}
       onOpenChange={onOpenChange}
       icon={IconBolt}
-      title={automacao ? t('projetos.automacoes.dialogTitleEdit') : t('projetos.automacoes.dialogTitleNew')}
+      title={automacao?.id ? t('projetos.automacoes.dialogTitleEdit') : t('projetos.automacoes.dialogTitleNew')}
       size="md"
       onSubmit={submit}
       submitLabel={t('projetos.automacoes.save')}
