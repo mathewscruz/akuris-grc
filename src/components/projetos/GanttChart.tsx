@@ -3,6 +3,7 @@ import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { parseDataLocal } from '@/lib/date-utils';
+import { isMarco } from '@/lib/projeto-acompanhamento';
 
 interface GanttChartProps {
   tarefas: ProjetoTarefa[];
@@ -73,10 +74,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, onSelectTarefa 
           return (
             <g key={it.t.id} className="cursor-pointer" onClick={() => onSelectTarefa?.(it.t)}>
               <text x={8} y={y + 22} fontSize="12" fill="hsl(var(--foreground))" className="truncate">
-                {it.t.titulo.length > 30 ? it.t.titulo.slice(0, 30) + '…' : it.t.titulo}
+                {(isMarco(it.t) ? '◆ ' : '') + (it.t.titulo.length > 30 ? it.t.titulo.slice(0, 30) + '…' : it.t.titulo)}
               </text>
               <rect x={barX} y={y + 8} width={barW} height={20} rx={4} fill={cor} fillOpacity={0.25} stroke={cor} />
               <rect x={barX} y={y + 8} width={(barW * progresso) / 100} height={20} rx={4} fill={cor} />
+              {isMarco(it.t) && <rect x={barX + barW - 7} y={y + 11} width={14} height={14} transform={`rotate(45 ${barX + barW} ${y + 18})`} fill="hsl(var(--primary))" />}
             </g>
           );
         })}
