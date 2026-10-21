@@ -10,6 +10,8 @@ import type { ProjetoTarefa, ProjetoColuna, ProjetoTarefaPrioridade } from '@/ty
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
+import { isMarco, estaAtrasada, mesInicio, TAG_MARCO } from '@/lib/projeto-acompanhamento';
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
 };
@@ -27,21 +29,32 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
   const [fColuna, setFColuna] = React.useState<string>('todas');
   const [fStatus, setFStatus] = React.useState<string>('todos');
   const [agrupar, setAgrupar] = React.useState<string>('nenhum');
+  const [fResp, setFResp] = React.useState<string>('todos');
+  const [fTipo, setFTipo] = React.useState<string>('todos');
+  const { data: usuarios = [] } = useUsuariosEmpresa();
+  const nomeUsuario = React.useCallback((id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null, [usuarios]);
+  const tipos = React.useMemo(() => {
+    const set = new Set<string>();
+    tarefas.forEach((x) => { const tg = (x.tags ?? []).find((g) => g !== TAG_MARCO); if (tg) set.add(tg); });
+    return [...set].sort();
+  }, [tarefas]);
+  const tipoDe = (x: ProjetoTarefa) => (isMarco(x) ? t('p3Projetos.lista.milestone') : (x.tags ?? [])[0] ?? null);
 
   const filtradas = React.useMemo(() => {
     return tarefas.filter((t) => {
       if (busca && !matchesText(busca, t.titulo)) return false;
       if (fPrior !== 'todas' && t.prioridade !== fPrior) return false;
       if (fColuna !== 'todas' && t.coluna_id !== fColuna) return false;
+      if (fResp !== 'todos' && (t.responsavel_id ?? 'none') !== fResp) return false;
+      if (fTipo !== 'todos' && !(t.tags ?? []).includes(fTipo)) return false;
       if (fStatus === 'abertas' && t.concluida_em) return false;
       if (fStatus === 'concluidas' && !t.concluida_em) return false;
       if (fStatus === 'atrasadas') {
-        const atrasada = t.prazo && !t.concluida_em && parseDataLocal(t.prazo) < new Date();
-        if (!atrasada) return false;
+        if (!estaAtrasada(t)) return false;
       }
       return true;
     });
-  }, [tarefas, busca, fPrior, fColuna, fStatus]);
+  }, [tarefas, busca, fPrior, fColuna, fStatus, fResp, fTipo]);
 
   // Ordenação A-Z / Z-A por coluna
   const [sort, setSort] = React.useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
@@ -88,13 +101,18 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
       } else if (agrupar === 'prioridade') {
         key = getPrioridadeLabel(t, row.t.prioridade);
       } else if (agrupar === 'responsavel') {
-        key = row.t.responsavel_id ?? t('projetos.lista.notAssigned');
+        key = nomeUsuario(row.t.responsavel_id) ?? t('projetos.lista.notAssigned');
+      } else if (agrupar === 'tipo') {
+        key = tipoDe(row.t) ?? '—';
+      } else if (agrupar === 'mes') {
+        const mk = mesInicio(row.t);
+        key = mk ? new Date(Number(mk.slice(0, 4)), Number(mk.slice(5, 7)) - 1, 1).toLocaleDateString(intlLocale(), { month: 'long', year: 'numeric' }) : '—';
       }
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(row);
     });
     return [...m.entries()].map(([key, rows]) => ({ key, label: key, rows }));
-  }, [ordenadas, agrupar, colunas]);
+  }, [ordenadas, agrupar, colunas, nomeUsuario]);
 
   return (
     <div className="space-y-3">
@@ -147,9 +165,35 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
               <SelectItem value="coluna">{t('projetos.lista.groupColumn')}</SelectItem>
               <SelectItem value="prioridade">{t('projetos.lista.groupPriority')}</SelectItem>
               <SelectItem value="responsavel">{t('projetos.lista.groupResponsible')}</SelectItem>
+              <SelectItem value="tipo">{t('p3Projetos.lista.groupType')}</SelectItem>
+              <SelectItem value="mes">{t('p3Projetos.lista.groupMonth')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        <div className="flex flex-col gap-1 min-w-[180px]">
+          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterResponsibleLabel')}</span>
+          <Select value={fResp} onValueChange={setFResp}>
+            <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">{t('p3Projetos.lista.responsibleAll')}</SelectItem>
+              <SelectItem value="none">{t('projetos.lista.notAssigned')}</SelectItem>
+              {usuarios.map((u) => <SelectItem key={u.user_id} value={u.user_id}>{u.nome ?? u.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        {tipos.length > 0 && (
+          <div className="flex flex-col gap-1 min-w-[180px]">
+            <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterTypeLabel')}</span>
+            <Select value={fTipo} onValueChange={setFTipo}>
+              <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">{t('p3Projetos.lista.typeAll')}</SelectItem>
+                <SelectItem value={TAG_MARCO}>{t('p3Projetos.lista.milestone')}</SelectItem>
+                {tipos.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <span className="text-xs text-muted-foreground ml-auto">{t('projetos.lista.filteredOf', { filtered: filtradas.length, total: tarefas.length })}</span>
       </div>
 
@@ -158,46 +202,60 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
           <TableHeader>
             <TableRow>
               <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('projetos.lista.colTarefa')}</SortableTableHead>
+              <TableHead>{t('p3Projetos.lista.colTipo')}</TableHead>
               <SortableTableHead field="coluna" sort={sort} onSort={toggleSort}>{t('projetos.lista.colColuna')}</SortableTableHead>
-              <SortableTableHead field="prioridade" sort={sort} onSort={toggleSort}>{t('projetos.lista.colPrioridade')}</SortableTableHead>
-              <SortableTableHead field="prazo" sort={sort} onSort={toggleSort}>{t('projetos.lista.colPrazo')}</SortableTableHead>
+              <SortableTableHead field="responsavel_id" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colResponsavel')}</SortableTableHead>
+              <SortableTableHead field="data_inicio" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colPeriodo')}</SortableTableHead>
+              <SortableTableHead field="progresso_pct" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colProgresso')}</SortableTableHead>
               <SortableTableHead field="concluida_em" sort={sort} onSort={toggleSort}>{t('projetos.lista.colStatus')}</SortableTableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {grupos.length === 1 && grupos[0].rows.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
             ) : (
               grupos.map((g) => (
                 <React.Fragment key={g.key}>
                   {g.label && (
                     <TableRow>
-                      <TableCell colSpan={5} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
+                      <TableCell colSpan={7} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
                         {g.label} <span className="text-muted-foreground">({g.rows.length})</span>
                       </TableCell>
                     </TableRow>
                   )}
                   {g.rows.map(({ t: task, depth }) => {
                     const col = colunas.find((c) => c.id === task.coluna_id);
-                    const atrasada = task.prazo && !task.concluida_em && parseDataLocal(task.prazo) < new Date();
+                    const atrasada = estaAtrasada(task);
+                    const fmt = (d: string | null) => (d ? parseDataLocal(d).toLocaleDateString(intlLocale()) : '—');
+                    const tags = task.tags ?? [];
+                    const pct = Math.max(0, Math.min(100, task.progresso_pct ?? 0));
                     return (
                       <TableRow key={task.id} className="cursor-pointer" onClick={() => onSelect(task)}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-1.5" style={{ paddingLeft: depth * 18 }}>
                             {depth > 0 && <IconChevron className="h-3.5 w-3.5 text-muted-foreground" />}
-                            <span className="truncate">{task.titulo}</span>
+                            {isMarco(task) && <span className="text-primary" aria-label={t('p3Projetos.lista.milestone')} title={t('p3Projetos.lista.milestone')}>◆</span>}
+                            <span className={depth === 0 ? 'truncate font-semibold' : 'truncate'}>{task.titulo}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{col?.nome ?? '—'}</TableCell>
-                        <TableCell>
-                          <StatusBadge tone={prioridadeTone[task.prioridade]}>{getPrioridadeLabel(t, task.prioridade)}</StatusBadge>
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px]">
+                          <span className="block truncate" title={tags.join(' · ')}>{tags.filter((g) => g !== TAG_MARCO).join(' · ') || (isMarco(task) ? t('p3Projetos.lista.milestone') : '—')}</span>
                         </TableCell>
-                        <TableCell className={atrasada ? 'text-destructive font-medium' : ''}>
-                          {task.prazo ? parseDataLocal(task.prazo).toLocaleDateString(intlLocale()) : '—'}
+                        <TableCell>{col?.nome ?? '—'}</TableCell>
+                        <TableCell className="text-sm">{nomeUsuario(task.responsavel_id) ?? <span className="text-muted-foreground">{t('projetos.lista.notAssigned')}</span>}</TableCell>
+                        <TableCell className={atrasada ? 'text-destructive font-medium whitespace-nowrap' : 'whitespace-nowrap'}>
+                          {fmt(task.data_inicio)} → {fmt(task.data_fim ?? task.prazo)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 min-w-[90px]">
+                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary" style={{ width: `${pct}%` }} /></div>
+                            <span className="text-xs tabular-nums">{pct}%</span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {task.concluida_em
                             ? <StatusBadge tone="success">{t('projetos.lista.done')}</StatusBadge>
+                            : atrasada ? <StatusBadge tone="destructive">{t('projetos.lista.statusOverdue')}</StatusBadge>
                             : <StatusBadge tone="info">{t('projetos.lista.open')}</StatusBadge>}
                         </TableCell>
                       </TableRow>

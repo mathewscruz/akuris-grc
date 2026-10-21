@@ -8,7 +8,8 @@ import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import type { ProjetoTarefaPrioridade } from '@/types/projetos';
-import { parseDataLocal } from '@/lib/date-utils';
+import { parseDataLocal, intlLocale } from '@/lib/date-utils';
+import { indicadores, progressoPorFase } from '@/lib/projeto-acompanhamento';
 
 export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[] }) {
   const { t } = useLanguage();
@@ -54,8 +55,38 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
     return { total, abertas, concluidas: concluidas.length, atrasadas, slaViolado, slaRisco, semanas, cycleMed, porPrior, porColuna, estimado, gasto };
   }, [tarefas, colunas]);
 
+  const ind = React.useMemo(() => indicadores(tarefas), [tarefas]);
+  const fases = React.useMemo(() => progressoPorFase(tarefas), [tarefas]);
+  const marco = ind.proximoMarco;
+  const marcoData = marco ? parseDataLocal((marco.data_fim ?? marco.prazo)!).toLocaleDateString(intlLocale()) : null;
+
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Mini icon={<IconTrendUp />} label={t('p3Projetos.painel.progressoGeral')} value={`${Math.round(ind.progresso * 100)}%`} hint={t('p3Projetos.painel.planejadoHoje', { value: Math.round(ind.planejado * 100) })} />
+        <Mini icon={<IconSuccess />} label={t('p3Projetos.painel.concluidas')} value={String(ind.concluidas)} hint={t('p3Projetos.painel.deTotal', { total: ind.total })} />
+        <Mini icon={<IconWarning />} label={t('p3Projetos.painel.atrasadas')} value={String(ind.atrasadas)} hint={t('p3Projetos.painel.atrasadasHint')} />
+        <Card variant="elevated">
+          <CardContent className="p-3 space-y-1">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs"><span className="text-primary">◆</span>{t('p3Projetos.painel.proximoMarco')}</div>
+            <div className="text-lg font-semibold tabular-nums">{marcoData ?? '—'}</div>
+            <div className="text-xs text-muted-foreground line-clamp-2">{marco ? marco.titulo : t('p3Projetos.painel.semMarco')}</div>
+          </CardContent>
+        </Card>
+      </div>
+      {fases.length > 0 && (
+        <Card variant="elevated">
+          <CardContent className="p-4 space-y-3">
+            <div className="text-sm font-semibold">{t('p3Projetos.painel.porFase')}</div>
+            {fases.map((f) => (
+              <div key={f.id} className="space-y-1">
+                <div className="flex justify-between gap-3 text-xs"><span className="truncate">{f.titulo}</span><span className="tabular-nums font-medium">{f.progresso}%</span></div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: `${f.progresso}%` }} /></div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Mini icon={<IconTrendUp />} label={t('projetos.metricas.velocity')} value={(m.semanas[3]?.concluidas ?? 0).toString()} hint={t('projetos.metricas.avg4Weeks', { value: (m.semanas.reduce((s, x) => s + x.concluidas, 0) / 4).toFixed(1) })} />
         <Mini icon={<IconTime />} label={t('projetos.metricas.cycleTime')} value={`${m.cycleMed.toFixed(1)}d`} hint={t('projetos.metricas.cycleTimeHint')} />
