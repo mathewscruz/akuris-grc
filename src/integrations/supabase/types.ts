@@ -9413,6 +9413,8 @@ export type Database = {
           descricao: string | null
           estimativa_horas: number | null
           id: string
+          lembrete_3d_enviado_em: string | null
+          lembrete_dia_enviado_em: string | null
           ordem: number
           origem_id: string | null
           origem_tipo: string | null
@@ -9442,6 +9444,8 @@ export type Database = {
           descricao?: string | null
           estimativa_horas?: number | null
           id?: string
+          lembrete_3d_enviado_em?: string | null
+          lembrete_dia_enviado_em?: string | null
           ordem?: number
           origem_id?: string | null
           origem_tipo?: string | null
@@ -9471,6 +9475,8 @@ export type Database = {
           descricao?: string | null
           estimativa_horas?: number | null
           id?: string
+          lembrete_3d_enviado_em?: string | null
+          lembrete_dia_enviado_em?: string | null
           ordem?: number
           origem_id?: string | null
           origem_tipo?: string | null
@@ -12376,6 +12382,7 @@ export type Database = {
       }
       agendar_expurgo_denuncias: { Args: never; Returns: string }
       agendar_lembretes_diarios: { Args: never; Returns: string }
+      agendar_lembretes_tarefas_projeto: { Args: never; Returns: string }
       agendar_orientacoes_requisitos: { Args: never; Returns: string }
       apply_default_permissions_for_user: {
         Args: { user_id_param: string }
@@ -13121,6 +13128,10 @@ export type Database = {
       projeto_pertence_empresa: {
         Args: { _projeto_id: string }
         Returns: boolean
+      }
+      projeto_tarefa_avisa_responsavel: {
+        Args: { p_body: Json }
+        Returns: undefined
       }
       provision_user_registration: {
         Args: {
