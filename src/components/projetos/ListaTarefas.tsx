@@ -235,13 +235,13 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
           </TableHeader>
           <TableBody>
             {grupos.length === 1 && grupos[0].rows.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
+              <TableRow data-table-static><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
             ) : (
               grupos.map((g) => (
                 <React.Fragment key={g.key}>
                   {g.label && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
+                    <TableRow data-table-static>
+                      <TableCell colSpan={6} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
                         {g.label} <span className="text-muted-foreground">({g.rows.length})</span>
                       </TableCell>
                     </TableRow>
@@ -261,14 +261,19 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                     if (nivel !== 'atividade') nome = nome.replace(/^(FASE|DOMÍNIO|DOMINIO)\s+\d+\s+—\s+/i, '');
                     const recolhido = recolhidos.has(task.id);
                     const linhaCls = nivel === 'fase'
-                      ? 'cursor-pointer bg-primary/[0.07] hover:bg-primary/10 shadow-[inset_3px_0_0_hsl(var(--primary))]'
+                      ? 'bg-primary/[0.08] hover:bg-primary/[0.12]'
                       : nivel === 'dominio'
-                        ? 'cursor-pointer bg-[hsl(var(--chart-teal)/0.07)] hover:bg-[hsl(var(--chart-teal)/0.12)] shadow-[inset_3px_0_0_hsl(var(--chart-teal))]'
-                        : 'cursor-pointer';
+                        ? 'bg-[hsl(var(--chart-teal)/0.08)] hover:bg-[hsl(var(--chart-teal)/0.13)]'
+                        : 'bg-card hover:bg-muted/40';
+                    const barra = nivel === 'fase'
+                      ? 'shadow-[inset_3px_0_0_hsl(var(--primary))]'
+                      : nivel === 'dominio' ? 'shadow-[inset_3px_0_0_hsl(var(--chart-teal))]' : '';
+                    const status: StatusKind = col?.is_concluido || task.concluida_em ? 'done' : atrasada || /atras/i.test(col?.nome ?? '') ? 'late' : /andamento|progress/i.test(col?.nome ?? '') ? 'active' : 'rest';
+                    const statusLabel = status === 'late' && !/atras/i.test(col?.nome ?? '') ? t('projetos.lista.statusOverdue') : col?.nome ?? '—';
                     return (
-                      <TableRow key={task.id} className={linhaCls} onClick={() => onSelect(task)}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2" style={{ paddingLeft: nivel === 'atividade' ? depth * 20 : depth * 20 }}>
+                      <TableRow key={task.id} data-table-static className={`cursor-pointer border-b border-border/60 transition-colors ${linhaCls}`} onClick={() => onSelect(task)}>
+                        <TableCell className={`py-2.5 ${barra}`}>
+                          <div className="flex items-center gap-2" style={{ paddingLeft: depth * 22 }}>
                             {temFilhos ? (
                               <button type="button" onClick={(e) => { e.stopPropagation(); alternarRecolhido(task.id); }}
                                 className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-background/70"
@@ -276,42 +281,34 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                                 <IconChevron className={`h-3.5 w-3.5 transition-transform ${recolhido ? '' : 'rotate-90'}`} />
                               </button>
                             ) : depth > 0 ? (
-                              <span aria-hidden className="h-px w-3 shrink-0 bg-border" />
+                              <span aria-hidden className="ml-2 h-3 w-3 shrink-0 rounded-bl border-b border-l border-border" />
                             ) : null}
                             {codigo && (
                               <span className={nivel === 'fase'
                                 ? 'shrink-0 rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground tabular-nums'
                                 : nivel === 'dominio'
-                                  ? 'shrink-0 rounded-md bg-[hsl(var(--chart-teal)/0.15)] px-1.5 py-0.5 text-[11px] font-semibold text-[hsl(var(--chart-teal))] tabular-nums'
-                                  : 'shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary tabular-nums'}>{codigo}</span>
+                                  ? 'shrink-0 rounded-md bg-[hsl(var(--chart-teal))] px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground tabular-nums'
+                                  : 'shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums'}>{codigo}</span>
                             )}
                             {isMarco(task) && <span className="text-[hsl(var(--fw-gold))]" aria-label={t('p3Projetos.lista.milestone')} title={t('p3Projetos.lista.milestone')}>◆</span>}
-                            <span className={nivel === 'fase' ? 'truncate font-semibold text-foreground' : nivel === 'dominio' ? 'truncate font-semibold text-foreground/90' : 'truncate font-normal'}>{nome}</span>
+                            <span className={nivel === 'fase' ? 'truncate font-bold text-foreground' : nivel === 'dominio' ? 'truncate font-semibold text-foreground' : 'truncate text-foreground/90'}>{nome}</span>
                             {temFilhos && <span className="text-xs text-muted-foreground">({filhosPorPai.get(task.id)!.length})</span>}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-[200px]">
+                        <TableCell className="py-2.5 text-xs text-muted-foreground max-w-[200px]">
                           <span className="block truncate" title={tags.join(' · ')}>{tags.filter((g) => g !== TAG_MARCO).join(' · ') || (isMarco(task) ? t('p3Projetos.lista.milestone') : '—')}</span>
                         </TableCell>
-                        <TableCell>
-                          <StatusBadge tone={col?.is_concluido ? 'success' : /atras/i.test(col?.nome ?? '') ? 'destructive' : /andamento|progress/i.test(col?.nome ?? '') ? 'info' : 'neutral'}>{col?.nome ?? '—'}</StatusBadge>
-                        </TableCell>
-                        <TableCell className="text-sm">{nomeUsuario(task.responsavel_id) ?? <span className="text-muted-foreground">{t('projetos.lista.notAssigned')}</span>}</TableCell>
-                        <TableCell className={atrasada ? 'text-destructive font-medium whitespace-nowrap' : 'whitespace-nowrap'}>
+                        <TableCell className="py-2.5 text-sm">{nomeUsuario(task.responsavel_id) ?? <span className="text-muted-foreground">{t('projetos.lista.notAssigned')}</span>}</TableCell>
+                        <TableCell className={`py-2.5 text-xs tabular-nums whitespace-nowrap ${atrasada ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                           {fmt(task.data_inicio)} → {fmt(task.data_fim ?? task.prazo)}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 min-w-[90px]">
-                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><div className={nivel === 'dominio' ? 'h-full bg-[hsl(var(--chart-teal))]' : pct >= 100 ? 'h-full bg-success' : 'h-full bg-primary'} style={{ width: `${pct}%` }} /></div>
-                            <span className="text-xs tabular-nums">{pct}%</span>
+                        <TableCell className="py-2.5">
+                          <div className="flex items-center gap-2 min-w-[110px]">
+                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><div className={pct >= 100 ? 'h-full bg-success' : nivel === 'dominio' ? 'h-full bg-[hsl(var(--chart-teal))]' : 'h-full bg-primary'} style={{ width: `${pct}%` }} /></div>
+                            <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{pct}%</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {task.concluida_em
-                            ? <StatusBadge tone="success">{t('projetos.lista.done')}</StatusBadge>
-                            : atrasada ? <StatusBadge tone="destructive">{t('projetos.lista.statusOverdue')}</StatusBadge>
-                            : <StatusBadge tone="info">{t('projetos.lista.open')}</StatusBadge>}
-                        </TableCell>
+                        <TableCell className="py-2.5"><StatusPill kind={status}>{statusLabel}</StatusPill></TableCell>
                       </TableRow>
                     );
                   })}
