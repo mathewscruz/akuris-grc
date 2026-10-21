@@ -7,7 +7,7 @@ const CLS: Record<StatusKind, string> = {
   rest: 'bg-muted text-muted-foreground',
   active: 'bg-state-active-surface text-state-active',
   done: 'bg-state-done-surface text-state-done',
-  late: 'bg-destructive/12 text-destructive',
+  late: 'bg-destructive/10 text-destructive',
 };
 const DOT: Record<StatusKind, string> = {
   rest: 'bg-muted-foreground/60',
