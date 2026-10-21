@@ -56,6 +56,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const { data: vinculos = [] } = useTarefaVinculos(tarefa?.id ?? '');
   const { data: usuarios = [] } = useUsuariosEmpresa();
   const nomeUsuario = (id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null;
+  const fotoUsuario = (id: string | null) => (usuarios.find((u) => u.user_id === id) as { foto_url?: string | null } | undefined)?.foto_url ?? null;
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [novaSub, setNovaSub] = useState('');
   const [novaTag, setNovaTag] = useState('');
@@ -156,7 +157,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const kind = statusKindDe(colAtual);
   const codigoDe = (titulo: string) => titulo.match(/^([A-Z]{1,3}\d+(?:\.\d+)*)\s+—\s+(.*)$/);
   const nomeCurto = (titulo: string) => (codigoDe(titulo)?.[2] ?? titulo).replace(/^(FASE|DOMÍNIO|DOMINIO)\s+\d+\s+—\s+/i, '');
-  const ghost = 'h-8 w-full justify-between border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus:ring-0 data-[state=open]:bg-muted';
+  const ghost = 'h-8 w-full justify-between border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus:ring-0 data-[state=open]:bg-muted whitespace-nowrap [&>span]:line-clamp-none [&>span]:overflow-visible';
   const copiarLink = () => {
     const url = `${window.location.origin}${window.location.pathname}?tarefa=${tarefa?.id ?? ''}`;
     void navigator.clipboard?.writeText(url).then(() => toast.success(t('p3Projetos.tarefa.linkCopied')));
@@ -201,7 +202,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           })}
         </nav>
         <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
-          <SelectTrigger aria-label={t('p3Projetos.tarefa.status')} className="h-8 w-auto gap-1 border-transparent bg-transparent px-1 shadow-none focus:ring-0 [&>svg]:hidden">
+          <SelectTrigger aria-label={t('p3Projetos.tarefa.status')} className="h-8 w-auto gap-1 border-transparent bg-transparent px-1 shadow-none focus:ring-0 [&>svg]:hidden [&>span]:line-clamp-none [&>span]:overflow-visible whitespace-nowrap">
             <StatusPill kind={kind} className="py-1">{colAtual?.nome ?? '—'}<IconChevron className="h-3 w-3 rotate-90" /></StatusPill>
           </SelectTrigger>
           <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}><StatusPill kind={statusKindDe(c)}>{c.nome}</StatusPill></SelectItem>)}</SelectContent>
@@ -213,7 +214,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
         )}
       </div>
 
-      <form onSubmit={handleSubmit} id="tarefa-form" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <form onSubmit={handleSubmit} id="tarefa-form" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* Coluna principal */}
         <div className="min-w-0 space-y-6 order-2 lg:order-1">
           <Textarea
@@ -249,7 +250,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                       {cm && <span className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">{cm[1]}</span>}
                       <button type="button" className={`min-w-0 flex-1 truncate text-left hover:text-primary ${feito ? 'line-through text-muted-foreground' : ''}`} onClick={() => onOpenTarefa?.(s)}>{cm?.[2] ?? s.titulo}</button>
                       <StatusPill kind={statusKindDe(colunas.find((c) => c.id === s.coluna_id))} className="hidden sm:inline-flex">{colunas.find((c) => c.id === s.coluna_id)?.nome ?? '—'}</StatusPill>
-                      {nomeUsuario(s.responsavel_id) && <Avatar nome={nomeUsuario(s.responsavel_id)!} />}
+                      {nomeUsuario(s.responsavel_id) && <Avatar nome={nomeUsuario(s.responsavel_id)!} foto={fotoUsuario(s.responsavel_id)} />}
                       {fim && <span className="w-14 text-right text-xs text-muted-foreground tabular-nums">{parseDataLocal(fim).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short' })}</span>}
                     </li>
                   );
@@ -303,7 +304,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           <Prop icon={<IconFlag />} label={t('projetos.tarefaDialog.fieldPrioridade')}>
             <Select value={form.prioridade} onValueChange={(v) => setForm({ ...form, prioridade: v as ProjetoTarefaPrioridade })}>
               <SelectTrigger className={ghost}>
-                <span className="flex items-center gap-2"><IconFlag className={`h-4 w-4 ${PRIOR_COR[form.prioridade]}`} />{t(`projetos.priority.${form.prioridade}`)}</span>
+                <div className="flex items-center gap-2"><IconFlag className={`h-4 w-4 ${PRIOR_COR[form.prioridade]}`} />{t(`projetos.priority.${form.prioridade}`)}</div>
               </SelectTrigger>
               <SelectContent>
                 {(['baixa', 'media', 'alta', 'critica'] as const).map((p) => (
@@ -344,7 +345,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
               ))}
               <input value={novaTag} onChange={(e) => setNovaTag(e.target.value)} placeholder="+"
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }} onBlur={addTag}
-                className="h-6 w-16 rounded-full border border-dashed border-border bg-transparent px-2 text-xs outline-none focus:border-primary" />
+                className="h-6 w-10 rounded-full border border-dashed border-border bg-transparent px-2 text-xs outline-none focus:border-primary" />
             </div>
           </Prop>
           <div className="col-span-full mt-2 flex items-center gap-4 border-t border-border px-1 pt-4">
@@ -396,15 +397,16 @@ function Count({ n }: { n: number }) {
   return <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground">{n}</span>;
 }
 
-function Avatar({ nome }: { nome: string }) {
+function Avatar({ nome, foto }: { nome: string; foto?: string | null }) {
   const ini = nome.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
+  if (foto) return <img src={foto} alt={nome} title={nome} className="h-6 w-6 shrink-0 rounded-full object-cover" />;
   return <span title={nome} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">{ini}</span>;
 }
 
 function Prop({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[118px_minmax(0,1fr)] items-center gap-1 py-1">
-      <span className="flex items-center gap-2 px-1 text-xs text-muted-foreground [&>svg]:h-4 [&>svg]:w-4">{icon}{label}</span>
+    <div className="grid grid-cols-[140px_minmax(0,1fr)] items-center gap-1 py-1">
+      <span className="flex items-center gap-2 whitespace-nowrap px-1 text-xs text-muted-foreground [&>svg]:shrink-0 [&>svg]:h-4 [&>svg]:w-4">{icon}{label}</span>
       <div className="min-w-0 text-sm">{children}</div>
     </div>
   );

@@ -53,7 +53,7 @@ export function UserSelect({ value, onValueChange, placeholder, id, excludedUser
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, nome, email, role')
+        .select('user_id, nome, email, role, foto_url')
         .eq('empresa_id', profile?.empresa_id)
         .eq('ativo', true)
         .order('nome');
