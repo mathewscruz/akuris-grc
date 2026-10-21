@@ -6417,6 +6417,51 @@ export type Database = {
           },
         ]
       }
+      gap_analysis_framework_owners: {
+        Row: {
+          atribuido_por: string | null
+          created_at: string
+          empresa_id: string
+          framework_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          atribuido_por?: string | null
+          created_at?: string
+          empresa_id: string
+          framework_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          atribuido_por?: string | null
+          created_at?: string
+          empresa_id?: string
+          framework_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gap_analysis_framework_owners_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gap_analysis_framework_owners_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gap_analysis_frameworks: {
         Row: {
           assessment_scope: string
@@ -12399,6 +12444,14 @@ export type Database = {
       assessment_pertence_empresa: {
         Args: { assessment_id: string }
         Returns: boolean
+      }
+      atribuir_responsavel_framework: {
+        Args: {
+          p_aplicar_requisitos?: boolean
+          p_framework_id: string
+          p_user_id: string
+        }
+        Returns: number
       }
       auditoria_item_pertence_empresa: {
         Args: { item_id: string }
