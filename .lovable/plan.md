@@ -1,34 +1,22 @@
-# Ligar Projetos aos demais módulos
+# Marcador "Você deveria estar aqui" na lista de atividades
 
-## O que já existe
-- Uma tarefa já pode ser ligada a riscos, controlos, incidentes, auditorias, requisitos, contratos, fornecedores, documentos, ativos, denúncias, planos de ação, dados pessoais, contas privilegiadas e continuidade (aba "Vínculos GRC").
-- "Criar tarefa" já existe em Riscos, Incidentes, Gap Analysis e Contratos.
-- Hoje a ligação é só de ida: o módulo de origem não mostra as tarefas nem o seu andamento.
+## O que o usuário verá
+- Na aba Lista do projeto, uma linha-marcador horizontal (faixa fina com rótulo "Você deveria estar aqui · hoje, 21/10") inserida entre as atividades, na posição da data de hoje no cronograma.
+- Ao lado do marcador, um resumo do ritmo:
+  - **Adiantado**: há atividades concluídas cujo período ainda está no futuro ("3 atividades adiantadas").
+  - **Atrasado**: atividades com fim antes de hoje e não concluídas ("5 atividades atrasadas").
+  - **No ritmo**: nenhuma das duas situações.
+- Atividades que deveriam estar em andamento hoje (início ≤ hoje ≤ fim) recebem um realce sutil; as atrasadas acima do marcador ganham um pequeno indicador "atrasada".
+- Botão "Ir para hoje" na barra da lista que rola até o marcador.
 
-## Oportunidades propostas
-
-1. **Tarefas visíveis no painel lateral de cada módulo**
-   Na aba "Ligações" do painel de risco, controlo, incidente, requisito etc., mostrar as tarefas ligadas com estado, responsável, prazo e link para abrir a tarefa.
-
-2. **"Criar tarefa" em todos os módulos**
-   Estender o botão para Controlos, Auditorias (achados), Documentos, Ativos, Continuidade, Privacidade e Planos de Ação, já com o vínculo preenchido.
-
-3. **Projeto a partir do Gap Analysis**
-   Botão "Gerar projeto de implementação" num framework: cria um projeto com uma fase por domínio e uma tarefa por requisito não conforme, já ligadas.
-
-4. **Progresso que volta para o módulo**
-   Quando todas as tarefas ligadas a um requisito/achado/plano estiverem concluídas, avisar no sino o responsável para rever o item (sem mudar estado automaticamente — decisão humana).
-
-5. **Evidência da tarefa reaproveitada**
-   Anexos de tarefas ligadas a um requisito ou controlo podem ser enviados à Biblioteca de Evidências com um clique.
-
-6. **Projeto no Dashboard e em Minhas Pendências**
-   Cartão "Projetos em risco" (tarefas atrasadas por projeto) e tarefas atrasadas ligadas a riscos críticos destacadas.
+## Regras
+- O marcador aparece só quando a lista está ordenada por período (padrão) e sem agrupamento, ou agrupada por mês (dentro do mês atual). Em outras ordenações, mostra apenas o resumo de ritmo e o botão fica oculto.
+- Posição: antes da primeira atividade cujo início é posterior a hoje. Se o projeto ainda não começou, fica no topo; se já terminou, no fim.
+- "Concluída" = status concluído ou progresso 100%. Fases/domínios (agrupadores) não contam no resumo, só atividades-folha.
+- Atividades sem data são ignoradas.
 
 ## Detalhes técnicos
-- Reutilizar `projeto_tarefa_vinculos` (sem nova tabela); hook novo `useTarefasDoRegisto(entidade, id)` em `useDetalheLigacoes`, sempre filtrado por `empresa_id`.
-- Botão genérico a partir de `CriarTarefaMenuItem` com tipo de entidade.
-- Geração de projeto via RPC transacional escopada pela empresa da sessão.
-- Aviso de conclusão por trigger em `projeto_tarefas` usando `criar_notificacao`.
-- Textos pt/en via t(); visual com `projeto-visual.tsx` e StatusPill.
-- Ordem sugerida: 1 → 2 → 3 → 4 → 5 → 6.
+- Nova função pura em `src/lib/projeto-acompanhamento.ts`: `calcularPosicaoHoje(tarefas, hoje)` devolvendo índice do marcador, ids em andamento esperado, atrasadas e adiantadas.
+- `ListaTarefas.tsx`: renderiza uma `TableRow` marcador (colSpan total) com tokens semânticos e vocabulário de `projeto-visual.tsx`; `ref` para rolar com "Ir para hoje".
+- Textos pt/en em `p3Projetos.lista.*`.
+- Testes em `projeto-acompanhamento.test.ts`: projeto não iniciado, em curso com atraso, adiantado, terminado.
