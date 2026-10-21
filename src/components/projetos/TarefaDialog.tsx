@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { TAG_MARCO } from '@/lib/projeto-acompanhamento';
-import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess } from '@/components/icons';
+import { undoableAction } from '@/lib/undoable-action';
+import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess, IconChevron, IconLink } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
@@ -20,13 +21,15 @@ import {
   useAddComentario,
   useTarefaChecklist,
   useChecklistMutations,
+  useTarefaVinculos,
 } from '@/hooks/useProjetoTarefas';
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
 import { VinculosGRCPanel } from './VinculosGRCPanel';
 import { TempoPanel } from './TempoPanel';
 import { ReacoesPorComentario } from './ReacoesBar';
+import { StatusPill, statusKindDe } from './StatusPill';
 import { useReacoes, useSprints } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade, ProjetoColuna } from '@/types/projetos';
-;
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
@@ -49,6 +52,10 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const remove = useDeleteTarefa(projetoId);
   const { data: sprints = [] } = useSprints(projetoId);
   const { data: checklist = [] } = useTarefaChecklist(tarefa?.id ?? '');
+  const { data: coms = [] } = useTarefaComentarios(tarefa?.id ?? '');
+  const { data: vinculos = [] } = useTarefaVinculos(tarefa?.id ?? '');
+  const { data: usuarios = [] } = useUsuariosEmpresa();
+  const nomeUsuario = (id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null;
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [novaSub, setNovaSub] = useState('');
   const [novaTag, setNovaTag] = useState('');
