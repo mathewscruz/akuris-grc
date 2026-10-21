@@ -15,6 +15,18 @@ import { UserSelect } from '@/components/riscos/UserSelect';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
+const ACAO_KEY: Record<string, string> = {
+  mover_para_coluna: 'projetos.automacoes.acaoMoverColuna',
+  mudar_prioridade: 'projetos.automacoes.acaoMudarPrioridade',
+  atribuir_responsavel: 'projetos.automacoes.acaoAtribuirResponsavel',
+  notificar_usuario: 'projetos.automacoes.acaoNotificarUsuario',
+};
+const MODELOS = [
+  { key: 'concluir', gatilho: 'tarefa_concluida', acao: 'notificar_usuario' },
+  { key: 'criada', gatilho: 'tarefa_criada', acao: 'atribuir_responsavel' },
+  { key: 'movida', gatilho: 'tarefa_movida_para_coluna', acao: 'mudar_prioridade' },
+];
+
 export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; colunas: ProjetoColuna[] }) {
   const { t } = useLanguage();
   const GATILHOS = [
@@ -64,33 +76,51 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
           action={{ label: t('projetos.automacoes.createFirst'), onClick: () => { setEditando(null); setOpen(true); } }}
         />
       ) : (
-        <div className="rounded-lg border border-border bg-card divide-y divide-border">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {automacoes.map((a) => (
-            <div key={a.id} className="p-3 flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-medium truncate">{a.nome}</h4>
-                  {a.ativa
-                    ? <StatusBadge tone="success">{t('projetos.automacoes.active')}</StatusBadge>
-                    : <StatusBadge tone="neutral">{t('projetos.automacoes.paused')}</StatusBadge>}
+            <div key={a.id} className={`rounded-xl border bg-card p-4 transition-colors ${a.ativa ? 'border-border' : 'border-dashed border-border opacity-70'}`}>
+              <div className="flex items-start gap-3">
+                <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${a.ativa ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}><IconBolt className="h-4 w-4" /></span>
+                <div className="min-w-0 flex-1">
+                  <h4 className="truncate text-sm font-semibold">{a.nome}</h4>
+                  {a.descricao && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{a.descricao}</p>}
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {GATILHOS.find((g) => g.value === a.gatilho)?.label ?? a.gatilho}
-                  {' · '}{t('projetos.automacoes.actionsCount', { count: (a.acoes ?? []).length })}
-                  {' · '}{t('projetos.automacoes.executionsCount', { count: a.execucoes_count })}
-                </div>
-                {a.descricao && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.descricao}</p>}
+                <Switch checked={a.ativa} onCheckedChange={() => toggleAtiva(a)} aria-label={a.ativa ? t('projetos.automacoes.active') : t('projetos.automacoes.paused')} />
               </div>
-              <div className="flex items-center gap-1">
-                <Switch checked={a.ativa} onCheckedChange={() => toggleAtiva(a)} />
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditando(a); setOpen(true); }} aria-label={t('common.edit')} title={t('common.edit')}>
-                  <IconEdit className="h-3.5 w-3.5" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setRemovendo(a)} aria-label={t('common.delete')} title={t('common.delete')}>
-                  <IconDelete className="h-3.5 w-3.5" />
-                </Button>
+              <div className="mt-3 space-y-1.5 rounded-lg bg-muted/40 p-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-12 shrink-0 font-semibold uppercase tracking-wide text-muted-foreground">{t('p3Projetos.automacoes.quando')}</span>
+                  <span className="rounded-md bg-card px-2 py-1 font-medium">{GATILHOS.find((g) => g.value === a.gatilho)?.label ?? a.gatilho}</span>
+                </div>
+                {(a.acoes ?? []).map((ac, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-12 shrink-0 font-semibold uppercase tracking-wide text-muted-foreground">{i === 0 ? t('p3Projetos.automacoes.entao') : '+'}</span>
+                    <span className="rounded-md bg-primary/10 px-2 py-1 font-medium text-primary">{t(ACAO_KEY[ac.tipo] ?? 'projetos.automacoes.addAction')}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <IconPlay className="h-3.5 w-3.5" />
+                <span>{t('projetos.automacoes.executionsCount', { count: a.execucoes_count })}</span>
+                {a.ultima_execucao_em && <span>· {new Date(a.ultima_execucao_em).toLocaleDateString()}</span>}
+                <span className="ml-auto flex gap-1">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditando(a); setOpen(true); }} aria-label={t('common.edit')} title={t('common.edit')}><IconEdit className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-destructive" onClick={() => setRemovendo(a)} aria-label={t('common.delete')} title={t('common.delete')}><IconDelete className="h-3.5 w-3.5" /></Button>
+                </span>
               </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && automacoes.length === 0 && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {MODELOS.map((m) => (
+            <button key={m.key} type="button" onClick={() => { setEditando({ nome: t(`p3Projetos.automacoes.modelo_${m.key}`), descricao: null, gatilho: m.gatilho, condicoes: {}, acoes: [{ tipo: m.acao }], ativa: true } as unknown as Automacao); setOpen(true); }}
+              className="rounded-xl border border-dashed border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">{t('p3Projetos.automacoes.modelo')}</p>
+              <p className="mt-1 text-sm font-medium">{t(`p3Projetos.automacoes.modelo_${m.key}`)}</p>
+            </button>
           ))}
         </div>
       )}
