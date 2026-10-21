@@ -326,3 +326,6 @@ timeout = 60
 [functions.send-projeto-tarefa-notification]
 # Chamada só pelo gatilho do banco e pela rotina diária; a porta fecha-se no código (token da rotina).
 verify_jwt = false
+
+[functions.send-gap-owner-notification]
+verify_jwt = true

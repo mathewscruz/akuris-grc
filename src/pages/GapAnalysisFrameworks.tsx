@@ -454,12 +454,14 @@ export default function GapAnalysisFrameworks() {
     queryFn: async () => {
       const ids = idsAtivos.split(',');
       const desde = new Date(Date.now() - 60 * 86400000).toISOString();
-      const [hist, evals] = await Promise.all([
+      const [hist, evals, donos] = await Promise.all([
         supabase.from('gap_analysis_score_history').select('framework_id, score, recorded_at')
           .eq('empresa_id', empresaId!).in('framework_id', ids).gte('recorded_at', desde)
           .order('recorded_at', { ascending: true }).limit(2000),
         supabase.from('gap_analysis_evaluations').select('framework_id, responsavel_avaliacao')
           .eq('empresa_id', empresaId!).in('framework_id', ids).not('responsavel_avaliacao', 'is', null).limit(5000),
+        supabase.from('gap_analysis_framework_owners' as any).select('framework_id, user_id')
+          .eq('empresa_id', empresaId!).in('framework_id', ids),
       ]);
       const tendencia: Record<string, number[]> = {};
       (hist.data || []).forEach((r: any) => { (tendencia[r.framework_id] ||= []).push(Number(r.score)); });
@@ -470,14 +472,16 @@ export default function GapAnalysisFrameworks() {
       });
       const topo: Record<string, string> = {};
       Object.entries(contagem).forEach(([fw, m]) => { topo[fw] = Object.entries(m).sort((a, b) => b[1] - a[1])[0][0]; });
+      // Responsável definido para o framework tem prioridade sobre o mais frequente.
+      ((donos.data as any[]) || []).forEach((d) => { topo[d.framework_id] = d.user_id; });
       const userIds = [...new Set(Object.values(topo))];
-      const pessoas: Record<string, { nome: string; foto?: string | null }> = {};
+      const pessoas: Record<string, { nome: string; foto?: string | null; userId?: string | null }> = {};
       if (userIds.length) {
         const { data } = await supabase.from('profiles').select('user_id, nome, foto_url')
           .eq('empresa_id', empresaId!).in('user_id', userIds);
-        (data || []).forEach((p: any) => { pessoas[p.user_id] = { nome: p.nome, foto: p.foto_url }; });
+        (data || []).forEach((p: any) => { pessoas[p.user_id] = { nome: p.nome, foto: p.foto_url, userId: p.user_id }; });
       }
-      const responsavel: Record<string, { nome: string; foto?: string | null } | null> = {};
+      const responsavel: Record<string, { nome: string; foto?: string | null; userId?: string | null } | null> = {};
       Object.entries(topo).forEach(([fw, uid]) => { responsavel[fw] = pessoas[uid] ?? null; });
       return { tendencia, responsavel };
     },
