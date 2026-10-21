@@ -11,7 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
-import { isMarco, estaAtrasada, mesInicio, TAG_MARCO } from '@/lib/projeto-acompanhamento';
+import { isMarco, estaAtrasada, mesInicio, TAG_MARCO, calcularPosicaoHoje } from '@/lib/projeto-acompanhamento';
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
 };
@@ -112,6 +112,30 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
     pais.forEach((p) => pushWithChildren(p, 0));
     return result;
   }, [filtradasOrdenadas, recolhidos, agrupar]);
+
+  // "Você deveria estar aqui"
+  const posHoje = React.useMemo(
+    () => calcularPosicaoHoje(ordenadas.map((r) => r.t), (x) => !filhosPorPai.has(x.id)),
+    [ordenadas, filhosPorPai],
+  );
+  const marcadorVisivel = (agrupar === 'nenhum' || agrupar === 'mes') && (!sort || (sort.field === 'data_inicio' && sort.direction === 'asc'));
+  const idAntesMarcador = ordenadas[posHoje.indice]?.t.id ?? null;
+  const atrasadasSet = React.useMemo(() => new Set(posHoje.atrasadas), [posHoje]);
+  const emCursoSet = React.useMemo(() => new Set(posHoje.emCurso), [posHoje]);
+  const marcadorRef = React.useRef<HTMLTableRowElement | null>(null);
+  const linhaMarcador = (
+    <TableRow key="__hoje" ref={marcadorRef} data-table-static className="hover:bg-transparent">
+      <TableCell colSpan={6} className="p-0">
+        <div className="relative flex items-center gap-3 px-3 py-1.5">
+          <span aria-hidden className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-primary/70" />
+          <span className="relative inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground whitespace-nowrap">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
+            {t('p3Projetos.lista.hojeMarcador', { data: new Date().toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' }) })}
+          </span>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 
   // Agrupar
   const grupos = React.useMemo(() => {
@@ -218,7 +242,18 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
             </Select>
           </div>
         )}
-        <span className="text-xs text-muted-foreground ml-auto">{t('projetos.lista.filteredOf', { filtered: filtradas.length, total: tarefas.length })}</span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {posHoje.atrasadas.length > 0 && <StatusPill kind="late">{t('p3Projetos.lista.ritmoAtrasado', { n: posHoje.atrasadas.length })}</StatusPill>}
+          {posHoje.adiantadas.length > 0 && <StatusPill kind="done">{t('p3Projetos.lista.ritmoAdiantado', { n: posHoje.adiantadas.length })}</StatusPill>}
+          {posHoje.ritmo === 'no_ritmo' && <StatusPill kind="active">{t('p3Projetos.lista.ritmoNoRitmo')}</StatusPill>}
+          {marcadorVisivel && ordenadas.length > 0 && (
+            <button type="button" onClick={() => marcadorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              className="h-8 rounded-md border border-border px-2.5 text-xs font-medium text-primary hover:bg-primary/10 whitespace-nowrap">
+              {t('p3Projetos.lista.irHoje')}
+            </button>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{t('projetos.lista.filteredOf', { filtered: filtradas.length, total: tarefas.length })}</span>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -237,7 +272,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
             {grupos.length === 1 && grupos[0].rows.length === 0 ? (
               <TableRow data-table-static><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
             ) : (
-              grupos.map((g) => (
+              grupos.map((g, gi) => (
                 <React.Fragment key={g.key}>
                   {g.label && (
                     <TableRow data-table-static>
@@ -270,8 +305,11 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                       : nivel === 'dominio' ? 'shadow-[inset_3px_0_0_hsl(var(--chart-teal))]' : '';
                     const status: StatusKind = col?.is_concluido || task.concluida_em ? 'done' : atrasada || /atras/i.test(col?.nome ?? '') ? 'late' : /andamento|progress/i.test(col?.nome ?? '') ? 'active' : 'rest';
                     const statusLabel = status === 'late' && !/atras/i.test(col?.nome ?? '') ? t('projetos.lista.statusOverdue') : col?.nome ?? '—';
+                    const emCursoHoje = emCursoSet.has(task.id) && !atrasadasSet.has(task.id);
                     return (
-                      <TableRow key={task.id} data-table-static className={`cursor-pointer border-b border-border/60 transition-colors ${linhaCls}`} onClick={() => onSelect(task)}>
+                      <React.Fragment key={task.id}>
+                      {marcadorVisivel && idAntesMarcador === task.id && linhaMarcador}
+                      <TableRow data-table-static className={`cursor-pointer border-b border-border/60 transition-colors ${linhaCls} ${emCursoHoje ? 'ring-1 ring-inset ring-primary/40' : ''}`} onClick={() => onSelect(task)}>
                         <TableCell className={`py-2.5 ${barra}`}>
                           <div className="flex items-center gap-2" style={{ paddingLeft: depth * 22 }}>
                             {temFilhos ? (
@@ -293,6 +331,8 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                             {isMarco(task) && <span className="text-[hsl(var(--fw-gold))]" aria-label={t('p3Projetos.lista.milestone')} title={t('p3Projetos.lista.milestone')}>◆</span>}
                             <span className={nivel === 'fase' ? 'truncate font-bold text-foreground' : nivel === 'dominio' ? 'truncate font-semibold text-foreground' : 'truncate text-foreground/90'}>{nome}</span>
                             {temFilhos && <span className="text-xs text-muted-foreground">({filhosPorPai.get(task.id)!.length})</span>}
+                            {atrasadasSet.has(task.id) && <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">{t('p3Projetos.lista.tagAtrasada')}</span>}
+                            {emCursoHoje && <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t('p3Projetos.lista.emCursoHoje')}</span>}
                           </div>
                         </TableCell>
                         <TableCell className="py-2.5 text-xs text-muted-foreground max-w-[200px]">
@@ -310,8 +350,10 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                         </TableCell>
                         <TableCell className="py-2.5"><StatusPill kind={status}>{statusLabel}</StatusPill></TableCell>
                       </TableRow>
+                      </React.Fragment>
                     );
                   })}
+                  {marcadorVisivel && idAntesMarcador === null && gi === grupos.length - 1 && linhaMarcador}
                 </React.Fragment>
               ))
             )}

@@ -85,3 +85,41 @@ export function mesInicio(t: ProjetoTarefa): string | null {
   const d = t.data_inicio ?? t.data_fim ?? t.prazo;
   return d ? String(d).slice(0, 7) : null;
 }
+
+const concluida = (t: ProjetoTarefa) => !!t.concluida_em || (t.progresso_pct ?? 0) >= 100;
+const diaMs = (s: string) => parseDataLocal(s).getTime();
+
+/**
+ * "Você deveria estar aqui": posição de hoje numa lista ordenada por período.
+ * `ordem` = tarefas na ordem de exibição; `ehFolha` diz quem conta (agrupadores não).
+ * indice = posição antes da qual o marcador entra (ordem.length = no fim).
+ */
+export function calcularPosicaoHoje(
+  ordem: ProjetoTarefa[],
+  ehFolha: (t: ProjetoTarefa) => boolean,
+  hoje = new Date(),
+) {
+  const h = new Date(hoje); h.setHours(0, 0, 0, 0);
+  const hMs = h.getTime();
+  let indice = ordem.length;
+  const emCurso: string[] = [];
+  const atrasadas: string[] = [];
+  const adiantadas: string[] = [];
+  ordem.forEach((t, i) => {
+    if (!ehFolha(t)) return;
+    const ini = t.data_inicio ?? t.data_fim ?? t.prazo;
+    const fim = t.data_fim ?? t.prazo ?? t.data_inicio;
+    if (!ini || !fim) return;
+    const a = diaMs(ini); const b = diaMs(fim);
+    if (a > hMs) {
+      if (indice === ordem.length) indice = i;
+      if (concluida(t)) adiantadas.push(t.id);
+    } else if (b < hMs) {
+      if (!concluida(t)) atrasadas.push(t.id);
+    } else if (!concluida(t)) emCurso.push(t.id);
+  });
+  // Recuar até ao agrupador pai imediatamente acima para não partir uma fase a meio do cabeçalho.
+  while (indice > 0 && indice < ordem.length && !ehFolha(ordem[indice - 1]) && ordem[indice].parent_task_id === ordem[indice - 1].id) indice--;
+  const ritmo: 'adiantado' | 'atrasado' | 'no_ritmo' = atrasadas.length ? 'atrasado' : adiantadas.length ? 'adiantado' : 'no_ritmo';
+  return { indice, emCurso, atrasadas, adiantadas, ritmo };
+}
