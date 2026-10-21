@@ -17,3 +17,4 @@
 - Judgement-heavy AI (evidence, documents, diagnostics, DocGen, questionnaires, supplier/risk suggestions) uses MODELOS.ANALISE; chat/quick tasks stay on PADRAO, so quality spend goes where users decide on the output.
 - Every AI Gateway call goes through _shared/ai.ts helpers (fetchIA, fetchAnaliseComReserva, callAiGateway), which log model, tokens, latency and fallback to ia_uso_modelos (super-admin read); Financeiro IA costs come from that log, not from credit rows.
 - Project tabs share one visual vocabulary from components/projetos/projeto-visual.tsx (code chip, phase/domain/activity level, avatar) and StatusPill; this keeps Lista, Kanban, Gantt, Calendário, Sprints and Métricas consistent.
+- Project task owner alerts (assignment, status change, due in 3 days/today) go through send-projeto-tarefa-notification, called by a DB trigger via pg_net and a daily cron; one path writes both the bell notification and the e-mail, so they never diverge.
