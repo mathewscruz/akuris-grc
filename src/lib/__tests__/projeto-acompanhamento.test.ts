@@ -35,3 +35,26 @@ describe('acompanhamento de cronograma', () => {
     expect(progressoPorFase([fase, a, b, m])).toEqual([{ id: 'f', titulo: 'Fase 0', total: 3, progresso: 63 }]);
   });
 });
+
+import { calcularPosicaoHoje } from '@/lib/projeto-acompanhamento';
+describe('calcularPosicaoHoje', () => {
+  const tk = (id: string, ini: string, fim: string, extra: Partial<any> = {}) =>
+    ({ id, data_inicio: ini, data_fim: fim, prazo: null, parent_task_id: null, concluida_em: null, progresso_pct: 0, tags: [], ...extra }) as any;
+  const hoje = new Date(2026, 9, 21);
+  const folha = () => true;
+  it('projeto não iniciado: marcador no topo', () => {
+    expect(calcularPosicaoHoje([tk('a', '2026-11-01', '2026-11-05')], folha, hoje).indice).toBe(0);
+  });
+  it('projeto terminado: marcador no fim', () => {
+    const r = calcularPosicaoHoje([tk('a', '2026-01-01', '2026-01-05', { progresso_pct: 100 })], folha, hoje);
+    expect(r.indice).toBe(1); expect(r.ritmo).toBe('no_ritmo');
+  });
+  it('em curso com atraso', () => {
+    const r = calcularPosicaoHoje([tk('a', '2026-10-01', '2026-10-10'), tk('b', '2026-10-20', '2026-10-25'), tk('c', '2026-11-01', '2026-11-02')], folha, hoje);
+    expect(r.indice).toBe(2); expect(r.atrasadas).toEqual(['a']); expect(r.emCurso).toEqual(['b']); expect(r.ritmo).toBe('atrasado');
+  });
+  it('adiantado: concluída com período futuro', () => {
+    const r = calcularPosicaoHoje([tk('a', '2026-11-01', '2026-11-05', { progresso_pct: 100 })], folha, hoje);
+    expect(r.adiantadas).toEqual(['a']); expect(r.ritmo).toBe('adiantado');
+  });
+});
