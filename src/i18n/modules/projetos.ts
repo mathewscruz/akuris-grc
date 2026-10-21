@@ -289,7 +289,7 @@ export const projetos = {
         managerRecommendation: 'Recomendação ao gestor',
       },
       suggestTasks: {
-        title: 'Quebrar objetivo em tarefas com IA',
+        title: 'Dividir objetivo em tarefas com IA',
         description: 'A IA propõe tarefas acionáveis. Você escolhe quais criar. Consome 1 crédito.',
         objective: 'Objetivo',
         objectivePlaceholder: 'Ex.: Implementar política de classificação de dados conforme LGPD',
@@ -432,7 +432,7 @@ export const projetos = {
       detalhe: {
         notFound: 'Project not found.',
         statusReportIa: 'AI status report',
-        breakWithAi: 'Break down with AI',
+        breakWithAi: 'Generate tasks with AI',
         exportCsv: 'Export CSV',
         edit: 'Edit',
         newTask: 'New task',
