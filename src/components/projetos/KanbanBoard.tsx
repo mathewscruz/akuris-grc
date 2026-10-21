@@ -10,7 +10,24 @@ import type { ProjetoColuna, ProjetoTarefa, ProjetoTarefaPrioridade } from '@/ty
 import { useMoveTarefa, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
-import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
+import { formatDateOnly } from '@/lib/date-utils';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
+import { isMarco, estaAtrasada } from '@/lib/projeto-acompanhamento';
+import { statusKindDe, type StatusKind } from './StatusPill';
+import { partirTitulo, mapaFilhos, CodeChip, UserAvatar } from './projeto-visual';
+import { IconChecklist } from '@/components/icons';
+
+const KIND_BAR: Record<StatusKind, string> = {
+  rest: 'bg-muted-foreground/40', active: 'bg-state-active', done: 'bg-state-done', late: 'bg-destructive',
+};
+const KIND_CHIP: Record<StatusKind, string> = {
+  rest: 'bg-muted text-muted-foreground', active: 'bg-state-active-surface text-state-active',
+  done: 'bg-state-done-surface text-state-done', late: 'bg-destructive/10 text-destructive',
+};
+
+type Ctx = { filhos: Map<string, ProjetoTarefa[]>; porId: Map<string, ProjetoTarefa>; usuarios: { user_id: string; nome: string | null; foto_url?: string | null }[] };
+const KanbanCtx = React.createContext<Ctx>({ filhos: new Map(), porId: new Map(), usuarios: [] });
 
 /**
  * Colisão por ponteiro: a coluna de destino é a que está debaixo do cursor.
@@ -48,15 +65,25 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [overId, setOverId] = React.useState<string | null>(null);
 
+  const { data: usuarios = [] } = useUsuariosEmpresa();
+  const filhos = React.useMemo(() => mapaFilhos(tarefas), [tarefas]);
+  const porId = React.useMemo(() => new Map(tarefas.map((x) => [x.id, x])), [tarefas]);
+  const fases = React.useMemo(() => tarefas.filter((x) => !x.parent_task_id && filhos.has(x.id)), [tarefas, filhos]);
+  const [fase, setFase] = React.useState('todas');
+  const faseRaiz = React.useCallback((x: ProjetoTarefa) => { let c = x; let n = 0; while (c.parent_task_id && porId.has(c.parent_task_id) && n++ < 8) c = porId.get(c.parent_task_id)!; return c.id; }, [porId]);
+  // O quadro mostra o trabalho a fazer: fases e domínios (agrupadores) ficam como filtro.
+  const visiveis = React.useMemo(() => tarefas.filter((x) => !filhos.has(x.id) && (fase === 'todas' || faseRaiz(x) === fase)), [tarefas, filhos, fase, faseRaiz]);
+  const ctx = React.useMemo(() => ({ filhos, porId, usuarios }), [filhos, porId, usuarios]);
+
   const tarefasPorColuna = React.useMemo(() => {
     const m: Record<string, ProjetoTarefa[]> = {};
     colunas.forEach((c) => (m[c.id] = []));
-    tarefas.forEach((t) => {
+    visiveis.forEach((t) => {
       if (t.coluna_id && m[t.coluna_id]) m[t.coluna_id].push(t);
     });
     Object.values(m).forEach((arr) => arr.sort((a, b) => a.ordem - b.ordem));
     return m;
-  }, [colunas, tarefas]);
+  }, [colunas, visiveis]);
 
   const handleDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
@@ -74,6 +101,19 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
   const activeTarefa = tarefas.find((t) => t.id === activeId);
 
   return (
+    <KanbanCtx.Provider value={ctx}>
+    {fases.length > 0 && (
+      <div className="mb-3 flex items-center gap-2">
+        <Select value={fase} onValueChange={setFase}>
+          <SelectTrigger className="h-9 w-[280px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">{t('p3Projetos.kanban.todasFases')}</SelectItem>
+            {fases.map((f) => { const p = partirTitulo(f.titulo); return <SelectItem key={f.id} value={f.id}>{p.codigo ? `${p.codigo} · ` : ''}{p.nome}</SelectItem>; })}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground">{t('p3Projetos.kanban.soAtividades')}</span>
+      </div>
+    )}
     <DndContext
       sensors={sensors}
       collisionDetection={collisionDetection}
@@ -98,6 +138,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
       </div>
       <DragOverlay>{activeTarefa ? <TaskCard tarefa={activeTarefa} dragging /> : null}</DragOverlay>
     </DndContext>
+    </KanbanCtx.Provider>
   );
 }
 
@@ -131,12 +172,14 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
       disso torna o cartao de tarefa uma linha larga e dificil de ler -- e com
       muitas param nos 17rem e o `overflow-x-auto` do pai trata do resto.
     */
-    <div ref={setNodeRef} className={`flex-1 min-w-[17rem] max-w-[26rem] rounded-lg border border-border bg-muted/30 p-3 transition-ui ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
+    <div ref={setNodeRef} className={`relative flex-1 min-w-[17rem] max-w-[26rem] overflow-hidden rounded-lg border border-border bg-muted/30 p-3 pt-4 transition-ui ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
+      <span aria-hidden className={`absolute inset-x-0 top-0 h-1 ${KIND_BAR[statusKindDe(coluna)]}`} />
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: coluna.cor ?? '#64748b' }} />
-          <h3 className="text-sm font-semibold">{coluna.nome}</h3>
-          <span className="text-xs text-muted-foreground tabular-nums">({tarefas.length})</span>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${KIND_CHIP[statusKindDe(coluna)]}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${KIND_BAR[statusKindDe(coluna)]}`} />{coluna.nome}
+          </span>
+          <span className="rounded-full bg-background px-2 text-xs font-semibold tabular-nums text-muted-foreground">{tarefas.length}</span>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} aria-label={t('projetos.kanban.addTaskDetailed')} title={t('projetos.kanban.addTaskDetailed')}>
           <IconAdd className="h-4 w-4" />
@@ -200,24 +243,42 @@ function DraggableTask({ tarefa, onClick }: { tarefa: ProjetoTarefa; onClick: ()
 
 function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: boolean }) {
   const { t } = useLanguage();
-  const atrasada = tarefa.prazo && !tarefa.concluida_em && parseDataLocal(tarefa.prazo) < new Date();
+  const { filhos, porId, usuarios } = React.useContext(KanbanCtx);
+  const atrasada = estaAtrasada(tarefa);
+  const { codigo, nome } = partirTitulo(tarefa.titulo);
+  const pai = tarefa.parent_task_id ? porId.get(tarefa.parent_task_id) : undefined;
+  const avo = pai?.parent_task_id ? porId.get(pai.parent_task_id) : undefined;
+  const contexto = [avo, pai].filter(Boolean).map((x) => partirTitulo(x!.titulo).codigo ?? partirTitulo(x!.titulo).nome).join(' › ');
+  const resp = usuarios.find((u) => u.user_id === tarefa.responsavel_id);
+  const subs = filhos.get(tarefa.id) ?? [];
+  const pct = Math.max(0, Math.min(100, tarefa.concluida_em ? 100 : tarefa.progresso_pct ?? 0));
+  const fim = tarefa.data_fim ?? tarefa.prazo;
   return (
-    <Card data-dragging={dragging || undefined} className={`akuris-kanban-card p-3 cursor-pointer hover:border-primary/40 ${dragging ? 'shadow-elegant' : ''}`}>
-      <p className="text-sm font-medium mb-2 line-clamp-2">{tarefa.titulo}</p>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <StatusBadge tone={prioridadeTone[tarefa.prioridade]}>
-          {getPrioridadeLabel(t, tarefa.prioridade)}
-        </StatusBadge>
-        {tarefa.prazo && (
-          <StatusBadge tone={atrasada ? 'destructive' : 'neutral'} variant={atrasada ? 'soft' : 'outline'} icon={<IconCalendar className="h-2.5 w-2.5" />}>
-            {formatDateOnly(tarefa.prazo)}
-          </StatusBadge>
+    <Card data-dragging={dragging || undefined} className={`akuris-kanban-card p-3 space-y-2.5 cursor-pointer hover:border-primary/40 ${dragging ? 'shadow-elegant' : ''}`}>
+      {contexto && <p className="truncate text-[11px] text-muted-foreground">{contexto}</p>}
+      <div className="flex items-start gap-2">
+        {codigo && <CodeChip codigo={codigo} nivel="atividade" className="mt-0.5" />}
+        {isMarco(tarefa) && <span className="mt-0.5 text-[hsl(var(--fw-gold))]" title={t('p3Projetos.lista.milestone')}>◆</span>}
+        <p className="text-sm font-medium leading-snug line-clamp-2">{nome}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted"><div className={pct >= 100 ? 'h-full bg-success' : 'h-full bg-primary'} style={{ width: `${pct}%` }} /></div>
+        <span className="text-[11px] tabular-nums text-muted-foreground">{pct}%</span>
+      </div>
+      <div className="flex items-center gap-2 text-[11px]">
+        <StatusBadge tone={prioridadeTone[tarefa.prioridade]}>{getPrioridadeLabel(t, tarefa.prioridade)}</StatusBadge>
+        {fim && (
+          <span className={`inline-flex items-center gap-1 tabular-nums ${atrasada ? 'font-medium text-destructive' : 'text-muted-foreground'}`}>
+            <IconCalendar className="h-3 w-3" />{formatDateOnly(fim)}
+          </span>
         )}
-        {tarefa.responsavel_id && (
-          <StatusBadge tone="info" icon={<IconPerson className="h-2.5 w-2.5" />}>
-            {t('projetos.kanban.assigned')}
-          </StatusBadge>
+        {subs.length > 0 && (
+          <span className="inline-flex items-center gap-1 text-muted-foreground"><IconChecklist className="h-3 w-3" />{subs.filter((x) => x.concluida_em).length}/{subs.length}</span>
         )}
+        <span className="ml-auto">
+          {resp ? <UserAvatar nome={resp.nome ?? '?'} foto={resp.foto_url} size={22} />
+            : tarefa.responsavel_id ? <IconPerson className="h-4 w-4 text-muted-foreground" /> : null}
+        </span>
       </div>
     </Card>
   );
