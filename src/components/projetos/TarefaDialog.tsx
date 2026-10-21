@@ -159,7 +159,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const nomeCurto = (titulo: string) => (codigoDe(titulo)?.[2] ?? titulo).replace(/^(FASE|DOMÍNIO|DOMINIO)\s+\d+\s+—\s+/i, '');
   const ghost = 'h-9 w-full justify-between border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus:ring-0 data-[state=open]:bg-muted whitespace-nowrap [&>span]:line-clamp-none [&>span]:overflow-visible';
   const copiarLink = () => {
-    const url = `${window.location.origin}${window.location.pathname}?tarefa=${tarefa?.id ?? ''}`;
+    const url = `${window.location.origin}${window.location.pathname}?focus=${tarefa?.id ?? ''}`;
     void navigator.clipboard?.writeText(url).then(() => toast.success(t('p3Projetos.tarefa.linkCopied')));
   };
 
