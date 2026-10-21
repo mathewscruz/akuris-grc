@@ -12,7 +12,7 @@ export const useUsuariosEmpresa = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, nome, email, role')
+        .select('user_id, nome, email, role, foto_url')
         .eq('ativo', true)
         .eq('empresa_id', empresaId!)
         .order('nome');

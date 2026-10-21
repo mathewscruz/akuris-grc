@@ -11,12 +11,16 @@ import { toast } from '@/lib/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconSort, IconPerson, IconCheck } from '@/components/icons';
 import { splitResponsavel } from '@/lib/uuid';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
+const iniciais = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 
 interface Usuario {
   user_id: string;
   nome: string;
   email: string;
   role: string;
+  foto_url?: string | null;
 }
 
 interface UserSelectProps {
@@ -53,7 +57,7 @@ export function UserSelect({ value, onValueChange, placeholder, id, excludedUser
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, nome, email, role')
+        .select('user_id, nome, email, role, foto_url')
         .eq('empresa_id', profile?.empresa_id)
         .eq('ativo', true)
         .order('nome');
@@ -129,8 +133,13 @@ export function UserSelect({ value, onValueChange, placeholder, id, excludedUser
           className="w-full justify-between"
         >
           {nomeVisivel ? (
-            <div className="flex items-center gap-2 truncate">
-              <IconPerson className="h-4 w-4 flex-shrink-0" />
+            <div className="flex min-w-0 items-center gap-2">
+              {selectedUser ? (
+                <Avatar className="h-6 w-6 shrink-0">
+                  {selectedUser.foto_url && <AvatarImage src={selectedUser.foto_url} alt={selectedUser.nome} className="object-cover" />}
+                  <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">{iniciais(selectedUser.nome)}</AvatarFallback>
+                </Avatar>
+              ) : <IconPerson className="h-4 w-4 flex-shrink-0" />}
               {/* Sem correspondência na lista o valor continua a ler-se, mas em
                   tom de apoio: está preenchido, e não está ligado a ninguém. */}
               <span className={cn('truncate', !selectedUser && 'text-muted-foreground')}>
@@ -169,7 +178,10 @@ export function UserSelect({ value, onValueChange, placeholder, id, excludedUser
                       )}
                     />
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <IconPerson className="h-4 w-4 flex-shrink-0" />
+                      <Avatar className="h-7 w-7 shrink-0">
+                        {usuario.foto_url && <AvatarImage src={usuario.foto_url} alt={usuario.nome} className="object-cover" />}
+                        <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">{iniciais(usuario.nome)}</AvatarFallback>
+                      </Avatar>
                       <div className="flex flex-col min-w-0">
                         <span className="font-medium truncate">{usuario.nome}</span>
                         <span className="text-xs text-muted-foreground truncate">{usuario.email}</span>
