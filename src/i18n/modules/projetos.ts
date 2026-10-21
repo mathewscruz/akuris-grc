@@ -60,7 +60,7 @@ export const projetos = {
       detalhe: {
         notFound: 'Projeto não encontrado.',
         statusReportIa: 'Status report IA',
-        breakWithAi: 'Quebrar com IA',
+        breakWithAi: 'Gerar tarefas com IA',
         exportCsv: 'Exportar CSV',
         edit: 'Editar',
         newTask: 'Nova tarefa',
