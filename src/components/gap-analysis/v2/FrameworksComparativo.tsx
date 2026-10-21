@@ -174,7 +174,8 @@ export function FrameworksComparativo({
         {/* Celular */}
         <div className="md:hidden divide-y">
           {ordenadas.map((l) => (
-            <button key={l.id} type="button" onClick={() => onOpen(l.id)} className="w-full p-4 text-left">
+            <div key={l.id}>
+            <button type="button" onClick={() => onOpen(l.id)} className="w-full p-4 text-left">
               <div className="flex items-center gap-3">
                 <FrameworkBadge name={l.nome} versao={l.versao} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -189,6 +190,7 @@ export function FrameworksComparativo({
               </div>
             </button>
             <div className="px-4 pb-3 -mt-1"><AtribuirResponsavelFramework frameworkId={l.id} responsavel={l.responsavel} /></div>
+            </div>
           ))}
         </div>
       </div>

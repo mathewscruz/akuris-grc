@@ -33,14 +33,14 @@ export function AtribuirResponsavelFramework({ frameworkId, responsavel }: Props
     });
     setSalvando(false);
     if (error) {
-      logger.error('atribuir responsável framework', error);
+      logger.error('atribuir responsável framework', { error: error.message });
       toast.error(error.code === '42501' ? t('gapAnalysis.frameworks.owner.semPermissao') : t('gapAnalysis.frameworks.owner.erro'));
       return;
     }
     toast.success(t('gapAnalysis.frameworks.owner.sucesso', { count: Number(data ?? 0) }));
     setOpen(false);
     qc.invalidateQueries({ queryKey: ['gap-fw-extras'] });
-    invokeEdgeFunction('send-gap-owner-notification', { body: { framework_id: frameworkId }, showToast: false }).catch((e) => logger.warn('e-mail do responsável', e));
+    invokeEdgeFunction('send-gap-owner-notification', { body: { framework_id: frameworkId }, showToast: false }).catch(() => logger.warn('e-mail do responsável não enviado'));
   };
 
   return (
