@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { seloDoFramework } from '@/components/frameworks/framework-seal-icon';
 import { resolveFrameworkBrand } from '@/lib/framework-brand';
-import { OwnerCell } from '@/components/ui/owner-cell';
+import { AtribuirResponsavelFramework } from './AtribuirResponsavelFramework';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getFwCategory } from './fw-utils';
@@ -19,7 +19,7 @@ export interface LinhaComparativo {
   criticos: number;
   atrasados: number;
   marco?: string | null;
-  responsavel?: { nome: string; foto?: string | null } | null;
+  responsavel?: { nome: string; foto?: string | null; userId?: string | null } | null;
   tendencia?: number[];
 }
 
@@ -157,8 +157,8 @@ export function FrameworksComparativo({
                     <td className="px-4 py-3.5 tabular-nums text-destructive font-medium">{l.naoConformes}</td>
                     <td className="px-4 py-3.5 tabular-nums text-destructive font-medium">{l.criticos}</td>
                     <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap text-xs">{fmtData(l.marco) ?? t('gapAnalysis.frameworks.tabela.definir')}</td>
-                    <td className="px-4 py-3.5">
-                      <OwnerCell name={l.responsavel?.nome} photo={l.responsavel?.foto} emptyLabel={t('gapAnalysis.frameworks.tabela.naoAtribuido')} />
+                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                      <AtribuirResponsavelFramework frameworkId={l.id} responsavel={l.responsavel} />
                     </td>
                     <td className="px-4 py-3.5"><Spark pontos={l.tendencia} cor={cor} /></td>
                     <td className="px-4 py-3.5 text-right">
@@ -188,6 +188,7 @@ export function FrameworksComparativo({
                 <span>{fmtData(l.marco) ?? t('gapAnalysis.frameworks.tabela.definir')}</span>
               </div>
             </button>
+            <div className="px-4 pb-3 -mt-1"><AtribuirResponsavelFramework frameworkId={l.id} responsavel={l.responsavel} /></div>
           ))}
         </div>
       </div>

@@ -40,7 +40,7 @@ export function AtribuirResponsavelFramework({ frameworkId, responsavel }: Props
     toast.success(t('gapAnalysis.frameworks.owner.sucesso', { count: Number(data ?? 0) }));
     setOpen(false);
     qc.invalidateQueries({ queryKey: ['gap-fw-extras'] });
-    invokeEdgeFunction('send-gap-owner-notification', { body: { framework_id: frameworkId } }).catch((e) => logger.warn('e-mail do responsável', e));
+    invokeEdgeFunction('send-gap-owner-notification', { body: { framework_id: frameworkId }, showToast: false }).catch((e) => logger.warn('e-mail do responsável', e));
   };
 
   return (
