@@ -221,17 +221,16 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
         <span className="text-xs text-muted-foreground ml-auto">{t('projetos.lista.filteredOf', { filtered: filtradas.length, total: tarefas.length })}</span>
       </div>
 
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <Table className="border-collapse border-spacing-0">
           <TableHeader>
-            <TableRow>
+            <TableRow data-table-static className="bg-muted/40">
               <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('projetos.lista.colTarefa')}</SortableTableHead>
               <TableHead>{t('p3Projetos.lista.colTipo')}</TableHead>
-              <SortableTableHead field="coluna" sort={sort} onSort={toggleSort}>{t('projetos.lista.colColuna')}</SortableTableHead>
               <SortableTableHead field="responsavel_id" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colResponsavel')}</SortableTableHead>
               <SortableTableHead field="data_inicio" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colPeriodo')}</SortableTableHead>
               <SortableTableHead field="progresso_pct" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colProgresso')}</SortableTableHead>
-              <SortableTableHead field="concluida_em" sort={sort} onSort={toggleSort}>{t('projetos.lista.colStatus')}</SortableTableHead>
+              <SortableTableHead field="coluna" sort={sort} onSort={toggleSort}>{t('projetos.lista.colStatus')}</SortableTableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
