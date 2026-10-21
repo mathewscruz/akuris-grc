@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TAG_MARCO } from '@/lib/projeto-acompanhamento';
-import { IconAdd, IconDelete, IconSend, IconChecklist, IconUser, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess } from '@/components/icons';
+import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
@@ -267,7 +267,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
               <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
             </Select>
           </Prop>
-          <Prop icon={<IconUser />} label={t('projetos.tarefaDialog.fieldResponsavel')}>
+          <Prop icon={<IconPerson />} label={t('projetos.tarefaDialog.fieldResponsavel')}>
             <UserSelect value={form.responsavel_id} onValueChange={(v) => setForm({ ...form, responsavel_id: v })} />
           </Prop>
           <Prop icon={<IconFlag />} label={t('projetos.tarefaDialog.fieldPrioridade')}>

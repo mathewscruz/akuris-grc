@@ -160,6 +160,9 @@ export default function ProjetoDetalhe() {
         colunas={colunas}
         tarefa={tarefaAtual}
         defaultColunaId={defaultColuna}
+        tarefas={tarefas}
+        projetoNome={projeto.nome}
+        onOpenTarefa={openEditarTarefa}
       />
       <ProjetoDialog open={projetoDialog} onOpenChange={setProjetoDialog} projeto={projeto} />
       <SuggestTasksDialog open={suggestDialog} onOpenChange={setSuggestDialog} projetoId={projeto.id} colunas={colunas} />
