@@ -290,12 +290,6 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
 
         {/* Propriedades */}
         <aside className="order-1 lg:order-2 self-start rounded-xl border border-border bg-muted/20 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-4">
-          <Prop icon={<IconChecklist />} label={t('p3Projetos.tarefa.status')}>
-            <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
-              <SelectTrigger className={ghost}><div className="flex"><StatusPill kind={kind}>{colAtual?.nome ?? '—'}</StatusPill></div></SelectTrigger>
-              <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}><StatusPill kind={statusKindDe(c)}>{c.nome}</StatusPill></SelectItem>)}</SelectContent>
-            </Select>
-          </Prop>
           <Prop icon={<IconPerson />} label={t('projetos.tarefaDialog.fieldResponsavel')}>
             <div className="[&_button]:h-9 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
               <UserSelect value={form.responsavel_id} onValueChange={(v) => setForm({ ...form, responsavel_id: v })} />
