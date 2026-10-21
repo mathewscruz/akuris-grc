@@ -76,18 +76,42 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
   }, [filtradas, sort, valorOrdenacao]);
 
   // Construir hierarquia (pais primeiro, depois filhos indentados)
+  // Recolher/expandir por fase e domínio — guardado na sessão para não se perder ao trocar de aba.
+  const chaveRecolhidos = `projeto-lista-recolhidos:${tarefas[0]?.projeto_id ?? ''}`;
+  const [recolhidos, setRecolhidos] = React.useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(sessionStorage.getItem(chaveRecolhidos) ?? '[]')); } catch { return new Set(); }
+  });
+  const alternarRecolhido = (id: string) => setRecolhidos((prev) => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id);
+    try { sessionStorage.setItem(chaveRecolhidos, JSON.stringify([...n])); } catch { /* sem storage */ }
+    return n;
+  });
+  const filhosPorPai = React.useMemo(() => {
+    const m = new Map<string, ProjetoTarefa[]>();
+    tarefas.forEach((x) => { if (x.parent_task_id) { if (!m.has(x.parent_task_id)) m.set(x.parent_task_id, []); m.get(x.parent_task_id)!.push(x); } });
+    return m;
+  }, [tarefas]);
+  /** Progresso de um agrupador = média das atividades-folha abaixo dele. */
+  const progressoAgregado = React.useCallback((id: string): number | null => {
+    const vals: number[] = [];
+    const walk = (pid: string) => (filhosPorPai.get(pid) ?? []).forEach((c) => (filhosPorPai.has(c.id) ? walk(c.id) : vals.push(c.progresso_pct ?? 0)));
+    walk(id);
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  }, [filhosPorPai]);
+
   const ordenadas = React.useMemo(() => {
     const ids = new Set(filtradasOrdenadas.map((t) => t.id));
     const pais = filtradasOrdenadas.filter((t) => !t.parent_task_id || !ids.has(t.parent_task_id));
     const result: { t: ProjetoTarefa; depth: number }[] = [];
     const pushWithChildren = (t: ProjetoTarefa, depth: number) => {
       result.push({ t, depth });
+      if (recolhidos.has(t.id) && agrupar === 'nenhum') return;
       const filhos = filtradasOrdenadas.filter((c) => c.parent_task_id === t.id);
       filhos.forEach((c) => pushWithChildren(c, depth + 1));
     };
     pais.forEach((p) => pushWithChildren(p, 0));
     return result;
-  }, [filtradasOrdenadas]);
+  }, [filtradasOrdenadas, recolhidos, agrupar]);
 
   // Agrupar
   const grupos = React.useMemo(() => {
@@ -228,27 +252,58 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                     const atrasada = estaAtrasada(task);
                     const fmt = (d: string | null) => (d ? parseDataLocal(d).toLocaleDateString(intlLocale()) : '—');
                     const tags = task.tags ?? [];
-                    const pct = Math.max(0, Math.min(100, task.progresso_pct ?? 0));
+                    const temFilhos = filhosPorPai.has(task.id);
+                    const nivel: 'fase' | 'dominio' | 'atividade' = temFilhos ? (depth === 0 ? 'fase' : 'dominio') : 'atividade';
+                    const agregado = temFilhos ? progressoAgregado(task.id) : null;
+                    const pct = Math.max(0, Math.min(100, agregado ?? task.progresso_pct ?? 0));
+                    const m = task.titulo.match(/^([A-Z]{1,3}\d+(?:\.\d+)*)\s+—\s+(.*)$/);
+                    const codigo = m?.[1] ?? null;
+                    let nome = m?.[2] ?? task.titulo;
+                    if (nivel !== 'atividade') nome = nome.replace(/^(FASE|DOMÍNIO|DOMINIO)\s+\d+\s+—\s+/i, '');
+                    const recolhido = recolhidos.has(task.id);
+                    const linhaCls = nivel === 'fase'
+                      ? 'cursor-pointer bg-primary/[0.07] hover:bg-primary/10 shadow-[inset_3px_0_0_hsl(var(--primary))]'
+                      : nivel === 'dominio'
+                        ? 'cursor-pointer bg-[hsl(var(--chart-teal)/0.07)] hover:bg-[hsl(var(--chart-teal)/0.12)] shadow-[inset_3px_0_0_hsl(var(--chart-teal))]'
+                        : 'cursor-pointer';
                     return (
-                      <TableRow key={task.id} className="cursor-pointer" onClick={() => onSelect(task)}>
+                      <TableRow key={task.id} className={linhaCls} onClick={() => onSelect(task)}>
                         <TableCell className="font-medium">
-                          <div className="flex items-center gap-1.5" style={{ paddingLeft: depth * 18 }}>
-                            {depth > 0 && <IconChevron className="h-3.5 w-3.5 text-muted-foreground" />}
-                            {isMarco(task) && <span className="text-primary" aria-label={t('p3Projetos.lista.milestone')} title={t('p3Projetos.lista.milestone')}>◆</span>}
-                            <span className={depth === 0 ? 'truncate font-semibold' : 'truncate'}>{task.titulo}</span>
+                          <div className="flex items-center gap-2" style={{ paddingLeft: nivel === 'atividade' ? depth * 20 : depth * 20 }}>
+                            {temFilhos ? (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); alternarRecolhido(task.id); }}
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-background/70"
+                                aria-label={recolhido ? t('p3Projetos.tarefa.expand') : t('p3Projetos.tarefa.collapse')} aria-expanded={!recolhido}>
+                                <IconChevron className={`h-3.5 w-3.5 transition-transform ${recolhido ? '' : 'rotate-90'}`} />
+                              </button>
+                            ) : depth > 0 ? (
+                              <span aria-hidden className="h-px w-3 shrink-0 bg-border" />
+                            ) : null}
+                            {codigo && (
+                              <span className={nivel === 'fase'
+                                ? 'shrink-0 rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground tabular-nums'
+                                : nivel === 'dominio'
+                                  ? 'shrink-0 rounded-md bg-[hsl(var(--chart-teal)/0.15)] px-1.5 py-0.5 text-[11px] font-semibold text-[hsl(var(--chart-teal))] tabular-nums'
+                                  : 'shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary tabular-nums'}>{codigo}</span>
+                            )}
+                            {isMarco(task) && <span className="text-[hsl(var(--fw-gold))]" aria-label={t('p3Projetos.lista.milestone')} title={t('p3Projetos.lista.milestone')}>◆</span>}
+                            <span className={nivel === 'fase' ? 'truncate font-semibold text-foreground' : nivel === 'dominio' ? 'truncate font-semibold text-foreground/90' : 'truncate font-normal'}>{nome}</span>
+                            {temFilhos && <span className="text-xs text-muted-foreground">({filhosPorPai.get(task.id)!.length})</span>}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground max-w-[200px]">
                           <span className="block truncate" title={tags.join(' · ')}>{tags.filter((g) => g !== TAG_MARCO).join(' · ') || (isMarco(task) ? t('p3Projetos.lista.milestone') : '—')}</span>
                         </TableCell>
-                        <TableCell>{col?.nome ?? '—'}</TableCell>
+                        <TableCell>
+                          <StatusBadge tone={col?.is_concluido ? 'success' : /atras/i.test(col?.nome ?? '') ? 'destructive' : /andamento|progress/i.test(col?.nome ?? '') ? 'info' : 'neutral'}>{col?.nome ?? '—'}</StatusBadge>
+                        </TableCell>
                         <TableCell className="text-sm">{nomeUsuario(task.responsavel_id) ?? <span className="text-muted-foreground">{t('projetos.lista.notAssigned')}</span>}</TableCell>
                         <TableCell className={atrasada ? 'text-destructive font-medium whitespace-nowrap' : 'whitespace-nowrap'}>
                           {fmt(task.data_inicio)} → {fmt(task.data_fim ?? task.prazo)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 min-w-[90px]">
-                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary" style={{ width: `${pct}%` }} /></div>
+                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><div className={nivel === 'dominio' ? 'h-full bg-[hsl(var(--chart-teal))]' : pct >= 100 ? 'h-full bg-success' : 'h-full bg-primary'} style={{ width: `${pct}%` }} /></div>
                             <span className="text-xs tabular-nums">{pct}%</span>
                           </div>
                         </TableCell>
