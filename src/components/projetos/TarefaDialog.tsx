@@ -203,7 +203,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
         </nav>
         <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
           <SelectTrigger aria-label={t('p3Projetos.tarefa.status')} className="h-8 w-auto gap-1 border-transparent bg-transparent px-1 shadow-none focus:ring-0 [&>svg]:hidden [&>span]:line-clamp-none [&>span]:overflow-visible whitespace-nowrap">
-            <StatusPill kind={kind} className="py-1">{colAtual?.nome ?? '—'}<IconChevron className="h-3 w-3 rotate-90" /></StatusPill>
+            <div className="flex"><StatusPill kind={kind} className="py-1">{colAtual?.nome ?? '—'}<IconChevron className="h-3 w-3 rotate-90" /></StatusPill></div>
           </SelectTrigger>
           <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}><StatusPill kind={statusKindDe(c)}>{c.nome}</StatusPill></SelectItem>)}</SelectContent>
         </Select>
@@ -292,7 +292,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
         <aside className="order-1 lg:order-2 self-start rounded-xl border border-border bg-muted/20 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-4">
           <Prop icon={<IconChecklist />} label={t('p3Projetos.tarefa.status')}>
             <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
-              <SelectTrigger className={ghost}><StatusPill kind={kind}>{colAtual?.nome ?? '—'}</StatusPill></SelectTrigger>
+              <SelectTrigger className={ghost}><div className="flex"><StatusPill kind={kind}>{colAtual?.nome ?? '—'}</StatusPill></div></SelectTrigger>
               <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}><StatusPill kind={statusKindDe(c)}>{c.nome}</StatusPill></SelectItem>)}</SelectContent>
             </Select>
           </Prop>
