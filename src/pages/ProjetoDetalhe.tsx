@@ -23,6 +23,16 @@ import { exportTarefasCSV } from '@/components/projetos/exportProjeto';
 import type { ProjetoTarefa } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatStatus } from '@/lib/text-utils';
+import { useSprints, useAutomacoes } from '@/hooks/useProjetoExtras';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { IconSearch } from '@/components/icons';
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
+import { matchesSearch } from '@/lib/search-utils';
+
+function TabCount({ n }: { n: number }) {
+  return <span className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground">{n}</span>;
+}
 
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +41,26 @@ export default function ProjetoDetalhe() {
   const { data: projeto, isLoading } = useProjeto(id);
   const { data: colunas = [] } = useProjetoColunas(id);
   const { data: tarefas = [] } = useProjetoTarefas(id);
+  const { data: sprints = [] } = useSprints(id);
+  const { data: automacoes = [] } = useAutomacoes(id);
+  const { data: usuarios = [] } = useUsuariosEmpresa();
+  const [aba, setAba] = useState('kanban');
+  const [busca, setBusca] = useState('');
+  const [fResp, setFResp] = useState('todos');
+  // Filtro partilhado por Kanban, Calendário e Gantt: mantém os agrupadores (fase/domínio) das tarefas que casam.
+  const tarefasFiltradas = React.useMemo(() => {
+    if (!busca && fResp === 'todos') return tarefas;
+    const porId = new Map(tarefas.map((x) => [x.id, x]));
+    const ok = new Set<string>();
+    tarefas.forEach((x) => {
+      if (busca && !matchesSearch(busca, x.titulo)) return;
+      if (fResp !== 'todos' && (x.responsavel_id ?? 'none') !== fResp) return;
+      let c: ProjetoTarefa | undefined = x; let n = 0;
+      while (c && n++ < 10) { ok.add(c.id); c = c.parent_task_id ? porId.get(c.parent_task_id) : undefined; }
+    });
+    return tarefas.filter((x) => ok.has(x.id));
+  }, [tarefas, busca, fResp]);
+  const nAtividades = React.useMemo(() => { const pais = new Set(tarefas.map((x) => x.parent_task_id).filter(Boolean)); return tarefas.filter((x) => !pais.has(x.id)).length; }, [tarefas]);
 
   const STATUS_LABEL: Record<string, string> = {
     ativo: t('projetos.status.ativo'),
@@ -119,28 +149,45 @@ export default function ProjetoDetalhe() {
         </Button>
       </div>
 
-      <Tabs defaultValue="kanban">
+      <Tabs value={aba} onValueChange={setAba}>
         <TabsList>
-          <TabsTrigger value="kanban">{t('projetos.detalhe.tabKanban')}</TabsTrigger>
-          <TabsTrigger value="lista">{t('projetos.detalhe.tabLista')}</TabsTrigger>
+          <TabsTrigger value="kanban">{t('projetos.detalhe.tabKanban')}<TabCount n={nAtividades} /></TabsTrigger>
+          <TabsTrigger value="lista">{t('projetos.detalhe.tabLista')}<TabCount n={tarefas.length} /></TabsTrigger>
           <TabsTrigger value="calendario">{t('projetos.detalhe.tabCalendario')}</TabsTrigger>
           <TabsTrigger value="gantt">{t('projetos.detalhe.tabGantt')}</TabsTrigger>
-          <TabsTrigger value="sprints">{t('projetos.detalhe.tabSprints')}</TabsTrigger>
+          <TabsTrigger value="sprints">{t('projetos.detalhe.tabSprints')}<TabCount n={sprints.length} /></TabsTrigger>
           <TabsTrigger value="metricas">{t('projetos.detalhe.tabMetricas')}</TabsTrigger>
-          <TabsTrigger value="automacoes">{t('projetos.detalhe.tabAutomacoes')}</TabsTrigger>
+          <TabsTrigger value="automacoes">{t('projetos.detalhe.tabAutomacoes')}<TabCount n={automacoes.filter((a) => a.ativa).length} /></TabsTrigger>
         </TabsList>
 
+        {['kanban', 'calendario', 'gantt'].includes(aba) && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="relative w-full max-w-sm">
+              <IconSearch className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={t('projetos.lista.searchPlaceholder')} className="h-9 pl-8" />
+            </div>
+            <Select value={fResp} onValueChange={setFResp}>
+              <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">{t('p3Projetos.lista.responsibleAll')}</SelectItem>
+                <SelectItem value="none">{t('projetos.lista.notAssigned')}</SelectItem>
+                {usuarios.map((u) => <SelectItem key={u.user_id} value={u.user_id}>{u.nome ?? u.email}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <TabsContent value="kanban">
-          <KanbanBoard projetoId={projeto.id} colunas={colunas} tarefas={tarefas} onAddTarefa={(cid) => openNovaTarefa(cid)} onEditTarefa={openEditarTarefa} />
+          <KanbanBoard projetoId={projeto.id} colunas={colunas} tarefas={tarefasFiltradas} onAddTarefa={(cid) => openNovaTarefa(cid)} onEditTarefa={openEditarTarefa} />
         </TabsContent>
         <TabsContent value="lista">
           <ListaTarefas tarefas={tarefas} colunas={colunas} onSelect={openEditarTarefa} />
         </TabsContent>
         <TabsContent value="calendario">
-          <CalendarView tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
+          <CalendarView tarefas={tarefasFiltradas} colunas={colunas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
         <TabsContent value="gantt">
-          <GanttChart tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
+          <GanttChart tarefas={tarefasFiltradas} colunas={colunas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
         <TabsContent value="sprints">
           <SprintsPanel projetoId={projeto.id} tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
