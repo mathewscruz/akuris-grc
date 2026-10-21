@@ -42,12 +42,12 @@ export function VinculosGRCPanel({ tarefaId }: Props) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">{t('vinculosGrc.hint')}</p>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center [&_button[role=combobox]]:h-9">
         <Select
           value={tipo}
           onValueChange={(v) => { setTipo(v as ProjetoVinculoEntidade); setEntId(''); setRowSelecionada(undefined); }}
         >
-          <SelectTrigger className="w-full sm:w-[220px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-full sm:w-[220px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {tipos.map((k) => (
               <SelectItem key={k} value={k}>{t(`entidades.${k}`)}</SelectItem>
@@ -61,7 +61,7 @@ export function VinculosGRCPanel({ tarefaId }: Props) {
             onValueChange={(id, row) => { setEntId(id); setRowSelecionada(row); }}
           />
         </div>
-        <Button type="button" onClick={handleAdd} disabled={!entId || add.isPending}>
+        <Button type="button" className="h-9 shrink-0" onClick={handleAdd} disabled={!entId || add.isPending}>
           <IconLink className="h-4 w-4" /> {t('projetos.vinculos.link')}
         </Button>
       </div>

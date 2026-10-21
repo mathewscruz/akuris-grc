@@ -86,7 +86,7 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
           </div>
           {startedAt && <StatusBadge tone="info">{fmtTimer(elapsed)}</StatusBadge>}
         </div>
-        <div className="flex gap-2 items-start">
+        <div className="flex gap-2 items-center">
           <Input
             placeholder={t('projetos.tempo.timerPlaceholder')}
             value={descTimer}
@@ -95,11 +95,11 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
             disabled={!!startedAt && false}
           />
           {startedAt ? (
-            <Button size="sm" variant="destructive" onClick={stopAndSave} disabled={add.isPending}>
+            <Button size="sm" variant="destructive" className="h-9 shrink-0" onClick={stopAndSave} disabled={add.isPending}>
               <IconPause className="h-4 w-4" /> {t('projetos.tempo.stopAndSave')}
             </Button>
           ) : (
-            <Button size="sm" onClick={start}>
+            <Button size="sm" className="h-9 shrink-0" onClick={start}>
               <IconPlay className="h-4 w-4" /> {t('projetos.tempo.start')}
             </Button>
           )}
@@ -114,17 +114,17 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
 
       <div className="rounded-lg border border-border bg-card p-4 space-y-3">
         <div className="text-sm font-semibold">{t('projetos.tempo.manualLogTitle')}</div>
-        <div className="flex gap-2">
-          <div className="w-24 space-y-2">
-            <Label htmlFor="novoH" className="text-xs">{t('projetos.tempo.hours')}</Label>
-            <Input id="novoH" type="number" step="0.25" min="0.01" value={novoH} onChange={(e) => setNovoH(e.target.value)} />
+        <div className="flex items-end gap-2">
+          <div className="w-24">
+            <Label htmlFor="novoH" className="mb-1.5 block text-xs">{t('projetos.tempo.hours')}</Label>
+            <Input id="novoH" type="number" step="0.25" min="0.01" value={novoH} onChange={(e) => setNovoH(e.target.value)} className="h-9" />
           </div>
           <div className="flex-1">
-            <Label htmlFor="novoDesc" className="text-xs">{t('projetos.tempo.description')}</Label>
-            <Input id="novoDesc" value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder={t('projetos.tempo.descriptionPlaceholder')} />
+            <Label htmlFor="novoDesc" className="mb-1.5 block text-xs">{t('projetos.tempo.description')}</Label>
+            <Input id="novoDesc" value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder={t('projetos.tempo.descriptionPlaceholder')} className="h-9" />
           </div>
-          <div className="self-end">
-            <Button size="sm" onClick={addManual} disabled={add.isPending} aria-label={t('common.add')} title={t('common.add')}><IconAdd className="h-4 w-4" /></Button>
+          <div>
+            <Button size="icon" className="h-9 w-9" onClick={addManual} disabled={add.isPending} aria-label={t('common.add')} title={t('common.add')}><IconAdd className="h-4 w-4" /></Button>
           </div>
         </div>
       </div>
