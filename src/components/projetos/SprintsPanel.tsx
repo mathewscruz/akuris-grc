@@ -16,6 +16,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import { DateField } from '@/components/ui/date-field';
 import { formatarDiaParaDB, intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
+import { partirTitulo, CodeChip, UserAvatar } from './projeto-visual';
 interface Props {
   projetoId: string;
   tarefas: ProjetoTarefa[];
@@ -68,6 +70,12 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
         />
       ) : (
         <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {[...sprints].sort((a, b) => Number(b.ativa) - Number(a.ativa) || a.data_inicio.localeCompare(b.data_inicio)).map((s) => (
+              <SprintCard key={s.id} sprint={s} tarefas={tarefas.filter((x) => x.sprint_id === s.id)} selected={s.id === sprintAtiva}
+                onClick={() => setSprintAtiva(s.id === sprintAtiva ? 'todas' : s.id)} />
+            ))}
+          </div>
           {ativa && <SprintCabecalho sprint={ativa} tarefas={tarefasSprint} />}
           <Burndown sprint={ativa} tarefas={tarefasSprint} />
           <ListaTarefasSprint tarefas={tarefasSprint} onSelect={onSelectTarefa} />
@@ -76,6 +84,36 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
 
       <SprintDialog open={open} onOpenChange={setOpen} projetoId={projetoId} sprint={editing} />
     </div>
+  );
+}
+
+function SprintCard({ sprint, tarefas, selected, onClick }: { sprint: ProjetoSprint; tarefas: ProjetoTarefa[]; selected: boolean; onClick: () => void }) {
+  const { t } = useLanguage();
+  const { data: usuarios = [] } = useUsuariosEmpresa();
+  const conc = tarefas.filter((x) => x.concluida_em).length;
+  const pct = tarefas.length ? Math.round((conc / tarefas.length) * 100) : 0;
+  const equipa = [...new Set(tarefas.map((x) => x.responsavel_id).filter(Boolean))] as string[];
+  const estado = sprint.ativa ? 'ativa' : sprint.concluida ? 'concluida' : 'planeada';
+  return (
+    <button type="button" onClick={onClick}
+      className={`relative overflow-hidden rounded-xl border bg-card p-4 text-left transition-all hover:border-primary/40 ${selected ? 'border-primary ring-2 ring-primary/30' : 'border-border'} ${sprint.ativa ? 'shadow-[inset_0_3px_0_hsl(var(--primary))]' : ''}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-semibold">{sprint.nome}</p>
+          <p className="text-xs tabular-nums text-muted-foreground">{parseDataLocal(sprint.data_inicio).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short' })} → {parseDataLocal(sprint.data_fim).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+        </div>
+        <StatusBadge tone={estado === 'ativa' ? 'success' : estado === 'concluida' ? 'info' : 'neutral'}>{t(`p3Projetos.sprints.${estado}`)}</StatusBadge>
+      </div>
+      {sprint.objetivo && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{sprint.objetivo}</p>}
+      <div className="mt-3 flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className={pct >= 100 ? 'h-full bg-success' : 'h-full bg-primary'} style={{ width: `${pct}%` }} /></div>
+        <span className="text-xs tabular-nums text-muted-foreground">{conc}/{tarefas.length}</span>
+      </div>
+      <div className="mt-3 flex -space-x-1.5">
+        {equipa.slice(0, 5).map((id) => { const u = usuarios.find((x) => x.user_id === id); return <UserAvatar key={id} nome={u?.nome ?? '?'} foto={(u as any)?.foto_url} size={22} />; })}
+        {equipa.length > 5 && <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-muted text-[10px] font-semibold ring-2 ring-card">+{equipa.length - 5}</span>}
+      </div>
+    </button>
   );
 }
 
@@ -147,8 +185,11 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={t('residuos.geral.burndownSprint')}>
         <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="hsl(var(--border))" />
         <line x1={PAD} y1={PAD} x2={PAD} y2={H - PAD} stroke="hsl(var(--border))" />
+        <defs><linearGradient id="burn-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" /></linearGradient></defs>
+        {[0.25, 0.5, 0.75].map((f) => <line key={f} x1={PAD} x2={W - PAD} y1={PAD + f * (H - 2 * PAD)} y2={PAD + f * (H - 2 * PAD)} stroke="hsl(var(--chart-grid))" strokeDasharray="2 4" />)}
+        <path d={`${toPath(realPts)} L${sx(dias)} ${H - PAD} L${sx(0)} ${H - PAD} Z`} fill="url(#burn-fill)" />
         <path d={toPath(idealPts)} fill="none" stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" />
-        <path d={toPath(realPts)} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} />
+        <path d={toPath(realPts)} fill="none" stroke="hsl(var(--primary))" strokeWidth={2.5} strokeLinejoin="round" />
         <text x={PAD} y={PAD - 6} fontSize="10" fill="hsl(var(--muted-foreground))">{total}</text>
         <text x={PAD} y={H - PAD + 14} fontSize="10" fill="hsl(var(--muted-foreground))">0</text>
         <text x={W - PAD} y={H - PAD + 14} fontSize="10" textAnchor="end" fill="hsl(var(--muted-foreground))">{dias}d</text>
@@ -173,7 +214,8 @@ function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; o
           {t.concluida_em
             ? <IconSuccess className="h-4 w-4 text-success" />
             : <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />}
-          <span className={`flex-1 text-sm ${t.concluida_em ? 'line-through text-muted-foreground' : ''}`}>{t.titulo}</span>
+          {partirTitulo(t.titulo).codigo && <CodeChip codigo={partirTitulo(t.titulo).codigo!} nivel="atividade" />}
+          <span className={`flex-1 truncate text-sm ${t.concluida_em ? 'line-through text-muted-foreground' : ''}`}>{partirTitulo(t.titulo).nome}</span>
           <span className="text-xs text-muted-foreground">{getPrioridadeLabel(t2, t.prioridade)}</span>
         </button>
       ))}
