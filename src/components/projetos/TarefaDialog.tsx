@@ -157,7 +157,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const kind = statusKindDe(colAtual);
   const codigoDe = (titulo: string) => titulo.match(/^([A-Z]{1,3}\d+(?:\.\d+)*)\s+—\s+(.*)$/);
   const nomeCurto = (titulo: string) => (codigoDe(titulo)?.[2] ?? titulo).replace(/^(FASE|DOMÍNIO|DOMINIO)\s+\d+\s+—\s+/i, '');
-  const ghost = 'h-8 w-full justify-between border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus:ring-0 data-[state=open]:bg-muted whitespace-nowrap [&>span]:line-clamp-none [&>span]:overflow-visible';
+  const ghost = 'h-9 w-full justify-between border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus:ring-0 data-[state=open]:bg-muted whitespace-nowrap [&>span]:line-clamp-none [&>span]:overflow-visible';
   const copiarLink = () => {
     const url = `${window.location.origin}${window.location.pathname}?tarefa=${tarefa?.id ?? ''}`;
     void navigator.clipboard?.writeText(url).then(() => toast.success(t('p3Projetos.tarefa.linkCopied')));
@@ -255,7 +255,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                     </li>
                   );
                 })}
-                <li className="flex items-center gap-3 px-3 py-1.5">
+                <li className="flex items-center gap-3 px-3 py-1">
                   <IconAdd className="h-4 w-4 text-muted-foreground" />
                   <input value={novaSub} onChange={(e) => setNovaSub(e.target.value)} placeholder={t('p3Projetos.tarefa.addSub')}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void criarSub(); } }}
@@ -297,7 +297,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             </Select>
           </Prop>
           <Prop icon={<IconPerson />} label={t('projetos.tarefaDialog.fieldResponsavel')}>
-            <div className="[&_button]:h-8 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
+            <div className="[&_button]:h-9 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
               <UserSelect value={form.responsavel_id} onValueChange={(v) => setForm({ ...form, responsavel_id: v })} />
             </div>
           </Prop>
@@ -314,17 +314,17 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             </Select>
           </Prop>
           <Prop icon={<IconCalendar />} label={t('p3Projetos.tarefa.inicio')}>
-            <div className="[&_button]:h-8 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:shadow-none [&_button:hover]:bg-muted">
+            <div className="[&_button]:h-9 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
               <DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} />
             </div>
           </Prop>
           <Prop icon={<IconCalendar />} label={t('p3Projetos.tarefa.conclusao')}>
-            <div className="[&_button]:h-8 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:shadow-none [&_button:hover]:bg-muted">
+            <div className="[&_button]:h-9 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
               <DateField value={form.prazo || null} onChange={(v) => setForm({ ...form, prazo: v ?? '' })} />
             </div>
           </Prop>
           <Prop icon={<IconTime />} label={t('projetos.tarefaDialog.fieldEstimativa')}>
-            <Input type="number" min="0" step="0.5" placeholder={t('p3Projetos.tarefa.vazio')} className="h-8 border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus-visible:bg-background" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
+            <Input type="number" min="0" step="0.5" placeholder={t('p3Projetos.tarefa.vazio')} className="h-9 border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus-visible:bg-background" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
           </Prop>
           <Prop icon={<IconTrendUp />} label={t('projetos.tarefaDialog.fieldSprint')}>
             <Select value={form.sprint_id || 'none'} onValueChange={(v) => setForm({ ...form, sprint_id: v === 'none' ? '' : v })}>
@@ -353,7 +353,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             <div className="space-y-1">
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><IconSuccess className="h-4 w-4" />{t('p3Projetos.tarefa.progresso')}</p>
               <div className="flex items-center gap-1">
-                <Input type="number" min={0} max={100} step={5} className="h-8 w-20" aria-label={t('p3Projetos.tarefa.progresso')}
+                <Input type="number" min={0} max={100} step={5} className="h-9 w-20" aria-label={t('p3Projetos.tarefa.progresso')}
                   value={colAtual?.is_concluido ? 100 : form.progresso_pct} disabled={!!colAtual?.is_concluido}
                   onChange={(e) => setForm({ ...form, progresso_pct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
                 <span className="text-sm text-muted-foreground">%</span>
@@ -405,7 +405,7 @@ function Avatar({ nome, foto }: { nome: string; foto?: string | null }) {
 
 function Prop({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_minmax(0,1fr)] items-center gap-1 py-1">
+    <div className="grid min-h-10 grid-cols-[140px_minmax(0,1fr)] items-center gap-1 py-0.5">
       <span className="flex items-center gap-2 whitespace-nowrap px-1 text-xs text-muted-foreground [&>svg]:shrink-0 [&>svg]:h-4 [&>svg]:w-4">{icon}{label}</span>
       <div className="min-w-0 text-sm">{children}</div>
     </div>
@@ -458,8 +458,9 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
           value={novo}
           onChange={(e) => setNovo(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } } }}
+          className="h-9"
         />
-        <Button type="button" size="icon" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }} aria-label={t('common.add')} title={t('common.add')}>
+        <Button type="button" size="icon" className="h-9 w-9 shrink-0" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }} aria-label={t('common.add')} title={t('common.add')}>
           <IconAdd className="h-4 w-4" />
         </Button>
       </div>
@@ -497,9 +498,9 @@ function ComentariosPanel({ tarefaId }: { tarefaId: string }) {
           </div>
         ))}
       </div>
-      <div className="flex gap-2">
-        <Textarea rows={2} placeholder={t('projetos.tarefaDialog.commentPlaceholder')} value={novo} onChange={(e) => setNovo(e.target.value)} />
-        <Button type="button" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }}>
+      <div className="flex items-end gap-2">
+        <Textarea rows={2} className="min-h-[72px]" placeholder={t('projetos.tarefaDialog.commentPlaceholder')} value={novo} onChange={(e) => setNovo(e.target.value)} />
+        <Button type="button" size="icon" className="h-9 w-9 shrink-0" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }}>
           <IconSend className="h-4 w-4" />
         </Button>
       </div>
