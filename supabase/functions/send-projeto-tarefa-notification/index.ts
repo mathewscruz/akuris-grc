@@ -6,7 +6,7 @@ import { Resend } from "npm:resend@2.0.0";
 import { notificationEmail } from "../_shared/email-brand.ts";
 import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 import { authorizedScheduledJob } from "../_shared/scheduled-job.ts";
-import { deveAvisarEvento, fimDe, lembreteDevido } from "./regras.ts";
+import { autoria, deveAvisarEvento, fimDe, lembreteDevido } from "./regras.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -23,7 +23,7 @@ type Tarefa = {
 };
 const CAMPOS = "id, projeto_id, coluna_id, parent_task_id, titulo, responsavel_id, data_fim, prazo, concluida_em, progresso_pct, lembrete_3d_enviado_em, lembrete_dia_enviado_em";
 
-async function avisar(tarefa: Tarefa, tipo: "atribuicao" | "status" | "3d" | "dia", extra: { de?: string; para?: string; ator?: string } = {}) {
+async function avisar(tarefa: Tarefa, tipo: "atribuicao" | "status" | "3d" | "dia", extra: { de?: string; para?: string; ator?: { nome: string; automacao: boolean } } = {}) {
   const { data: projeto } = await db.from("projetos").select("nome, empresa_id").eq("id", tarefa.projeto_id).maybeSingle();
   if (!projeto) return { enviado: false, motivo: "projeto" };
   const { data: dest } = await db.from("profiles")
@@ -41,8 +41,8 @@ async function avisar(tarefa: Tarefa, tipo: "atribuicao" | "status" | "3d" | "di
     dia: "Sua atividade vence hoje",
   }[tipo];
   const intro = {
-    atribuicao: `${extra.ator ? extra.ator + " atribuiu" : "Foi atribuída"} a você a atividade abaixo.`,
-    status: `${extra.ator ?? "Alguém"} alterou o status de "${extra.de ?? "—"}" para "${extra.para ?? "—"}".`,
+    atribuicao: `${extra.ator?.nome ?? "Uma automação do projeto"} atribuiu a você a atividade abaixo.`,
+    status: `${extra.ator?.nome ?? "Uma automação do projeto"} alterou o status de "${extra.de ?? "—"}" para "${extra.para ?? "—"}".`,
     "3d": "Faltam poucos dias para o prazo desta atividade.",
     dia: "O prazo desta atividade termina hoje.",
   }[tipo];
@@ -50,7 +50,7 @@ async function avisar(tarefa: Tarefa, tipo: "atribuicao" | "status" | "3d" | "di
   if (dest.notificar_na_aplicacao !== false) {
     await db.from("notifications").insert({
       user_id: tarefa.responsavel_id, type: tipo === "dia" ? "warning" : "info",
-      title: titulo, message: `${tarefa.titulo} · ${projeto.nome}`, link_to: `/projetos/${tarefa.projeto_id}?focus=${tarefa.id}`,
+      title: titulo, message: `${tarefa.titulo} · ${projeto.nome}${extra.ator && (tipo === "status" || tipo === "atribuicao") ? ` · ${extra.ator.automacao ? "Automação" : extra.ator.nome}` : ""}`, link_to: `/projetos/${tarefa.projeto_id}?focus=${tarefa.id}`,
       metadata: { projeto_id: tarefa.projeto_id, tarefa_id: tarefa.id, tipo },
     });
   }
@@ -61,7 +61,7 @@ async function avisar(tarefa: Tarefa, tipo: "atribuicao" | "status" | "3d" | "di
     name: dest.nome || "Usuário", item: tarefa.titulo, code: "", description: "", locale: "pt",
     tone: tipo === "dia" ? "warning" : "neutral",
     title: titulo, module: "Projetos", intro,
-    fields: [["Projeto", projeto.nome], ["Prazo", fmt(fim)], ...(tipo === "status" ? [["Novo status", extra.para ?? "—"] as const] : [])],
+    fields: [["Projeto", projeto.nome], ["Prazo", fmt(fim)], ...(tipo === "status" ? [["Novo status", extra.para ?? "—"] as const] : []), ...(extra.ator ? [[tipo === "status" ? "Alterado por" : "Atribuído por", extra.ator.automacao ? "Automação" : extra.ator.nome] as const] : [])],
     next: "Abra a atividade no Akuris para acompanhar e atualizar o andamento.",
     action: { label: "Abrir atividade", url },
   } as any);
@@ -75,9 +75,9 @@ async function avisar(tarefa: Tarefa, tipo: "atribuicao" | "status" | "3d" | "di
 }
 
 async function nome(userId: unknown) {
-  if (!isUuid(userId)) return undefined;
-  const { data } = await db.from("profiles").select("nome").eq("user_id", userId as string).maybeSingle();
-  return data?.nome ?? undefined;
+  if (!isUuid(userId)) return autoria(null);
+  const { data } = await db.from("profiles").select("nome, email").eq("user_id", userId as string).maybeSingle();
+  return autoria(data ?? null);
 }
 
 Deno.serve(async (req) => {

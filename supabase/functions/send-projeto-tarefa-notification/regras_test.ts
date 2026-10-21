@@ -19,3 +19,10 @@ Deno.test("quem fez a ação não é avisado", () => {
   assertEquals(deveAvisarEvento("u1", "u2"), true);
   assertEquals(deveAvisarEvento("u1", null), true);
 });
+
+import { autoria } from "./regras.ts";
+Deno.test("autoria: nome, só e-mail, automação", () => {
+  assertEquals(autoria({ nome: "Mathews Cruz", email: "m@x.com" }).nome, "Mathews Cruz");
+  assertEquals(autoria({ nome: null, email: "m@x.com" }).nome, "m@x.com");
+  assertEquals(autoria(null), { nome: "Uma automação do projeto", automacao: true });
+});

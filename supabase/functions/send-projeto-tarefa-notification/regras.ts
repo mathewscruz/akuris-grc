@@ -34,3 +34,9 @@ export function lembreteDevido(t: TarefaLembrete, hoje: string, ehFolha: boolean
 /** Atribuição/status: não avisa quem fez a própria ação. */
 export const deveAvisarEvento = (responsavelId: string | null, atorId: string | null) =>
   !!responsavelId && responsavelId !== atorId;
+
+/** Quem fez a ação, para o texto do e-mail. Nulo = automação/sistema. */
+export function autoria(perfil: { nome?: string | null; email?: string | null } | null): { nome: string; automacao: boolean } {
+  const nome = perfil?.nome?.trim() || perfil?.email?.trim();
+  return nome ? { nome, automacao: false } : { nome: "Uma automação do projeto", automacao: true };
+}
