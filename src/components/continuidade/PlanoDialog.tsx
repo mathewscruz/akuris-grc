@@ -38,7 +38,16 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
     rpo_horas: '',
     proxima_revisao: '',
     versao: '1.0',
+    sistema_id: '',
+    criticidade: 'media',
   });
+  const [sistemas, setSistemas] = useState<{ id: string; nome_sistema: string }[]>([]);
+
+  useEffect(() => {
+    if (!open || !empresaId) return;
+    supabase.from('sistemas_privilegiados').select('id, nome_sistema').eq('empresa_id', empresaId).order('nome_sistema')
+      .then(({ data }) => setSistemas(data ?? []));
+  }, [open, empresaId]);
 
   useEffect(() => {
     if (plano) {
@@ -53,9 +62,11 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
         rpo_horas: plano.rpo_horas?.toString() || '',
         proxima_revisao: plano.proxima_revisao || '',
         versao: plano.versao || '1.0',
+        sistema_id: plano.sistema_id || '',
+        criticidade: plano.criticidade || 'media',
       });
     } else {
-      setForm({ nome: '', tipo: 'bcp', descricao: '', escopo: '', objetivos: '', status: 'rascunho', rto_horas: '', rpo_horas: '', proxima_revisao: '', versao: '1.0' });
+      setForm({ nome: '', tipo: 'bcp', descricao: '', escopo: '', objetivos: '', status: 'rascunho', rto_horas: '', rpo_horas: '', proxima_revisao: '', versao: '1.0', sistema_id: '', criticidade: 'media' });
     }
   }, [plano, open]);
 
@@ -82,6 +93,8 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       rpo_horas: form.rpo_horas ? Number(form.rpo_horas) : null,
       proxima_revisao: form.proxima_revisao || null,
       versao: form.versao || '1.0',
+      sistema_id: form.sistema_id || null,
+      criticidade: form.criticidade,
       empresa_id: empresaId,
       ...(plano ? {} : { created_by: user?.id }),
     };
@@ -130,6 +143,28 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
                   <SelectItem value="bcp">{t('continuidadeComp.planoDialog.tipoBcp')}</SelectItem>
                   <SelectItem value="drp">{t('continuidadeComp.planoDialog.tipoDrp')}</SelectItem>
                   <SelectItem value="ambos">{t('continuidadeComp.planoDialog.tipoAmbos')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t('continuidadeComp.planoDialog.fieldSistema')}</Label>
+              <Select value={form.sistema_id || 'none'} onValueChange={v => setForm(p => ({ ...p, sistema_id: v === 'none' ? '' : v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('continuidadeComp.planoDialog.semSistema')}</SelectItem>
+                  {sistemas.map(s => <SelectItem key={s.id} value={s.id}>{s.nome_sistema}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('continuidadeComp.planoDialog.fieldCriticidade')}</Label>
+              <Select value={form.criticidade} onValueChange={v => setForm(p => ({ ...p, criticidade: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {['baixa', 'media', 'alta', 'critica'].map(c => <SelectItem key={c} value={c}>{t(`continuidadeComp.planoDialog.criticidade.${c}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
