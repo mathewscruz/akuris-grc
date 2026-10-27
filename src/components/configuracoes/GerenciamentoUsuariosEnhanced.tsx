@@ -418,7 +418,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         }
 
         const emailNorm = data.email.trim().toLowerCase();
-        if (usuarios.some((u) => (u.email || '').toLowerCase() === emailNorm)) {
+        // Inactive profiles are restored server-side (create-user returns restored: true).
+        if (usuarios.some((u) => u.ativo !== false && (u.email || '').toLowerCase() === emailNorm)) {
           form.setError('email', { type: 'manual', message: t('admin.usuarios.emailJaExiste') });
           return;
         }
