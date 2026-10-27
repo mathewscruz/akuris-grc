@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.continuidade_planos_valida_sistema() FROM PUBLIC, anon, authenticated;
