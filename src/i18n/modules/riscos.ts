@@ -52,6 +52,15 @@ const riscosRaw = {
       monitorado: 'Monitorado',
       aceito: 'Aceito',
     },
+    move: {
+      label: 'Fluxo do risco',
+      advance: 'Avançar para {status}',
+      changeTo: 'Mudar status',
+      changed: 'Status alterado para {status}',
+      undo: 'Desfazer',
+      error: 'Não foi possível alterar o status',
+      addTreatment: 'Adicionar tratamento',
+    },
     level: {
       critico: 'Crítico',
       muitoAlto: 'Muito Alto',
@@ -232,6 +241,15 @@ const riscosRaw = {
       tratado: 'Treated',
       monitorado: 'Monitored',
       aceito: 'Accepted',
+    },
+    move: {
+      label: 'Risk workflow',
+      advance: 'Move to {status}',
+      changeTo: 'Change status',
+      changed: 'Status changed to {status}',
+      undo: 'Undo',
+      error: 'Could not change the status',
+      addTreatment: 'Add treatment',
     },
     level: {
       critico: 'Critical',

@@ -137,3 +137,13 @@ export function deriveRiscoStatus(
       : `O risco possui ${resumo.concluidos} de ${resumo.requeridos} tratamentos concluídos; exibindo o status coerente com a evidência.`,
   };
 }
+
+/** Ordem do fluxo de status do risco, usada para mover o risco com um clique. */
+export const FLUXO_STATUS_RISCO = ['identificado', 'analisado', 'em_tratamento', 'tratado', 'monitorado'] as const;
+export type StatusFluxoRisco = (typeof FLUXO_STATUS_RISCO)[number];
+
+/** Próximo status do fluxo; `null` no último passo ou fora do fluxo. */
+export function proximoStatusRisco(atual: string | null | undefined): StatusFluxoRisco | null {
+  const i = FLUXO_STATUS_RISCO.indexOf(norm(atual) as StatusFluxoRisco);
+  return i >= 0 && i < FLUXO_STATUS_RISCO.length - 1 ? FLUXO_STATUS_RISCO[i + 1] : null;
+}
