@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resolveCriticidadeTone } from '@/lib/status-tone';
 import { IconAdd, IconEdit, IconDelete, IconTime, IconChecklist, IconTest, IconTarget, IconShieldCheck } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
