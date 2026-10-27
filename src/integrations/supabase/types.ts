@@ -2058,6 +2058,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           criterios_ativacao: string | null
+          criticidade: string
           data_ultima_revisao: string | null
           descricao: string | null
           empresa_id: string
@@ -2074,6 +2075,7 @@ export type Database = {
           rpo_horas: number | null
           rto_horas: number | null
           runbook: string | null
+          sistema_id: string | null
           status: string
           tipo: string
           updated_at: string
@@ -2084,6 +2086,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           criterios_ativacao?: string | null
+          criticidade?: string
           data_ultima_revisao?: string | null
           descricao?: string | null
           empresa_id: string
@@ -2100,6 +2103,7 @@ export type Database = {
           rpo_horas?: number | null
           rto_horas?: number | null
           runbook?: string | null
+          sistema_id?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -2110,6 +2114,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           criterios_ativacao?: string | null
+          criticidade?: string
           data_ultima_revisao?: string | null
           descricao?: string | null
           empresa_id?: string
@@ -2126,6 +2131,7 @@ export type Database = {
           rpo_horas?: number | null
           rto_horas?: number | null
           runbook?: string | null
+          sistema_id?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -2152,6 +2158,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "continuidade_planos_sistema_id_fkey"
+            columns: ["sistema_id"]
+            isOneToOne: false
+            referencedRelation: "sistemas_privilegiados"
+            referencedColumns: ["id"]
           },
         ]
       }
