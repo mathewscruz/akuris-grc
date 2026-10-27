@@ -55,6 +55,7 @@ import { RiscoAnexosIcone } from '@/components/riscos/RiscoAnexosIcone';
 import { RiscosTabs } from '@/components/riscos/RiscosTabs';
 import RiscosAceite from '@/pages/RiscosAceite';
 import { RiscoDetailDrawer } from '@/components/riscos/RiscoDetailDrawer';
+import { RiscoStatusMenu } from '@/components/riscos/RiscoStatusControls';
 import { SeverityKpiRow } from '@/components/riscos/matrix/SeverityKpiRow';
 import { RiskHeatmap } from '@/components/riscos/matrix/RiskHeatmap';
 import { HeatmapCellPanel } from '@/components/riscos/matrix/HeatmapCellPanel';
@@ -696,9 +697,11 @@ export function Riscos() {
         // coerente com a evidência; o dado gravado não é alterado.
         const efetivo = risco.status_efetivo ?? value;
         return (
-          <span title={risco.status_ajuste_motivo ?? undefined}>
-            <StatusBadge {...resolveRiscoStatusTone(efetivo)}>{formatStatus(efetivo)}</StatusBadge>
-          </span>
+          canUpdate('riscos')
+            ? <RiscoStatusMenu riscoId={risco.id} status={efetivo} title={risco.status_ajuste_motivo ?? undefined} />
+            : <span title={risco.status_ajuste_motivo ?? undefined}>
+                <StatusBadge {...resolveRiscoStatusTone(efetivo)}>{formatStatus(efetivo)}</StatusBadge>
+              </span>
         );
       },
     },

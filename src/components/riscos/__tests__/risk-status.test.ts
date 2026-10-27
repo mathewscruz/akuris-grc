@@ -26,3 +26,15 @@ describe('QA-065 coerência de status', () => {
     expect(() => assertTratamentosLookup(null)).not.toThrow();
   });
 });
+
+import { proximoStatusRisco } from '../risk-status';
+describe('proximoStatusRisco', () => {
+  it('avança na ordem do fluxo', () => {
+    expect(proximoStatusRisco('identificado')).toBe('analisado');
+    expect(proximoStatusRisco('em_tratamento')).toBe('tratado');
+  });
+  it('não avança após monitorado nem fora do fluxo', () => {
+    expect(proximoStatusRisco('monitorado')).toBeNull();
+    expect(proximoStatusRisco('arquivado')).toBeNull();
+  });
+});

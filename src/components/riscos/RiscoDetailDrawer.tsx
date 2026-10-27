@@ -47,6 +47,7 @@ import { IconChevron, IconClose, IconView, IconWarning, IconAdd, IconExternal, I
 import { severidadeRisco } from '@/lib/metrics/riscos';
 import { usePermissions } from '@/hooks/usePermissions';
 import { RiscoKris } from '@/components/riscos/RiscoKris';
+import { RiscoStatusStepper } from '@/components/riscos/RiscoStatusControls';
 
 interface Risco {
   id: string;
@@ -220,6 +221,9 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 )}
               </div>
               <SheetTitle className="text-xl leading-tight font-semibold">{risco.nome}</SheetTitle>
+              {!isError && canUpdate('riscos') && (
+                <RiscoStatusStepper riscoId={risco.id} status={statusCoerente.status} />
+              )}
             </div>
             <ScoreRing score={scoreAtual} sev={sevAtual} />
           </div>
