@@ -24,6 +24,8 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { RecordProgress } from '@/components/ui/record-progress';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveCriticidadeTone } from '@/lib/status-tone';
 
 const statusMap: Record<string, { label: string; variant: any }> = {
   rascunho: { label: 'Rascunho', variant: 'secondary' },
@@ -65,7 +67,7 @@ export default function Continuidade() {
       if (!empresaId) return [];
       const { data, error } = await supabase
         .from('continuidade_planos')
-        .select('*')
+        .select('*, sistema:sistemas_privilegiados(nome_sistema)')
         .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -112,7 +114,7 @@ export default function Continuidade() {
   const planosFiltrados = useMemo(() => {
     if (!searchTerm.trim()) return planos;
     return (planos as any[]).filter((p) =>
-      matchesSearch(searchTerm, p.nome, p.tipo, p.status, p.descricao),
+      matchesSearch(searchTerm, p.nome, p.tipo, p.status, p.descricao, p.sistema?.nome_sistema),
     );
   }, [planos, searchTerm]);
 
@@ -152,6 +154,14 @@ export default function Continuidade() {
         const st = statusMap[row.status] || statusMap.rascunho;
         return <Badge variant={st.variant}>{st.label}</Badge>;
       },
+    },
+    {
+      key: 'sistema', label: t('continuidadeComp.planoDialog.fieldSistema'),
+      render: (_v, row) => <span className="text-muted-foreground">{row.sistema?.nome_sistema || '—'}</span>,
+    },
+    {
+      key: 'criticidade', label: t('continuidadeComp.planoDialog.fieldCriticidade'), sortable: true,
+      render: (_v, row) => <StatusBadge {...resolveCriticidadeTone(row.criticidade)}>{t(`continuidadeComp.planoDialog.criticidade.${row.criticidade || 'media'}`)}</StatusBadge>,
     },
     {
       key: 'rto_horas',
@@ -215,10 +225,12 @@ export default function Continuidade() {
   // Exportar fica no botão padrão da tabela (CSV/PDF).
   const exportarDaPagina = () => {
               exportCSV(
-                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), t('continuidadeComp.planoDialog.fieldSistema'), t('continuidadeComp.planoDialog.fieldCriticidade'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
                 planosFiltrados.map((p: any) => [
                   p.nome || '', tipoMap[p.tipo] || p.tipo || '',
                   statusMap[p.status]?.label || p.status || '',
+                  p.sistema?.nome_sistema || '',
+                  t(`continuidadeComp.planoDialog.criticidade.${p.criticidade || 'media'}`),
                   p.rto_horas != null ? String(p.rto_horas) : '',
                   p.rpo_horas != null ? String(p.rpo_horas) : '',
                   p.proxima_revisao ? parseDataLocal(p.proxima_revisao).toLocaleDateString(intlLocale()) : '',

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resolveCriticidadeTone } from '@/lib/status-tone';
 import { IconAdd, IconEdit, IconDelete, IconTime, IconChecklist, IconTest, IconTarget, IconShieldCheck } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -112,6 +113,12 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano, onSuccess }: Pla
           <div className="flex items-center gap-2 mb-4">
             <StatusBadge tone={st.tone}>{st.label}</StatusBadge>
             <StatusBadge tone="neutral" variant="outline">{plano.tipo === 'bcp' ? t('continuidadeComp.detalhe.tipoBcp') : plano.tipo === 'drp' ? t('continuidadeComp.detalhe.tipoDrp') : t('continuidadeComp.detalhe.tipoAmbos')}</StatusBadge>
+            <StatusBadge {...resolveCriticidadeTone(plano.criticidade)}>
+              {t('continuidadeComp.planoDialog.fieldCriticidade')}: {t(`continuidadeComp.planoDialog.criticidade.${plano.criticidade || 'media'}`)}
+            </StatusBadge>
+            {plano.sistema?.nome_sistema && (
+              <StatusBadge tone="neutral" variant="outline">{t('continuidadeComp.planoDialog.fieldSistema')}: {plano.sistema.nome_sistema}</StatusBadge>
+            )}
           </div>
 
           {/* Resumo */}
