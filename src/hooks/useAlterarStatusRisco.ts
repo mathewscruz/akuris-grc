@@ -20,7 +20,7 @@ export function useAlterarStatusRisco() {
     if (!empresaId) return false;
     if (novo === STATUS_TRATADO) {
       const { data, error } = await supabase
-        .from('riscos_tratamentos').select('status').eq('risco_id', riscoId).eq('empresa_id', empresaId);
+        .from('riscos_tratamentos').select('status').eq('risco_id', riscoId);
       if (error) { toast.error(t('riscos.page.move.error')); return false; }
       const resumo = resumirTratamentos(data ?? []);
       if (!podeMarcarTratado(resumo)) { toast.error(motivoBloqueioTratado(resumo)); return false; }
@@ -43,7 +43,7 @@ export function useAlterarStatusRisco() {
         },
       });
     } catch (e) {
-      logger.error('Falha ao alterar status do risco', e);
+      logger.error('Falha ao alterar status do risco', { error: String(e) });
       toast.error(t('riscos.page.move.error'));
       return false;
     } finally {
