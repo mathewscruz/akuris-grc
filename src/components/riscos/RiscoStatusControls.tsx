@@ -32,7 +32,7 @@ export function RiscoStatusMenu({ riscoId, status, title }: { riscoId: string; s
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuLabel className="text-xs">{t('riscos.page.move.changeTo')}</DropdownMenuLabel>
         {FLUXO_STATUS_RISCO.map((s) => (
-          <DropdownMenuItem key={s} disabled={s === status} onSelect={() => alterar(riscoId, s)}>
+          <DropdownMenuItem key={s} disabled={s === status} onSelect={() => alterar(riscoId, s, status)}>
             {t(`riscos.page.status.${s}`)}
           </DropdownMenuItem>
         ))}
@@ -59,7 +59,7 @@ export function RiscoStatusStepper({ riscoId, status }: { riscoId: string; statu
               <button
                 type="button"
                 disabled={busy || ativo}
-                onClick={() => alterar(riscoId, s)}
+                onClick={() => alterar(riscoId, s, status)}
                 aria-current={ativo ? 'step' : undefined}
                 className={cn(
                   'whitespace-nowrap rounded-full border px-2.5 h-7 text-xs transition-colors',
@@ -76,7 +76,7 @@ export function RiscoStatusStepper({ riscoId, status }: { riscoId: string; statu
         })}
       </ol>
       {proximo && (
-        <Button size="sm" variant="outline" className="h-7 text-xs" disabled={busy} onClick={() => alterar(riscoId, proximo)}>
+        <Button size="sm" variant="outline" className="h-7 text-xs" disabled={busy} onClick={() => alterar(riscoId, proximo, status)}>
           {t('riscos.page.move.advance', { status: t(`riscos.page.status.${proximo}`) })}
           <IconArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
         </Button>
