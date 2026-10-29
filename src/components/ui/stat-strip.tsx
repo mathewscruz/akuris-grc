@@ -27,7 +27,7 @@ function StatBandArt({ module }: { module?: StatBandModule }) {
   const Art = module ? BAND_ART[module] : null
   return (
     <span aria-hidden="true" className="akuris-stat-band-art pointer-events-none absolute -right-6 top-1/2 -translate-y-1/2 sm:-right-4">
-      {Art ? <Art size={240} strokeWidth={0.18} className="h-40 w-40 sm:h-60 sm:w-60" /> : <AkurisSidebarIcon className="h-40 w-40 sm:h-60 sm:w-60" />}
+      {Art ? <Art size={192} strokeWidth={0.18} className="h-32 w-32 sm:h-48 sm:w-48" /> : <AkurisSidebarIcon className="h-32 w-32 sm:h-48 sm:w-48" />}
     </span>
   )
 }
@@ -326,7 +326,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
     <div
       id={summaryId}
       className={cn(
-        "akuris-stat-band relative grid grid-cols-2 overflow-hidden rounded-2xl border lg:flex lg:items-stretch lg:py-7",
+        "akuris-stat-band relative grid grid-cols-2 overflow-hidden rounded-xl border lg:flex lg:items-stretch lg:py-5",
         className
       )}
       {...props}
@@ -353,39 +353,39 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
 
         const content = (
           <>
-            <span className="band-label block truncate text-xs font-semibold uppercase tracking-[0.14em]">{item.label}</span>
-            <span className={cn("mt-2 block font-bold leading-none tracking-[-0.04em] tabular-nums", isHero ? "band-fg text-[3.5rem]" : "band-accent text-[2.75rem]", item.attentionPulse && "akuris-risk-attention")}>
+            <span className="band-label block truncate text-[10px] font-semibold uppercase tracking-[0.14em]">{item.label}</span>
+            <span className={cn("mt-2 block font-bold leading-none tracking-[-0.04em] tabular-nums", isHero ? "band-fg text-[2.8rem]" : "band-accent text-[2.2rem]", item.attentionPulse && "akuris-risk-attention")}>
               {unavailable ? '—' : <AnimatedMetricValue value={item.value} />}
             </span>
-            {caption && <span className={cn("band-muted mt-1.5 block", isHero ? "text-base" : "text-sm")}>{caption}</span>}
+            {caption && <span className={cn("band-muted mt-1.5 block", isHero ? "text-[13px]" : "text-xs")}>{caption}</span>}
             {!isHero && !unavailable && alertLabel && (
-              <span className="band-accent mt-2.5 inline-flex items-center gap-1.5 text-sm font-semibold">
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+              <span className="band-accent mt-2 inline-flex items-center gap-1.5 text-xs font-semibold">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
                 {alertLabel}
               </span>
             )}
             {isHero && segments.length > 0 && (
-              <span role="img" aria-label={segments.map((sg) => `${sg.label}: ${sg.value}`).join(", ")} className="band-track mt-6 flex h-7 w-full overflow-hidden rounded-full">
+              <span role="img" aria-label={segments.map((sg) => `${sg.label}: ${sg.value}`).join(", ")} className="band-track mt-5 flex h-[22px] w-full overflow-hidden rounded-full">
                 {segments.map((sg) => (
                   <span key={sg.label} className={cn("akuris-motion-data block h-full transition-[width] motion-reduce:transition-none", BAND_TONE[sg.tone])} style={{ width: `${sg.percent}%` }} />
                 ))}
               </span>
             )}
             {isHero && total > 0 && (
-              <span className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:justify-between">
+              <span className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2.5 sm:flex sm:justify-between">
                 {list.map((b) => (
-                  <span key={b.label} className="flex min-w-0 flex-col gap-1 text-sm">
-                    <span className="band-fg flex items-center gap-2.5"><span aria-hidden="true" className={cn("h-3 w-3 shrink-0 rounded-full", BAND_TONE[b.tone])} />{b.label}</span>
-                    <span className="band-muted pl-[22px] tabular-nums">{b.value} ({Math.round((b.value / total) * 100)}%)</span>
+                  <span key={b.label} className="flex min-w-0 flex-col gap-0.5 text-xs">
+                    <span className="band-fg flex items-center gap-2"><span aria-hidden="true" className={cn("h-2.5 w-2.5 shrink-0 rounded-full", BAND_TONE[b.tone])} />{b.label}</span>
+                    <span className="band-muted pl-[18px] tabular-nums">{b.value} ({Math.round((b.value / total) * 100)}%)</span>
                   </span>
                 ))}
               </span>
             )}
             {!isHero && list.length > 0 && (
-              <span className={cn("flex flex-col gap-2.5 text-sm", alertLabel ? "mt-5" : "mt-[3.25rem]")}>
+              <span className={cn("flex flex-col gap-2 text-xs", alertLabel ? "mt-4" : "mt-[2.6rem]")}>
                 {list.map((b) => (
                   <span key={b.label} className="flex items-center justify-between gap-4">
-                    <span className="band-fg flex min-w-0 items-center gap-2.5"><span aria-hidden="true" className={cn("h-3 w-3 shrink-0 rounded-full", BAND_TONE[b.tone])} /><span className="truncate">{b.label}</span></span>
+                    <span className="band-fg flex min-w-0 items-center gap-2"><span aria-hidden="true" className={cn("h-2.5 w-2.5 shrink-0 rounded-full", BAND_TONE[b.tone])} /><span className="truncate">{b.label}</span></span>
                     <span className="band-fg tabular-nums">{b.value}</span>
                   </span>
                 ))}
@@ -394,7 +394,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
           </>
         )
 
-        const pad = isHero ? "px-6 py-6 lg:px-10 lg:py-0" : "px-5 py-5 lg:px-11 lg:py-0"
+        const pad = isHero ? "px-5 py-5 lg:px-8 lg:py-0" : "px-4 py-4 lg:px-9 lg:py-0"
         return (
           <div
             key={item.key ?? `${item.label}-${index}`}
