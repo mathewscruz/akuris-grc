@@ -513,7 +513,7 @@ export default function Contratos() {
             </TabsTrigger>
           </TabsList>
 
-        {currentTab === 'contratos' ? <StatStrip serieTabela="contratos"
+        {currentTab === 'contratos' ? <StatStrip module="contratos" serieTabela="contratos"
           loading={statsLoading}
           error={statsError}
           items={[
@@ -559,7 +559,7 @@ export default function Contratos() {
               drillDown: 'contratos_renovacao',
             },
           ]}
-        /> : <StatStrip
+        /> : <StatStrip module="contratos"
           loading={loadingFornecedores}
           items={[
             { key: 'fornecedores', label: t('cardsKpi.contratos.fornecedoresTotal'), value: statsFornecedores.total },

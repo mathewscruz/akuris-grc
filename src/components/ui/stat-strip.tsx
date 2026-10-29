@@ -6,6 +6,31 @@ import type { DrillDownKey } from "@/components/dashboard/KpiDrillDownDrawer"
 import type { LucideIcon } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useSerieSemanal, type TabelaSerie } from "@/hooks/useSerieSemanal"
+import {
+  RiscosIcon, ControlesIcon, AuditoriasIcon, AtivosIcon, IncidentesIcon, GapAnalysisIcon, DueDiligenceIcon,
+  DocumentosIcon, DenunciasIcon, PlanosAcaoIcon, ProjetosIcon, LicencasIcon, ChavesIcon, ContratosIcon,
+  PrivacidadeIcon, SistemasIcon, ContasPrivilegiadasIcon, RevisaoAcessosIcon, ContinuidadeIcon, RelatoriosIcon,
+  AkurisSidebarIcon,
+} from "@/components/icons"
+
+const BAND_ART = {
+  riscos: RiscosIcon, controles: ControlesIcon, auditorias: AuditoriasIcon, ativos: AtivosIcon, incidentes: IncidentesIcon,
+  gap: GapAnalysisIcon, dueDiligence: DueDiligenceIcon, documentos: DocumentosIcon, denuncias: DenunciasIcon,
+  planosAcao: PlanosAcaoIcon, projetos: ProjetosIcon, licencas: LicencasIcon, chaves: ChavesIcon, contratos: ContratosIcon,
+  privacidade: PrivacidadeIcon, sistemas: SistemasIcon, contas: ContasPrivilegiadasIcon, revisaoAcessos: RevisaoAcessosIcon,
+  continuidade: ContinuidadeIcon, relatorios: RelatoriosIcon,
+} as const
+export type StatBandModule = keyof typeof BAND_ART
+
+/** Desenho de fundo do módulo: traço fino, grande, cortado pela borda direita. */
+function StatBandArt({ module }: { module?: StatBandModule }) {
+  const Art = module ? BAND_ART[module] : null
+  return (
+    <span aria-hidden="true" className="akuris-stat-band-art pointer-events-none absolute -right-6 top-1/2 -translate-y-1/2 sm:-right-4">
+      {Art ? <Art size={240} strokeWidth={0.18} className="h-40 w-40 sm:h-60 sm:w-60" /> : <AkurisSidebarIcon className="h-40 w-40 sm:h-60 sm:w-60" />}
+    </span>
+  )
+}
 
 /**
  * StatStrip (Envio 14 — faixa dentro de um cartão único).
@@ -107,6 +132,8 @@ interface StatStripProps extends React.HTMLAttributes<HTMLDivElement> {
   serieTabela?: TabelaSerie
   loading?: boolean
   error?: boolean
+  /** Módulo que define o desenho de fundo da faixa. */
+  module?: StatBandModule
 }
 
 const TONE_TEXT: Record<StatStripTone, string> = {
@@ -224,7 +251,7 @@ export function AnimatedMetricValue({ value }: { value: number | string }) {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
-export function StatStrip({ items: itemsIn, serieTabela, loading = false, error = false, className, ...props }: StatStripProps) {
+export function StatStrip({ items: itemsIn, serieTabela, loading = false, error = false, module, className, ...props }: StatStripProps) {
   const serie = useSerieSemanal(serieTabela)
   const items = React.useMemo(() => serie && itemsIn?.length ? itemsIn.map((it) => !it.series && (/total/i.test(it.key ?? '') || /total/i.test(it.label)) ? { ...it, series: serie } : it) : itemsIn, [itemsIn, serie])
   const drill = useKpiDrillDown()
@@ -304,7 +331,8 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
       )}
       {...props}
     >
-      <span aria-hidden="true" className="akuris-stat-band-glow pointer-events-none absolute inset-y-0 right-0 w-2/5" />
+      <span aria-hidden="true" className="akuris-stat-band-glow pointer-events-none absolute inset-0" />
+      <StatBandArt module={module} />
       {ordered.map((item, index) => {
         const isHero = index === 0
         const numeric = metricNumber(item.value)
@@ -373,7 +401,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
             data-mobile-hidden={!isHero && !mobileExpanded && mobileOrder.indexOf(item) >= 2}
             style={{ '--metric-order': mobileOrder.indexOf(item) } as React.CSSProperties}
             className={cn(
-              "akuris-stat-item band-divider relative min-w-0",
+              "akuris-stat-item band-divider relative z-[1] min-w-0",
               isHero
                 ? "col-span-2 border-b lg:flex-[1.55] lg:border-b-0"
                 : cn("lg:flex-1 lg:border-l", mobileIdx % 2 === 1 && "border-l", mobileIdx >= 2 && "border-t lg:border-t-0",

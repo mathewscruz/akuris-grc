@@ -123,7 +123,7 @@ export default function Projetos() {
         ]}
       />
 
-      <StatStrip loading={statsLoading} error={statsError}
+      <StatStrip module="projetos" loading={statsLoading} error={statsError}
         items={[
           { key: 'ativos', label: t('projetos.page.statActive'), value: stats?.projetosAtivos ?? 0 },
           { key: 'abertas', label: t('projetos.page.statOpenTasks'), value: stats?.tarefasAbertas ?? 0, hero: true, breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (stats?.tarefasAbertas ?? 0) - ((stats?.tarefasAtrasadas ?? 0))), tone: 'active' }, { label: t('projetos.page.statOverdueTasks'), value: stats?.tarefasAtrasadas ?? 0, tone: 'critical' }] },

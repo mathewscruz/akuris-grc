@@ -364,7 +364,7 @@ export default function RevisaoAcessos() {
       {linkedError && <QueryError onRetry={() => void retryLinked()} />}
       {linkedId && linkedReady && !linkedReview && <p role="status" className="text-sm text-muted-foreground">{t('experience.reviewUnavailable')}</p>}
       {systemId && <div className="flex items-center gap-3 text-sm text-muted-foreground"><span>{t('experience.systemFilter')}</span><Button variant="ghost" size="sm" onClick={() => setSearchParams(previous => { const next = new URLSearchParams(previous); next.delete('sistema'); return next; })}>{t('common.clear')}</Button></div>}
-      <StatStrip serieTabela="access_reviews"
+      <StatStrip module="revisaoAcessos" serieTabela="access_reviews"
         loading={statsLoading}
         error={statsError}
         items={[

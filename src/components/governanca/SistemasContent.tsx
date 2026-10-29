@@ -353,7 +353,7 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
 
   return (
     <div className="space-y-6">
-      <StatStrip
+      <StatStrip module="sistemas"
         error={isError}
         loading={isLoading}
         items={[

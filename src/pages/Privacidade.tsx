@@ -1125,7 +1125,7 @@ export default function Privacidade() {
       />
 
 
-        <StatStrip serieTabela="dados_pessoais"
+        <StatStrip module="privacidade" serieTabela="dados_pessoais"
           loading={isLoading}
           items={[
             {

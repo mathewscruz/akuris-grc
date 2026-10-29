@@ -274,7 +274,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
       {/* Stats — escondido quando embutido (o DocumentsHero já traz os KPIs) */}
       {!embedded && (
-      <StatStrip items={statsCards} />
+      <StatStrip module="gap" items={statsCards} />
       )}
 
       {/* Lista de Avaliações */}

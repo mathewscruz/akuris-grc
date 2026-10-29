@@ -175,5 +175,5 @@ export function SeverityKpiRow({ counts, trends, onSelect }: Props) {
     breakdown: sevs.map((sev) => ({ label: t(`riscosVisoes.matrix.severityKpiRow.labels.${sev}`), value: counts[sev] ?? 0, tone: SEV_DOT[sev] })),
   };
 
-  return <StatStrip items={[hero, ...items]} />;
+  return <StatStrip module="riscos" items={[hero, ...items]} />;
 }

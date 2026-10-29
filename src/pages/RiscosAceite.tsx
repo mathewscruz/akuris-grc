@@ -366,7 +366,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         />
       )}
 
-      <StatStrip serieTabela="riscos"
+      <StatStrip module="riscos" serieTabela="riscos"
         items={[
           { key: 'aceitos', label: t('riscos.aceite.stats.acceptedTitle'), value: totalAceitos, icon: IconSuccess, hint: t('riscos.aceite.stats.acceptedDesc'), drillDown: 'riscos_aceite', hero: true, breakdown: [{ label: t('riscos.aceite.stats.acceptedTitle'), value: totalAceitos, tone: 'done' }, { label: t('riscos.aceite.stats.pendingTitle'), value: totalPendentes, tone: 'medium' }, { label: t('riscos.aceite.stats.expiredTitle'), value: totalExpirados, tone: 'critical' }] },
           { key: 'pendentes', label: t('riscos.aceite.stats.pendingTitle'), value: totalPendentes, icon: IconTime, tone: 'warning', hint: t('riscos.aceite.stats.pendingDesc'), drillDown: 'riscos_aceite_pendentes' },

@@ -203,7 +203,7 @@ export default function MinhasTarefas({ embedded = false }: { embedded?: boolean
         description={t('minhasTarefas.subtitle')}
       />}
 
-      <StatStrip
+      <StatStrip module="projetos"
         loading={isLoading}
         items={[
           { key: 'open', label: t('minhasTarefas.stats.open'), value: buckets.atrasadas.length + buckets.hoje.length + buckets.semana.length, breakdown: [{ label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'critical' }, { label: t('minhasTarefas.stats.today'), value: buckets.hoje.length, tone: 'medium' }, { label: t('minhasTarefas.stats.thisWeek'), value: buckets.semana.length, tone: 'active' }] }, { key: 'overdueCol', label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'destructive' },

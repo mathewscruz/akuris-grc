@@ -476,7 +476,7 @@ export default function AuditoriasContent({ actionsSlot, headerSearch, onHeaderS
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <StatStrip serieTabela="auditorias"
+      <StatStrip module="auditorias" serieTabela="auditorias"
         loading={statsLoading || countsLoading}
         error={statsError || countsError}
         items={[

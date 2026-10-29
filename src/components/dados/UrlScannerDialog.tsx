@@ -499,7 +499,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
             </div>
 
             <div className="animate-fade-in" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
-              <StatStrip
+              <StatStrip module="privacidade"
                 items={[
                   { key: 'forms', label: t('dadosDialogs.urlScanner.cardFormularios'), value: totalForms },
                   { key: 'fields', label: t('dadosDialogs.urlScanner.cardCampos'), value: totalFields },

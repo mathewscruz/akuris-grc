@@ -526,7 +526,7 @@ export default function Incidentes() {
         ]}
       />
 
-      <StatStrip serieTabela="incidentes"
+      <StatStrip module="incidentes" serieTabela="incidentes"
         loading={loading || statsLoading}
         error={isError || statsError}
         items={[

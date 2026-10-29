@@ -87,7 +87,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
 
   return (
     <div className="space-y-4">
-      <StatStrip items={[
+      <StatStrip module="projetos" items={[
         { key: 'progresso', label: t('p3Projetos.painel.progressoGeral'), value: `${Math.round(ind.progresso * 100)}%`, icon: IconTrendUp as any, hint: t('p3Projetos.painel.planejadoHoje', { value: Math.round(ind.planejado * 100) }) } as any,
         { key: 'concluidas', label: t('p3Projetos.painel.concluidas'), value: ind.concluidas, icon: IconSuccess as any, tone: 'success', hint: t('p3Projetos.painel.deTotal', { total: ind.total }) } as any,
         { key: 'atrasadas', label: t('p3Projetos.painel.atrasadas'), value: ind.atrasadas, icon: IconWarning as any, tone: 'destructive', hint: t('p3Projetos.painel.atrasadasHint') } as any,

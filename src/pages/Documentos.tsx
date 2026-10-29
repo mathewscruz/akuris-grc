@@ -519,7 +519,7 @@ export default function Documentos() {
           ]}
         />
 
-        <StatStrip serieTabela="documentos"
+        <StatStrip module="documentos" serieTabela="documentos"
           loading={statsLoading}
           error={statsError}
           items={[

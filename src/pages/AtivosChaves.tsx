@@ -419,7 +419,7 @@ export default function AtivosChaves() {
         ]}
       />
 
-      <StatStrip serieTabela="ativos_chaves_criptograficas"
+      <StatStrip module="chaves" serieTabela="ativos_chaves_criptograficas"
         error={isError || statsError}
         loading={statsLoading}
         items={[

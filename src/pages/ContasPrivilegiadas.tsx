@@ -389,7 +389,7 @@ export default function ContasPrivilegiadas() {
         ]}
       />
 
-      <StatStrip serieTabela="sistemas_privilegiados"
+      <StatStrip module="contas" serieTabela="sistemas_privilegiados"
         loading={isLoading}
         error={isError}
         items={[
