@@ -62,7 +62,7 @@ export function RiscosTabs({ matrix, table, aceite, riskCount, acceptedCount, ma
 
   return (
     <Tabs value={activeView} onValueChange={onChange} className="w-full">
-      <TabsList moduleTitle={t('sidebar.riskManagement')} moduleIcon={<RiscosIcon className="h-4 w-4" />} searchValue={searchValue} onSearchChange={activeView === 'table' ? onSearchChange : undefined}>
+      <TabsList moduleTitle={t('sidebar.riskManagement')} moduleIcon={<RiscosIcon className="h-4 w-4" />}>
         <TabsTrigger
           value="table" count={riskCount}
           className="text-xs"

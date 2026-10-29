@@ -377,7 +377,7 @@ export default function RevisaoAcessos() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList moduleTitle={t('sidebar.accessReview')} searchValue={activeTab === 'historico' ? historySearch : searchTerm} onSearchChange={activeTab === 'usuarios' ? undefined : activeTab === 'historico' ? setHistorySearch : setSearchTerm}>
+        <TabsList moduleTitle={t('sidebar.accessReview')}>
           <TabsTrigger value="ativas" count={filteredAndSortedReviews.length}>{t('fin.revisao.ativas')}</TabsTrigger>
           <TabsTrigger value="historico" count={visibleHistory.length}>{t('fin.comum.historico')}</TabsTrigger>
           <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>

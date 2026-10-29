@@ -694,7 +694,7 @@ export default function PlanosAcao() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList moduleTitle={t('planosAcao.tabAll')} searchValue={search} onSearchChange={setSearch}>
+        <TabsList moduleTitle={t('planosAcao.tabAll')}>
           <TabsTrigger value="conexoes">{t('evidenceIntelligence.context')}</TabsTrigger>
           <TabsTrigger value="meus" count={meusItens.length}><IconChecklist className="h-4 w-4" />{t('planosAcao.tabMyItems')}</TabsTrigger>
           <TabsTrigger value="tarefas"><IconTime className="h-4 w-4" />{t('minhasTarefas.title')}</TabsTrigger>

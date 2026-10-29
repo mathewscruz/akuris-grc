@@ -106,7 +106,7 @@ export default function Governanca() {
       />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList moduleTitle={t('modules.governanca.title')} searchValue={activeTab === 'controles' ? controlsSearch : auditsSearch} onSearchChange={activeTab === 'controles' ? setControlsSearch : setAuditsSearch}>
+        <TabsList moduleTitle={t('modules.governanca.title')}>
           <TabsTrigger value="controles" count={contagens?.controles} className="flex items-center gap-2">
             <ControlesIcon className="h-5 w-5" />
             {t('modules.governanca.controls')}

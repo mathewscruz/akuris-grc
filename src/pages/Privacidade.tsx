@@ -1170,7 +1170,7 @@ export default function Privacidade() {
         />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList moduleTitle={t('sidebar.privacy')} searchValue={activeTab === 'catalogo' ? searchCatalogoTerm : searchSolicitacoesTerm} onSearchChange={activeTab === 'catalogo' ? setSearchCatalogoTerm : activeTab === 'solicitacoes' ? setSearchSolicitacoesTerm : undefined} className="h-auto justify-start">
+        <TabsList moduleTitle={t('sidebar.privacy')} className="h-auto justify-start">
           <TabsTrigger value="jornada"><IconShieldAlert aria-hidden />
             {t("privacidadePrograma.tabs.jornada")}
           </TabsTrigger>
