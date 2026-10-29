@@ -480,7 +480,7 @@ export default function AuditoriasContent({ actionsSlot, headerSearch, onHeaderS
         loading={statsLoading || countsLoading}
         error={statsError || countsError}
         items={[
-          { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: todasAsAuditorias?.length || 0, drillDown: 'auditorias' },
+          { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: todasAsAuditorias?.length || 0, drillDown: 'auditorias', breakdown: [{ label: t("governancaComp.auditorias.statEmAndamento"), value: todasAsAuditorias?.filter(a => a.status === 'em_andamento').length || 0, tone: 'active' }, { label: t("governancaComp.auditorias.statPendentes"), value: todasAsAuditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'medium' }, { label: t('experience.stripRest'), value: todasAsAuditorias?.filter(a => a.status !== 'em_andamento' && a.status !== 'planejamento').length || 0, tone: 'rest' }] },
           { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: todasAsAuditorias?.filter(a => a.status === 'em_andamento').length || 0, drillDown: 'auditorias_andamento' },
           { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: totalItens ? t("experience.auditedItems", { completed: totalConcluidos, total: totalItens }) : t("experience.notStarted"), drillDown: 'auditorias_itens' },
           { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: todasAsAuditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias_pendentes' },

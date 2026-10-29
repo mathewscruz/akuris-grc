@@ -565,7 +565,7 @@ const Ativos = () => {
           error={assetsError || statsError}
         loading={statsLoading}
         items={[
-          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: IconServer, drillDown: 'ativos' },
+          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: IconServer, drillDown: 'ativos', breakdown: [{ label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), tone: 'critical' }, { label: t('experience.stripRest'), value: Math.max(0, (stats?.total || 0) - ((stats?.criticos || 0) + (stats?.altos || 0))), tone: 'rest' }] },
           { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: IconActivity, drillDown: 'ativos_operacionais' },
           { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, icon: IconTrendUp, drillDown: 'ativos_alto_valor' },
           { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), icon: IconWarning, tone: 'destructive', drillDown: 'ativos_criticos' },
