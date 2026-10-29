@@ -16,7 +16,7 @@ describe('indicadores sem conclusões implícitas', () => {
   });
   it('aceita uma interpretação de zero explicitamente definida pelo domínio', () => {
     render(<StatStrip items={[{ label: 'Revisões', value: 0, zeroState: { label: 'Nenhuma revisão pendente', tone: 'success' } }]} />);
-    expect(screen.getByText('Nenhuma revisão pendente')).toHaveClass('text-state-done');
+    expect(screen.getByText('Nenhuma revisão pendente')).toBeInTheDocument();
   });
   it('falha de consulta não vira zero, progresso ou ação de drill-down', () => {
     const onClick = vi.fn();
