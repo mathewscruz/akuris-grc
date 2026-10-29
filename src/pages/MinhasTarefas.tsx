@@ -206,7 +206,7 @@ export default function MinhasTarefas({ embedded = false }: { embedded?: boolean
       <StatStrip
         loading={isLoading}
         items={[
-          { key: 'overdue', label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length + buckets.hoje.length + buckets.semana.length, breakdown: [{ label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'critical' }, { label: t('minhasTarefas.stats.today'), value: buckets.hoje.length, tone: 'medium' }, { label: t('minhasTarefas.stats.thisWeek'), value: buckets.semana.length, tone: 'active' }] }, { key: 'overdueCol', label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'destructive' },
+          { key: 'open', label: t('minhasTarefas.stats.open'), value: buckets.atrasadas.length + buckets.hoje.length + buckets.semana.length, breakdown: [{ label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'critical' }, { label: t('minhasTarefas.stats.today'), value: buckets.hoje.length, tone: 'medium' }, { label: t('minhasTarefas.stats.thisWeek'), value: buckets.semana.length, tone: 'active' }] }, { key: 'overdueCol', label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'destructive' },
           { key: 'today', label: t('minhasTarefas.stats.today'), value: buckets.hoje.length, tone: 'warning' },
           { key: 'week', label: t('minhasTarefas.stats.thisWeek'), value: buckets.semana.length },
           { key: 'done', label: t('minhasTarefas.stats.done'), value: buckets.concluidas.length },

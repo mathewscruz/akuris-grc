@@ -4,7 +4,7 @@ export const minhasTarefas = {
       title: 'Minhas pendências',
       subtitle: 'Tudo atribuído a você — tarefas de projetos e planos de ação — organizado por urgência.',
       stats: {
-        overdue: 'Atrasadas',
+        overdue: 'Atrasadas', open: 'Para fazer',
         today: 'Hoje',
         thisWeek: 'Esta semana',
         done: 'Concluídas',
@@ -47,7 +47,7 @@ export const minhasTarefas = {
       title: 'My open items',
       subtitle: 'Everything assigned to you — project tasks and action plans — organized by urgency.',
       stats: {
-        overdue: 'Overdue',
+        overdue: 'Overdue', open: 'To do',
         today: 'Today',
         thisWeek: 'This week',
         done: 'Completed',
