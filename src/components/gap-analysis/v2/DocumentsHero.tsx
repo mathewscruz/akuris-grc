@@ -247,7 +247,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGener
         </div>
       </article>
 
-      <StatStrip
+      <StatStrip module="gap"
         items={[
           { key: 'analisadas', label: k('kpiAnalyzed'), value: stats.analyzed },
           { key: 'media', label: k('kpiAvg'), value: stats.avgConformity ? `${stats.avgConformity}%` : '—' },

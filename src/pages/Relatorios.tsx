@@ -258,7 +258,7 @@ export default function Relatorios() {
         ) : undefined}
       />
 
-      <StatStrip serieTabela="relatorios_customizados" loading={isLoading} error={isError}
+      <StatStrip module="relatorios" serieTabela="relatorios_customizados" loading={isLoading} error={isError}
         items={[
           { key: 'total', label: t('fin.relatorios.total'), value: stats.total, breakdown: [{ label: t('sweepCore.reports.published'), value: stats.publicados, tone: 'done' }, { label: t('sweepCore.reports.drafts'), value: stats.rascunhos, tone: 'medium' }, { label: t('experience.stripRest'), value: Math.max(0, (stats.total) - ((stats.publicados) + (stats.rascunhos))), tone: 'rest' }] },
           { key: 'publicados', label: t('sweepCore.reports.published'), value: stats.publicados },

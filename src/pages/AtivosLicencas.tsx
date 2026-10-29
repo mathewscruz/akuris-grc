@@ -397,7 +397,7 @@ export default function AtivosLicencas() {
         ]}
       />
 
-      <StatStrip serieTabela="ativos_licencas"
+      <StatStrip module="licencas" serieTabela="ativos_licencas"
         error={isError || statsError}
         loading={statsLoading}
         items={[

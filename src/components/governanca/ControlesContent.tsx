@@ -578,7 +578,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
     <div className="space-y-6">
       {statsError && !listError && <QueryError onRetry={retry} />}
       {/* KPIs */}
-      <StatStrip serieTabela="controles"
+      <StatStrip module="controles" serieTabela="controles"
         loading={statsLoading}
         error={statsError}
         items={[

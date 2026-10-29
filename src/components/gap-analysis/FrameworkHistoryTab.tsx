@@ -105,7 +105,7 @@ export function FrameworkHistoryTab({
       {/* Faixa de indicadores no padrão do sistema. Eram três cartões soltos,
           cada um com borda e vão próprios — o padrão antigo, que já saiu do
           resto do produto. */}
-      <StatStrip
+      <StatStrip module="gap"
         items={[
           {
             key: 'inicial',

@@ -100,7 +100,7 @@ export default function Denuncia() {
         </div>
       )}
 
-      <StatStrip serieTabela="denuncias"
+      <StatStrip module="denuncias" serieTabela="denuncias"
         loading={statsLoading}
         error={statsError}
         items={[

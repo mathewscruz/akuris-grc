@@ -73,7 +73,7 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
 
         {report && metrics && (
           <div className="space-y-5">
-            <StatStrip
+            <StatStrip module="projetos"
               items={[
                 { key: 'total', label: t('projetos.statusReport.statTasks'), value: metrics.total },
                 { key: 'concluidas', label: t('projetos.statusReport.statDone'), value: metrics.concluidas },
