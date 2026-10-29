@@ -78,7 +78,8 @@ export const riscosVisoes = {
         },
         severityKpiRow: {
           totalLabel: 'Riscos ativos',
-          totalCaption: 'por nível de severidade',
+          totalCaption: 'riscos ativos',
+          faixa: { tratamento: 'Tratamento', controles: 'Controles ligados', aceites: 'Aceites', atrasados: 'Atrasados', atrasadosN: '{count} atrasados', emAndamento: 'Em andamento', planejados: 'Planejados', concluidos: 'Concluídos', ativos: 'Ativos', parciais: 'Parcialmente ativos', inativos: 'Inativos', aVencer: 'A vencer', aVencerN: '{count} a vencer', validos: 'Válidos', vencidos: 'Vencidos' },
           labels: {
             critico: 'Críticos',
             alto: 'Altos',
@@ -186,7 +187,8 @@ export const riscosVisoes = {
         },
         severityKpiRow: {
           totalLabel: 'Active risks',
-          totalCaption: 'by severity level',
+          totalCaption: 'active risks',
+          faixa: { tratamento: 'Treatment', controles: 'Linked controls', aceites: 'Acceptances', atrasados: 'Overdue', atrasadosN: '{count} overdue', emAndamento: 'In progress', planejados: 'Planned', concluidos: 'Completed', ativos: 'Active', parciais: 'Partially active', inativos: 'Inactive', aVencer: 'Expiring', aVencerN: '{count} expiring', validos: 'Valid', vencidos: 'Expired' },
           labels: {
             critico: 'Critical',
             alto: 'High',

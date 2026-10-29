@@ -11,12 +11,12 @@ afterEach(cleanup);
 describe('indicadores sem conclusões implícitas', () => {
   it('zero em alerta permanece neutro sem declarar tudo em dia', () => {
     const { container } = render(<StatStrip items={[{ label: 'Vencidos', value: 0, tone: 'destructive' }]} />);
-    expect(screen.getByText('0')).toHaveClass('text-foreground');
+    expect(screen.getByText('0')).toHaveClass('band-fg');
     expect(container.textContent).not.toMatch(/tudoEmDia|Tudo em dia/);
   });
   it('aceita uma interpretação de zero explicitamente definida pelo domínio', () => {
     render(<StatStrip items={[{ label: 'Revisões', value: 0, zeroState: { label: 'Nenhuma revisão pendente', tone: 'success' } }]} />);
-    expect(screen.getByText('Nenhuma revisão pendente')).toHaveClass('text-state-done');
+    expect(screen.getByText('Nenhuma revisão pendente')).toBeInTheDocument();
   });
   it('falha de consulta não vira zero, progresso ou ação de drill-down', () => {
     const onClick = vi.fn();

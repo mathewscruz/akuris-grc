@@ -2427,5 +2427,22 @@ input:-webkit-autofill:focus {
 [data-just-saved="true"] { animation: akuris-row-new 900ms var(--motion-ease) both; }
 
 /* Faixa contínua de KPIs (modelo C): brilho roxo suave à direita só no escuro. */
-.akuris-stat-band-glow { background: radial-gradient(90% 120% at 0% 0%, hsl(var(--primary) / 0.06), transparent 70%); }
-.dark .akuris-stat-band-glow { background: radial-gradient(90% 130% at 0% 0%, hsl(var(--primary) / 0.24), transparent 70%); }
+.akuris-stat-band {
+  --band-bg: 220 62% 9%; --band-fg: 0 0% 100%; --band-muted: 222 18% 68%; --band-line: 222 38% 20%;
+  --band-accent: 252 92% 72%; --band-critical: 354 92% 61%; --band-high: 24 94% 56%;
+  --band-medium: 46 96% 56%; --band-low: 146 62% 52%; --band-rest: 222 16% 50%;
+  background: hsl(var(--band-bg)); color: hsl(var(--band-fg)); border-color: hsl(var(--band-line));
+}
+.akuris-stat-band .band-fg { color: hsl(var(--band-fg)); }
+.akuris-stat-band .band-muted { color: hsl(var(--band-muted)); }
+.akuris-stat-band .band-label { color: hsl(var(--band-fg) / 0.82); }
+.akuris-stat-band .band-accent { color: hsl(var(--band-accent)); }
+.akuris-stat-band .band-divider { border-color: hsl(var(--band-line)); }
+.akuris-stat-band .band-track { background: hsl(var(--band-line)); }
+.akuris-stat-band .band-critical { background: hsl(var(--band-critical)); }
+.akuris-stat-band .band-high { background: hsl(var(--band-high)); }
+.akuris-stat-band .band-medium { background: hsl(var(--band-medium)); }
+.akuris-stat-band .band-low { background: hsl(var(--band-low)); }
+.akuris-stat-band .band-rest { background: hsl(var(--band-rest)); }
+.akuris-stat-band .band-primary { background: hsl(var(--band-accent)); }
+.akuris-stat-band-glow { background: radial-gradient(80% 120% at 100% 0%, hsl(var(--band-accent) / 0.34), transparent 70%); }

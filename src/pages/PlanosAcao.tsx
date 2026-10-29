@@ -687,10 +687,8 @@ export default function PlanosAcao() {
         error={listError}
         items={[
           { key: 'total', label: t('planosAcao.statTotal'), breakdown: [{ label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'medium' }, { label: t('planosAcao.statInProgress'), value: stats.emAndamento, tone: 'active' }, { label: t('planosAcao.statCompleted'), value: stats.concluidos, tone: 'done' }, { label: t('planosAcao.statOverdue'), value: stats.atrasados, tone: 'critical' }], value: stats.total, onClick: () => { setStatusFilter('todos'); setViewMode('lista'); } },
-          { key: 'pendentes', label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'warning', onClick: () => { setStatusFilter('pendente'); setViewMode('lista'); } },
-          { key: 'emAndamento', label: t('planosAcao.statInProgress'), value: stats.emAndamento, onClick: () => { setStatusFilter('em_andamento'); setViewMode('lista'); } },
-          { key: 'concluidos', label: t('planosAcao.statCompleted'), value: stats.concluidos, onClick: () => { setStatusFilter('concluido'); setViewMode('lista'); } },
-          { key: 'atrasados', label: t('planosAcao.statOverdue'), value: stats.atrasados, tone: 'destructive', onClick: () => { setStatusFilter('atrasado'); setViewMode('lista'); } },
+          { key: 'abertos', label: t('planosAcao.statInProgress'), value: stats.pendentes + stats.emAndamento, alert: stats.atrasados > 0 ? { label: `${stats.atrasados} · ${t('planosAcao.statOverdue')}` } : undefined, breakdown: [{ label: t('planosAcao.statOverdue'), value: stats.atrasados, tone: 'critical' }, { label: t('planosAcao.statInProgress'), value: stats.emAndamento, tone: 'high' }, { label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'medium' }], onClick: () => { setStatusFilter('em_andamento'); setViewMode('lista'); } },
+          { key: 'concluidos', label: t('planosAcao.statCompleted'), value: stats.concluidos, breakdown: [{ label: t('planosAcao.statCompleted'), value: stats.concluidos, tone: 'low' }, { label: t('experience.stripOpen'), value: Math.max(0, stats.total - stats.concluidos), tone: 'rest' }], onClick: () => { setStatusFilter('concluido'); setViewMode('lista'); } },
         ]}
       />
 
