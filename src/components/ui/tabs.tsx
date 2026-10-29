@@ -107,8 +107,8 @@ const ESBATIMENTO: Record<string, string | undefined> = {
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { showIndicator?: boolean; moduleTitle?: string; moduleIcon?: React.ReactNode; searchValue?: string; onSearchChange?: (value: string) => void }
->(({ className, style, children, showIndicator = true, moduleTitle, moduleIcon, searchValue, onSearchChange, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { showIndicator?: boolean; moduleTitle?: string; moduleIcon?: React.ReactNode }
+>(({ className, style, children, showIndicator = true, moduleTitle, moduleIcon, ...props }, ref) => {
   const { t } = useLanguage()
   const motionAllowed = useMotionAllowed()
   const interna = React.useRef<HTMLDivElement>(null)
@@ -208,7 +208,7 @@ const TabsList = React.forwardRef<
   {horizontal && (lado === "fim" || lado === "ambos") && <button type="button" className="akuris-tabs-scroll right-0" aria-label={t("experience.tabsNext")} onClick={() => scrollTabs(1)}><ChevronRight aria-hidden="true" className="h-4 w-4" /></button>}
   </div>
   )
-  return <div className="akuris-tabs-viewport relative min-w-0 w-full max-w-full shrink-0 mb-4">{moduleTitle ? <ModuleSubbar title={moduleTitle} activeLabel={activeLabel} icon={moduleIcon} searchValue={searchValue} onSearchChange={onSearchChange}>{listContent}</ModuleSubbar> : listContent}</div>
+  return <div className="akuris-tabs-viewport relative min-w-0 w-full max-w-full shrink-0 mb-4">{moduleTitle ? <ModuleSubbar title={moduleTitle} activeLabel={activeLabel} icon={moduleIcon}>{listContent}</ModuleSubbar> : listContent}</div>
 })
 TabsList.displayName = TabsPrimitive.List.displayName
 

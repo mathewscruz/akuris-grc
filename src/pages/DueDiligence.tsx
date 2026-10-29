@@ -102,7 +102,7 @@ export default function DueDiligence() {
       <DueDiligenceDashboard showAttention={activeTab !== 'assessments'} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList moduleTitle={t('modules.dueDiligence.title')} searchValue={supplierSearch} onSearchChange={activeTab === 'fornecedores' ? setSupplierSearch : undefined}>
+        <TabsList moduleTitle={t('modules.dueDiligence.title')}>
           <TabsTrigger value="fornecedores" count={supplierCount ?? undefined}><IconOrg className="h-4 w-4" />{t('modules.dueDiligence.suppliers')}</TabsTrigger>
           <TabsTrigger value="assessments" count={stats?.totalAssessments}><IconChecklist className="h-4 w-4" />{t('modules.dueDiligence.newAssessment')}</TabsTrigger>
           <TabsTrigger value="templates" count={stats?.totalTemplates}><IconFile className="h-4 w-4" />{t('modules.dueDiligence.templates')}</TabsTrigger>

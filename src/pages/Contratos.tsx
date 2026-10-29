@@ -493,7 +493,7 @@ export default function Contratos() {
         />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList moduleTitle={t('modules.contratos.title')} searchValue={searchTerm} onSearchChange={setSearchTerm}>
+          <TabsList moduleTitle={t('modules.contratos.title')}>
             {/*
               O nome da aba fica, tambem no telemovel.
 
