@@ -105,11 +105,9 @@ export default function Denuncia() {
         error={statsError}
         items={[
           { key: 'total', label: t('cardsKpi.denuncias.total'), value: stats?.total ?? 0, drillDown: 'denuncias', breakdown: [{ label: t('cardsKpi.denuncias.novas'), value: stats?.novas ?? 0, tone: 'medium' }, { label: t('cardsKpi.denuncias.emAndamento'), value: stats?.em_andamento ?? 0, tone: 'active' }, { label: t('cardsKpi.denuncias.resolvidas'), value: stats?.resolvidas ?? 0, tone: 'done' }, { label: t('experience.stripRest'), value: Math.max(0, (stats?.total ?? 0) - ((stats?.novas ?? 0) + (stats?.em_andamento ?? 0) + (stats?.resolvidas ?? 0))), tone: 'rest' }] },
-          { key: 'novas', label: t('cardsKpi.denuncias.novas'), value: stats?.novas ?? 0, tone: 'warning', drillDown: 'denuncias_novas' },
-          { key: 'emAndamento', label: t('cardsKpi.denuncias.emAndamento'), value: stats?.em_andamento ?? 0, drillDown: 'denuncias_andamento' },
+          { key: 'abertas', label: t('cardsKpi.denuncias.emAndamento'), value: (stats?.novas ?? 0) + (stats?.em_andamento ?? 0), drillDown: 'denuncias_andamento', alert: (stats?.prazo_vencido ?? 0) > 0 ? { label: `${stats?.prazo_vencido} · ${t('cardsKpi.denuncias.prazoVencido')}` } : undefined, breakdown: [{ label: t('cardsKpi.denuncias.prazoVencido'), value: stats?.prazo_vencido ?? 0, tone: 'critical' }, { label: t('cardsKpi.denuncias.novas'), value: stats?.novas ?? 0, tone: 'medium' }, { label: t('cardsKpi.denuncias.emAndamento'), value: stats?.em_andamento ?? 0, tone: 'high' }] },
           /* O único número com consequência legal, e o que faltava: a Diretiva
              dá três meses para dar retorno a quem denunciou. */
-          { key: 'prazoVencido', label: t('cardsKpi.denuncias.prazoVencido'), value: stats?.prazo_vencido ?? 0, tone: 'destructive' as const },
           { key: 'resolvidas', label: t('cardsKpi.denuncias.resolvidas'), value: stats?.resolvidas ?? 0, drillDown: 'denuncias_resolvidas' },
         ]}
       />

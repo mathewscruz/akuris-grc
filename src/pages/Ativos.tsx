@@ -565,10 +565,9 @@ const Ativos = () => {
           error={assetsError || statsError}
         loading={statsLoading}
         items={[
-          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: IconServer, drillDown: 'ativos', breakdown: [{ label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), tone: 'critical' }, { label: t('experience.stripRest'), value: Math.max(0, (stats?.total || 0) - ((stats?.criticos || 0) + (stats?.altos || 0))), tone: 'rest' }] },
-          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: IconActivity, drillDown: 'ativos_operacionais' },
+          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: IconServer, drillDown: 'ativos', breakdown: [{ label: t('fin.comum.criticasF'), value: stats?.criticos || 0, tone: 'critical' }, { label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: stats?.altos || 0, tone: 'high' }, { label: t('experience.stripRest'), value: Math.max(0, (stats?.total || 0) - ((stats?.criticos || 0) + (stats?.altos || 0))), tone: 'low' }] },
+          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: IconActivity, drillDown: 'ativos_operacionais', breakdown: [{ label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, tone: 'low' }, { label: t('experience.stripOthers'), value: Math.max(0, (stats?.total || 0) - (stats?.ativos || 0)), tone: 'rest' }] },
           { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, icon: IconTrendUp, drillDown: 'ativos_alto_valor' },
-          { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), icon: IconWarning, tone: 'destructive', drillDown: 'ativos_criticos' },
           {
             key: 'naoClassificados',
             label: t('cardsKpi.sweep.ativos.naoClassificados'),

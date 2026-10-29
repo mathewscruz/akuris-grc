@@ -583,8 +583,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
         error={statsError}
         items={[
           { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: IconShield, drillDown: 'controles', breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (stats?.total || 0) - ((stats?.vencidos || 0) + (stats?.vencendoAvaliacao || 0))), tone: 'done' }, { label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, tone: 'medium' }, { label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, tone: 'critical' }] },
-          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: IconWarning, tone: 'destructive', drillDown: 'controles_vencidos' },
-          { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, icon: IconTime, tone: 'warning', drillDown: 'controles_vencendo' },
+          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, drillDown: 'controles_vencidos', alert: (stats?.vencendoAvaliacao || 0) > 0 ? { label: `${stats?.vencendoAvaliacao} · ${t("governancaComp.controles.statVencendo")}` } : undefined, breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (stats?.total || 0) - (stats?.vencidos || 0) - (stats?.vencendoAvaliacao || 0)), tone: 'low' }, { label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, tone: 'medium' }, { label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, tone: 'critical' }] },
           {
             key: 'efetividade',
             icon: IconTest,
@@ -604,6 +603,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
               : undefined,
             target: 100,
             direction: 'higher-is-better',
+            breakdown: stats?.total ? [{ label: t('experience.stripTested'), value: stats?.controlesTestados ?? 0, tone: 'low' }, { label: t('experience.stripUntested'), value: Math.max(0, stats.total - (stats?.controlesTestados ?? 0)), tone: 'rest' }] : [],
             drillDown: 'controles_testados',
           },
           {
@@ -613,6 +613,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
             value: `${stats?.percentualPreventivos ?? 0}%`,
             context: t('cardsKpi.metricas.preventivosDe', { preventivos: stats?.preventivos ?? 0, total: stats?.total ?? 0 }),
             progress: stats?.percentualPreventivos ?? 0,
+            breakdown: stats?.total ? [{ label: t('cardsKpi.metricas.preventivos'), value: stats?.preventivos ?? 0, tone: 'low' }, { label: t('experience.stripOthers'), value: Math.max(0, stats.total - (stats?.preventivos ?? 0)), tone: 'rest' }] : [],
             drillDown: 'controles_preventivos',
           },
         ]}
