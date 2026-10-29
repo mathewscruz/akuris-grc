@@ -266,7 +266,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
     return (
       <div
         className={cn(
-          "grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:flex lg:items-stretch dark:shadow-none",
+          "akuris-stat-band grid grid-cols-2 overflow-hidden rounded-2xl border sm:grid-cols-3 lg:flex lg:items-stretch",
           className
         )}
         {...props}
@@ -281,9 +281,9 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
               index === skeletonCount - 1 && skeletonCount % 2 === 1 && "col-span-2 sm:col-span-1"
             )}
           >
-            <div className="h-3 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" />
-            <div className="mt-3 h-7 w-14 animate-pulse rounded bg-muted motion-reduce:animate-none" />
-            <div className="mt-2 h-3 w-32 max-w-full animate-pulse rounded bg-muted/80 motion-reduce:animate-none" />
+            <div className="h-3 w-24 animate-pulse rounded bg-white/10 motion-reduce:animate-none" />
+            <div className="mt-3 h-7 w-14 animate-pulse rounded bg-white/10 motion-reduce:animate-none" />
+            <div className="mt-2 h-3 w-32 max-w-full animate-pulse rounded bg-white/10/80 motion-reduce:animate-none" />
           </div>
         ))}
       </div>
