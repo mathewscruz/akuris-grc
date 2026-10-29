@@ -77,6 +77,8 @@ export const riscosVisoes = {
           foraDaMatriz: 'Fora das faixas da matriz',
         },
         severityKpiRow: {
+          totalLabel: 'Riscos ativos',
+          totalCaption: 'por nível de severidade',
           labels: {
             critico: 'Críticos',
             alto: 'Altos',
@@ -183,6 +185,8 @@ export const riscosVisoes = {
           foraDaMatriz: 'Outside the matrix bands',
         },
         severityKpiRow: {
+          totalLabel: 'Active risks',
+          totalCaption: 'by severity level',
           labels: {
             critico: 'Critical',
             alto: 'High',
