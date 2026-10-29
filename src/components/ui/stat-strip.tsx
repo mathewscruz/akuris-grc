@@ -314,9 +314,9 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
         const total = segments.reduce((acc, b) => acc + b.value, 0)
         const list = unavailable ? [] : (item.breakdown ?? [])
         const mobileIdx = index - 1
-        const caption = isHero ? (item.caption ?? item.context) : undefined
         const zero = numeric === 0 && item.zeroState ? item.zeroState.label : undefined
-        const alertLabel = item.alert?.label ?? (!isHero ? zero : undefined)
+        const caption = unavailable ? t('experience.unavailable') : isHero ? (zero ?? item.caption ?? item.context) : (!item.alert ? zero ?? item.context : undefined)
+        const alertLabel = item.alert?.label
 
         const activate = () => {
           if (item.onClick) return item.onClick()
@@ -329,7 +329,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
             <span className={cn("mt-2 block font-bold leading-none tracking-[-0.04em] tabular-nums", isHero ? "band-fg text-[3.5rem]" : "band-accent text-[2.75rem]", item.attentionPulse && "akuris-risk-attention")}>
               {unavailable ? '—' : <AnimatedMetricValue value={item.value} />}
             </span>
-            {caption && <span className="band-muted mt-1.5 block text-base">{caption}</span>}
+            {caption && <span className={cn("band-muted mt-1.5 block", isHero ? "text-base" : "text-sm")}>{caption}</span>}
             {!isHero && !unavailable && alertLabel && (
               <span className="band-accent mt-2.5 inline-flex items-center gap-1.5 text-sm font-semibold">
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>

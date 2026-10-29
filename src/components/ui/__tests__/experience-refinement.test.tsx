@@ -11,7 +11,7 @@ afterEach(cleanup);
 describe('indicadores sem conclusões implícitas', () => {
   it('zero em alerta permanece neutro sem declarar tudo em dia', () => {
     const { container } = render(<StatStrip items={[{ label: 'Vencidos', value: 0, tone: 'destructive' }]} />);
-    expect(screen.getByText('0')).toHaveClass('text-foreground');
+    expect(screen.getByText('0')).toHaveClass('band-fg');
     expect(container.textContent).not.toMatch(/tudoEmDia|Tudo em dia/);
   });
   it('aceita uma interpretação de zero explicitamente definida pelo domínio', () => {
