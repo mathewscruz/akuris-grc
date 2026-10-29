@@ -118,5 +118,16 @@ export function SeverityKpiRow({ counts, trends, onSelect }: Props) {
     };
   });
 
-  return <StatStrip items={items} />;
+  const SEV_DOT = { critico: 'critical', alto: 'high', medio: 'medium', baixo: 'low' } as const;
+  const total = sevs.reduce((a, s) => a + (counts[s] ?? 0), 0);
+  const hero: StatStripItem = {
+    key: 'total',
+    hero: true,
+    label: t('riscosVisoes.matrix.severityKpiRow.totalLabel'),
+    value: total,
+    caption: t('riscosVisoes.matrix.severityKpiRow.totalCaption'),
+    breakdown: sevs.map((sev) => ({ label: t(`riscosVisoes.matrix.severityKpiRow.labels.${sev}`), value: counts[sev] ?? 0, tone: SEV_DOT[sev] })),
+  };
+
+  return <StatStrip items={[hero, ...items]} />;
 }

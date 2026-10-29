@@ -530,7 +530,11 @@ export default function Incidentes() {
         loading={loading || statsLoading}
         error={isError || statsError}
         items={[
-          { key: 'total', label: statsCards[0].title, value: statsCards[0].value, drillDown: 'incidentes' },
+          { key: 'total', label: statsCards[0].title, value: statsCards[0].value, drillDown: 'incidentes', caption: statsCards[0].description, breakdown: [
+            { label: t('fin.comum.criticosLower'), value: statsIncidentes?.criticos || 0, tone: 'critical' },
+            { label: t('sweepRiscos.incidentes.segAltos'), value: statsIncidentes?.altos || 0, tone: 'high' },
+            { label: t('sweepRiscos.incidentes.segDemais'), value: Math.max(0, (statsIncidentes?.total || 0) - (statsIncidentes?.criticos || 0) - (statsIncidentes?.altos || 0)), tone: 'muted' },
+          ] },
           { key: 'criticosAltos', label: statsCards[1].title, value: statsCards[1].value, tone: 'destructive', drillDown: 'incidentes_criticos' },
           { key: 'investigacao', label: statsCards[2].title, value: statsCards[2].value, drillDown: 'incidentes_investigacao' },
           { key: 'mes', label: statsCards[3].title, value: statsCards[3].value },
