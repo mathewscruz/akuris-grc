@@ -238,7 +238,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
         item.direction === 'higher-is-better' ? value < item.target : item.direction === 'lower-is-better' && value > item.target
       )
       const attention = missedTarget || (value ?? 0) > 0 && ['destructive', 'warning', 'orange'].includes(item.tone ?? '')
-      return item.mobilePriority ?? (item === items[0] ? 0 : attention ? 1 : 10 + items.indexOf(item))
+      return item.mobilePriority ?? (item.hero || item === items[0] ? 0 : attention ? 1 : 10 + items.indexOf(item))
     }
     return rank(a) - rank(b)
   })
@@ -427,8 +427,8 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
         return (
           <div
             key={item.key ?? `${item.label}-${index}`}
-            data-mobile-hidden={!isHero && !mobileExpanded && mobileIdx >= 2}
-            style={{ '--metric-order': index } as React.CSSProperties}
+            data-mobile-hidden={!isHero && !mobileExpanded && mobileOrder.indexOf(item) >= 2}
+            style={{ '--metric-order': mobileOrder.indexOf(item) } as React.CSSProperties}
             className={cn(
               "akuris-stat-item relative min-w-0 border-border/60",
               isHero
@@ -448,7 +448,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
           </div>
         )
       })}
-      {items.length > 3 && (
+      {items.length > 2 && (
         <button type="button" aria-expanded={mobileExpanded} aria-controls={summaryId} onClick={() => setMobileExpanded((value) => !value)} className="order-last col-span-2 min-h-9 border-t border-border/60 px-4 py-2 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:hidden">
           {t(mobileExpanded ? 'experience.hideMetrics' : 'experience.showMetrics')}
         </button>
