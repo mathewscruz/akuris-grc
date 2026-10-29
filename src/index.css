@@ -2427,5 +2427,5 @@ input:-webkit-autofill:focus {
 [data-just-saved="true"] { animation: akuris-row-new 900ms var(--motion-ease) both; }
 
 /* Faixa contínua de KPIs (modelo C): brilho roxo suave à direita só no escuro. */
-.akuris-stat-band-glow { background: none; }
-.dark .akuris-stat-band-glow { background: radial-gradient(120% 90% at 100% 0%, hsl(var(--primary) / 0.22), transparent 70%); }
+.akuris-stat-band-glow { background: radial-gradient(90% 120% at 0% 0%, hsl(var(--primary) / 0.06), transparent 70%); }
+.dark .akuris-stat-band-glow { background: radial-gradient(90% 130% at 0% 0%, hsl(var(--primary) / 0.24), transparent 70%); }

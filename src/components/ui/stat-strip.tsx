@@ -304,7 +304,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
       )}
       {...props}
     >
-      <span aria-hidden="true" className="akuris-stat-band-glow pointer-events-none absolute inset-y-0 right-0 w-1/3" />
+      <span aria-hidden="true" className="akuris-stat-band-glow pointer-events-none absolute inset-y-0 left-0 w-1/2" />
       {ordered.map((item, index) => {
         const isHero = index === 0
         const numeric = metricNumber(item.value)
@@ -343,7 +343,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
           <span
             role="img"
             aria-label={segments.map((s) => `${s.label}: ${s.value}`).join(", ")}
-            className={cn("flex w-full gap-0.5 overflow-hidden rounded-full bg-muted", isHero ? "mt-5 h-3" : "mt-3 h-1.5")}
+            className={cn("flex w-full gap-0.5 overflow-hidden rounded-full bg-muted", isHero ? "mt-4 h-2" : "mt-3 h-1.5")}
           >
             {segments.map((s) => (
               <span
@@ -356,7 +356,7 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
         )
 
         const legend = showLegend && (
-          <span className={cn("mt-3 grid gap-x-4 gap-y-1.5", isHero ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1")}>
+          <span className={cn("mt-3 grid gap-x-4 gap-y-1.5", isHero ? "grid-cols-2 sm:flex sm:flex-wrap sm:gap-x-6" : "grid-cols-1")}>
             {item.breakdown!.map((b) => (
               <span key={b.label} className={cn("flex min-w-0 text-xs", isHero ? "flex-col gap-0.5" : "items-center justify-between gap-3")}>
                 <span className="flex min-w-0 items-center gap-2 text-foreground/85">
@@ -384,9 +384,9 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
             <span
               className={cn(
                 "mt-2 block font-semibold leading-none tracking-[-0.03em] tabular-nums",
-                isHero ? "text-5xl" : "text-3xl",
+                isHero ? "text-[3.25rem]" : "text-[1.75rem]",
                 item.attentionPulse && "akuris-risk-attention",
-                !isHero && tone === "neutral" && interactive ? "text-primary" : TONE_TEXT[tone]
+                TONE_TEXT[tone]
               )}
             >
               {unavailable ? '—' : <AnimatedMetricValue value={item.value} />}
@@ -412,13 +412,12 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
             )}
             {bar}
             {legend}
-            {!showLegend && !unavailable && item.series && item.series.length > 1 && Math.max(...item.series) > Math.min(...item.series) && (
-              <MiniArea series={item.series} tone={tone} />
-            )}
+            
             {!segments.length && progressPercent !== null && (
-              <span role="progressbar" aria-valuemin={0} aria-valuemax={progressMax} aria-valuenow={clamp(progressValue ?? 0, 0, progressMax)} aria-label={`${item.label}: ${item.value}`} className="mt-auto block h-1 overflow-hidden rounded-full bg-muted">
+              <span className="mt-auto pt-3 block">
+              <span role="progressbar" aria-valuemin={0} aria-valuemax={progressMax} aria-valuenow={clamp(progressValue ?? 0, 0, progressMax)} aria-label={`${item.label}: ${item.value}`} className="block h-1 overflow-hidden rounded-full bg-muted">
                 <span className={cn("akuris-motion-data block h-full rounded-full transition-[width] motion-reduce:transition-none", TONE_PROGRESS[tone])} style={{ width: `${progressPercent}%` }} />
-              </span>
+              </span></span>
             )}
           </>
         )
