@@ -63,6 +63,42 @@ export interface StatStripItem {
   attentionPulse?: boolean
   /** Série real (mais antiga → mais recente) para o mini gráfico de área. */
   series?: number[]
+  /** Divisão real do valor (barra + legenda). Itens com valor 0 continuam na legenda. */
+  breakdown?: StatStripBreakdown[]
+  /** Linha de alerta curta com ícone de relógio (ex.: "6 atrasados"). */
+  alert?: { label: string; tone?: StatStripTone }
+  /** Legenda sob o número do destaque (ex.: "riscos ativos"). */
+  caption?: string
+  /** Força este item como destaque (por omissão, o primeiro). */
+  hero?: boolean
+}
+
+export type StatStripBreakdownTone =
+  | "critical" | "high" | "medium" | "low" | "done" | "active" | "rest" | "muted" | "primary"
+
+export interface StatStripBreakdown {
+  label: string
+  value: number
+  tone: StatStripBreakdownTone
+}
+
+export const BREAKDOWN_DOT: Record<StatStripBreakdownTone, string> = {
+  critical: "bg-severity-critical",
+  high: "bg-severity-high",
+  medium: "bg-severity-medium",
+  low: "bg-severity-low",
+  done: "bg-state-done",
+  active: "bg-state-active",
+  rest: "bg-state-rest",
+  muted: "bg-muted-foreground/50",
+  primary: "bg-primary",
+}
+
+/** Percentagens inteiras de cada segmento; soma 0 → lista vazia (sem barra). */
+export function breakdownSegments(items: StatStripBreakdown[] = []) {
+  const total = items.reduce((acc, b) => acc + Math.max(0, b.value), 0)
+  if (total <= 0) return []
+  return items.filter((b) => b.value > 0).map((b) => ({ ...b, percent: (b.value / total) * 100 }))
 }
 
 interface StatStripProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -256,25 +292,28 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
 
   if (!items || items.length === 0) return null
 
+  const heroIndex = Math.max(0, items.findIndex((it) => it.hero))
+  const ordered = [items[heroIndex], ...items.filter((_, i) => i !== heroIndex)]
+
   return (
     <div
       id={summaryId}
       className={cn(
-        "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:flex lg:items-stretch",
+        "akuris-stat-band relative grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card dark:shadow-none lg:flex lg:items-stretch",
         className
       )}
       {...props}
     >
-      {items.map((item, index) => {
+      <span aria-hidden="true" className="akuris-stat-band-glow pointer-events-none absolute inset-y-0 right-0 w-1/3" />
+      {ordered.map((item, index) => {
+        const isHero = index === 0
         const numeric = metricNumber(item.value)
         const positive = numeric !== null && numeric > 0
         const unavailable = error || item.dataState === 'unavailable'
         const zeroState = numeric === 0 ? item.zeroState : undefined
         const hasTarget = item.target !== undefined && item.direction && item.direction !== "neutral" && numeric !== null
         const targetMet = hasTarget && (
-          item.direction === "higher-is-better"
-            ? numeric >= item.target!
-            : numeric <= item.target!
+          item.direction === "higher-is-better" ? numeric >= item.target! : numeric <= item.target!
         )
         const tone: StatStripTone = unavailable ? "neutral" : hasTarget
           ? targetMet ? "success" : item.tone ?? "warning"
@@ -287,111 +326,130 @@ export function StatStrip({ items: itemsIn, serieTabela, loading = false, error 
           ? clamp((progressValue / progressMax) * 100, 0, 100)
           : null
         const rawContext = unavailable ? t('experience.unavailable') : zeroState?.label ?? item.context ?? item.hint
-        // Sem comparação real não mostramos texto de "sem dados"/"sem histórico".
         const context = rawContext && /(sem dados|sem hist[oó]rico|no data|no comparable|no history)/i.test(rawContext) ? undefined : rawContext
-        const targetLabel = item.target !== undefined
-          ? t("cardsKpi.metricas.meta", { value: item.target })
-          : undefined
+        const targetLabel = item.target !== undefined ? t("cardsKpi.metricas.meta", { value: item.target }) : undefined
         const supportingText = [context, targetLabel].filter(Boolean).join(" · ")
+        const segments = unavailable ? [] : breakdownSegments(item.breakdown)
+        const breakdownTotal = segments.reduce((a, b) => a + b.value, 0)
+        const showLegend = !unavailable && !!item.breakdown?.length && breakdownTotal > 0
+        const mobileIdx = index - 1
 
         const activate = () => {
           if (item.onClick) return item.onClick()
           if (item.drillDown) drill.open(item.drillDown)
         }
 
+        const bar = segments.length > 0 && (
+          <span
+            role="img"
+            aria-label={segments.map((s) => `${s.label}: ${s.value}`).join(", ")}
+            className={cn("flex w-full gap-0.5 overflow-hidden rounded-full bg-muted", isHero ? "mt-5 h-3" : "mt-3 h-1.5")}
+          >
+            {segments.map((s) => (
+              <span
+                key={s.label}
+                className={cn("akuris-motion-data block h-full transition-[width] motion-reduce:transition-none", BREAKDOWN_DOT[s.tone])}
+                style={{ width: `${s.percent}%` }}
+              />
+            ))}
+          </span>
+        )
+
+        const legend = showLegend && (
+          <span className={cn("mt-3 grid gap-x-4 gap-y-1.5", isHero ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1")}>
+            {item.breakdown!.map((b) => (
+              <span key={b.label} className={cn("flex min-w-0 text-xs", isHero ? "flex-col gap-0.5" : "items-center justify-between gap-3")}>
+                <span className="flex min-w-0 items-center gap-2 text-foreground/85">
+                  <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", BREAKDOWN_DOT[b.tone])} />
+                  <span className="truncate">{b.label}</span>
+                </span>
+                <span className={cn("tabular-nums text-muted-foreground", isHero ? "pl-4" : "font-medium text-foreground")}>
+                  {isHero ? `${b.value} (${Math.round((b.value / breakdownTotal) * 100)}%)` : b.value}
+                </span>
+              </span>
+            ))}
+          </span>
+        )
+
         const content = (
           <>
             <span className="flex min-h-4 min-w-0 items-start justify-between gap-3">
-              <span className="line-clamp-2 text-micro font-semibold leading-4 tracking-[0.02em] text-muted-foreground">
+              <span className="line-clamp-2 text-micro font-semibold uppercase leading-4 tracking-[0.12em] text-muted-foreground">
                 {item.label}
               </span>
               {interactive && (
-                <span
-                  aria-hidden="true"
-                  className="shrink-0 -translate-x-1 text-sm leading-none text-muted-foreground/60 opacity-0 transition-[opacity,transform] duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
-                >
-                  →
-                </span>
+                <span aria-hidden="true" className="shrink-0 -translate-x-1 text-sm leading-none text-muted-foreground/60 opacity-0 transition-[opacity,transform] duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none">→</span>
               )}
             </span>
             <span
               className={cn(
-                "mt-2 block text-2xl font-semibold leading-none tracking-[-0.025em] tabular-nums",
+                "mt-2 block font-semibold leading-none tracking-[-0.03em] tabular-nums",
+                isHero ? "text-5xl" : "text-3xl",
                 item.attentionPulse && "akuris-risk-attention",
-                TONE_TEXT[tone]
+                !isHero && tone === "neutral" && interactive ? "text-primary" : TONE_TEXT[tone]
               )}
             >
               {unavailable ? '—' : <AnimatedMetricValue value={item.value} />}
             </span>
-            <span className={cn("mt-1.5 block min-h-4 line-clamp-2 text-micro leading-4", TONE_CONTEXT[tone])}>
-              {supportingText || "\u00a0"}
-            </span>
+            {isHero && item.caption && <span className="mt-1.5 block text-sm text-muted-foreground">{item.caption}</span>}
+            {!unavailable && item.alert && (
+              <span className={cn("mt-2 inline-flex items-center gap-1.5 text-xs font-semibold", TONE_CONTEXT[item.alert.tone ?? "neutral"] === "text-muted-foreground" ? "text-primary" : TONE_CONTEXT[item.alert.tone ?? "neutral"])}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                {item.alert.label}
+              </span>
+            )}
+            {supportingText && (
+              <span className={cn("mt-1.5 block line-clamp-2 text-micro leading-4", TONE_CONTEXT[tone])}>{supportingText}</span>
+            )}
             {!unavailable && item.trend && (
-              <span
-                className={cn(
-                  "mt-1 inline-flex text-micro font-medium leading-none",
-                  item.trend.favorable === true && "text-state-done",
-                  item.trend.favorable === false && "text-destructive",
-                  item.trend.favorable === undefined && "text-muted-foreground"
-                )}
-              >
+              <span className={cn("mt-1 inline-flex text-micro font-medium leading-none",
+                item.trend.favorable === true && "text-state-done",
+                item.trend.favorable === false && "text-destructive",
+                item.trend.favorable === undefined && "text-muted-foreground")}>
                 {item.trend.direction === "up" ? "↑ " : item.trend.direction === "down" ? "↓ " : ""}
                 {item.trend.label}
               </span>
             )}
-            {!unavailable && item.series && item.series.length > 1 && Math.max(...item.series) > Math.min(...item.series) && (
+            {bar}
+            {legend}
+            {!showLegend && !unavailable && item.series && item.series.length > 1 && Math.max(...item.series) > Math.min(...item.series) && (
               <MiniArea series={item.series} tone={tone} />
             )}
-            {progressPercent !== null && (
-              <span
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={progressMax}
-                aria-valuenow={clamp(progressValue ?? 0, 0, progressMax)}
-                aria-label={`${item.label}: ${item.value}`}
-                className="mt-auto block h-1 overflow-hidden rounded-full bg-muted pt-0"
-              >
-                <span
-                  className={cn("akuris-motion-data block h-full rounded-full transition-[width] motion-reduce:transition-none", TONE_PROGRESS[tone])}
-                  style={{ width: `${progressPercent}%` }}
-                />
+            {!segments.length && progressPercent !== null && (
+              <span role="progressbar" aria-valuemin={0} aria-valuemax={progressMax} aria-valuenow={clamp(progressValue ?? 0, 0, progressMax)} aria-label={`${item.label}: ${item.value}`} className="mt-auto block h-1 overflow-hidden rounded-full bg-muted">
+                <span className={cn("akuris-motion-data block h-full rounded-full transition-[width] motion-reduce:transition-none", TONE_PROGRESS[tone])} style={{ width: `${progressPercent}%` }} />
               </span>
             )}
           </>
         )
 
+        const pad = isHero ? "px-5 py-5 sm:px-6" : "px-4 py-4 sm:px-5 sm:py-5"
         return (
           <div
             key={item.key ?? `${item.label}-${index}`}
-            data-mobile-hidden={!mobileExpanded && mobileOrder.indexOf(item) >= 2}
-            style={{ '--metric-order': mobileOrder.indexOf(item) } as React.CSSProperties}
+            data-mobile-hidden={!isHero && !mobileExpanded && mobileIdx >= 2}
+            style={{ '--metric-order': index } as React.CSSProperties}
             className={cn(
-              "akuris-stat-item relative min-h-[96px] overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.03)] dark:shadow-none sm:min-h-[112px] lg:flex-1 lg:min-w-0",
-              mobileExpanded && mobileOrder.indexOf(item) === items.length - 1 && items.length % 2 === 1 && "col-span-2 sm:col-span-1"
+              "akuris-stat-item relative min-w-0 border-border/60",
+              isHero
+                ? "col-span-2 border-b lg:flex-[1.6] lg:border-b-0"
+                : cn("lg:flex-1 lg:border-l", mobileIdx % 2 === 1 && "border-l", mobileIdx >= 2 && "border-t lg:border-t-0",
+                    mobileIdx === ordered.length - 2 && mobileIdx % 2 === 0 && "col-span-2 lg:col-span-1")
             )}
           >
-            <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-0.5", TONE_ACCENT[tone])} />
-
             {interactive ? (
-              <button
-                type="button"
-                onClick={activate}
-                title={item.hint ?? item.label}
-                aria-label={`${item.label}: ${item.value}`}
-                className="group flex h-full w-full cursor-pointer flex-col items-stretch justify-start px-4 py-3 sm:px-5 sm:py-4 text-left transition-colors duration-150 hover:bg-accent/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none"
-              >
+              <button type="button" onClick={activate} title={item.hint ?? item.label} aria-label={`${item.label}: ${item.value}`}
+                className={cn("group relative flex h-full w-full cursor-pointer flex-col items-stretch justify-start text-left transition-colors duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none", pad)}>
                 {content}
               </button>
             ) : (
-              <div className="flex h-full flex-col justify-start px-4 py-3 sm:px-5 sm:py-4" title={item.hint ?? item.label}>
-                {content}
-              </div>
+              <div className={cn("relative flex h-full flex-col justify-start", pad)} title={item.hint ?? item.label}>{content}</div>
             )}
           </div>
         )
       })}
-      {items.length > 2 && (
-        <button type="button" aria-expanded={mobileExpanded} aria-controls={summaryId} onClick={() => setMobileExpanded((value) => !value)} className="order-last col-span-2 min-h-9 border-t px-4 py-2 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:hidden">
+      {items.length > 3 && (
+        <button type="button" aria-expanded={mobileExpanded} aria-controls={summaryId} onClick={() => setMobileExpanded((value) => !value)} className="order-last col-span-2 min-h-9 border-t border-border/60 px-4 py-2 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:hidden">
           {t(mobileExpanded ? 'experience.hideMetrics' : 'experience.showMetrics')}
         </button>
       )}
