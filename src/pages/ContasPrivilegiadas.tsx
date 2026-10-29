@@ -393,7 +393,7 @@ export default function ContasPrivilegiadas() {
         loading={isLoading}
         error={isError}
         items={[
-          { key: 'ativas', label: t('sweepDenuncias.contas.cardContasAtivas'), value: contasAtivas, onClick: () => { setStatusFilter('ativo'); setSearchTerm(''); setNivelFilter('todos'); } },
+          { key: 'ativas', label: t('sweepDenuncias.contas.cardContasAtivas'), breakdown: [{ label: t('sweepDenuncias.contas.cardContasAtivas'), value: contasAtivas, tone: 'done' }, { label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, tone: 'medium' }, { label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'critical' }], value: contasAtivas, onClick: () => { setStatusFilter('ativo'); setSearchTerm(''); setNivelFilter('todos'); } },
           { key: 'pendentes', label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, onClick: () => { setStatusFilter('pendente_aprovacao'); setSearchTerm(''); setNivelFilter('todos'); } },
           { key: 'vencendo', label: t('residuos.geral.vencendo30'), value: contasVencendo, tone: 'warning', drillDown: 'contas_vencendo' },
           { key: 'expiradas', label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'destructive', onClick: () => { setStatusFilter('expirado'); setSearchTerm(''); setNivelFilter('todos'); } },

@@ -357,7 +357,7 @@ export default function SistemasContent({ actionsSlot }: { actionsSlot?: HTMLEle
         error={isError}
         loading={isLoading}
         items={[
-          { key: 'total', label: t("governancaComp.sistemas.statTotal"), value: sistemas.length, drillDown: 'sistemas' },
+          { key: 'total', label: t("governancaComp.sistemas.statTotal"), value: sistemas.length, drillDown: 'sistemas', breakdown: [{ label: t("governancaComp.sistemas.statAtivos"), value: sistemasAtivos, tone: 'done' }, { label: t("governancaComp.sistemas.statInativos"), value: sistemas.length - sistemasAtivos, tone: 'muted' }] },
           { key: 'ativos', label: t("governancaComp.sistemas.statAtivos"), value: sistemasAtivos, drillDown: 'sistemas_ativos' },
           { key: 'criticidade_alta', label: t("governancaComp.sistemas.statCriticidadeAlta"), value: sistemasCriticos, tone: 'warning', drillDown: 'sistemas_criticos' },
           { key: 'inativos', label: t("governancaComp.sistemas.statInativos"), value: sistemas.length - sistemasAtivos, drillDown: 'sistemas_inativos' },

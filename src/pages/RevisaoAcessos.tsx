@@ -368,7 +368,7 @@ export default function RevisaoAcessos() {
         loading={statsLoading}
         error={statsError}
         items={[
-          { key: 'emAndamento', label: t('residuos.geral.emAndamento'), value: stats?.emAndamento || 0, drillDown: 'revisao_acessos' },
+          { key: 'emAndamento', label: t('residuos.geral.emAndamento'), value: stats?.emAndamento || 0, drillDown: 'revisao_acessos', breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (stats?.emAndamento || 0) - ((stats?.vencidas || 0))), tone: 'active' }, { label: t('sweepDenuncias.revisao.cardVencidas'), value: stats?.vencidas || 0, tone: 'critical' }, { label: t('fin.comum.concluidas'), value: stats?.concluidas || 0, tone: 'done' }] },
           { key: 'concluidas', label: t('fin.comum.concluidas'), value: stats?.concluidas || 0 },
           { key: 'vencidas', label: t('sweepDenuncias.revisao.cardVencidas'), value: stats?.vencidas || 0, tone: 'destructive', drillDown: 'revisao_acessos_vencidas' },
           { key: 'contasRevisadas', label: t('sweepDenuncias.revisao.cardContasRevisadas'), value: stats?.contasRevisadas || 0 },

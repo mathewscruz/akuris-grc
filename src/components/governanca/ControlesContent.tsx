@@ -582,7 +582,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
         loading={statsLoading}
         error={statsError}
         items={[
-          { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: IconShield, drillDown: 'controles' },
+          { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: IconShield, drillDown: 'controles', breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (stats?.total || 0) - ((stats?.vencidos || 0) + (stats?.vencendoAvaliacao || 0))), tone: 'done' }, { label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, tone: 'medium' }, { label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, tone: 'critical' }] },
           { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: IconWarning, tone: 'destructive', drillDown: 'controles_vencidos' },
           { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, icon: IconTime, tone: 'warning', drillDown: 'controles_vencendo' },
           {

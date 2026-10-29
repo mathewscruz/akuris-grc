@@ -259,7 +259,7 @@ export default function Continuidade() {
         loading={statsLoading}
         error={statsError || isError}
         items={[
-          { key: 'total', label: t('cardsKpi.continuidade.totalPlanos'), value: stats?.total ?? 0, drillDown: 'continuidade' },
+          { key: 'total', label: t('cardsKpi.continuidade.totalPlanos'), value: stats?.total ?? 0, drillDown: 'continuidade', breakdown: [{ label: t('cardsKpi.sweep.continuidade.planosAtivos'), value: stats?.ativos ?? 0, tone: 'done' }, { label: t('cardsKpi.continuidade.emRevisao'), value: stats?.emRevisao ?? 0, tone: 'medium' }, { label: t('experience.stripRest'), value: Math.max(0, (stats?.total ?? 0) - ((stats?.ativos ?? 0) + (stats?.emRevisao ?? 0))), tone: 'rest' }] },
           { key: 'ativos', label: t('cardsKpi.sweep.continuidade.planosAtivos'), value: stats?.ativos ?? 0, drillDown: 'continuidade_ativos' },
           { key: 'emRevisao', label: t('cardsKpi.continuidade.emRevisao'), value: stats?.emRevisao ?? 0, tone: 'warning', drillDown: 'continuidade_revisao' },
           { key: 'testes', label: t('cardsKpi.continuidade.testesRealizados'), value: stats?.testesRealizados ?? 0, drillDown: 'continuidade_testes' },

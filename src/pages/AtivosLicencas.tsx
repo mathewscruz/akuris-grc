@@ -401,7 +401,7 @@ export default function AtivosLicencas() {
         error={isError || statsError}
         loading={statsLoading}
         items={[
-          { key: 'total', label: t('cardsKpi.licencas.totalLicencas'), value: stats?.total ?? 0, drillDown: 'ativos_licencas' },
+          { key: 'total', label: t('cardsKpi.licencas.totalLicencas'), value: stats?.total ?? 0, drillDown: 'ativos_licencas', breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (stats?.total ?? 0) - ((stats?.vencendo30dias ?? 0) + (stats?.vencidas ?? 0))), tone: 'done' }, { label: t('residuos.geral.vencendo30'), value: stats?.vencendo30dias ?? 0, tone: 'medium' }, { label: t('sweepDados.ativos.kpiVencidasTitle'), value: stats?.vencidas ?? 0, tone: 'critical' }] },
           { key: 'ativas', label: t('cardsKpi.licencas.licencasAtivas'), value: stats?.ativas ?? 0, drillDown: 'licencas_ativas' },
           { key: 'aVencer', label: t('residuos.geral.vencendo30'), value: stats?.vencendo30dias ?? 0, tone: 'warning', drillDown: 'licencas_a_vencer' },
           { key: 'vencidas', label: t('sweepDados.ativos.kpiVencidasTitle'), value: stats?.vencidas ?? 0, tone: 'destructive', drillDown: 'licencas_vencidas' },

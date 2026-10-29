@@ -686,7 +686,7 @@ export default function PlanosAcao() {
         loading={listLoading}
         error={listError}
         items={[
-          { key: 'total', label: t('planosAcao.statTotal'), value: stats.total, onClick: () => { setStatusFilter('todos'); setViewMode('lista'); } },
+          { key: 'total', label: t('planosAcao.statTotal'), breakdown: [{ label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'medium' }, { label: t('planosAcao.statInProgress'), value: stats.emAndamento, tone: 'active' }, { label: t('planosAcao.statCompleted'), value: stats.concluidos, tone: 'done' }, { label: t('planosAcao.statOverdue'), value: stats.atrasados, tone: 'critical' }], value: stats.total, onClick: () => { setStatusFilter('todos'); setViewMode('lista'); } },
           { key: 'pendentes', label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'warning', onClick: () => { setStatusFilter('pendente'); setViewMode('lista'); } },
           { key: 'emAndamento', label: t('planosAcao.statInProgress'), value: stats.emAndamento, onClick: () => { setStatusFilter('em_andamento'); setViewMode('lista'); } },
           { key: 'concluidos', label: t('planosAcao.statCompleted'), value: stats.concluidos, onClick: () => { setStatusFilter('concluido'); setViewMode('lista'); } },

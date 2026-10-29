@@ -423,7 +423,7 @@ export default function AtivosChaves() {
         error={isError || statsError}
         loading={statsLoading}
         items={[
-          { key: 'total', label: t('cardsKpi.chaves.totalChaves'), value: stats?.total ?? 0, drillDown: 'ativos_chaves' },
+          { key: 'total', label: t('cardsKpi.chaves.totalChaves'), value: stats?.total ?? 0, drillDown: 'ativos_chaves', breakdown: [{ label: t('fin.comum.criticasF'), value: stats?.criticas ?? 0, tone: 'critical' }, { label: t('experience.stripRest'), value: Math.max(0, (stats?.total ?? 0) - ((stats?.criticas ?? 0))), tone: 'rest' }] },
           { key: 'ativas', label: t('sweepDados.ativos.kpiChavesAtivasTitle'), value: stats?.ativas ?? 0, drillDown: 'chaves_ativas' },
           { key: 'rotacoesPendentes', label: t('fin.chaves.rotacoesPendentes'), value: stats?.rotacao30dias ?? 0, tone: 'warning', drillDown: 'chaves_rotacao' },
           { key: 'criticas', label: t('fin.comum.criticasF'), value: stats?.criticas ?? 0, tone: 'destructive', drillDown: 'chaves_criticas' },

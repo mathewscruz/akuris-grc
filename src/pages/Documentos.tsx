@@ -523,7 +523,7 @@ export default function Documentos() {
           loading={statsLoading}
           error={statsError}
           items={[
-            { key: 'total', label: t('documentos.lista.totalDocumentos'), value: statsDocumentos?.total || 0, drillDown: 'documentos' },
+            { key: 'total', label: t('documentos.lista.totalDocumentos'), value: statsDocumentos?.total || 0, drillDown: 'documentos', breakdown: [{ label: t('experience.stripOnTrack'), value: Math.max(0, (statsDocumentos?.total || 0) - ((statsDocumentos?.vencidos || 0) + (statsDocumentos?.vencendo30Dias || 0))), tone: 'done' }, { label: t('documentos.lista.vencendo30'), value: statsDocumentos?.vencendo30Dias || 0, tone: 'medium' }, { label: t('documentos.lista.vencidosKpi'), value: statsDocumentos?.vencidos || 0, tone: 'critical' }] },
             { key: 'vencidos', label: t('documentos.lista.vencidosKpi'), value: statsDocumentos?.vencidos || 0, tone: (statsDocumentos?.vencidos || 0) > 0 ? 'destructive' : undefined, drillDown: 'documentos_vencidos' },
             { key: 'vencendo30', label: t('documentos.lista.vencendo30'), value: statsDocumentos?.vencendo30Dias || 0, tone: 'warning', drillDown: 'documentos_vencendo' },
             { key: 'pendentes', label: t('documentos.lista.pendentesAprovacaoKpi'), value: statsDocumentos?.pendentesAprovacao || 0, tone: (statsDocumentos?.pendentesAprovacao || 0) > 0 ? 'warning' : undefined, drillDown: 'documentos_pendentes' },
