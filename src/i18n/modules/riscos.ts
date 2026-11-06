@@ -59,6 +59,8 @@ const riscosRaw = {
       changed: 'Status alterado para {status}',
       undo: 'Desfazer',
       error: 'Não foi possível alterar o status',
+      blockedNoTreatment: 'Para usar "{status}", cadastre ao menos um tratamento.',
+      blockedTreatments: 'O status segue os tratamentos: com {concluidos} de {requeridos} concluídos, o risco fica em "{esperado}".',
       addTreatment: 'Adicionar tratamento',
     },
     level: {
@@ -249,6 +251,8 @@ const riscosRaw = {
       changed: 'Status changed to {status}',
       undo: 'Undo',
       error: 'Could not change the status',
+      blockedNoTreatment: 'To use "{status}", add at least one treatment.',
+      blockedTreatments: 'Status follows the treatments: with {concluidos} of {requeridos} done, the risk stays "{esperado}".',
       addTreatment: 'Add treatment',
     },
     level: {

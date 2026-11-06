@@ -118,7 +118,7 @@ export function deriveRiscoStatus(
     : ((tratamentos as TratamentoResumo | null | undefined) ?? { requeridos: 0, concluidos: 0 });
 
   const esperado = podeMarcarTratado(resumo)
-    ? STATUS_TRATADO
+    ? (normalizado === 'monitorado' ? original : STATUS_TRATADO)
     : resumo.requeridos > 0
       ? 'em_tratamento'
       : ['tratado', 'em_tratamento'].includes(normalizado)

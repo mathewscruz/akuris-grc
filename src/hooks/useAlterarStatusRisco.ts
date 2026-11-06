@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
-import { motivoBloqueioTratado, podeMarcarTratado, resumirTratamentos, STATUS_TRATADO } from '@/components/riscos/risk-status';
+import { deriveRiscoStatus, motivoBloqueioTratado, podeMarcarTratado, resumirTratamentos, STATUS_TRATADO } from '@/components/riscos/risk-status';
 
 /** Muda o status de um risco direto da tabela/painel, com "Desfazer". */
 export function useAlterarStatusRisco() {
@@ -17,12 +17,20 @@ export function useAlterarStatusRisco() {
 
   const alterar = useCallback(async (riscoId: string, novo: string, anterior?: string) => {
     if (!empresaId) return false;
-    if (novo === STATUS_TRATADO) {
+    {
+      // A tela deriva o status dos tratamentos; bloqueia mudanças que voltariam após recarregar.
       const { data, error } = await supabase
         .from('riscos_tratamentos').select('status').eq('risco_id', riscoId);
       if (error) { toast.error(t('riscos.page.move.error')); return false; }
       const resumo = resumirTratamentos(data ?? []);
-      if (!podeMarcarTratado(resumo)) { toast.error(motivoBloqueioTratado(resumo)); return false; }
+      if (novo === STATUS_TRATADO && !podeMarcarTratado(resumo)) { toast.error(motivoBloqueioTratado(resumo)); return false; }
+      const esperado = deriveRiscoStatus(novo, resumo).status;
+      if (esperado !== novo) {
+        toast.error(resumo.requeridos === 0
+          ? t('riscos.page.move.blockedNoTreatment', { status: t(`riscos.page.status.${novo}`) })
+          : t('riscos.page.move.blockedTreatments', { concluidos: resumo.concluidos, requeridos: resumo.requeridos, esperado: t(`riscos.page.status.${esperado}`) }));
+        return false;
+      }
     }
     const label = t(`riscos.page.status.${novo}`);
     const listKey = ['riscos', empresaId];
