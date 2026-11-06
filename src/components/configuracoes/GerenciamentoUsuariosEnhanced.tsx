@@ -580,12 +580,26 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         body: { email: usuario.email, userId: usuario.user_id }
       });
 
+      const resetErrorKeys: Record<string, string> = {
+        rate_limited: 'admin.usuarios.resetErrRateLimited',
+        forbidden: 'admin.usuarios.resetErrForbidden',
+        profile_missing: 'admin.usuarios.resetErrNotFound',
+        delivery_unavailable: 'admin.usuarios.resetErrUnavailable',
+        service_unavailable: 'admin.usuarios.resetErrUnavailable',
+        link_generation_failed: 'admin.usuarios.resetErrUnavailable',
+      };
+      const mensagemPorCodigo = (code?: string) =>
+        t(code && resetErrorKeys[code] ? resetErrorKeys[code] : 'admin.usuarios.toastErrorResetPassword');
       if (error) {
-        const mensagem = await extrairMensagemEdge(error);
-        throw new Error(mensagem || t('admin.usuarios.toastErrorResetPassword'));
+        let code: string | undefined;
+        try {
+          const ctx = (error as any)?.context as Response | undefined;
+          if (ctx && typeof ctx.clone === 'function') code = JSON.parse(await ctx.clone().text())?.error_code;
+        } catch { /* ignora */ }
+        throw new Error(mensagemPorCodigo(code));
       }
       if (data && (data as any).success === false) {
-        throw new Error((data as any).error || t('admin.usuarios.toastErrorResetPassword'));
+        throw new Error(mensagemPorCodigo((data as any).error_code));
       }
 
       toast.success(t('admin.usuarios.toastPasswordReset', { email: usuario.email }));
