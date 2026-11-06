@@ -19,6 +19,7 @@ describe('QA-065 coerência de status', () => {
   it('deriva o ciclo de vida a partir dos tratamentos', () => {
     expect(deriveRiscoStatus('analisado', [{ status: 'pendente' }]).status).toBe('em_tratamento');
     expect(deriveRiscoStatus('em_tratamento', [{ status: 'concluído' }]).status).toBe('tratado');
+    expect(deriveRiscoStatus('monitorado', [{ status: 'concluído' }]).status).toBe('monitorado');
     expect(deriveRiscoStatus('em_revisao', [{ status: 'pendente' }]).status).toBe('em_revisao');
   });
   it('interrompe a derivação quando a consulta de tratamentos falha', () => {
