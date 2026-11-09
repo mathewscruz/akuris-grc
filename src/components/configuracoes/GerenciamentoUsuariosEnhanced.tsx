@@ -89,6 +89,7 @@ interface Usuario {
   created_at: string;
   permission_profile_id?: string;
   invitation_sent_at?: string | null;
+  invitation_error?: string | null;
   empresas?: {
     nome: string;
   };
@@ -163,7 +164,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         .from('profiles')
         .select(`
           id, user_id, nome, email, role, ativo, empresa_id, foto_url,
-          created_at, permission_profile_id, invitation_sent_at,
+          created_at, permission_profile_id, invitation_sent_at, invitation_error,
           empresas ( nome ),
           permission_profiles ( name )
         `)
@@ -196,6 +197,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         created_at: usuario.created_at,
         permission_profile_id: usuario.permission_profile_id,
         invitation_sent_at: usuario.invitation_sent_at ?? null,
+        invitation_error: usuario.invitation_error ?? null,
         empresas: usuario.empresas,
         permission_profiles: usuario.permission_profiles,
       }));
@@ -783,6 +785,17 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           );
         }
         
+        if (accessInfo?.first_access_pending && usuario.invitation_error) {
+          return (
+            <div className="space-y-1">
+              <Badge variant="destructive" className="whitespace-nowrap">{t('admin.usuarios.conviteFalhou')}</Badge>
+              <button type="button" className="block text-xs text-primary hover:underline" onClick={() => resendWelcomeEmail(usuario)}>
+                {t('admin.usuarios.reenviarConvite')}
+              </button>
+            </div>
+          );
+        }
+
         if (accessInfo?.first_access_pending) {
           // Mostra quando o convite saiu — a informacao que faltava. Com
           // `IconTime` do catalogo e nao `Clock` do lucide: relogio ja tem uma

@@ -122,7 +122,7 @@ export async function handleResendWelcomeEmail(req: Request, dependencies = { re
     try {
       const { error: metadataError } = await supabaseAdmin
         .from('profiles')
-        .update({ invitation_sent_at: new Date().toISOString() })
+        .update({ invitation_sent_at: new Date().toISOString(), invitation_error: null })
         .eq('user_id', userProfile.user_id)
       if (metadataError) console.error('resend-welcome-email: invitation timestamp update failed')
     } catch (e) {

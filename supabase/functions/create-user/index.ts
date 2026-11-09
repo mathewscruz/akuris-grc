@@ -68,13 +68,21 @@ Deno.serve(async (req) => {
           body: { userName: nome, userEmail: email, setupPasswordUrl, companyName: company?.data?.nome || 'Akuris' },
         })
         emailSent = !error && data?.success !== false
-        if (emailSent) {
-          let update = client.from('profiles').update({ invitation_sent_at: new Date().toISOString() }).eq('user_id', user.id)
+        {
+          const motivo = emailSent ? null : String((data as { error?: string })?.error || error?.message || 'send_failed').slice(0, 200)
+          if (!emailSent) console.error('Welcome email failed:', motivo)
+          const campos = emailSent ? { invitation_sent_at: new Date().toISOString(), invitation_error: null } : { invitation_error: motivo }
+          let update = client.from('profiles').update(campos).eq('user_id', user.id)
           update = empresaId ? update.eq('empresa_id', empresaId) : update.is('empresa_id', null)
           const { error: updateError } = await update
           if (updateError) console.error('Could not save invitation timestamp', updateError.code)
         }
-      } catch { console.error('Could not send registration email') }
+      } catch (e) {
+        console.error('Could not send registration email', e instanceof Error ? e.message : '')
+        await client.from('profiles').update({ invitation_error: 'send_exception' }).eq('user_id', user.id)
+      }
+    } else {
+      await client.from('profiles').update({ invitation_error: 'link_generation_failed' }).eq('user_id', user.id)
     }
     }
     const tarefa = enviarConvite().catch(() => console.error('Background invitation failed'))
