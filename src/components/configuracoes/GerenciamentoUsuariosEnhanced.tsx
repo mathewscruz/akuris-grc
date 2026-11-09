@@ -572,6 +572,31 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
   };
 
+  const [corrigindo, setCorrigindo] = useState<Usuario | null>(null);
+  const [novoEmail, setNovoEmail] = useState('');
+  const [salvandoEmail, setSalvandoEmail] = useState(false);
+
+  const corrigirEmailEReenviar = async () => {
+    if (!corrigindo) return;
+    const email = novoEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      toast.error(t('admin.usuarios.corrigirEmailInvalido'));
+      return;
+    }
+    setSalvandoEmail(true);
+    try {
+      await resendFirstAccessEmail(corrigindo.user_id, t('admin.usuarios.toastErrorResendInvite'), email);
+      toast.success(t('admin.usuarios.corrigirEmailSucesso', { email }));
+      setCorrigindo(null);
+      await fetchUsuarios();
+      await fetchUsersAccessInfo(usuarios.map(u => u.user_id));
+    } catch (error: any) {
+      toast.error(error.message || t('admin.usuarios.toastErrorResendInvite'));
+    } finally {
+      setSalvandoEmail(false);
+    }
+  };
+
   const resetPassword = async (usuario: Usuario) => {
     try {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: true }));
@@ -867,6 +892,12 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 {t('admin.usuarios.actionReenviarConvite')}
               </DropdownMenuItem>
             )}
+            {shouldShowResendButton(usuario) && (
+              <DropdownMenuItem onClick={() => { setCorrigindo(usuario); setNovoEmail(usuario.email); }}>
+                <IconEdit className="h-4 w-4 mr-2" />
+                {t('admin.usuarios.actionCorrigirEmail')}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="text-destructive"
@@ -1134,6 +1165,35 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           description: searchTerm ? t('admin.usuarios.emptyDescriptionFiltered') : t('admin.usuarios.emptyDescriptionEmpty'),
         }}
       />
+
+      <Dialog open={!!corrigindo} onOpenChange={(o) => { if (!o && !salvandoEmail) setCorrigindo(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('admin.usuarios.corrigirEmailTitulo')}</DialogTitle>
+            <DialogDescription>
+              {t('admin.usuarios.corrigirEmailDescricao', { email: corrigindo?.email ?? '' })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="novo-email-convite" className="text-sm font-medium">{t('admin.usuarios.corrigirEmailNovo')}</label>
+            <Input
+              id="novo-email-convite"
+              type="email"
+              value={novoEmail}
+              onChange={(e) => setNovoEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') corrigirEmailEReenviar(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCorrigindo(null)} disabled={salvandoEmail}>{t('common.cancel')}</Button>
+            <Button onClick={corrigirEmailEReenviar} disabled={salvandoEmail || !novoEmail.trim()}>
+              {salvandoEmail && <AkurisPulse size={16} className="mr-2" />}
+              {t('admin.usuarios.corrigirEmailSalvar')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={deleteDialogOpen}

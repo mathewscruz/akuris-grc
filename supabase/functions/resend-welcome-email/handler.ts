@@ -3,6 +3,25 @@ import { authCorsHeaders } from '../_shared/cors.ts'
 
 interface ResendWelcomeEmailRequest {
   userId: string
+  newEmail?: string
+}
+
+function jsonError(error: string, code: string, status: number, headers: Record<string, string>) {
+  return new Response(JSON.stringify({ error, code }), { status, headers: { 'Content-Type': 'application/json', ...headers } })
+}
+
+// Domínio sem MX (nem A, como fallback do SMTP) nunca recebe e-mail.
+async function dominioRecebeEmail(dominio: string): Promise<boolean> {
+  try {
+    const mx = await Deno.resolveDns(dominio, 'MX')
+    if (mx.length) return true
+  } catch { /* tenta A */ }
+  try {
+    return (await Deno.resolveDns(dominio, 'A')).length > 0
+  } catch (e: any) {
+    // Falha de rede do resolvedor não deve bloquear; só NXDOMAIN/sem registro.
+    return !/NotFound|no record|NXDOMAIN/i.test(String(e?.name ?? '') + String(e?.message ?? ''))
+  }
 }
 
 export async function handleResendWelcomeEmail(req: Request, dependencies = { requireUserContext, requireValidMfa }) {
@@ -60,9 +79,49 @@ export async function handleResendWelcomeEmail(req: Request, dependencies = { re
       throw new AuthError('Você não tem permissão para gerenciar este usuário', 403)
     }
 
+    // Correção de e-mail digitado errado: só antes do primeiro acesso.
+    const rawNewEmail = (body as any)?.newEmail
+    let emailCorrigido = false
+    if (rawNewEmail !== undefined && rawNewEmail !== null && rawNewEmail !== '') {
+      const novo = typeof rawNewEmail === 'string' ? rawNewEmail.trim().toLowerCase() : ''
+      if (novo.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(novo)) {
+        return jsonError('E-mail inválido.', 'invalid_email', 400, corsHeaders)
+      }
+      if (userId === ctx.userId) throw new AuthError('Você não pode alterar o próprio e-mail por aqui.', 403)
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId)
+      if (!authUser?.user) throw new AuthError('Usuário não encontrado', 404)
+      if (authUser.user.last_sign_in_at) {
+        return jsonError('Este usuário já ativou a conta; o e-mail só pode ser alterado por ele.', 'already_active', 409, corsHeaders)
+      }
+      const { data: alvoRole } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', userId)
+      if ((alvoRole ?? []).some((r: any) => r.role === 'super_admin') && !isSuperAdmin) {
+        throw new AuthError('Não é possível alterar um super admin.', 403)
+      }
+      if (novo !== String(userProfile.email).toLowerCase()) {
+        const { data: dup } = await supabaseAdmin.from('profiles').select('user_id').ilike('email', novo).neq('user_id', userId).limit(1)
+        if (dup && dup.length) return jsonError('Este e-mail já está em uso por outro usuário.', 'email_in_use', 409, corsHeaders)
+        if (!(await dominioRecebeEmail(novo.split('@')[1]))) {
+          return jsonError('Este domínio não recebe e-mails. Confira o endereço.', 'domain_no_mail', 400, corsHeaders)
+        }
+        const emailAntigo = userProfile.email
+        const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(userId, { email: novo, email_confirm: true })
+        if (authErr) {
+          const msg = /already|registered|exists/i.test(authErr.message ?? '')
+          return jsonError(msg ? 'Este e-mail já está em uso por outro usuário.' : 'Não foi possível alterar o e-mail.', msg ? 'email_in_use' : 'update_failed', msg ? 409 : 500, corsHeaders)
+        }
+        const { error: profErr } = await supabaseAdmin.from('profiles').update({ email: novo }).eq('user_id', userId)
+        if (profErr) {
+          await supabaseAdmin.auth.admin.updateUserById(userId, { email: emailAntigo, email_confirm: true })
+          return jsonError('Não foi possível alterar o e-mail.', 'update_failed', 500, corsHeaders)
+        }
+        ;(userProfile as any).email = novo
+        emailCorrigido = true
+      }
+    }
+
     // Anti-abuso: no máximo um reenvio a cada 5 minutos por utilizador.
     const REENVIO_INTERVALO_MS = 5 * 60 * 1000
-    if (userProfile.invitation_sent_at) {
+    if (!emailCorrigido && userProfile.invitation_sent_at) {
       const ultimo = new Date(userProfile.invitation_sent_at).getTime()
       if (Number.isFinite(ultimo) && Date.now() - ultimo < REENVIO_INTERVALO_MS) {
         const faltamMin = Math.max(1, Math.ceil((REENVIO_INTERVALO_MS - (Date.now() - ultimo)) / 60000))

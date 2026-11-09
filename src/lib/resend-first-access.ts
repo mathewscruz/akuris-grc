@@ -1,9 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /** Reenvio individual e em lote só confirmam um envio reconhecido pelo servidor. */
-export async function resendFirstAccessEmail(userId: string, fallbackMessage: string): Promise<void> {
+export async function resendFirstAccessEmail(userId: string, fallbackMessage: string, newEmail?: string): Promise<void> {
   const { data, error } = await supabase.functions.invoke('resend-welcome-email', {
-    body: { userId },
+    body: newEmail ? { userId, newEmail } : { userId },
   });
 
   if (error) {
