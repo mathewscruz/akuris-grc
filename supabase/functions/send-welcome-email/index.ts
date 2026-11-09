@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     })
 
     if (error) {
-      console.error('Erro ao enviar e-mail:', error)
+      console.error('Resend error:', (error as any)?.name, (error as any)?.message)
       throw error
     }
 
