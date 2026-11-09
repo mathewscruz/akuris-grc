@@ -572,6 +572,31 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
   };
 
+  const [corrigindo, setCorrigindo] = useState<Usuario | null>(null);
+  const [novoEmail, setNovoEmail] = useState('');
+  const [salvandoEmail, setSalvandoEmail] = useState(false);
+
+  const corrigirEmailEReenviar = async () => {
+    if (!corrigindo) return;
+    const email = novoEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      toast.error(t('admin.usuarios.corrigirEmailInvalido'));
+      return;
+    }
+    setSalvandoEmail(true);
+    try {
+      await resendFirstAccessEmail(corrigindo.user_id, t('admin.usuarios.toastErrorResendInvite'), email);
+      toast.success(t('admin.usuarios.corrigirEmailSucesso', { email }));
+      setCorrigindo(null);
+      await fetchUsuarios();
+      await fetchUsersAccessInfo(usuarios.map(u => u.user_id));
+    } catch (error: any) {
+      toast.error(error.message || t('admin.usuarios.toastErrorResendInvite'));
+    } finally {
+      setSalvandoEmail(false);
+    }
+  };
+
   const resetPassword = async (usuario: Usuario) => {
     try {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: true }));
@@ -865,6 +890,12 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   <IconMail className="h-4 w-4 mr-2" />
                 )}
                 {t('admin.usuarios.actionReenviarConvite')}
+              </DropdownMenuItem>
+            )}
+            {shouldShowResendButton(usuario) && (
+              <DropdownMenuItem onClick={() => { setCorrigindo(usuario); setNovoEmail(usuario.email); }}>
+                <IconEdit className="h-4 w-4 mr-2" />
+                {t('admin.usuarios.actionCorrigirEmail')}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
