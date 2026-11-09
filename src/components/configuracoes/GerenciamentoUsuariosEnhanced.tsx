@@ -1166,6 +1166,35 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         }}
       />
 
+      <Dialog open={!!corrigindo} onOpenChange={(o) => { if (!o && !salvandoEmail) setCorrigindo(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('admin.usuarios.corrigirEmailTitulo')}</DialogTitle>
+            <DialogDescription>
+              {t('admin.usuarios.corrigirEmailDescricao', { email: corrigindo?.email ?? '' })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="novo-email-convite" className="text-sm font-medium">{t('admin.usuarios.corrigirEmailNovo')}</label>
+            <Input
+              id="novo-email-convite"
+              type="email"
+              value={novoEmail}
+              onChange={(e) => setNovoEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') corrigirEmailEReenviar(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCorrigindo(null)} disabled={salvandoEmail}>{t('common.cancel')}</Button>
+            <Button onClick={corrigirEmailEReenviar} disabled={salvandoEmail || !novoEmail.trim()}>
+              {salvandoEmail && <AkurisPulse size={16} className="mr-2" />}
+              {t('admin.usuarios.corrigirEmailSalvar')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
