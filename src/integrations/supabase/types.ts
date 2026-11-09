@@ -8714,6 +8714,7 @@ export type Database = {
           empresa_id: string | null
           foto_url: string | null
           id: string
+          invitation_error: string | null
           invitation_link: string | null
           invitation_sent_at: string | null
           nome: string
@@ -8734,6 +8735,7 @@ export type Database = {
           empresa_id?: string | null
           foto_url?: string | null
           id?: string
+          invitation_error?: string | null
           invitation_link?: string | null
           invitation_sent_at?: string | null
           nome: string
@@ -8754,6 +8756,7 @@ export type Database = {
           empresa_id?: string | null
           foto_url?: string | null
           id?: string
+          invitation_error?: string | null
           invitation_link?: string | null
           invitation_sent_at?: string | null
           nome?: string
