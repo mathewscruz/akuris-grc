@@ -112,3 +112,22 @@ describe('progresso automático da tarefa', () => {
   it('sem itens não calcula', () => { expect(_pa([], [])).toBeNull(); });
   it('a etiqueta interna nunca aparece', () => { expect(_tv(['__pct_auto', 'Política'])).toEqual(['Política']); });
 });
+
+describe('regressões das métricas', () => {
+  it('conta conclusões apenas nas folhas, incluindo progresso de 100%', () => {
+    const tarefas = [
+      t({ id: 'pai', progresso_pct: 100, concluida_em: '2026-10-20' }),
+      t({ id: 'a', parent_task_id: 'pai', progresso_pct: 100 }),
+      t({ id: 'b', parent_task_id: 'pai', progresso_pct: 0 }),
+    ];
+    const r = indicadores(tarefas, new Date(2026, 9, 21, 12));
+    expect(r.total).toBe(2);
+    expect(r.concluidas).toBe(1);
+  });
+
+  it('prazo de hoje não está atrasado durante o dia', () => {
+    const tarefa = t({ prazo: '2026-10-21' });
+    expect(estaAtrasada(tarefa, new Date(2026, 9, 21, 15, 30))).toBe(false);
+    expect(estaAtrasada(tarefa, new Date(2026, 9, 22))).toBe(true);
+  });
+});
