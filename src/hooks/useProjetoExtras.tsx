@@ -398,3 +398,26 @@ export function useAplicarTemplate() {
     onError: (e: any) => toast.error(e.message || tGlobal('cardsKpi.sweep.projetos.erroAplicarTemplate')),
   });
 }
+
+
+export interface AutomacaoExecucao { id: string; tarefa_titulo: string | null; resultado: string; acoes: string[]; erro: string | null; created_at: string }
+
+/** Últimas 10 execuções de uma automação (isoladas por empresa via RLS + filtro). */
+export function useExecucoesAutomacao(automacaoId: string | undefined, enabled = true) {
+  const { profile } = useAuth();
+  return useQuery({
+    queryKey: ['projeto-automacao-execucoes', profile?.empresa_id, automacaoId],
+    enabled: !!automacaoId && !!profile?.empresa_id && enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projeto_automacao_execucoes' as any)
+        .select('id, tarefa_titulo, resultado, acoes, erro, created_at')
+        .eq('empresa_id', profile!.empresa_id!)
+        .eq('automacao_id', automacaoId!)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return (data ?? []) as unknown as AutomacaoExecucao[];
+    },
+  });
+}

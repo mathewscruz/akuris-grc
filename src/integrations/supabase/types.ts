@@ -8980,6 +8980,53 @@ export type Database = {
           },
         ]
       }
+      projeto_automacao_execucoes: {
+        Row: {
+          acoes: Json
+          automacao_id: string
+          created_at: string
+          empresa_id: string
+          erro: string | null
+          id: string
+          projeto_id: string
+          resultado: string
+          tarefa_id: string | null
+          tarefa_titulo: string | null
+        }
+        Insert: {
+          acoes?: Json
+          automacao_id: string
+          created_at?: string
+          empresa_id: string
+          erro?: string | null
+          id?: string
+          projeto_id: string
+          resultado?: string
+          tarefa_id?: string | null
+          tarefa_titulo?: string | null
+        }
+        Update: {
+          acoes?: Json
+          automacao_id?: string
+          created_at?: string
+          empresa_id?: string
+          erro?: string | null
+          id?: string
+          projeto_id?: string
+          resultado?: string
+          tarefa_id?: string | null
+          tarefa_titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_automacao_execucoes_automacao_id_fkey"
+            columns: ["automacao_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_automacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projeto_automacoes: {
         Row: {
           acoes: Json
@@ -9464,6 +9511,7 @@ export type Database = {
       }
       projeto_tarefas: {
         Row: {
+          automacao_prazo_disparada_em: string | null
           baseline_fim: string | null
           baseline_inicio: string | null
           bloqueada: boolean
@@ -9497,6 +9545,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          automacao_prazo_disparada_em?: string | null
           baseline_fim?: string | null
           baseline_inicio?: string | null
           bloqueada?: boolean
@@ -9530,6 +9579,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          automacao_prazo_disparada_em?: string | null
           baseline_fim?: string | null
           baseline_inicio?: string | null
           bloqueada?: boolean

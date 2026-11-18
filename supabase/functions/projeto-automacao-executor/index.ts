@@ -1,5 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { authorizedScheduledJob } from '../_shared/scheduled-job.ts';
+import { normalizarTipo, passaCondicoes, montarMensagem, acaoCompleta } from './regras.ts';
 
 /**
  * Executor de Automações de Projeto.
@@ -28,7 +30,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { projeto_id, gatilho, tarefa: tarefaPedida, contexto } = await req.json();
+    const { projeto_id, gatilho, tarefa: tarefaPedida, contexto, dry_run, automacao_id } = await req.json();
     if (!projeto_id || !gatilho || typeof tarefaPedida?.id !== 'string') {
       return new Response(JSON.stringify({ error: 'Payload inválido' }), {
         status: 400,
@@ -49,8 +51,9 @@ Deno.serve(async (req) => {
       É o mesmo padrão das funções de notificação que já foram fechadas: nunca
       confiar num identificador que veio no pedido.
     */
+    const rotina = authorizedScheduledJob(req, Deno.env.get('LEMBRETES_DIARIOS_TOKEN'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    if (!rotina && !authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Não autorizado' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -59,19 +62,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
-    const { data: sessao, error: erroSessao } = await verificador.auth.getUser(
-      authHeader.replace('Bearer ', ''),
-    );
-    if (erroSessao || !sessao?.user) {
+    const { data: sessao, error: erroSessao } = rotina
+      ? { data: null, error: null }
+      : await verificador.auth.getUser(authHeader!.replace('Bearer ', ''));
+    if (!rotina && (erroSessao || !sessao?.user)) {
       return new Response(JSON.stringify({ error: 'Sessão inválida' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: perfil } = await supabase
-      .from('profiles').select('empresa_id').eq('user_id', sessao.user.id).eq('ativo', true).maybeSingle();
     const { data: projeto } = await supabase
       .from('projetos').select('empresa_id').eq('id', projeto_id).maybeSingle();
+    const { data: perfil } = rotina
+      ? { data: { empresa_id: projeto?.empresa_id } }
+      : await supabase.from('profiles').select('empresa_id').eq('user_id', sessao!.user.id).eq('ativo', true).maybeSingle();
 
     if (!perfil?.empresa_id || !projeto?.empresa_id || perfil.empresa_id !== projeto.empresa_id) {
       return new Response(JSON.stringify({ error: 'Projeto de outra empresa' }), {
@@ -90,45 +94,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: regras, error } = await supabase
-      .from('projeto_automacoes')
-      .select('*')
-      .eq('projeto_id', projeto_id)
-      .eq('gatilho', gatilho)
-      .eq('ativa', true);
+    let consulta = supabase.from('projeto_automacoes').select('*').eq('projeto_id', projeto_id);
+    // Testar agora: avalia uma regra específica (mesmo pausada) sem aplicar nada.
+    consulta = dry_run && automacao_id ? consulta.eq('id', automacao_id) : consulta.eq('gatilho', gatilho).eq('ativa', true);
+    const { data: regras, error } = await consulta;
     if (error) throw error;
 
     const executadas: string[] = [];
+    const previsao: { automacao_id: string; passa: boolean; acoes: string[] }[] = [];
 
     for (const r of regras ?? []) {
-      // Avaliar condições simples: { campo: valor }
-      const cond = (r.condicoes ?? {}) as Record<string, unknown>;
-      const passa = Object.entries(cond).every(([k, v]) => {
-        if (v === '' || v === null || v === undefined) return true;
-        return (tarefa as any)[k] === v;
-      });
+      const passa = passaCondicoes((r.condicoes ?? {}) as Record<string, unknown>, tarefa);
+      const acoes = (Array.isArray(r.acoes) ? r.acoes : []).filter(acaoCompleta);
+      if (dry_run) { previsao.push({ automacao_id: r.id, passa, acoes: acoes.map((a: any) => normalizarTipo(a.tipo)) }); continue; }
       if (!passa) continue;
 
-      const acoes = Array.isArray(r.acoes) ? r.acoes : [];
+      const aplicadas: string[] = [];
+      const erros: string[] = [];
       for (const ac of acoes) {
         try {
           await aplicarAcao(supabase, ac, tarefa, r, contexto);
+          aplicadas.push(normalizarTipo(ac.tipo));
         } catch (e) {
           console.error('Falha ao aplicar ação', ac, e);
+          erros.push(`${ac.tipo}: ${(e as Error).message}`);
         }
       }
 
-      await supabase
-        .from('projeto_automacoes')
-        .update({
-          ultima_execucao_em: new Date().toISOString(),
-          execucoes_count: (r.execucoes_count ?? 0) + 1,
-        })
-        .eq('id', r.id);
+      await supabase.from('projeto_automacoes').update({
+        ultima_execucao_em: new Date().toISOString(),
+        execucoes_count: (r.execucoes_count ?? 0) + 1,
+      }).eq('id', r.id).eq('empresa_id', projeto.empresa_id);
 
+      await supabase.from('projeto_automacao_execucoes').insert({
+        empresa_id: projeto.empresa_id, projeto_id, automacao_id: r.id,
+        tarefa_id: tarefa.id, tarefa_titulo: tarefa.titulo,
+        resultado: erros.length ? (aplicadas.length ? 'parcial' : 'erro') : 'sucesso',
+        acoes: aplicadas, erro: erros.join('; ') || null,
+      });
       executadas.push(r.id);
     }
 
+    if (dry_run) {
+      return new Response(JSON.stringify({ ok: true, previsao }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     return new Response(JSON.stringify({ ok: true, executadas }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -147,7 +156,7 @@ async function aplicarAcao(
   regra: any,
   _ctx: any,
 ) {
-  const tipo = acao.tipo as string;
+  const tipo = normalizarTipo(acao.tipo as string);
   switch (tipo) {
     case 'atribuir_responsavel':
       if (acao.user_id) {
@@ -178,14 +187,18 @@ async function aplicarAcao(
 
     case 'notificar_usuario':
       if (acao.user_id) {
-        await supabase.from('notificacoes').insert({
-          user_id: acao.user_id,
-          empresa_id: regra.empresa_id,
-          tipo: 'projeto_automacao',
-          titulo: `Automação: ${regra.nome}`,
-          mensagem: acao.mensagem || `Tarefa "${tarefa.titulo}" disparou a automação.`,
-          link: `/projetos/${regra.projeto_id}`,
+        // Isolamento: só avisa quem é da mesma empresa do projeto.
+        const { data: dest } = await supabase.from('profiles')
+          .select('empresa_id, notificar_na_aplicacao').eq('user_id', acao.user_id).eq('ativo', true).maybeSingle();
+        if (!dest || dest.empresa_id !== regra.empresa_id || dest.notificar_na_aplicacao === false) break;
+        const { error } = await supabase.from('notifications').insert({
+          user_id: acao.user_id, type: 'info',
+          title: `Automação: ${regra.nome}`,
+          message: montarMensagem(acao.mensagem, tarefa.titulo),
+          link_to: `/projetos/${regra.projeto_id}?focus=${tarefa.id}`,
+          metadata: { projeto_id: regra.projeto_id, tarefa_id: tarefa.id, automacao_id: regra.id },
         });
+        if (error) throw error;
       }
       break;
 

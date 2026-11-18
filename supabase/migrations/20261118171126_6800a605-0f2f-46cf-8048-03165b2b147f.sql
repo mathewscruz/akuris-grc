@@ -1,0 +1,1 @@
+REVOKE ALL ON public.projeto_automacao_execucoes FROM anon;

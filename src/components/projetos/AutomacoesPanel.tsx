@@ -9,11 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useAutomacoes, useUpsertAutomacao, useDeleteAutomacao, type Automacao } from '@/hooks/useProjetoExtras';
+import { useAutomacoes, useUpsertAutomacao, useDeleteAutomacao, useExecucoesAutomacao, type Automacao } from '@/hooks/useProjetoExtras';
+import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
+import { invokeEdgeFunction } from '@/lib/edge-function-utils';
+import type { ProjetoTarefa } from '@/types/projetos';
+import { partirTitulo } from './projeto-visual';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import type { ProjetoColuna } from '@/types/projetos';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { intlLocale } from '@/lib/date-utils';
+import { toast } from '@/lib/toast';
 
 const ACAO_KEY: Record<string, string> = {
   mover_para_coluna: 'projetos.automacoes.acaoMoverColuna',
@@ -27,12 +34,14 @@ const MODELOS = [
   { key: 'movida', gatilho: 'tarefa_movida_para_coluna', acao: 'mudar_prioridade' },
 ];
 
-export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; colunas: ProjetoColuna[] }) {
+export function AutomacoesPanel({ projetoId, colunas, tarefas = [] }: { projetoId: string; colunas: ProjetoColuna[]; tarefas?: ProjetoTarefa[] }) {
   const { t } = useLanguage();
   const GATILHOS = [
     { value: 'tarefa_criada', label: t('projetos.automacoes.gatilhoTarefaCriada') },
     { value: 'tarefa_movida_para_coluna', label: t('projetos.automacoes.gatilhoTarefaMovida') },
     { value: 'tarefa_concluida', label: t('projetos.automacoes.gatilhoTarefaConcluida') },
+    // Emitido pela rotina diária de prazos (uma vez por atividade vencida).
+    { value: 'prazo_excedido', label: t('autoMet.gatilhoPrazo') },
     /*
       O vocabulario da lista tem de ser o que o executor conhece.
 
@@ -52,6 +61,18 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
   const [open, setOpen] = React.useState(false);
   const [editando, setEditando] = React.useState<Automacao | null>(null);
   const [removendo, setRemovendo] = React.useState<Automacao | null>(null);
+  const [historico, setHistorico] = React.useState<string | null>(null);
+  const [testando, setTestando] = React.useState<Automacao | null>(null);
+  const { data: usuarios = [] } = useUsuariosEmpresa();
+  const nomeUser = (id?: string) => usuarios.find((u: any) => u.user_id === id)?.nome ?? '—';
+  const nomeColuna = (id?: string) => colunas.find((c) => c.id === id)?.nome ?? '—';
+  const frase = (a: Automacao) => {
+    const g = GATILHOS.find((x) => x.value === a.gatilho)?.label ?? a.gatilho;
+    const c = a.condicoes ?? {};
+    const conds = [c.coluna_id && `${t('autoMet.condColuna')} ${nomeColuna(c.coluna_id)}`, c.prioridade && `${t('autoMet.condPrioridade')} ${t(`projetos.priority.${c.prioridade}`)}`, c.responsavel_id && `${t('autoMet.condResponsavel')} ${nomeUser(c.responsavel_id)}`].filter(Boolean);
+    const acoes = (a.acoes ?? []).map((ac: any) => { const tp = ac.tipo === 'definir_prioridade' ? 'mudar_prioridade' : ac.tipo; const alvo = tp === 'mover_para_coluna' ? nomeColuna(ac.coluna_id) : tp === 'mudar_prioridade' ? (ac.prioridade ? t(`projetos.priority.${ac.prioridade}`) : '—') : nomeUser(ac.user_id); return `${t(ACAO_KEY[tp] ?? 'projetos.automacoes.addAction')} (${alvo})`; });
+    return { g, conds, acoes };
+  };
 
   const toggleAtiva = (a: Automacao) => upsert.mutate({ id: a.id, nome: a.nome, gatilho: a.gatilho, ativa: !a.ativa } as any);
 
@@ -87,31 +108,31 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
                 </div>
                 <Switch checked={a.ativa} onCheckedChange={() => toggleAtiva(a)} aria-label={a.ativa ? t('projetos.automacoes.active') : t('projetos.automacoes.paused')} />
               </div>
-              <div className="mt-3 space-y-1.5 rounded-lg bg-muted/40 p-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-12 shrink-0 font-semibold uppercase tracking-wide text-muted-foreground">{t('p3Projetos.automacoes.quando')}</span>
-                  <span className="rounded-md bg-card px-2 py-1 font-medium">{GATILHOS.find((g) => g.value === a.gatilho)?.label ?? a.gatilho}</span>
-                </div>
-                {(a.acoes ?? []).map((ac, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="w-12 shrink-0 font-semibold uppercase tracking-wide text-muted-foreground">{i === 0 ? t('p3Projetos.automacoes.entao') : '+'}</span>
-                    <span className="rounded-md bg-primary/10 px-2 py-1 font-medium text-primary">{t(ACAO_KEY[ac.tipo] ?? 'projetos.automacoes.addAction')}</span>
-                  </div>
-                ))}
-              </div>
+              {(() => { const f = frase(a); return (
+                <p className="mt-3 rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">
+                  <span className="font-semibold text-muted-foreground">{t('p3Projetos.automacoes.quando')}</span> {f.g.toLowerCase()}
+                  {f.conds.length > 0 && <span className="text-muted-foreground"> · {f.conds.join(' · ')}</span>}
+                  <span className="mx-1.5 text-primary">→</span>
+                  <span className="font-medium text-primary">{f.acoes.join(' + ') || '—'}</span>
+                </p>
+              ); })()}
               <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <IconPlay className="h-3.5 w-3.5" />
                 <span>{t('projetos.automacoes.executionsCount', { count: a.execucoes_count })}</span>
-                {a.ultima_execucao_em && <span>· {new Date(a.ultima_execucao_em).toLocaleDateString()}</span>}
+                {a.ultima_execucao_em && <span>· {new Date(a.ultima_execucao_em).toLocaleDateString(intlLocale())}</span>}
                 <span className="ml-auto flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" onClick={() => setHistorico(historico === a.id ? null : a.id)} aria-expanded={historico === a.id}>{t('autoMet.historico')}</Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" onClick={() => setTestando(a)}>{t('autoMet.testar')}</Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditando(a); setOpen(true); }} aria-label={t('common.edit')} title={t('common.edit')}><IconEdit className="h-3.5 w-3.5" /></Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-destructive" onClick={() => setRemovendo(a)} aria-label={t('common.delete')} title={t('common.delete')}><IconDelete className="h-3.5 w-3.5" /></Button>
                 </span>
               </div>
+              {historico === a.id && <HistoricoAutomacao automacaoId={a.id} />}
             </div>
           ))}
         </div>
       )}
+      {testando && <TestarAutomacao automacao={testando} projetoId={projetoId} tarefas={tarefas} onClose={() => setTestando(null)} acaoLabel={(tp) => t(ACAO_KEY[tp === 'definir_prioridade' ? 'mudar_prioridade' : tp] ?? tp)} />}
 
       {!isLoading && automacoes.length === 0 && (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -172,8 +193,13 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
   const addAcao = () => setForm({ ...form, acoes: [...form.acoes, { tipo: 'notificar_usuario' }] });
   const rmAcao = (i: number) => setForm({ ...form, acoes: form.acoes.filter((_: any, idx: number) => idx !== i) });
 
+  const [tentou, setTentou] = React.useState(false);
+  React.useEffect(() => { if (open) setTentou(false); }, [open]);
+  const acaoIncompleta = (a: any) => (a.tipo === 'mover_para_coluna' && !a.coluna_id) || ((a.tipo === 'mudar_prioridade' || a.tipo === 'definir_prioridade') && !a.prioridade) || ((a.tipo === 'atribuir_responsavel' || a.tipo === 'notificar_usuario') && !a.user_id);
+  const invalido = !form.nome.trim() || form.acoes.length === 0 || form.acoes.some(acaoIncompleta);
   const submit = async () => {
-    if (!form.nome.trim()) return;
+    setTentou(true);
+    if (invalido) { toast.error(t('autoMet.completarCampos')); return; }
     await upsert.mutateAsync({ id: automacao?.id, ...form });
     onOpenChange(false);
   };
@@ -190,7 +216,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
       isSubmitting={upsert.isPending}
     >
         <div className="space-y-3">
-          <div><Label htmlFor="nome">{t('projetos.automacoes.fieldNome')}</Label><Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+          <div><Label htmlFor="nome">{t('projetos.automacoes.fieldNome')}</Label><Input id="nome" value={form.nome} aria-invalid={tentou && !form.nome.trim()} className={tentou && !form.nome.trim() ? 'border-destructive' : ''} onChange={(e) => setForm({ ...form, nome: e.target.value })} />{tentou && !form.nome.trim() && <p role="alert" className="mt-1 text-xs text-destructive">{t('autoMet.nomeObrigatorio')}</p>}</div>
           <div><Label htmlFor="descricao">{t('projetos.automacoes.fieldDescricao')}</Label><Textarea id="descricao" rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
 
           <div className="space-y-2">
@@ -211,13 +237,30 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
             </div>
           )}
 
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t('autoMet.soSePrioridade')}</Label>
+              <Select value={form.condicoes?.prioridade || 'qualquer'} onValueChange={(v) => setForm({ ...form, condicoes: { ...form.condicoes, prioridade: v === 'qualquer' ? '' : v } })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="qualquer">{t('autoMet.qualquer')}</SelectItem>
+                  {(['baixa', 'media', 'alta', 'critica'] as const).map((p) => <SelectItem key={p} value={p}>{t(`projetos.priority.${p}`)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('autoMet.soSeResponsavel')}</Label>
+              <UserSelect value={form.condicoes?.responsavel_id ?? ''} onValueChange={(v) => setForm({ ...form, condicoes: { ...form.condicoes, responsavel_id: v } })} />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>{t('projetos.automacoes.fieldAcoes')}</Label>
               <Button size="sm" variant="ghost" onClick={addAcao}><IconAdd className="h-3.5 w-3.5" /> {t('projetos.automacoes.addAction')}</Button>
             </div>
             {form.acoes.map((a: any, i: number) => (
-              <div key={i} className="rounded-md border border-border bg-card p-2 space-y-2">
+              <div key={i} className={`rounded-md border bg-card p-2 space-y-2 ${tentou && acaoIncompleta(a) ? 'border-destructive' : 'border-border'}`}>
                 <div className="flex gap-2">
                   <Select value={a.tipo} onValueChange={(v) => setAcao(i, { tipo: v })}>
                     <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
@@ -242,6 +285,10 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
                 {(a.tipo === 'atribuir_responsavel' || a.tipo === 'notificar_usuario') && (
                   <UserSelect value={a.user_id ?? ''} onValueChange={(v) => setAcao(i, { user_id: v })} />
                 )}
+                {a.tipo === 'notificar_usuario' && (
+                  <Input value={a.mensagem ?? ''} onChange={(e) => setAcao(i, { mensagem: e.target.value })} placeholder={t('autoMet.mensagemPlaceholder')} aria-label={t('autoMet.mensagem')} />
+                )}
+                {tentou && acaoIncompleta(a) && <p role="alert" className="text-xs text-destructive">{t('autoMet.acaoIncompleta')}</p>}
               </div>
             ))}
           </div>
@@ -252,6 +299,60 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
           </div>
         </div>
 
+    </DialogShell>
+  );
+}
+
+function HistoricoAutomacao({ automacaoId }: { automacaoId: string }) {
+  const { t } = useLanguage();
+  const { data = [], isLoading } = useExecucoesAutomacao(automacaoId);
+  if (isLoading) return <div className="mt-3 flex justify-center"><AkurisPulse size={24} /></div>;
+  if (!data.length) return <p className="mt-3 text-xs text-muted-foreground">{t('autoMet.semExecucoes')}</p>;
+  return (
+    <ul className="mt-3 divide-y divide-border rounded-lg border text-xs">
+      {data.map((e) => (
+        <li key={e.id} className="flex items-center gap-2 px-3 py-2">
+          <StatusBadge tone={e.resultado === 'sucesso' ? 'success' : e.resultado === 'parcial' ? 'warning' : 'destructive'}>{t(`autoMet.resultado.${e.resultado}`)}</StatusBadge>
+          <span className="min-w-0 flex-1 truncate" title={e.erro ?? undefined}>{e.tarefa_titulo ? partirTitulo(e.tarefa_titulo).nome : '—'}</span>
+          <span className="shrink-0 tabular-nums text-muted-foreground">{new Date(e.created_at).toLocaleString(intlLocale(), { dateStyle: 'short', timeStyle: 'short' })}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function TestarAutomacao({ automacao, projetoId, tarefas, onClose, acaoLabel }: { automacao: Automacao; projetoId: string; tarefas: ProjetoTarefa[]; onClose: () => void; acaoLabel: (tipo: string) => string }) {
+  const { t } = useLanguage();
+  const [tarefaId, setTarefaId] = React.useState('');
+  const [res, setRes] = React.useState<{ passa: boolean; acoes: string[] } | null>(null);
+  const [carregando, setCarregando] = React.useState(false);
+  const testar = async () => {
+    if (!tarefaId) return;
+    setCarregando(true); setRes(null);
+    const { data } = await invokeEdgeFunction<{ previsao: { passa: boolean; acoes: string[] }[] }>('projeto-automacao-executor', {
+      body: { projeto_id: projetoId, gatilho: automacao.gatilho, tarefa: { id: tarefaId }, dry_run: true, automacao_id: automacao.id },
+    });
+    setCarregando(false);
+    if (data?.previsao?.[0]) setRes(data.previsao[0]);
+  };
+  return (
+    <DialogShell open onOpenChange={(o) => !o && onClose()} icon={IconPlay} title={t('autoMet.testarTitulo', { nome: automacao.nome })} description={t('autoMet.testarDesc')} size="md" onSubmit={testar} submitLabel={t('autoMet.testar')} isSubmitting={carregando} submitDisabled={!tarefaId}>
+      <div className="space-y-3">
+        <Select value={tarefaId} onValueChange={(v) => { setTarefaId(v); setRes(null); }}>
+          <SelectTrigger><SelectValue placeholder={t('autoMet.escolherAtividade')} /></SelectTrigger>
+          <SelectContent>{tarefas.slice(0, 300).map((x) => <SelectItem key={x.id} value={x.id}>{partirTitulo(x.titulo).nome}</SelectItem>)}</SelectContent>
+        </Select>
+        {res && (
+          <div className="rounded-lg border p-3 text-sm">
+            {res.passa ? (
+              <>
+                <p className="font-medium">{t('autoMet.testarPassa')}</p>
+                <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground">{res.acoes.map((a, i) => <li key={i}>{acaoLabel(a)}</li>)}</ul>
+              </>
+            ) : <p className="text-muted-foreground">{t('autoMet.testarNaoPassa')}</p>}
+          </div>
+        )}
+      </div>
     </DialogShell>
   );
 }

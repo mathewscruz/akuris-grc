@@ -125,7 +125,7 @@ verify_jwt = false
 [functions.projeto-automacao-executor]
 # Chamada do produto, com a sessao de quem move a tarefa. A verificacao de
 # inquilino esta no codigo -- o `projeto_id` vem do corpo e nao se confia nele.
-verify_jwt = true
+verify_jwt = false  # a sessão ou o token da rotina são verificados no código
 
 [functions.avaliar-fornecedor-ia]
 # Chamada por dentro (submissão do questionário) e pelo produto (reavaliar).

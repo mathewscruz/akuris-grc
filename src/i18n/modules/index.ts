@@ -74,6 +74,7 @@ import { jurisdicao } from "./jurisdicao";
 import { p3Breadcrumbs } from "./p3-breadcrumbs";
 import { p3Projetos } from "./p3-projetos";
 import { ajustesModulos } from "./ajustes-modulos";
+import { autoMet } from "./auto-met";
 import { p3Filtros } from "./p3-filtros";
 import { p3Kpis } from "./p3-kpis";
 import { p3Denuncia } from "./p3-denuncia";
@@ -202,6 +203,7 @@ const modules: Record<string, ModuleDict> = {
   p3Breadcrumbs,
   p3Projetos,
   ajustesModulos,
+  autoMet,
   p3Filtros,
   p3Kpis,
   p3Denuncia,

@@ -80,6 +80,25 @@ async function nome(userId: unknown) {
   return autoria(data ?? null);
 }
 
+/** Dispara uma vez as automações "prazo vencido" das atividades vencidas. */
+async function dispararPrazoExcedido(hoje: string, auth: string) {
+  const { data: regras } = await db.from("projeto_automacoes").select("projeto_id").eq("gatilho", "prazo_excedido").eq("ativa", true);
+  const projetos = [...new Set((regras ?? []).map((r: any) => r.projeto_id))];
+  if (!projetos.length) return 0;
+  const { data: vencidas } = await db.from("projeto_tarefas").select("id, projeto_id")
+    .in("projeto_id", projetos).is("concluida_em", null).is("automacao_prazo_disparada_em", null)
+    .or(`data_fim.lt.${hoje},and(data_fim.is.null,prazo.lt.${hoje})`).limit(500);
+  let n = 0;
+  for (const t of vencidas ?? []) {
+    const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/projeto-automacao-executor`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify({ projeto_id: t.projeto_id, gatilho: "prazo_excedido", tarefa: { id: t.id } }),
+    });
+    if (r.ok) { n++; await db.from("projeto_tarefas").update({ automacao_prazo_disparada_em: new Date().toISOString() }).eq("id", t.id); }
+  }
+  return n;
+}
+
 Deno.serve(async (req) => {
   if (!authorizedScheduledJob(req, Deno.env.get("LEMBRETES_DIARIOS_TOKEN"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))) {
     return json({ error: "Não autorizado" }, 401);
@@ -124,7 +143,8 @@ Deno.serve(async (req) => {
         await db.from("projeto_tarefas").update(l === "dia" ? { lembrete_dia_enviado_em: new Date().toISOString(), lembrete_3d_enviado_em: t.lembrete_3d_enviado_em ?? new Date().toISOString() } : { lembrete_3d_enviado_em: new Date().toISOString() }).eq("id", t.id);
         if (r.enviado) enviados++;
       }
-      return json({ verificadas: rows?.length ?? 0, enviados });
+      const automacoes = await dispararPrazoExcedido(hoje, req.headers.get("Authorization")!);
+      return json({ verificadas: rows?.length ?? 0, enviados, automacoes });
     }
     return json({ error: "tipo inválido" }, 400);
   } catch (e) {

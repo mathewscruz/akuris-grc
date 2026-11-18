@@ -191,10 +191,10 @@ export default function ProjetoDetalhe() {
           <SprintsPanel projetoId={projeto.id} tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
         <TabsContent value="metricas">
-          <MetricasPanel tarefas={tarefas} colunas={colunas} />
+          <MetricasPanel tarefas={tarefas} colunas={colunas} fimPrevisto={projeto.data_fim_prevista} />
         </TabsContent>
         <TabsContent value="automacoes">
-          <AutomacoesPanel projetoId={projeto.id} colunas={colunas} />
+          <AutomacoesPanel projetoId={projeto.id} colunas={colunas} tarefas={tarefas} />
         </TabsContent>
       </Tabs>
 

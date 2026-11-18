@@ -215,3 +215,55 @@ export function progressoAutomatico(
   if (checklist.length) return Math.round((checklist.filter((c) => c.concluido).length / checklist.length) * 100);
   return null;
 }
+
+// ── Métricas avançadas ───────────────────────────────────────────────
+const estaConcluida = (t: ProjetoTarefa) => !!t.concluida_em || (t.progresso_pct ?? 0) >= 100;
+
+/** Burnup semanal: concluídas acumuladas por semana (só folhas). */
+export function burnupSemanal(tarefas: ProjetoTarefa[], semanas = 12, hoje = new Date()) {
+  const f = folhas(tarefas);
+  const out: { fim: Date; concluidas: number }[] = [];
+  for (let i = semanas - 1; i >= 0; i--) {
+    const fim = new Date(hoje); fim.setHours(23, 59, 59, 999); fim.setDate(fim.getDate() - i * 7);
+    out.push({ fim, concluidas: f.filter((t) => t.concluida_em && new Date(t.concluida_em) <= fim).length });
+  }
+  return { total: f.length, pontos: out };
+}
+
+/** Previsão de término pela média de conclusões das últimas 4 semanas. */
+export function previsaoTermino(tarefas: ProjetoTarefa[], hoje = new Date()): { data: Date | null; porSemana: number; restantes: number } {
+  const f = folhas(tarefas);
+  const restantes = f.filter((t) => !estaConcluida(t)).length;
+  const desde = hoje.getTime() - 28 * 86400000;
+  const recentes = f.filter((t) => t.concluida_em && new Date(t.concluida_em).getTime() >= desde && new Date(t.concluida_em).getTime() <= hoje.getTime()).length;
+  const porSemana = recentes / 4;
+  if (restantes === 0) return { data: hoje, porSemana, restantes };
+  if (porSemana === 0) return { data: null, porSemana, restantes };
+  return { data: new Date(hoje.getTime() + Math.ceil((restantes / porSemana) * 7) * 86400000), porSemana, restantes };
+}
+
+/** Atrasadas por responsável (só folhas). */
+export function atrasadasPorResponsavel(tarefas: ProjetoTarefa[], hoje = new Date()): Record<string, number> {
+  const out: Record<string, number> = {};
+  folhas(tarefas).forEach((t) => { if (t.responsavel_id && estaAtrasada(t, hoje)) out[t.responsavel_id] = (out[t.responsavel_id] ?? 0) + 1; });
+  return out;
+}
+
+/** Dias médios entre criação e conclusão, por prioridade (só folhas). */
+export function tempoMedioPorPrioridade(tarefas: ProjetoTarefa[]): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const p of ['critica', 'alta', 'media', 'baixa']) {
+    const ds = folhas(tarefas).filter((t: any) => t.prioridade === p && t.concluida_em && t.created_at)
+      .map((t: any) => (new Date(t.concluida_em).getTime() - new Date(t.created_at).getTime()) / 86400000);
+    out[p] = ds.length ? ds.reduce((a, b) => a + b, 0) / ds.length : null;
+  }
+  return out;
+}
+
+/** Mantém atividades criadas ou concluídas dentro do período (null = tudo). */
+export function filtrarPorPeriodo(tarefas: ProjetoTarefa[], dias: number | null, hoje = new Date()): ProjetoTarefa[] {
+  if (!dias) return tarefas;
+  const lim = hoje.getTime() - dias * 86400000;
+  const pais = new Set(tarefas.map((t) => t.parent_task_id).filter(Boolean));
+  return tarefas.filter((t: any) => pais.has(t.id) || new Date(t.created_at ?? 0).getTime() >= lim || (t.concluida_em && new Date(t.concluida_em).getTime() >= lim) || !estaConcluida(t));
+}

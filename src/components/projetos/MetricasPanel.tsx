@@ -14,10 +14,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import type { ProjetoTarefaPrioridade } from '@/types/projetos';
 import { parseDataLocal, intlLocale } from '@/lib/date-utils';
-import { indicadores, progressoPorFase } from '@/lib/projeto-acompanhamento';
+import { indicadores, progressoPorFase, burnupSemanal, previsaoTermino, atrasadasPorResponsavel, tempoMedioPorPrioridade, filtrarPorPeriodo } from '@/lib/projeto-acompanhamento';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToolbarField } from '@/components/ui/module-toolbar';
 
-export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[] }) {
+export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[]; fimPrevisto?: string | null }) {
   const { t } = useLanguage();
+  const [periodo, setPeriodo] = React.useState('todos');
+  const tarefas = React.useMemo(() => filtrarPorPeriodo(todas, periodo === 'todos' ? null : Number(periodo)), [todas, periodo]);
   const m = React.useMemo(() => {
     const atividades = folhas(tarefas);
     const total = atividades.length;
@@ -48,20 +52,27 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
     // Distribuição por prioridade
     const porPrior = (['critica', 'alta', 'media', 'baixa'] as ProjetoTarefaPrioridade[]).map((p) => ({
       prior: p,
-      qtd: tarefas.filter((t) => t.prioridade === p).length,
+      qtd: atividades.filter((t) => t.prioridade === p).length,
     }));
 
     // Distribuição por coluna
-    const porColuna = colunas.map((c) => ({ nome: c.nome, qtd: tarefas.filter((t) => t.coluna_id === c.id).length }));
+    const porColuna = colunas.map((c) => ({ nome: c.nome, qtd: atividades.filter((t) => t.coluna_id === c.id).length }));
 
     // Tempo gasto vs estimado
-    const estimado = tarefas.reduce((s: number, t: any) => s + (Number(t.estimativa_horas) || 0), 0);
-    const gasto = tarefas.reduce((s: number, t: any) => s + (Number(t.tempo_gasto_horas) || 0), 0);
+    const estimado = atividades.reduce((s: number, t: any) => s + (Number(t.estimativa_horas) || 0), 0);
+    const gasto = atividades.reduce((s: number, t: any) => s + (Number(t.tempo_gasto_horas) || 0), 0);
 
     return { total, abertas, concluidas: concluidas.length, atrasadas, slaViolado, slaRisco, semanas, cycleMed, porPrior, porColuna, estimado, gasto };
   }, [tarefas, colunas]);
 
   const ind = React.useMemo(() => indicadores(tarefas), [tarefas]);
+  const burnup = React.useMemo(() => burnupSemanal(todas), [todas]);
+  const previsao = React.useMemo(() => previsaoTermino(todas), [todas]);
+  const atrasoPessoa = React.useMemo(() => atrasadasPorResponsavel(tarefas), [tarefas]);
+  const tempoPrior = React.useMemo(() => tempoMedioPorPrioridade(tarefas), [tarefas]);
+  const mediaSemanal = m.semanas.length ? m.semanas.reduce((a, s) => a + s.concluidas, 0) / m.semanas.length : 0;
+  const fimPrev = fimPrevisto ? parseDataLocal(fimPrevisto) : null;
+  const previsaoAtrasa = !!(previsao.data && fimPrev && previsao.data > new Date(fimPrev.getTime() + 86399999));
   const fases = React.useMemo(() => progressoPorFase(tarefas), [tarefas]);
   const { data: usuarios = [] } = useUsuariosEmpresa();
   const atividades = React.useMemo(() => folhas(tarefas), [tarefas]);
@@ -88,6 +99,18 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <ToolbarField label={t('autoMet.periodo')}>
+          <Select value={periodo} onValueChange={setPeriodo}>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30">{t('relatoriosComp.dialog.period30')}</SelectItem>
+              <SelectItem value="90">{t('relatoriosComp.dialog.period90')}</SelectItem>
+              <SelectItem value="todos">{t('relatoriosComp.dialog.periodAll')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </ToolbarField>
+      </div>
       <StatStrip module="projetos" items={[
         { key: 'progresso', label: t('p3Projetos.painel.progressoGeral'), value: `${Math.round(ind.progresso * 100)}%`, icon: IconTrendUp as any, hint: t('p3Projetos.painel.planejadoHoje', { value: Math.round(ind.planejado * 100) }) } as any,
         { key: 'concluidas', label: t('p3Projetos.painel.concluidas'), value: ind.concluidas, icon: IconSuccess as any, tone: 'success', hint: t('p3Projetos.painel.deTotal', { total: ind.total }) } as any,
@@ -145,7 +168,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
                   <div className="h-full bg-state-done" style={{ width: `${(c.feitas / maxCarga) * 100}%` }} />
                   <div className="h-full bg-primary" style={{ width: `${((c.total - c.feitas) / maxCarga) * 100}%` }} />
                 </div>
-                <span className="text-right text-xs tabular-nums text-muted-foreground">{c.feitas}/{c.total}</span>
+                <span className="text-right text-xs tabular-nums text-muted-foreground">{c.feitas}/{c.total}{atrasoPessoa[c.id] ? <span className="ml-1 font-semibold text-destructive" title={t('autoMet.atrasadasPessoa')}>· {atrasoPessoa[c.id]}</span> : null}</span>
               </div>
             ))}
           </CardContent>
@@ -159,11 +182,32 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
         <Mini icon={<IconSuccess />} label={t('projetos.metricas.completion')} value={m.total ? `${Math.round((m.concluidas / m.total) * 100)}%` : '—'} hint={t('projetos.metricas.completionHint', { done: m.concluidas, total: m.total })} />
       </div>
 
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card variant="elevated" className="lg:col-span-2">
+          <CardContent className="p-4">
+            <div className="text-sm font-semibold mb-3">{t('autoMet.burnup')}</div>
+            <AkurisArea data={burnup.pontos.map((p) => ({ label: p.fim.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' }), value: p.concluidas }))} target={burnup.total} targetLabel={t('autoMet.escopo', { n: burnup.total })} domain={[0, Math.max(1, burnup.total)]} />
+          </CardContent>
+        </Card>
+        <Card variant="elevated">
+          <CardContent className="p-4 space-y-3">
+            <div className="text-sm font-semibold">{t('autoMet.previsao')}</div>
+            <p className={`text-2xl font-semibold tabular-nums ${previsaoAtrasa ? 'text-destructive' : ''}`}>{previsao.data ? previsao.data.toLocaleDateString(intlLocale()) : '—'}</p>
+            <p className="text-xs text-muted-foreground">{previsao.data ? t('autoMet.previsaoBase', { n: previsao.porSemana.toFixed(1), r: previsao.restantes }) : t('autoMet.previsaoSemRitmo')}</p>
+            {fimPrev && <Row label={t('autoMet.fimPrevisto')} value={fimPrev.toLocaleDateString(intlLocale())} hint={previsaoAtrasa ? t('autoMet.previsaoAtrasa') : ''} tone={previsaoAtrasa ? 'destructive' : undefined} />}
+            <div className="border-t pt-3 space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground">{t('autoMet.tempoMedio')}</div>
+              {(['critica', 'alta', 'media', 'baixa'] as const).map((p) => <Row key={p} label={getPrioridadeLabel(t, p)} value={tempoPrior[p] == null ? '—' : t('autoMet.dias', { n: tempoPrior[p]!.toFixed(1) })} />)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card variant="elevated">
           <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">{t('projetos.metricas.velocityChart')}</div>
-            <AkurisArea data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} />
+            <div className="text-sm font-semibold mb-3">{t('autoMet.velocidade8')}</div>
+            <AkurisArea data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} target={mediaSemanal} targetLabel={t('autoMet.media', { n: mediaSemanal.toFixed(1) })} />
           </CardContent>
         </Card>
         <Card variant="elevated">
@@ -177,7 +221,12 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
             <div className="text-sm font-semibold flex items-center gap-2"><IconTimer className="h-4 w-4 text-primary" /> {t('projetos.metricas.timeAndSla')}</div>
             <Row label={t('projetos.metricas.estimatedTotal')} value={`${m.estimado.toFixed(1)}h`} />
             <Row label={t('projetos.metricas.spentTotal')} value={`${m.gasto.toFixed(1)}h`} />
-            <Row label={t('projetos.metricas.efficiency')} value={m.estimado ? `${Math.round((m.gasto / m.estimado) * 100)}%` : '—'} hint={m.estimado && m.gasto > m.estimado ? t('projetos.metricas.aboveBudget') : ''} />
+            {m.estimado > 0 && (
+              <div className="space-y-1">
+                <Row label={t('autoMet.gastoVsEstimado')} value={`${Math.round((m.gasto / m.estimado) * 100)}%`} hint={m.gasto > m.estimado ? t('projetos.metricas.aboveBudget') : ''} tone={m.gasto > m.estimado ? 'destructive' : undefined} />
+                <div className="h-2 overflow-hidden rounded-full bg-muted"><div className={`h-full ${m.gasto > m.estimado ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${Math.min(100, (m.gasto / m.estimado) * 100)}%` }} /></div>
+              </div>
+            )}
             <Row label={t('projetos.metricas.slaViolated')} value={String(m.slaViolado)} tone={m.slaViolado > 0 ? 'destructive' : 'success'} />
             <Row label={t('projetos.metricas.slaAtRisk')} value={String(m.slaRisco)} tone={m.slaRisco > 0 ? 'warning' : 'neutral'} />
           </CardContent>
