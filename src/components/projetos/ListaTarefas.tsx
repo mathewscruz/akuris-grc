@@ -1,6 +1,6 @@
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import React from 'react';
-import { IconSearch, IconChevron } from '@/components/icons';
+import { IconSearch, IconChevron, IconLock } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -378,6 +378,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                             )}
                             {isMarco(task) && <span className="text-[hsl(var(--fw-gold))]" aria-label={t('p3Projetos.lista.milestone')} title={t('p3Projetos.lista.milestone')}>◆</span>}
                             <span className={nivel === 'fase' ? 'truncate font-bold text-foreground' : nivel === 'dominio' ? 'truncate font-semibold text-foreground' : 'truncate text-foreground/90'}>{nome}</span>
+                            {task.bloqueada && <IconLock className="h-3.5 w-3.5 shrink-0 text-warning" aria-label={t('p3Projetos.tarefa.bloqueada')} />}
                             {temFilhos && <span className="text-xs text-muted-foreground">({filhosPorPai.get(task.id)!.length})</span>}
                             {atrasadasSet.has(task.id) && <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">{t('p3Projetos.lista.tagAtrasada')}</span>}
                             {emCursoHoje && <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t('p3Projetos.lista.emCursoHoje')}</span>}

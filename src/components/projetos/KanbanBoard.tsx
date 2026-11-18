@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconAdd, IconCalendar, IconPerson } from '@/components/icons';
+import { IconAdd, IconCalendar, IconPerson, IconLock } from '@/components/icons';
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, KeyboardSensor, pointerWithin, rectIntersection, type CollisionDetection, type DragEndEvent } from '@dnd-kit/core';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
@@ -260,6 +260,7 @@ function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: bool
         {codigo && <CodeChip codigo={codigo} nivel="atividade" className="mt-0.5" />}
         {isMarco(tarefa) && <span className="mt-0.5 text-[hsl(var(--fw-gold))]" title={t('p3Projetos.lista.milestone')}>◆</span>}
         <p className="text-sm font-medium leading-snug line-clamp-2">{nome}</p>
+        {tarefa.bloqueada && <IconLock className="mt-0.5 ml-auto h-3.5 w-3.5 shrink-0 text-warning" aria-label={t('p3Projetos.tarefa.bloqueada')} />}
       </div>
       <div className="flex items-center gap-2">
         <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted"><div className={pct >= 100 ? 'h-full bg-success' : 'h-full bg-primary'} style={{ width: `${pct}%` }} /></div>

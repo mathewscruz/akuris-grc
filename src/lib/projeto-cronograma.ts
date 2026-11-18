@@ -79,3 +79,25 @@ export function desvioLinhaBase(t: DatasTarefa & { baseline_fim?: string | null 
 export function deslocarLote<T extends DatasTarefa & { id: string }>(tarefas: T[], dias: number): { id: string; data_inicio: DataISO; data_fim: DataISO }[] {
   return tarefas.flatMap((t) => { const r = aplicarArrasto(t, dias, 'mover'); return r ? [{ id: t.id, ...r }] : []; });
 }
+
+
+/** Verdadeiro se "tarefaId depende de novaDepId" fecharia um ciclo (ou é ela mesma). */
+export function criaCicloDependencia(deps: { tarefa_id: string; depende_de_tarefa_id: string }[], tarefaId: string, novaDepId: string): boolean {
+  if (tarefaId === novaDepId) return true;
+  const proximas = new Map<string, string[]>();
+  deps.forEach((d) => { proximas.set(d.tarefa_id, [...(proximas.get(d.tarefa_id) ?? []), d.depende_de_tarefa_id]); });
+  const pilha = [novaDepId]; const vistos = new Set<string>();
+  while (pilha.length) {
+    const atual = pilha.pop()!;
+    if (atual === tarefaId) return true;
+    if (vistos.has(atual)) continue;
+    vistos.add(atual);
+    pilha.push(...(proximas.get(atual) ?? []));
+  }
+  return false;
+}
+
+/** Período inválido: fim antes do início (datas YYYY-MM-DD). */
+export function periodoInvertido(inicio?: string | null, fim?: string | null): boolean {
+  return !!inicio && !!fim && fim < inicio;
+}

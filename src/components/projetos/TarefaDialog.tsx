@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { TAG_MARCO, estaAtrasada, TAG_PCT_AUTO, tagsVisiveis, progressoAutomatico } from '@/lib/projeto-acompanhamento';
-import { periodoSubtarefasExcede } from '@/lib/projeto-cronograma';
+import { periodoSubtarefasExcede, periodoInvertido } from '@/lib/projeto-cronograma';
+import { DependenciasField } from './DependenciasField';
+import { Switch } from '@/components/ui/switch';
 import { undoableAction } from '@/lib/undoable-action';
-import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess, IconChevron, IconLink } from '@/components/icons';
+import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess, IconChevron, IconLink, IconLock } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
@@ -29,7 +31,7 @@ import { VinculosGRCPanel } from './VinculosGRCPanel';
 import { TempoPanel } from './TempoPanel';
 import { ReacoesPorComentario } from './ReacoesBar';
 import { StatusPill, statusKindDe } from './StatusPill';
-import { useReacoes, useSprints } from '@/hooks/useProjetoExtras';
+import { useReacoes, useSprints, useTempoEntradas } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade, ProjetoColuna } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -58,7 +60,14 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const { data: usuarios = [] } = useUsuariosEmpresa();
   const nomeUsuario = (id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null;
   const fotoUsuario = (id: string | null) => (usuarios.find((u) => u.user_id === id) as { foto_url?: string | null } | undefined)?.foto_url ?? null;
+  const { data: tempoEntradas = [] } = useTempoEntradas(tarefa?.id);
+  const addComentario = useAddComentario(tarefa?.id ?? '');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [discardConfirm, setDiscardConfirm] = useState(false);
+  const [tituloInvalido, setTituloInvalido] = useState(false);
+  const [motivoBloqueio, setMotivoBloqueio] = useState('');
+  const inicialRef = React.useRef('');
+  const continuarRef = React.useRef(false);
   const [novaSub, setNovaSub] = useState('');
   const [novaTag, setNovaTag] = useState('');
   const [form, setForm] = useState({
@@ -74,11 +83,12 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     progresso_pct: 0,
     pct_auto: false,
     tags: [] as string[],
+    bloqueada: false,
   });
 
   useEffect(() => {
     if (open) {
-      setForm({
+      const inicial = {
         titulo: tarefa?.titulo ?? '',
         descricao: tarefa?.descricao ?? '',
         prioridade: (tarefa?.prioridade ?? 'media') as ProjetoTarefaPrioridade,
@@ -91,7 +101,12 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
         progresso_pct: tarefa?.progresso_pct ?? 0,
         tags: tagsVisiveis(tarefa?.tags),
         pct_auto: (tarefa?.tags ?? []).includes(TAG_PCT_AUTO),
-      });
+        bloqueada: !!tarefa?.bloqueada,
+      };
+      setForm(inicial);
+      inicialRef.current = JSON.stringify(inicial);
+      setTituloInvalido(false);
+      setMotivoBloqueio('');
       setNovaSub('');
       setNovaTag('');
     }
@@ -124,9 +139,13 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.titulo.trim()) return;
+    const continuar = continuarRef.current;
+    continuarRef.current = false;
+    if (!form.titulo.trim()) { setTituloInvalido(true); toast.error(t('p3Projetos.tarefa.tituloObrigatorio')); return; }
+    if (periodoInvertido(form.data_inicio, form.prazo)) { toast.error(t('p3Projetos.tarefa.datasInvertidas')); return; }
     const concluida = colAtual?.is_concluido;
-    await upsert.mutateAsync({
+    const passouBloqueada = form.bloqueada && !tarefa?.bloqueada;
+    const salvo: any = await upsert.mutateAsync({
       id: tarefa?.id,
       projeto_id: projetoId,
       coluna_id: form.coluna_id || null,
@@ -143,7 +162,14 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
       progresso_pct: concluida ? 100 : pctEfetivo,
       tags: form.pct_auto ? [...form.tags, TAG_PCT_AUTO] : form.tags,
       concluida_em: concluida ? (tarefa?.concluida_em ?? new Date().toISOString()) : null,
+      bloqueada: form.bloqueada,
     } as any);
+    if (passouBloqueada && tarefa?.id) {
+      const motivo = motivoBloqueio.trim();
+      addComentario.mutate(motivo ? t('p3Projetos.tarefa.bloqueioComentario', { motivo }) : t('p3Projetos.tarefa.bloqueadaSemMotivo'));
+    }
+    inicialRef.current = JSON.stringify(form);
+    if (continuar && !tarefa && salvo?.id && onOpenTarefa) { onOpenTarefa(salvo as ProjetoTarefa); return; }
     onOpenChange(false);
   };
 
@@ -169,6 +195,15 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     setNovaTag('');
   };
 
+  const sujo = open && inicialRef.current !== '' && inicialRef.current !== JSON.stringify(form);
+  function pedirFechar(o: boolean) {
+    if (!o && sujo) { setDiscardConfirm(true); return; }
+    onOpenChange(o);
+  }
+  const gastoHoras = tempoEntradas.reduce((sum: number, e: any) => sum + Number(e.horas), 0);
+  const estimativaNum = Number(form.estimativa_horas) || 0;
+  const datasInvertidas = periodoInvertido(form.data_inicio, form.prazo);
+
   const kind = statusKindDe(colAtual);
   const codigoDe = (titulo: string) => titulo.match(/^([A-Z]{1,3}\d+(?:\.\d+)*)\s+—\s+(.*)$/);
   const nomeCurto = (titulo: string) => (codigoDe(titulo)?.[2] ?? titulo).replace(/^(FASE|DOMÍNIO|DOMINIO)\s+\d+\s+—\s+/i, '');
@@ -182,7 +217,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     <>
     <DialogShell
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={pedirFechar}
       icon={IconChecklist}
       eyebrow={projetoNome}
       title={tarefa ? t('projetos.tarefaDialog.titleEdit') : t('projetos.tarefaDialog.titleNew')}
@@ -194,7 +229,10 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
               <IconDelete className="h-4 w-4" /> {t('projetos.tarefaDialog.delete')}
             </Button>
           )}
-          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('projetos.tarefaDialog.close')}</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => pedirFechar(false)}>{t('projetos.tarefaDialog.close')}</Button>
+          {!tarefa && onOpenTarefa && (
+            <Button type="submit" variant="outline" size="sm" form="tarefa-form" disabled={upsert.isPending} onClick={() => { continuarRef.current = true; }}>{t('p3Projetos.tarefa.salvarContinuar')}</Button>
+          )}
           <Button type="submit" size="sm" form="tarefa-form" disabled={upsert.isPending}>{t('projetos.tarefaDialog.save')}</Button>
         </div>
       }
@@ -243,11 +281,11 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           <Textarea
             aria-label={t('projetos.tarefaDialog.fieldTitulo')}
             value={form.titulo}
-            onChange={(e) => setForm({ ...form, titulo: e.target.value.replace(/\n/g, ' ') })}
-            required
+            onChange={(e) => { setTituloInvalido(false); setForm({ ...form, titulo: e.target.value.replace(/\n/g, ' ') }); }}
+            aria-invalid={tituloInvalido || undefined}
             rows={1}
             placeholder={t('projetos.tarefaDialog.fieldTitulo')}
-            className="min-h-0 resize-none border-transparent bg-transparent px-2 -mx-2 py-1 text-2xl font-semibold leading-tight shadow-none hover:bg-muted/50 focus-visible:bg-muted/40 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+            className="min-h-0 resize-none border-transparent bg-transparent px-2 -mx-2 py-1 text-2xl font-semibold leading-tight shadow-none aria-[invalid]:bg-destructive/10 aria-[invalid]:ring-1 aria-[invalid]:ring-destructive/50 hover:bg-muted/50 focus-visible:bg-muted/40 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
           />
 
           <section className="space-y-2">
@@ -255,6 +293,10 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} placeholder={t('p3Projetos.tarefa.descPlaceholder')}
               className="border-transparent bg-muted/30 shadow-none hover:bg-muted/50 focus-visible:border-border focus-visible:bg-background" />
           </section>
+
+          {!tarefa && (
+            <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground">{t('p3Projetos.tarefa.salveParaMais')}</p>
+          )}
 
           {tarefa && (
             <section className="space-y-2">
@@ -351,12 +393,28 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             </div>
           </Prop>
           <Prop icon={<IconCalendar />} label={t('p3Projetos.tarefa.conclusao')}>
-            <div className="[&_button]:h-9 [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
+            <div data-invalid={datasInvertidas} className="[&_button]:h-9 data-[invalid=true]:[&_button]:text-destructive [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-2 [&_button]:shadow-none [&_button:hover]:bg-muted">
               <DateField value={form.prazo || null} onChange={(v) => setForm({ ...form, prazo: v ?? '' })} />
             </div>
+            {datasInvertidas && <p role="alert" className="px-2 pb-1 text-xs text-destructive">{t('p3Projetos.tarefa.datasInvertidas')}</p>}
           </Prop>
           <Prop icon={<IconTime />} label={t('projetos.tarefaDialog.fieldEstimativa')}>
+            <div className="flex items-center gap-1">
             <Input type="number" min="0" step="0.5" placeholder={t('p3Projetos.tarefa.vazio')} className="h-9 border-transparent bg-transparent px-2 shadow-none hover:bg-muted focus-visible:bg-background" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
+              <span className="text-sm text-muted-foreground">h</span>
+            </div>
+            {tarefa && (gastoHoras > 0 || estimativaNum > 0) && (
+              <div className="space-y-1 px-2 pb-1">
+                <p className={`text-xs tabular-nums ${estimativaNum > 0 && gastoHoras > estimativaNum ? 'font-medium text-destructive' : 'text-muted-foreground'}`}>
+                  {t('p3Projetos.tarefa.gasto')}: {gastoHoras.toFixed(1)}h{estimativaNum > 0 ? ` ${t('p3Projetos.tarefa.de')} ${estimativaNum}h` : ''}
+                </p>
+                {estimativaNum > 0 && (
+                  <div className="h-1 overflow-hidden rounded-full bg-muted">
+                    <div className={`h-full transition-ui ${gastoHoras > estimativaNum ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${Math.min(100, (gastoHoras / estimativaNum) * 100)}%` }} />
+                  </div>
+                )}
+              </div>
+            )}
           </Prop>
           <Prop icon={<IconTrendUp />} label={t('projetos.tarefaDialog.fieldSprint')}>
             <Select value={form.sprint_id || 'none'} onValueChange={(v) => setForm({ ...form, sprint_id: v === 'none' ? '' : v })}>
@@ -380,6 +438,19 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                 className="h-6 w-10 rounded-full border border-dashed border-border bg-transparent px-2 text-xs outline-none focus:border-primary" />
             </div>
           </Prop>
+          {tarefa && (
+            <Prop icon={<IconLink />} label={t('p3Projetos.tarefa.dependeDe')}>
+              <DependenciasField projetoId={projetoId} tarefa={tarefa} tarefas={tarefas} />
+            </Prop>
+          )}
+          <Prop icon={<IconLock />} label={t('p3Projetos.tarefa.bloqueada')}>
+            <div className="px-2"><Switch checked={form.bloqueada} onCheckedChange={(v) => setForm({ ...form, bloqueada: v })} aria-label={t('p3Projetos.tarefa.bloqueada')} /></div>
+          </Prop>
+          {form.bloqueada && !tarefa?.bloqueada && tarefa && (
+            <div className="col-span-full px-1 pb-1">
+              <Input value={motivoBloqueio} onChange={(e) => setMotivoBloqueio(e.target.value)} placeholder={t('p3Projetos.tarefa.motivoBloqueio')} className="h-8 text-sm" />
+            </div>
+          )}
           <div className="col-span-full mt-2 flex items-center gap-4 border-t border-border px-1 pt-4">
             <ProgressRing value={pctEfetivo} />
             <div className="min-w-0 flex-1 space-y-2">
@@ -412,6 +483,16 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
       </form>
     </DialogShell>
 
+    <ConfirmDialog
+      open={discardConfirm}
+      onOpenChange={setDiscardConfirm}
+      title={t('p3Projetos.tarefa.descartarTitulo')}
+      description={t('p3Projetos.tarefa.descartarDesc')}
+      confirmText={t('p3Projetos.tarefa.descartar')}
+      cancelText={t('p3Projetos.tarefa.continuarEditando')}
+      variant="destructive"
+      onConfirm={() => { setDiscardConfirm(false); inicialRef.current = ''; onOpenChange(false); }}
+    />
     <ConfirmDialog
       open={deleteConfirm}
       onOpenChange={setDeleteConfirm}

@@ -80,3 +80,29 @@ export function useSalvarLinhaBase(projetoId: string | undefined) {
     onError: (e) => { logger.error('Linha de base', e); toast.error(tGlobal('p3Projetos.cronograma.erroSalvar')); },
   });
 }
+
+
+/** Dependências de uma tarefa (inserir/remover). RLS: can_access_tarefa. */
+export function useMutarDependencia(projetoId: string | undefined) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ['projeto-dependencias', projetoId] });
+  const add = useMutation({
+    mutationFn: async ({ tarefaId, dependeDe }: { tarefaId: string; dependeDe: string }) => {
+      const { error } = await supabase.from('projeto_tarefa_dependencias' as any)
+        .insert({ tarefa_id: tarefaId, depende_de_tarefa_id: dependeDe, tipo: 'FS' } as any);
+      if (error) throw error;
+    },
+    onSuccess: refresh,
+    onError: (e: any) => { logger.error('dependencia add', e); toast.error(e?.message || tGlobal('p3Projetos.feedback.error')); },
+  });
+  const remove = useMutation({
+    mutationFn: async ({ tarefaId, dependeDe }: { tarefaId: string; dependeDe: string }) => {
+      const { error } = await supabase.from('projeto_tarefa_dependencias' as any)
+        .delete().eq('tarefa_id', tarefaId).eq('depende_de_tarefa_id', dependeDe);
+      if (error) throw error;
+    },
+    onSuccess: refresh,
+    onError: (e: any) => { logger.error('dependencia remove', e); toast.error(e?.message || tGlobal('p3Projetos.feedback.error')); },
+  });
+  return { add, remove };
+}

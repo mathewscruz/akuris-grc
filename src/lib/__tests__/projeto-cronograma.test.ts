@@ -33,3 +33,18 @@ describe('cronograma de projetos', () => {
       .toEqual([{ id: 'a', data_inicio: '2027-01-02', data_fim: '2027-01-03' }]);
   });
 });
+
+import { criaCicloDependencia, periodoInvertido } from '../projeto-cronograma';
+describe('regras dos popups', () => {
+  it('bloqueia dependência de si mesma e ciclos', () => {
+    const deps = [{ tarefa_id: 'b', depende_de_tarefa_id: 'a' }, { tarefa_id: 'c', depende_de_tarefa_id: 'b' }];
+    expect(criaCicloDependencia(deps, 'a', 'a')).toBe(true);
+    expect(criaCicloDependencia(deps, 'a', 'c')).toBe(true);
+    expect(criaCicloDependencia(deps, 'c', 'a')).toBe(false);
+  });
+  it('conclusão antes do início é inválida', () => {
+    expect(periodoInvertido('2026-11-20', '2026-11-18')).toBe(true);
+    expect(periodoInvertido('2026-11-18', '2026-11-18')).toBe(false);
+    expect(periodoInvertido('2026-11-18', null)).toBe(false);
+  });
+});
