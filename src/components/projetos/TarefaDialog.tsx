@@ -217,8 +217,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           })}
         </nav>
         <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
-          <SelectTrigger aria-label={t('p3Projetos.tarefa.status')} className="h-8 w-auto gap-1 border-transparent bg-transparent px-1 shadow-none focus:ring-0 [&>svg]:hidden [&>span]:line-clamp-none [&>span]:overflow-visible whitespace-nowrap">
-            <div className="flex"><StatusPill kind={kind} className="py-1">{colAtual?.nome ?? '—'}<IconChevron className="h-3 w-3 rotate-90" /></StatusPill></div>
+          <SelectTrigger aria-label={t('p3Projetos.tarefa.status')} className="group h-8 w-auto gap-1 border-0 bg-transparent px-1 shadow-none outline-none ring-0 ring-offset-0 focus:ring-0 focus:ring-offset-0 focus-visible:!outline-none focus-visible:!shadow-none focus-visible:ring-0 data-[state=open]:ring-0 [&>svg]:hidden [&>span]:line-clamp-none [&>span]:overflow-visible whitespace-nowrap">
+            <div className="flex"><StatusPill kind={kind} className="py-1 transition-ui group-focus-visible:ring-2 group-focus-visible:ring-primary/30">{colAtual?.nome ?? '—'}<IconChevron className="h-3 w-3 rotate-90" /></StatusPill></div>
           </SelectTrigger>
           <SelectContent className="border-0 bg-transparent p-0 shadow-none dark:shadow-none data-[state=closed]:slide-out-to-top-1">
             {colunas.map((c, i) => (
