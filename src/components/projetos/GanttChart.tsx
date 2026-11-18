@@ -3,8 +3,8 @@ import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { isMarco, estaAtrasada, ordenarTarefasPorData, type OrdemGantt } from '@/lib/projeto-acompanhamento';
-import { IconChevron } from '@/components/icons';
+import { isMarco, estaAtrasada, ordenarTarefasPorData, periodoHerdado, type OrdemGantt } from '@/lib/projeto-acompanhamento';
+import { IconChevron, IconCalendar } from '@/components/icons';
 import { statusKindDe, type StatusKind } from './StatusPill';
 import { partirTitulo, mapaFilhos, nivelDe, CodeChip, NIVEL_ROW, type Nivel } from './projeto-visual';
 
@@ -105,6 +105,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
     walk(id);
     return iv.length ? { ini: Math.min(...iv.map((i) => i.ini)), fim: Math.max(...iv.map((i) => i.fim)) } : null;
   };
+  const porId = new Map(tarefas.map((tk) => [tk.id, tk]));
+  const periodoReal = (tk: ProjetoTarefa) => (filhos.has(tk.id) ? resumo(tk.id) ?? intervalo(tk) : intervalo(tk));
   const progressoAgregado = (id: string) => {
     const v: number[] = [];
     const walk = (pid: string) => (filhos.get(pid) ?? []).forEach((c) => (filhos.has(c.id) ? walk(c.id) : v.push(c.concluida_em ? 100 : c.progresso_pct ?? 0)));
@@ -163,6 +165,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
             const kind = tk.concluida_em ? 'done' : estaAtrasada(tk) ? 'late' : statusKindDe(colunas.find((c) => c.id === tk.coluna_id));
             const pct = temFilhos ? progressoAgregado(tk.id) : Math.max(0, Math.min(100, tk.concluida_em ? 100 : tk.progresso_pct ?? 0));
             const marco = isMarco(tk);
+            const semData = !iv;
+            const herdado = semData ? periodoHerdado(tk, porId, periodoReal) : null;
             return (
               <div key={tk.id} className={`group flex border-b border-border/60 hover:bg-muted/30 ${NIVEL_ROW[nivel]}`} style={{ height: ROW_H }}>
                 <div style={{ width: LEFT_W, paddingLeft: 12 + depth * 18 }}
@@ -178,8 +182,21 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
                   {codigo && <CodeChip codigo={codigo} nivel={nivel} />}
                   {marco && <span className="text-[hsl(var(--fw-gold))]">◆</span>}
                   <span className={`truncate text-sm ${nivel === 'fase' ? 'font-bold' : nivel === 'dominio' ? 'font-semibold' : ''}`} title={nome}>{nome}</span>
+                  {semData && <IconCalendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-label={t('p3Projetos.gantt.semData')} />}
                 </div>
                 <div className="relative" style={{ width: largura }}>
+                  {semData && (herdado ? (
+                    <button type="button" onClick={() => onSelectTarefa?.(tk)} title={t('p3Projetos.gantt.semDataDica')}
+                      className="absolute top-1/2 flex h-5 -translate-y-1/2 items-center overflow-hidden rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                      style={{ left: x(herdado.ini), width: Math.max(8, x(herdado.fim) - x(herdado.ini)) }}>
+                      <span className="truncate">{t('p3Projetos.gantt.semData')}</span>
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => onSelectTarefa?.(tk)} title={t('p3Projetos.gantt.semDataDica')}
+                      className="sticky left-2 top-1/2 ml-2 mt-[9px] inline-flex h-[18px] items-center gap-1 rounded-full border border-dashed border-muted-foreground/40 bg-muted/40 px-2 text-[10px] font-medium text-muted-foreground hover:text-foreground">
+                      <IconCalendar className="h-3 w-3" />{t('p3Projetos.gantt.semData')}
+                    </button>
+                  ))}
                   {iv && (marco && !temFilhos ? (
                     <button type="button" onClick={() => onSelectTarefa?.(tk)} title={nome}
                       className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[2px] bg-[hsl(var(--fw-gold))] ring-2 ring-card"

@@ -74,3 +74,16 @@ describe('ordenarTarefasPorData', () => {
     expect(ordenarTarefasPorData(ts, 'prazo').map((x) => x.id)).toEqual(['b', 'c', 'a']);
   });
 });
+
+import { periodoHerdado as _ph } from '@/lib/projeto-acompanhamento';
+describe('periodoHerdado (Gantt)', () => {
+  const pai = { id: 'p', parent_task_id: null };
+  const filho = { id: 'f', parent_task_id: 'p' };
+  const porId = new Map([['p', pai], ['f', filho]]);
+  it('subtarefa sem data herda o período do pai', () => {
+    expect(_ph(filho, porId, (t) => (t.id === 'p' ? { ini: 10, fim: 20 } : null))).toEqual({ ini: 10, fim: 20 });
+  });
+  it('sem pai datado não herda nada', () => {
+    expect(_ph(filho, porId, () => null)).toBeNull();
+  });
+});

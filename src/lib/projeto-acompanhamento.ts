@@ -140,3 +140,23 @@ export function ordenarTarefasPorData<T extends { data_inicio?: string | null; d
     return (a.ordem ?? 0) - (b.ordem ?? 0);
   });
 }
+
+/**
+ * Período herdado para desenhar uma tarefa sem data no Gantt: o do ancestral
+ * mais próximo que tenha período (próprio ou resumo dos filhos datados).
+ * Só serve para desenho — nunca é gravado nem entra em resumos/escala.
+ */
+export function periodoHerdado<T extends { id: string; parent_task_id?: string | null }>(
+  tarefa: T,
+  porId: Map<string, T>,
+  periodoDe: (t: T) => { ini: number; fim: number } | null,
+): { ini: number; fim: number } | null {
+  let p = tarefa.parent_task_id; let guarda = 0;
+  while (p && porId.has(p) && guarda++ < 20) {
+    const pai = porId.get(p)!;
+    const iv = periodoDe(pai);
+    if (iv) return iv;
+    p = pai.parent_task_id;
+  }
+  return null;
+}
