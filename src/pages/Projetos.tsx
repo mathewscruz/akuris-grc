@@ -1,3 +1,5 @@
+import { Chip } from '@/components/ui/chip';
+import { projetoStatusChip } from '@/lib/status-tone';
 import { rowOpenProps } from '@/lib/row-interaction';
 import React, { useState } from 'react';
 import { QueryError } from '@/components/ui/query-error';
@@ -9,7 +11,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -26,12 +27,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { RecordProgress } from '@/components/ui/record-progress';
 
-const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'info'> = {
-  ativo: 'success',
-  pausado: 'warning',
-  concluido: 'info',
-  arquivado: 'neutral',
-};
+
 
 export default function Projetos() {
   const navigate = useNavigate();
@@ -173,7 +169,7 @@ export default function Projetos() {
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold leading-tight flex-1 min-w-0">{p.nome}</h3>
                   <div className="flex items-center gap-1 shrink-0">
-                    <StatusBadge tone={statusTone[p.status] ?? 'neutral'}>{STATUS_LABEL[p.status] ?? formatStatus(p.status)}</StatusBadge>
+                    <Chip tone={projetoStatusChip(p.status)}>{STATUS_LABEL[p.status] ?? formatStatus(p.status)}</Chip>
                     <ProjetoActionsMenu projeto={p} onEdit={() => openEditar(p)} />
                   </div>
                 </div>

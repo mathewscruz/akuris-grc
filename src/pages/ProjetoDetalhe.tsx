@@ -1,10 +1,11 @@
+import { Chip } from '@/components/ui/chip';
+import { projetoStatusChip } from '@/lib/status-tone';
 import React, { useEffect, useRef, useState } from 'react';
 import { IconAdd, IconDownload, IconFile, IconArrowLeft } from '@/components/icons';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { useProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { KanbanBoard } from '@/components/projetos/KanbanBoard';
@@ -130,7 +131,7 @@ export default function ProjetoDetalhe() {
           <h1 className="text-2xl font-semibold truncate">{projeto.nome}</h1>
           {projeto.descricao && <p className="text-sm text-muted-foreground line-clamp-1">{projeto.descricao}</p>}
         </div>
-        <StatusBadge tone="primary">{STATUS_LABEL[projeto.status] ?? formatStatus(projeto.status)}</StatusBadge>
+        <Chip tone={projetoStatusChip(projeto.status)}>{STATUS_LABEL[projeto.status] ?? formatStatus(projeto.status)}</Chip>
         <Button variant="outline" size="sm" onClick={() => setReportDialog(true)}>
           <IconFile className="h-4 w-4" /> {t('projetos.detalhe.statusReportIa')}
         </Button>

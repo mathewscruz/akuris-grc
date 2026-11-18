@@ -768,3 +768,7 @@ export const resolveMarcoTipoTone = comoTaxonomia(_resolveMarcoTipoTone);
 export const resolveTipoAcessoTone = comoTaxonomia(_resolveTipoAcessoTone);
 export const resolveTipoVinculacaoTone = comoTaxonomia(_resolveTipoVinculacaoTone);
 export const resolveGenericTone = comoTaxonomia(_resolveGenericTone);
+
+/** Estado do projeto → tom de estado do Chip (ativo, pausado, concluído, arquivado). */
+export const projetoStatusChip = (status?: string | null): 'active' | 'attention' | 'done' | 'rest' =>
+  status === 'ativo' ? 'active' : status === 'pausado' ? 'attention' : status === 'concluido' ? 'done' : 'rest';
