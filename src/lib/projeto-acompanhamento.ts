@@ -160,3 +160,44 @@ export function periodoHerdado<T extends { id: string; parent_task_id?: string |
   }
   return null;
 }
+
+/**
+ * Ordena por data mantendo a hierarquia: irmãos são ordenados pela data
+ * (grupos pela menor data dos descendentes); sem data vão para o fim do seu
+ * nível, ainda dentro do pai. Devolve a lista achatada com profundidade.
+ */
+export function ordenarArvorePorData<T extends { id: string; parent_task_id?: string | null; data_inicio?: string | null; data_fim?: string | null; prazo?: string | null; ordem?: number | null }>(
+  tarefas: T[], ordem: Exclude<OrdemGantt, 'estrutura'>, recolhidos: Set<string> = new Set(),
+): { t: T; depth: number }[] {
+  const ids = new Set(tarefas.map((x) => x.id));
+  const filhos = new Map<string, T[]>();
+  const raiz: T[] = [];
+  tarefas.forEach((x) => {
+    if (x.parent_task_id && ids.has(x.parent_task_id)) {
+      const l = filhos.get(x.parent_task_id) ?? []; l.push(x); filhos.set(x.parent_task_id, l);
+    } else raiz.push(x);
+  });
+  const propria = (x: T) => (ordem === 'inicio' ? x.data_inicio ?? x.prazo ?? x.data_fim : x.data_fim ?? x.prazo ?? x.data_inicio) ?? null;
+  const memo = new Map<string, string | null>();
+  const chave = (x: T, guarda = 0): string | null => {
+    if (memo.has(x.id)) return memo.get(x.id)!;
+    let k = propria(x);
+    if (guarda < 20) for (const c of filhos.get(x.id) ?? []) { const kc = chave(c, guarda + 1); if (kc && (!k || kc < k)) k = kc; }
+    memo.set(x.id, k); return k;
+  };
+  const sort = (l: T[]) => l.slice().sort((a, b) => {
+    const ka = chave(a); const kb = chave(b);
+    if (ka && kb && ka !== kb) return ka < kb ? -1 : 1;
+    if (ka && !kb) return -1;
+    if (!ka && kb) return 1;
+    return (a.ordem ?? 0) - (b.ordem ?? 0);
+  });
+  const out: { t: T; depth: number }[] = [];
+  const push = (x: T, d: number) => {
+    out.push({ t: x, depth: d });
+    if (recolhidos.has(x.id) || d > 20) return;
+    sort(filhos.get(x.id) ?? []).forEach((c) => push(c, d + 1));
+  };
+  sort(raiz).forEach((r) => push(r, 0));
+  return out;
+}

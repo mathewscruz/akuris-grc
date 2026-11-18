@@ -3,7 +3,7 @@ import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { isMarco, estaAtrasada, ordenarTarefasPorData, periodoHerdado, type OrdemGantt } from '@/lib/projeto-acompanhamento';
+import { isMarco, estaAtrasada, ordenarArvorePorData, periodoHerdado, type OrdemGantt } from '@/lib/projeto-acompanhamento';
 import { IconChevron, IconCalendar } from '@/components/icons';
 import { statusKindDe, type StatusKind } from './StatusPill';
 import { partirTitulo, mapaFilhos, nivelDe, CodeChip, NIVEL_ROW, type Nivel } from './projeto-visual';
@@ -60,9 +60,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
     const raiz = tarefas.filter((x) => !x.parent_task_id || !ids.has(x.parent_task_id)).sort((a, b) => a.ordem - b.ordem);
     const out: { t: ProjetoTarefa; depth: number; nivel: Nivel }[] = [];
     if (ordenacao !== 'estrutura') {
-      const porId = new Map(tarefas.map((x) => [x.id, x]));
-      const profundidade = (x: ProjetoTarefa) => { let d = 0; let p = x.parent_task_id; while (p && porId.has(p) && d < 10) { d++; p = porId.get(p)!.parent_task_id; } return d; };
-      return ordenarTarefasPorData(tarefas, ordenacao).map((x) => ({ t: x, depth: 0, nivel: nivelDe(x, filhos, profundidade(x)) }));
+      return ordenarArvorePorData(tarefas, ordenacao, recolhidos).map(({ t: x, depth }) => ({ t: x, depth, nivel: nivelDe(x, filhos, depth) }));
     }
     const push = (x: ProjetoTarefa, d: number) => {
       out.push({ t: x, depth: d, nivel: nivelDe(x, filhos, d) });

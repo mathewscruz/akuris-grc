@@ -87,3 +87,16 @@ describe('periodoHerdado (Gantt)', () => {
     expect(_ph(filho, porId, () => null)).toBeNull();
   });
 });
+
+import { ordenarArvorePorData as _oa } from '@/lib/projeto-acompanhamento';
+describe('ordenarArvorePorData (Gantt)', () => {
+  it('subtarefa sem data fica dentro do pai, após as irmãs datadas', () => {
+    const ts = [
+      { id: 'A', parent_task_id: null, data_inicio: '2026-03-01', ordem: 1 },
+      { id: 'a1', parent_task_id: 'A', data_inicio: null, ordem: 1 },
+      { id: 'a2', parent_task_id: 'A', data_inicio: '2026-03-05', ordem: 2 },
+      { id: 'B', parent_task_id: null, data_inicio: '2026-01-01', ordem: 2 },
+    ];
+    expect(_oa(ts, 'inicio').map((x) => `${x.t.id}:${x.depth}`)).toEqual(['B:0', 'A:0', 'a2:1', 'a1:1']);
+  });
+});
