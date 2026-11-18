@@ -58,7 +58,7 @@ export function useUpsertSprint(projetoId: string) {
       qc.invalidateQueries({ queryKey: ['projeto-sprints', projetoId] });
       toast.success(tGlobal('cardsKpi.sweep.projetos.sprintSalva'));
     },
-    onError: (e: any) => toast.error(e.message || 'Erro'),
+    onError: (e: any) => toast.error(e.message || tGlobal('p3Projetos.feedback.error')),
   });
 }
 
@@ -71,7 +71,8 @@ export function useDeleteSprint(projetoId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projeto-sprints', projetoId] });
-      toast.success('Sprint removida');
+      qc.invalidateQueries({ queryKey: ['projeto-tarefas', projetoId] });
+      toast.success(tGlobal('p3Projetos.feedback.sprintRemoved'));
     },
   });
 }
@@ -125,9 +126,9 @@ export function useAddTempo(tarefaId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tarefa-tempo', tarefaId] });
       qc.invalidateQueries({ queryKey: ['projeto-tarefas'] });
-      toast.success('Tempo registrado');
+      toast.success(tGlobal('p3Projetos.feedback.timeLogged'));
     },
-    onError: (e: any) => toast.error(e.message || 'Erro'),
+    onError: (e: any) => toast.error(e.message || tGlobal('p3Projetos.feedback.error')),
   });
 }
 
@@ -191,7 +192,7 @@ export function useToggleReacao() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['comentario-reacoes'] }),
-    onError: (e: any) => toast.error(e.message || 'Erro'),
+    onError: (e: any) => toast.error(e.message || tGlobal('p3Projetos.feedback.error')),
   });
 }
 
@@ -253,7 +254,7 @@ export function useUpsertAutomacao(projetoId: string) {
       qc.invalidateQueries({ queryKey: ['projeto-automacoes', projetoId] });
       toast.success(tGlobal('cardsKpi.sweep.projetos.automacaoSalva'));
     },
-    onError: (e: any) => toast.error(e.message || 'Erro'),
+    onError: (e: any) => toast.error(e.message || tGlobal('p3Projetos.feedback.error')),
   });
 }
 
@@ -320,7 +321,7 @@ export function useUpsertTemplate() {
       qc.invalidateQueries({ queryKey: ['projeto-templates'] });
       toast.success(tGlobal('cardsKpi.sweep.projetos.templateSalvo'));
     },
-    onError: (e: any) => toast.error(e.message || 'Erro'),
+    onError: (e: any) => toast.error(e.message || tGlobal('p3Projetos.feedback.error')),
   });
 }
 

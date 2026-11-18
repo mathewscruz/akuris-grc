@@ -2,7 +2,7 @@ import React from 'react';
 import { AkurisBars, AkurisArea, AkurisDonut } from '@/components/charts/AkurisCharts';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
-import { folhas, isMarco } from '@/lib/projeto-acompanhamento';
+import { folhas, isMarco, estaAtrasada } from '@/lib/projeto-acompanhamento';
 import { partirTitulo, CodeChip, UserAvatar } from './projeto-visual';
 import { statusKindDe } from './StatusPill';
 import { IconSuccess, IconWarning, IconTime, IconTrendUp, IconTimer } from '@/components/icons';
@@ -19,10 +19,11 @@ import { indicadores, progressoPorFase } from '@/lib/projeto-acompanhamento';
 export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[] }) {
   const { t } = useLanguage();
   const m = React.useMemo(() => {
-    const total = tarefas.length;
-    const concluidas = tarefas.filter((t) => t.concluida_em);
+    const atividades = folhas(tarefas);
+    const total = atividades.length;
+    const concluidas = atividades.filter((t) => t.concluida_em || (t.progresso_pct ?? 0) >= 100);
     const abertas = total - concluidas.length;
-    const atrasadas = tarefas.filter((t) => !t.concluida_em && t.prazo && parseDataLocal(t.prazo) < new Date()).length;
+    const atrasadas = atividades.filter((t) => estaAtrasada(t)).length;
     const slaViolado = (tarefas as any[]).filter((t) => t.sla_status === 'violado').length;
     const slaRisco = (tarefas as any[]).filter((t) => t.sla_status === 'em_risco').length;
 

@@ -26,12 +26,17 @@ interface CriarTarefaFromGRCProps {
   trigger?: React.ReactNode;
   variant?: 'default' | 'outline' | 'ghost' | 'secondary';
   size?: 'default' | 'sm' | 'lg' | 'icon';
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
-  entidadeTipo, entidadeId, tituloSugerido = '', descricaoSugerida = '', trigger, variant = 'outline', size = 'sm',
+  entidadeTipo, entidadeId, tituloSugerido = '', descricaoSugerida = '', trigger, variant = 'outline', size = 'sm', open: controlledOpen, onOpenChange,
 }) => {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (next: boolean) => { setInternalOpen(next); onOpenChange?.(next); };
+  const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
   const [projetoId, setProjetoId] = useState<string>('');
   const [titulo, setTitulo] = useState(tituloSugerido);
   const [descricao, setDescricao] = useState(descricaoSugerida);
@@ -48,6 +53,7 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
   const ativos = useMemo(() => projetos.filter(p => p.status === 'ativo'), [projetos]);
 
   React.useEffect(() => {
+    if (!open) setCreatedTaskId(null);
     if (open) {
       setTitulo(tituloSugerido);
       setDescricao(descricaoSugerida);
@@ -55,15 +61,18 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
   }, [open, tituloSugerido, descricaoSugerida]);
 
   const handleSalvar = async () => {
+    let tarefaId = createdTaskId;
+    if (!tarefaId) {
     if (!projetoId) { toast.error(t('projetos.criarTarefaGRC.selectProjectError')); return; }
     if (titulo.trim().length < 3) { toast.error(t('projetos.criarTarefaGRC.titleError')); return; }
-    const primeiraColuna = colunas[0]?.id;
-    if (!primeiraColuna) { toast.error(t('projetos.criarTarefaGRC.noColumnsError')); return; }
+    if (!colunas[0]?.id) { toast.error(t('projetos.criarTarefaGRC.noColumnsError')); return; }
+    }
     setSalvando(true);
     try {
+      if (!tarefaId) {
       const tarefa: any = await upsert.mutateAsync({
         projeto_id: projetoId,
-        coluna_id: primeiraColuna,
+        coluna_id: colunas[0].id,
         titulo,
         descricao: descricao || null,
         prioridade,
@@ -71,11 +80,14 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
         origem_tipo: entidadeTipo,
         origem_id: entidadeId,
       });
+      tarefaId = tarefa?.id ?? null;
+      if (tarefaId) setCreatedTaskId(tarefaId);
+      }
 
       // cria vínculo polimórfico
-      if (tarefa?.id && profile?.empresa_id) {
+      if (tarefaId && profile?.empresa_id) {
         await exigirEscrita(supabase.from('projeto_tarefa_vinculos' as any).insert({
-          tarefa_id: tarefa.id,
+          tarefa_id: tarefaId,
           entidade_tipo: entidadeTipo,
           entidade_id: entidadeId,
           criado_por: user?.id ?? null,
@@ -93,7 +105,7 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
 
   return (
     <>
-      {trigger ? (
+      {controlledOpen !== undefined ? null : trigger ? (
         <span onClick={() => setOpen(true)}>{trigger}</span>
       ) : (
         <Button variant={variant} size={size} onClick={() => setOpen(true)}>

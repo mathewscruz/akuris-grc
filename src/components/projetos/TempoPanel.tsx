@@ -8,11 +8,11 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { useTempoEntradas, useAddTempo, useDeleteTempo } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { intlLocale } from '@/lib/date-utils';
+import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 
 const STORAGE_KEY = 'akuris.tarefa.timer';
 
-export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; estimativa?: number | null; gasto?: number | null }) {
+export function TempoPanel({ tarefaId, estimativa }: { tarefaId: string; estimativa?: number | null; gasto?: number | null }) {
   const { t } = useLanguage();
   const { data: entradas = [] } = useTempoEntradas(tarefaId);
   const add = useAddTempo(tarefaId);
@@ -27,11 +27,13 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
 
   // hidrata timer do localStorage por tarefa
   React.useEffect(() => {
+    setStartedAt(null);
+    setElapsed(0);
     try {
       const raw = localStorage.getItem(`${STORAGE_KEY}.${tarefaId}`);
       if (raw) {
         const { startedAt: s } = JSON.parse(raw);
-        if (typeof s === 'number') setStartedAt(s);
+        if (typeof s === 'number' && Number.isFinite(s)) { setStartedAt(s); setElapsed(Math.max(0, Date.now() - s)); }
       }
     } catch {
       // Um valor local inválido apenas reinicia o cronómetro.
@@ -67,6 +69,7 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
     setNovoH(''); setNovoDesc('');
   };
 
+  const totalHoras = entradas.reduce((sum, e) => sum + Number(e.horas), 0);
   const totalUser = entradas.filter((e) => e.user_id === user?.id).reduce((s, e) => s + Number(e.horas), 0);
   const fmtTimer = (ms: number) => {
     const tot = Math.floor(ms / 1000);
@@ -108,7 +111,7 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <Stat label={t('projetos.tempo.statEstimate')} value={estimativa ? `${estimativa}h` : '—'} />
-        <Stat label={t('projetos.tempo.statSpentTotal')} value={gasto ? `${Number(gasto).toFixed(1)}h` : '0h'} />
+        <Stat label={t('projetos.tempo.statSpentTotal')} value={`${totalHoras.toFixed(1)}h`} />
         <Stat label={t('projetos.tempo.statYouLogged')} value={`${totalUser.toFixed(1)}h`} />
       </div>
 
@@ -138,7 +141,7 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
             {entradas.map((e) => (
               <li key={e.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm group">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium">{Number(e.horas).toFixed(2)}h <span className="text-muted-foreground font-normal">· {new Date(e.data).toLocaleDateString(intlLocale())}</span></div>
+                  <div className="font-medium">{Number(e.horas).toFixed(2)}h <span className="text-muted-foreground font-normal">· {parseDataLocal(e.data).toLocaleDateString(intlLocale())}</span></div>
                   {e.descricao && <div className="text-xs text-muted-foreground truncate">{e.descricao}</div>}
                 </div>
                 {e.user_id === user?.id && (

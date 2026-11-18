@@ -114,7 +114,7 @@ export function useDeleteTarefa(projetoId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projeto-tarefas', projetoId] });
-      toast.success('Tarefa removida');
+      toast.success(tGlobal('p3Projetos.feedback.taskRemoved'));
     },
     onError: (err: any) => toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroRemover')),
   });

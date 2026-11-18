@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IconAdd, IconDownload, IconFile, IconArrowLeft, IconSettings } from '@/components/icons';
+import { IconAdd, IconDownload, IconFile, IconArrowLeft } from '@/components/icons';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -139,9 +139,6 @@ export default function ProjetoDetalhe() {
         </Button>
         <Button variant="outline" size="sm" onClick={() => exportTarefasCSV(projeto.nome, tarefas, colunas)}>
           <IconDownload className="h-4 w-4" /> {t('projetos.detalhe.exportCsv')}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
-          <IconSettings className="h-4 w-4" /> {t('projetos.detalhe.edit')}
         </Button>
         <ProjetoActionsMenu projeto={projeto} onEdit={() => setProjetoDialog(true)} variant="button" />
         <Button size="sm" onClick={() => openNovaTarefa()}>

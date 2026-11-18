@@ -22,7 +22,7 @@ export function CriarTarefaMenuItem(props: {
       <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setOpen(true); }}>
         <IconChecklist className="mr-2 h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
       </DropdownMenuItem>
-      <CriarTarefaFromGRCControlled
+      <CriarTarefaFromGRC
         open={open}
         onOpenChange={setOpen}
         entidadeTipo={props.entidadeTipo}
@@ -31,28 +31,5 @@ export function CriarTarefaMenuItem(props: {
         descricaoSugerida={props.descricaoSugerida}
       />
     </>
-  );
-}
-
-/**
- * Variante puramente controlada — renderiza só o dialog do CriarTarefaFromGRC.
- * Usa o componente original com `trigger` invisível, clicando programaticamente.
- */
-function CriarTarefaFromGRCControlled({
-  open, onOpenChange, ...rest
-}: { open: boolean; onOpenChange: (v: boolean) => void } & React.ComponentProps<typeof CriarTarefaFromGRC>) {
-  const triggerRef = React.useRef<HTMLSpanElement>(null);
-
-  React.useEffect(() => {
-    if (open) triggerRef.current?.click();
-  }, [open]);
-
-  return (
-    <div className="contents" onClick={(e) => e.stopPropagation()}>
-      <CriarTarefaFromGRC
-        {...rest}
-        trigger={<span ref={triggerRef} style={{ display: 'none' }} />}
-      />
-    </div>
   );
 }
