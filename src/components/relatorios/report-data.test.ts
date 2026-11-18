@@ -34,12 +34,12 @@ describe('report preview and export data', () => {
     state.rows.due_diligence_assessments = [0, 20, 100, null].map((score_final, id) => ({ id, status: 'concluido', score_final }));
     const result = await fetchTemplateData('due_diligence_fornecedores', 'tenant-a');
     const metrics = result.sections[0].metrics!;
-    expect(metrics.find(m => m.label === 'Score Medio (0-100)')?.value).toBe('40.0');
-    expect(metrics.find(m => m.label === 'Avaliacoes com score de 80 ou mais')?.value).toBe(1);
+    expect(metrics.find(m => m.label === 'Score Médio (0-100)')?.value).toBe('40.0');
+    expect(metrics.find(m => m.label === 'Avaliações com score de 80 ou mais')?.value).toBe(1);
   });
   it('does not translate absence of completed scores into a measured zero', async () => {
     state.rows.due_diligence_assessments = [{ id: 'draft', status: 'pendente', score_final: null }];
     const result = await fetchTemplateData('due_diligence_fornecedores', 'tenant-a');
-    expect(result.sections[0].metrics!.find(m => m.label === 'Score Medio (0-100)')?.value).toBe('—');
+    expect(result.sections[0].metrics!.find(m => m.label === 'Score Médio (0-100)')?.value).toBe('—');
   });
 });

@@ -20,7 +20,14 @@ const BLOCOS = [
   'riscos_geral', 'incidentes_periodo', 'lgpd_anpd', 'iso27001_auditoria',
   'continuidade_bcp', 'contratos_geral', 'ativos_inventario',
   'due_diligence_fornecedores', 'documentos_governanca', 'denuncias_canal_etica',
+  'planos_acao', 'revisao_acessos', 'projetos_portfolio',
 ] as const;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function parseDestinatarios(txt: string) {
+  const lista = txt.split(/[,;\s]+/).map((e) => e.trim()).filter(Boolean);
+  return { validos: lista.filter((e) => EMAIL_RE.test(e)), invalidos: lista.filter((e) => !EMAIL_RE.test(e)) };
+}
 
 export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading }: RelatorioDialogProps) {
   const { t } = useLanguage();
@@ -56,8 +63,12 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
   const alternarBloco = (bloco: string, checked: boolean) =>
     setBlocos((atuais) => checked ? [...new Set([...atuais, bloco])] : atuais.filter((item) => item !== bloco));
 
+  const dest = parseDestinatarios(destinatarios);
+  const agendaInvalida = frequencia !== 'manual' && (dest.validos.length === 0 || dest.invalidos.length > 0);
+  const diaMax = frequencia === 'semanal' ? 7 : 28;
+
   const handleSave = () => {
-    if (!nome.trim() || blocos.length === 0) return;
+    if (!nome.trim() || blocos.length === 0 || agendaInvalida) return;
     const template = templateBase === 'nenhum' ? null : templateBase;
     onSave({
       nome: nome.trim(),
@@ -73,8 +84,8 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
       },
       agendamento: frequencia === 'manual' ? null : {
         frequencia,
-        dia_envio: Math.min(28, Math.max(1, Number(diaEnvio) || 1)),
-        destinatarios: destinatarios.split(',').map((email) => email.trim()).filter(Boolean),
+        dia_envio: Math.min(diaMax, Math.max(1, Number(diaEnvio) || 1)),
+        destinatarios: dest.validos,
         ativo: true,
       },
     });
@@ -91,8 +102,8 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
       onSubmit={handleSave}
       submitLabel={relatorio ? t('relatoriosComp.dialog.submitUpdate') : t('relatoriosComp.dialog.submitCreate')}
       isSubmitting={loading}
-      submitDisabled={!nome.trim() || blocos.length === 0}
-      submitBlockedReason={!nome.trim() ? t('relatoriosComp.dialog.nameRequired') : blocos.length === 0 ? t('relatoriosComp.dialog.blockRequired') : undefined}
+      submitDisabled={!nome.trim() || blocos.length === 0 || agendaInvalida}
+      submitBlockedReason={!nome.trim() ? t('relatoriosComp.dialog.nameRequired') : blocos.length === 0 ? t('relatoriosComp.dialog.blockRequired') : agendaInvalida ? t('relatoriosComp.agenda.emailsInvalidos') : undefined}
     >
       <div className="grid gap-6 py-2">
         <section className="grid gap-4 md:grid-cols-2">
@@ -119,8 +130,8 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
           <div className="space-y-2"><Label>{t('relatoriosComp.dialog.audience')}</Label><Select value={publico} onValueChange={setPublico}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="diretoria">{t('relatoriosComp.dialog.audienceBoard')}</SelectItem><SelectItem value="auditoria">{t('relatoriosComp.dialog.audienceAudit')}</SelectItem><SelectItem value="operacional">{t('relatoriosComp.dialog.audienceOperations')}</SelectItem><SelectItem value="regulador">{t('relatoriosComp.dialog.audienceRegulator')}</SelectItem></SelectContent></Select></div>
           <label className="flex items-center gap-2 self-end rounded-md border px-3 py-2.5 text-sm"><Checkbox checked={incluirDetalhes} onCheckedChange={(checked) => setIncluirDetalhes(checked === true)} />{t('relatoriosComp.dialog.includeDetails')}</label>
           <div className="space-y-2"><Label>{t('relatoriosComp.dialog.frequency')}</Label><Select value={frequencia} onValueChange={setFrequencia}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">{t('relatoriosComp.dialog.frequencyManual')}</SelectItem><SelectItem value="semanal">{t('relatoriosComp.dialog.frequencyWeekly')}</SelectItem><SelectItem value="mensal">{t('relatoriosComp.dialog.frequencyMonthly')}</SelectItem><SelectItem value="trimestral">{t('relatoriosComp.dialog.frequencyQuarterly')}</SelectItem></SelectContent></Select></div>
-          {frequencia !== 'manual' && <div className="space-y-2"><Label htmlFor="diaEnvio">{t('relatoriosComp.dialog.sendDay')}</Label><Input id="diaEnvio" type="number" min="1" max="28" value={diaEnvio} onChange={(e) => setDiaEnvio(e.target.value)} /></div>}
-          {frequencia !== 'manual' && <div className="space-y-2 md:col-span-2"><Label htmlFor="destinatarios">{t('relatoriosComp.dialog.recipients')}</Label><Input id="destinatarios" value={destinatarios} onChange={(e) => setDestinatarios(e.target.value)} placeholder={t('relatoriosComp.dialog.recipientsPlaceholder')} /></div>}
+          {frequencia !== 'manual' && <div className="space-y-2"><Label htmlFor="diaEnvio">{t('relatoriosComp.dialog.sendDay')}</Label>{frequencia === 'semanal' ? (<Select value={String(Math.min(7, Number(diaEnvio) || 1))} onValueChange={setDiaEnvio}><SelectTrigger id="diaEnvio"><SelectValue /></SelectTrigger><SelectContent>{[1, 2, 3, 4, 5, 6, 7].map((d) => <SelectItem key={d} value={String(d)}>{t(`relatoriosComp.agenda.dias.${d}`)}</SelectItem>)}</SelectContent></Select>) : (<Input id="diaEnvio" type="number" min="1" max="28" value={diaEnvio} onChange={(e) => setDiaEnvio(e.target.value)} />)}</div>}
+          {frequencia !== 'manual' && <div className="space-y-2 md:col-span-2"><Label htmlFor="destinatarios">{t('relatoriosComp.dialog.recipients')}</Label><Input id="destinatarios" value={destinatarios} onChange={(e) => setDestinatarios(e.target.value)} placeholder={t('relatoriosComp.dialog.recipientsPlaceholder')} aria-invalid={agendaInvalida} />{agendaInvalida && <p role="alert" className="text-xs text-destructive">{dest.invalidos.length ? t('relatoriosComp.agenda.invalidosLista', { lista: dest.invalidos.join(', ') }) : t('relatoriosComp.agenda.emailsInvalidos')}</p>}</div>}
         </section>
       </div>
     </DialogShell>

@@ -1,6 +1,16 @@
 export const relatoriosComp = {
   pt: {
     relatoriosComp: {
+      novos: {
+        planos_acao: { nome: 'Planos de Ação', desc: 'Planos abertos, atrasados, por responsável e origem' },
+        revisao_acessos: { nome: 'Revisão de Acessos', desc: 'Campanhas de revisão, decisões e acessos revogados' },
+        projetos_portfolio: { nome: 'Portfólio de Projetos', desc: 'Progresso, atividades atrasadas e prazos por projeto' },
+      },
+      agenda: {
+        emailsInvalidos: 'Indique pelo menos um e-mail válido para o envio agendado.',
+        invalidosLista: 'E-mails inválidos: {lista}',
+        dias: { 1: 'Segunda-feira', 2: 'Terça-feira', 3: 'Quarta-feira', 4: 'Quinta-feira', 5: 'Sexta-feira', 6: 'Sábado', 7: 'Domingo' },
+      },
       dialog: {
         titleEdit: 'Editar Relatório',
         titleNew: 'Novo Relatório',
@@ -44,6 +54,9 @@ export const relatoriosComp = {
           due_diligence_fornecedores: 'Due diligence de fornecedores',
           documentos_governanca: 'Governança documental',
           denuncias_canal_etica: 'Canal de ética',
+          planos_acao: 'Planos de ação',
+          revisao_acessos: 'Revisão de acessos',
+          projetos_portfolio: 'Projetos',
         },
         audience: 'Público principal',
         audienceBoard: 'Diretoria',
@@ -73,6 +86,16 @@ export const relatoriosComp = {
   },
   en: {
     relatoriosComp: {
+      novos: {
+        planos_acao: { nome: 'Action Plans', desc: 'Open and overdue plans by owner and source' },
+        revisao_acessos: { nome: 'Access Reviews', desc: 'Review campaigns, decisions and revoked access' },
+        projetos_portfolio: { nome: 'Project Portfolio', desc: 'Progress, overdue tasks and deadlines per project' },
+      },
+      agenda: {
+        emailsInvalidos: 'Enter at least one valid e-mail for scheduled delivery.',
+        invalidosLista: 'Invalid e-mails: {lista}',
+        dias: { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' },
+      },
       dialog: {
         titleEdit: 'Edit Report',
         titleNew: 'New Report',
@@ -116,6 +139,9 @@ export const relatoriosComp = {
           due_diligence_fornecedores: 'Supplier due diligence',
           documentos_governanca: 'Document governance',
           denuncias_canal_etica: 'Ethics channel',
+          planos_acao: 'Action plans',
+          revisao_acessos: 'Access reviews',
+          projetos_portfolio: 'Projects',
         },
         audience: 'Primary audience',
         audienceBoard: 'Board',

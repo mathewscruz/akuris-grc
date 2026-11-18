@@ -329,3 +329,7 @@ verify_jwt = false
 
 [functions.send-gap-owner-notification]
 verify_jwt = true
+
+[functions.send-relatorios-agendados]
+# Chamada só pela rotina diária; a porta fecha-se no código (token da rotina).
+verify_jwt = false

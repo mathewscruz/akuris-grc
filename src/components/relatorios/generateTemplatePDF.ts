@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getAppLocale } from '@/lib/i18n-locale';
+import { JURISDICAO_CONFIG, type JurisdicaoCodigo } from '@/lib/jurisdicao';
 import { contarRiscosPorSeveridade, severidadeRisco, norm, contarContratos, isIncidenteResolvido, isContratoAVencer, isAVencer } from '@/lib/metrics';
 import { contarDocumentos } from '@/lib/metrics/documentos';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
@@ -132,9 +133,85 @@ const PDF_LABELS: Record<string, string> = {
   "Verifique se ha dados cadastrados nos modulos correspondentes.": "Check whether data has been registered in the corresponding modules."
 };
 
+Object.assign(PDF_LABELS, {
+  "Panorama de privacidade": "Privacy overview",
+  "Resumo Executivo - Periodo selecionado": "Executive Summary - Selected period",
+  "Incidentes no periodo": "Incidents in period",
+  "Planos de Acao": "Action Plans",
+  "Total de Planos de Acao": "Total Action Plans",
+  "Atrasados": "Overdue",
+  "Em Aberto": "Open",
+  "Origem": "Source",
+  "Prazo": "Due date",
+  "Revisao de Acessos": "Access Reviews",
+  "Total de Revisoes": "Total Reviews",
+  "Contas Revisadas": "Accounts Reviewed",
+  "Contas Revogadas": "Accounts Revoked",
+  "Contas Aprovadas": "Accounts Approved",
+  "Revisoes": "Reviews",
+  "Data limite": "Deadline",
+  "Projetos": "Projects",
+  "Total de Projetos": "Total Projects",
+  "Atividades": "Tasks",
+  "Atividades Atrasadas": "Overdue Tasks",
+  "Progresso": "Progress",
+  "Fim previsto": "Planned end",
+  "Autoridade": "Authority",
+  "Lei aplicavel": "Applicable law",
+});
+
+/** Acentuação dos rótulos PT (o dicionário-fonte foi escrito sem acentos). */
+const ACENTOS_PT: Record<string, string> = {
+  Responsavel: 'Responsável', indisponivel: 'indisponível', ultimos: 'últimos', Medio: 'Médio', Medios: 'Médios',
+  Avaliacoes: 'Avaliações', Anonimas: 'Anônimas', Critica: 'Crítica', Criticos: 'Críticos', Etica: 'Ética',
+  Criptograficas: 'Criptográficas', Concluidas: 'Concluídas', Concluidos: 'Concluídos', Denuncias: 'Denúncias',
+  Distribuicao: 'Distribuição', Investigacao: 'Investigação', Revisao: 'Revisão', Revisoes: 'Revisões', Governanca: 'Governança',
+  Historico: 'Histórico', Inventario: 'Inventário', Licencas: 'Licenças', Nao: 'Não', Negocios: 'Negócios',
+  Solicitacoes: 'Solicitações', Nivel: 'Nível', Titulo: 'Título', Versao: 'Versão', Inicio: 'Início', Codigo: 'Código',
+  Conclusao: 'Conclusão', Periodo: 'Período', periodo: 'período', Acao: 'Ação', aplicavel: 'aplicável', ha: 'há', modulos: 'módulos',
+};
+function acentuar(txt: string): string {
+  return txt.replace(/[A-Za-z]+/g, (w) => ACENTOS_PT[w] ?? w);
+}
+
 function tr(ptLabel: string): string {
-  if (getAppLocale() === 'pt') return ptLabel;
+  if (getAppLocale() === 'pt') return acentuar(ptLabel);
   return PDF_LABELS[ptLabel] ?? ptLabel;
+}
+
+// ── opções do relatório (período, público, detalhes) ─────────────────
+export interface OpcoesRelatorio { periodoDias?: number | null; publico?: string; incluirDetalhes?: boolean }
+let periodoAtual: number | null = null;
+
+/** Mantém só os registos cujo campo de data cai dentro do período escolhido. */
+export function filtrarPeriodo<T extends Record<string, any>>(rows: T[], periodoDias: number | null | undefined, campo = 'created_at', agora = new Date()): T[] {
+  if (!periodoDias) return rows;
+  const limite = agora.getTime() - periodoDias * 86400000;
+  return rows.filter((r) => {
+    const v = r[campo] ?? r.created_at;
+    if (!v) return true;
+    const t = new Date(v).getTime();
+    return Number.isNaN(t) || t >= limite;
+  });
+}
+const noPeriodo = <T extends Record<string, any>>(rows: T[], campo = 'created_at') => filtrarPeriodo(rows, periodoAtual, campo);
+
+/** Aplica "incluir detalhes" e público: sem detalhes só indicadores; diretoria/regulador vê top 10. */
+export function aplicarOpcoes(sections: Section[], opcoes: OpcoesRelatorio = {}): Section[] {
+  const resumido = opcoes.publico === 'diretoria' || opcoes.publico === 'regulador';
+  return sections
+    .map((sec) => {
+      if (!sec.tableRows) return sec;
+      if (opcoes.incluirDetalhes === false) return { ...sec, tableRows: undefined, tableHeaders: undefined };
+      if (resumido && sec.tableRows.length > 10) return { ...sec, tableRows: sec.tableRows.slice(0, 10), truncado: sec.tableRows.length - 10 };
+      return sec;
+    })
+    .filter((sec) => sec.metrics?.length || sec.tableRows);
+}
+
+export function opcoesDe(relatorio: any): OpcoesRelatorio {
+  const c = relatorio?.configuracao || {};
+  return { periodoDias: c.periodo_dias ?? null, publico: c.publico, incluirDetalhes: c.incluir_detalhes !== false };
 }
 
 
@@ -162,56 +239,52 @@ function checkPageBreak(doc: jsPDF, y: number, margin = 40): number {
   return y;
 }
 
-function addTable(doc: jsPDF, headers: string[], rows: string[][], startY: number, colWidths: number[]): number {
-  let y = startY;
-  
-  // Header
+function drawHeader(doc: jsPDF, headers: string[], y: number, colWidths: number[]) {
   doc.setFontSize(8);
   doc.setFillColor(AKURIS_COLORS.primary);
-  let x = 20;
-  headers.forEach((h, i) => {
-    doc.rect(x, y - 5, colWidths[i], 8, 'F');
-    x += colWidths[i];
-  });
-  
+  const totalW = colWidths.reduce((a, b) => a + b, 0);
+  doc.rect(20, y - 5, totalW, 8, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  x = 20;
-  headers.forEach((h, i) => {
-    doc.text(h, x + 2, y);
-    x += colWidths[i];
-  });
-  y += 6;
-  
+  let x = 20;
+  headers.forEach((h, i) => { doc.text(h, x + 2, y); x += colWidths[i]; });
   doc.setFont('helvetica', 'normal');
+  return y + 6;
+}
+
+function addTable(doc: jsPDF, headers: string[], rows: string[][], startY: number, colWidths: number[]): number {
+  let y = drawHeader(doc, headers, startY, colWidths);
+  const totalW = colWidths.reduce((a, b) => a + b, 0);
+  const lineH = 3.6;
   for (let ri = 0; ri < rows.length; ri++) {
-    const row = rows[ri];
-    y = checkPageBreak(doc, y);
-    
-    // Zebra striping
+    doc.setFontSize(8);
+    const cells = rows[ri].map((cell, i) => doc.splitTextToSize(formatLabel(cell || '-'), colWidths[i] - 4) as string[]);
+    const rowH = Math.max(1, ...cells.map((c) => c.length)) * lineH + 2.4;
+    if (y + rowH > 270) {
+      doc.addPage();
+      y = drawHeader(doc, headers, 25, colWidths);
+    }
     if (ri % 2 === 0) {
       doc.setFillColor(248, 247, 255);
-      x = 20;
-      const totalW = colWidths.reduce((a, b) => a + b, 0);
-      doc.rect(20, y - 3.5, totalW, 6, 'F');
+      doc.rect(20, y - 3.5, totalW, rowH, 'F');
     }
-    
     doc.setFontSize(8);
     doc.setTextColor(AKURIS_COLORS.text);
-    x = 20;
-    row.forEach((cell, i) => {
-      const formatted = formatLabel(cell || '-');
-      const lines = doc.splitTextToSize(formatted, colWidths[i] - 4);
-      doc.text(lines[0], x + 2, y);
-      x += colWidths[i];
-    });
-    y += 6;
+    let x = 20;
+    cells.forEach((lines, i) => { doc.text(lines, x + 2, y); x += colWidths[i]; });
+    y += rowH;
   }
   return y + 5;
 }
 
 // ── data fetchers ────────────────────────────────────────────────────
-export async function fetchTemplateData(templateBase: string, empresaId: string) {
+export async function fetchTemplateData(templateBase: string, empresaId: string, opcoes: OpcoesRelatorio = {}) {
+  periodoAtual = opcoes.periodoDias ?? null;
+  const r = await fetchBase(templateBase, empresaId);
+  return { sections: aplicarOpcoes(r.sections as Section[], opcoes) };
+}
+
+async function fetchBase(templateBase: string, empresaId: string): Promise<{ sections: Section[] }> {
   switch (templateBase) {
     case 'riscos_geral': return fetchRiscosData(empresaId);
     case 'incidentes_periodo': return fetchIncidentesData(empresaId);
@@ -226,11 +299,14 @@ export async function fetchTemplateData(templateBase: string, empresaId: string)
     case 'due_diligence_fornecedores': return fetchDueDiligenceData(empresaId);
     case 'documentos_governanca': return fetchDocumentosData(empresaId);
     case 'denuncias_canal_etica': return fetchDenunciasData(empresaId);
+    case 'planos_acao': return fetchPlanosAcaoData(empresaId);
+    case 'revisao_acessos': return fetchRevisaoAcessosData(empresaId);
+    case 'projetos_portfolio': return fetchProjetosData(empresaId);
     default: return { sections: [] as Section[] };
   }
 }
 
-interface Section { title: string; metrics?: { label: string; value: string | number }[]; tableHeaders?: string[]; tableRows?: string[][]; colWidths?: number[]; }
+interface Section { truncado?: number; title: string; metrics?: { label: string; value: string | number }[]; tableHeaders?: string[]; tableRows?: string[][]; colWidths?: number[]; }
 
 async function fetchRiscosData(empresaId: string) {
   const { data: riscos } = await readAllPages((from, to) => supabase.from('riscos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
@@ -273,7 +349,8 @@ async function fetchRiscosData(empresaId: string) {
 }
 
 async function fetchIncidentesData(empresaId: string) {
-  const { data: inc } = await readAllPages((from, to) => supabase.from('incidentes').select('*').eq('empresa_id', empresaId).order('data_deteccao', { ascending: false }).order('id').range(from, to));
+  const { data: incTodos } = await readAllPages((from, to) => supabase.from('incidentes').select('*').eq('empresa_id', empresaId).order('data_deteccao', { ascending: false }).order('id').range(from, to));
+  const inc = noPeriodo(incTodos || [], 'data_deteccao');
   const i = inc || [];
   const critica = i.filter(x => severidadeDeFaixas(x.criticidade) === 'critico').length;
   const alta = i.filter(x => severidadeDeFaixas(x.criticidade) === 'alto').length;
@@ -294,14 +371,18 @@ async function fetchIncidentesData(empresaId: string) {
 }
 
 async function fetchLGPDData(empresaId: string) {
+  const { data: emp } = await supabase.from('empresas').select('jurisdicao').eq('id', empresaId).maybeSingle();
+  const jur = JURISDICAO_CONFIG[((emp as any)?.jurisdicao as JurisdicaoCodigo) || 'BR'] ?? JURISDICAO_CONFIG.BR;
   const [{ data: dados }, { data: sol }] = await Promise.all([
     readAllPages((from, to) => supabase.from('dados_pessoais').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
     readAllPages((from, to) => supabase.from('dados_solicitacoes_titular').select('*').eq('empresa_id', empresaId).order('id').range(from, to)),
   ]);
-  const d = dados || []; const s = sol || [];
+  const d = dados || []; const s = noPeriodo(sol || []);
   return {
     sections: [
-      { title: tr('Panorama LGPD'), metrics: [
+      { title: `${tr('Panorama de privacidade')} (${jur.lei})`, metrics: [
+        { label: tr('Lei aplicavel'), value: jur.lei },
+        ...(jur.autoridade && jur.autoridade !== '—' ? [{ label: tr('Autoridade'), value: jur.autoridade }] : []),
         { label: tr('Dados Pessoais Mapeados'), value: d.length },
         { label: tr('Solicitacoes de Titulares'), value: s.length },
       ]},
@@ -381,7 +462,7 @@ async function frameworksDaEmpresa(empresaId: string) {
 async function fetchExecutivoData(empresaId: string) {
   const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   const { data: riscos } = await readAllPages((from, to) => supabase.from('riscos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
-  const { data: incidentes } = await readAllPages((from, to) => supabase.from('incidentes').select('*').eq('empresa_id', empresaId).gte('data_deteccao', ninetyDaysAgo.toISOString()).order('id').range(from, to));
+  const { data: incidentes } = await readAllPages((from, to) => supabase.from('incidentes').select('*').eq('empresa_id', empresaId).gte('data_deteccao', new Date(Date.now() - (periodoAtual ?? 90) * 86400000).toISOString()).order('id').range(from, to));
   const { data: controles } = await readAllPages((from, to) => supabase.from('controles').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
   const frameworks = await frameworksDaEmpresa(empresaId);
   const r = riscos || []; const i = incidentes || []; const c = controles || []; const f = frameworks || [];
@@ -390,7 +471,7 @@ async function fetchExecutivoData(empresaId: string) {
       { title: tr('Retrato atual e incidentes dos ultimos 90 dias'), metrics: [
         { label: tr('Total de Riscos'), value: r.length },
         { label: tr('Riscos Criticos'), value: r.filter(x => severidadeRisco(x as any) === 'critico').length },
-        { label: tr('Incidentes (90 dias)'), value: i.length },
+        { label: (periodoAtual ? tr('Incidentes no periodo') : tr('Incidentes (90 dias)')), value: i.length },
         { label: tr('Controles Ativos'), value: c.filter(x => x.status === 'ativo').length },
         { label: tr('Frameworks Monitorados'), value: f.length },
       ]},
@@ -517,7 +598,8 @@ async function fetchAtivosData(empresaId: string) {
 }
 
 async function fetchAuditoriaInternaData(empresaId: string) {
-  const { data: auditorias } = await readAllPages((from, to) => supabase.from('auditorias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const { data: auditoriasTodas } = await readAllPages((from, to) => supabase.from('auditorias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const auditorias = noPeriodo(auditoriasTodas || []);
   const a = auditorias || [];
   const auditoriaIds = a.map((x: any) => x.id);
   const { data: itens } = auditoriaIds.length > 0
@@ -547,7 +629,8 @@ async function fetchAuditoriaInternaData(empresaId: string) {
 }
 
 async function fetchDueDiligenceData(empresaId: string) {
-  const { data: assessments } = await readAllPages((from, to) => supabase.from('due_diligence_assessments').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const { data: assessmentsTodos } = await readAllPages((from, to) => supabase.from('due_diligence_assessments').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const assessments = noPeriodo(assessmentsTodos || []);
   const dd = assessments || [];
   const concluidos = dd.filter((x: any) => ['concluido', 'finalizado'].includes(x.status));
   const pendentes = dd.filter((x: any) => !['concluido', 'finalizado', 'cancelado'].includes(x.status)).length;
@@ -619,7 +702,8 @@ async function fetchDocumentosData(empresaId: string) {
 }
 
 async function fetchDenunciasData(empresaId: string) {
-  const { data: denuncias } = await readAllPages((from, to) => supabase.from('denuncias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const { data: denunciasTodas } = await readAllPages((from, to) => supabase.from('denuncias').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const denuncias = noPeriodo(denunciasTodas || []);
   const d = denuncias || [];
   const abertas = d.filter((x: any) => ['nova', 'em_analise', 'em_investigacao'].includes(x.status)).length;
   const concluidas = d.filter((x: any) => ['resolvida', 'arquivada'].includes(x.status)).length;
@@ -644,24 +728,107 @@ async function fetchDenunciasData(empresaId: string) {
   };
 }
 
+const hojeISO = () => new Date().toISOString().slice(0, 10);
+const fmtData = (v?: string | null) => (v ? parseDataLocal(String(v).slice(0, 10)).toLocaleDateString(intlLocale()) : '-');
+
+async function nomesPerfis(empresaId: string): Promise<Record<string, string>> {
+  const { data } = await readAllPages((from, to) => supabase.from('profiles').select('user_id, nome').eq('empresa_id', empresaId).order('id').range(from, to));
+  return Object.fromEntries((data || []).map((p: any) => [p.user_id, p.nome]));
+}
+
+async function fetchPlanosAcaoData(empresaId: string) {
+  const { data } = await readAllPages((from, to) => supabase.from('planos_acao').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const p = noPeriodo(data || []);
+  const nomes = await nomesPerfis(empresaId);
+  const hoje = hojeISO();
+  const fechado = (x: any) => ['concluido', 'cancelado'].includes(norm(x.status));
+  const abertos = p.filter((x: any) => !fechado(x));
+  const atrasados = abertos.filter((x: any) => x.prazo && String(x.prazo).slice(0, 10) < hoje);
+  return { sections: [
+    { title: tr('Planos de Acao'), metrics: [
+      { label: tr('Total de Planos de Acao'), value: p.length },
+      { label: tr('Em Aberto'), value: abertos.length },
+      { label: tr('Atrasados'), value: atrasados.length },
+      { label: tr('Concluidos'), value: p.filter((x: any) => norm(x.status) === 'concluido').length },
+    ], tableHeaders: [tr('Titulo'), tr('Origem'), tr('Responsavel'), tr('Prazo'), tr('Status')],
+      tableRows: [...abertos].sort((a: any, b: any) => String(a.prazo || '9').localeCompare(String(b.prazo || '9'))).map((x: any) => [x.titulo, x.modulo_origem || '-', nomes[x.responsavel_id] || '-', fmtData(x.prazo), x.status || '-']),
+      colWidths: [60, 28, 35, 22, 25] },
+  ] as Section[] };
+}
+
+async function fetchRevisaoAcessosData(empresaId: string) {
+  const { data } = await readAllPages((from, to) => supabase.from('access_reviews').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const r = noPeriodo(data || []);
+  const soma = (k: string) => r.reduce((acc: number, x: any) => acc + (Number(x[k]) || 0), 0);
+  return { sections: [
+    { title: tr('Revisao de Acessos'), metrics: [
+      { label: tr('Total de Revisoes'), value: r.length },
+      { label: tr('Contas Revisadas'), value: soma('contas_revisadas') },
+      { label: tr('Contas Aprovadas'), value: soma('contas_aprovadas') },
+      { label: tr('Contas Revogadas'), value: soma('contas_revogadas') },
+    ], tableHeaders: [tr('Nome'), tr('Status'), tr('Data limite'), tr('Contas Revisadas'), tr('Contas Revogadas')],
+      tableRows: r.map((x: any) => [x.nome_revisao, x.status || '-', fmtData(x.data_limite), `${x.contas_revisadas ?? 0}/${x.total_contas ?? 0}`, String(x.contas_revogadas ?? 0)]),
+      colWidths: [60, 28, 28, 28, 26] },
+  ] as Section[] };
+}
+
+async function fetchProjetosData(empresaId: string) {
+  const { data: projetos } = await readAllPages((from, to) => supabase.from('projetos').select('*').eq('empresa_id', empresaId).order('id').range(from, to));
+  const pr = (projetos || []).filter((x: any) => x.status !== 'arquivado');
+  const ids = pr.map((x: any) => x.id);
+  const { data: tarefas } = ids.length
+    ? await readAllPages((from, to) => supabase.from('projeto_tarefas').select('id, projeto_id, parent_task_id, data_fim, prazo, progresso_pct, concluida_em, projetos!inner(empresa_id)').eq('projetos.empresa_id', empresaId).order('id').range(from, to))
+    : { data: [] as any[] };
+  const ts = tarefas || [];
+  const nomes = await nomesPerfis(empresaId);
+  const hoje = hojeISO();
+  const pais = new Set(ts.map((x: any) => x.parent_task_id).filter(Boolean));
+  const folhas = ts.filter((x: any) => !pais.has(x.id));
+  const atrasada = (x: any) => !x.concluida_em && (x.data_fim || x.prazo) && String(x.data_fim || x.prazo).slice(0, 10) < hoje;
+  const linha = (p: any) => {
+    const f = folhas.filter((x: any) => x.projeto_id === p.id);
+    const pct = f.length ? Math.round(f.reduce((a: number, x: any) => a + (x.concluida_em ? 100 : Number(x.progresso_pct) || 0), 0) / f.length) : 0;
+    return [p.nome, nomes[p.owner_id] || '-', `${pct}%`, String(f.filter(atrasada).length), fmtData(p.data_fim_prevista), p.status || '-'];
+  };
+  return { sections: [
+    { title: tr('Projetos'), metrics: [
+      { label: tr('Total de Projetos'), value: pr.length },
+      { label: tr('Atividades'), value: folhas.length },
+      { label: tr('Atividades Atrasadas'), value: folhas.filter(atrasada).length },
+    ], tableHeaders: [tr('Nome'), tr('Responsavel'), tr('Progresso'), tr('Atrasados'), tr('Fim previsto'), tr('Status')],
+      tableRows: pr.map(linha), colWidths: [55, 35, 20, 20, 24, 20] },
+  ] as Section[] };
+}
+
 // ── PDF generator ────────────────────────────────────────────────────
 export async function generateTemplatePDF(relatorio: any, empresaId: string) {
   const doc = new jsPDF();
   const widgets = Array.isArray(relatorio?.configuracao?.widgets) ? relatorio.configuracao.widgets : [];
   const fontes = widgets.length > 0 ? widgets : relatorio.template_base ? [relatorio.template_base] : [];
-  const conjuntos = await Promise.all(fontes.map((fonte: string) => fetchTemplateData(fonte, empresaId)));
+  const opcoes = opcoesDe(relatorio);
+  const conjuntos: { sections: Section[] }[] = [];
+  // Sequencial: o período ativo é estado do módulo durante cada leitura.
+  for (const fonte of fontes) conjuntos.push(await fetchTemplateData(fonte, empresaId, opcoes));
   const data = { sections: conjuntos.flatMap((conjunto) => conjunto.sections) };
-  const logo = await loadAkurisLogo();
+  const [logo, { data: emp }] = await Promise.all([
+    loadAkurisLogo(),
+    supabase.from('empresas').select('nome').eq('id', empresaId).maybeSingle(),
+  ]);
+  const locale = getAppLocale();
+  const periodoTxt = opcoes.periodoDias
+    ? (locale === 'pt' ? `Período: últimos ${opcoes.periodoDias} dias` : `Period: last ${opcoes.periodoDias} days`)
+    : (locale === 'pt' ? 'Período: todo o histórico' : 'Period: all history');
 
-  // Cover
-  addAkurisCover(doc, logo, relatorio.nome, relatorio.descricao || '', {
-    data: new Date().toLocaleDateString(intlLocale())
+  addAkurisCover(doc, logo, relatorio.nome, [relatorio.descricao, periodoTxt].filter(Boolean).join('\n'), {
+    empresa: (emp as any)?.nome || undefined,
+    data: new Date().toLocaleDateString(intlLocale()),
   });
 
-  // Sections
+  doc.addPage();
+  let y = 25;
   for (const section of data.sections) {
-    doc.addPage();
-    let y = 25;
+    // Seções curtas partilham a página; só quebra quando não cabe o início.
+    if (y > 200) { doc.addPage(); y = 25; } else if (y > 25) { y += 6; }
     y = addSectionTitleLocal(doc, section.title, y);
 
     if (section.metrics) {
@@ -675,18 +842,22 @@ export async function generateTemplatePDF(relatorio: any, empresaId: string) {
     if (section.tableHeaders && section.tableRows && section.colWidths) {
       y = checkPageBreak(doc, y, 60);
       y = addTable(doc, section.tableHeaders, section.tableRows, y, section.colWidths);
+      if (section.truncado) {
+        doc.setFontSize(8);
+        doc.setTextColor(AKURIS_COLORS.textLight);
+        doc.text(locale === 'pt' ? `+ ${section.truncado} registos não listados (versão resumida)` : `+ ${section.truncado} more records not listed (summary version)`, 20, y);
+        y += 6;
+      }
     }
   }
 
-  // If no data at all
   if (data.sections.length === 0) {
-    doc.addPage();
     doc.setFontSize(14);
     doc.setTextColor(AKURIS_COLORS.textLight);
     doc.text(tr('Nenhum dado encontrado para este template.'), 105, 140, { align: 'center' });
     doc.text(tr('Verifique se ha dados cadastrados nos modulos correspondentes.'), 105, 155, { align: 'center' });
   }
 
-  addAkurisFooter(doc);
+  addAkurisFooter(doc, (emp as any)?.nome || undefined);
   doc.save(`${relatorio.nome.replace(/\s+/g, '_')}.pdf`);
 }

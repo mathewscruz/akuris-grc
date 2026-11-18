@@ -4,7 +4,7 @@ import { DialogShell } from '@/components/ui/dialog-shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { fetchTemplateData } from './generateTemplatePDF';
+import { fetchTemplateData, opcoesDe } from './generateTemplatePDF';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconChart } from '@/components/icons';
 
@@ -20,11 +20,13 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
   const widgets = Array.isArray(relatorio?.configuracao?.widgets) ? relatorio.configuracao.widgets : [];
   const fontes: string[] = widgets.length ? widgets : relatorio?.template_base ? [relatorio.template_base] : [];
   const { data, isLoading: loading, isError, refetch } = useQuery({
-    queryKey: ['report-preview', empresaId, relatorio?.id, fontes],
+    queryKey: ['report-preview', empresaId, relatorio?.id, fontes, relatorio?.configuracao],
     enabled: open && !!empresaId && fontes.length > 0,
     queryFn: async () => {
-      const conjuntos = await Promise.all(fontes.map(fonte => fetchTemplateData(fonte, empresaId)));
-      return { sections: conjuntos.flatMap(conjunto => conjunto.sections) };
+      const opcoes = opcoesDe(relatorio);
+      const sections = [];
+      for (const fonte of fontes) sections.push(...(await fetchTemplateData(fonte, empresaId, opcoes)).sections);
+      return { sections };
     },
   });
 

@@ -1,10 +1,11 @@
+import { useSearchParams } from 'react-router-dom';
 import { readAllPages } from '@/lib/read-all-pages';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QueryError } from '@/components/ui/query-error';
 import { useListState } from '@/hooks/useListState';
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
-import { IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconFile, IconChart, IconShield, IconBook, IconOrg, IconPackage, IconUsers, IconFileCheck, IconMessage, IconError, IconFramework, IconLifebuoy } from '@/components/icons';
-import { useState, useMemo } from 'react';
+import { IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconFile, IconChart, IconShield, IconBook, IconOrg, IconPackage, IconUsers, IconFileCheck, IconMessage, IconError, IconFramework, IconLifebuoy, IconTarget, IconLock, IconFlag } from '@/components/icons';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -41,6 +42,9 @@ const templateConfigs: Record<string, { nome: string; descricao: string; icon: a
   due_diligence_fornecedores: { nome: 'fin.relatorios.tpl.due_diligence_fornecedores.nome', descricao: 'fin.relatorios.tpl.due_diligence_fornecedores.desc', icon: IconUsers, cor: 'text-success' },
   documentos_governanca: { nome: 'fin.relatorios.tpl.documentos_governanca.nome', descricao: 'fin.relatorios.tpl.documentos_governanca.desc', icon: IconFileCheck, cor: 'text-info' },
   denuncias_canal_etica: { nome: 'fin.relatorios.tpl.denuncias_canal_etica.nome', descricao: 'fin.relatorios.tpl.denuncias_canal_etica.desc', icon: IconMessage, cor: 'text-primary' },
+  planos_acao: { nome: 'relatoriosComp.novos.planos_acao.nome', descricao: 'relatoriosComp.novos.planos_acao.desc', icon: IconTarget, cor: 'text-primary' },
+  revisao_acessos: { nome: 'relatoriosComp.novos.revisao_acessos.nome', descricao: 'relatoriosComp.novos.revisao_acessos.desc', icon: IconLock, cor: 'text-info' },
+  projetos_portfolio: { nome: 'relatoriosComp.novos.projetos_portfolio.nome', descricao: 'relatoriosComp.novos.projetos_portfolio.desc', icon: IconFlag, cor: 'text-primary' },
 };
 
 export default function Relatorios() {
@@ -57,7 +61,7 @@ export default function Relatorios() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useListState('activeTab', 'meus');
   const [reportGoal, setReportGoal] = useListState('reportGoal', 'all');
-  const templateGoal = (key: string) => ['executivo_trimestral', 'compliance_geral'].includes(key) ? 'board' : ['iso27001_auditoria', 'auditoria_interna', 'lgpd_anpd', 'documentos_governanca'].includes(key) ? 'audit' : 'operations';
+  const templateGoal = (key: string) => ['executivo_trimestral', 'compliance_geral'].includes(key) ? 'board' : ['iso27001_auditoria', 'auditoria_interna', 'lgpd_anpd', 'documentos_governanca', 'revisao_acessos'].includes(key) ? 'audit' : 'operations';
 
   const { data: relatorios = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['relatorios-customizados', empresaId],
@@ -73,6 +77,17 @@ export default function Relatorios() {
     },
     enabled: !!empresaId,
   });
+
+  // Links de e-mail/sino (?abrir=<id>) abrem a pré-visualização do relatório.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const id = searchParams.get('abrir');
+    if (!id || !relatorios.length) return;
+    const rel = relatorios.find((r: any) => r.id === id);
+    if (rel) setPreviewRelatorio(rel);
+    searchParams.delete('abrir');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, relatorios, setSearchParams]);
 
   const stats = useMemo(() => ({
     total: relatorios.length,
@@ -90,6 +105,7 @@ export default function Relatorios() {
     }
     const { error } = await supabase.from('relatorio_agendamentos').upsert({
       ...agendamento,
+      proximo_envio: null,
       relatorio_id: relatorioId,
       empresa_id: empresaId,
     }, { onConflict: 'relatorio_id' });

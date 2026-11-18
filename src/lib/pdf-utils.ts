@@ -1,5 +1,18 @@
 import jsPDF from 'jspdf';
 import { formatStatus } from '@/lib/text-utils';
+import { getAppLocale } from '@/lib/i18n-locale';
+
+/** Textos fixos dos PDFs em PT/EN. */
+export function pdfTxt(k: 'plataforma' | 'pagina' | 'as' | 'empresa' | 'geradoEm', a?: number, b?: number): string {
+  const pt = getAppLocale() === 'pt';
+  switch (k) {
+    case 'plataforma': return pt ? 'Plataforma GRC' : 'GRC Platform';
+    case 'pagina': return pt ? `Página ${a} de ${b}` : `Page ${a} of ${b}`;
+    case 'as': return pt ? ' às ' : ' at ';
+    case 'empresa': return pt ? 'Empresa' : 'Company';
+    case 'geradoEm': return pt ? 'Gerado em' : 'Generated on';
+  }
+}
 import { intlLocale } from '@/lib/date-utils';
 
 // Akuris brand colors
@@ -79,7 +92,7 @@ export function addAkurisHeader(doc: jsPDF, logoBase64: string | null, y: number
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(180, 180, 220);
-  doc.text('Plataforma GRC', pageWidth - 14, 18, { align: 'right' });
+  doc.text(pdfTxt('plataforma'), pageWidth - 14, 18, { align: 'right' });
 
   // Gradient line (simulated with two-color segments)
   doc.setFillColor(AKURIS_COLORS.primary);
@@ -93,7 +106,7 @@ export function addAkurisHeader(doc: jsPDF, logoBase64: string | null, y: number
 /**
  * Add Akuris branded footer to all pages
  */
-export function addAkurisFooter(doc: jsPDF) {
+export function addAkurisFooter(doc: jsPDF, empresa?: string) {
   const totalPages = doc.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -108,10 +121,10 @@ export function addAkurisFooter(doc: jsPDF) {
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(AKURIS_COLORS.textLight);
-    doc.text('Akuris - Plataforma GRC', 14, pageHeight - 10);
-    doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    doc.text(empresa ? `${empresa} · Akuris` : `Akuris - ${pdfTxt('plataforma')}`, 14, pageHeight - 10);
+    doc.text(pdfTxt('pagina', i, totalPages), pageWidth / 2, pageHeight - 10, { align: 'center' });
     doc.text(
-      new Date().toLocaleDateString(intlLocale()) + ' às ' + new Date().toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }),
+      new Date().toLocaleDateString(intlLocale()) + pdfTxt('as') + new Date().toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }),
       pageWidth - 14, pageHeight - 10, { align: 'right' }
     );
   }
@@ -171,9 +184,9 @@ export function addAkurisCover(doc: jsPDF, logoBase64: string | null, title: str
   doc.setTextColor(150, 150, 180);
 
   if (meta?.empresa) {
-    doc.text(`Empresa: ${meta.empresa}`, 30, metaY);
+    doc.text(`${pdfTxt('empresa')}: ${meta.empresa}`, 30, metaY);
   }
-  doc.text(`Gerado em: ${meta?.data || new Date().toLocaleDateString(intlLocale())}`, 30, metaY + 8);
+  doc.text(`${pdfTxt('geradoEm')}: ${meta?.data || new Date().toLocaleDateString(intlLocale())}`, 30, metaY + 8);
 
   // Bottom gradient line
   doc.setFillColor(AKURIS_COLORS.primary);

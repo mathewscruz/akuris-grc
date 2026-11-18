@@ -1,3 +1,4 @@
+import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,7 +28,7 @@ interface ReportsData {
 
 export const useReportsData = () => {
   return useQuery({
-    queryKey: ['due-diligence-reports'],
+    queryKey: ['due-diligence-reports', useAuth().profile?.empresa_id],
     queryFn: async (): Promise<ReportsData> => {
       // Buscar empresa do usuário
       const { data: { user } } = await supabase.auth.getUser();

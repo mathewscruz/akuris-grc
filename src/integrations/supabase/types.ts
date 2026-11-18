@@ -12447,6 +12447,7 @@ export type Database = {
         Args: { p_code_id: string; p_user_id: string }
         Returns: boolean
       }
+      agendar_envio_relatorios: { Args: never; Returns: string }
       agendar_expurgo_denuncias: { Args: never; Returns: string }
       agendar_lembretes_diarios: { Args: never; Returns: string }
       agendar_lembretes_tarefas_projeto: { Args: never; Returns: string }
