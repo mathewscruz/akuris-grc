@@ -220,7 +220,15 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           <SelectTrigger aria-label={t('p3Projetos.tarefa.status')} className="h-8 w-auto gap-1 border-transparent bg-transparent px-1 shadow-none focus:ring-0 [&>svg]:hidden [&>span]:line-clamp-none [&>span]:overflow-visible whitespace-nowrap">
             <div className="flex"><StatusPill kind={kind} className="py-1">{colAtual?.nome ?? '—'}<IconChevron className="h-3 w-3 rotate-90" /></StatusPill></div>
           </SelectTrigger>
-          <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}><StatusPill kind={statusKindDe(c)}>{c.nome}</StatusPill></SelectItem>)}</SelectContent>
+          <SelectContent className="border-0 bg-transparent p-0 shadow-none dark:shadow-none data-[state=closed]:slide-out-to-top-1">
+            {colunas.map((c, i) => (
+              <SelectItem key={c.id} value={c.id}
+                className="group bg-transparent py-1 focus:bg-transparent data-[highlighted]:bg-transparent animate-in fade-in-0 slide-in-from-top-1 motion-reduce:animate-none"
+                style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}>
+                <StatusPill kind={statusKindDe(c)} className="transition-ui group-data-[highlighted]:scale-[1.03] group-data-[highlighted]:ring-2 group-data-[highlighted]:ring-primary/30">{c.nome}</StatusPill>
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
         {tarefa && (
           <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={copiarLink} aria-label={t('p3Projetos.tarefa.copyLink')} title={t('p3Projetos.tarefa.copyLink')}>
