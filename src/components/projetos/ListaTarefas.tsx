@@ -1,3 +1,4 @@
+import { ToolbarField } from '@/components/ui/module-toolbar';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import React from 'react';
 import { IconSearch, IconChevron, IconLock } from '@/components/icons';
@@ -181,12 +182,11 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <IconSearch className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t('projetos.lista.searchPlaceholder')} value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-8 h-9" />
+          <Input placeholder={t('projetos.lista.searchPlaceholder')} value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-8 h-10" />
         </div>
-        <div className="flex flex-col gap-1 min-w-[180px]">
-          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterStatusLabel')}</span>
+        <ToolbarField label={t('p3Projetos.lista.filterStatusLabel')}>
           <Select value={fStatus} onValueChange={setFStatus}>
-            <SelectTrigger className="h-9 w-full" title={fStatus}><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full" title={fStatus}><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">{t('projetos.lista.statusAll')}</SelectItem>
               <SelectItem value="abertas">{t('projetos.lista.statusOpen')}</SelectItem>
@@ -194,11 +194,10 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
               <SelectItem value="atrasadas">{t('projetos.lista.statusOverdue')}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex flex-col gap-1 min-w-[180px]">
-          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterPriorityLabel')}</span>
+        </ToolbarField>
+        <ToolbarField label={t('p3Projetos.lista.filterPriorityLabel')}>
           <Select value={fPrior} onValueChange={setFPrior}>
-            <SelectTrigger className="h-9 w-full" title={fPrior}><SelectValue placeholder={t('projetos.tarefaDialog.fieldPrioridade')} /></SelectTrigger>
+            <SelectTrigger className="w-full" title={fPrior}><SelectValue placeholder={t('projetos.tarefaDialog.fieldPrioridade')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">{t('projetos.lista.priorityAll')}</SelectItem>
               <SelectItem value="critica">{getPrioridadeLabel(t, 'critica')}</SelectItem>
@@ -207,21 +206,19 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
               <SelectItem value="baixa">{getPrioridadeLabel(t, 'baixa')}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex flex-col gap-1 min-w-[180px]">
-          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterColumnLabel')}</span>
+        </ToolbarField>
+        <ToolbarField label={t('p3Projetos.lista.filterColumnLabel')}>
           <Select value={fColuna} onValueChange={setFColuna}>
-            <SelectTrigger className="h-9 w-full" title={colunas.find((c) => c.id === fColuna)?.nome ?? fColuna}><SelectValue placeholder={t('projetos.tarefaDialog.fieldColuna')} /></SelectTrigger>
+            <SelectTrigger className="w-full" title={colunas.find((c) => c.id === fColuna)?.nome ?? fColuna}><SelectValue placeholder={t('projetos.tarefaDialog.fieldColuna')} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">{t('projetos.lista.columnAll')}</SelectItem>
               {colunas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex flex-col gap-1 min-w-[180px]">
-          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterGroupLabel')}</span>
+        </ToolbarField>
+        <ToolbarField label={t('p3Projetos.lista.filterGroupLabel')}>
           <Select value={agrupar} onValueChange={setAgrupar}>
-            <SelectTrigger className="h-9 w-full" title={agrupar}><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full" title={agrupar}><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="nenhum">{t('projetos.lista.groupNone')}</SelectItem>
               <SelectItem value="coluna">{t('projetos.lista.groupColumn')}</SelectItem>
@@ -231,30 +228,28 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
               <SelectItem value="mes">{t('p3Projetos.lista.groupMonth')}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex flex-col gap-1 min-w-[180px]">
-          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterResponsibleLabel')}</span>
+        </ToolbarField>
+        <ToolbarField label={t('p3Projetos.lista.filterResponsibleLabel')}>
           <Select value={fResp} onValueChange={setFResp}>
-            <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">{t('p3Projetos.lista.responsibleAll')}</SelectItem>
               <SelectItem value="none">{t('projetos.lista.notAssigned')}</SelectItem>
               {usuarios.map((u) => <SelectItem key={u.user_id} value={u.user_id}>{u.nome ?? u.email}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </ToolbarField>
         {tipos.length > 0 && (
-          <div className="flex flex-col gap-1 min-w-[180px]">
-            <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterTypeLabel')}</span>
+          <ToolbarField label={t('p3Projetos.lista.filterTypeLabel')}>
             <Select value={fTipo} onValueChange={setFTipo}>
-              <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">{t('p3Projetos.lista.typeAll')}</SelectItem>
                 <SelectItem value={TAG_MARCO}>{t('p3Projetos.lista.milestone')}</SelectItem>
                 {tipos.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
+          </ToolbarField>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {posHoje.atrasadas.length > 0 && <StatusPill kind="late">{t('p3Projetos.lista.ritmoAtrasado', { n: posHoje.atrasadas.length })}</StatusPill>}

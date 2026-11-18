@@ -40,7 +40,7 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
         <Select value={sprintAtiva} onValueChange={setSprintAtiva}>
-          <SelectTrigger className="h-9 w-[260px]"><SelectValue placeholder={t('projetos.sprints.selectPlaceholder')} /></SelectTrigger>
+          <SelectTrigger className="h-10 w-[260px]"><SelectValue placeholder={t('projetos.sprints.selectPlaceholder')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">{t('projetos.sprints.allSprints')}</SelectItem>
             {sprints.map((s) => (

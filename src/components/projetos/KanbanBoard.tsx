@@ -105,7 +105,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
     {fases.length > 0 && (
       <div className="mb-3 flex items-center gap-2">
         <Select value={fase} onValueChange={setFase}>
-          <SelectTrigger className="h-9 w-[280px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 w-[280px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">{t('p3Projetos.kanban.todasFases')}</SelectItem>
             {fases.map((f) => { const p = partirTitulo(f.titulo); return <SelectItem key={f.id} value={f.id}>{p.codigo ? `${p.codigo} · ` : ''}{p.nome}</SelectItem>; })}

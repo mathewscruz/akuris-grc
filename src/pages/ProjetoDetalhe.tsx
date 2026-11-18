@@ -165,7 +165,7 @@ export default function ProjetoDetalhe() {
               <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={t('projetos.lista.searchPlaceholder')} className="h-9 pl-8" />
             </div>
             <Select value={fResp} onValueChange={setFResp}>
-              <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 w-[220px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">{t('p3Projetos.lista.responsibleAll')}</SelectItem>
                 <SelectItem value="none">{t('projetos.lista.notAssigned')}</SelectItem>

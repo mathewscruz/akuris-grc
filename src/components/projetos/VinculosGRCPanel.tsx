@@ -47,7 +47,7 @@ export function VinculosGRCPanel({ tarefaId }: Props) {
           value={tipo}
           onValueChange={(v) => { setTipo(v as ProjetoVinculoEntidade); setEntId(''); setRowSelecionada(undefined); }}
         >
-          <SelectTrigger className="h-9 w-full sm:w-[220px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 w-full sm:w-[220px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {tipos.map((k) => (
               <SelectItem key={k} value={k}>{t(`entidades.${k}`)}</SelectItem>
