@@ -196,3 +196,13 @@ describe('decisão de acesso a módulo', () => {
     });
   });
 });
+
+describe('Relatórios governado pelo perfil', () => {
+  const base = { papel: 'admin' as const, modulo: 'relatorios', acao: 'access' as const, usarPapelComoReserva: false, modulosDoPlano: ['relatorios'] };
+  it('admin com Relatórios no perfil entra', () => {
+    expect(decidirAcesso({ ...base, permissao: { module_name: 'relatorios', can_access: true, can_read: true, can_create: false, can_update: false, can_delete: false } as any })).toBe(true);
+  });
+  it('admin sem Relatórios no perfil é bloqueado', () => {
+    expect(decidirAcesso({ ...base, permissao: undefined })).toBe(false);
+  });
+});
