@@ -110,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         successCount++;
       } catch (emailError) {
-        console.error(`Erro ao enviar lembrete para ${assessment.fornecedor_email}:`, emailError);
+        console.error(`Erro ao enviar lembrete do assessment ${assessment.id}:`, emailError);
         errorCount++;
       }
     }

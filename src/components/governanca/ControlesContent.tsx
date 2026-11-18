@@ -1,3 +1,4 @@
+import { csvRow } from '@/lib/csv-utils';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { loadControls } from '@/lib/queries/controls';
@@ -639,7 +640,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
                 c.responsavel_nome || '',
                 c.testesCount || 0
               ]);
-              const csvContent = [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
+              const csvContent = [headers.join(";"), ...rows.map(r => csvRow(r))].join("\n");
               const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
               const link = document.createElement("a");
               link.href = URL.createObjectURL(blob);
@@ -783,7 +784,7 @@ export default function ControlesContent({ actionsSlot, headerSearch, onHeaderSe
             shortControleId(c.id, c.codigo), c.nome, c.tipo, c.status, c.criticidade,
             c.responsavel_nome || '', c.testesCount || 0
           ]);
-          const csvContent = [headers.join(";"), ...rows.map((r: any[]) => r.join(";"))].join("\n");
+          const csvContent = [headers.join(";"), ...rows.map((r: any[]) => csvRow(r))].join("\n");
           const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
           const link = document.createElement("a");
           link.href = URL.createObjectURL(blob);

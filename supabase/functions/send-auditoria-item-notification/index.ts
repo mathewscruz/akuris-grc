@@ -168,7 +168,7 @@ serve(async (req) => {
       throw emailError;
     }
 
-    console.log(`Notificação enviada para ${responsavel.email}`);
+    console.log('Notificação de item de auditoria enviada');
 
     return new Response(JSON.stringify({ success: true, app_sent: appSent, email_sent: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {

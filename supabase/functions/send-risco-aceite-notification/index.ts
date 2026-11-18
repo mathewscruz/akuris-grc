@@ -47,14 +47,17 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const callerId = userData.user.id as string;
 
-    const { risco_id, aprovador_id, solicitante_id, empresa_id, tipo, comentario }: NotificationRequest = await req.json();
+    const { risco_id, aprovador_id, solicitante_id, empresa_id, tipo }: NotificationRequest = await req.json();
 
     const { data: callerProfile } = await supabase.from('profiles').select('empresa_id').eq('user_id', callerId).eq('ativo', true).single();
     if (!callerProfile?.empresa_id || callerProfile.empresa_id !== empresa_id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
-    const { data: risco } = await supabase.from('riscos').select('nome')
+    if (!["solicitacao", "aprovado", "rejeitado"].includes(tipo)) {
+      return new Response(JSON.stringify({ error: 'Tipo inválido' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const { data: risco } = await supabase.from('riscos').select('nome, aprovador_aceite, created_by, historico_aceite')
       .eq('id', risco_id).eq('empresa_id', empresa_id).maybeSingle();
     if (!risco) {
       return new Response(JSON.stringify({ error: 'Risco não encontrado' }), {
@@ -62,6 +65,22 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
     const risco_nome = risco.nome;
+
+    // Remetente e destinatários vêm do risco gravado, nunca do pedido: só o
+    // solicitante avisa o aprovador designado, e só o aprovador designado
+    // comunica a própria decisão, com o comentário que ficou no histórico.
+    const forbidden = () => new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    if (!risco.aprovador_aceite || risco.aprovador_aceite !== aprovador_id) return forbidden();
+    let comentarioGravado: string | undefined;
+    if (tipo === "solicitacao") {
+      if (callerId !== solicitante_id) return forbidden();
+    } else {
+      if (callerId !== aprovador_id || risco.created_by !== solicitante_id) return forbidden();
+      const historico = Array.isArray(risco.historico_aceite) ? risco.historico_aceite as any[] : [];
+      const ultimo = historico[historico.length - 1];
+      if (!ultimo || ultimo.evento !== tipo || ultimo.aprovador !== callerId) return forbidden();
+      comentarioGravado = typeof ultimo.comentario === 'string' ? ultimo.comentario.slice(0, 1000) : undefined;
+    }
 
     // Buscar dados do aprovador
     const { data: aprovador } = await supabase
@@ -105,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
       destinatario = solicitante!;
       subject = `[Akuris] Aceite de Risco Rejeitado: ${risco_nome}`;
       heading = "Aceite de Risco Rejeitado";
-      bodyText = `${aprovador.nome || "O aprovador"} rejeitou o aceite formal do risco abaixo.${comentario ? ` Motivo: ${comentario}` : ""}`;
+      bodyText = `${aprovador.nome || "O aprovador"} rejeitou o aceite formal do risco abaixo.${comentarioGravado ? ` Motivo: ${comentarioGravado}` : ""}`;
       ctaText = "Ver Risco";
     }
 
@@ -127,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
       text: htmlToText(htmlContent),
     });
 
-    console.log(`E-mail de aceite de risco (${tipo}) enviado para ${destinatario?.email}`);
+    console.log(`E-mail de aceite de risco (${tipo}) enviado`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200, headers: { "Content-Type": "application/json", ...corsHeaders }

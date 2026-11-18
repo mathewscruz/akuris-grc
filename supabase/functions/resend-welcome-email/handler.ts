@@ -154,7 +154,7 @@ export async function handleResendWelcomeEmail(req: Request, dependencies = { re
     }
     const setupPasswordUrl = `${siteUrl}/definir-senha?token_hash=${encodeURIComponent(linkData.properties.hashed_token)}&type=recovery`
 
-    console.log(`Reenviando e-mail via send-welcome-email para: ${userProfile.email}`)
+    console.log('Reenviando e-mail via send-welcome-email')
 
     const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-welcome-email', {
       headers: {

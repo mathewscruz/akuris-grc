@@ -39,9 +39,9 @@ serve(async (req) => {
     */
     const ctx = await requireUserContext(req);
 
-    const { user_id, controle_id, comentario }: MentionNotificationRequest = await req.json();
+    const { user_id, controle_id }: MentionNotificationRequest = await req.json();
 
-    if (!user_id || !controle_id || typeof comentario !== 'string' || comentario.length > 2_000) {
+    if (!user_id || !controle_id) {
       return new Response(JSON.stringify({ error: 'Payload inválido' }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
@@ -59,6 +59,18 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Destinatário fora da sua empresa" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
+    // O texto do e-mail vem do comentário gravado pelo próprio autor, que tem
+    // de mencionar este destinatário — o pedido não escolhe o conteúdo.
+    const desde = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: gravados } = await supabase.from('controles_comentarios').select('comentario, mencoes')
+      .eq('controle_id', controle_id).eq('user_id', ctx.userId).gte('created_at', desde)
+      .order('created_at', { ascending: false }).limit(10);
+    const gravado = (gravados ?? []).find((c: any) => Array.isArray(c.mencoes) && c.mencoes.includes(user_id));
+    if (!gravado) {
+      return new Response(JSON.stringify({ error: 'Menção não encontrada' }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    const comentarioGravado = String(gravado.comentario ?? '');
+
     const { data: autorMencao } = await supabase.from("profiles").select("nome")
       .eq('empresa_id', ctx.empresaId).eq('ativo', true).eq("user_id", ctx.userId).single();
     const autorNome = autorMencao?.nome || "Um usuário";
@@ -67,7 +79,7 @@ serve(async (req) => {
     const companyName = empresa?.nome || "Akuris";
 
     const controleLink = `https://akuris.pt/governanca/controles?detalhe=${controle_id}`;
-    const comentarioTruncado = comentario.length > 200 ? comentario.substring(0, 200) + "..." : comentario;
+    const comentarioTruncado = comentarioGravado.length > 200 ? comentarioGravado.substring(0, 200) + "..." : comentarioGravado;
 
     const emailHtml = operationalEmail("controlMention", {
       name: usuario.nome, item: controle_nome, author: autorNome, description: comentarioTruncado, url: controleLink
@@ -83,7 +95,7 @@ serve(async (req) => {
 
     if (emailError) throw emailError;
 
-    console.log(`E-mail de menção enviado para ${usuario.email}`);
+    console.log('E-mail de menção enviado');
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Erro na função:", error);

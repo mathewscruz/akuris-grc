@@ -1,3 +1,4 @@
+import { csvRow } from '@/lib/csv-utils';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { readAllPages, readAllPagesByIds } from '@/lib/read-all-pages';
@@ -306,7 +307,7 @@ export default function Contratos() {
 
     const csvContent = [
       headers.join(";"),
-      ...rows.map(row => row.join(";"))
+      ...rows.map(row => csvRow(row))
     ].join("\n");
 
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -669,7 +670,7 @@ export default function Contratos() {
                   c.data_inicio ? formatDateOnly(c.data_inicio) : '',
                   c.data_fim ? formatDateOnly(c.data_fim) : ''
                 ]);
-                const csvContent = [headers.join(";"), ...rows.map((row: any[]) => row.join(";"))].join("\n");
+                const csvContent = [headers.join(";"), ...rows.map((row: any[]) => csvRow(row))].join("\n");
                 const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
                 const link = document.createElement("a");
                 link.href = URL.createObjectURL(blob);

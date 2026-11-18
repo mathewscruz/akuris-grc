@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { projeto_id, gatilho, tarefa, contexto } = await req.json();
-    if (!projeto_id || !gatilho || !tarefa?.id) {
+    const { projeto_id, gatilho, tarefa: tarefaPedida, contexto } = await req.json();
+    if (!projeto_id || !gatilho || typeof tarefaPedida?.id !== 'string') {
       return new Response(JSON.stringify({ error: 'Payload inválido' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -76,6 +76,17 @@ Deno.serve(async (req) => {
     if (!perfil?.empresa_id || !projeto?.empresa_id || perfil.empresa_id !== projeto.empresa_id) {
       return new Response(JSON.stringify({ error: 'Projeto de outra empresa' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // A tarefa vem da base, ligada ao projeto já autorizado: o id do pedido
+    // nunca alcança tarefas de outro projeto ou empresa.
+    const { data: tarefa } = await supabase
+      .from('projeto_tarefas').select('*')
+      .eq('id', tarefaPedida.id).eq('projeto_id', projeto_id).maybeSingle();
+    if (!tarefa) {
+      return new Response(JSON.stringify({ error: 'Tarefa não encontrada neste projeto' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -143,7 +154,7 @@ async function aplicarAcao(
         await supabase
           .from('projeto_tarefas')
           .update({ responsavel_id: acao.user_id })
-          .eq('id', tarefa.id);
+          .eq('id', tarefa.id).eq('projeto_id', tarefa.projeto_id);
       }
       break;
 
@@ -152,7 +163,7 @@ async function aplicarAcao(
         await supabase
           .from('projeto_tarefas')
           .update({ coluna_id: acao.coluna_id })
-          .eq('id', tarefa.id);
+          .eq('id', tarefa.id).eq('projeto_id', tarefa.projeto_id);
       }
       break;
 
@@ -161,7 +172,7 @@ async function aplicarAcao(
         await supabase
           .from('projeto_tarefas')
           .update({ prioridade: acao.prioridade })
-          .eq('id', tarefa.id);
+          .eq('id', tarefa.id).eq('projeto_id', tarefa.projeto_id);
       }
       break;
 

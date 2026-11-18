@@ -1,3 +1,4 @@
+import { csvRow } from '@/lib/csv-utils';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { readAllPages, readAllPagesByIds } from "@/lib/read-all-pages";
 import { auditItemSummary } from '@/lib/auditoria-itens';
@@ -304,8 +305,8 @@ export default function AuditoriasContent({ actionsSlot, headerSearch, onHeaderS
         counts.itens,
         counts.itensConcluidos,
         `${progresso}%`
-      ].join(';');
-    });
+      ];
+    }).map((r) => csvRow(r));
     
     const csvContent = [headers.join(';'), ...rows].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });

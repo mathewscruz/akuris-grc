@@ -714,6 +714,27 @@ serve(async (req) => {
     user_id = authedUserId;
     empresa_id = authedEmpresaId;
 
+    // Frameworks pedidos têm de ser modelos globais ou da própria empresa;
+    // a leitura seguinte usa service role e não pode atravessar tenants.
+    {
+      const fwPedidos = Array.from(new Set([
+        ...(Array.isArray(framework_context?.framework_ids) ? framework_context.framework_ids : []),
+        ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
+      ].filter((x: unknown) => typeof x === 'string' && x))) as string[];
+      if (fwPedidos.length) {
+        const { data: permitidos } = await supabase
+          .from('gap_analysis_frameworks')
+          .select('id, empresa_id')
+          .in('id', fwPedidos.slice(0, 50));
+        const ok = new Set((permitidos ?? []).filter((f: any) => f.empresa_id == null || f.empresa_id === empresa_id).map((f: any) => f.id));
+        if (fwPedidos.length > 50 || fwPedidos.some((id) => !ok.has(id))) {
+          return new Response(JSON.stringify({ error: 'Framework não encontrado' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
+
     /**
      * O contexto da empresa, lido uma vez por invocação e SEMPRE no servidor.
      *

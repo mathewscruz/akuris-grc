@@ -1,3 +1,4 @@
+import { csvRow } from '@/lib/csv-utils';
 import { jsPDF } from 'jspdf';
 import { RiscosStats } from '@/hooks/useRiscosStats';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
@@ -126,7 +127,7 @@ export function exportRiscosCSV(riscos: RiscoExport[], locale: Locale = 'pt') {
   ]);
 
   const csvContent = [headers, ...rows]
-    .map(row => row.map(cell => `"${cell}"`).join(','))
+    .map(row => csvRow(row, ','))
     .join('\n');
 
   const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });

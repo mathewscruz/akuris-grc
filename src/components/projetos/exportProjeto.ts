@@ -1,3 +1,4 @@
+import { spreadsheetText } from '@/lib/csv-utils';
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { getPrioridadeLabel } from './enum-labels';
@@ -24,7 +25,7 @@ export function exportTarefasCSV(projetoNome: string, tarefas: ProjetoTarefa[], 
     tr.created_at ?? '',
   ]);
   const csv = [headers, ...rows]
-    .map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .map((r) => r.map((v) => `"${(typeof v === 'number' ? String(v) : spreadsheetText(v)).replace(/"/g, '""')}"`).join(','))
     .join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);

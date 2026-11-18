@@ -326,7 +326,8 @@ async function getAssessment(admin: any, token: string) {
     .eq('link_token', token).maybeSingle();
   if (error) throw error;
   if (!data) return { error: { error: 'Link inválido', code: 'NOT_FOUND' }, status: 404 } as const;
-  if (data.data_expiracao && new Date(data.data_expiracao).getTime() < Date.now() && data.status !== 'concluido') {
+  // Link expirado não devolve nada, nem respostas de questionário concluído.
+  if (data.data_expiracao && new Date(data.data_expiracao).getTime() < Date.now()) {
     return { error: { error: 'Este link expirou', code: 'EXPIRED' }, status: 410 } as const;
   }
   if (!['enviado', 'em_andamento', 'concluido'].includes(data.status)) {

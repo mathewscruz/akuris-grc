@@ -162,3 +162,25 @@ export function validarUrlExterno(rawUrl: string | undefined | null): UrlSegura 
 
   return { ok: true, url: parsed.toString() };
 }
+
+/**
+ * Como `validarUrlExterno`, mas também resolve o DNS e recusa quando qualquer
+ * endereço resolvido é interno. Um nome público que aponta (ou passa a
+ * apontar, por DNS rebinding) para 127.0.0.1 ou 169.254.169.254 não passa.
+ */
+export async function validarUrlExternoResolvido(rawUrl: string | undefined | null): Promise<UrlSegura> {
+  const base = validarUrlExterno(rawUrl);
+  if (!base.ok) return base;
+  const host = new URL(base.url!).hostname.replace(/^\[|\]$/g, '');
+  // IP literal já foi verificado acima.
+  if (/^[\d.]+$/.test(host) || host.includes(':')) return base;
+  const enderecos: string[] = [];
+  for (const tipo of ['A', 'AAAA'] as const) {
+    try { enderecos.push(...await Deno.resolveDns(host, tipo)); } catch { /* sem registo deste tipo */ }
+  }
+  if (!enderecos.length) return { ok: false, error: 'Não foi possível resolver o endereço' };
+  if (enderecos.some((ip) => hostInterno(ip))) {
+    return { ok: false, error: 'URLs internas ou privadas não são permitidas' };
+  }
+  return base;
+}

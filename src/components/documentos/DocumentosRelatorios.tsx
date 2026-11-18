@@ -1,3 +1,4 @@
+import { csvRow } from '@/lib/csv-utils';
 import React, { useState } from 'react';
 import { estadoDocumento, isDocumentoVencido } from '@/lib/metrics/documentos';
 import { IconFilter, IconDownload, IconChart } from '@/components/icons';
@@ -64,7 +65,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
 
     const csvContent = [
       headers.join(";"),
-      ...rows.map(row => row.join(";"))
+      ...rows.map(row => csvRow(row))
     ].join("\n");
 
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });

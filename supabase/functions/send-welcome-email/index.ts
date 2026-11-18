@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    console.log(`Enviando e-mail de boas-vindas para: ${userEmail}`)
+    console.log('Enviando e-mail de boas-vindas')
 
     const html = await renderAsync(
       React.createElement(WelcomeEmail, {

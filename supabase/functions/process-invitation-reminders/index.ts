@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
 
         // Se já atingiu o limite máximo, pular
         if (currentReminderCount >= maxReminders) {
-          console.log(`Usuário ${user.email} já atingiu limite máximo de lembretes`)
+          console.log(`Usuário ${user.user_id ?? user.id} já atingiu limite máximo de lembretes`)
           continue
         }
 
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
         }
 
         if (!shouldSendReminder) {
-          console.log(`Ainda não é hora de enviar lembrete para ${user.email}`)
+          console.log(`Ainda não é hora de enviar lembrete para ${user.user_id ?? user.id}`)
           continue
         }
 
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
           text: htmlToText(html),
         }, `invitation-reminder/${user.user_id}/${currentReminderCount + 1}`, Deno.env.get('RESEND_API_KEY') || '')
 
-        console.log(`E-mail de lembrete enviado para ${user.email}`)
+        console.log(`E-mail de lembrete enviado para ${user.user_id ?? user.id}`)
 
         // Atualizar ou criar registro de lembrete
         const nextReminderCount = currentReminderCount + 1
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         sent++
 
       } catch (error) {
-        console.error(`Erro ao processar usuário ${user.email}:`, error)
+        console.error(`Erro ao processar usuário ${user.user_id ?? user.id}:`, error)
         errors++
       }
     }

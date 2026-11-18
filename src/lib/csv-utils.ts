@@ -9,11 +9,20 @@ export function spreadsheetText(value: unknown): string {
   return /^[\s]*[=+@-]/.test(text) || /^[\t\r]/.test(text) ? `'${text}` : text;
 }
 
+/** Linha CSV segura: texto neutralizado contra fórmulas e escapado. */
+export function csvRow(cells: unknown[], sep = ';'): string {
+  return cells.map((cell) => {
+    const val = typeof cell === 'number' ? String(cell) : spreadsheetText(cell);
+    return val.includes(sep) || val.includes('"') || val.includes('\n') ? `"${val.replace(/"/g, '""')}"` : val;
+  }).join(sep);
+}
+
 export function exportCSV(headers: string[], rows: (string | number | null | undefined)[][], filename: string) {
   const csvContent = [
     headers.join(';'),
     ...rows.map(row => row.map(cell => {
-      const val = cell == null ? '' : String(cell);
+      // Números ficam como números; texto nunca pode virar fórmula.
+      const val = typeof cell === 'number' ? String(cell) : spreadsheetText(cell);
       // Escape values containing semicolons, quotes, or newlines
       if (val.includes(';') || val.includes('"') || val.includes('\n')) {
         return `"${val.replace(/"/g, '""')}"`;

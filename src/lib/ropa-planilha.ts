@@ -1,3 +1,4 @@
+import { spreadsheetText } from '@/lib/csv-utils';
 import * as XLSX from 'xlsx';
 import { textoDaVariante } from '@/lib/pt-variants';
 import {
@@ -204,5 +205,15 @@ export function exportRopaWorkbook(
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(aoa), sheetName);
   });
 
+  // Nenhuma célula de texto pode ser lida como fórmula ao abrir o ficheiro.
+  for (const nome of workbook.SheetNames) {
+    const sheet = workbook.Sheets[nome];
+    for (const ref of Object.keys(sheet)) {
+      if (ref.startsWith('!')) continue;
+      const cell = sheet[ref] as { t?: string; v?: unknown; f?: string };
+      delete cell.f;
+      if (cell.t === 's' && typeof cell.v === 'string') cell.v = spreadsheetText(cell.v);
+    }
+  }
   XLSX.writeFile(workbook, fileName);
 }

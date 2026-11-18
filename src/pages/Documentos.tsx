@@ -1,3 +1,4 @@
+import { csvRow } from '@/lib/csv-utils';
 import { paginationPages } from '@/lib/pagination';
 import { readAllPages } from '@/lib/read-all-pages';
 import { useRef } from 'react';
@@ -439,7 +440,7 @@ export default function Documentos() {
 
     const csvContent = [
       headers.join(";"),
-      ...rows.map(row => row.join(";"))
+      ...rows.map(row => csvRow(row))
     ].join("\n");
 
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
