@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useAtualizarTarefas, type PatchTarefa } from '@/hooks/useProjetoCronograma';
 import { deslocarLote } from '@/lib/projeto-cronograma';
+import { tagsVisiveis } from '@/lib/projeto-acompanhamento';
 import { isMarco, estaAtrasada, mesInicio, TAG_MARCO, calcularPosicaoHoje } from '@/lib/projeto-acompanhamento';
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
@@ -48,10 +49,10 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
   const nomeUsuario = React.useCallback((id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null, [usuarios]);
   const tipos = React.useMemo(() => {
     const set = new Set<string>();
-    tarefas.forEach((x) => { const tg = (x.tags ?? []).find((g) => g !== TAG_MARCO); if (tg) set.add(tg); });
+    tarefas.forEach((x) => { const tg = tagsVisiveis(x.tags).find((g) => g !== TAG_MARCO); if (tg) set.add(tg); });
     return [...set].sort();
   }, [tarefas]);
-  const tipoDe = (x: ProjetoTarefa) => (isMarco(x) ? t('p3Projetos.lista.milestone') : (x.tags ?? [])[0] ?? null);
+  const tipoDe = (x: ProjetoTarefa) => (isMarco(x) ? t('p3Projetos.lista.milestone') : tagsVisiveis(x.tags)[0] ?? null);
 
   const filtradas = React.useMemo(() => {
     return tarefas.filter((t) => {
@@ -329,7 +330,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                     const col = colunas.find((c) => c.id === task.coluna_id);
                     const atrasada = estaAtrasada(task);
                     const fmt = (d: string | null) => (d ? parseDataLocal(d).toLocaleDateString(intlLocale()) : '—');
-                    const tags = task.tags ?? [];
+                    const tags = tagsVisiveis(task.tags);
                     const temFilhos = filhosPorPai.has(task.id);
                     const nivel: 'fase' | 'dominio' | 'atividade' = temFilhos ? (depth === 0 ? 'fase' : 'dominio') : 'atividade';
                     const agregado = temFilhos ? progressoAgregado(task.id) : null;

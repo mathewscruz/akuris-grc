@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { TAG_MARCO, estaAtrasada } from '@/lib/projeto-acompanhamento';
+import { TAG_MARCO, estaAtrasada, TAG_PCT_AUTO, tagsVisiveis, progressoAutomatico } from '@/lib/projeto-acompanhamento';
 import { periodoSubtarefasExcede } from '@/lib/projeto-cronograma';
 import { undoableAction } from '@/lib/undoable-action';
 import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess, IconChevron, IconLink } from '@/components/icons';
@@ -72,6 +72,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     estimativa_horas: '',
     sprint_id: '',
     progresso_pct: 0,
+    pct_auto: false,
     tags: [] as string[],
   });
 
@@ -88,7 +89,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
         estimativa_horas: tarefa?.estimativa_horas ? String(tarefa.estimativa_horas) : '',
         sprint_id: tarefa?.sprint_id ?? '',
         progresso_pct: tarefa?.progresso_pct ?? 0,
-        tags: tarefa?.tags ?? [],
+        tags: tagsVisiveis(tarefa?.tags),
+        pct_auto: (tarefa?.tags ?? []).includes(TAG_PCT_AUTO),
       });
       setNovaSub('');
       setNovaTag('');
@@ -112,6 +114,13 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   );
   const fmtCurto = (d: string) => parseDataLocal(d).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short' });
   const colAtual = colunas.find((c) => c.id === form.coluna_id);
+  const pctCalculado = progressoAutomatico(subtarefas, checklist);
+  const pctEfetivo = colAtual?.is_concluido ? 100 : form.pct_auto && pctCalculado != null ? pctCalculado : form.progresso_pct;
+  const bloqueadoPct = !!colAtual?.is_concluido || (form.pct_auto && pctCalculado != null);
+  const definirPct = (v: number) => {
+    const n = Math.max(0, Math.min(100, Math.round(v)));
+    setForm((f) => ({ ...f, progresso_pct: n, ...(n === 100 && colunaConcluida ? { coluna_id: colunaConcluida.id } : {}) }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,8 +140,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
       prazo: form.prazo || null,
       estimativa_horas: form.estimativa_horas ? Number(form.estimativa_horas) : null,
       sprint_id: form.sprint_id || null,
-      progresso_pct: concluida ? 100 : form.progresso_pct,
-      tags: form.tags,
+      progresso_pct: concluida ? 100 : pctEfetivo,
+      tags: form.pct_auto ? [...form.tags, TAG_PCT_AUTO] : form.tags,
       concluida_em: concluida ? (tarefa?.concluida_em ?? new Date().toISOString()) : null,
     } as any);
     onOpenChange(false);
@@ -364,15 +373,31 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             </div>
           </Prop>
           <div className="col-span-full mt-2 flex items-center gap-4 border-t border-border px-1 pt-4">
-            <ProgressRing value={colAtual?.is_concluido ? 100 : form.progresso_pct} />
-            <div className="space-y-1">
+            <ProgressRing value={pctEfetivo} />
+            <div className="min-w-0 flex-1 space-y-2">
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><IconSuccess className="h-4 w-4" />{t('p3Projetos.tarefa.progresso')}</p>
-              <div className="flex items-center gap-1">
-                <Input type="number" min={0} max={100} step={5} className="h-9 w-20" aria-label={t('p3Projetos.tarefa.progresso')}
-                  value={colAtual?.is_concluido ? 100 : form.progresso_pct} disabled={!!colAtual?.is_concluido}
-                  onChange={(e) => setForm({ ...form, progresso_pct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t('p3Projetos.tarefa.progresso')}>
+                {[0, 25, 50, 75, 100].map((v) => (
+                  <button key={v} type="button" disabled={bloqueadoPct} onClick={() => definirPct(v)} aria-pressed={pctEfetivo === v}
+                    className={`h-7 rounded-full border px-2.5 text-xs font-medium tabular-nums transition-ui disabled:cursor-not-allowed disabled:opacity-50 ${pctEfetivo === v ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'}`}>
+                    {v}%
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="range" min={0} max={100} step={5} value={pctEfetivo} disabled={bloqueadoPct}
+                  onChange={(e) => definirPct(Number(e.target.value))} aria-label={t('p3Projetos.tarefa.progresso')}
+                  className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-50" />
+                <Input type="number" min={0} max={100} className="h-8 w-16 text-right tabular-nums" aria-label={t('p3Projetos.tarefa.progresso')}
+                  value={pctEfetivo} disabled={bloqueadoPct} onChange={(e) => definirPct(Number(e.target.value) || 0)} />
                 <span className="text-sm text-muted-foreground">%</span>
               </div>
+              {pctCalculado != null && !colAtual?.is_concluido && (
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox checked={form.pct_auto} onCheckedChange={(v) => setForm((f) => ({ ...f, pct_auto: !!v }))} />
+                  {t('p3Projetos.tarefa.pctAuto')}
+                </label>
+              )}
             </div>
           </div>
         </aside>
@@ -446,18 +471,34 @@ function SectionHead({ title, done, total }: { title: string; done: number; tota
 
 function ProgressRing({ value }: { value: number }) {
   const r = 24, c = 2 * Math.PI * r;
+  const [mostrado, setMostrado] = useState(value);
+  const atual = React.useRef(value);
+  useEffect(() => {
+    const de = atual.current; const para = value;
+    if (de === para) return;
+    const reduzir = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduzir) { atual.current = para; setMostrado(para); return; }
+    const t0 = performance.now(); let raf = 0;
+    const passo = (agora: number) => {
+      const k = Math.min(1, (agora - t0) / 450); const e = 1 - Math.pow(1 - k, 3);
+      const v = Math.round(de + (para - de) * e);
+      atual.current = v; setMostrado(v);
+      if (k < 1) raf = requestAnimationFrame(passo);
+    };
+    raf = requestAnimationFrame(passo);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  const cor = value >= 100 ? 'hsl(var(--success))' : 'hsl(var(--primary))';
   return (
-    <div className="relative h-14 w-14 shrink-0">
-      <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden>
-        <circle cx="28" cy="28" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
-        <circle cx="28" cy="28" r={r} fill="none" stroke={value >= 100 ? 'hsl(var(--success))' : 'hsl(var(--primary))'} strokeWidth="5" strokeLinecap="round"
-          strokeDasharray={c} strokeDashoffset={c * (1 - value / 100)} transform="rotate(-90 28 28)" className="transition-all duration-500" />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums">{value}%</span>
-    </div>
+    <svg width="56" height="56" viewBox="0 0 56 56" className="block shrink-0" role="img" aria-label={`${value}%`}>
+      <circle cx="28" cy="28" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
+      <circle cx="28" cy="28" r={r} fill="none" stroke={cor} strokeWidth="5" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={c * (1 - mostrado / 100)} transform="rotate(-90 28 28)" />
+      <text x="28" y="28" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--foreground))"
+        style={{ fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{mostrado}%</text>
+    </svg>
   );
 }
-
 
 function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
   const { t } = useLanguage();

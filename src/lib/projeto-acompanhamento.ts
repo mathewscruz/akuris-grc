@@ -201,3 +201,17 @@ export function ordenarArvorePorData<T extends { id: string; parent_task_id?: st
   sort(raiz).forEach((r) => push(r, 0));
   return out;
 }
+
+/** Etiqueta interna: a % da tarefa é calculada pelas subtarefas/checklist. */
+export const TAG_PCT_AUTO = '__pct_auto';
+export const tagsVisiveis = (tags: string[] | null | undefined) => (tags ?? []).filter((g) => g !== TAG_PCT_AUTO);
+
+/** % automática: subtarefas concluídas ÷ total; sem subtarefas, itens do checklist marcados ÷ total. */
+export function progressoAutomatico(
+  subtarefas: { concluida_em: string | null }[],
+  checklist: { concluido?: boolean | null }[],
+): number | null {
+  if (subtarefas.length) return Math.round((subtarefas.filter((s) => s.concluida_em).length / subtarefas.length) * 100);
+  if (checklist.length) return Math.round((checklist.filter((c) => c.concluido).length / checklist.length) * 100);
+  return null;
+}

@@ -100,3 +100,15 @@ describe('ordenarArvorePorData (Gantt)', () => {
     expect(_oa(ts, 'inicio').map((x) => `${x.t.id}:${x.depth}`)).toEqual(['B:0', 'A:0', 'a2:1', 'a1:1']);
   });
 });
+
+import { progressoAutomatico as _pa, tagsVisiveis as _tv } from '@/lib/projeto-acompanhamento';
+describe('progresso automático da tarefa', () => {
+  it('usa subtarefas concluídas sobre o total', () => {
+    expect(_pa([{ concluida_em: 'x' }, { concluida_em: null }, { concluida_em: null }, { concluida_em: 'y' }], [])).toBe(50);
+  });
+  it('sem subtarefas, usa o checklist', () => {
+    expect(_pa([], [{ concluido: true }, { concluido: false }, { concluido: false }])).toBe(33);
+  });
+  it('sem itens não calcula', () => { expect(_pa([], [])).toBeNull(); });
+  it('a etiqueta interna nunca aparece', () => { expect(_tv(['__pct_auto', 'Política'])).toEqual(['Política']); });
+});
