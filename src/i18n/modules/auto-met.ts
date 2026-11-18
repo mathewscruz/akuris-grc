@@ -1,6 +1,16 @@
 /** Automações e métricas de projeto. Estrutura: { pt: {...}, en: {...} }. */
 export const autoMet = {
   pt: { autoMet: {
+    burndown: 'Burndown — atividades restantes', burnupSub: 'Quanto já foi entregue frente ao escopo e ao ritmo necessário.', burndownSub: 'Quanto falta entregar até zerar o escopo.',
+    restantes: 'Restantes', projecao: 'Projeção no ritmo atual', semanaDe: 'Semana até {d}',
+    previsaoSub: 'Calculada pelo ritmo das últimas 4 semanas.', diasCurto: '{n} d',
+    ritmoSub: 'Clique numa barra para ver o que foi concluído.', vsAnterior: 'vs semana anterior', concluidasLabel: 'Concluídas', emAberto: 'Em aberto',
+    prioridadeSub: 'Progresso e atrasos por prioridade. Clique para ver a lista.', tempoSub: 'Horas gastas frente ao estimado e prazos de SLA.',
+    semEstimativa: 'Adicione estimativas às atividades para acompanhar o consumo de horas.', atencao: 'Atenção',
+    porColuna: 'Por coluna', porColunaSub: 'Onde as atividades estão agora no fluxo.',
+    listaSemana: 'Concluídas na semana de {d}', listaPrioridade: 'Prioridade {p}', listaVazia: 'Nenhuma atividade aqui.',
+    saude: { no_prazo: 'No prazo', em_risco: 'Em risco', atrasado: 'Atrasado', sem_prazo: 'Sem prazo' },
+    saudeFrase: '{r}% concluído · esperado {e}% para hoje', esperadoHoje: 'esperado hoje', folga: 'de folga', atraso: 'de atraso previsto',
     concluidasAcum: 'Concluídas acumuladas', ritmoIdeal: 'Ritmo ideal', hoje: 'Hoje', semDados: 'sem dados',
     previsaoSemRitmoLongo: 'Nenhuma atividade foi concluída nas últimas 4 semanas, então ainda não dá para prever o fim. Faltam {r} atividades.',
     nConcluidas: '{n} concluídas', nAtividades: '{n} atividades',
@@ -29,6 +39,16 @@ export const autoMet = {
     tempoMedio: 'Tempo médio de conclusão', dias: '{n} dias',
   } },
   en: { autoMet: {
+    burndown: 'Burndown — remaining activities', burnupSub: 'How much has been delivered against scope and the required pace.', burndownSub: 'How much is left until scope reaches zero.',
+    restantes: 'Remaining', projecao: 'Projection at current pace', semanaDe: 'Week ending {d}',
+    previsaoSub: 'Based on the pace of the last 4 weeks.', diasCurto: '{n} d',
+    ritmoSub: 'Click a bar to see what was completed.', vsAnterior: 'vs previous week', concluidasLabel: 'Completed', emAberto: 'Open',
+    prioridadeSub: 'Progress and delays by priority. Click to see the list.', tempoSub: 'Hours spent against estimate and SLA deadlines.',
+    semEstimativa: 'Add estimates to activities to track hour consumption.', atencao: 'Attention',
+    porColuna: 'By column', porColunaSub: 'Where activities currently sit in the flow.',
+    listaSemana: 'Completed in week of {d}', listaPrioridade: '{p} priority', listaVazia: 'No activities here.',
+    saude: { no_prazo: 'On track', em_risco: 'At risk', atrasado: 'Late', sem_prazo: 'No deadline' },
+    saudeFrase: '{r}% complete · {e}% expected today', esperadoHoje: 'expected today', folga: 'of slack', atraso: 'forecast delay',
     concluidasAcum: 'Cumulative completed', ritmoIdeal: 'Ideal pace', hoje: 'Today', semDados: 'no data',
     previsaoSemRitmoLongo: 'No activity was completed in the last 4 weeks, so the finish date cannot be forecast yet. {r} activities remain.',
     nConcluidas: '{n} completed', nAtividades: '{n} activities',

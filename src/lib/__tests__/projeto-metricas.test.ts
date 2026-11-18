@@ -46,3 +46,36 @@ describe('ritmo ideal e recorte do burnup', () => {
     expect(recortarInicio(pts).map((p) => p.concluidas)).toEqual([0, 1, 2, 2]);
   });
 });
+
+import { saudeProjeto, projecaoBurnup, prioridadeEmpilhada, tempoMedioPorPrioridade as tmp } from '@/lib/projeto-acompanhamento';
+describe('saúde e projeção', () => {
+  const ini = new Date('2026-01-01'), fim = new Date('2026-01-11'), meio = new Date('2026-01-06');
+  it('esperado é a fração do tempo decorrido', () => {
+    expect(saudeProjeto(0.5, ini, fim, new Date('2026-01-10'), meio)).toEqual({ saude: 'no_prazo', esperado: 0.5, folgaDias: 1 });
+  });
+  it('previsão depois do fim previsto = atrasado', () => {
+    expect(saudeProjeto(0.5, ini, fim, new Date('2026-01-15'), meio).saude).toBe('atrasado');
+  });
+  it('progresso bem abaixo do esperado = em risco', () => {
+    expect(saudeProjeto(0.2, ini, fim, new Date('2026-01-10'), meio).saude).toBe('em_risco');
+  });
+  it('sem fim previsto = sem prazo', () => {
+    expect(saudeProjeto(0.2, ini, null, null).saude).toBe('sem_prazo');
+  });
+  it('projeção para ao alcançar o escopo', () => {
+    expect(projecaoBurnup(2, 5, 1.5, hoje).map((p) => p.valor)).toEqual([3.5, 5]);
+    expect(projecaoBurnup(2, 5, 0, hoje)).toEqual([]);
+  });
+  it('separa concluídas, atrasadas e em aberto', () => {
+    const r = prioridadeEmpilhada([
+      t({ prioridade: 'alta', concluida_em: '2026-11-01' }),
+      t({ prioridade: 'alta', prazo: '2026-11-01' }),
+      t({ prioridade: 'alta', prazo: '2026-12-30' }),
+    ] as any, hoje);
+    expect(r[1]).toEqual({ prior: 'alta', concluidas: 1, atrasadas: 1, abertas: 1, total: 3 });
+  });
+  it('tempo médio ignora conclusão antes da criação', () => {
+    const r = tmp([t({ prioridade: 'alta', created_at: '2026-11-10', concluida_em: '2026-11-07' }), t({ prioridade: 'alta', created_at: '2026-11-01', concluida_em: '2026-11-03' })] as any);
+    expect(r.alta).toBe(2);
+  });
+});

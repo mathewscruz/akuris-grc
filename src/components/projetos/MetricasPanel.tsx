@@ -14,12 +14,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import type { ProjetoTarefaPrioridade } from '@/types/projetos';
 import { parseDataLocal, intlLocale } from '@/lib/date-utils';
-import { indicadores, progressoPorFase, burnupSemanal, previsaoTermino, atrasadasPorResponsavel, tempoMedioPorPrioridade, filtrarPorPeriodo, trajetoriaIdeal, recortarInicio } from '@/lib/projeto-acompanhamento';
+import { indicadores, progressoPorFase, burnupSemanal, previsaoTermino, atrasadasPorResponsavel, tempoMedioPorPrioridade, filtrarPorPeriodo, trajetoriaIdeal, recortarInicio, saudeProjeto, projecaoBurnup, prioridadeEmpilhada } from '@/lib/projeto-acompanhamento';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToolbarField } from '@/components/ui/module-toolbar';
 import { CHART_SEVERITY } from '@/lib/chart-tokens';
+import { MetricCard, BurnChart, WeeklyBars, StackedPriority, Gauge, type BurnPoint } from './metricas-graficos';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Chip } from '@/components/ui/chip';
 
-export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[]; fimPrevisto?: string | null }) {
+export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto, inicioProjeto }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[]; fimPrevisto?: string | null; inicioProjeto?: string | null }) {
   const { t } = useLanguage();
   const [periodo, setPeriodo] = React.useState('todos');
   const tarefas = React.useMemo(() => filtrarPorPeriodo(todas, periodo === 'todos' ? null : Number(periodo)), [todas, periodo]);
@@ -33,7 +36,7 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
     const slaRisco = (tarefas as any[]).filter((t) => t.sla_status === 'em_risco').length;
 
     // Velocity últimas 4 semanas
-    const semanas: { label: string; concluidas: number }[] = [];
+    const semanas: { label: string; concluidas: number; ini: Date; fim: Date }[] = [];
     for (let i = 7; i >= 0; i--) {
       const ini = new Date(); ini.setDate(ini.getDate() - (i + 1) * 7); ini.setHours(0, 0, 0, 0);
       const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
@@ -41,7 +44,7 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
         const d = new Date(t.concluida_em ?? 0);
         return d >= ini && d < fim;
       }).length;
-      semanas.push({ label: ini.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' }), concluidas: c });
+      semanas.push({ label: ini.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' }), concluidas: c, ini: new Date(ini), fim: new Date(fim) });
     }
 
     // Cycle time médio (em dias) usando created_at -> concluida_em
@@ -76,15 +79,42 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
   const previsaoAtrasa = !!(previsao.data && fimPrev && previsao.data > new Date(fimPrev.getTime() + 86399999));
   const fases = React.useMemo(() => progressoPorFase(tarefas), [tarefas]);
   const fmtDia = (d: Date) => d.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' });
-  const burnupDados = React.useMemo(() => {
-    const pts = recortarInicio(burnup.pontos);
+  const [modoBurn, setModoBurn] = React.useState<'up' | 'down'>('up');
+  const [semanaSel, setSemanaSel] = React.useState<number | null>(null);
+  const [lista, setLista] = React.useState<{ titulo: string; itens: ProjetoTarefa[] } | null>(null);
+  const inicio = React.useMemo(() => {
+    if (inicioProjeto) return parseDataLocal(inicioProjeto);
     const criadas = todas.map((x: any) => x.created_at).filter(Boolean).map((d: string) => new Date(d).getTime());
-    const inicio = criadas.length ? new Date(Math.min(...criadas)) : null;
-    const ideal = trajetoriaIdeal(pts.map((p) => p.fim), burnup.total, inicio, fimPrev);
-    return pts.map((p, i) => ({ label: fmtDia(p.fim), value: p.concluidas, secondary: ideal[i] }));
+    return criadas.length ? new Date(Math.min(...criadas)) : null;
+  }, [inicioProjeto, todas]);
+  const burnupDados = React.useMemo<BurnPoint[]>(() => {
+    const pts = recortarInicio(burnup.pontos);
+    const total = burnup.total;
+    const ideal = trajetoriaIdeal(pts.map((p) => p.fim), total, inicio, fimPrev);
+    const reais: BurnPoint[] = pts.map((p, i) => ({ label: fmtDia(p.fim), escopo: total, real: p.concluidas, ideal: ideal[i] }));
+    const atual = pts[pts.length - 1]?.concluidas ?? 0;
+    const fut = projecaoBurnup(atual, total, previsao.porSemana);
+    const idealFut = trajetoriaIdeal(fut.map((f) => f.fim), total, inicio, fimPrev);
+    if (fut.length && reais.length) reais[reais.length - 1].projecao = atual;
+    const todosPts = [...reais, ...fut.map((f, i) => ({ label: fmtDia(f.fim), escopo: total, real: null, projecao: f.valor, ideal: idealFut[i] }))];
+    if (modoBurn === 'up') return todosPts;
+    const inv = (v: number | null | undefined) => (v == null ? v : Math.round((total - v) * 10) / 10);
+    return todosPts.map((d) => ({ ...d, real: inv(d.real), ideal: inv(d.ideal), projecao: inv(d.projecao) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [burnup, todas, fimPrevisto]);
-  const temIdeal = burnupDados.some((d) => d.secondary != null);
+  }, [burnup, inicio, fimPrevisto, previsao.porSemana, modoBurn]);
+  const hojeLabel = burnup.pontos.length ? fmtDia(burnup.pontos[burnup.pontos.length - 1].fim) : undefined;
+  const real = ind.total ? ind.concluidas / ind.total : 0;
+  const saude = React.useMemo(() => saudeProjeto(real, inicio, fimPrev, previsao.data), [real, inicio, fimPrevisto, previsao.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  const empilhado = React.useMemo(() => prioridadeEmpilhada(tarefas), [tarefas]);
+  const ultima = m.semanas[m.semanas.length - 1]?.concluidas ?? 0;
+  const penultima = m.semanas[m.semanas.length - 2]?.concluidas ?? 0;
+  const abrirSemana = (i: number) => {
+    const s = m.semanas[i]; if (!s) return;
+    setSemanaSel(i);
+    setLista({ titulo: t('autoMet.listaSemana', { d: s.label }), itens: folhas(tarefas).filter((x) => x.concluida_em && new Date(x.concluida_em) >= s.ini && new Date(x.concluida_em) < s.fim) });
+  };
+  const abrirPrioridade = (p: string) => setLista({ titulo: t('autoMet.listaPrioridade', { p: getPrioridadeLabel(t, p as ProjetoTarefaPrioridade) }), itens: folhas(tarefas).filter((x) => x.prioridade === p) });
+  const temIdeal = burnupDados.some((d) => d.ideal != null);
   const corPrior = { critica: CHART_SEVERITY.critical, alta: CHART_SEVERITY.high, media: CHART_SEVERITY.medium, baixa: CHART_SEVERITY.low } as const;
   const maxTempo = Math.max(0, ...Object.values(tempoPrior).map((v) => v ?? 0));
   const { data: usuarios = [] } = useUsuariosEmpresa();
@@ -188,6 +218,27 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
         </Card>
       </div>
 
+      {saude.saude !== 'sem_prazo' && (
+        <section className="flex flex-wrap items-center gap-x-8 gap-y-4 rounded-xl border border-border bg-card p-5 dark:shadow-none animate-fade-in motion-reduce:animate-none">
+          <div className="flex items-center gap-3">
+            <Chip tone={saude.saude === 'no_prazo' ? 'done' : saude.saude === 'em_risco' ? 'attention' : 'critical'}>{t(`autoMet.saude.${saude.saude}`)}</Chip>
+            <p className="text-sm text-muted-foreground">{t('autoMet.saudeFrase', { r: Math.round(real * 100), e: Math.round((saude.esperado ?? 0) * 100) })}</p>
+          </div>
+          <div className="min-w-[200px] flex-1">
+            <div className="relative h-2.5 rounded-full bg-muted">
+              <div className="h-full origin-left animate-scale-in rounded-full motion-reduce:animate-none" style={{ width: `${Math.round(real * 100)}%`, background: 'hsl(var(--chart-trend))' }} />
+              <span className="absolute -top-1 h-4.5 w-0.5 rounded bg-foreground/60" style={{ left: `${Math.round((saude.esperado ?? 0) * 100)}%`, height: 18 }} title={t('autoMet.esperadoHoje')} />
+            </div>
+            <div className="mt-1.5 flex justify-between text-micro text-muted-foreground"><span>{inicio?.toLocaleDateString(intlLocale())}</span><span>{t('autoMet.esperadoHoje')}</span><span>{fimPrev?.toLocaleDateString(intlLocale())}</span></div>
+          </div>
+          {saude.folgaDias != null && (
+            <div className="text-right">
+              <p className={`text-2xl font-semibold tabular-nums ${saude.folgaDias < 0 ? 'text-destructive' : 'text-foreground'}`}>{saude.folgaDias > 0 ? '+' : ''}{saude.folgaDias}d</p>
+              <p className="text-micro text-muted-foreground">{t(saude.folgaDias < 0 ? 'autoMet.atraso' : 'autoMet.folga')}</p>
+            </div>
+          )}
+        </section>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Mini icon={<IconTrendUp />} label={t('projetos.metricas.velocity')} value={(m.semanas[7]?.concluidas ?? 0).toString()} hint={t('projetos.metricas.avg4Weeks', { value: (m.semanas.slice(4).reduce((s, x) => s + x.concluidas, 0) / 4).toFixed(1) })} />
         <Mini icon={<IconTime />} label={t('projetos.metricas.cycleTime')} value={`${m.cycleMed.toFixed(1)}d`} hint={t('projetos.metricas.cycleTimeHint')} />
@@ -196,69 +247,113 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card variant="elevated" className="lg:col-span-2">
-          <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">{t('autoMet.burnup')}</div>
-            <AkurisArea height={240} curve="stepAfter" integer data={burnupDados} valueLabel={t('autoMet.concluidasAcum')} target={burnup.total} targetLabel={t('autoMet.escopo', { n: burnup.total })} domain={[0, Math.max(1, burnup.total)]} secondaryLabel={temIdeal ? t('autoMet.ritmoIdeal') : undefined} referenceX={burnupDados[burnupDados.length - 1]?.label} referenceXLabel={t('autoMet.hoje')} />
-            <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: "hsl(var(--chart-trend))" }} />{t('autoMet.concluidasAcum')}</span>
-              <span className="flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-muted-foreground" />{t('autoMet.escopo', { n: burnup.total })}</span>
-              {temIdeal && <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dotted border-muted-foreground" />{t('autoMet.ritmoIdeal')}</span>}
+        <MetricCard className="lg:col-span-2" title={t(modoBurn === 'up' ? 'autoMet.burnup' : 'autoMet.burndown')} subtitle={t(modoBurn === 'up' ? 'autoMet.burnupSub' : 'autoMet.burndownSub')}
+          action={
+            <div role="radiogroup" className="inline-flex shrink-0 rounded-full border border-border bg-muted/40 p-0.5 text-xs">
+              {(['up', 'down'] as const).map((k) => (
+                <button key={k} type="button" role="radio" aria-checked={modoBurn === k} onClick={() => setModoBurn(k)}
+                  className={`rounded-full px-3 py-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${modoBurn === k ? 'bg-card font-medium text-foreground shadow-sm dark:shadow-none dark:ring-1 dark:ring-border' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {k === 'up' ? 'Burnup' : 'Burndown'}
+                </button>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-        <Card variant="elevated">
-          <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-semibold">{t('autoMet.previsao')}</div>
-            <p className={`text-2xl font-semibold tabular-nums ${previsaoAtrasa ? 'text-destructive' : ''}`}>{previsao.data ? previsao.data.toLocaleDateString(intlLocale()) : '—'}</p>
-            {previsao.data ? <p className="text-xs text-muted-foreground">{t('autoMet.previsaoBase', { n: previsao.porSemana.toFixed(1), r: previsao.restantes })}</p>
-              : <p className="rounded-md border border-dashed border-border bg-muted/30 p-2.5 text-xs leading-relaxed text-muted-foreground">{t('autoMet.previsaoSemRitmoLongo', { r: previsao.restantes })}</p>}
+          }>
+          <BurnChart data={burnupDados} hojeLabel={hojeLabel} labels={{
+            real: t(modoBurn === 'up' ? 'autoMet.concluidasAcum' : 'autoMet.restantes'), ideal: t('autoMet.ritmoIdeal'), projecao: t('autoMet.projecao'),
+            escopo: t('autoMet.escopo', { n: burnup.total }), hoje: t('autoMet.hoje'), semana: (l) => t('autoMet.semanaDe', { d: l }),
+          }} />
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: 'hsl(var(--chart-trend))' }} />{t(modoBurn === 'up' ? 'autoMet.concluidasAcum' : 'autoMet.restantes')}</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-muted" />{t('autoMet.escopo', { n: burnup.total })}</span>
+            {temIdeal && <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dotted border-muted-foreground" />{t('autoMet.ritmoIdeal')}</span>}
+            {previsao.porSemana > 0 && <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed" style={{ borderColor: 'hsl(var(--chart-trend))' }} />{t('autoMet.projecao')}</span>}
+          </div>
+        </MetricCard>
+        <MetricCard title={t('autoMet.previsao')} subtitle={t('autoMet.previsaoSub')}>
+          <div className="space-y-4">
+            <div>
+              <p className={`text-3xl font-semibold tabular-nums tracking-tight ${previsaoAtrasa ? 'text-destructive' : 'text-foreground'}`}>{previsao.data ? previsao.data.toLocaleDateString(intlLocale()) : '—'}</p>
+              {previsao.data
+                ? <p className="mt-1 text-xs text-muted-foreground">{t('autoMet.previsaoBase', { n: previsao.porSemana.toFixed(1), r: previsao.restantes })}</p>
+                : <p className="mt-2 rounded-md border border-dashed border-border bg-muted/30 p-2.5 text-xs leading-relaxed text-muted-foreground">{t('autoMet.previsaoSemRitmoLongo', { r: previsao.restantes })}</p>}
+            </div>
             {fimPrev && <Row label={t('autoMet.fimPrevisto')} value={fimPrev.toLocaleDateString(intlLocale())} hint={previsaoAtrasa ? t('autoMet.previsaoAtrasa') : ''} tone={previsaoAtrasa ? 'destructive' : undefined} />}
-            <div className="border-t pt-3 space-y-2">
+            <div className="space-y-2.5 border-t pt-4">
               <div className="text-xs font-semibold text-muted-foreground">{t('autoMet.tempoMedio')}</div>
               {(['critica', 'alta', 'media', 'baixa'] as const).map((p) => (
-                <div key={p} className="grid grid-cols-[64px_minmax(0,1fr)_56px] items-center gap-2 text-sm">
+                <div key={p} className="grid grid-cols-[60px_minmax(0,1fr)_52px] items-center gap-2 text-sm">
                   <span className="text-muted-foreground">{getPrioridadeLabel(t, p)}</span>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    {tempoPrior[p] != null && maxTempo > 0 && <div className="h-full rounded-full" style={{ width: `${Math.max(6, (tempoPrior[p]! / maxTempo) * 100)}%`, background: corPrior[p] }} />}
+                    {tempoPrior[p] != null && maxTempo > 0 && <div className="h-full origin-left animate-scale-in rounded-full motion-reduce:animate-none" style={{ width: `${Math.max(6, (tempoPrior[p]! / maxTempo) * 100)}%`, background: corPrior[p] }} />}
                   </div>
-                  <span className="text-right tabular-nums text-xs">{tempoPrior[p] == null ? <span className="text-muted-foreground">{t('autoMet.semDados')}</span> : t('autoMet.dias', { n: tempoPrior[p]!.toFixed(1) })}</span>
+                  <span className="whitespace-nowrap text-right text-xs tabular-nums">{tempoPrior[p] == null ? <span className="text-muted-foreground">—</span> : t('autoMet.diasCurto', { n: tempoPrior[p]!.toLocaleString(intlLocale(), { maximumFractionDigits: 1 }) })}</span>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </MetricCard>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card variant="elevated">
-          <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">{t('autoMet.velocidade8')}</div>
-            <AkurisBars integer showValues data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} target={mediaSemanal} targetLabel={t('autoMet.media', { n: mediaSemanal.toFixed(1) })} format={(v) => t('autoMet.nConcluidas', { n: v })} />
-          </CardContent>
-        </Card>
-        <Card variant="elevated">
-          <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byPriority')}</div>
-            <AkurisBars horizontal showValues integer height={180} data={m.porPrior.map((p) => ({ label: getPrioridadeLabel(t, p.prior), value: p.qtd, color: corPrior[p.prior as keyof typeof corPrior] }))} format={(v) => t('autoMet.nAtividades', { n: v })} />
-          </CardContent>
-        </Card>
-        <Card variant="elevated">
-          <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-semibold flex items-center gap-2"><IconTimer className="h-4 w-4 text-primary" /> {t('projetos.metricas.timeAndSla')}</div>
-            <Row label={t('projetos.metricas.estimatedTotal')} value={`${m.estimado.toFixed(1)}h`} />
-            <Row label={t('projetos.metricas.spentTotal')} value={`${m.gasto.toFixed(1)}h`} />
-            {m.estimado > 0 && (
-              <div className="space-y-1">
-                <Row label={t('autoMet.gastoVsEstimado')} value={`${Math.round((m.gasto / m.estimado) * 100)}%`} hint={m.gasto > m.estimado ? t('projetos.metricas.aboveBudget') : ''} tone={m.gasto > m.estimado ? 'destructive' : undefined} />
-                <div className="h-2 overflow-hidden rounded-full bg-muted"><div className={`h-full ${m.gasto > m.estimado ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${Math.min(100, (m.gasto / m.estimado) * 100)}%` }} /></div>
-              </div>
-            )}
-            <Row label={t('projetos.metricas.slaViolated')} value={String(m.slaViolado)} tone={m.slaViolado > 0 ? 'destructive' : 'success'} />
-            <Row label={t('projetos.metricas.slaAtRisk')} value={String(m.slaRisco)} tone={m.slaRisco > 0 ? 'warning' : 'neutral'} />
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <MetricCard title={t('autoMet.velocidade8')} subtitle={t('autoMet.ritmoSub')}
+          action={<Chip tone={ultima > penultima ? 'done' : ultima < penultima ? 'attention' : 'rest'}>{ultima - penultima > 0 ? '+' : ''}{ultima - penultima} {t('autoMet.vsAnterior')}</Chip>}>
+          <WeeklyBars data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} media={mediaSemanal}
+            mediaLabel={t('autoMet.media', { n: mediaSemanal.toLocaleString(intlLocale(), { maximumFractionDigits: 1 }) })}
+            tooltip={() => t('autoMet.concluidasLabel')} onSelect={abrirSemana} selected={lista ? semanaSel : null} />
+        </MetricCard>
+        <MetricCard title={t('projetos.metricas.byPriority')} subtitle={t('autoMet.prioridadeSub')}>
+          <StackedPriority onSelect={abrirPrioridade}
+            rows={empilhado.map((r) => ({ key: r.prior, label: getPrioridadeLabel(t, r.prior), color: corPrior[r.prior], concluidas: r.concluidas, abertas: r.abertas, atrasadas: r.atrasadas, total: r.total }))}
+            labels={{ concluidas: t('autoMet.concluidasLabel'), abertas: t('autoMet.emAberto'), atrasadas: t('p3Projetos.painel.atrasadas'), vazio: '—' }} />
+        </MetricCard>
       </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <MetricCard title={t('projetos.metricas.timeAndSla')} subtitle={t('autoMet.tempoSub')}>
+          <div className="grid items-center gap-5 sm:grid-cols-[200px_minmax(0,1fr)]">
+            {m.estimado > 0
+              ? <Gauge value={(m.gasto / m.estimado) * 100} label={t('autoMet.gastoVsEstimado')} />
+              : <p className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">{t('autoMet.semEstimativa')}</p>}
+            <div className="space-y-3">
+              <Row label={t('projetos.metricas.estimatedTotal')} value={`${m.estimado.toFixed(1)}h`} />
+              <Row label={t('projetos.metricas.spentTotal')} value={`${m.gasto.toFixed(1)}h`} hint={m.gasto > m.estimado && m.estimado > 0 ? t('projetos.metricas.aboveBudget') : ''} tone={m.gasto > m.estimado && m.estimado > 0 ? 'destructive' : undefined} />
+              <Row label={t('projetos.metricas.slaViolated')} value={String(m.slaViolado)} tone={m.slaViolado > 0 ? 'destructive' : undefined} hint={m.slaViolado > 0 ? t('projetos.metricas.requiresAction') : ''} />
+              <Row label={t('projetos.metricas.slaAtRisk')} value={String(m.slaRisco)} tone={m.slaRisco > 0 ? 'warning' : undefined} hint={m.slaRisco > 0 ? t('autoMet.atencao') : ''} />
+            </div>
+          </div>
+        </MetricCard>
+        <MetricCard title={t('autoMet.porColuna')} subtitle={t('autoMet.porColunaSub')}>
+          <ul className="space-y-2.5">
+            {m.porColuna.map((c, i) => { const max = Math.max(1, ...m.porColuna.map((x) => x.qtd)); return (
+              <li key={c.nome} className="grid grid-cols-[minmax(0,140px)_minmax(0,1fr)_32px] items-center gap-3 text-sm">
+                <span className="truncate text-muted-foreground">{c.nome}</span>
+                <div className="h-2 overflow-hidden rounded-full bg-muted/60"><div className="h-full origin-left animate-scale-in rounded-full motion-reduce:animate-none" style={{ width: `${(c.qtd / max) * 100}%`, background: 'hsl(var(--chart-trend))', opacity: 0.4 + 0.6 * (c.qtd / max), animationDelay: `${i * 50}ms` }} /></div>
+                <span className="text-right text-xs font-semibold tabular-nums">{c.qtd}</span>
+              </li>
+            ); })}
+          </ul>
+        </MetricCard>
+      </div>
+
+      <Sheet open={!!lista} onOpenChange={(o) => { if (!o) { setLista(null); setSemanaSel(null); } }}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>{lista?.titulo}</SheetTitle>
+            <SheetDescription>{t('autoMet.nAtividades', { n: lista?.itens.length ?? 0 })}</SheetDescription>
+          </SheetHeader>
+          <ul className="mt-4 divide-y divide-border">
+            {lista?.itens.length === 0 && <li className="py-8 text-center text-sm text-muted-foreground">{t('autoMet.listaVazia')}</li>}
+            {lista?.itens.map((x) => { const p = partirTitulo(x.titulo); const atras = !x.concluida_em && estaAtrasada(x); const d = x.concluida_em ? new Date(x.concluida_em) : (x.data_fim ?? x.prazo) ? parseDataLocal((x.data_fim ?? x.prazo)!) : null; return (
+              <li key={x.id} className="flex items-center gap-3 py-2.5 text-sm">
+                {x.concluida_em ? <IconSuccess className="h-4 w-4 shrink-0 text-success" /> : <span className={`h-3.5 w-3.5 shrink-0 rounded-full border ${atras ? 'border-destructive' : 'border-muted-foreground/40'}`} />}
+                {p.codigo && <CodeChip codigo={p.codigo} nivel="atividade" />}
+                <span className={`min-w-0 flex-1 truncate ${x.concluida_em ? 'text-muted-foreground' : ''}`}>{p.nome}</span>
+                {d && <span className={`text-xs tabular-nums ${atras ? 'text-destructive' : 'text-muted-foreground'}`}>{d.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })}</span>}
+              </li>
+            ); })}
+          </ul>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

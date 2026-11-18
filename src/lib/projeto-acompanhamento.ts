@@ -254,7 +254,8 @@ export function tempoMedioPorPrioridade(tarefas: ProjetoTarefa[]): Record<string
   const out: Record<string, number | null> = {};
   for (const p of ['critica', 'alta', 'media', 'baixa']) {
     const ds = folhas(tarefas).filter((t: any) => t.prioridade === p && t.concluida_em && t.created_at)
-      .map((t: any) => (new Date(t.concluida_em).getTime() - new Date(t.created_at).getTime()) / 86400000);
+      .map((t: any) => (new Date(t.concluida_em).getTime() - new Date(t.created_at).getTime()) / 86400000)
+      .filter((d) => d >= 0 && Number.isFinite(d)); // conclusão antes da criação = dado incoerente
     out[p] = ds.length ? ds.reduce((a, b) => a + b, 0) / ds.length : null;
   }
   return out;
@@ -288,4 +289,44 @@ export function recortarInicio<T extends { concluidas: number }>(pontos: T[], mi
   if (primeiro < 0) return pontos.slice(-minimo);
   const ini = Math.max(0, Math.min(primeiro - 1, pontos.length - minimo));
   return pontos.slice(ini);
+}
+
+// ── Saúde, projeção e distribuições ──────────────────────────────────
+export type Saude = 'no_prazo' | 'em_risco' | 'atrasado' | 'sem_prazo';
+
+/**
+ * Compara o progresso real (folhas concluídas / total) com o esperado para hoje
+ * numa reta entre início e fim previsto. Folga em dias = previsão vs fim previsto.
+ */
+export function saudeProjeto(real: number, inicio: Date | null, fim: Date | null, previsao: Date | null, hoje = new Date()):
+  { saude: Saude; esperado: number | null; folgaDias: number | null } {
+  if (!inicio || !fim || fim <= inicio) return { saude: 'sem_prazo', esperado: null, folgaDias: null };
+  const esperado = Math.max(0, Math.min(1, (hoje.getTime() - inicio.getTime()) / (fim.getTime() - inicio.getTime())));
+  const folgaDias = previsao ? Math.round((fim.getTime() - previsao.getTime()) / 86400000) : null;
+  if (real >= 1) return { saude: 'no_prazo', esperado, folgaDias };
+  if (hoje > fim || (folgaDias != null && folgaDias < 0)) return { saude: 'atrasado', esperado, folgaDias };
+  if (real + 0.1 < esperado || folgaDias == null) return { saude: 'em_risco', esperado, folgaDias };
+  return { saude: 'no_prazo', esperado, folgaDias };
+}
+
+/** Pontos futuros (semanais) do ritmo atual até alcançar o escopo; máx. `limite` semanas. */
+export function projecaoBurnup(atual: number, total: number, porSemana: number, hoje = new Date(), limite = 12): { fim: Date; valor: number }[] {
+  if (porSemana <= 0 || atual >= total) return [];
+  const out: { fim: Date; valor: number }[] = [];
+  let v = atual;
+  for (let i = 1; i <= limite && v < total; i++) {
+    v = Math.min(total, atual + porSemana * i);
+    out.push({ fim: new Date(hoje.getTime() + i * 7 * 86400000), valor: Math.round(v * 10) / 10 });
+  }
+  return out;
+}
+
+/** Por prioridade: concluídas, em aberto no prazo e atrasadas (só folhas). */
+export function prioridadeEmpilhada(tarefas: ProjetoTarefa[], hoje = new Date()) {
+  return (['critica', 'alta', 'media', 'baixa'] as const).map((p) => {
+    const f = folhas(tarefas).filter((t: any) => t.prioridade === p);
+    const concluidas = f.filter(estaConcluida).length;
+    const atrasadas = f.filter((t) => !estaConcluida(t) && estaAtrasada(t, hoje)).length;
+    return { prior: p, concluidas, atrasadas, abertas: f.length - concluidas - atrasadas, total: f.length };
+  });
 }
