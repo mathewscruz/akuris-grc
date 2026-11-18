@@ -300,7 +300,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
                       className={`group/bar absolute top-1/2 flex h-5 -translate-y-1/2 touch-none select-none items-center overflow-hidden rounded-md ${BAR[kind].track} ${d ? 'cursor-grabbing ring-2 ring-primary/50' : 'cursor-grab'} ${conflito ? 'ring-2 ring-destructive/70' : ''} transition-shadow hover:ring-2 hover:ring-primary/40`}
                       style={{ left: x(ivVis!.ini), width: Math.max(8, x(ivVis!.fim) - x(ivVis!.ini)) }}>
                       <span className={`absolute inset-y-0 left-0 ${BAR[kind].fill}`} style={{ width: `${pct}%` }} />
-                      {x(ivVis!.fim) - x(ivVis!.ini) > 36 && <span className="relative px-1.5 text-micro font-semibold tabular-nums text-foreground/80">{pct}%</span>}
+                      {x(ivVis!.fim) - x(ivVis!.ini) > 36 && <span className={`relative px-1.5 text-micro font-semibold tabular-nums ${(x(ivVis!.fim) - x(ivVis!.ini)) * pct / 100 >= 40 ? 'text-primary-foreground' : 'text-foreground/80'}`}>{pct}%</span>}
                       <span aria-hidden onPointerDown={(e) => iniciarArrasto(e, tk, 'fim')}
                         className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-foreground/0 group-hover/bar:bg-foreground/20" />
                     </div>
