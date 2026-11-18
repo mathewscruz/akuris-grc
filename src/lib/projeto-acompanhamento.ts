@@ -123,3 +123,20 @@ export function calcularPosicaoHoje(
   const ritmo: 'adiantado' | 'atrasado' | 'no_ritmo' = atrasadas.length ? 'atrasado' : adiantadas.length ? 'adiantado' : 'no_ritmo';
   return { indice, emCurso, atrasadas, adiantadas, ritmo };
 }
+
+
+export type OrdemGantt = 'estrutura' | 'inicio' | 'prazo';
+
+/** Ordena tarefas por data (início ou prazo); sem data vão para o fim. */
+export function ordenarTarefasPorData<T extends { data_inicio?: string | null; data_fim?: string | null; prazo?: string | null; ordem?: number | null }>(
+  tarefas: T[], ordem: Exclude<OrdemGantt, 'estrutura'>,
+): T[] {
+  const chave = (x: T) => (ordem === 'inicio' ? x.data_inicio ?? x.prazo ?? x.data_fim : x.data_fim ?? x.prazo ?? x.data_inicio) ?? null;
+  return tarefas.slice().sort((a, b) => {
+    const ka = chave(a); const kb = chave(b);
+    if (ka && kb && ka !== kb) return ka < kb ? -1 : 1;
+    if (ka && !kb) return -1;
+    if (!ka && kb) return 1;
+    return (a.ordem ?? 0) - (b.ordem ?? 0);
+  });
+}

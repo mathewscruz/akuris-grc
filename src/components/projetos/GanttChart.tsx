@@ -3,7 +3,7 @@ import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { isMarco, estaAtrasada } from '@/lib/projeto-acompanhamento';
+import { isMarco, estaAtrasada, ordenarTarefasPorData, type OrdemGantt } from '@/lib/projeto-acompanhamento';
 import { IconChevron } from '@/components/icons';
 import { statusKindDe, type StatusKind } from './StatusPill';
 import { partirTitulo, mapaFilhos, nivelDe, CodeChip, NIVEL_ROW, type Nivel } from './projeto-visual';
@@ -40,6 +40,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
     return n;
   });
 
+  const chaveOrdem = `gantt-ordem:${tarefas[0]?.projeto_id ?? ''}`;
+  const [ordenacao, setOrdenacao] = React.useState<OrdemGantt>(() => {
+    try { const v = localStorage.getItem(chaveOrdem); return v === 'inicio' || v === 'prazo' ? v : 'estrutura'; } catch { return 'estrutura'; }
+  });
+  const mudarOrdem = (o: OrdemGantt) => { setOrdenacao(o); try { localStorage.setItem(chaveOrdem, o); } catch { /* sem storage */ } };
+
   const filhos = useMemo(() => mapaFilhos(tarefas), [tarefas]);
   const intervalo = (x: ProjetoTarefa) => {
     const ini = x.data_inicio ? parseDataLocal(x.data_inicio) : x.prazo ? parseDataLocal(x.prazo) : null;
@@ -53,6 +59,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
     const ids = new Set(tarefas.map((x) => x.id));
     const raiz = tarefas.filter((x) => !x.parent_task_id || !ids.has(x.parent_task_id)).sort((a, b) => a.ordem - b.ordem);
     const out: { t: ProjetoTarefa; depth: number; nivel: Nivel }[] = [];
+    if (ordenacao !== 'estrutura') {
+      const porId = new Map(tarefas.map((x) => [x.id, x]));
+      const profundidade = (x: ProjetoTarefa) => { let d = 0; let p = x.parent_task_id; while (p && porId.has(p) && d < 10) { d++; p = porId.get(p)!.parent_task_id; } return d; };
+      return ordenarTarefasPorData(tarefas, ordenacao).map((x) => ({ t: x, depth: 0, nivel: nivelDe(x, filhos, profundidade(x)) }));
+    }
     const push = (x: ProjetoTarefa, d: number) => {
       out.push({ t: x, depth: d, nivel: nivelDe(x, filhos, d) });
       if (recolhidos.has(x.id)) return;
@@ -60,7 +71,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
     };
     raiz.forEach((r) => push(r, 0));
     return out;
-  }, [tarefas, filhos, recolhidos]);
+  }, [tarefas, filhos, recolhidos, ordenacao]);
 
   const escala = useMemo(() => {
     const iv = tarefas.map(intervalo).filter(Boolean) as { ini: number; fim: number }[];
@@ -103,7 +114,14 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex flex-wrap items-center justify-end gap-1">
+        <label className="mr-1 text-xs text-muted-foreground" htmlFor="gantt-ordem">{t('p3Projetos.gantt.ordenar')}</label>
+        <select id="gantt-ordem" value={ordenacao} onChange={(e) => mudarOrdem(e.target.value as OrdemGantt)}
+          className="mr-3 h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
+          <option value="estrutura">{t('p3Projetos.gantt.ordemEstrutura')}</option>
+          <option value="inicio">{t('p3Projetos.gantt.ordemInicio')}</option>
+          <option value="prazo">{t('p3Projetos.gantt.ordemPrazo')}</option>
+        </select>
         {(['semana', 'mes', 'trimestre'] as Zoom[]).map((z) => (
           <button key={z} type="button" onClick={() => setZoom(z)}
             className={`h-8 rounded-md px-3 text-xs font-medium transition-colors ${zoom === z ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'}`}>

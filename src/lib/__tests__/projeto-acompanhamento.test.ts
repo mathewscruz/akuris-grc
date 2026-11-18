@@ -58,3 +58,19 @@ describe('calcularPosicaoHoje', () => {
     expect(r.adiantadas).toEqual(['a']); expect(r.ritmo).toBe('adiantado');
   });
 });
+
+
+import { ordenarTarefasPorData } from '../projeto-acompanhamento';
+describe('ordenarTarefasPorData', () => {
+  const ts = [
+    { id: 'a', data_inicio: null, data_fim: null, prazo: null, ordem: 1 },
+    { id: 'b', data_inicio: '2026-03-01', data_fim: '2026-03-10', prazo: null, ordem: 2 },
+    { id: 'c', data_inicio: '2026-01-15', data_fim: '2026-04-01', prazo: null, ordem: 3 },
+  ];
+  it('ordena por início com sem data no fim', () => {
+    expect(ordenarTarefasPorData(ts, 'inicio').map((x) => x.id)).toEqual(['c', 'b', 'a']);
+  });
+  it('ordena por prazo', () => {
+    expect(ordenarTarefasPorData(ts, 'prazo').map((x) => x.id)).toEqual(['b', 'c', 'a']);
+  });
+});

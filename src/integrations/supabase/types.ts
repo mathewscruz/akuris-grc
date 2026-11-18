@@ -13331,6 +13331,7 @@ export type Database = {
         Args: { p_empresa_id: string }
         Returns: number
       }
+      setup_link_status: { Args: { _token_hash: string }; Returns: boolean }
       severidade_canonica: { Args: { p_valor: string }; Returns: string }
       sistema_do_diretorio: {
         Args: { p_categoria?: string; p_empresa_id: string; p_nome: string }

@@ -71,8 +71,15 @@ const DefinirSenha = () => {
         } else if (tokenHash && isSupportedLinkType(type)) {
           // O token é consumido só no submit para que scanners de links de
           // e-mail não o queimem antes de a pessoa abrir a página.
-          setPendingToken({ token_hash: tokenHash, type });
-          setIsTokenValid(true);
+          // Confere sem consumir: um link já usado ou substituído não deve
+          // exibir o formulário como se ainda valesse.
+          const { data: ativo, error: statusError } = await supabase.rpc('setup_link_status' as any, { _token_hash: tokenHash });
+          if (statusError || ativo !== true) {
+            setIsTokenValid(false);
+          } else {
+            setPendingToken({ token_hash: tokenHash, type });
+            setIsTokenValid(true);
+          }
         } else {
           setIsTokenValid(false);
         }
@@ -148,6 +155,8 @@ const DefinirSenha = () => {
         });
       }
 
+      setPendingToken(null);
+      window.history.replaceState({}, document.title, window.location.pathname);
       setSuccess(true);
       setRedirectIn(5);
     } catch (error) {
