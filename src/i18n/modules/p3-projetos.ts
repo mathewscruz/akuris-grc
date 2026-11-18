@@ -5,6 +5,7 @@
 export const p3Projetos = {
   pt: {
     p3Projetos: {
+      feedback: { sprintRemoved: 'Sprint removida', timeLogged: 'Tempo registrado', taskRemoved: 'Tarefa removida', error: 'Erro' },
       papel: {
         owner: 'Dono',
         admin: 'Administrador',
@@ -96,6 +97,7 @@ export const p3Projetos = {
   },
   en: {
     p3Projetos: {
+      feedback: { sprintRemoved: 'Sprint removed', timeLogged: 'Time logged', taskRemoved: 'Task removed', error: 'Error' },
       papel: {
         owner: 'Owner',
         admin: 'Admin',

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IconAdd, IconDownload, IconFile, IconArrowLeft, IconSettings } from '@/components/icons';
+import { IconAdd, IconDownload, IconFile, IconArrowLeft } from '@/components/icons';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';

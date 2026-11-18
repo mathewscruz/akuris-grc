@@ -164,6 +164,7 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
   const realPts: { x: number; y: number }[] = [];
   for (let i = 0; i <= dias; i++) {
     const cutoff = start + i * 86400000;
+    if (cutoff > Date.now()) break;
     const restantes = tarefas.filter((t) => !t.concluida_em || new Date(t.concluida_em).getTime() > cutoff).length;
     realPts.push({ x: i, y: restantes });
   }
