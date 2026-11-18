@@ -267,3 +267,25 @@ export function filtrarPorPeriodo(tarefas: ProjetoTarefa[], dias: number | null,
   const pais = new Set(tarefas.map((t) => t.parent_task_id).filter(Boolean));
   return tarefas.filter((t: any) => pais.has(t.id) || new Date(t.created_at ?? 0).getTime() >= lim || (t.concluida_em && new Date(t.concluida_em).getTime() >= lim) || !estaConcluida(t));
 }
+
+/**
+ * Ritmo ideal do burnup: 0 no início até o total na data prevista, linear.
+ * Devolve null para pontos antes do início (sem linha) e o total após o fim.
+ */
+export function trajetoriaIdeal(fins: Date[], total: number, inicio: Date | null, fimPrevisto: Date | null): (number | null)[] {
+  if (!inicio || !fimPrevisto || fimPrevisto <= inicio || total <= 0) return fins.map(() => null);
+  const dur = fimPrevisto.getTime() - inicio.getTime();
+  return fins.map((f) => {
+    const x = f.getTime() - inicio.getTime();
+    if (x < 0) return null;
+    return Math.round(Math.min(total, (x / dur) * total) * 10) / 10;
+  });
+}
+
+/** Recorta semanas vazias do começo do burnup, mantendo pelo menos `minimo` pontos. */
+export function recortarInicio<T extends { concluidas: number }>(pontos: T[], minimo = 4): T[] {
+  const primeiro = pontos.findIndex((p) => p.concluidas > 0);
+  if (primeiro < 0) return pontos.slice(-minimo);
+  const ini = Math.max(0, Math.min(primeiro - 1, pontos.length - minimo));
+  return pontos.slice(ini);
+}

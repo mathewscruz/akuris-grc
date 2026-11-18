@@ -14,9 +14,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import type { ProjetoTarefaPrioridade } from '@/types/projetos';
 import { parseDataLocal, intlLocale } from '@/lib/date-utils';
-import { indicadores, progressoPorFase, burnupSemanal, previsaoTermino, atrasadasPorResponsavel, tempoMedioPorPrioridade, filtrarPorPeriodo } from '@/lib/projeto-acompanhamento';
+import { indicadores, progressoPorFase, burnupSemanal, previsaoTermino, atrasadasPorResponsavel, tempoMedioPorPrioridade, filtrarPorPeriodo, trajetoriaIdeal, recortarInicio } from '@/lib/projeto-acompanhamento';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToolbarField } from '@/components/ui/module-toolbar';
+import { CHART_SEVERITY } from '@/lib/chart-tokens';
 
 export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[]; fimPrevisto?: string | null }) {
   const { t } = useLanguage();
@@ -74,6 +75,18 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
   const fimPrev = fimPrevisto ? parseDataLocal(fimPrevisto) : null;
   const previsaoAtrasa = !!(previsao.data && fimPrev && previsao.data > new Date(fimPrev.getTime() + 86399999));
   const fases = React.useMemo(() => progressoPorFase(tarefas), [tarefas]);
+  const fmtDia = (d: Date) => d.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' });
+  const burnupDados = React.useMemo(() => {
+    const pts = recortarInicio(burnup.pontos);
+    const criadas = todas.map((x: any) => x.created_at).filter(Boolean).map((d: string) => new Date(d).getTime());
+    const inicio = criadas.length ? new Date(Math.min(...criadas)) : null;
+    const ideal = trajetoriaIdeal(pts.map((p) => p.fim), burnup.total, inicio, fimPrev);
+    return pts.map((p, i) => ({ label: fmtDia(p.fim), value: p.concluidas, secondary: ideal[i] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [burnup, todas, fimPrevisto]);
+  const temIdeal = burnupDados.some((d) => d.secondary != null);
+  const corPrior = { critica: CHART_SEVERITY.critical, alta: CHART_SEVERITY.high, media: CHART_SEVERITY.medium, baixa: CHART_SEVERITY.low } as const;
+  const maxTempo = Math.max(0, ...Object.values(tempoPrior).map((v) => v ?? 0));
   const { data: usuarios = [] } = useUsuariosEmpresa();
   const atividades = React.useMemo(() => folhas(tarefas), [tarefas]);
   const porStatus = React.useMemo(() => {
@@ -186,18 +199,32 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
         <Card variant="elevated" className="lg:col-span-2">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('autoMet.burnup')}</div>
-            <AkurisArea data={burnup.pontos.map((p) => ({ label: p.fim.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' }), value: p.concluidas }))} target={burnup.total} targetLabel={t('autoMet.escopo', { n: burnup.total })} domain={[0, Math.max(1, burnup.total)]} />
+            <AkurisArea height={240} curve="stepAfter" integer data={burnupDados} valueLabel={t('autoMet.concluidasAcum')} target={burnup.total} targetLabel={t('autoMet.escopo', { n: burnup.total })} domain={[0, Math.max(1, burnup.total)]} secondaryLabel={temIdeal ? t('autoMet.ritmoIdeal') : undefined} referenceX={burnupDados[burnupDados.length - 1]?.label} referenceXLabel={t('autoMet.hoje')} />
+            <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: "hsl(var(--chart-trend))" }} />{t('autoMet.concluidasAcum')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-muted-foreground" />{t('autoMet.escopo', { n: burnup.total })}</span>
+              {temIdeal && <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dotted border-muted-foreground" />{t('autoMet.ritmoIdeal')}</span>}
+            </div>
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4 space-y-3">
             <div className="text-sm font-semibold">{t('autoMet.previsao')}</div>
             <p className={`text-2xl font-semibold tabular-nums ${previsaoAtrasa ? 'text-destructive' : ''}`}>{previsao.data ? previsao.data.toLocaleDateString(intlLocale()) : '—'}</p>
-            <p className="text-xs text-muted-foreground">{previsao.data ? t('autoMet.previsaoBase', { n: previsao.porSemana.toFixed(1), r: previsao.restantes }) : t('autoMet.previsaoSemRitmo')}</p>
+            {previsao.data ? <p className="text-xs text-muted-foreground">{t('autoMet.previsaoBase', { n: previsao.porSemana.toFixed(1), r: previsao.restantes })}</p>
+              : <p className="rounded-md border border-dashed border-border bg-muted/30 p-2.5 text-xs leading-relaxed text-muted-foreground">{t('autoMet.previsaoSemRitmoLongo', { r: previsao.restantes })}</p>}
             {fimPrev && <Row label={t('autoMet.fimPrevisto')} value={fimPrev.toLocaleDateString(intlLocale())} hint={previsaoAtrasa ? t('autoMet.previsaoAtrasa') : ''} tone={previsaoAtrasa ? 'destructive' : undefined} />}
             <div className="border-t pt-3 space-y-2">
               <div className="text-xs font-semibold text-muted-foreground">{t('autoMet.tempoMedio')}</div>
-              {(['critica', 'alta', 'media', 'baixa'] as const).map((p) => <Row key={p} label={getPrioridadeLabel(t, p)} value={tempoPrior[p] == null ? '—' : t('autoMet.dias', { n: tempoPrior[p]!.toFixed(1) })} />)}
+              {(['critica', 'alta', 'media', 'baixa'] as const).map((p) => (
+                <div key={p} className="grid grid-cols-[64px_minmax(0,1fr)_56px] items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">{getPrioridadeLabel(t, p)}</span>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    {tempoPrior[p] != null && maxTempo > 0 && <div className="h-full rounded-full" style={{ width: `${Math.max(6, (tempoPrior[p]! / maxTempo) * 100)}%`, background: corPrior[p] }} />}
+                  </div>
+                  <span className="text-right tabular-nums text-xs">{tempoPrior[p] == null ? <span className="text-muted-foreground">{t('autoMet.semDados')}</span> : t('autoMet.dias', { n: tempoPrior[p]!.toFixed(1) })}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -207,13 +234,13 @@ export function MetricasPanel({ tarefas: todas, colunas, fimPrevisto }: { tarefa
         <Card variant="elevated">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('autoMet.velocidade8')}</div>
-            <AkurisArea data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} target={mediaSemanal} targetLabel={t('autoMet.media', { n: mediaSemanal.toFixed(1) })} />
+            <AkurisBars integer showValues data={m.semanas.map((s) => ({ label: s.label, value: s.concluidas }))} target={mediaSemanal} targetLabel={t('autoMet.media', { n: mediaSemanal.toFixed(1) })} format={(v) => t('autoMet.nConcluidas', { n: v })} />
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byPriority')}</div>
-            <AkurisBars data={m.porPrior.map((p) => ({ label: getPrioridadeLabel(t, p.prior), value: p.qtd }))} />
+            <AkurisBars horizontal showValues integer height={180} data={m.porPrior.map((p) => ({ label: getPrioridadeLabel(t, p.prior), value: p.qtd, color: corPrior[p.prior as keyof typeof corPrior] }))} format={(v) => t('autoMet.nAtividades', { n: v })} />
           </CardContent>
         </Card>
         <Card variant="elevated">

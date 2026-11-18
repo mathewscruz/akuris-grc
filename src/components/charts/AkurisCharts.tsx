@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { Area, AreaChart, Bar, BarChart, Cell, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, Cell, LabelList, Line, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useMotionAllowed } from '@/lib/motion-preferences';
-import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP_STYLE, CHART_FONT, CHART_TREND, chartSeries } from '@/lib/chart-tokens';
+import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP_STYLE, CHART_FONT, CHART_TREND, CHART_TREND_GUIDE, chartSeries } from '@/lib/chart-tokens';
 import { AnimatedMetricValue } from '@/components/ui/stat-strip';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 
@@ -39,8 +39,17 @@ export function ChartCard({ label, title, value, trend, actions, children, class
 const tooltipStyle = CHART_TOOLTIP_STYLE;
 
 /** Evolução no tempo: área com degradê, balão e linha de meta opcional. */
-export function AkurisArea({ data, height = 200, target, targetLabel, format, domain }: {
-  data: Array<{ label: string; value: number }>; height?: number; target?: number; targetLabel?: string; format?: (v: number) => string; domain?: [number, number];
+export function AkurisArea({ data, height = 200, target, targetLabel, format, domain, curve = 'monotone', integer, secondaryLabel, referenceX, referenceXLabel, valueLabel }: {
+  data: Array<{ label: string; value: number; secondary?: number | null }>; height?: number; target?: number; targetLabel?: string; format?: (v: number) => string; domain?: [number, number];
+  /** 'stepAfter' para contagens acumuladas (sem ondas entre pontos). */
+  curve?: 'monotone' | 'linear' | 'stepAfter';
+  /** Contagens: eixo só com inteiros. */
+  integer?: boolean;
+  /** Nome da linha pontilhada opcional (campo `secondary`). */
+  secondaryLabel?: string;
+  referenceX?: string; referenceXLabel?: string;
+  /** Nome da série principal no balão. */
+  valueLabel?: string;
 }) {
   const id = React.useId().replace(/:/g, '');
   const motion = useMotionAllowed();
@@ -55,30 +64,53 @@ export function AkurisArea({ data, height = 200, target, targetLabel, format, do
         </defs>
         <CartesianGrid stroke={CHART_GRID} vertical={false} />
         <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
-        <YAxis domain={domain} tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => (format ? format(v) : v)} />
-        {target !== undefined && <ReferenceLine y={target} stroke={CHART_AXIS} strokeDasharray="4 4" label={{ value: targetLabel, fill: CHART_AXIS, fontSize: CHART_FONT.axis, position: 'right' }} />}
-        <Area type="monotone" dataKey="value" stroke={CHART_TREND} strokeWidth={2} fill={`url(#ar-${id})`} isAnimationActive={motion} animationDuration={900} activeDot={{ r: 5 }} />
+        <YAxis domain={domain} allowDecimals={!integer} tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [format ? format(v) : v, name === 'secondary' ? secondaryLabel : (valueLabel ?? name)]} />
+        {target !== undefined && <ReferenceLine y={target} stroke={CHART_AXIS} strokeDasharray="4 4" label={{ value: targetLabel, fill: CHART_AXIS, fontSize: CHART_FONT.axis, position: 'insideTopRight' }} />}
+        {referenceX && <ReferenceLine x={referenceX} stroke={CHART_TREND_GUIDE} label={{ value: referenceXLabel, fill: CHART_AXIS, fontSize: CHART_FONT.axis, position: 'insideTopLeft' }} />}
+        <Area type={curve} dataKey="value" name="value" stroke={CHART_TREND} strokeWidth={2} fill={`url(#ar-${id})`} isAnimationActive={motion} animationDuration={900} activeDot={{ r: 5 }} />
+        {secondaryLabel && <Line type="linear" dataKey="secondary" name="secondary" stroke={CHART_AXIS} strokeDasharray="2 4" strokeWidth={1.5} dot={false} connectNulls isAnimationActive={motion} />}
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
 /** Volumes por período: barras arredondadas, o último (atual) em destaque. */
-export function AkurisBars({ data, height = 200, highlightIndex, format }: {
-  data: Array<{ label: string; value: number }>; height?: number; highlightIndex?: number; format?: (value: number) => string;
+export function AkurisBars({ data, height = 200, highlightIndex, format, horizontal, showValues, integer, target, targetLabel }: {
+  data: Array<{ label: string; value: number; color?: string }>; height?: number; highlightIndex?: number; format?: (value: number) => string;
+  /** Barras deitadas (categorias no eixo vertical). */
+  horizontal?: boolean;
+  /** Número escrito na ponta da barra. */
+  showValues?: boolean;
+  integer?: boolean;
+  target?: number; targetLabel?: string;
 }) {
   const motion = useMotionAllowed();
   const hi = highlightIndex ?? data.length - 1;
+  if (horizontal) return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 32, left: 0, bottom: 0 }}>
+        <XAxis type="number" hide allowDecimals={!integer} />
+        <YAxis type="category" dataKey="label" width={72} tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <Tooltip contentStyle={tooltipStyle} formatter={format} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+        <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={18} background={{ fill: 'hsl(var(--muted) / 0.35)', radius: 6 } as never} isAnimationActive={motion} animationDuration={700}>
+          {data.map((d, i) => <Cell key={i} fill={d.color ?? chartSeries(0)} />)}
+          {showValues && <LabelList dataKey="value" position="right" fill={CHART_AXIS} fontSize={CHART_FONT.axis} />}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid stroke={CHART_GRID} vertical={false} />
         <XAxis dataKey="label" tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
+        <YAxis allowDecimals={!integer} tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={tooltipStyle} formatter={format} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+        {target !== undefined && target > 0 && <ReferenceLine y={target} stroke={CHART_AXIS} strokeDasharray="4 4" label={{ value: targetLabel, fill: CHART_AXIS, fontSize: CHART_FONT.axis, position: 'insideTopRight' }} />}
         <Bar dataKey="value" radius={[6, 6, 6, 6]} maxBarSize={28} isAnimationActive={motion} animationDuration={700}>
-          {data.map((_, i) => <Cell key={i} fill={chartSeries(i === hi ? 0 : 2)} />)}
+          {data.map((d, i) => <Cell key={i} fill={d.color ?? (i === hi ? CHART_TREND : chartSeries(2))} />)}
+          {showValues && <LabelList dataKey="value" position="top" fill={CHART_AXIS} fontSize={CHART_FONT.axis} formatter={(v: number) => (v ? v : '')} />}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

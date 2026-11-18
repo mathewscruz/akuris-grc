@@ -31,3 +31,18 @@ describe('métricas de projeto', () => {
     expect(r.baixa).toBeNull();
   });
 });
+
+import { trajetoriaIdeal, recortarInicio } from '@/lib/projeto-acompanhamento';
+describe('ritmo ideal e recorte do burnup', () => {
+  it('vai de 0 no início ao total na data prevista', () => {
+    const ini = new Date('2026-01-01'), fim = new Date('2026-01-11');
+    expect(trajetoriaIdeal([new Date('2025-12-25'), ini, new Date('2026-01-06'), new Date('2026-02-01')], 10, ini, fim)).toEqual([null, 0, 5, 10]);
+  });
+  it('sem data prevista não desenha linha', () => {
+    expect(trajetoriaIdeal([new Date()], 5, new Date(), null)).toEqual([null]);
+  });
+  it('remove semanas vazias do começo mantendo uma antes da primeira conclusão', () => {
+    const pts = [0, 0, 0, 0, 0, 1, 2, 2].map((concluidas) => ({ concluidas }));
+    expect(recortarInicio(pts).map((p) => p.concluidas)).toEqual([0, 1, 2, 2]);
+  });
+});

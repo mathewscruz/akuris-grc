@@ -243,15 +243,26 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
     }
   }, [open, sprint]);
 
+  const [tentou, setTentou] = React.useState(false);
+  React.useEffect(() => { if (open) setTentou(false); }, [open]);
+  const nomeInvalido = tentou && !form.nome.trim();
+  const datasInvertidas = !!(form.data_inicio && form.data_fim && form.data_fim < form.data_inicio);
+  const duracao = form.data_inicio && form.data_fim && !datasInvertidas
+    ? Math.round((parseDataLocal(form.data_fim)!.getTime() - parseDataLocal(form.data_inicio)!.getTime()) / 86400000) + 1
+    : null;
+  const estado: 'planeada' | 'ativa' | 'concluida' = form.concluida ? 'concluida' : form.ativa ? 'ativa' : 'planeada';
+  const definirEstado = (e: typeof estado) => setForm({ ...form, ativa: e === 'ativa', concluida: e === 'concluida' });
+  const atalhoSemanas = (n: number) => {
+    const ini = form.data_inicio ? parseDataLocal(form.data_inicio)! : new Date();
+    setForm({ ...form, data_inicio: formatarDiaParaDB(ini), data_fim: formatarDiaParaDB(new Date(ini.getTime() + (n * 7 - 1) * 86400000)) });
+  };
+
   const submit = async () => {
-    if (!form.nome.trim()) return;
+    setTentou(true);
     /* O burndown faz `Math.max(1, fim - início)`: com o intervalo ao
        contrário, a linha ideal é desenhada sobre um único dia. */
-    if (form.data_inicio && form.data_fim && form.data_fim < form.data_inicio) {
-      toast.error(t('common.fimAntesDoInicio'));
-      return;
-    }
-    await upsert.mutateAsync({ id: sprint?.id, ...form });
+    if (!form.nome.trim() || datasInvertidas) return;
+    await upsert.mutateAsync({ id: sprint?.id, ...form, nome: form.nome.trim() });
     onOpenChange(false);
   };
 
@@ -275,17 +286,52 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
         </div>
       }
     >
-        <div className="space-y-3">
-          <div><Label htmlFor="nome">{t('projetos.sprints.fieldNome')}</Label><Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-          <div><Label htmlFor="objetivo">{t('projetos.sprints.fieldObjetivo')}</Label><Textarea id="objetivo" rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>{t('projetos.sprints.fieldInicio')}</Label><DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} /></div>
-            <div><Label>{t('projetos.sprints.fieldFim')}</Label><DateField value={form.data_fim || null} onChange={(v) => setForm({ ...form, data_fim: v ?? '' })} /></div>
-          </div>
-          <div className="flex gap-4 text-sm">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> {t('projetos.sprints.fieldAtiva')}</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.concluida} onChange={(e) => setForm({ ...form, concluida: e.target.checked })} /> {t('projetos.sprints.fieldConcluida')}</label>
-          </div>
+        <div className="space-y-6">
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('autoMet.sprintIdent')}</h3>
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between">
+                <Label htmlFor="nome">{t('projetos.sprints.fieldNome')} <span className="text-destructive">*</span></Label>
+                <span className="text-micro tabular-nums text-muted-foreground">{form.nome.length}/80</span>
+              </div>
+              <Input id="nome" autoFocus maxLength={80} placeholder={t('autoMet.sprintNomePh')} aria-invalid={nomeInvalido} className={nomeInvalido ? 'border-destructive focus-visible:ring-destructive/40' : ''} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+              {nomeInvalido && <p role="alert" className="text-xs text-destructive">{t('autoMet.sprintNomeObrig')}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="objetivo">{t('projetos.sprints.fieldObjetivo')}</Label>
+              <Textarea id="objetivo" rows={3} placeholder={t('autoMet.sprintObjetivoPh')} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} />
+            </div>
+          </section>
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">{t('autoMet.sprintPeriodo')}</h3>
+              <div className="flex gap-1">
+                {[1, 2, 3].map((n) => (
+                  <button key={n} type="button" onClick={() => atalhoSemanas(n)} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+                    {t('autoMet.sprintSemanas', { n })}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>{t('projetos.sprints.fieldInicio')}</Label><DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} /></div>
+              <div className="space-y-2"><Label>{t('projetos.sprints.fieldFim')}</Label><div className={datasInvertidas ? 'rounded-md ring-1 ring-destructive/60' : ''}><DateField value={form.data_fim || null} onChange={(v) => setForm({ ...form, data_fim: v ?? '' })} /></div></div>
+            </div>
+            {datasInvertidas
+              ? <p role="alert" className="text-xs text-destructive">{t('autoMet.sprintFimAntes')}</p>
+              : duracao != null && <p className="text-xs text-muted-foreground">{t('autoMet.sprintDuracao', { n: duracao })}</p>}
+          </section>
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('autoMet.sprintEstado')}</h3>
+            <div role="radiogroup" aria-label={t('autoMet.sprintEstado')} className="inline-flex rounded-full border border-border bg-muted/40 p-1">
+              {(['planeada', 'ativa', 'concluida'] as const).map((e) => (
+                <button key={e} type="button" role="radio" aria-checked={estado === e} onClick={() => definirEstado(e)}
+                  className={`rounded-full px-3.5 py-1 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${estado === e ? 'bg-card font-medium text-foreground shadow-sm dark:shadow-none dark:ring-1 dark:ring-border' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {t(e === 'planeada' ? 'autoMet.sprintPlaneada' : e === 'ativa' ? 'autoMet.sprintAtiva' : 'autoMet.sprintConcluida')}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
     </DialogShell>
 

@@ -1,6 +1,13 @@
 /** Automações e métricas de projeto. Estrutura: { pt: {...}, en: {...} }. */
 export const autoMet = {
   pt: { autoMet: {
+    concluidasAcum: 'Concluídas acumuladas', ritmoIdeal: 'Ritmo ideal', hoje: 'Hoje', semDados: 'sem dados',
+    previsaoSemRitmoLongo: 'Nenhuma atividade foi concluída nas últimas 4 semanas, então ainda não dá para prever o fim. Faltam {r} atividades.',
+    nConcluidas: '{n} concluídas', nAtividades: '{n} atividades',
+    sprintIdent: 'Identificação', sprintPeriodo: 'Período', sprintEstado: 'Estado', sprintDuracao: '{n} dias',
+    sprintSemanas: '{n} sem.', sprintNomePh: 'Ex.: Sprint 3 — Políticas de acesso', sprintObjetivoPh: 'O que a equipa quer entregar nesta sprint?',
+    sprintNomeObrig: 'Dê um nome à sprint.', sprintFimAntes: 'O fim deve ser depois do início.',
+    sprintPlaneada: 'Planejada', sprintAtiva: 'Ativa', sprintConcluida: 'Concluída',
     gatilhoPrazo: 'Prazo da atividade vencido',
     condColuna: 'coluna', condPrioridade: 'prioridade', condResponsavel: 'responsável',
     historico: 'Histórico', testar: 'Testar agora',
@@ -22,6 +29,13 @@ export const autoMet = {
     tempoMedio: 'Tempo médio de conclusão', dias: '{n} dias',
   } },
   en: { autoMet: {
+    concluidasAcum: 'Cumulative completed', ritmoIdeal: 'Ideal pace', hoje: 'Today', semDados: 'no data',
+    previsaoSemRitmoLongo: 'No activity was completed in the last 4 weeks, so the finish date cannot be forecast yet. {r} activities remain.',
+    nConcluidas: '{n} completed', nAtividades: '{n} activities',
+    sprintIdent: 'Identification', sprintPeriodo: 'Period', sprintEstado: 'Status', sprintDuracao: '{n} days',
+    sprintSemanas: '{n} wk', sprintNomePh: 'E.g. Sprint 3 — Access policies', sprintObjetivoPh: 'What does the team want to deliver in this sprint?',
+    sprintNomeObrig: 'Give the sprint a name.', sprintFimAntes: 'End must be after start.',
+    sprintPlaneada: 'Planned', sprintAtiva: 'Active', sprintConcluida: 'Completed',
     gatilhoPrazo: 'Task due date passed',
     condColuna: 'column', condPrioridade: 'priority', condResponsavel: 'owner',
     historico: 'History', testar: 'Test now',
