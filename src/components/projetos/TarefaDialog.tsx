@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
-import { TAG_MARCO } from '@/lib/projeto-acompanhamento';
+import { TAG_MARCO, estaAtrasada } from '@/lib/projeto-acompanhamento';
+import { periodoSubtarefasExcede } from '@/lib/projeto-cronograma';
 import { undoableAction } from '@/lib/undoable-action';
 import { IconAdd, IconDelete, IconSend, IconChecklist, IconPerson, IconFlag, IconCalendar, IconTime, IconTrendUp, IconTag, IconSuccess, IconChevron, IconLink } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
@@ -105,6 +106,11 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const colunaConcluida = colunas.find((c) => c.is_concluido);
   const colunaAberta = colunas.find((c) => !c.is_concluido);
   const subFeitas = subtarefas.filter((x) => x.concluida_em).length;
+  const excede = React.useMemo(
+    () => (subtarefas.length ? periodoSubtarefasExcede({ data_inicio: form.data_inicio || null, data_fim: form.prazo || null }, subtarefas) : null),
+    [subtarefas, form.data_inicio, form.prazo],
+  );
+  const fmtCurto = (d: string) => parseDataLocal(d).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short' });
   const colAtual = colunas.find((c) => c.id === form.coluna_id);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,6 +242,17 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           {tarefa && (
             <section className="space-y-2">
               <SectionHead title={t('p3Projetos.tarefa.subtarefas')} done={subFeitas} total={subtarefas.length} />
+              {excede && (
+                <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.08)] px-3 py-2 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground">{t('p3Projetos.cronograma.excedeTitulo')}</p>
+                    <p className="text-muted-foreground">{t('p3Projetos.cronograma.excedeDesc', { ini: fmtCurto(excede.data_inicio), fim: fmtCurto(excede.data_fim) })}</p>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setForm({ ...form, data_inicio: excede.data_inicio, prazo: excede.data_fim })}>
+                    {t('p3Projetos.cronograma.ajustarPeriodo')}
+                  </Button>
+                </div>
+              )}
               <ul className="overflow-hidden rounded-lg border border-border divide-y divide-border">
                 {subtarefas.map((s) => {
                   const fim = s.data_fim ?? s.prazo;
@@ -251,7 +268,11 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                       <button type="button" className={`min-w-0 flex-1 truncate text-left hover:text-primary ${feito ? 'line-through text-muted-foreground' : ''}`} onClick={() => onOpenTarefa?.(s)}>{cm?.[2] ?? s.titulo}</button>
                       <StatusPill kind={statusKindDe(colunas.find((c) => c.id === s.coluna_id))} className="hidden sm:inline-flex">{colunas.find((c) => c.id === s.coluna_id)?.nome ?? '—'}</StatusPill>
                       {nomeUsuario(s.responsavel_id) && <Avatar nome={nomeUsuario(s.responsavel_id)!} foto={fotoUsuario(s.responsavel_id)} />}
-                      {fim && <span className="w-14 text-right text-xs text-muted-foreground tabular-nums">{parseDataLocal(fim).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short' })}</span>}
+                      {(s.data_inicio || fim) && (
+                        <span className={`shrink-0 whitespace-nowrap text-right text-xs tabular-nums ${!feito && estaAtrasada(s) ? 'font-medium text-destructive' : 'text-muted-foreground'}`}>
+                          {s.data_inicio ? fmtCurto(s.data_inicio) : '—'} → {fim ? fmtCurto(fim) : '—'}
+                        </span>
+                      )}
                     </li>
                   );
                 })}

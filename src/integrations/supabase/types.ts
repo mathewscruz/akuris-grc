@@ -9464,6 +9464,8 @@ export type Database = {
       }
       projeto_tarefas: {
         Row: {
+          baseline_fim: string | null
+          baseline_inicio: string | null
           bloqueada: boolean
           coluna_id: string | null
           concluida_em: string | null
@@ -9495,6 +9497,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          baseline_fim?: string | null
+          baseline_inicio?: string | null
           bloqueada?: boolean
           coluna_id?: string | null
           concluida_em?: string | null
@@ -9526,6 +9530,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          baseline_fim?: string | null
+          baseline_inicio?: string | null
           bloqueada?: boolean
           coluna_id?: string | null
           concluida_em?: string | null
@@ -13312,6 +13318,10 @@ export type Database = {
       }
       ropa_chave_da_base_legal: { Args: { p_texto: string }; Returns: string }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
+      salvar_linha_base_projeto: {
+        Args: { _projeto_id: string }
+        Returns: number
+      }
       salvar_tratamento_risco: {
         Args: {
           p_custo: number

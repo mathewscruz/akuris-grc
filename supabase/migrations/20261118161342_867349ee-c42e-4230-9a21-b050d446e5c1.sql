@@ -1,0 +1,1 @@
+ALTER FUNCTION public.salvar_linha_base_projeto(uuid) SECURITY INVOKER;

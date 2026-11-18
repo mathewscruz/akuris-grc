@@ -1,28 +1,7 @@
-# Roadmap
-- [x] Monitoring: impedir rascunhos antigos de substituir avaliações gravadas
-- [x] Monitoring: manter painéis de evidência montados durante a edição
-- [x] Monitoring: não apresentar falha geral quando há orientação disponível
-- [x] 1 Largura da janela do requisito
-- [x] 2 Status em lote Planos de Ação
-- [x] 3 QR code do ativo
-- [x] 4 Orientação com falso erro: aviso geral só quando falta texto; conclusão automática e conteúdo preservados
-- [x] 5 Questionário IA sem crédito (já respeitava; ajustado ao padrão)
-- [x] 6 Datas com fuso
-- [x] 7 Severidade residual
-- [x] 8 Formulário de contratos (teste desatualizado)
-- [x] 9-11 Guardas visuais e testes desatualizados
-- [x] 12 Configurações: visão geral em cartões
-- [ ] Teste de armazenamento de login da pré-visualização (código da plataforma, não do Akuris)
-- [x] Estruturar conteúdo dos requisitos (rotina automática a completar)
-- [x] Tela do framework no modelo A (categorias ao lado)
-- [x] Status com anel (Chip)
-- [x] Gap Analysis: limpeza e unificação
-- [x] Simplificação: Minhas tarefas como aba de Planos de Ação
-- [x] Simplificação: rota de Planos de Ação (já era única; /planos é a página de planos de assinatura)
-- [x] Simplificação: canal de denúncia com as duas ações lado a lado
-- [x] Simplificação visual: 3 estilos de botão, borda só em cartões clicáveis, 4 tamanhos de texto
-- [x] Administração Akuris separada das Configurações
-- [x] Permissões só por perfil (ajustes individuais convertidos em perfis)
-- [x] Um único espaço de avisos no topo
-- [x] Exportar padrão (CSV/PDF) em todas as tabelas
-- [x] Ícones de módulo neutros e escala única de espaçamentos
+# Roadmap — Projetos
+- [x] 1. Popup: início → fim nas subtarefas, atrasadas em vermelho
+- [x] 2. Gantt editável (arrastar/esticar, definir datas em "Sem data", desfazer)
+- [x] 3. Dependências no Gantt + aviso de conflito
+- [x] 4. Aviso na tarefa principal + "Ajustar período"
+- [x] 5. Linha de base
+- [x] 6. Ações em lote na lista

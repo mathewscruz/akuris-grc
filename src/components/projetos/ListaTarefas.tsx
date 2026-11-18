@@ -11,6 +11,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { useAtualizarTarefas, type PatchTarefa } from '@/hooks/useProjetoCronograma';
+import { deslocarLote } from '@/lib/projeto-cronograma';
 import { isMarco, estaAtrasada, mesInicio, TAG_MARCO, calcularPosicaoHoje } from '@/lib/projeto-acompanhamento';
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
@@ -32,6 +36,15 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
   const [fResp, setFResp] = React.useState<string>('todos');
   const [fTipo, setFTipo] = React.useState<string>('todos');
   const { data: usuarios = [] } = useUsuariosEmpresa();
+  const [selecionadas, setSelecionadas] = React.useState<Set<string>>(new Set());
+  const [loteDias, setLoteDias] = React.useState('7');
+  const atualizarLote = useAtualizarTarefas(tarefas[0]?.projeto_id);
+  const alternarSel = (id: string) => setSelecionadas((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const aplicarLote = (patches: PatchTarefa[]) => {
+    if (!patches.length) return;
+    void atualizarLote(patches, t('p3Projetos.cronograma.loteAplicado', { n: patches.length })).then((ok) => { if (ok) setSelecionadas(new Set()); });
+  };
+  const tarefasSel = () => tarefas.filter((x) => selecionadas.has(x.id));
   const nomeUsuario = React.useCallback((id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null, [usuarios]);
   const tipos = React.useMemo(() => {
     const set = new Set<string>();
@@ -125,7 +138,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
   const marcadorRef = React.useRef<HTMLTableRowElement | null>(null);
   const linhaMarcador = (
     <TableRow key="__hoje" ref={marcadorRef} data-table-static className="hover:bg-transparent">
-      <TableCell colSpan={6} className="p-0">
+      <TableCell colSpan={7} className="p-0">
         <div className="relative flex items-center gap-3 px-3 py-1.5">
           <span aria-hidden className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-primary/70" />
           <span className="relative inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground whitespace-nowrap">
@@ -256,10 +269,41 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
         <span className="text-xs text-muted-foreground">{t('projetos.lista.filteredOf', { filtered: filtradas.length, total: tarefas.length })}</span>
       </div>
 
+      {selecionadas.size > 0 && (
+        <div role="toolbar" className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-card px-3 py-2 text-xs shadow-sm dark:shadow-none">
+          <span className="font-semibold text-foreground">{t('p3Projetos.cronograma.selecionadas', { n: selecionadas.size })}</span>
+          <Select onValueChange={(v) => aplicarLote(tarefasSel().map((x) => ({ id: x.id, responsavel_id: v === 'none' ? null : v })))}>
+            <SelectTrigger className="h-8 w-[180px]"><SelectValue placeholder={t('p3Projetos.cronograma.mudarResp')} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t('projetos.lista.notAssigned')}</SelectItem>
+              {usuarios.map((u) => <SelectItem key={u.user_id} value={u.user_id}>{u.nome ?? u.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select onValueChange={(v) => aplicarLote(tarefasSel().map((x) => ({ id: x.id, coluna_id: v })))}>
+            <SelectTrigger className="h-8 w-[160px]"><SelectValue placeholder={t('p3Projetos.cronograma.mudarEstado')} /></SelectTrigger>
+            <SelectContent>{colunas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+          </Select>
+          <span className="ml-2 text-muted-foreground">{t('p3Projetos.cronograma.deslocar')}</span>
+          <input type="number" value={loteDias} onChange={(e) => setLoteDias(e.target.value)} aria-label={t('p3Projetos.cronograma.dias')}
+            className="h-8 w-16 rounded-md border border-border bg-background px-2 text-xs tabular-nums" />
+          <span className="text-muted-foreground">{t('p3Projetos.cronograma.dias')}</span>
+          <Button type="button" size="sm" variant="outline" className="h-8 text-xs"
+            onClick={() => { const n = parseInt(loteDias, 10); if (n) aplicarLote(deslocarLote(tarefasSel(), n)); }}>
+            {t('p3Projetos.cronograma.aplicar')}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" className="ml-auto h-8 text-xs" onClick={() => setSelecionadas(new Set())}>{t('p3Projetos.cronograma.limpar')}</Button>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <Table className="border-collapse border-spacing-0">
           <TableHeader>
             <TableRow data-table-static className="bg-muted/40">
+              <TableHead className="w-10">
+                <Checkbox aria-label={t('p3Projetos.cronograma.selecionarTodas')}
+                  checked={filtradas.length > 0 && filtradas.every((x) => selecionadas.has(x.id))}
+                  onCheckedChange={(v) => setSelecionadas(v ? new Set(filtradas.map((x) => x.id)) : new Set())} />
+              </TableHead>
               <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('projetos.lista.colTarefa')}</SortableTableHead>
               <TableHead>{t('p3Projetos.lista.colTipo')}</TableHead>
               <SortableTableHead field="responsavel_id" sort={sort} onSort={toggleSort}>{t('p3Projetos.lista.colResponsavel')}</SortableTableHead>
@@ -270,13 +314,13 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
           </TableHeader>
           <TableBody>
             {grupos.length === 1 && grupos[0].rows.length === 0 ? (
-              <TableRow data-table-static><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
+              <TableRow data-table-static><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('projetos.lista.noTasks')}</TableCell></TableRow>
             ) : (
               grupos.map((g, gi) => (
                 <React.Fragment key={g.key}>
                   {g.label && (
                     <TableRow data-table-static>
-                      <TableCell colSpan={6} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
+                      <TableCell colSpan={7} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
                         {g.label} <span className="text-muted-foreground">({g.rows.length})</span>
                       </TableCell>
                     </TableRow>
@@ -310,7 +354,10 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                       <React.Fragment key={task.id}>
                       {marcadorVisivel && idAntesMarcador === task.id && linhaMarcador}
                       <TableRow data-table-static className={`cursor-pointer border-b border-border/60 transition-colors ${linhaCls} ${emCursoHoje ? 'ring-1 ring-inset ring-primary/40' : ''}`} onClick={() => onSelect(task)}>
-                        <TableCell className={`py-2.5 ${barra}`}>
+                        <TableCell className={`w-10 py-2.5 ${barra}`} onClick={(e) => e.stopPropagation()}>
+                          <Checkbox aria-label={t('p3Projetos.cronograma.selecionar')} checked={selecionadas.has(task.id)} onCheckedChange={() => alternarSel(task.id)} />
+                        </TableCell>
+                        <TableCell className="py-2.5">
                           <div className="flex items-center gap-2" style={{ paddingLeft: depth * 22 }}>
                             {temFilhos ? (
                               <button type="button" onClick={(e) => { e.stopPropagation(); alternarRecolhido(task.id); }}

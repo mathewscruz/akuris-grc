@@ -87,6 +87,8 @@ export interface ProjetoTarefa {
   sla_violado_em?: string | null;
   origem_tipo?: string | null;
   origem_id?: string | null;
+  baseline_inicio?: string | null;
+  baseline_fim?: string | null;
 }
 
 export interface ProjetoTarefaChecklist {
