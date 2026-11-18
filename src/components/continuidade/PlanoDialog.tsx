@@ -75,7 +75,10 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       toast({ title: t('continuidadeComp.planoDialog.toastNomeRequired'), variant: 'destructive' });
       return;
     }
-    if (!empresaId) return;
+    if (!empresaId) {
+      toast({ title: t('ajustesModulos.empresaIndisponivel'), variant: 'destructive' });
+      return;
+    }
     if ([form.rto_horas, form.rpo_horas].some(v => v !== '' && recoveryHours(v) == null)) {
       toast({ title: t('calculationMethod.recovery'), variant: 'destructive' });
       return;

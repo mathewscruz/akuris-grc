@@ -20,6 +20,7 @@
  * `ConfiguracoesDenuncia`.
  */
 import { useEffect, useState } from 'react';
+import { ColorSwatchField } from '@/components/ui/color-swatch-field';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -217,13 +218,7 @@ export function CanalMarcaEComite() {
             <div className="space-y-2">
               <Label htmlFor="cor_destaque">{t('denunciasAdmin.marca.corDestaque')}</Label>
               <div className="flex items-center gap-2">
-                <Input
-                  id="cor_destaque"
-                  type="color"
-                  className="h-9 w-14 p-1"
-                  value={valor('cor_destaque') ?? '#7452FF'}
-                  onChange={(e) => setRascunho({ ...rascunho, cor_destaque: e.target.value })}
-                />
+                <ColorSwatchField value={valor('cor_destaque') ?? '#7452FF'} onChange={(c) => setRascunho({ ...rascunho, cor_destaque: c })} />
                 <Input
                   value={valor('cor_destaque') ?? ''}
                   onChange={(e) => setRascunho({ ...rascunho, cor_destaque: e.target.value })}

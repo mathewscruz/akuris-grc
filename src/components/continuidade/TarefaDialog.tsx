@@ -52,7 +52,10 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
       toast({ title: t('modDialogs.continuidade.tarefa.tituloObrigatorio'), variant: 'destructive' });
       return;
     }
-    if (!empresaId) return;
+    if (!empresaId) {
+      toast({ title: t('ajustesModulos.empresaIndisponivel'), variant: 'destructive' });
+      return;
+    }
     setLoading(true);
 
     const payload = {

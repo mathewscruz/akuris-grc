@@ -25,7 +25,7 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-md bg-muted/30", className)}
+      className={cn("rounded-md bg-transparent", className)}
       aria-hidden="true"
       {...props}
     />

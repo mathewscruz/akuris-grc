@@ -11,6 +11,7 @@
  * ignorar aquele canto do ecrã — e quem tem os dois diretórios ligados vê os
  * dois, porque são listas diferentes e sincronizar cada uma é decisão separada.
  */
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { IconRefresh } from '@/components/icons';
@@ -121,7 +122,7 @@ export function SincronizarDiretorio({ onSincronizado }: Props) {
           onClick={() => sincronizar(dir)}
           disabled={emCurso !== null}
         >
-          <IconRefresh className={`mr-2 h-4 w-4 ${emCurso === dir.tipo ? 'animate-spin' : ''}`} />
+          {emCurso === dir.tipo ? <AkurisPulse size={16} className="mr-2" /> : <IconRefresh className="mr-2 h-4 w-4" />}
           {emCurso === dir.tipo
             ? t('revisaoAcessosComp.sincronizar.sincronizando')
             : t(`revisaoAcessosComp.sincronizar.botao.${dir.rotulo}`)}

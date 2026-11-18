@@ -102,6 +102,8 @@ interface DataTableProps<T> {
   onSearchChange?: (value: string) => void
   filters?: Filter[]
   onExport?: () => void
+  /** PDF personalizado do módulo; sem ele, a tabela gera o PDF padrão. */
+  onExportPdf?: () => void
   /** Nome usado nos arquivos exportados; com ele, a tabela oferece Exportar (CSV/PDF) mesmo sem `onExport`. */
   exportName?: string
   /** Desliga o botão Exportar padrão. */
@@ -162,6 +164,7 @@ export function DataTable<T extends Record<string, any>>({
   onSearchChange,
   filters = [],
   onExport,
+  onExportPdf,
   exportName,
   exportable = true,
   onRefresh,
@@ -507,7 +510,7 @@ export function DataTable<T extends Record<string, any>>({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => onExport ? onExport() : exportarTabelaCSV(sortedData, colunasExportaveis, nomeExport())}>CSV</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => { void exportarTabelaPDF(sortedData, colunasExportaveis, nomeExport()) }}>PDF</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => { if (onExportPdf) onExportPdf(); else void exportarTabelaPDF(sortedData, colunasExportaveis, nomeExport()) }}>PDF</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

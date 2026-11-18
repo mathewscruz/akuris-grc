@@ -366,7 +366,7 @@ export default function DenunciaConsulta() {
         {/* Resultado da busca */}
         {showDetails && denuncia && (
           <div className="space-y-6">
-            <div className="flex flex-wrap gap-3 justify-end"><Button variant="outline" onClick={recarregar} disabled={refreshing}><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{t('canalExperience.refresh')}</Button><Button variant="ghost" onClick={clearCase}><LogOut size={16} />{t('canalExperience.exitCase')}</Button></div>
+            <div className="flex flex-wrap gap-3 justify-end"><Button variant="outline" onClick={recarregar} disabled={refreshing}>{refreshing ? <AkurisPulse size={16} /> : <RefreshCw size={16} />}{t('canalExperience.refresh')}</Button><Button variant="ghost" onClick={clearCase}><LogOut size={16} />{t('canalExperience.exitCase')}</Button></div>
             {!privateAccess && <p className="canal-note">{t('canalExperience.legacyHint')}</p>}
             {/* Informações da denúncia */}
             <Card>

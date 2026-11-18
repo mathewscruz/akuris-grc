@@ -486,7 +486,6 @@ export default function Contratos() {
             )
           }
           secondaryActions={currentTab === 'contratos' ? [
-            { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <IconDownload className="h-4 w-4" />, onClick: handleExportCSV },
             { label: t('cardsKpi.denuncias.relatorios'), icon: <IconChart className="h-4 w-4" />, onClick: () => setRelatoriosOpen(true) },
             { label: t('modules.dueDiligence.templates'), icon: <IconFile className="h-4 w-4" />, onClick: () => setTemplatesOpen(true) },
             { label: t('p3Import.importButtonLabel'), icon: <IconUpload className="h-4 w-4" />, onClick: () => setImportDialogOpen(true), separatorBefore: true },
@@ -599,6 +598,7 @@ export default function Contratos() {
                   onSort={toggleSortContratos}
                   loading={loadingContratos || profilesLoading}
                   onRowClick={(c) => setDetalheContrato(c)}
+                  onExport={handleExportCSV}
                   searchValue={searchTerm}
                   onSearchChange={setSearchTerm}
                   searchPlaceholder={t('fin.contratos.buscar')}

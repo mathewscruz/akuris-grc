@@ -59,7 +59,10 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
       toast({ title: t('modDialogs.continuidade.teste.dataObrigatoria'), variant: 'destructive' });
       return;
     }
-    if (!empresaId) return;
+    if (!empresaId) {
+      toast({ title: t('ajustesModulos.empresaIndisponivel'), variant: 'destructive' });
+      return;
+    }
     setLoading(true);
 
     const payload = {

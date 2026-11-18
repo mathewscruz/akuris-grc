@@ -408,12 +408,12 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
     const finalizandoRascunho = finalizar && (!risco || risco.status === 'rascunho');
     if (finalizandoRascunho && (!data.categoria_id || !data.responsavel || !data.probabilidade_inicial || !data.impacto_inicial)) {
       setActiveTab(!data.categoria_id || !data.responsavel ? 'identificacao' : 'avaliacao');
-      toast.error('Para finalizar, informe categoria, responsável, probabilidade e impacto. Você ainda pode salvar como rascunho.');
+      toast.error(t('ajustesModulos.riscoFinalizarIncompleto'));
       return;
     }
     if (finalizar && risco?.id && reavaliacaoInvalidaAceite(data) && !data.ultima_observacao_avaliacao?.trim()) {
       setActiveTab('acompanhamento');
-      toast.error('Explique brevemente o motivo da reavaliação para manter a trilha de auditoria compreensível.');
+      toast.error(t('ajustesModulos.riscoMotivoReavaliacao'));
       return;
     }
     
@@ -453,11 +453,11 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
       return;
     }
     if (data.aceito && !data.aceite_valido_ate) {
-      toast.error('Indique até quando o aceite é válido.');
+      toast.error(t('ajustesModulos.riscoAceiteValidade'));
       return;
     }
     if (data.aceito && data.aceite_valido_ate && parseDataLocal(data.aceite_valido_ate) <= new Date()) {
-      toast.error('A validade do aceite tem de ser uma data futura.');
+      toast.error(t('ajustesModulos.riscoAceiteFuturo'));
       return;
     }
 

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { DateField } from "@/components/ui/date-field";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -245,7 +246,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.chaveDialog.labelCreationDate')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v ?? "")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -259,7 +260,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.chaveDialog.labelLastRotation')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v ?? "")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,7 +274,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                   <FormItem>
                     <FormLabel>{t('contratosAtivos.chaveDialog.labelNextRotation')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v ?? "")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

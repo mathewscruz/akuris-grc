@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { ColorSwatchField } from '@/components/ui/color-swatch-field';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -285,19 +286,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cor">{t('riscosDialogs.categorias.cor')}</Label>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        id="cor"
-                        type="color"
-                        value={formData.cor}
-                        onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                        className="w-20 h-10"
-                      />
-                      <div 
-                        className="w-8 h-8 rounded border"
-                        style={{ backgroundColor: formData.cor }}
-                      />
-                    </div>
+                    <ColorSwatchField value={formData.cor} onChange={(c) => setFormData({ ...formData, cor: c })} aria-label={t('riscosDialogs.categorias.cor')} />
                   </div>
                 </div>
                 <div className="space-y-2">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DateField } from "@/components/ui/date-field";
 import { IconAdd, IconEdit, IconDelete, IconCalendar, IconPerson, IconMoney, IconSettings } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,6 +161,10 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
     
     if (!profile?.empresa_id) {
       toast.error(t('contratosAtivos.manutencaoDialog.toastNoEmpresa'));
+      return;
+    }
+    if (!formData.data_manutencao) {
+      toast.error(t('contratosAtivos.manutencaoDialog.labelMaintenanceDate'));
       return;
     }
 
@@ -442,32 +447,28 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="data_manutencao">{t('contratosAtivos.manutencaoDialog.labelMaintenanceDate')}</Label>
-                      <Input
+                      <DateField
                         id="data_manutencao"
-                        type="date"
-                        value={formData.data_manutencao}
-                        onChange={(e) => setFormData(prev => ({...prev, data_manutencao: e.target.value}))}
-                        required
+                        value={formData.data_manutencao || null}
+                        onChange={(v) => setFormData(prev => ({...prev, data_manutencao: v ?? ""}))}
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="data_prevista_conclusao">{t('contratosAtivos.manutencaoDialog.labelExpectedCompletion')}</Label>
-                      <Input
+                      <DateField
                         id="data_prevista_conclusao"
-                        type="date"
-                        value={formData.data_prevista_conclusao}
-                        onChange={(e) => setFormData(prev => ({...prev, data_prevista_conclusao: e.target.value}))}
+                        value={formData.data_prevista_conclusao || null}
+                        onChange={(v) => setFormData(prev => ({...prev, data_prevista_conclusao: v ?? ""}))}
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="data_conclusao">{t('contratosAtivos.manutencaoDialog.labelCompletionDate')}</Label>
-                      <Input
+                      <DateField
                         id="data_conclusao"
-                        type="date"
-                        value={formData.data_conclusao}
-                        onChange={(e) => setFormData(prev => ({...prev, data_conclusao: e.target.value}))}
+                        value={formData.data_conclusao || null}
+                        onChange={(v) => setFormData(prev => ({...prev, data_conclusao: v ?? ""}))}
                       />
                     </div>
                   </div>
@@ -522,11 +523,10 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     
                     <div className="space-y-2">
                       <Label htmlFor="proxima_manutencao">{t('contratosAtivos.manutencaoDialog.labelNextMaintenance')}</Label>
-                      <Input
+                      <DateField
                         id="proxima_manutencao"
-                        type="date"
-                        value={formData.proxima_manutencao}
-                        onChange={(e) => setFormData(prev => ({...prev, proxima_manutencao: e.target.value}))}
+                        value={formData.proxima_manutencao || null}
+                        onChange={(v) => setFormData(prev => ({...prev, proxima_manutencao: v ?? ""}))}
                       />
                     </div>
                   </div>

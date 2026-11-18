@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { DateField } from "@/components/ui/date-field";
 import { IconCheck, IconCalendar, IconFile, IconChevron, IconChevronLeft, IconMoney, IconUsers, IconChecklist } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
@@ -455,31 +456,28 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="data_inicio">{t('contratosAtivos.contratoDialogWizard.labelStartDate')}</Label>
-                <Input
+                <DateField
                   id="data_inicio"
-                  type="date"
-                  value={formData.data_inicio}
-                  onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+                  value={formData.data_inicio || null}
+                  onChange={(v) => setFormData({ ...formData, data_inicio: v ?? "" })}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="data_fim">{t('contratosAtivos.contratoDialogWizard.labelEndDate')}</Label>
-                <Input
+                <DateField
                   id="data_fim"
-                  type="date"
-                  value={formData.data_fim}
-                  onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
+                  value={formData.data_fim || null}
+                  onChange={(v) => setFormData({ ...formData, data_fim: v ?? "" })}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="data_assinatura">{t('contratosAtivos.contratoDialogWizard.labelSignatureDate')}</Label>
-                <Input
+                <DateField
                   id="data_assinatura"
-                  type="date"
-                  value={formData.data_assinatura}
-                  onChange={(e) => setFormData({ ...formData, data_assinatura: e.target.value })}
+                  value={formData.data_assinatura || null}
+                  onChange={(v) => setFormData({ ...formData, data_assinatura: v ?? "" })}
                 />
               </div>
             </div>

@@ -435,12 +435,6 @@ export function CategoriasDenuncia() {
                     />
                   ))}
                 </div>
-                <Input
-                  type="color"
-                  value={formData.cor}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
-                  className="w-20 h-10"
-                />
               </div>
 
               <div className="flex items-center gap-2">

@@ -73,6 +73,7 @@ import { buscaGlobal } from "./busca-global";
 import { jurisdicao } from "./jurisdicao";
 import { p3Breadcrumbs } from "./p3-breadcrumbs";
 import { p3Projetos } from "./p3-projetos";
+import { ajustesModulos } from "./ajustes-modulos";
 import { p3Filtros } from "./p3-filtros";
 import { p3Kpis } from "./p3-kpis";
 import { p3Denuncia } from "./p3-denuncia";
@@ -200,6 +201,7 @@ const modules: Record<string, ModuleDict> = {
   jurisdicao,
   p3Breadcrumbs,
   p3Projetos,
+  ajustesModulos,
   p3Filtros,
   p3Kpis,
   p3Denuncia,

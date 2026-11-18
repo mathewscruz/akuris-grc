@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DateField } from "@/components/ui/date-field";
 import { useListState } from "@/hooks/useListState";
 import { PrivacyProgramNavigation } from "./PrivacyProgramNavigation";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1229,7 +1230,9 @@ const Sel = ({ value, set, options }: any) => (
     </SelectContent>
   </Select>
 );
-const Texto = ({ value, set, placeholder = "", type = "text" }: any) => (
+const Texto = ({ value, set, placeholder = "", type = "text" }: any) => type === "date" ? (
+  <DateField value={value || null} onChange={(v) => set(v ?? "")} />
+) : (
   <Input
     type={type}
     value={value || ""}

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { DateField } from "@/components/ui/date-field";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -165,7 +166,7 @@ export function ReviewItemDecisionDialog({
                     <FormItem>
                       <FormLabel>{t("revisaoAcessosComp.itemDecisionDialog.fieldNovaData")}</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateField value={field.value || null} onChange={(v) => field.onChange(v ?? "")} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

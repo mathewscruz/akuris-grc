@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,6 +12,7 @@ interface DevelopmentCompany {
 }
 
 export function DevelopmentCompanySwitcher() {
+  const { t } = useLanguage();
   const {
     profile,
     selectDevelopmentCompany,
@@ -34,7 +36,7 @@ export function DevelopmentCompanySwitcher() {
       .then(({ data, error }) => {
         if (!active) return;
         if (error) {
-          toast.error('Não foi possível carregar as empresas locais.');
+          toast.error(t('ajustesModulos.empresasLocaisErro'));
           return;
         }
         setCompanies(data ?? []);

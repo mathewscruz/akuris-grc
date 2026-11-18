@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ModuleLoadingSkeletonProps {
@@ -25,6 +26,9 @@ export function ModuleLoadingSkeleton({
       role="status"
       aria-label={t('residuos.geral.carregandoModulo')}
     >
+      <div className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center">
+        <AkurisPulse size={48} />
+      </div>
       <div className="space-y-2">
         <Skeleton className="h-8 w-56 max-w-[70%]" />
         <Skeleton className="h-4 w-[28rem] max-w-[90%]" />

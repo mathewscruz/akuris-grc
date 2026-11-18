@@ -845,9 +845,7 @@ export function Riscos() {
             </Button> : undefined
           }
           secondaryActions={[
-            { label: t('riscos.page.export.csv'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(viewedRiscos) },
-            { label: t('riscos.page.export.pdf'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(viewedRiscos, statsDaExportacao) },
-            ...(canCreate('riscos') ? [{ label: t('riscosBiblioteca.botao'), icon: <IconBook className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true }] : []),
+            ...(canCreate('riscos') ? [{ label: t('riscosBiblioteca.botao'), icon: <IconBook className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true) }] : []),
             ...(['admin', 'super_admin'].includes(String(profile?.role)) ? [
               { label: t('riscos.page.categories'), icon: <IconTag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
               { label: t('riscos.page.configMatrix'), icon: <IconSettings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
@@ -1003,6 +1001,8 @@ export function Riscos() {
                     sortField={sortField}
                     sortDirection={sortDirection}
                     onSort={handleSort}
+                    onExport={() => exportRiscosCSV(viewedRiscos)}
+                    onExportPdf={() => exportRiscosPDF(viewedRiscos, statsDaExportacao)}
                     emptyState={{
                       icon: <IconWarning className="h-8 w-8" />,
                       title: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'

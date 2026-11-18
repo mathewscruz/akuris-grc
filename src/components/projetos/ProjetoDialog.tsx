@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ColorSwatchField } from '@/components/ui/color-swatch-field';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { toast } from '@/lib/toast';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,6 @@ import { useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { indicadores } from '@/lib/projeto-acompanhamento';
 
 /** Paleta de identificação do projeto (valor gravado; mantém-se estável entre temas). */
-const CORES_PROJETO = ['#7552FF', '#3B82F6', '#14B8A6', '#22C55E', '#F59E0B', '#EF4444', '#EC4899', '#64748B'];
 
 interface Props {
   open: boolean;
@@ -110,14 +110,7 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
             </div>
             <div className="space-y-2">
               <Label>{t('projetos.dialog.fieldCor')}</Label>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('projetos.dialog.fieldCor')}>
-                {CORES_PROJETO.map((c) => (
-                  <button key={c} type="button" role="radio" aria-checked={form.cor.toLowerCase() === c.toLowerCase()} aria-label={c}
-                    onClick={() => setForm({ ...form, cor: c })}
-                    className={`h-7 w-7 rounded-full transition-ui ${form.cor.toLowerCase() === c.toLowerCase() ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'hover:scale-110'}`}
-                    style={{ backgroundColor: c }} />
-                ))}
-              </div>
+              <ColorSwatchField value={form.cor} onChange={(c) => setForm({ ...form, cor: c })} aria-label={t('projetos.dialog.fieldCor')} />
             </div>
           </section>
           <section className="space-y-3">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { DateField } from "@/components/ui/date-field";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -343,7 +344,7 @@ export function SistemaUsuarioDialog({
                   <FormItem>
                     <FormLabel>{t('campos.sistemaUsuario.dataConcessao')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v ?? "")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -357,7 +358,7 @@ export function SistemaUsuarioDialog({
                   <FormItem>
                     <FormLabel>{t('fin.comum.dataExpiracao')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v ?? "")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
