@@ -25,7 +25,6 @@ import { toast } from "@/lib/toast";
 import { ConexoesAtivas, useConexoesAtivas } from "./ConexoesAtivas";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveItemStatusTone } from "@/lib/status-tone";
-import { INTEGRATION_COLLECTIONS_ENABLED } from "@/lib/integration-release";
 import {
   COLLECTION_PROVIDERS,
   connectionNeedsAttention,
@@ -53,7 +52,21 @@ function ProviderLogo({ provider }: { provider: CollectionProvider }) {
 }
 
 export function IntegrationCollections({ empresaId }: { empresaId: string }) {
-  return INTEGRATION_COLLECTIONS_ENABLED ? (
+  // The server decides availability: a provider turns on by itself once its
+  // platform credentials exist and the server-side release switch is on.
+  const probe = useQuery({
+    queryKey: ["integration-collections", empresaId],
+    queryFn: () => integrationRequest<CollectionList>({ action: "list" }),
+    retry: false,
+  });
+  // Decide once: the catalog re-fetches the same query and must not bounce back.
+  const [onHold, setOnHold] = useState(true);
+  useEffect(() => {
+    if (probe.data) setOnHold(false);
+    else if (probe.isError)
+      setOnHold((probe.error as Error).message === "integrations_coming_soon");
+  }, [probe.data, probe.isError, probe.error]);
+  return !onHold ? (
     <AvailableIntegrationCollections empresaId={empresaId} />
   ) : (
     <div className="space-y-8">
@@ -321,13 +334,24 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
                 <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
                   {t(`collectionHub.provider.${provider.id}`)}
                 </p>
-                <Button
-                  variant="outline"
-                  className="self-start"
-                  onClick={() => setNewProvider(provider.id)}
-                >
-                  {t("collectionHub.connect")}
-                </Button>
+                {query.data?.availability[provider.id] === true ? (
+                  <Button
+                    variant="outline"
+                    className="self-start"
+                    onClick={() => setNewProvider(provider.id)}
+                  >
+                    {t("collectionHub.connect")}
+                  </Button>
+                ) : (
+                  <Button
+                    disabled
+                    variant="secondary"
+                    className="self-start disabled:opacity-100"
+                    aria-label={`${provider.name}: ${t("collectionHub.comingSoon")}`}
+                  >
+                    {t("collectionHub.comingSoon")}
+                  </Button>
+                )}
               </article>
             ))}
           </div>

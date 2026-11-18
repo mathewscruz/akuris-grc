@@ -11,7 +11,6 @@ import {
 import { persistExplicitLocale } from "@/lib/i18n-locale";
 const invoke = vi.hoisted(() => vi.fn());
 // Exercise the prepared connection flows independently from the release hold.
-vi.mock("@/lib/integration-release", () => ({ INTEGRATION_COLLECTIONS_ENABLED: true }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     functions: { invoke },
@@ -79,10 +78,9 @@ describe("collection connections", () => {
     );
     const github = await screen.findByText("GitHub");
     const button = github.closest("article")!.querySelector("button")!;
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("Em breve");
     fireEvent.click(button);
-    expect(
-      await screen.findByText("Configuração da plataforma necessária"),
-    ).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Autorizar conexão" }),
     ).toBeNull();
@@ -114,8 +112,9 @@ describe("collection connections", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível consultar as conexões",
     );
+    const before = invoke.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(invoke.mock.calls.length).toBeGreaterThan(before));
   });
   it("marks stale scheduled data but not paused or manual connections", () => {
     const old = {

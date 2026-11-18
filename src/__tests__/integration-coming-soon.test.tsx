@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { IntegrationCollections } from "@/components/configuracoes/integrations/IntegrationCollections";
 import { COLLECTION_PROVIDERS } from "@/lib/integration-platform";
-import { INTEGRATION_COLLECTIONS_ENABLED } from "@/lib/integration-release";
 import { persistExplicitLocale } from "@/lib/i18n-locale";
 
 const invoke = vi.hoisted(() => vi.fn());
@@ -37,6 +36,7 @@ beforeEach(() => {
   localStorage.clear();
   persistExplicitLocale("pt-BR");
   invoke.mockReset();
+  invoke.mockResolvedValue({ data: null, error: { context: { json: async () => ({ error: "integrations_coming_soon" }) } } });
   from.mockImplementation(() => {
     const query = {
       select: vi.fn().mockReturnThis(),
@@ -57,10 +57,9 @@ describe("integration release hold", () => {
     const query = from.mock.results[0].value;
     expect(query.eq).toHaveBeenCalledWith("empresa_id", "tenant-a");
     expect(query.eq).toHaveBeenCalledWith("status", "connected");
-    expect(invoke).not.toHaveBeenCalled();
+    expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });
   it("shows all eight original brands as coming soon without starting queries or OAuth", () => {
-    expect(INTEGRATION_COLLECTIONS_ENABLED).toBe(false);
     const { container } = mount();
     expect(screen.getAllByRole("article")).toHaveLength(8);
     expect(screen.getAllByText("Em breve")).toHaveLength(8);
@@ -74,7 +73,7 @@ describe("integration release hold", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByRole("tab", { name: "Adicionar conexão" })).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(invoke).not.toHaveBeenCalled();
+    expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });
 
   it("keeps catalog search usable without contacting an unavailable backend", () => {
@@ -86,7 +85,7 @@ describe("integration release hold", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Nenhuma ferramenta encontrada.");
     fireEvent.change(search, { target: { value: "" } });
     expect(screen.getAllByRole("article")).toHaveLength(8);
-    expect(invoke).not.toHaveBeenCalled();
+    expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });
 
   it("translates the unavailable state for English users", () => {
@@ -94,6 +93,6 @@ describe("integration release hold", () => {
     mount();
     expect(screen.getAllByText("Coming soon")).toHaveLength(8);
     expect(screen.getByText(/Connections and collections are not available yet/)).toBeVisible();
-    expect(invoke).not.toHaveBeenCalled();
+    expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });
 });
