@@ -118,7 +118,7 @@ export function ProductPeek() {
       <h2 id="cine-peek-title" className="ed-h2">{t('site.cinePeekTitle')}</h2>
       <p className="ed-side">{t('site.cinePeekSub')}</p>
     </div>
-    <div className="ed-peek-frame"><img src={dashboardArt.url} alt={t('site.cinePeekTitle')} loading="lazy" width={1586} height={992} /></div>
+    <div className="ed-peek-frame"><img src={dashboardArt.url} alt={t('site.cinePeekTitle')} loading="eager" decoding="async" width={1586} height={992} /></div>
   </div></section>;
 }
 
