@@ -143,8 +143,8 @@ export function PartnersStrip() {
     <p className="cine-label">{t('site.partnersLabel')}</p>
     <h2 id="cine-partners-title" className="ed-h2">{t('site.partnersTitle')}</h2>
     <ul className="ed-partners-logos">
-      <li><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /><span className="ed-partners-region">{t('site.partnersRegionCyberme')}</span></li>
-      <li><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /><span className="ed-partners-region">{t('site.partnersRegionMercurius')}</span></li>
+      <li><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /><PartnerGeo map={GEO_EU} tone="cyan" label={t('site.partnersGeoEurope')} kicker={t('site.partnersOfficialReseller')} /></li>
+      <li><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /><PartnerGeo map={GEO_SA} tone="amber" label={t('site.partnersGeoBrChile')} kicker={t('site.partnersOfficialReseller')} /></li>
     </ul>
   </div></section>;
 }
@@ -207,4 +207,49 @@ export function LandingFooter() {
     </div>
     <div className="cine-footer-bottom"><p>© {new Date().getFullYear()} Akuris. {t('site.cineRights')}</p><nav aria-label="Legal"><Link to="/politica-privacidade">{t('site.cinePrivacy')}</Link><Link to="/seguranca">{t("site.trust")}</Link><Link to="/politica-privacidade#cookies">Cookies</Link></nav></div>
   </footer>;
+}
+
+/* Mini-mapas pontilhados: '.' vazio, 'o' terra, 'h' região de atuação, 'p' região + pulso */
+const GEO_EU = [
+  '......ooo.oo....',
+  '.....oooooo.....',
+  '..o..hhhh.......',
+  '.oo.hhhhhhhh....',
+  '....hhhhhhhhhh..',
+  '...hhhhhhhhhhh..',
+  '..hhhhhhhhhhhh..',
+  '.phhhh.hhh.hh...',
+  '.hhh....hh..h...',
+  '.........h......',
+];
+const GEO_SA = [
+  '..oooo......',
+  '.ooooohhh...',
+  'oooohhhhhhh.',
+  '.oohhhhhhhhh',
+  '..ohhhhpphhh',
+  '..hhhhhhhhh.',
+  '..phhhhhhh..',
+  '..hhhhhhh...',
+  '..hhoooo....',
+  '..hhooo.....',
+  '..hho.......',
+  '..ph........',
+  '..hh........',
+  '...h........',
+];
+function PartnerGeo({ map, tone, label, kicker }: { map: string[]; tone: 'cyan' | 'amber'; label: string; kicker: string }) {
+  const g = 9; const w = map[0].length * g; const h = map.length * g;
+  return <div className={`ed-partners-geo is-${tone}`}>
+    <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true">
+      {map.flatMap((row, y) => row.split('').map((c, x) => c === '.' ? null : (
+        <g key={`${x}-${y}`}>
+          <circle cx={x * g + g / 2} cy={y * g + g / 2} r={c === 'o' ? 1.3 : 2} className={c === 'o' ? 'geo-land' : 'geo-on'} style={{ animationDelay: `${(x + y) * 40}ms` }} />
+          {c === 'p' && <circle cx={x * g + g / 2} cy={y * g + g / 2} r={2} className="geo-pulse" />}
+        </g>
+      )))}
+    </svg>
+    <span className="ed-partners-kicker">{kicker}</span>
+    <span className="ed-partners-place">{label}</span>
+  </div>;
 }
