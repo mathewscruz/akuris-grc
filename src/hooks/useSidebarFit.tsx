@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
-export type SidebarFit = 'comfortable' | 'compact' | 'dense';
-const LEVELS: SidebarFit[] = ['comfortable', 'compact', 'dense'];
+export type SidebarFit = 'comfortable' | 'compact' | 'dense' | 'icons';
+const LEVELS: SidebarFit[] = ['comfortable', 'compact', 'dense', 'icons'];
+/** Altura mínima por item (px) para cada nível; abaixo do último, só ícones. */
+const LIMITES = [64, 54, 40];
 
 /**
  * Fallback síncrono baseado em altura do viewport, usado antes da primeira medição.
@@ -11,7 +13,8 @@ function initialGuess(): SidebarFit {
   const h = window.innerHeight;
   if (h >= 1000) return 'comfortable';
   if (h >= 820) return 'compact';
-  return 'dense';
+  if (h >= 640) return 'dense';
+  return 'icons';
 }
 
 export function useSidebarFit(): SidebarFit {
@@ -33,18 +36,13 @@ export function useSidebarFit(): SidebarFit {
  * desce abaixo dele, para não oscilar quando a altura está no limite.
  */
 export function escolherDensidade(per: number, atual: SidebarFit, folga = 4): SidebarFit {
-  const alvo: SidebarFit = per >= 64 ? 'comfortable' : per >= 54 ? 'compact' : 'dense';
-  const iAlvo = LEVELS.indexOf(alvo);
+  const nivel = (p: number) => { const k = LIMITES.findIndex((l) => p >= l); return k === -1 ? LIMITES.length : k; };
   const iAtual = LEVELS.indexOf(atual);
+  const iAlvo = nivel(per);
   if (iAlvo === iAtual) return atual;
-  if (iAlvo < iAtual) {
-    // subir (mais espaço): exige folga acima do limite
-    const limite = iAtual === 2 ? 54 : 64;
-    return per >= limite + folga ? alvo : atual;
-  }
-  // descer: exige ficar abaixo do limite menos a folga
-  const limite = iAtual === 0 ? 64 : 54;
-  return per < limite - folga ? alvo : atual;
+  // subir exige folga acima do limite; descer exige ficar abaixo do limite menos a folga
+  const iNovo = iAlvo < iAtual ? nivel(per - folga) : nivel(per + folga);
+  return iNovo === iAtual ? atual : LEVELS[iNovo];
 }
 
 export function useAutoFit(contentRef: RefObject<HTMLElement>): SidebarFit {

@@ -12,4 +12,9 @@ describe('densidade do menu lateral com tolerância', () => {
     expect(escolherDensidade(49, 'compact')).toBe('dense');
     expect(escolherDensidade(58, 'dense')).toBe('compact');
   });
+  it('telas muito baixas mostram só ícones e voltam com folga', () => {
+    expect(escolherDensidade(35, 'dense')).toBe('icons');
+    expect(escolherDensidade(42, 'icons')).toBe('icons');
+    expect(escolherDensidade(46, 'icons')).toBe('dense');
+  });
 });

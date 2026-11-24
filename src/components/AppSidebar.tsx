@@ -73,7 +73,8 @@ export function AppSidebar() {
   const contentRef = useRef<HTMLDivElement>(null);
   const fit = useAutoFit(contentRef);
   const isCompact = fit !== 'comfortable';
-  const isDense = fit === 'dense';
+  const isIcons = fit === 'icons' && !isMobile;
+  const isDense = fit === 'dense' || isIcons;
   /* Intervalo único entre itens: o mesmo em todo o menu, qualquer que seja
      o grupo. Só o "Sair" fica destacado, por viver no rodapé. */
   const itemGap = isDense ? 'gap-0' : isCompact ? 'gap-0.5' : 'gap-1';
@@ -149,12 +150,12 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   const closeMobile = () => { if (isMobile) setOpenMobile(false); };
-  const railIcon = isDense ? 'h-4 w-4' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
-  const labelCls = isMobile ? 'flex-1 text-left text-sm' : `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-micro' : 'text-micro'}`;
+  const railIcon = isIcons ? 'h-5 w-5' : isDense ? 'h-4 w-4' : isCompact ? 'h-5 w-5' : 'h-[22px] w-[22px]';
+  const labelCls = isMobile ? 'flex-1 text-left text-sm' : isIcons ? 'sr-only' : `w-full whitespace-normal break-normal hyphens-none text-center leading-tight ${isDense ? 'text-micro' : 'text-micro'}`;
   const railCls = (active: boolean) => isMobile
     ? `relative flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'}`
     :
-    `relative flex w-full flex-col items-center justify-center ${isDense ? 'gap-0' : 'gap-1'} rounded-lg px-1 ${isDense ? 'py-0.5' : isCompact ? 'py-1.5' : 'py-2.5'} transition-colors duration-200 ${
+    `relative flex w-full flex-col items-center justify-center ${isDense ? 'gap-0' : 'gap-1'} rounded-lg px-1 ${isIcons ? 'py-1.5' : isDense ? 'py-0.5' : isCompact ? 'py-1.5' : 'py-2.5'} transition-colors duration-200 ${
       active
         ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
         : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
@@ -288,7 +289,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-hidden py-2'}`}>
+      <SidebarContent ref={contentRef as any} className={`gap-0 px-2 ${isMobile ? 'overflow-y-auto py-3' : isDense ? 'overflow-y-auto [scrollbar-width:none] py-1' : 'overflow-y-auto [scrollbar-width:none] py-2'}`}>
         <ul
           className={`flex flex-col ${isMobile ? itemGap : 'flex-1 justify-between gap-0'}`}
           style={isMobile ? undefined : { maxHeight: `min(85%, ${menuItems.length * 84}px)` }}
