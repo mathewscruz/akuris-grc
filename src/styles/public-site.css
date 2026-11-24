@@ -789,7 +789,7 @@
 /* Parceiros e revendedores */
 .ed-partners { text-align:center; }
 .ed-partners .ed-h2 { margin-top:.75rem; }
-.ed-partners-logos { list-style:none; margin:3rem 0 0; padding:2.5rem 0; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8rem; border-top:1px solid hsl(0 0% 100% / .08); border-bottom:1px solid hsl(0 0% 100% / .08); }
+.ed-partners-logos { list-style:none; margin:3rem 0 0; padding:2.5rem 0; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8rem; }
 .ed-partners-logos li { display:grid; grid-template-rows:96px auto; justify-items:center; align-content:center; gap:1.25rem; }
 .ed-partners-logos img { display:block; align-self:center; height:38px; width:auto; opacity:.6; transition:opacity .3s ease, transform .3s ease; }
 .ed-partners-logos img.is-tall { height:96px; }
