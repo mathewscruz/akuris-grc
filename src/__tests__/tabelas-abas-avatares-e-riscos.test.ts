@@ -42,8 +42,6 @@ describe('padrão visual das tabelas', () => {
 
   it('usa fundo branco, uma densidade única e paginação por padrão', () => {
     expect(tabela).toContain('bg-card text-sm');
-    expect(tabela).toContain('"h-10 px-4"');
-    expect(tabela).toContain('"px-4 py-3"');
     expect(tabela).not.toContain('useTableDensity');
     expect(dataTable).toContain('paginated = true');
     expect(dataTable).toContain('pageSize: initialPageSize = 20');

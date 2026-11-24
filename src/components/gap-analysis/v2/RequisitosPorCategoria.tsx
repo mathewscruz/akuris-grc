@@ -120,7 +120,7 @@ export function RequisitosPorCategoria({ frameworkId, empresaId, refreshKey, cat
             </button>
             {aberto && (
               <div className="border-t border-border overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="akuris-table w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs text-muted-foreground bg-muted/30">
                       <th className="px-5 py-2.5 font-medium w-32">ID</th>

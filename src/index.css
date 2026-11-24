@@ -2330,51 +2330,90 @@ input:-webkit-autofill:focus {
 .akuris-tabs-scroll:hover { color: hsl(var(--primary)); }
 .akuris-tabs-scroll:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
 
-/* ── Onda: tabelas como "cartões em lista" ───────────────────────────────
-   Cada linha é um cartão arredondado com aresta e faixa à esquerda na cor
-   do estado/gravidade (lida do primeiro Chip da linha). */
+/* Compact operational tables; detail views keep their own presentation. */
 @layer components {
-  .akuris-table { border-collapse: separate; border-spacing: 0 8px; }
-  .akuris-table > thead th { background-image: none !important; background-color: transparent !important; }
-  .akuris-table tbody > tr:not([data-table-static]) {
-    --row-accent: hsl(var(--border));
-    border: 0 !important;
-    background-color: hsl(var(--surface-elevated, var(--card)));
+  .akuris-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
   }
-  .akuris-table tbody > tr:not([data-table-static]) > td {
-    border-top: 1px solid hsl(var(--border) / 0.7);
-    border-bottom: 1px solid hsl(var(--border) / 0.7);
-    background-color: inherit;
+  .akuris-table > thead th {
+    height: 32px;
+    padding: 4px 12px;
+    background-image: none !important;
+    background-color: hsl(var(--card)) !important;
+    font-size: 10px;
+    letter-spacing: 0;
+    font-weight: 500;
   }
-  .akuris-table tbody > tr:not([data-table-static]) > td:first-child {
-    border-left: 1px solid hsl(var(--border) / 0.7);
-    border-top-left-radius: 0.625rem; border-bottom-left-radius: 0.625rem;
-    box-shadow: inset 3px 0 0 var(--row-accent);
+  .akuris-table > tbody > tr > td:not([colspan]) {
+    padding: 6px 12px !important;
+    height: 36px;
+    border-top: 0;
+    border-right: 0;
+    border-left: 0;
+    border-bottom: 1px solid hsl(var(--border) / 0.55);
+    border-radius: 0;
+    font-size: 13px;
+    letter-spacing: 0;
   }
-  .akuris-table tbody > tr:not([data-table-static]) > td:last-child {
-    border-right: 1px solid hsl(var(--border) / 0.7);
-    border-top-right-radius: 0.625rem; border-bottom-right-radius: 0.625rem;
+  .akuris-table > tbody > tr:last-child > td { border-bottom: 0; }
+  .akuris-table > tbody > tr > td:first-child {
+    position: relative;
+    box-shadow: none !important;
   }
-  .akuris-table tbody > tr:not([data-table-static]):hover > td {
-    border-color: hsl(var(--primary) / 0.35);
+  .akuris-table > tbody > tr:is([data-last-opened="true"], [data-state="selected"]) > td:first-child::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    background-color: hsl(var(--primary));
   }
-  /* Estado primeiro; gravidade por último para sempre mandar. */
-  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="done"]) { --row-accent: hsl(var(--state-done)); }
-  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="active"]) { --row-accent: hsl(var(--state-active)); }
-  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="attention"]) { --row-accent: hsl(var(--warning)); }
-  .akuris-table tbody > tr:has([data-chip-family="state"][data-chip-tone="blocked"]) { --row-accent: hsl(var(--destructive)); }
-  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="low"]) { --row-accent: hsl(var(--state-done)); }
-  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="medium"]) { --row-accent: hsl(var(--warning)); }
-  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="high"]) { --row-accent: hsl(var(--severity-high)); }
-  .akuris-table tbody > tr:has([data-chip-family="severity"][data-chip-tone="critical"]) { --row-accent: hsl(var(--destructive)); }
-  /* Faixa reta de 3px em vez da curva do canto. */
-  .akuris-table tbody > tr:not([data-table-static]) > td:first-child { position: relative; box-shadow: none !important; }
-  .akuris-table tbody > tr:not([data-table-static]) > td:first-child::before {
-    content: ""; position: absolute; left: 0; top: -1px; bottom: -1px; width: 3px;
-    border-radius: 0.625rem 0 0 0.625rem; background: var(--row-accent);
+  .akuris-table [data-record-avatar] {
+    width: 24px;
+    height: 24px;
+    box-shadow: none;
   }
-  .akuris-table tbody > tr:has(td[colspan]) > td::before { display: none; }
-  .akuris-table tbody > tr:has(td[colspan]) > td { box-shadow: none; }
+  .akuris-table [data-chip] {
+    height: 20px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .akuris-table [data-chip-family="state"] { color: hsl(var(--muted-foreground)); --table-state-dot: var(--state-rest); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="active"] { --table-state-dot: var(--state-active); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="done"] { --table-state-dot: var(--state-done); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="attention"] { --table-state-dot: var(--severity-medium); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="blocked"] { --table-state-dot: var(--destructive); color: hsl(var(--destructive)); }
+  /* A measured ring is data, not decoration: never replace it with a dot. */
+  .akuris-table [data-chip-family="state"]:not([data-chip-measured]) > [data-chip-indicator] > * { display: none; }
+  .akuris-table [data-chip-family="state"]:not([data-chip-measured]) > [data-chip-indicator]::before {
+    content: "";
+    display: block;
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: hsl(var(--table-state-dot));
+  }
+  /* Pointer targets stay comfortable on touch screens; names and multiline
+     content determine row height instead of being clipped to a fixed box. */
+  @media (hover: hover) and (pointer: fine) {
+    .akuris-table > tbody > tr > td:not([colspan]) > button,
+    .akuris-table > tbody > tr > td:not([colspan]) > div > button {
+      height: 24px;
+      min-height: 24px;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
 }
 
 /* ── Onda: navegação fixa, cascata e profundidade ─────────────────────── */

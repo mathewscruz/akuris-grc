@@ -5,10 +5,9 @@ import { cn } from "@/lib/utils"
 /**
  * Tabela base do produto.
  *
- * Há uma única densidade deliberada: 40px no cabeçalho e cerca de 44px nas
- * linhas. É suficientemente compacta para listas operacionais e continua
- * confortável para leitura e toque. A escolha deixa de ser empurrada para o
- * usuário e todas as telas mantêm o mesmo ritmo vertical.
+ * Uma única base compacta: cabeçalho de 32px e linhas de cerca de 36px.
+ * Conteúdo multilinha e controles de toque podem crescer sem recortar texto.
+ * Todas as telas herdam o mesmo ritmo vertical.
  */
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -93,7 +92,7 @@ const TableHead = React.forwardRef<
     <th
       ref={ref}
       className={cn(
-        "h-10 px-4",
+        "h-8 px-3",
         /* O cabeçalho é uma etiqueta, não conteúdo: corpo mais pequeno que a
            célula, caixa alta e cor apagada. Antes tinha o MESMO tamanho do
            conteúdo e a tabela não tinha estrutura visível. */
@@ -116,7 +115,7 @@ const TableCell = React.forwardRef<
     <td
       ref={ref}
       className={cn(
-        "px-4 py-3",
+        "px-3 py-1.5",
         /* O conteúdo secundário recua para cinzento: o que fica preto é o
            nome do registo (ver `PRIMARY_CELL` no DataTable) e os estados. */
         "align-middle text-xs text-muted-foreground [&:has([role=checkbox])]:pr-0",

@@ -6,7 +6,7 @@ export function OwnerCell({ name, photo, emptyLabel }: { name?: string | null; p
   if (!name) {
     return (
       <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-        <span aria-hidden="true" className="h-8 w-8 shrink-0 rounded-full border border-dashed border-muted-foreground/40" />
+        <span data-record-avatar="" aria-hidden="true" className="h-8 w-8 shrink-0 rounded-full border border-dashed border-muted-foreground/40" />
         {emptyLabel}
       </span>
     );

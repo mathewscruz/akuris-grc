@@ -1,0 +1,3 @@
+- [x] Apply compact rows, inline status and smaller avatars to shared and operational tables.
+- [x] Verify shared table rendering in light/dark at desktop, tablet and mobile widths; sorting, pagination and row opening work, and 22 relevant tests pass.
+- [x] Save changes and report verification limits: customer module pages require sign-in unavailable in this sandbox; browser verification used isolated shared controls, not a signed-in customer session.

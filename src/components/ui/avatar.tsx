@@ -9,6 +9,7 @@ const Avatar = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
+    data-record-avatar=""
     className={cn(
       /* Aro duplo e volume discreto: continua a ser fotografia/identidade,
          mas deixa de parecer apenas um círculo lilás solto dentro da tabela. */

@@ -152,7 +152,7 @@ const RING: Record<StateLevel, { color: string; fill: number; spin?: boolean; te
 export const StateRing = ({ level, progress }: { level: StateLevel; progress?: number }) => {
   const r = RING[level];
   const medido = typeof progress === 'number' && Number.isFinite(progress);
-  const fill = medido ? Math.round(Math.min(1, Math.max(0, progress!)) * 100) : r.fill;
+  const fill = typeof progress === 'number' && Number.isFinite(progress) ? Math.round(Math.min(1, Math.max(0, progress)) * 100) : r.fill;
   return (
     <svg
       viewBox="0 0 16 16"
@@ -198,7 +198,7 @@ export const Chip: React.FC<ChipProps> = ({
   */
   if (family === 'type' || family === 'category') {
     return (
-      <span className={cn('text-xs text-muted-foreground', className)} {...props}>
+      <span data-chip="" data-chip-family={family} data-chip-tone={tone} className={cn('text-xs text-muted-foreground', className)} {...props}>
         {children}
       </span>
     );
@@ -217,8 +217,10 @@ export const Chip: React.FC<ChipProps> = ({
     const level = isState(tone) ? tone : 'rest';
     return (
       <span
+        data-chip=""
         data-chip-family={family}
         data-chip-tone={tone}
+        data-chip-measured={typeof progress === 'number' && Number.isFinite(progress) || undefined}
         className={cn(
           'inline-flex h-6 items-center gap-1.5 text-xs font-medium leading-none whitespace-nowrap',
           RING[level].text,
@@ -226,7 +228,9 @@ export const Chip: React.FC<ChipProps> = ({
         )}
         {...props}
       >
-        {icon ? <span className="flex items-center [&_svg]:h-3 [&_svg]:w-3">{icon}</span> : <StateRing level={level} progress={progress} />}
+        <span data-chip-indicator="" className="flex items-center">
+          {icon ? <span className="flex items-center [&_svg]:h-3 [&_svg]:w-3">{icon}</span> : <StateRing level={level} progress={progress} />}
+        </span>
         {children}
       </span>
     );
@@ -234,6 +238,7 @@ export const Chip: React.FC<ChipProps> = ({
 
   return (
     <span
+      data-chip=""
       data-chip-family={family}
       data-chip-tone={tone}
       className={cn(

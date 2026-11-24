@@ -19,7 +19,7 @@ const DOT: Record<StatusKind, string> = {
 /** Etapa de uma tarefa de projeto: pílula tonal (fundo suave + ponto), no padrão do modelo da lista. */
 export function StatusPill({ kind, children, className }: { kind: StatusKind; children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CLS[kind], className)}>
+    <span data-chip="" data-chip-family="state" data-chip-tone={kind === 'late' ? 'blocked' : kind} className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CLS[kind], className)}>
       <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', DOT[kind])} />
       {children}
     </span>

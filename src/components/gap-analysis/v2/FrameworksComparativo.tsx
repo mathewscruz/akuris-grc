@@ -124,7 +124,7 @@ export function FrameworksComparativo({
         </div>
 
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="akuris-table w-full text-sm">
             <thead>
               <tr className="border-b">
                 {['framework', 'aderencia', 'naoConformes', 'criticos', 'marco', 'responsavel', 'tendencia', 'acoes'].map((k) => (

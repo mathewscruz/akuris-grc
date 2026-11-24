@@ -288,7 +288,7 @@ export function DataTable<T extends Record<string, any>>({
   const STICKY_CELL = 'sticky right-0 z-10 bg-inherit'
   /* A coluna que identifica o registo é a única em corpo de texto e cor
      plena. Sem isto, o nome pesava o mesmo que um "v1" ou um travessão. */
-  const PRIMARY_CELL = 'text-sm font-medium text-foreground'
+  const PRIMARY_CELL = 'text-[13px] font-medium text-foreground'
   const colunasSemAcoes = columns.filter((c) => !isActionsColumn(c))
   const colunaPrincipal =
     colunasSemAcoes.find((c) => TITLE_KEYS.has(String(c.key).toLowerCase())) ?? colunasSemAcoes[0]
@@ -677,7 +677,7 @@ export function DataTable<T extends Record<string, any>>({
                     {sortable ? (
                       <Button variant="ghost" size="sm"
                         type="button"
-                        className="inline-flex w-full items-center gap-1.5 rounded-md py-2 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="inline-flex h-7 w-full items-center gap-1.5 rounded-md px-0 py-1 text-micro text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         onClick={() => handleSort(String(column.key))}
                       >
                         {column.label}
@@ -726,6 +726,7 @@ export function DataTable<T extends Record<string, any>>({
                   */
                   data-focus-id={(item as any).id}
                   data-row-new={newRows.has(rowId(item, index)) || undefined}
+                  data-last-opened={lastOpenedRow === rowId(item, index) || undefined}
                   {...(() => {
                     const key = rowId(item, index)
                     const base = onRowClick
