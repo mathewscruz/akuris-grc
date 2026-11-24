@@ -627,3 +627,18 @@
 .cine-hero-shield { opacity:.5; }
 .cine-trails { opacity:.25; }
 .cine-marquee { border-top:1px solid #ffffff0f; }
+
+/* Abertura autoral: marca Akuris */
+.cine-hero { background:transparent; }
+.cine-stage { position:absolute; inset:0; z-index:-1; pointer-events:none; }
+.cine-glow { position:absolute; right:6%; top:18%; width:min(46vw,640px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 40% 40%,#7552ff2e,transparent 60%),radial-gradient(circle at 65% 65%,#22d3ee1f,transparent 60%); filter:blur(40px); }
+.cine-dots { position:absolute; right:0; top:0; width:58%; height:100%; background-image:radial-gradient(#ffffff 1px,transparent 1.2px); background-size:26px 26px; opacity:.07; -webkit-mask-image:radial-gradient(60% 55% at 60% 48%,#000,transparent 75%); mask-image:radial-gradient(60% 55% at 60% 48%,#000,transparent 75%); }
+.cine-hero::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background-image:radial-gradient(#b9a6ff 1px,transparent 1.4px); background-size:26px 26px; -webkit-mask-image:radial-gradient(180px circle at var(--mx,-999px) var(--my,-999px),#000,transparent 70%); mask-image:radial-gradient(180px circle at var(--mx,-999px) var(--my,-999px),#000,transparent 70%); opacity:.35; }
+.cine-mark { position:absolute; right:8%; top:50%; transform:translateY(-50%); width:min(36vw,500px); overflow:visible; fill:none; stroke-linejoin:round; stroke-linecap:round; }
+.cine-mark-base { stroke:#c9bcff; stroke-width:.9; opacity:.55; stroke-dasharray:1; stroke-dashoffset:1; animation:cine-draw 2.4s cubic-bezier(.6,0,.2,1) .2s forwards; }
+.cine-mark-beam { stroke:url(#none); stroke:var(--site-cyan); stroke-width:1.3; stroke-dasharray:.08 .92; filter:drop-shadow(0 0 6px #5ee0f0); opacity:0; animation:cine-beam 7s linear 2.6s infinite; }
+@keyframes cine-beam { 0% { stroke-dashoffset:1; opacity:0; } 8% { opacity:1; } 92% { opacity:1; } 100% { stroke-dashoffset:0; opacity:0; } }
+.cine-hero h1 .cine-accent { background:linear-gradient(90deg,#c9bcff,var(--site-cyan)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.cine-benefits { margin-top:56px; }
+@media(max-width:760px) { .cine-mark { right:-10%; width:90vw; opacity:.35; } .cine-glow { right:-20%; width:90vw; } .cine-dots { width:100%; } }
+@media(prefers-reduced-motion:reduce) { .cine-mark-base { animation:none; stroke-dashoffset:0; } .cine-mark-beam { display:none; } }

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import heroSkyline from '@/assets/landing-hero-skyline.jpg';
 import akurisLogo from '@/assets/akuris-logo.png';
 import { DemoButton } from '@/components/public/PublicShell';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -29,11 +28,19 @@ function LightTrails({ className }: { className?: string }) {
   </svg>;
 }
 
+const MARK_D = 'M40 228 L132 42 Q140 26 148 42 L240 228 Q190 186 140 186 Q90 186 40 228 Z';
+function BrandMark() {
+  return <svg className="cine-mark" viewBox="0 0 280 260">
+    <path className="cine-mark-base" pathLength="1" d={MARK_D} />
+    <path className="cine-mark-beam" pathLength="1" d={MARK_D} />
+  </svg>;
+}
+
 /** Spotlight que segue o ponteiro nos cartões (CSS vars --mx/--my). */
 function useSpotlight() {
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('.cine-module, .cine-aud-grid article');
+      const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('.cine-module, .cine-aud-grid article, .cine-hero');
       if (!el) return; const r = el.getBoundingClientRect();
       el.style.setProperty('--mx', `${e.clientX - r.left}px`); el.style.setProperty('--my', `${e.clientY - r.top}px`);
     };
@@ -47,12 +54,9 @@ export function HeroCinematic() {
   useSpotlight();
   const benefits: [ReactNode, string][] = [[<IconChart strokeWidth={1.5} />, t('site.cineBenA')], [<IconRefresh strokeWidth={1.5} />, t('site.cineBenB')], [<IconFileText strokeWidth={1.5} />, t('site.cineBenC')]];
   return <section className="cine-hero" aria-labelledby="cine-hero-title">
-    <img className="cine-hero-photo" src={heroSkyline} alt="" width={1920} height={1088} fetchPriority="high" />
-    <div className="cine-hero-tint" aria-hidden="true" />
-    <LightTrails className="cine-trails" />
-    <NeonShield className="cine-hero-shield" />
+    <div className="cine-stage" aria-hidden="true"><div className="cine-glow" /><div className="cine-dots" /><BrandMark /></div>
     <div className="lp-container cine-hero-inner">
-      <h1 id="cine-hero-title">{t('site.cineTitle')}</h1>
+      <h1 id="cine-hero-title"><Accent text={t('site.cineTitle')} word={t('site.cineTitleAccent')} /></h1>
       <p className="cine-hero-lead">{t('site.cineLeadClear')}</p>
       <div className="cine-hero-actions"><DemoButton className="lp-btn cine-btn-outline">{t('site.cineDemo')}</DemoButton><a className="cine-link-btn" href="#como-funciona">{t('site.cineHowLink')} ↓</a></div>
       <ul className="cine-benefits">{benefits.map(([icon, label]) => <li key={label}>{icon}<span>{label}</span></li>)}</ul>
