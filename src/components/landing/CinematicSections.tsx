@@ -29,21 +29,29 @@ function LightTrails({ className }: { className?: string }) {
   </svg>;
 }
 
-const Vertical = ({ lines, className }: { lines: string[]; className: string }) =>
-  <div className={`cine-vtext ${className}`} aria-hidden="true">{lines.map(l => <span key={l}>{l}</span>)}<i /></div>;
+/** Spotlight que segue o ponteiro nos cartões (CSS vars --mx/--my). */
+function useSpotlight() {
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('.cine-module, .cine-aud-grid article');
+      if (!el) return; const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${e.clientX - r.left}px`); el.style.setProperty('--my', `${e.clientY - r.top}px`);
+    };
+    document.addEventListener('pointermove', onMove, { passive: true });
+    return () => document.removeEventListener('pointermove', onMove);
+  }, []);
+}
 
 export function HeroCinematic() {
   const { t } = useLanguage();
+  useSpotlight();
   const benefits: [ReactNode, string][] = [[<IconChart strokeWidth={1.5} />, t('site.cineBenA')], [<IconRefresh strokeWidth={1.5} />, t('site.cineBenB')], [<IconFileText strokeWidth={1.5} />, t('site.cineBenC')]];
   return <section className="cine-hero" aria-labelledby="cine-hero-title">
     <img className="cine-hero-photo" src={heroSkyline} alt="" width={1920} height={1088} fetchPriority="high" />
     <div className="cine-hero-tint" aria-hidden="true" />
-    <div className="cine-particles" aria-hidden="true">{Array.from({ length: 22 }, (_, i) => <i key={i} style={{ left: `${(i * 47) % 96 + 2}%`, top: `${(i * 37) % 80 + 4}%`, animationDelay: `${(i * .37) % 4}s` }} />)}</div>
+    <div className="cine-grain" aria-hidden="true" />
     <LightTrails className="cine-trails" />
     <NeonShield className="cine-hero-shield" />
-    <Vertical className="cine-v-mid" lines={t('site.cineVMid').split('|')} />
-    <Vertical className="cine-v-top" lines={t('site.cineVTop').split('|')} />
-    <Vertical className="cine-v-bottom" lines={t('site.cineVBottom').split('|')} />
     <div className="lp-container cine-hero-inner">
       <h1 id="cine-hero-title">{t('site.cineTitle')}</h1>
       <p className="cine-hero-lead">{t('site.cineLeadClear')}</p>

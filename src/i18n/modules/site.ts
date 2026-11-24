@@ -146,7 +146,7 @@ const copy: Record<string, [string, string]> = {
   cineLead1: ['Mais visibilidade. Mais controle. Mais confiança.', 'More visibility. More control. More confidence.'], cineLead2: ['Para um futuro mais seguro.', 'For a safer future.'],
   cineDemo: ['Pedir demonstração', 'Request a demo'],
   cineBen1: ['Reduza riscos', 'Reduce risks'], cineBen2: ['Fortaleça a conformidade', 'Strengthen compliance'], cineBen3: ['Impulsione decisões melhores', 'Drive better decisions'],
-  cineVMid: ['Segurança|Transforma|Possibilidades', 'Security|Transforms|Possibilities'], cineVTop: ['Pessoas|Processos|Tecnologia|Um futuro mais seguro', 'People|Processes|Technology|A safer future'], cineVBottom: ['Inteligência|em governança|para o que vem a seguir', 'Intelligence|in governance|for what comes next'],
+ 
   cineAboutLabel: ['Sobre o Akuris', 'About Akuris'],
   cineAboutTitle: ['Uma plataforma GRC completa, feita para auditorias reais', 'A complete GRC platform, built for real audits'], cineAboutAccent: ['auditorias reais', 'real audits'],
   cineAboutBody: ['O Akuris centraliza riscos, controles, evidências e auditorias em um só lugar, com a profundidade que sua operação precisa e a simplicidade que seu time merece.', 'Akuris centralizes risks, controls, evidence and audits in one place, with the depth your operation needs and the simplicity your team deserves.'],
