@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { validarUrlExternoResolvido } from '../_shared/ssrf.ts';
+import { validarUrlExternoResolvido, destinoIntegracaoPermitido } from '../_shared/ssrf.ts';
 import { requireUserContext, requireValidMfa, authErrorResponse } from '../_shared/auth.ts';
 
 const corsHeaders = {
@@ -77,7 +77,8 @@ serve(async (req) => {
       transformaria o teste de conexão num scanner da rede interna.
     */
     const urlToCheck = tipo === 'jira' || tipo === 'servicenow' ? instance_url : webhook_url;
-    const check = await validarUrlExternoResolvido(urlToCheck);
+    const destino = destinoIntegracaoPermitido(String(tipo), urlToCheck);
+    const check = destino.ok ? await validarUrlExternoResolvido(urlToCheck) : destino;
     if (!check.ok) {
       return new Response(JSON.stringify({ success: false, error: check.error }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

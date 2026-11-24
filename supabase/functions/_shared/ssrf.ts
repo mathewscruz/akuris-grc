@@ -184,3 +184,34 @@ export async function validarUrlExternoResolvido(rawUrl: string | undefined | nu
   }
   return base;
 }
+
+/**
+ * Destinos permitidos por tipo de integração. O servidor só envia dados para
+ * hosts dos fornecedores oficiais; webhooks genéricos só para hosts listados
+ * pela plataforma no segredo INTEGRATION_WEBHOOK_ALLOWED_HOSTS (vírgulas).
+ */
+const DESTINOS_POR_TIPO: Record<string, string[]> = {
+  slack: ['hooks.slack.com'],
+  teams: ['webhook.office.com', 'logic.azure.com', 'powerplatform.com', 'environment.api.powerplatform.com'],
+  jira: ['atlassian.net', 'jira.com'],
+  servicenow: ['service-now.com', 'servicenowservices.com'],
+};
+
+function hostCasa(host: string, sufixo: string): boolean {
+  const h = host.toLowerCase(); const s = sufixo.toLowerCase().replace(/^\./, '');
+  return h === s || h.endsWith('.' + s);
+}
+
+export function destinoIntegracaoPermitido(tipo: string, rawUrl: string | undefined | null): UrlSegura {
+  const base = validarUrlExterno(rawUrl);
+  if (!base.ok) return base;
+  const u = new URL(base.url!);
+  if (u.protocol !== 'https:') return { ok: false, error: 'Apenas HTTPS é permitido' };
+  const extra = (Deno.env.get('INTEGRATION_WEBHOOK_ALLOWED_HOSTS') || '')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const lista = [...(DESTINOS_POR_TIPO[tipo] ?? []), ...extra];
+  if (!lista.some((s) => hostCasa(u.hostname, s))) {
+    return { ok: false, error: 'Destino não autorizado para este tipo de integração' };
+  }
+  return base;
+}

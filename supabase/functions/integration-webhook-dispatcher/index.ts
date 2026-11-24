@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
-import { validarUrlExterno } from '../_shared/ssrf.ts';
+import { destinoIntegracaoPermitido } from '../_shared/ssrf.ts';
 import { lerCredenciais } from '../_shared/credenciais.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -421,7 +421,7 @@ serve(async (req) => {
         faz o servidor buscar as credenciais IAM da máquina e enviá-las adiante.
         Um só ponto de estrangulamento, porque todos os ramos usam este campo.
       */
-      const alvo = validarUrlExterno(integration.webhook_url);
+      const alvo = destinoIntegracaoPermitido(integration.tipo_integracao, integration.webhook_url);
       if (!alvo.ok) {
         console.error(`SSRF bloqueado para ${integration.tipo_integracao}: ${alvo.error} (${integration.webhook_url})`);
         await supabase.from('integracoes_webhook_logs').insert({

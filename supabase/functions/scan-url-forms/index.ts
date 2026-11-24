@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { hostInterno } from "../_shared/ssrf.ts";
+import { validarUrlExternoResolvido } from "../_shared/ssrf.ts";
 import { formLabel } from './labels.ts';
 
 const corsHeaders = {
@@ -628,7 +628,19 @@ serve(async (req) => {
         },
       );
     }
-    if (hostInterno(parsed.hostname)) {
+    // Limite do servidor: só HTTPS público (DNS resolvido) e teto diário por empresa.
+    const destino = await validarUrlExternoResolvido(parsed.toString());
+    const { data: perfilScan } = await scoped.from("profiles").select("empresa_id").eq("user_id", userData.user.id).maybeSingle();
+    const inicioDia = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: scansEmpresa } = perfilScan?.empresa_id
+      ? await scoped.from("dados_descobertas").select("id", { count: "exact", head: true })
+          .eq("empresa_id", perfilScan.empresa_id).gte("created_at", inicioDia)
+      : { count: 9999 };
+    if ((scansEmpresa ?? 0) >= 30) {
+      return new Response(JSON.stringify({ success: false, error: "Limite diário de descobertas da empresa atingido" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (parsed.protocol !== "https:" || !destino.ok) {
       return new Response(
         JSON.stringify({
           success: false,
