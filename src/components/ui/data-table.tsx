@@ -288,7 +288,7 @@ export function DataTable<T extends Record<string, any>>({
   const STICKY_CELL = 'sticky right-0 z-10 bg-inherit'
   /* A coluna que identifica o registo é a única em corpo de texto e cor
      plena. Sem isto, o nome pesava o mesmo que um "v1" ou um travessão. */
-  const PRIMARY_CELL = 'text-[13px] font-medium text-foreground'
+  const PRIMARY_CELL = 'text-sm font-normal text-foreground'
   const colunasSemAcoes = columns.filter((c) => !isActionsColumn(c))
   const colunaPrincipal =
     colunasSemAcoes.find((c) => TITLE_KEYS.has(String(c.key).toLowerCase())) ?? colunasSemAcoes[0]

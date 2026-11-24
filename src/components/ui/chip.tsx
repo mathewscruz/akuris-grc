@@ -211,7 +211,7 @@ export const Chip: React.FC<ChipProps> = ({
   if (family === 'severity' && isSeverity(tone)) {
     const s = SEVERITY_CLASSES[tone];
     chipClass = s.chip;
-    trailing = <SeverityMeter level={tone} />;
+    trailing = <span data-chip-meter="" className="flex items-center"><SeverityMeter level={tone} /></span>;
   } else if (family === 'state') {
     /* Estado sem caixa: texto + mini anel que diz o significado (ou a proporção medida). */
     const level = isState(tone) ? tone : 'rest';

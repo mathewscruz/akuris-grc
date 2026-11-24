@@ -692,8 +692,7 @@ input:-webkit-autofill:focus {
   @media (hover: hover) and (pointer: fine) {
     .akuris-table tbody > tr:not([data-table-static]) > td:last-child button,
     .akuris-table tbody > tr:not([data-table-static]) > td:last-child [role="button"] {
-      opacity: 0.68;
-      transform: translateX(2px);
+      opacity: 0.6;
       transition: opacity var(--motion-micro) var(--motion-ease),
                   transform var(--motion-micro) var(--motion-ease),
                   color var(--motion-micro) var(--motion-ease),
@@ -705,7 +704,6 @@ input:-webkit-autofill:focus {
     .akuris-table tbody > tr:not([data-table-static]):focus-within > td:last-child button,
     .akuris-table tbody > tr:not([data-table-static]):focus-within > td:last-child [role="button"] {
       opacity: 1;
-      transform: translateX(0);
     }
   }
 
@@ -2338,26 +2336,28 @@ input:-webkit-autofill:focus {
     font-size: 13px;
   }
   .akuris-table > thead th {
-    height: 32px;
-    padding: 4px 12px;
+    height: 40px;
+    padding: 6px 12px;
     background-image: none !important;
-    background-color: hsl(var(--card)) !important;
-    font-size: 10px;
+    background-color: transparent !important;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    text-transform: none;
     letter-spacing: 0;
-    font-weight: 500;
+    font-weight: 400;
   }
   .akuris-table > tbody > tr > td:not([colspan]) {
-    padding: 6px 12px !important;
-    height: 36px;
+    padding: 10px 12px !important;
+    height: 46px;
+    font-variant-numeric: tabular-nums;
     border-top: 0;
     border-right: 0;
     border-left: 0;
     border-bottom: 1px solid hsl(var(--border) / 0.55);
     border-radius: 0;
-    font-size: 13px;
+    font-size: 14px;
     letter-spacing: 0;
   }
-  .akuris-table > tbody > tr:last-child > td { border-bottom: 0; }
   .akuris-table > tbody > tr > td:first-child {
     position: relative;
     box-shadow: none !important;
@@ -2366,12 +2366,15 @@ input:-webkit-autofill:focus {
     content: "";
     position: absolute;
     inset: 0 auto 0 0;
-    width: 2px;
+    width: 3px;
     background-color: hsl(var(--primary));
   }
+  .akuris-table > tbody > tr:is([data-last-opened="true"], [data-state="selected"]) > td { background-color: hsl(var(--muted) / 0.35); }
+  .akuris-table [data-chip-family="severity"] { min-width: 0; font-size: 14px !important; }
+  .akuris-table [data-chip-family="severity"] > [data-chip-meter] { display: none; }
   .akuris-table [data-record-avatar] {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     box-shadow: none;
   }
   .akuris-table [data-chip] {
@@ -2382,8 +2385,8 @@ input:-webkit-autofill:focus {
     border-radius: 0;
     background: transparent;
     box-shadow: none;
-    gap: 6px;
-    font-size: 12px;
+    gap: 8px;
+    font-size: 13px;
     font-weight: 400;
     letter-spacing: 0;
   }
@@ -2391,14 +2394,14 @@ input:-webkit-autofill:focus {
   .akuris-table [data-chip-family="state"][data-chip-tone="active"] { --table-state-dot: var(--state-active); }
   .akuris-table [data-chip-family="state"][data-chip-tone="done"] { --table-state-dot: var(--state-done); }
   .akuris-table [data-chip-family="state"][data-chip-tone="attention"] { --table-state-dot: var(--severity-medium); }
-  .akuris-table [data-chip-family="state"][data-chip-tone="blocked"] { --table-state-dot: var(--destructive); color: hsl(var(--destructive)); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="blocked"] { --table-state-dot: var(--destructive); }
   /* A measured ring is data, not decoration: never replace it with a dot. */
   .akuris-table [data-chip-family="state"]:not([data-chip-measured]) > [data-chip-indicator] > * { display: none; }
   .akuris-table [data-chip-family="state"]:not([data-chip-measured]) > [data-chip-indicator]::before {
     content: "";
     display: block;
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     flex-shrink: 0;
     border-radius: 50%;
     background-color: hsl(var(--table-state-dot));
