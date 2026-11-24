@@ -50,5 +50,10 @@ Sem copiar Tenant ID, sem criar "app registration", sem segredo para colar. É o
 - Textos PT/EN via t().
 
 ## Pendente de você
-- Ter (ou criar) uma conta Microsoft/Entra da Akuris para registrar o aplicativo e me passar Client ID e segredo pelos Segredos do projeto.
+- A Akuris usa Google Workspace, e isso não muda nada: o e-mail continua no Google. Basta criar um tenant Entra ID gratuito só para registrar o aplicativo:
+  1. Em azure.microsoft.com/free (ou entra.microsoft.com), criar a conta com um e-mail da Akuris (ex.: integracoes@akuris.com.br); isso cria um tenant tipo akuris.onmicrosoft.com, sem custo e sem licença Microsoft 365.
+  2. Opcional: verificar o domínio akuris.com.br nesse tenant (registro TXT no DNS) — necessário para o "editor verificado".
+  3. Entra ID > Registros de aplicativo > Novo: tipo de conta "Contas em qualquer diretório organizacional (multilocatário)"; URL de redirecionamento = callback do Akuris (eu informo).
+  4. Permissões de API > Microsoft Graph > Permissões de aplicativo (só leitura, listadas acima).
+  5. Certificados e segredos > novo segredo; Client ID e segredo vão para os Segredos do projeto.
 - A Microsoft pode pedir "editor verificado" (Publisher verification) para clientes aceitarem sem alerta; recomendado, mas não bloqueia.
