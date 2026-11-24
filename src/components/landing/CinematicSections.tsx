@@ -4,7 +4,7 @@ import akurisLogo from '@/assets/akuris-logo.png';
 import { DemoButton } from '@/components/public/PublicShell';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ProductScreens } from '@/components/landing/ProductScreens';
+import dashboardArt from '@/assets/akuris-dashboard.png.asset.json';
 import { FRAMEWORK_LOGOS } from '@/components/landing/FrameworkLogos';
 
 const Accent = ({ text, word }: { text: string; word: string }) => {
@@ -118,7 +118,7 @@ export function ProductPeek() {
       <h2 id="cine-peek-title" className="ed-h2">{t('site.cinePeekTitle')}</h2>
       <p className="ed-side">{t('site.cinePeekSub')}</p>
     </div>
-    <div className="ed-peek-frame"><ProductScreens autoplay /></div>
+    <div className="ed-peek-frame"><img src={dashboardArt.url} alt={t('site.cinePeekTitle')} loading="lazy" width={1586} height={992} /></div>
   </div></section>;
 }
 
@@ -185,7 +185,6 @@ export function LandingFooter() {
         <span className="cine-footer-lang"><LanguageSelector variant="dark" /></span>
       </div>
     </div>
-    <p className="ed-footer-word" aria-hidden="true">AKURIS</p>
     <div className="cine-footer-bottom"><p>© {new Date().getFullYear()} Akuris. {t('site.cineRights')}</p><nav aria-label="Legal"><Link to="/politica-privacidade">{t('site.cinePrivacy')}</Link><Link to="/seguranca">{t("site.trust")}</Link><Link to="/politica-privacidade#cookies">Cookies</Link></nav></div>
   </footer>;
 }
