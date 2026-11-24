@@ -6,7 +6,6 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProductScreens } from '@/components/landing/ProductScreens';
 import { FRAMEWORK_LOGOS } from '@/components/landing/FrameworkLogos';
-import { IconUserCheck, IconShieldCheck, IconChart, IconUsers, IconBolt } from '@/components/icons';
 
 const Accent = ({ text, word }: { text: string; word: string }) => {
   const i = text.indexOf(word);
@@ -14,19 +13,7 @@ const Accent = ({ text, word }: { text: string; word: string }) => {
   return <>{text.slice(0, i)}<span className="cine-accent">{word}</span>{text.slice(i + word.length)}</>;
 };
 
-function NeonShield({ check = false, className }: { check?: boolean; className?: string }) {
-  return <svg className={className} viewBox="0 0 200 240" aria-hidden="true">
-    <path className="cine-draw" pathLength="1" d="M100 8 18 40v66c0 58 36 100 82 124 46-24 82-66 82-124V40L100 8Z" />
-    <path className="cine-draw cine-draw-2" pathLength="1" d="M100 34 42 57v50c0 44 26 76 58 94 32-18 58-50 58-94V57l-58-23Z" />
-    {check && <path className="cine-draw cine-draw-3" pathLength="1" d="m66 120 24 24 46-50" />}
-  </svg>;
-}
 
-function LightTrails({ className }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 800 300" preserveAspectRatio="none" aria-hidden="true">
-    {[0, 1, 2, 3, 4].map(i => <path key={i} pathLength="1" style={{ animationDelay: `${i * .35}s` }} d={`M0 ${300 - i * 8} C 260 ${280 - i * 18}, 520 ${200 - i * 22}, 800 ${40 + i * 20}`} />)}
-  </svg>;
-}
 
 const MARK_D = 'M40 228 L132 42 Q140 26 148 42 L240 228 Q190 186 140 186 Q90 186 40 228 Z';
 function BrandMark() {
@@ -75,15 +62,27 @@ export function AboutModules() {
   </div></section>;
 }
 
+function useActiveByCenter(count: number) {
+  const refs = useRef<(HTMLElement | null)[]>([]);
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0; const mid = window.innerHeight / 2; let best = 0, dist = Infinity;
+      refs.current.forEach((el, i) => { if (!el) return; const r = el.getBoundingClientRect(); const d = Math.abs(r.top + Math.min(r.height, 120) / 2 - mid); if (d < dist) { dist = d; best = i; } });
+      setActive(best);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update(); window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [count]);
+  return { refs, active, setActive };
+}
+
 const THREAD = ['Riscos', 'Controles', 'Gap', 'Privacidade', 'Auditorias', 'Continuidade'] as const;
 function ModuleThread() {
   const { t } = useLanguage();
-  const [active, setActive] = useState(0);
-  const refs = useRef<(HTMLLIElement | null)[]>([]);
-  useEffect(() => {
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.i)); }), { rootMargin: '-45% 0px -45% 0px' });
-    refs.current.forEach(el => el && io.observe(el)); return () => io.disconnect();
-  }, []);
+  const { refs, active } = useActiveByCenter(THREAD.length);
   const progress = active / (THREAD.length - 1);
   return <div className="cine-thread">
     <p className="cine-label">{t('site.cineThreadLabel')}</p>
@@ -113,56 +112,59 @@ export function FrameworkMarquee() {
 
 export function ProductPeek() {
   const { t } = useLanguage();
-  return <section className="cine-sec cine-peek" aria-labelledby="cine-peek-title"><div className="lp-container" data-reveal>
-    <p className="cine-label">{t('site.cinePeekLabel')}</p>
-    <h2 id="cine-peek-title" className="cine-h2">{t('site.cinePeekTitle')}</h2>
-    <p className="cine-sub">{t('site.cinePeekSub')}</p>
-    <div className="cine-product-frame"><ProductScreens autoplay /></div>
+  return <section className="cine-sec ed-peek" aria-labelledby="cine-peek-title"><div className="lp-container ed-peek-grid">
+    <div className="ed-peek-copy">
+      <p className="cine-label">{t('site.cinePeekLabel')}</p>
+      <h2 id="cine-peek-title" className="ed-h2">{t('site.cinePeekTitle')}</h2>
+      <p className="ed-side">{t('site.cinePeekSub')}</p>
+    </div>
+    <div className="ed-peek-frame"><ProductScreens autoplay /></div>
   </div></section>;
 }
 
 export function Audience() {
   const { t } = useLanguage();
-  const items: [ReactNode, number][] = [[<IconShieldCheck strokeWidth={1.5} />, 1], [<IconUserCheck strokeWidth={1.5} />, 2], [<IconChart strokeWidth={1.5} />, 3]];
-  return <section className="cine-sec cine-audience" aria-labelledby="cine-aud-title"><div className="lp-container" data-reveal>
+  const { refs, active, setActive } = useActiveByCenter(3);
+  return <section className="cine-sec ed-aud" aria-labelledby="cine-aud-title"><div className="lp-container">
     <p className="cine-label">{t('site.cineAudLabel')}</p>
-    <h2 id="cine-aud-title" className="cine-h2">{t('site.cineAudTitle')}</h2>
-    <div className="cine-aud-grid">{items.map(([icon, n]) => <article key={n}><span className="cine-module-icon">{icon}</span><h3>{t(`site.cineAud${n}`)}</h3><p>{t(`site.cineAud${n}Body`)}</p></article>)}</div>
+    <h2 id="cine-aud-title" className="sr-only">{t('site.cineAudTitle')}</h2>
+    <ol>{[1, 2, 3].map((n, i) => <li key={n} ref={el => { refs.current[i] = el; }} onMouseEnter={() => setActive(i)} className={i === active ? 'is-active' : ''}>
+      <p className="ed-quote">{t(`site.edAudQuote${n}`)}</p>
+      <div className="ed-aud-meta"><strong>{t(`site.cineAud${n}`)}</strong><span>{t(`site.cineAud${n}Body`)}</span></div>
+    </li>)}</ol>
   </div></section>;
 }
 
 export function FaqCompact({ faqs }: { faqs: { question: string; answer: string }[] }) {
   const { t } = useLanguage();
-  return <section className="cine-sec cine-faq" aria-labelledby="cine-faq-title"><div className="lp-container" data-reveal>
-    <p className="cine-label">{t('site.cineFaqLabel')}</p>
-    <h2 id="cine-faq-title" className="cine-h2">{t('site.cineFaqTitle')}</h2>
-    <div className="cine-faq-list">{faqs.map(f => <details key={f.question}><summary>{f.question}<span aria-hidden="true">+</span></summary><p>{f.answer}</p></details>)}</div>
+  return <section className="cine-sec ed-faq" aria-labelledby="cine-faq-title"><div className="lp-container ed-faq-grid">
+    <div className="ed-faq-head"><p className="cine-label">{t('site.cineFaqLabel')}</p><h2 id="cine-faq-title" className="ed-h2">{t('site.cineFaqTitle')}</h2></div>
+    <div className="ed-faq-list">{faqs.map(f => <details key={f.question}><summary>{f.question}<i aria-hidden="true" /></summary><div><p>{f.answer}</p></div></details>)}</div>
   </div></section>;
 }
 
 export function GlowSteps() {
   const { t } = useLanguage();
-  return <section className="cine-steps cine-sec" id="como-funciona" aria-labelledby="cine-steps-title"><div className="lp-container" data-reveal>
+  return <section className="cine-sec ed-steps" id="como-funciona" aria-labelledby="cine-steps-title"><div className="lp-container">
     <p className="cine-label">{t('site.cineStepsLabel')}</p>
-    <h2 id="cine-steps-title">{t('site.cineStepsTitle')}</h2>
-    <p className="cine-steps-sub">{t('site.cineStepsSub')}</p>
-    <ol>{[1, 2, 3].map(n => <li key={n}><span className="cine-step-dot">{n}</span><h3>{t(`site.cineStep${n}`)}</h3><p>{t(`site.cineStep${n}Body`)}</p></li>)}</ol>
+    <h2 id="cine-steps-title" className="ed-h2">{t('site.cineStepsTitle')}</h2>
+    <p className="ed-side ed-steps-sub">{t('site.cineStepsSub')}</p>
+    <div className="ed-steps-line" aria-hidden="true"><i /></div>
+    <ol>{[1, 2, 3].map(n => <li key={n} style={{ ['--i' as string]: n }}><span className="ed-num">0{n}</span><h3>{t(`site.cineStep${n}`)}</h3><p>{t(`site.cineStep${n}Body`)}</p></li>)}</ol>
   </div></section>;
 }
 
 export function CtaShield() {
   const { t } = useLanguage();
-  const items: [ReactNode, string, string][] = [[<IconBolt strokeWidth={1.5} />, 'cineCtaB1', 'cineCtaB1Body'], [<IconChart strokeWidth={1.5} />, 'cineCtaB2', 'cineCtaB2Body'], [<IconUsers strokeWidth={1.5} />, 'cineCtaB3', 'cineCtaB3Body']];
-  return <section className="lp-container cine-cta-wrap cine-sec" id="contato"><div className="cine-cta" data-reveal>
-    <div className="cine-cta-copy">
-      <p className="cine-label cine-label-bar">{t('site.cineCtaLabel')}</p>
-      <h2><Accent text={t('site.cineCtaTitle')} word={t('site.cineCtaAccent')} /></h2>
-      <p>{t('site.cineCtaBody')}</p>
+  return <section className="cine-sec ed-cta" id="contato" aria-labelledby="ed-cta-title">
+    <div className="ed-cta-art" aria-hidden="true"><div className="cine-glow" /><BrandMark /></div>
+    <div className="lp-container ed-cta-inner">
+      <p className="cine-label">{t('site.cineCtaLabel')}</p>
+      <h2 id="ed-cta-title"><Accent text={t('site.edCtaTitle')} word={t('site.edCtaAccent')} /></h2>
+      <p className="ed-side">{t('site.cineCtaBody')}</p>
       <DemoButton className="lp-btn cine-btn-solid">{t('site.cineDemo')}</DemoButton>
     </div>
-    <div className="cine-cta-art"><LightTrails className="cine-cta-waves" /><NeonShield check className="cine-cta-shield" /></div>
-    <ul className="cine-cta-list">{items.map(([icon, a, b]) => <li key={a}>{icon}<span><strong>{t('site.' + a)}</strong><span>{t('site.' + b)}</span></span></li>)}</ul>
-  </div></section>;
+  </section>;
 }
 
 const Social = ({ d, label, href }: { d: string; label: string; href: string }) =>
@@ -183,6 +185,7 @@ export function LandingFooter() {
         <span className="cine-footer-lang"><LanguageSelector variant="dark" /></span>
       </div>
     </div>
+    <p className="ed-footer-word" aria-hidden="true">AKURIS</p>
     <div className="cine-footer-bottom"><p>© {new Date().getFullYear()} Akuris. {t('site.cineRights')}</p><nav aria-label="Legal"><Link to="/politica-privacidade">{t('site.cinePrivacy')}</Link><Link to="/seguranca">{t("site.trust")}</Link><Link to="/politica-privacidade#cookies">Cookies</Link></nav></div>
   </footer>;
 }
