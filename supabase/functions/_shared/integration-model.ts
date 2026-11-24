@@ -1,4 +1,5 @@
 export const PROVIDERS = [
+  "microsoft",
   "microsoft365",
   "entra_id",
   "intune",

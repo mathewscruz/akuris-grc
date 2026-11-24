@@ -16,6 +16,7 @@ import {
   providerReady,
   randomSecret,
   digest,
+  TENANT_ID,
 } from "../_shared/integration-oauth.ts";
 import { ProviderError } from "../_shared/integration-providers.ts";
 import { processIntegrationRun } from "../_shared/integration-runner.ts";
@@ -110,21 +111,39 @@ Deno.serve(async (req) => {
       return json({ error: "authorization_required" }, 403);
     let result = "authorized";
     try {
-      const code = url.searchParams.get("code");
-      if (url.searchParams.has("error") || !code || code.length > 4096)
-        throw new ProviderError("consent_denied");
-      const credentials = await exchangeCode(
-        connection.data.provider,
-        code,
-        saved.verifier,
-      );
-      const completed = await client
-        .from("integration_connections")
-        .update({
+      let update: Record<string, unknown>;
+      if (connection.data.provider === "microsoft") {
+        // Admin consent returns the customer's tenant; no token is stored.
+        const msTenant = url.searchParams.get("tenant") || "";
+        if (
+          url.searchParams.has("error") ||
+          url.searchParams.get("admin_consent") !== "True" ||
+          !TENANT_ID.test(msTenant)
+        )
+          throw new ProviderError("consent_denied");
+        update = {
+          settings: { ...(connection.data.settings || {}), tenant_id: msTenant },
+          status: "authorized",
+          error_code: null,
+        };
+      } else {
+        const code = url.searchParams.get("code");
+        if (url.searchParams.has("error") || !code || code.length > 4096)
+          throw new ProviderError("consent_denied");
+        const credentials = await exchangeCode(
+          connection.data.provider,
+          code,
+          saved.verifier,
+        );
+        update = {
           credentials: JSON.stringify(credentials),
           status: "authorized",
           error_code: null,
-        })
+        };
+      }
+      const completed = await client
+        .from("integration_connections")
+        .update(update)
         .eq("id", saved.connection_id)
         .eq("empresa_id", tenant)
         .eq("updated_at", connection.data.updated_at)
@@ -226,7 +245,11 @@ Deno.serve(async (req) => {
         );
       } else {
         const settings =
-          provider === "aws" ? { external_id: randomSecret() } : {};
+          provider === "aws"
+            ? { external_id: randomSecret() }
+            : provider === "microsoft"
+              ? { modules: ["intune", "entra"] }
+              : {};
         const created = await client
           .from("integration_connections")
           .insert({
@@ -384,6 +407,24 @@ Deno.serve(async (req) => {
         return json({ error: "invalid_configuration" }, 400);
       if (body.frequency !== "manual" && !(await schedulerReady(client)))
         return json({ error: "scheduler_setup_required" }, 409);
+      if (connection.provider === "microsoft") {
+        const allowed = ["intune", "entra", "documentos"];
+        if (
+          !Array.isArray(body.modules) ||
+          body.modules.some((m: unknown) => !allowed.includes(m as string))
+        )
+          return json({ error: "invalid_configuration" }, 400);
+        checked(
+          await client
+            .from("integration_connections")
+            .update({
+              settings: { ...connection.settings, modules: [...new Set(body.modules)] },
+            })
+            .eq("id", connection.id)
+            .eq("empresa_id", empresa),
+        );
+        connection.settings = { ...connection.settings, modules: body.modules };
+      }
       checked(
         await client.rpc("integration_configure", {
           p_id: connection.id,

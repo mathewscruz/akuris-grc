@@ -7,6 +7,61 @@ import {
   retryDelay,
   identityImportRow,
 } from "./integration-model.ts";
+import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
+
+// Intune devices feed Gestão de Ativos (discovery, not evidence scope).
+// Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
+async function syncIntuneAtivos(db: any, empresaId: string, resources: any[]) {
+  const rows = resources.map(ativoDoIntune).filter(Boolean) as any[];
+  let novos = 0;
+  for (const a of rows) {
+    let atual = (
+      await db.from("ativos").select("id,atributos")
+        .eq("empresa_id", empresaId).eq("intune_device_id", a.intune_device_id).maybeSingle()
+    ).data;
+    const serial = serialConfiavel(a.atributos.numero_serie);
+    if (!atual && serial) {
+      atual = (
+        await db.from("ativos").select("id,atributos")
+          .eq("empresa_id", empresaId).is("intune_device_id", null)
+          .eq("atributos->>numero_serie", serial).limit(1).maybeSingle()
+      ).data;
+    }
+    if (atual) {
+      await db.from("ativos").update({
+        intune_device_id: a.intune_device_id,
+        versao: a.versao,
+        atributos: { ...(atual.atributos ?? {}), ...a.atributos, intune_nao_visto: false },
+      }).eq("id", atual.id).eq("empresa_id", empresaId);
+    } else {
+      const ins = await db.from("ativos").insert({
+        ...a, empresa_id: empresaId, status: "pendente", tags: ["descoberto-intune"],
+      });
+      if (!ins.error) novos++;
+    }
+  }
+  // Devices no longer in Intune are flagged, never deleted.
+  const vistos = new Set(rows.map((a) => a.intune_device_id));
+  const { data: existentes } = await db.from("ativos").select("id,intune_device_id,atributos")
+    .eq("empresa_id", empresaId).not("intune_device_id", "is", null);
+  for (const e of existentes || []) {
+    if (!vistos.has(e.intune_device_id) && !e.atributos?.intune_nao_visto)
+      await db.from("ativos").update({ atributos: { ...(e.atributos ?? {}), intune_nao_visto: true } })
+        .eq("id", e.id).eq("empresa_id", empresaId);
+  }
+  if (novos) {
+    const { data: admins } = await db.from("profiles").select("user_id")
+      .eq("empresa_id", empresaId).in("role", ["admin", "super_admin"]).eq("ativo", true);
+    if (admins?.length)
+      await db.from("notifications").insert(admins.map((p: any) => ({
+        user_id: p.user_id,
+        title: "Novos ativos do Intune",
+        message: `${novos} dispositivo(s) do Microsoft Intune entraram na Gestão de Ativos.`,
+        type: "info",
+        link_to: "/ativos",
+      })));
+  }
+}
 
 function checked(result: { error?: any }) {
   if (result.error) throw new ProviderError("storage_write_failed");
@@ -78,6 +133,14 @@ export async function processIntegrationRun(
           { onConflict: "run_id,resource_id" },
         ),
       );
+    }
+    if (
+      connection.provider === "intune" ||
+      (connection.provider === "microsoft" &&
+        (connection.settings.modules ?? ["intune"]).includes("intune"))
+    ) {
+      const devices = collection.resources.filter((r) => r.kind === "device");
+      if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices);
     }
     // Imported accounts feed the existing access review, in the chosen system.
     // Do not revoke disappeared accounts on a partial or filtered collection.

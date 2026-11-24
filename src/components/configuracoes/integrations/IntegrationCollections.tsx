@@ -23,11 +23,15 @@ import {
   IconSearch,
 } from "@/components/icons";
 import { toast } from "@/lib/toast";
+import { supabase } from "@/integrations/supabase/client";
+import { TeamsConfigDialog } from "./TeamsConfigDialog";
 import { ConexoesAtivas, useConexoesAtivas } from "./ConexoesAtivas";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveItemStatusTone } from "@/lib/status-tone";
 import {
   COLLECTION_PROVIDERS,
+  LEGACY_MICROSOFT_PROVIDERS,
+  MICROSOFT_MODULES,
   connectionNeedsAttention,
   integrationErrorKey,
   integrationRequest,
@@ -83,6 +87,8 @@ function ComingSoonCollections({ empresaId }: { empresaId: string }) {
   const connectedProviders = new Set(data?.conns.map((connection) => connection.provider));
   const [search, setSearch] = useState("");
   const providers = COLLECTION_PROVIDERS.filter((provider) =>
+    !LEGACY_MICROSOFT_PROVIDERS.has(provider.id) || connectedProviders.has(provider.id),
+  ).filter((provider) =>
     `${provider.name} ${t(`collectionHub.family.${provider.family}`)}`
       .toLocaleLowerCase()
       .includes(search.trim().toLocaleLowerCase()),
@@ -126,6 +132,7 @@ function ComingSoonCollections({ empresaId }: { empresaId: string }) {
             <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
               {t(`collectionHub.provider.${provider.id}`)}
             </p>
+            {provider.id === "microsoft" && <TeamsAvisosButton empresaId={empresaId} />}
             {connectedProviders.has(provider.id) ? (
               <div className="self-start">
                 <StatusBadge {...resolveItemStatusTone("concluido")}>
@@ -198,7 +205,11 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
       ),
     )
     .filter((c) => view !== "attention" || connectionNeedsAttention(c));
-  const providers = COLLECTION_PROVIDERS.filter((p) =>
+  const providers = COLLECTION_PROVIDERS.filter(
+    (p) =>
+      !LEGACY_MICROSOFT_PROVIDERS.has(p.id) ||
+      connections.some((c) => c.provider === p.id),
+  ).filter((p) =>
     matches(`${p.name} ${t(`collectionHub.family.${p.family}`)}`),
   );
 
@@ -333,6 +344,7 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
                 <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
                   {t(`collectionHub.provider.${provider.id}`)}
                 </p>
+                {provider.id === "microsoft" && <TeamsAvisosButton empresaId={empresaId} />}
                 {query.data?.availability[provider.id] === true ? (
                   <Button
                     variant="outline"
@@ -575,6 +587,8 @@ function ConnectionManager({
   const [region, setRegion] = useState(
     connection.settings.region || "us-east-1",
   );
+  const savedModules = connection.settings.modules || ["intune", "entra"];
+  const [modules, setModules] = useState(new Set(savedModules));
   const [busy, setBusy] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [reconnectUrl, setReconnectUrl] = useState("");
@@ -602,6 +616,8 @@ function ConnectionManager({
     frequency !== connection.frequency ||
     region !== (connection.settings.region || "us-east-1") ||
     system !== (connection.settings.system_id || "") ||
+    modules.size !== savedModules.length ||
+    savedModules.some((m) => !modules.has(m)) ||
     scope.size !== connection.scope_ids.length ||
     connection.scope_ids.some((id) => !scope.has(id));
   const latestStatus = runs[0]?.status;
@@ -649,7 +665,10 @@ function ConnectionManager({
       return next;
     });
   const locked = busy || running;
-  const identity = ["microsoft365", "entra_id"].includes(connection.provider);
+  const unified = connection.provider === "microsoft";
+  const identity =
+    ["microsoft365", "entra_id"].includes(connection.provider) ||
+    (unified && modules.has("entra"));
   return (
     <>
       <DialogShell
@@ -669,6 +688,7 @@ function ConnectionManager({
             region,
             scope_ids: [...scope],
             system_id: system || null,
+            ...(unified ? { modules: [...modules] } : {}),
           })
         }
         submitLabel={t("collectionHub.save")}
@@ -733,6 +753,45 @@ function ConnectionManager({
             >
               {t(integrationErrorKey(connection.error_code))}
             </p>
+          )}
+          {unified && (
+            <section className="space-y-3">
+              <div>
+                <h4 className="font-semibold">{t("collectionHub.microsoft.modulesTitle")}</h4>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("collectionHub.microsoft.modulesHelp")}
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {MICROSOFT_MODULES.map((m) => (
+                  <label
+                    key={m}
+                    className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-primary"
+                      checked={modules.has(m)}
+                      disabled={locked}
+                      onChange={(e) =>
+                        setModules((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(m);
+                          else next.delete(m);
+                          return next;
+                        })
+                      }
+                    />
+                    <span>
+                      <span className="block font-medium">{t(`collectionHub.microsoft.module.${m}`)}</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {t(`collectionHub.microsoft.moduleDest.${m}`)}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
           )}
           <section className="space-y-3">
             <div>
@@ -1069,6 +1128,48 @@ function ConnectionManager({
       >
         <p className="text-sm">{connection.name}</p>
       </DialogShell>
+    </>
+  );
+}
+
+/** Teams notifications live inside the unified Microsoft card. */
+function TeamsAvisosButton({ empresaId }: { empresaId: string }) {
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const config = useQuery({
+    queryKey: ["teams-config", empresaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("integracoes_config")
+        .select("id,webhook_url,configuracoes,status")
+        .eq("empresa_id", empresaId)
+        .eq("tipo_integracao", "teams")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const ligado = config.data?.status === "conectado";
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mb-2 self-start px-0 text-primary hover:bg-transparent"
+        onClick={() => setOpen(true)}
+      >
+        {t("collectionHub.microsoft.teams")}
+        {ligado ? ` · ${t("collectionHub.conectadas.conectado")}` : ""}
+      </Button>
+      {open && (
+        <TeamsConfigDialog
+          open
+          onOpenChange={setOpen}
+          empresaId={empresaId}
+          existingConfig={(config.data as any) || undefined}
+          onSaved={() => void config.refetch()}
+        />
+      )}
     </>
   );
 }

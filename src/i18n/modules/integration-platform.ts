@@ -139,7 +139,16 @@ export const integrationPlatform = {
         development: "Desenvolvimento",
         documents: "Documentos",
       },
+      microsoft: {
+        modulesTitle: "O que trazer da Microsoft",
+        modulesHelp: "Ligue só o que a sua empresa quer usar no Akuris. O acesso é sempre só de leitura.",
+        teams: "Avisos no Teams",
+        module: { intune: "Dispositivos do Intune", entra: "Usuários e grupos (Entra ID)", documentos: "Documentos (SharePoint)" },
+        moduleDest: { intune: "Preenche a Gestão de Ativos", entra: "Alimenta a Revisão de acessos", documentos: "Vira evidência reutilizável" },
+      },
       provider: {
+        microsoft:
+          "Um clique do administrador do seu tenant conecta tudo: dispositivos do Intune para Ativos, usuários do Entra ID para revisão de acessos e documentos do SharePoint como evidência.",
         microsoft365:
           "Visão conjunta de usuários, cadastro de MFA, atribuições de função e dispositivos gerenciados pelo Intune.",
         entra_id:
@@ -167,6 +176,7 @@ export const integrationPlatform = {
           "O processamento automático ainda não foi ativado. Escolha coleta manual.",
         permission_missing:
           "A conta não concedeu uma permissão necessária. Revise o consentimento com seu administrador.",
+        consent_revoked: "O administrador do tenant retirou a autorização do Akuris. Conecte de novo.",
         consent_denied:
           "A autorização não foi concluída. Você pode tentar novamente.",
         mfa_permission_missing:
@@ -340,7 +350,16 @@ export const integrationPlatform = {
         development: "Development",
         documents: "Documents",
       },
+      microsoft: {
+        modulesTitle: "What to bring from Microsoft",
+        modulesHelp: "Turn on only what your company wants to use in Akuris. Access is always read-only.",
+        teams: "Teams notifications",
+        module: { intune: "Intune devices", entra: "Users and groups (Entra ID)", documentos: "Documents (SharePoint)" },
+        moduleDest: { intune: "Fills Asset Management", entra: "Feeds access reviews", documentos: "Becomes reusable evidence" },
+      },
       provider: {
+        microsoft:
+          "One click from your tenant admin connects everything: Intune devices to Assets, Entra ID users to access reviews and SharePoint documents as evidence.",
         microsoft365:
           "Combined view of users, MFA registration, directory role assignments and Intune-managed devices.",
         entra_id:
@@ -368,6 +387,7 @@ export const integrationPlatform = {
           "Automatic processing is not active yet. Choose manual collection.",
         permission_missing:
           "A required permission was not granted. Review consent with your administrator.",
+        consent_revoked: "Your tenant admin removed Akuris authorization. Connect again.",
         consent_denied: "Authorization was not completed. You can try again.",
         mfa_permission_missing:
           "The provider did not allow reading MFA registration. This signal remains unknown.",

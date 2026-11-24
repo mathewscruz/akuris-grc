@@ -74,8 +74,9 @@ export async function authorizationUrl(
 ): Promise<string> {
   if (!providerReady(provider))
     throw new ProviderError("platform_setup_required");
-  const config = oauthConfig(provider),
-    url = new URL(config.authorization);
+  const config = oauthConfig(provider);
+  if (provider === "microsoft") return microsoftAdminConsentUrl(config, state);
+  const url = new URL(config.authorization);
   url.search = new URLSearchParams({
     client_id: config.clientId!,
     redirect_uri: config.callback,
@@ -154,6 +155,8 @@ export async function connectionCredentials(
   connection: any,
 ): Promise<Record<string, any>> {
   if (connection.provider === "aws") return {};
+  if (connection.provider === "microsoft")
+    return microsoftAppToken(connection.settings?.tenant_id);
   const { data, error } = await db.rpc("integration_read_credentials", {
     p_id: connection.id,
     p_empresa: connection.empresa_id,
@@ -178,4 +181,46 @@ export async function connectionCredentials(
     .eq("empresa_id", connection.empresa_id);
   if (saved.error) throw new ProviderError("credential_save_failed");
   return credentials;
+}
+
+// Unified Microsoft: one multi-tenant app; the customer's admin consents once
+// and Akuris reads with app-only tokens. No customer secret is ever stored.
+export const TENANT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function microsoftAdminConsentUrl(config: ReturnType<typeof oauthConfig>, state: string) {
+  const url = new URL("https://login.microsoftonline.com/organizations/v2.0/adminconsent");
+  url.search = new URLSearchParams({
+    client_id: config.clientId!,
+    redirect_uri: config.callback,
+    state,
+    scope: "https://graph.microsoft.com/.default",
+  }).toString();
+  return url.href;
+}
+export async function microsoftAppToken(tenantId: unknown) {
+  if (typeof tenantId !== "string" || !TENANT_ID.test(tenantId))
+    throw new ProviderError("authorization_required");
+  const config = oauthConfig("microsoft");
+  if (!providerReady("microsoft")) throw new ProviderError("platform_setup_required");
+  const response = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(20000),
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: new URLSearchParams({
+        client_id: config.clientId!,
+        client_secret: config.secret!,
+        grant_type: "client_credentials",
+        scope: "https://graph.microsoft.com/.default",
+      }),
+    },
+  );
+  const token = await response.json().catch(() => ({}));
+  if (!response.ok || !token.access_token)
+    throw new ProviderError(
+      response.status === 400 || response.status === 401 ? "consent_revoked" : "authorization_expired",
+      response.status === 429 || response.status >= 500,
+    );
+  return { access_token: token.access_token as string };
 }

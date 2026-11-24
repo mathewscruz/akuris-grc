@@ -120,9 +120,13 @@ export async function collectProvider(
   };
   const pages = (path: string, accessToken: string, notes: string[]) =>
     graphPages(path, accessToken, notes, read);
+  const modules: string[] = Array.isArray(settings.modules)
+    ? settings.modules
+    : ["intune", "entra"];
+  const unified = provider === "microsoft";
   try {
-    if (["microsoft365", "entra_id", "intune"].includes(provider)) {
-      if (provider !== "intune") {
+    if (["microsoft", "microsoft365", "entra_id", "intune"].includes(provider)) {
+      if (provider !== "intune" && (!unified || modules.includes("entra"))) {
         const users = await pages(
           "/users?$top=999&$select=id,displayName,mail,userPrincipalName,accountEnabled,department,jobTitle",
           token,
@@ -204,10 +208,10 @@ export async function collectProvider(
           })),
         );
       }
-      if (provider !== "entra_id") {
+      if (provider !== "entra_id" && (!unified || modules.includes("intune"))) {
         try {
           const devices = await pages(
-            "/deviceManagement/managedDevices?$top=999&$select=id,deviceName,complianceState,operatingSystem,osVersion,serialNumber,userPrincipalName,lastSyncDateTime",
+            "/deviceManagement/managedDevices?$top=999&$select=id,deviceName,complianceState,operatingSystem,osVersion,serialNumber,userPrincipalName,lastSyncDateTime,manufacturer,model,isEncrypted",
             token,
             warnings,
           );
@@ -223,6 +227,9 @@ export async function collectProvider(
                 serial_number: device.serialNumber ?? null,
                 owner_email: device.userPrincipalName ?? null,
                 provider_last_sync: device.lastSyncDateTime ?? null,
+                manufacturer: device.manufacturer ?? null,
+                model: device.model ?? null,
+                encrypted: device.isEncrypted ?? null,
               },
             })),
           );
@@ -327,7 +334,12 @@ export async function collectProvider(
         if (!next) break;
       }
       if (next) warnings.push("collection_limit");
-    } else if (provider === "onedrive" || provider === "sharepoint") {
+    }
+    if (
+      provider === "onedrive" ||
+      provider === "sharepoint" ||
+      (unified && modules.includes("documentos"))
+    ) {
       const drives =
         provider === "onedrive"
           ? await pages("/me/drives", token, warnings)
@@ -366,7 +378,7 @@ export async function collectProvider(
           );
         }
       }
-      if (provider === "sharepoint" && drives.length >= 20)
+      if (provider !== "onedrive" && drives.length >= 20)
         warnings.push("collection_limit");
     }
   } catch (error) {

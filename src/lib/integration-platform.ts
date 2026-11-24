@@ -2,6 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const COLLECTION_PROVIDERS = [
   {
+    id: "microsoft",
+    name: "Microsoft 365",
+    logo: "microsoft365.svg",
+    family: "identity",
+  },
+  {
     id: "microsoft365",
     name: "Microsoft 365",
     logo: "microsoft365.svg",
@@ -40,6 +46,15 @@ export const COLLECTION_PROVIDERS = [
     family: "documents",
   },
 ] as const;
+/** Superseded by the unified "microsoft" connection; shown only when already connected. */
+export const LEGACY_MICROSOFT_PROVIDERS: ReadonlySet<string> = new Set([
+  "microsoft365",
+  "entra_id",
+  "intune",
+  "sharepoint",
+  "onedrive",
+]);
+export const MICROSOFT_MODULES = ["intune", "entra", "documentos"] as const;
 export type CollectionProvider = (typeof COLLECTION_PROVIDERS)[number]["id"];
 export interface CollectionConnection {
   id: string;
@@ -49,7 +64,7 @@ export interface CollectionConnection {
     "pending" | "authorized" | "connected" | "partial" | "error" | "paused";
   frequency: "manual" | "daily" | "weekly";
   scope_ids: string[];
-  settings: { system_id?: string; role_arn?: string; region?: string };
+  settings: { system_id?: string; role_arn?: string; region?: string; modules?: string[]; tenant_id?: string };
   last_success_at: string | null;
   next_run_at: string | null;
   error_code: string | null;
@@ -129,6 +144,7 @@ export function integrationErrorKey(code: string): string {
     "scheduler_setup_required",
     "permission_missing",
     "consent_denied",
+    "consent_revoked",
     "mfa_permission_missing",
     "roles_permission_missing",
     "intune_permission_missing",

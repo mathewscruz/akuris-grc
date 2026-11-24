@@ -433,7 +433,10 @@ export function IntegrationHub() {
     );
   }
 
-  const integracoesPorCategoria = INTEGRACOES_DISPONIVEIS.reduce((acc, int) => {
+  // Microsoft lives in one card under Coletas; Azure stays only for legacy setups.
+  const integracoesPorCategoria = INTEGRACOES_DISPONIVEIS.filter(
+    (i) => i.tipo !== 'teams' && (i.tipo !== 'azure' || !!getExistingConfig('azure')),
+  ).reduce((acc, int) => {
     if (!acc[int.categoria]) acc[int.categoria] = [];
     acc[int.categoria].push(int);
     return acc;

@@ -634,6 +634,7 @@ export type Database = {
           fornecedor: string | null
           id: string
           imei: string | null
+          intune_device_id: string | null
           localizacao: string | null
           mesh_node_id: string | null
           nome: string
@@ -659,6 +660,7 @@ export type Database = {
           fornecedor?: string | null
           id?: string
           imei?: string | null
+          intune_device_id?: string | null
           localizacao?: string | null
           mesh_node_id?: string | null
           nome: string
@@ -684,6 +686,7 @@ export type Database = {
           fornecedor?: string | null
           id?: string
           imei?: string | null
+          intune_device_id?: string | null
           localizacao?: string | null
           mesh_node_id?: string | null
           nome?: string
