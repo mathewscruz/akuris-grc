@@ -40,3 +40,22 @@ export function autoria(perfil: { nome?: string | null; email?: string | null } 
   const nome = perfil?.nome?.trim() || perfil?.email?.trim();
   return nome ? { nome, automacao: false } : { nome: "Uma automação do projeto", automacao: true };
 }
+
+/** Segunda-feira? (data AAAA-MM-DD já no fuso de Brasília). */
+export const ehSegunda = (dia: string) => new Date(dia + "T00:00:00Z").getUTCDay() === 1;
+
+export interface ItemResumo { responsavel_id: string | null; data_fim: string | null; prazo: string | null; concluida_em: string | null; temEvidencia: boolean }
+
+/** Resumo semanal de uma pessoa: a vencer na semana (seg–dom), atrasadas e concluídas sem evidência. */
+export function resumoSemanal<T extends ItemResumo>(itens: T[], segunda: string) {
+  const domingo = new Date(Date.parse(segunda + "T00:00:00Z") + 6 * 86400000).toISOString().slice(0, 10);
+  const semana: T[] = [], atrasadas: T[] = [], semEvidencia: T[] = [];
+  for (const t of itens) {
+    const fim = fimDe(t);
+    if (t.concluida_em) { if (!t.temEvidencia) semEvidencia.push(t); continue; }
+    if (!fim) continue;
+    if (fim < segunda) atrasadas.push(t);
+    else if (fim <= domingo) semana.push(t);
+  }
+  return { semana, atrasadas, semEvidencia, vazio: !semana.length && !atrasadas.length && !semEvidencia.length };
+}

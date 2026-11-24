@@ -41,6 +41,7 @@ import { AIDiagnosticCard, type AIDiagnosticResult } from './AIDiagnosticCard';
 import { localizeRequirement } from "@/lib/gap-i18n";
 import { useOrientacaoRequisito } from '@/hooks/useOrientacaoRequisito';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EvidenciasDeProjetos } from '@/components/projetos/EvidenciasDeProjetos';
 
 interface RequirementDrawerProps {
   open: boolean;
@@ -481,6 +482,9 @@ export function RequirementDrawer({
                       ))}
                     </div>
                   )}
+                  <div className="mt-4">
+                    <EvidenciasDeProjetos alvo={{ tipo: 'requisito', id: requirement.id }} />
+                  </div>
                   <div className="mt-4">
                     <DocumentosDoRequisito
                       requisitoId={requirement.id}

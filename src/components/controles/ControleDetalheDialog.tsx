@@ -42,6 +42,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { notificarVarios } from '@/lib/notificar';
+import { EvidenciasDeProjetos } from '@/components/projetos/EvidenciasDeProjetos';
 interface ControleDetalheDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -737,6 +738,7 @@ export function ControleDetalheDialog({
             </TabsContent>
 
             <TabsContent value="evidencias" className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              <div className="flex-shrink-0 mb-4"><EvidenciasDeProjetos alvo={{ tipo: 'controle', id: controle.id }} /></div>
               {/* Upload de evidência */}
               <div className="flex-shrink-0 mb-4">
                 <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">

@@ -1,5 +1,6 @@
 import React from 'react';
-import { IconEdit, IconDelete, IconMore, IconArchive } from '@/components/icons';
+import { IconEdit, IconDelete, IconMore, IconArchive, IconFileText } from '@/components/icons';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
@@ -74,6 +75,16 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
             ) : (
               <><IconArchive className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.archive')}</>
             )}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={async () => {
+            const id = toast.loading(t('evidSemana.pacoteGerando'));
+            try {
+              const { gerarPacoteEvidencias } = await import('./pacoteEvidencias');
+              await gerarPacoteEvidencias(projeto as any, t);
+              toast.success(t('evidSemana.pacotePronto'), { id });
+            } catch { toast.error(t('evidSemana.erro'), { id }); }
+          }}>
+            <IconFileText className="h-4 w-4 mr-2" /> {t('evidSemana.pacote')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

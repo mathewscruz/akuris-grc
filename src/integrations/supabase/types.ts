@@ -8723,6 +8723,7 @@ export type Database = {
           permission_profile_id: string | null
           preferred_locale: string
           receber_comunicados: boolean
+          resumo_semanal: boolean
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           user_id: string
@@ -8744,6 +8745,7 @@ export type Database = {
           permission_profile_id?: string | null
           preferred_locale: string
           receber_comunicados?: boolean
+          resumo_semanal?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id: string
@@ -8765,6 +8767,7 @@ export type Database = {
           permission_profile_id?: string | null
           preferred_locale?: string
           receber_comunicados?: boolean
+          resumo_semanal?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
@@ -9254,9 +9257,69 @@ export type Database = {
           },
         ]
       }
+      projeto_tarefa_anexo_evidencias: {
+        Row: {
+          anexo_id: string
+          controle_id: string | null
+          created_at: string
+          criado_por: string | null
+          empresa_id: string
+          id: string
+          requirement_id: string | null
+        }
+        Insert: {
+          anexo_id: string
+          controle_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          empresa_id: string
+          id?: string
+          requirement_id?: string | null
+        }
+        Update: {
+          anexo_id?: string
+          controle_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          empresa_id?: string
+          id?: string
+          requirement_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_anexo_evidencias_anexo_id_fkey"
+            columns: ["anexo_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefa_anexos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefa_anexo_evidencias_controle_id_fkey"
+            columns: ["controle_id"]
+            isOneToOne: false
+            referencedRelation: "controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefa_anexo_evidencias_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefa_anexo_evidencias_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projeto_tarefa_anexos: {
         Row: {
           created_at: string
+          documento_id: string | null
           id: string
           nome: string
           storage_path: string | null
@@ -9269,6 +9332,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          documento_id?: string | null
           id?: string
           nome: string
           storage_path?: string | null
@@ -9281,6 +9345,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          documento_id?: string | null
           id?: string
           nome?: string
           storage_path?: string | null
@@ -9292,6 +9357,13 @@ export type Database = {
           url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_anexos_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projeto_tarefa_anexos_tarefa_id_fkey"
             columns: ["tarefa_id"]

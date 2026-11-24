@@ -88,6 +88,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
     email_notifications: true,
     in_app_notifications: true,
     marketing_emails: true,
+    weekly_summary: true,
   });
   const [aGravarPrefs, setAGravarPrefs] = useState(false);
   const [endingOtherSessions, setEndingOtherSessions] = useState(false);
@@ -98,7 +99,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('notificar_por_email, notificar_na_aplicacao, receber_comunicados')
+        .select('notificar_por_email, notificar_na_aplicacao, receber_comunicados, resumo_semanal')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) {
@@ -110,6 +111,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
           email_notifications: data.notificar_por_email ?? true,
           in_app_notifications: data.notificar_na_aplicacao ?? true,
           marketing_emails: data.receber_comunicados ?? true,
+          weekly_summary: (data as any).resumo_semanal ?? true,
         });
       }
     })();
@@ -127,7 +129,8 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
         notificar_por_email: prefs.email_notifications,
         notificar_na_aplicacao: prefs.in_app_notifications,
         receber_comunicados: prefs.marketing_emails,
-      })
+        resumo_semanal: prefs.weekly_summary,
+      } as any)
       .eq('user_id', user.id);
     setAGravarPrefs(false);
     if (error) {
@@ -541,6 +544,18 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               onCheckedChange={(checked) =>
                 saveNotificationPrefs({ ...notificationPrefs, email_notifications: checked })
               }
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5 pr-4">
+              <Label htmlFor="pp-weekly-summary" className="text-sm">{t('evidSemana.resumoSemanal')}</Label>
+              <p className="text-xs text-muted-foreground">{t('evidSemana.resumoSemanalSub')}</p>
+            </div>
+            <Switch
+              id="pp-weekly-summary"
+              disabled={aGravarPrefs}
+              checked={notificationPrefs.weekly_summary}
+              onCheckedChange={(checked) => saveNotificationPrefs({ ...notificationPrefs, weekly_summary: checked })}
             />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">

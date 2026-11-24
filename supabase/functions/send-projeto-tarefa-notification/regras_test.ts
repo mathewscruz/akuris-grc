@@ -26,3 +26,12 @@ Deno.test("autoria: nome, só e-mail, automação", () => {
   assertEquals(autoria({ nome: null, email: "m@x.com" }).nome, "m@x.com");
   assertEquals(autoria(null), { nome: "Uma automação do projeto", automacao: true });
 });
+
+import { ehSegunda, resumoSemanal } from "./regras.ts";
+Deno.test("resumo semanal separa semana, atrasadas e concluídas sem evidência", () => {
+  const i = (data_fim: string | null, concluida_em: string | null = null, temEvidencia = false) => ({ responsavel_id: "u", data_fim, prazo: null, concluida_em, temEvidencia });
+  const r = resumoSemanal([i("2026-11-25"), i("2026-11-20"), i("2026-12-05"), i("2026-11-24", "2026-11-24"), i("2026-11-24", "2026-11-24", true)], "2026-11-23");
+  assertEquals([r.semana.length, r.atrasadas.length, r.semEvidencia.length, r.vazio], [1, 1, 1, false]);
+  assertEquals(resumoSemanal([], "2026-11-23").vazio, true);
+  assertEquals([ehSegunda("2026-11-23"), ehSegunda("2026-11-24")], [true, false]);
+});

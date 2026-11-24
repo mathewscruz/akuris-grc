@@ -427,7 +427,7 @@ export function useExecucoesAutomacao(automacaoId: string | undefined, enabled =
 ========================================================= */
 export interface TarefaEvidencia {
   id: string; tarefa_id: string; nome: string; storage_path: string | null; url: string | null;
-  tipo_origem: 'arquivo' | 'link'; tipo: string | null; tamanho_bytes: number | null; uploaded_by: string | null; created_at: string;
+  tipo_origem: 'arquivo' | 'link' | 'documento'; documento_id?: string | null; tipo: string | null; tamanho_bytes: number | null; uploaded_by: string | null; created_at: string;
 }
 
 export function useTarefaEvidencias(tarefaId?: string) {
@@ -485,6 +485,14 @@ export function useEvidenciaMutations(tarefaId: string, projetoId: string) {
     onSuccess: () => { refresh(); toast.success(tGlobal('evidSemana.enviado')); },
     onError: () => toast.error(tGlobal('evidSemana.erro')),
   });
+  const adicionarDocumento = useMutation({
+    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
+      const { error } = await supabase.from('projeto_tarefa_anexos' as any).insert({ tarefa_id: tarefaId, nome, documento_id: id, tipo_origem: 'documento', uploaded_by: user?.id } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => { refresh(); toast.success(tGlobal('evidSemana.enviado')); },
+    onError: () => toast.error(tGlobal('evidSemana.erro')),
+  });
   const remover = useMutation({
     mutationFn: async (ev: TarefaEvidencia) => {
       const { error } = await supabase.from('projeto_tarefa_anexos' as any).delete().eq('id', ev.id).eq('tarefa_id', tarefaId);
@@ -494,13 +502,98 @@ export function useEvidenciaMutations(tarefaId: string, projetoId: string) {
     onSuccess: refresh,
     onError: () => toast.error(tGlobal('evidSemana.erro')),
   });
-  return { enviarArquivo, adicionarLink, remover };
+  return { enviarArquivo, adicionarLink, adicionarDocumento, remover };
 }
 
 export async function abrirEvidencia(ev: TarefaEvidencia) {
   if (ev.tipo_origem === 'link' && ev.url) { window.open(ev.url, '_blank', 'noopener,noreferrer'); return; }
+  if (ev.tipo_origem === 'documento' && ev.documento_id) { await abrirDocumento(ev.documento_id); return; }
   if (!ev.storage_path) return;
   const { data, error } = await supabase.storage.from('projeto-anexos').createSignedUrl(ev.storage_path, 300);
   if (error || !data) { toast.error(tGlobal('evidSemana.erro')); return; }
   window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+}
+
+/** Abre o arquivo atual de um documento do módulo Documentos (URL assinada quando está no bucket). */
+export async function abrirDocumento(documentoId: string) {
+  const { data: doc } = await supabase.from('documentos').select('arquivo_url, arquivo_url_externa').eq('id', documentoId).maybeSingle();
+  const externa = (doc as any)?.arquivo_url_externa as string | null;
+  const arq = (doc as any)?.arquivo_url as string | null;
+  if (externa) { window.open(externa, '_blank', 'noopener,noreferrer'); return; }
+  if (!arq) { window.open(`/documentos?focus=${documentoId}`, '_self'); return; }
+  const path = arq.includes('/documentos/') ? arq.split('/documentos/')[1] : (arq.startsWith('http') ? null : arq);
+  if (path) {
+    const { data } = await supabase.storage.from('documentos').createSignedUrl(path.split('?')[0], 300);
+    if (data?.signedUrl) { window.open(data.signedUrl, '_blank', 'noopener,noreferrer'); return; }
+  }
+  window.open(arq, '_blank', 'noopener,noreferrer');
+}
+
+/* =========================================================
+   EVIDÊNCIA DA TAREFA REAPROVEITADA EM REQUISITO / CONTROLO
+========================================================= */
+export type AlvoEvidencia = { tipo: 'requisito' | 'controle'; id: string };
+
+/** Ligações das evidências de uma tarefa a requisitos/controlos. */
+export function useAnexoLigacoes(tarefaId?: string) {
+  const { profile } = useAuth();
+  const empresaId = profile?.empresa_id;
+  return useQuery({
+    queryKey: ['tarefa-anexo-ligacoes', empresaId, tarefaId],
+    enabled: !!tarefaId && !!empresaId,
+    queryFn: async () => {
+      const { data: anexos } = await supabase.from('projeto_tarefa_anexos' as any).select('id').eq('tarefa_id', tarefaId!);
+      const ids = ((anexos as any[]) ?? []).map((a) => a.id);
+      if (!ids.length) return [] as { anexo_id: string; requirement_id: string | null; controle_id: string | null }[];
+      const { data, error } = await supabase.from('projeto_tarefa_anexo_evidencias' as any)
+        .select('anexo_id, requirement_id, controle_id').eq('empresa_id', empresaId!).in('anexo_id', ids);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+}
+
+export function useLigarAnexo(tarefaId: string) {
+  const { user, profile } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ anexoId, alvo, ligar }: { anexoId: string; alvo: AlvoEvidencia; ligar: boolean }) => {
+      const empresaId = profile?.empresa_id; if (!empresaId) throw new Error('sem empresa');
+      const col = alvo.tipo === 'requisito' ? 'requirement_id' : 'controle_id';
+      if (ligar) {
+        const { error } = await supabase.from('projeto_tarefa_anexo_evidencias' as any)
+          .insert({ anexo_id: anexoId, empresa_id: empresaId, [col]: alvo.id, criado_por: user?.id } as any);
+        if (error && (error as any).code !== '23505') throw error;
+      } else {
+        const { error } = await supabase.from('projeto_tarefa_anexo_evidencias' as any)
+          .delete().eq('empresa_id', empresaId).eq('anexo_id', anexoId).eq(col, alvo.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tarefa-anexo-ligacoes'] }); qc.invalidateQueries({ queryKey: ['evidencias-de-projetos'] }); },
+    onError: () => toast.error(tGlobal('evidSemana.erro')),
+  });
+}
+
+export interface EvidenciaDeProjeto { ligacaoId: string; anexo: TarefaEvidencia; tarefaTitulo: string; projetoId: string; projetoNome: string }
+
+/** Evidências de tarefas de projeto usadas num requisito ou controlo (só da empresa). */
+export function useEvidenciasDeProjetos(alvo: AlvoEvidencia | null) {
+  const { profile } = useAuth();
+  const empresaId = profile?.empresa_id;
+  return useQuery({
+    queryKey: ['evidencias-de-projetos', empresaId, alvo?.tipo, alvo?.id],
+    enabled: !!empresaId && !!alvo?.id,
+    queryFn: async () => {
+      const col = alvo!.tipo === 'requisito' ? 'requirement_id' : 'controle_id';
+      const { data, error } = await supabase.from('projeto_tarefa_anexo_evidencias' as any)
+        .select('id, anexo:projeto_tarefa_anexos!inner(*, tarefa:projeto_tarefas!inner(titulo, projeto_id, projeto:projetos!inner(nome, empresa_id)))')
+        .eq('empresa_id', empresaId!).eq(col, alvo!.id);
+      if (error) throw error;
+      return ((data as any[]) ?? []).map((r) => ({
+        ligacaoId: r.id, anexo: r.anexo, tarefaTitulo: r.anexo?.tarefa?.titulo ?? '',
+        projetoId: r.anexo?.tarefa?.projeto_id, projetoNome: r.anexo?.tarefa?.projeto?.nome ?? '',
+      })) as EvidenciaDeProjeto[];
+    },
+  });
 }

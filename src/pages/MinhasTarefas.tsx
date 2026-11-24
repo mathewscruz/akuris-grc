@@ -1,6 +1,8 @@
 import React from 'react';
 import { IconSuccess, IconWarning, IconTime, IconChecklist } from '@/components/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { MinhaSemana } from '@/components/projetos/MinhaSemana';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -47,6 +49,8 @@ export default function MinhasTarefas({ embedded = false }: { embedded?: boolean
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
   const { user, profile } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const visao = params.get('visao') === 'semana' ? 'semana' : 'lista';
 
   const empresaId = profile?.empresa_id;
   const userId = user?.id;
@@ -203,6 +207,14 @@ export default function MinhasTarefas({ embedded = false }: { embedded?: boolean
         description={t('minhasTarefas.subtitle')}
       />}
 
+      <Tabs value={visao} onValueChange={(v) => { const p = new URLSearchParams(params); if (v === 'semana') p.set('visao', 'semana'); else p.delete('visao'); setParams(p, { replace: true }); }}>
+        <TabsList>
+          <TabsTrigger value="lista">{t('evidSemana.visaoLista')}</TabsTrigger>
+          <TabsTrigger value="semana">{t('evidSemana.visaoSemana')}</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {visao === 'semana' ? <MinhaSemana /> : <>
       <StatStrip module="projetos"
         loading={isLoading}
         items={[
@@ -232,6 +244,7 @@ export default function MinhasTarefas({ embedded = false }: { embedded?: boolean
           {renderGrupo(t('minhasTarefas.groups.done'), buckets.concluidas, 'success')}
         </div>
       )}
+      </>}
     </div>
   );
 }

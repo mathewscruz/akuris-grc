@@ -6,7 +6,7 @@ import { Resend } from "npm:resend@2.0.0";
 import { notificationEmail } from "../_shared/email-brand.ts";
 import { htmlToText, sanitizeEmailDocument } from "../_shared/email.ts";
 import { authorizedScheduledJob } from "../_shared/scheduled-job.ts";
-import { autoria, deveAvisarEvento, fimDe, lembreteDevido } from "./regras.ts";
+import { autoria, deveAvisarEvento, ehSegunda, fimDe, lembreteDevido, resumoSemanal } from "./regras.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -99,6 +99,63 @@ async function dispararPrazoExcedido(hoje: string, auth: string) {
   return n;
 }
 
+/** Toda segunda: resumo da semana (sino + e-mail) para quem não desligou a preferência. */
+async function enviarResumosSemanais(segunda: string) {
+  const desde = new Date(Date.parse(segunda) - 14 * 86400000).toISOString();
+  const { data: rows, error } = await db.from("projeto_tarefas")
+    .select("id, titulo, projeto_id, responsavel_id, data_fim, prazo, concluida_em, projetos!inner(nome, empresa_id, status)")
+    .not("responsavel_id", "is", null).neq("projetos.status", "arquivado")
+    .or(`concluida_em.is.null,concluida_em.gte.${desde}`).limit(5000);
+  if (error) throw error;
+  const ids = (rows ?? []).filter((r: any) => r.concluida_em).map((r: any) => r.id);
+  const comEv = new Set<string>();
+  for (let i = 0; i < ids.length; i += 300) {
+    const { data } = await db.from("projeto_tarefa_anexos").select("tarefa_id").in("tarefa_id", ids.slice(i, i + 300));
+    (data ?? []).forEach((a: any) => comEv.add(a.tarefa_id));
+  }
+  const porPessoa = new Map<string, any[]>();
+  for (const r of (rows ?? []) as any[]) {
+    const lista = porPessoa.get(r.responsavel_id) ?? []; lista.push({ ...r, temEvidencia: comEv.has(r.id) }); porPessoa.set(r.responsavel_id, lista);
+  }
+  const key = Deno.env.get("RESEND_API_KEY");
+  let enviados = 0;
+  for (const [userId, itens] of porPessoa) {
+    const { data: dest } = await db.from("profiles")
+      .select("nome, email, empresa_id, notificar_por_email, notificar_na_aplicacao, resumo_semanal")
+      .eq("user_id", userId).eq("ativo", true).maybeSingle();
+    if (!dest || dest.resumo_semanal === false) continue;
+    // Isolamento: só tarefas de projetos da empresa da pessoa.
+    const r = resumoSemanal(itens.filter((t) => t.projetos?.empresa_id === dest.empresa_id), segunda);
+    if (r.vazio) continue;
+    const titulo = "Sua semana no Akuris";
+    const resumo = `${r.semana.length} a concluir · ${r.atrasadas.length} atrasadas · ${r.semEvidencia.length} concluídas sem evidência`;
+    if (dest.notificar_na_aplicacao !== false) {
+      await db.from("notifications").insert({
+        user_id: userId, type: r.atrasadas.length ? "warning" : "info", title: titulo, message: resumo,
+        link_to: "/projetos/minhas-tarefas?visao=semana", metadata: { tipo: "resumo_semanal", semana: segunda },
+      });
+    }
+    if (dest.notificar_por_email === false || !dest.email || !key) continue;
+    const linha = (t: any) => [t.titulo, `${t.projetos?.nome ?? ""} · ${fmt(fimDe(t))}`] as const;
+    const html = notificationEmail({
+      name: dest.nome || "Usuário", item: resumo, code: "", description: "", locale: "pt",
+      tone: r.atrasadas.length ? "warning" : "neutral", title: titulo, module: "Projetos",
+      intro: "Estas são as suas atividades para esta semana.",
+      fields: [...r.atrasadas.slice(0, 10).map((t) => ["Atrasada", linha(t).join(" — ")] as const),
+        ...r.semana.slice(0, 15).map((t) => ["Esta semana", linha(t).join(" — ")] as const),
+        ...r.semEvidencia.slice(0, 10).map((t) => ["Sem evidência", linha(t).join(" — ")] as const)],
+      next: "Abra a sua semana no Akuris para reorganizar prazos e anexar evidências.",
+      action: { label: "Abrir minha semana", url: `${APP}/projetos/minhas-tarefas?visao=semana` },
+    } as any);
+    const { error: e2 } = await new Resend(key).emails.send({
+      from: "Akuris <noreply@akuris.com.br>", to: [dest.email], subject: `[Akuris] ${titulo}: ${resumo}`,
+      html: sanitizeEmailDocument(html), text: htmlToText(html),
+    });
+    if (!e2) enviados++;
+  }
+  return { pessoas: porPessoa.size, enviados };
+}
+
 Deno.serve(async (req) => {
   if (!authorizedScheduledJob(req, Deno.env.get("LEMBRETES_DIARIOS_TOKEN"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))) {
     return json({ error: "Não autorizado" }, 401);
@@ -144,7 +201,8 @@ Deno.serve(async (req) => {
         if (r.enviado) enviados++;
       }
       const automacoes = await dispararPrazoExcedido(hoje, req.headers.get("Authorization")!);
-      return json({ verificadas: rows?.length ?? 0, enviados, automacoes });
+      const semanal = ehSegunda(hoje) ? await enviarResumosSemanais(hoje) : null;
+      return json({ verificadas: rows?.length ?? 0, enviados, automacoes, semanal });
     }
     return json({ error: "tipo inválido" }, 400);
   } catch (e) {
