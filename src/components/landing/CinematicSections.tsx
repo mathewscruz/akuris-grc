@@ -49,7 +49,6 @@ export function HeroCinematic() {
   return <section className="cine-hero" aria-labelledby="cine-hero-title">
     <img className="cine-hero-photo" src={heroSkyline} alt="" width={1920} height={1088} fetchPriority="high" />
     <div className="cine-hero-tint" aria-hidden="true" />
-    <div className="cine-grain" aria-hidden="true" />
     <LightTrails className="cine-trails" />
     <NeonShield className="cine-hero-shield" />
     <div className="lp-container cine-hero-inner">
