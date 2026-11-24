@@ -9259,31 +9259,37 @@ export type Database = {
           created_at: string
           id: string
           nome: string
-          storage_path: string
+          storage_path: string | null
           tamanho_bytes: number | null
           tarefa_id: string
           tipo: string | null
+          tipo_origem: string
           uploaded_by: string | null
+          url: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
-          storage_path: string
+          storage_path?: string | null
           tamanho_bytes?: number | null
           tarefa_id: string
           tipo?: string | null
+          tipo_origem?: string
           uploaded_by?: string | null
+          url?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
-          storage_path?: string
+          storage_path?: string | null
           tamanho_bytes?: number | null
           tarefa_id?: string
           tipo?: string | null
+          tipo_origem?: string
           uploaded_by?: string | null
+          url?: string | null
         }
         Relationships: [
           {
@@ -9741,6 +9747,7 @@ export type Database = {
           data_inicio: string | null
           descricao: string | null
           empresa_id: string
+          exigir_evidencia: boolean
           icone: string | null
           id: string
           nome: string
@@ -9757,6 +9764,7 @@ export type Database = {
           data_inicio?: string | null
           descricao?: string | null
           empresa_id: string
+          exigir_evidencia?: boolean
           icone?: string | null
           id?: string
           nome: string
@@ -9773,6 +9781,7 @@ export type Database = {
           data_inicio?: string | null
           descricao?: string | null
           empresa_id?: string
+          exigir_evidencia?: boolean
           icone?: string | null
           id?: string
           nome?: string

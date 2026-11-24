@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Switch } from '@/components/ui/switch';
 import { ColorSwatchField } from '@/components/ui/color-swatch-field';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { toast } from '@/lib/toast';
@@ -39,6 +40,7 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
     data_inicio: '',
     data_fim_prevista: '',
     cor: '#7552FF',
+    exigir_evidencia: true,
   });
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
         data_inicio: projeto?.data_inicio ?? '',
         data_fim_prevista: projeto?.data_fim_prevista ?? '',
         cor: projeto?.cor ?? '#7552FF',
+        exigir_evidencia: (projeto as any)?.exigir_evidencia ?? true,
       });
       setOwnerInvalido(false);
     }
@@ -76,7 +79,8 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
       data_inicio: form.data_inicio || null,
       data_fim_prevista: form.data_fim_prevista || null,
       cor: form.cor,
-    });
+      exigir_evidencia: form.exigir_evidencia,
+    } as any);
     onOpenChange(false);
   };
 
@@ -150,6 +154,10 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
                 <DateField value={form.data_fim_prevista || null} onChange={(v) => setForm({ ...form, data_fim_prevista: v ?? '' })} />
               </div>
             </div>
+            <label className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+              <span><span className="block text-sm font-medium">{t('evidSemana.exigir')}</span><span className="block text-xs text-muted-foreground">{t('evidSemana.exigirSub')}</span></span>
+              <Switch checked={form.exigir_evidencia} onCheckedChange={(v) => setForm({ ...form, exigir_evidencia: v })} />
+            </label>
           </section>
         </form>
     </DialogShell>

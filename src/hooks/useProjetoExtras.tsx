@@ -421,3 +421,86 @@ export function useExecucoesAutomacao(automacaoId: string | undefined, enabled =
     },
   });
 }
+
+/* =========================================================
+   EVIDÊNCIAS DA ATIVIDADE (arquivo no bucket privado ou link https)
+========================================================= */
+export interface TarefaEvidencia {
+  id: string; tarefa_id: string; nome: string; storage_path: string | null; url: string | null;
+  tipo_origem: 'arquivo' | 'link'; tipo: string | null; tamanho_bytes: number | null; uploaded_by: string | null; created_at: string;
+}
+
+export function useTarefaEvidencias(tarefaId?: string) {
+  return useQuery({
+    queryKey: ['tarefa-evidencias', tarefaId],
+    enabled: !!tarefaId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('projeto_tarefa_anexos' as any).select('*').eq('tarefa_id', tarefaId!).order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as TarefaEvidencia[];
+    },
+  });
+}
+
+/** Contagem de evidências por atividade do projeto (clipe na lista/Kanban). */
+export function useContagemEvidencias(tarefaIds: string[]) {
+  const ids = [...tarefaIds].sort();
+  return useQuery({
+    queryKey: ['tarefa-evidencias-contagem', ids.join(',')],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const out: Record<string, number> = {};
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data, error } = await supabase.from('projeto_tarefa_anexos' as any).select('tarefa_id').in('tarefa_id', ids.slice(i, i + 200));
+        if (error) throw error;
+        (data as any[] ?? []).forEach((r) => { out[r.tarefa_id] = (out[r.tarefa_id] ?? 0) + 1; });
+      }
+      return out;
+    },
+  });
+}
+
+export function useEvidenciaMutations(tarefaId: string, projetoId: string) {
+  const { user, profile } = useAuth();
+  const qc = useQueryClient();
+  const refresh = () => { qc.invalidateQueries({ queryKey: ['tarefa-evidencias', tarefaId] }); qc.invalidateQueries({ queryKey: ['tarefa-evidencias-contagem'] }); };
+  const enviarArquivo = useMutation({
+    mutationFn: async (file: File) => {
+      const empresaId = profile?.empresa_id; if (!empresaId || !user) throw new Error('sem sessão');
+      const seguro = file.name.normalize('NFD').replace(/[^\w.-]+/g, '_').slice(-80);
+      const path = `${empresaId}/${projetoId}/${tarefaId}/${crypto.randomUUID()}-${seguro}`;
+      const up = await supabase.storage.from('projeto-anexos').upload(path, file, { contentType: file.type || undefined });
+      if (up.error) throw up.error;
+      const { error } = await supabase.from('projeto_tarefa_anexos' as any).insert({ tarefa_id: tarefaId, nome: file.name, storage_path: path, tipo: file.type || null, tamanho_bytes: file.size, tipo_origem: 'arquivo', uploaded_by: user.id } as any);
+      if (error) { await supabase.storage.from('projeto-anexos').remove([path]); throw error; }
+    },
+    onSuccess: () => { refresh(); toast.success(tGlobal('evidSemana.enviado')); },
+    onError: () => toast.error(tGlobal('evidSemana.erro')),
+  });
+  const adicionarLink = useMutation({
+    mutationFn: async ({ url, nome }: { url: string; nome?: string }) => {
+      const { error } = await supabase.from('projeto_tarefa_anexos' as any).insert({ tarefa_id: tarefaId, nome: nome?.trim() || url, url: url.trim(), tipo_origem: 'link', uploaded_by: user?.id } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => { refresh(); toast.success(tGlobal('evidSemana.enviado')); },
+    onError: () => toast.error(tGlobal('evidSemana.erro')),
+  });
+  const remover = useMutation({
+    mutationFn: async (ev: TarefaEvidencia) => {
+      const { error } = await supabase.from('projeto_tarefa_anexos' as any).delete().eq('id', ev.id).eq('tarefa_id', tarefaId);
+      if (error) throw error;
+      if (ev.storage_path) await supabase.storage.from('projeto-anexos').remove([ev.storage_path]);
+    },
+    onSuccess: refresh,
+    onError: () => toast.error(tGlobal('evidSemana.erro')),
+  });
+  return { enviarArquivo, adicionarLink, remover };
+}
+
+export async function abrirEvidencia(ev: TarefaEvidencia) {
+  if (ev.tipo_origem === 'link' && ev.url) { window.open(ev.url, '_blank', 'noopener,noreferrer'); return; }
+  if (!ev.storage_path) return;
+  const { data, error } = await supabase.storage.from('projeto-anexos').createSignedUrl(ev.storage_path, 300);
+  if (error || !data) { toast.error(tGlobal('evidSemana.erro')); return; }
+  window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+}

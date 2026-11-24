@@ -1,3 +1,4 @@
+import { semanaAtual } from '@/lib/projeto-evidencias';
 import { ToolbarField } from '@/components/ui/module-toolbar';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import React from 'react';
@@ -66,6 +67,13 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
       if (fStatus === 'concluidas' && !t.concluida_em) return false;
       if (fStatus === 'atrasadas') {
         if (!estaAtrasada(t)) return false;
+      }
+      if (fStatus === 'semana') {
+        const w = semanaAtual();
+        const ini = t.data_inicio ? parseDataLocal(t.data_inicio).getTime() : null;
+        const fimS = t.prazo ?? t.data_fim;
+        const fim = fimS ? parseDataLocal(fimS).getTime() : ini;
+        if (fim == null || (ini ?? fim) >= w.fim || fim < w.ini) return false;
       }
       return true;
     });
@@ -192,6 +200,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
               <SelectItem value="abertas">{t('projetos.lista.statusOpen')}</SelectItem>
               <SelectItem value="concluidas">{t('projetos.lista.statusDone')}</SelectItem>
               <SelectItem value="atrasadas">{t('projetos.lista.statusOverdue')}</SelectItem>
+              <SelectItem value="semana">{t('evidSemana.estaSemana')}</SelectItem>
             </SelectContent>
           </Select>
         </ToolbarField>
@@ -252,6 +261,11 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
           </ToolbarField>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          {fStatus === 'semana' && (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {t('evidSemana.semanaResumo', { n: filtradas.length, a: filtradas.filter((x) => estaAtrasada(x)).length, c: filtradas.filter((x) => x.concluida_em).length })}
+            </span>
+          )}
           {posHoje.atrasadas.length > 0 && <StatusPill kind="late">{t('p3Projetos.lista.ritmoAtrasado', { n: posHoje.atrasadas.length })}</StatusPill>}
           {posHoje.adiantadas.length > 0 && <StatusPill kind="done">{t('p3Projetos.lista.ritmoAdiantado', { n: posHoje.adiantadas.length })}</StatusPill>}
           {posHoje.ritmo === 'no_ritmo' && <StatusPill kind="active">{t('p3Projetos.lista.ritmoNoRitmo')}</StatusPill>}

@@ -6,6 +6,7 @@ import { undoableAction } from '@/lib/undoable-action';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { tGlobal } from '@/lib/i18n-global';
+import { mensagemErroTarefa } from '@/lib/projeto-evidencias';
 
 /** Dependências entre tarefas do projeto (RLS: can_access_tarefa). */
 export function useDependenciasProjeto(projetoId: string | undefined, tarefaIds: string[]) {
@@ -59,7 +60,7 @@ export function useAtualizarTarefas(projetoId: string | undefined) {
       },
     }).catch((e) => {
       logger.error('Falha ao atualizar tarefas', e);
-      toast.error(tGlobal('p3Projetos.cronograma.erroSalvar'));
+      toast.error(mensagemErroTarefa(e, tGlobal('p3Projetos.cronograma.erroSalvar')));
       return false;
     });
   };

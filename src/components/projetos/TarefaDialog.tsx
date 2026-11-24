@@ -29,6 +29,8 @@ import {
 import { useUsuariosEmpresa } from '@/hooks/useUsuariosEmpresa';
 import { VinculosGRCPanel } from './VinculosGRCPanel';
 import { TempoPanel } from './TempoPanel';
+import { EvidenciasPanel } from './EvidenciasPanel';
+import { useTarefaEvidencias } from '@/hooks/useProjetoExtras';
 import { ReacoesPorComentario } from './ReacoesBar';
 import { StatusPill, statusKindDe } from './StatusPill';
 import { useReacoes, useSprints, useTempoEntradas } from '@/hooks/useProjetoExtras';
@@ -61,6 +63,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const nomeUsuario = (id: string | null) => usuarios.find((u) => u.user_id === id)?.nome ?? null;
   const fotoUsuario = (id: string | null) => (usuarios.find((u) => u.user_id === id) as { foto_url?: string | null } | undefined)?.foto_url ?? null;
   const { data: tempoEntradas = [] } = useTempoEntradas(tarefa?.id);
+  const { data: evidencias = [] } = useTarefaEvidencias(tarefa?.id);
+  const [abaAtiva, setAbaAtiva] = useState('comentarios');
   const addComentario = useAddComentario(tarefa?.id ?? '');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [discardConfirm, setDiscardConfirm] = useState(false);
@@ -145,7 +149,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     if (periodoInvertido(form.data_inicio, form.prazo)) { toast.error(t('p3Projetos.tarefa.datasInvertidas')); return; }
     const concluida = colAtual?.is_concluido;
     const passouBloqueada = form.bloqueada && !tarefa?.bloqueada;
-    const salvo: any = await upsert.mutateAsync({
+    let salvo: any;
+    try { salvo = await upsert.mutateAsync({
       id: tarefa?.id,
       projeto_id: projetoId,
       coluna_id: form.coluna_id || null,
@@ -163,7 +168,10 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
       tags: form.pct_auto ? [...form.tags, TAG_PCT_AUTO] : form.tags,
       concluida_em: concluida ? (tarefa?.concluida_em ?? new Date().toISOString()) : null,
       bloqueada: form.bloqueada,
-    } as any);
+    } as any); } catch (err: any) {
+      if (String(err?.message ?? '').includes('EVIDENCIA_OBRIGATORIA')) setAbaAtiva('evidencias');
+      return;
+    }
     if (passouBloqueada && tarefa?.id) {
       const motivo = motivoBloqueio.trim();
       addComentario.mutate(motivo ? t('p3Projetos.tarefa.bloqueioComentario', { motivo }) : t('p3Projetos.tarefa.bloqueadaSemMotivo'));
@@ -353,13 +361,15 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           )}
 
           {tarefa && (
-            <Tabs defaultValue="comentarios">
+            <Tabs value={abaAtiva} onValueChange={setAbaAtiva}>
               <TabsList>
                 <TabsTrigger value="comentarios">{t('p3Projetos.tarefa.comentarios')}<Count n={coms.length} /></TabsTrigger>
+                <TabsTrigger value="evidencias">{t('evidSemana.aba')}<Count n={evidencias.length} /></TabsTrigger>
                 <TabsTrigger value="tempo">{t('projetos.tarefaDialog.tabTempo')}</TabsTrigger>
                 <TabsTrigger value="vinculos">{t('projetos.tarefaDialog.tabVinculos')}<Count n={vinculos.length} /></TabsTrigger>
               </TabsList>
               <TabsContent value="comentarios" className="pt-4"><ComentariosPanel tarefaId={tarefa.id} /></TabsContent>
+              <TabsContent value="evidencias" className="pt-4"><EvidenciasPanel tarefaId={tarefa.id} projetoId={projetoId} /></TabsContent>
               <TabsContent value="tempo" className="pt-4">
                 <TempoPanel tarefaId={tarefa.id} estimativa={tarefa.estimativa_horas} gasto={tarefa.tempo_gasto_horas} />
               </TabsContent>

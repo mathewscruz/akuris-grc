@@ -14,6 +14,7 @@ import type {
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { tGlobal } from '@/lib/i18n-global';
+import { mensagemErroTarefa } from '@/lib/projeto-evidencias';
 
 export function useProjetoColunas(projetoId: string | undefined) {
   return useQuery({
@@ -100,7 +101,7 @@ export function useUpsertTarefa() {
     },
     onError: (err: any) => {
       logger.error(tGlobal('cardsKpi.sweep.projetos.erroSalvarTarefa'), err);
-      toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroSalvarTarefa'));
+      toast.error(mensagemErroTarefa(err, tGlobal('cardsKpi.sweep.projetos.erroSalvarTarefa')));
     },
   });
 }
@@ -180,7 +181,7 @@ export function useMoveTarefa(projetoId: string) {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['projeto-tarefas', projetoId], ctx.prev);
-      toast.error(tGlobal('cardsKpi.sweep.projetos.erroMoverTarefa'));
+      toast.error(mensagemErroTarefa(_err, tGlobal('cardsKpi.sweep.projetos.erroMoverTarefa')));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['projeto-tarefas', projetoId] });

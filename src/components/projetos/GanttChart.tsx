@@ -1,3 +1,4 @@
+import { semanasNoIntervalo, semanaAtual } from '@/lib/projeto-evidencias';
 import React, { useMemo } from 'react';
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -109,6 +110,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
   for (let d = new Date(escala.min); d.getTime() < escala.max; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
     meses.push({ ini: d.getTime(), fim: new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime() });
   }
+  const semanas = zoom === 'trimestre' ? [] : semanasNoIntervalo(escala.min, escala.max).filter((w) => w.ini >= escala.min || w.fim > escala.min);
+  const fimDeSemana: number[] = [];
+  if (zoom === 'semana') for (let d = new Date(escala.min); d.getTime() < escala.max; d.setDate(d.getDate() + 1)) if (d.getDay() === 6) fimDeSemana.push(d.getTime());
+  const semAtual = semanaAtual();
   const hoje = Date.now();
   const hojeVisivel = hoje >= escala.min && hoje <= escala.max;
 
@@ -194,16 +199,31 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, colunas = [], o
             <div className="relative" style={{ width: largura }}>
               {meses.map((m) => (
                 <div key={m.ini} style={{ left: x(m.ini), width: x(m.fim) - x(m.ini) }}
-                  className="absolute inset-y-0 flex items-center overflow-hidden border-r border-border/60 px-2 text-xs font-medium capitalize text-muted-foreground">
-                  <span className="truncate">{new Date(m.ini).toLocaleDateString(intlLocale(), zoom === 'trimestre' ? { month: 'short' } : { month: 'short', year: '2-digit' })}</span>
+                  className={`absolute flex items-center overflow-hidden border-r border-border px-2 text-xs font-medium capitalize text-muted-foreground ${zoom === 'semana' ? 'top-0 h-5 border-b border-border/60' : 'inset-y-0'}`}>
+                  <span className="truncate">{new Date(m.ini).toLocaleDateString(intlLocale(), zoom === 'trimestre' ? { month: 'short' } : zoom === 'semana' ? { month: 'long', year: 'numeric' } : { month: 'short', year: '2-digit' })}</span>
                 </div>
               ))}
+              {zoom === 'semana' && semanas.map((w) => {
+                const ini = Math.max(w.ini, escala.min); const atual = w.ini === semAtual.ini;
+                const fmt = (ms: number) => new Date(ms).toLocaleDateString(intlLocale(), { day: '2-digit' });
+                return (
+                  <div key={w.ini} style={{ left: x(ini), width: x(Math.min(w.fim, escala.max)) - x(ini) }}
+                    className={`absolute bottom-0 flex h-5 items-center overflow-hidden border-r border-border/50 px-1.5 text-micro tabular-nums ${atual ? 'bg-primary/10 font-semibold text-primary' : 'text-muted-foreground'}`}>
+                    <span className="truncate">{t('evidSemana.semana', { n: w.num })} · {fmt(w.ini)}–{fmt(w.fim - DAY_MS)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Grelha de meses + hoje */}
           <div aria-hidden className="pointer-events-none absolute bottom-0 top-10" style={{ left: LEFT_W, width: largura }}>
-            {meses.map((m) => <div key={m.ini} className="absolute inset-y-0 border-r border-border/40" style={{ left: x(m.fim) - 1 }} />)}
+            {fimDeSemana.map((d) => <div key={d} className="absolute inset-y-0 bg-muted/40" style={{ left: x(d), width: px * 2 }} />)}
+            {semAtual.fim > escala.min && semAtual.ini < escala.max && zoom !== 'trimestre' && (
+              <div className="absolute inset-y-0 bg-primary/[0.04]" style={{ left: x(Math.max(semAtual.ini, escala.min)), width: x(Math.min(semAtual.fim, escala.max)) - x(Math.max(semAtual.ini, escala.min)) }} />
+            )}
+            {semanas.map((w) => w.ini > escala.min && <div key={w.ini} className={`absolute inset-y-0 border-l ${zoom === 'semana' ? 'border-border/50' : 'border-dashed border-border/30'}`} style={{ left: x(w.ini) }} />)}
+            {meses.map((m) => <div key={m.ini} className="absolute inset-y-0 border-r border-border" style={{ left: x(m.fim) - 1 }} />)}
             {hojeVisivel && (
               <div className="absolute inset-y-0 z-10 w-0.5 bg-primary" style={{ left: x(hoje) }}>
                 <span className="absolute -top-0 left-1 rounded bg-primary px-1 text-micro font-semibold text-primary-foreground">{t('projetos.calendar.today')}</span>
