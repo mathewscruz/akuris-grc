@@ -23,10 +23,10 @@ export function RiscoStatusMenu({ riscoId, status, title }: { riscoId: string; s
           title={title}
           disabled={salvando === riscoId}
           aria-label={t('riscos.page.move.changeTo')}
-          className="inline-flex items-center gap-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group inline-flex items-center gap-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <StatusBadge {...resolveRiscoStatusTone(status)}>{formatStatus(status)}</StatusBadge>
-          <IconChevron className="h-3 w-3 text-muted-foreground rotate-90" strokeWidth={1.5} />
+          <IconChevron className="h-3 w-3 text-muted-foreground rotate-90 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" strokeWidth={1.5} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>

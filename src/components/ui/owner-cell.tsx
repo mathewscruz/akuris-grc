@@ -5,8 +5,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export function OwnerCell({ name, photo, emptyLabel }: { name?: string | null; photo?: string | null; emptyLabel: string }) {
   if (!name) {
     return (
-      <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-        <span data-record-avatar="" aria-hidden="true" className="h-8 w-8 shrink-0 rounded-full border border-dashed border-muted-foreground/40" />
+      <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+        <span data-record-avatar="" aria-hidden="true" className="h-7 w-7 shrink-0 rounded-full border border-dashed border-muted-foreground/40" />
         {emptyLabel}
       </span>
     );
@@ -17,11 +17,11 @@ export function OwnerCell({ name, photo, emptyLabel }: { name?: string | null; p
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="inline-flex max-w-40 cursor-default items-center gap-2">
-            <Avatar className="h-8 w-8 shrink-0">
+            <Avatar className="h-7 w-7 shrink-0">
               {photo && <AvatarImage src={photo} alt={name} />}
               <AvatarFallback className="text-micro">{initials}</AvatarFallback>
             </Avatar>
-            <span className="truncate text-xs font-medium text-foreground/85">{name}</span>
+            <span className="truncate text-sm font-normal text-foreground">{name}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent><p>{name}</p></TooltipContent>

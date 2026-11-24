@@ -2372,6 +2372,12 @@ input:-webkit-autofill:focus {
   .akuris-table > tbody > tr:is([data-last-opened="true"], [data-state="selected"]) > td { background-color: hsl(var(--muted) / 0.35); }
   .akuris-table [data-chip-family="severity"] { min-width: 0; font-size: 14px !important; }
   .akuris-table [data-chip-family="severity"] > [data-chip-meter] { display: none; }
+  .akuris-table { background-color: transparent !important; }
+  .akuris-table > tbody > tr > td :is(.text-xs, .text-micro, .text-\[11px\], .text-\[12px\]):not([data-chip]):not([data-chip] *) { font-size: 13px; }
+  .akuris-table > tbody > tr > td .font-mono { font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .akuris-table > tbody > tr > td :is(.font-medium, .font-semibold):not([data-chip]) { font-weight: 400; }
+  .akuris-table > tbody > tr > td :is(.text-foreground\/85, .text-foreground\/80) { color: hsl(var(--foreground)); }
+  .akuris-table [data-chip-family="severity"] [data-chip-mark], .akuris-table [data-chip-family="severity"] > span:not(:last-child):empty { display: none; }
   .akuris-table [data-record-avatar] {
     width: 28px;
     height: 28px;
