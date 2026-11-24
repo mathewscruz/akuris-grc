@@ -141,6 +141,18 @@ const copy: Record<string, [string, string]> = {
   trust3: ['Rastreabilidade e avaliação', 'Traceability and evaluation'], trust3Body: ['Os módulos oferecem registros de acompanhamento e evidências. Solicite detalhes sobre retenção, fornecedores de infraestrutura e condições contratuais para avaliar a aderência ao seu cenário.', 'Modules provide follow-up records and evidence. Request details on retention, infrastructure providers and contractual terms to assess your requirements.'],
   trustNotice: ['Esta página não declara certificações, SLAs ou garantias de segurança absoluta. Documentos contratuais e respostas técnicas devem ser confirmados com a equipe Akuris.', 'This page does not assert certifications, SLAs or absolute security guarantees. Confirm contractual documents and technical answers with the Akuris team.'],
   guideTitle: ['Guias para transformar requisitos em trabalho organizado.', 'Guides to turn requirements into organized work.'], guideBody: ['Explore as referências e veja como relacioná-las ao seu programa.', 'Explore the references and see how they relate to your program.'], guideWhat: ['O que é {name}', 'What is {name}'], guideWhy: ['Por que importa', 'Why it matters'], guideRequirements: ['Requisitos principais', 'Key requirements'], guideHelp: ['Como o Akuris ajuda com {name}', 'How Akuris helps with {name}'], guideOthers: ['Outros guias', 'Other guides'], portugueseContent: ['Este conteúdo editorial está disponível em português.', 'This editorial content is available in Portuguese.'],
+  cineEyebrow: ['Governança · Risco · Compliance', 'Governance · Risk · Compliance'],
+  cineTitle: ['Fique um passo à frente em governança, risco e compliance.', 'Stay one step ahead in governance, risk and compliance.'],
+  cineAside: ['Frameworks, riscos, controles e evidências conectados num só lugar.', 'Frameworks, risks, controls and evidence connected in one place.'],
+  cineAboutLabel: ['Sobre o Akuris', 'About Akuris'],
+  cineAboutTitle: ['Uma plataforma GRC feita para auditorias reais.', 'A GRC platform built for real audits.'],
+  cineAboutBody: ['O Akuris reúne avaliação de frameworks, gestão de riscos, privacidade, continuidade e projetos, com responsáveis e evidências rastreáveis.', 'Akuris brings together framework assessments, risk management, privacy, continuity and projects, with traceable owners and evidence.'],
+  cineStatFrameworks: ['frameworks e regulações', 'frameworks and regulations'], cineStatRisks: ['cenários na biblioteca de riscos', 'scenarios in the risk library'], cineStatDomains: ['domínios GRC integrados', 'integrated GRC domains'],
+  cineMarqueeLabel: ['Frameworks suportados', 'Supported frameworks'],
+  cineStepsLabel: ['Do plano à prática', 'From plan to practice'], cineStepsTitle: ['Como funciona', 'How it works'],
+  cineStep1: ['Conecte o seu contexto', 'Connect your context'], cineStep1Body: ['Escolha os frameworks e registe sistemas, ativos e responsáveis.', 'Choose frameworks and register systems, assets and owners.'],
+  cineStep2: ['Avalie e priorize', 'Assess and prioritize'], cineStep2Body: ['Identifique lacunas, ligue riscos a controles e defina planos de ação.', 'Find gaps, link risks to controls and define action plans.'],
+  cineStep3: ['Comprove e evolua', 'Prove and improve'], cineStep3Body: ['Reúna evidências, acompanhe o progresso e prepare auditorias com confiança.', 'Gather evidence, track progress and prepare audits with confidence.'],
 };
 export const site = {
   pt: { site: Object.fromEntries(Object.entries(copy).map(([key, pair]) => [key, pair[0]])) },
