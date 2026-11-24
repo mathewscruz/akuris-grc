@@ -409,7 +409,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     <Button type="button" variant="outline" onClick={resetForm}>
                       {t('contratosAtivos.marcosDialog.cancelButton')}
                     </Button>
-                    <Button type="submit" disabled={loading}>
+                    <Button type="submit" disabled={loading} loading={loading}>
                       {loading ? t('contratosAtivos.marcosDialog.savingButton') : (editingMarco ? t('contratosAtivos.marcosDialog.submitUpdate') : t('contratosAtivos.marcosDialog.submitCreate'))}
                     </Button>
                   </div>

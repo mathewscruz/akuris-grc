@@ -2,6 +2,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
+import { AkurisPulse } from "@/components/ui/AkurisPulse"
 
 /**
  * Padrão oficial de botões Akuris — use SEMPRE uma destas variantes (não crie
@@ -81,17 +82,44 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  /** Estado de envio: mostra o AkurisPulse e, ao terminar, um ✓ breve no próprio botão. */
+  loading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    const [saved, setSaved] = React.useState(false)
+    const prev = React.useRef(loading)
+    React.useEffect(() => {
+      if (prev.current && !loading) {
+        setSaved(true)
+        const id = window.setTimeout(() => setSaved(false), 1400)
+        prev.current = loading
+        return () => window.clearTimeout(id)
+      }
+      prev.current = loading
+    }, [loading])
+    if (asChild || loading === undefined) {
+      return (
+        <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} disabled={disabled} {...props}>
+          {children}
+        </Comp>
+      )
+    }
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
-      />
+      >
+        {loading ? <AkurisPulse size={14} /> : saved ? (
+          <svg viewBox="0 0 16 16" className="h-4 w-4 animate-in zoom-in-50 duration-300 motion-reduce:animate-none" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        ) : null}
+        {children}
+      </Comp>
     )
   }
 )

@@ -195,6 +195,7 @@ export function DataTable<T extends Record<string, any>>({
   const [pageSize, setPageSize] = useListState(`table:${stateKey}:size`, initialPageSize)
   const [recordView, setRecordView] = useListState<'list' | 'grid'>(`table:${stateKey}:view`, 'list')
   const [expandedMobileRows, setExpandedMobileRows] = React.useState<Set<string>>(() => new Set())
+  const [lastOpenedRow, setLastOpenedRow] = React.useState<string | null>(null)
 
   /**
    * Filtrar e não ter são coisas diferentes, e a tabela sabe distingui-las.
@@ -576,7 +577,7 @@ export function DataTable<T extends Record<string, any>>({
               const visibleColumns = expanded || recordView === 'grid' ? resto : resto.slice(0, mobileCollapsedFields)
               const hasMore = recordView !== 'grid' && resto.length > mobileCollapsedFields
               const abrir = onRowClick
-                ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
+                ? rowOpenProps(() => { setLastOpenedRow(rowKey); onRowClick(item) }, (item as any).titulo || (item as any).nome || undefined)
                 : null
               const valor = (column: Column<T>) => renderValue(column, item)
               return (
@@ -726,12 +727,15 @@ export function DataTable<T extends Record<string, any>>({
                   data-focus-id={(item as any).id}
                   data-row-new={newRows.has(rowId(item, index)) || undefined}
                   {...(() => {
+                    const key = rowId(item, index)
                     const base = onRowClick
-                      ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
+                      ? rowOpenProps(() => { setLastOpenedRow(key); onRowClick(item) }, (item as any).titulo || (item as any).nome || undefined)
                       : { className: 'transition-colors' };
                     // A célula fixa herda o fundo da linha (incluindo o realce
                     // do rato), por isso a linha precisa de um fundo próprio.
-                    return { ...base, className: `bg-card ${base.className ?? ''}` };
+                    // A última linha aberta fica realçada ao voltar do registo.
+                    const realce = lastOpenedRow === key ? 'shadow-[inset_2px_0_0_hsl(var(--primary))] !bg-muted/60' : ''
+                    return { ...base, className: `bg-card ${realce} ${base.className ?? ''}` };
                   })()}
                 >
 

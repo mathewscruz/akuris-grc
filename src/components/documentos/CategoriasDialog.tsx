@@ -368,10 +368,9 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
                 <Button type="button" variant="outline" onClick={resetForm}>
                   {t('documentos.dialogs.cancelar')}
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} loading={loading}>
                   {loading ? (
                     <>
-                      <AkurisPulse size={16} className="mr-2" />
                       {t('documentos.dialogs.salvando')}
                     </>
                   ) : (

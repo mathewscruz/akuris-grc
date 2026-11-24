@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/date-utils';
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,7 +119,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
               {getStatusBadge(entry.valor_novo)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {entry.user_nome} • {new Date(entry.created_at).toLocaleString()}
+              {entry.user_nome} • {formatDateTime(entry.created_at)}
             </p>
           </div>
         </div>

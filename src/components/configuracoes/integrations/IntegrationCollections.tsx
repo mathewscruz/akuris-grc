@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/date-utils';
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
@@ -284,9 +285,7 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
                       <p className="mt-1 text-xs text-muted-foreground">
                         {t("collectionHub.lastSuccess")}:{" "}
                         {connection.last_success_at
-                          ? new Date(
-                              connection.last_success_at,
-                            ).toLocaleString()
+                          ? formatDateTime(connection.last_success_at)
                           : t("collectionHub.never")}
                       </p>
                     </div>
@@ -686,7 +685,7 @@ function ConnectionManager({
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t("collectionHub.lastSuccess")}:{" "}
                   {connection.last_success_at
-                    ? new Date(connection.last_success_at).toLocaleString()
+                    ? formatDateTime(connection.last_success_at)
                     : t("collectionHub.never")}
                 </p>
               </div>
@@ -864,7 +863,7 @@ function ConnectionManager({
                           )}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {new Date(resource.collected_at).toLocaleString()}
+                          {formatDateTime(resource.collected_at)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -976,7 +975,7 @@ function ConnectionManager({
                   <div>
                     <p>
                       {t(`collectionHub.status.${run.status}`)} ·{" "}
-                      {new Date(run.created_at).toLocaleString()}
+                      {formatDateTime(run.created_at)}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {run.resource_count} {t("collectionHub.resources")}

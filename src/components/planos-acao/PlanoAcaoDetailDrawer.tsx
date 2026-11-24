@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/date-utils';
 /**
  * PlanoAcaoDetailDrawer — painel lateral do plano de ação (mesmo estilo do painel de risco).
  * Abas: Visão · Histórico · Comentários.
@@ -238,7 +239,7 @@ export function PlanoAcaoDetailDrawer({
                     <li key={h.id} className="border-l-2 border-border pl-3">
                       <p className="text-sm font-medium">{t(`planosAcao.auditAction.${h.action}`)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(h.created_at).toLocaleString()}
+                        {formatDateTime(h.created_at)}
                         {h.changed_fields?.length ? ` · ${h.changed_fields.join(', ')}` : ''}
                       </p>
                     </li>
@@ -273,7 +274,7 @@ export function PlanoAcaoDetailDrawer({
                     <li key={c.id} className="rounded-lg border border-border p-3">
                       <p className="text-sm whitespace-pre-wrap">{c.comentario}</p>
                       <p className="text-xs text-muted-foreground mt-1.5">
-                        {c.autor} · {new Date(c.created_at).toLocaleString()}
+                        {c.autor} · {formatDateTime(c.created_at)}
                       </p>
                     </li>
                   ))}

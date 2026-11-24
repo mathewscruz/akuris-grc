@@ -319,7 +319,7 @@ export function ProductDialog({
             >
               {text("regulatory.cancel_116461")}
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} loading={saving}>
               {saving
                 ? text("regulatory.saving_126974")
                 : text("regulatory.save_product_20e015")}
@@ -513,7 +513,7 @@ export function ProductVersionDialog({
             >
               {text("regulatory.cancel_116461")}
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} loading={saving}>
               {text("regulatory.save_version_527aa3")}
             </Button>
           </DialogFooter>

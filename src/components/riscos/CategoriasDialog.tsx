@@ -299,7 +299,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading} loading={loading}>
                     {editingCategoria ? t('riscosDialogs.categorias.atualizar') : t('riscosDialogs.categorias.criar')}
                   </Button>
                   <Button type="button" variant="outline" onClick={handleCancelForm}>

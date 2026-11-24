@@ -93,15 +93,10 @@ export function AdherenceAnalysisProgress({ progresso, isError = false, errorMes
               strokeDasharray={C} strokeDashoffset={C - (shown / 100) * C}
             />
           </svg>
-          {!done && !isError && (
-            <div className="pointer-events-none absolute inset-0 animate-spin rounded-full motion-reduce:hidden" style={{ animationDuration: '2.4s' }}>
-              <span className="absolute left-1/2 top-[2px] h-2 w-2 -translate-x-1/2 rounded-full bg-primary/60 blur-[2px]" />
-            </div>
-          )}
           <div className="absolute inset-0 flex items-center justify-center">
             {done ? <IconSuccess className="h-10 w-10 text-success animate-in zoom-in-50 duration-500" strokeWidth={1.5} />
               : isError ? <IconInfo className="h-10 w-10 text-destructive" strokeWidth={1.5} />
-              : <span className="text-3xl font-bold tabular-nums text-foreground">{pct}%</span>}
+              : <span className="flex flex-col items-center gap-1"><span className="text-3xl font-bold tabular-nums text-foreground">{pct}%</span><AkurisPulse size={14} /></span>}
           </div>
         </div>
         <div className="space-y-0.5">

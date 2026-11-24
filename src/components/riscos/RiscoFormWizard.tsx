@@ -1637,7 +1637,7 @@ export function RiscoFormWizard({ risco, onSuccess, initialTab = 'identificacao'
                   )}
                   {(risco || isLastTab) && (
                     <span title={reason} className="inline-flex flex-col items-end gap-1">
-                      <Button type="submit" disabled={loading} size="sm">
+                      <Button type="submit" disabled={loading} loading={loading} size="sm">
                         <IconSave className="h-4 w-4 mr-1.5" />
                         {loading
                           ? t('fin.comum.salvando')

@@ -589,10 +589,9 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                 <Button type="button" variant="outline" onClick={resetForm}>
                   {t('documentosExtras.vinculacoes.cancelar')}
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} loading={loading}>
                   {loading ? (
                     <>
-                      <AkurisPulse size={16} className="mr-2" />
                       {t('documentosExtras.vinculacoes.criando')}
                     </>
                   ) : (

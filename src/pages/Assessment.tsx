@@ -142,7 +142,7 @@ const invokePublicAssessment = async <T,>(body: Record<string, unknown> | FormDa
 const AssessmentShell = ({ children }: { children: React.ReactNode }) => {
   const { t } = useLanguage();
   return (
-  <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+  <div className="min-h-screen bg-gradient-to-b from-background via-background to-background relative overflow-hidden">
     {/* Bottom purple glow */}
     <div className="pointer-events-none absolute inset-0">
       <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse_at_center,hsl(250,80%,60%,0.18),transparent_70%)]" />
@@ -153,10 +153,10 @@ const AssessmentShell = ({ children }: { children: React.ReactNode }) => {
     </div>
     {/* Footer */}
     <div className="relative z-10 text-center pb-6 pt-8">
-      <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-3 w-3" />
         <span>{t('publicPortal.assessment.poweredBy')}</span>
-        <span className="font-semibold text-slate-700">Akuris</span>
+        <span className="font-semibold text-foreground">Akuris</span>
       </div>
     </div>
   </div>
@@ -244,50 +244,50 @@ const WelcomeScreen = ({
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="space-y-6 animate-fade-in">
         {/* Hero */}
-        <Card className="bg-white border-slate-200 shadow-xl overflow-hidden">
+        <Card className="bg-card border-border shadow-xl overflow-hidden">
           <div className="bg-gradient-to-br from-[hsl(250,80%,60%)]/10 via-transparent to-[hsl(250,80%,60%)]/5 p-8 sm:p-10">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xs font-medium text-[hsl(250,80%,55%)]">
                 {t('publicPortal.assessment.eyebrow')}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3 leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 leading-tight">
               {t('publicPortal.assessment.greeting', { name: assessment.fornecedor_nome.split(' ')[0] })}
             </h1>
-            <p className="text-base text-slate-600 leading-relaxed max-w-xl">
-              <span className="text-slate-900 font-medium">{assessment.empresa.nome}</span>{' '}
+            <p className="text-base text-muted-foreground leading-relaxed max-w-xl">
+              <span className="text-foreground font-medium">{assessment.empresa.nome}</span>{' '}
               {t('publicPortal.assessment.introPrefix')}
             </p>
           </div>
 
-          <CardContent className="p-6 sm:p-8 border-t border-slate-200">
+          <CardContent className="p-6 sm:p-8 border-t border-border">
             {/* Stats grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
                 <div className="flex items-center justify-center shrink-0 text-primary">
                   <ListChecks className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">{t('publicPortal.assessment.questions')}</p>
-                  <p className="text-base font-semibold text-slate-900">{t('publicPortal.assessment.totalQuestions', { count: totalQuestions })}</p>
+                  <p className="text-xs text-muted-foreground">{t('publicPortal.assessment.questions')}</p>
+                  <p className="text-base font-semibold text-foreground">{t('publicPortal.assessment.totalQuestions', { count: totalQuestions })}</p>
                   {totalRequired > 0 && (
-                    <p className="text-micro text-slate-500">{t('publicPortal.assessment.requiredCount', { count: totalRequired })}</p>
+                    <p className="text-micro text-muted-foreground">{t('publicPortal.assessment.requiredCount', { count: totalRequired })}</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
                 <div className="flex items-center justify-center shrink-0 text-primary">
                   <Clock className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">{t('publicPortal.assessment.estimatedTime')}</p>
-                  <p className="text-base font-semibold text-slate-900">~{estimatedMinutes} min</p>
-                  <p className="text-micro text-slate-500">{t('publicPortal.assessment.canPause')}</p>
+                  <p className="text-xs text-muted-foreground">{t('publicPortal.assessment.estimatedTime')}</p>
+                  <p className="text-base font-semibold text-foreground">~{estimatedMinutes} min</p>
+                  <p className="text-micro text-muted-foreground">{t('publicPortal.assessment.canPause')}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
                 <div className={cn(
                   "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
                   "bg-[hsl(250,80%,60%)]/15"
@@ -298,13 +298,13 @@ const WelcomeScreen = ({
                   )} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">{t('publicPortal.assessment.deadline')}</p>
-                  <p className="text-base font-semibold text-slate-900">
+                  <p className="text-xs text-muted-foreground">{t('publicPortal.assessment.deadline')}</p>
+                  <p className="text-base font-semibold text-foreground">
                     {deadline ? deadline.toLocaleDateString(localeTag(), { day: '2-digit', month: 'short' }) : t('publicPortal.assessment.noDeadline')}
                   </p>
                   <p className={cn(
                     "text-micro",
-                    overdue ? "text-[hsl(250,80%,45%)] font-medium" : "text-slate-500"
+                    overdue ? "text-[hsl(250,80%,45%)] font-medium" : "text-muted-foreground"
                   )}>
                     {!deadline ? t('publicPortal.assessment.noDeadlineSet') : overdue ? t('publicPortal.assessment.overdue') : daysLeft === 0 ? t('publicPortal.assessment.dueToday') : t('publicPortal.assessment.daysLeft', { days: daysLeft })}
                   </p>
@@ -314,23 +314,23 @@ const WelcomeScreen = ({
 
             {/* Instructions */}
             <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-semibold text-slate-800">{t('publicPortal.assessment.beforeStart')}</h3>
-              <ul className="space-y-1.5 text-sm text-slate-600">
+              <h3 className="text-sm font-semibold text-foreground">{t('publicPortal.assessment.beforeStart')}</h3>
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{t('publicPortal.assessment.tip1').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip1Strong')}</strong>{t('publicPortal.assessment.tip1').split('{strong}')[1]}</span>
+                  <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                  <span>{t('publicPortal.assessment.tip1').split('{strong}')[0]}<strong className="text-foreground">{t('publicPortal.assessment.tip1Strong')}</strong>{t('publicPortal.assessment.tip1').split('{strong}')[1]}</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{t('publicPortal.assessment.tip2').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip2Strong')}</strong>{t('publicPortal.assessment.tip2').split('{strong}')[1]}</span>
+                  <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                  <span>{t('publicPortal.assessment.tip2').split('{strong}')[0]}<strong className="text-foreground">{t('publicPortal.assessment.tip2Strong')}</strong>{t('publicPortal.assessment.tip2').split('{strong}')[1]}</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{t('publicPortal.assessment.tip3').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip3Strong')}</strong>{t('publicPortal.assessment.tip3').split('{strong}')[1]}</span>
+                  <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                  <span>{t('publicPortal.assessment.tip3').split('{strong}')[0]}<strong className="text-foreground">{t('publicPortal.assessment.tip3Strong')}</strong>{t('publicPortal.assessment.tip3').split('{strong}')[1]}</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{t('publicPortal.assessment.tip4').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip4Strong')}</strong>{t('publicPortal.assessment.tip4').split('{strong}')[1]}</span>
+                  <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                  <span>{t('publicPortal.assessment.tip4').split('{strong}')[0]}<strong className="text-foreground">{t('publicPortal.assessment.tip4Strong')}</strong>{t('publicPortal.assessment.tip4').split('{strong}')[1]}</span>
                 </li>
               </ul>
             </div>
@@ -638,7 +638,7 @@ export default function Assessment() {
         <div className="flex items-center justify-center min-h-[80vh]">
           <div className="text-center">
             <AkurisPulse size={48} className="mb-4" />
-            <p className="text-slate-600 text-sm">{t('publicPortal.assessment.loadingQuestionnaire')}</p>
+            <p className="text-muted-foreground text-sm">{t('publicPortal.assessment.loadingQuestionnaire')}</p>
           </div>
         </div>
       </AssessmentShell>
@@ -650,11 +650,11 @@ export default function Assessment() {
     return (
       <AssessmentShell>
         <div className="flex items-center justify-center min-h-[80vh] p-4">
-          <Card className="w-full max-w-md bg-white border-slate-200 shadow-xl">
+          <Card className="w-full max-w-md bg-card border-border shadow-xl">
             <CardContent className="pt-6 text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-slate-900">{loadError?.title || t('publicPortal.assessment.notFoundTitle')}</h2>
-              <p className="text-slate-500">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2 text-foreground">{loadError?.title || t('publicPortal.assessment.notFoundTitle')}</h2>
+              <p className="text-muted-foreground">
                 {loadError?.message || t('publicPortal.assessment.notFoundMessage')}
               </p>
               {canRetryLoad && <Button type="button" className="mt-5" onClick={() => void fetchAssessment()}>{t('common.retry')}</Button>}
@@ -672,26 +672,26 @@ export default function Assessment() {
         <div className="flex items-center justify-center min-h-[80vh] p-4">
           <div className="text-center max-w-lg mx-auto">
             <div className="relative mb-8 animate-scale-in">
-              <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
+              <div className="w-24 h-24 bg-gradient-to-br from-success to-success rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-success/20">
                 <CheckCircle2 className="w-12 h-12 text-white animate-fade-in" />
               </div>
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-[hsl(250,80%,60%)] to-[hsl(250,80%,50%)] rounded-full animate-pulse"></div>
             </div>
             
             <div className="space-y-6 animate-fade-in">
-              <h2 className="text-3xl font-bold text-slate-900">{t('publicPortal.assessment.sentTitle')}</h2>
-              <p className="text-lg text-slate-600 max-w-md mx-auto leading-relaxed">
+              <h2 className="text-3xl font-bold text-foreground">{t('publicPortal.assessment.sentTitle')}</h2>
+              <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
                 {t('publicPortal.assessment.sentMessage', { company: assessment.empresa.nome })}
               </p>
               
-              <div className="mt-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-                <div className="flex items-center justify-center space-x-3 text-emerald-600 mb-3">
+              <div className="mt-8 p-6 bg-card border border-border rounded-xl shadow-sm">
+                <div className="flex items-center justify-center space-x-3 text-success mb-3">
                   <CheckCircle2 className="w-5 h-5" />
                   <span className="font-medium">{t('publicPortal.assessment.completedSuccess')}</span>
                 </div>
                 {assessment.data_conclusao && (
-                  <p className="text-sm text-slate-500">
-                    <strong className="text-slate-700">{t('publicPortal.assessment.completedAt')}</strong>{' '}
+                  <p className="text-sm text-muted-foreground">
+                    <strong className="text-foreground">{t('publicPortal.assessment.completedAt')}</strong>{' '}
                     {parseDataLocal(assessment.data_conclusao).toLocaleString(localeTag())}
                   </p>
                 )}
@@ -749,20 +749,20 @@ export default function Assessment() {
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4">
               {/* Progress card */}
-              <Card className="bg-white border-slate-200 shadow-sm">
+              <Card className="bg-card border-border shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-medium text-slate-500">{t('publicPortal.assessment.progress')}</span>
-                    <span className="text-xs font-semibold text-slate-900">{Math.round(progress)}%</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t('publicPortal.assessment.progress')}</span>
+                    <span className="text-xs font-semibold text-foreground">{Math.round(progress)}%</span>
                   </div>
                   <Progress
                     value={progress}
                     className="h-2 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-[hsl(250,80%,60%)] [&>div]:to-[hsl(250,80%,50%)] mb-3"
                   />
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{t('publicPortal.assessment.ofTotal', { answered: answeredCount, total: questions.length })}</span>
                     {missingRequiredList.length > 0 && (
-                      <span className="flex items-center gap-1 text-slate-700 font-medium">
+                      <span className="flex items-center gap-1 text-foreground font-medium">
                         <AlertTriangle className="h-3 w-3 text-[hsl(250,80%,55%)]" />
                         {t('publicPortal.assessment.requiredShort', { count: missingRequiredList.length })}
                       </span>
@@ -772,9 +772,9 @@ export default function Assessment() {
               </Card>
 
               {/* Summary card — replaces "Páginas" header */}
-              <Card className="bg-white border-slate-200 shadow-sm">
+              <Card className="bg-card border-border shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-slate-500">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">
                     {t('publicPortal.assessment.summary')}
                   </CardTitle>
                 </CardHeader>
@@ -794,13 +794,13 @@ export default function Assessment() {
                     return (
                       <>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1.5 text-slate-500">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
                             <Calendar className="h-3.5 w-3.5" />
                             {t('publicPortal.assessment.deadline')}
                           </span>
                           <span className={cn(
                             'font-semibold',
-                            overdue ? 'text-[hsl(250,80%,45%)]' : urgent ? 'text-slate-900' : 'text-slate-700'
+                            overdue ? 'text-[hsl(250,80%,45%)]' : urgent ? 'text-foreground' : 'text-foreground'
                           )}>
                             {daysLeft === null
                               ? t('publicPortal.assessment.noDeadline')
@@ -812,18 +812,18 @@ export default function Assessment() {
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1.5 text-slate-500">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
                             <Clock className="h-3.5 w-3.5" />
                             {t('publicPortal.assessment.estimatedTime')}
                           </span>
-                          <span className="font-semibold text-slate-700">~{estimatedMinutes} min</span>
+                          <span className="font-semibold text-foreground">~{estimatedMinutes} min</span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1.5 text-slate-500">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
                             <Save className="h-3.5 w-3.5" />
                             {t('publicPortal.assessment.lastSave')}
                           </span>
-                          <span className="font-semibold text-slate-700 text-right">
+                          <span className="font-semibold text-foreground text-right">
                             {savedAt
                               ? savedAt.toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
                               : '—'}
@@ -836,9 +836,9 @@ export default function Assessment() {
               </Card>
 
               {/* Sections (was "Páginas") */}
-              <Card className="bg-white border-slate-200 shadow-sm">
+              <Card className="bg-card border-border shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-slate-500">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">
                     {t('publicPortal.assessment.sections')}
                   </CardTitle>
                 </CardHeader>
@@ -872,12 +872,12 @@ export default function Assessment() {
                             <div className={cn(
                               'h-7 w-7 rounded-full flex items-center justify-center text-micro font-semibold shrink-0 transition-colors',
                               isComplete
-                                ? 'bg-slate-900 text-white'
+                                ? 'bg-primary text-primary-foreground'
                                 : isCurrent
                                   ? 'bg-[hsl(250,80%,60%)]/20 text-[hsl(250,80%,40%)]'
                                   : hasContent
-                                    ? 'bg-slate-200 text-slate-700'
-                                    : 'bg-muted text-slate-500'
+                                    ? 'bg-muted text-foreground'
+                                    : 'bg-muted text-muted-foreground'
                             )}>
                               {isComplete ? <Check className="h-3.5 w-3.5" /> : idx + 1}
                             </div>
@@ -885,14 +885,14 @@ export default function Assessment() {
                             <div className="min-w-0 flex-1">
                               <p className={cn(
                                 'text-sm font-medium truncate',
-                                isCurrent ? 'text-slate-900' : 'text-slate-700'
+                                isCurrent ? 'text-foreground' : 'text-foreground'
                               )} title={sectionLabel}>
                                 {sectionLabel}
                               </p>
-                              <p className="text-micro text-slate-500">
+                              <p className="text-micro text-muted-foreground">
                                 {t('publicPortal.assessment.answeredOf', { answered: status?.answered || 0, total: status?.total || 0 })}
                                 {status && status.missingRequired > 0 && (
-                                  <span className="text-slate-600"> · {t('publicPortal.assessment.requiredShort', { count: status.missingRequired })}</span>
+                                  <span className="text-muted-foreground"> · {t('publicPortal.assessment.requiredShort', { count: status.missingRequired })}</span>
                                 )}
                               </p>
                             </div>
@@ -908,12 +908,12 @@ export default function Assessment() {
 
               {/* Pendencies — only show when there are missing required */}
               {missingRequiredList.length > 0 && (
-                <Card className="bg-white border-slate-200 shadow-sm">
+                <Card className="bg-card border-border shadow-sm">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                    <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                       <AlertTriangle className="h-3.5 w-3.5 text-[hsl(250,80%,55%)]" />
                       {t('publicPortal.assessment.pendingRequired')}
-                      <span className="ml-auto text-micro font-semibold text-slate-700 bg-muted px-1.5 py-0.5 rounded">
+                      <span className="ml-auto text-micro font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">
                         {missingRequiredList.length}
                       </span>
                     </CardTitle>
@@ -928,13 +928,13 @@ export default function Assessment() {
                             <li key={q.id}>
                               <button
                                 onClick={() => setCurrentPage(pageOfQ)}
-                                className="w-full text-left flex items-center gap-2 text-xs text-slate-700 hover:text-slate-900 p-2 rounded hover:bg-accent transition-colors"
+                                className="w-full text-left flex items-center gap-2 text-xs text-foreground hover:text-foreground p-2 rounded hover:bg-accent transition-colors"
                               >
-                                <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
+                                <ChevronRight className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                                 <span className="flex-1 truncate" title={q.titulo || q.pergunta}>
                                   {q.titulo || q.pergunta}
                                 </span>
-                                <span className="text-micro text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
+                                <span className="text-micro text-muted-foreground shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
                               </button>
                             </li>
                           );
@@ -950,13 +950,13 @@ export default function Assessment() {
           {/* === Main content === */}
           <main className="min-w-0">
             {/* Mobile progress */}
-            <Card className="lg:hidden mb-4 bg-white border-slate-200 shadow-sm">
+            <Card className="lg:hidden mb-4 bg-card border-border shadow-sm">
               <CardContent className="p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-medium text-slate-500">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {t('publicPortal.assessment.pageOf', { page: currentPage + 1, total: totalPages })}
                   </span>
-                  <span className="text-xs font-semibold text-slate-900">{Math.round(progress)}%</span>
+                  <span className="text-xs font-semibold text-foreground">{Math.round(progress)}%</span>
                 </div>
                 <Progress
                   value={progress}
@@ -968,12 +968,12 @@ export default function Assessment() {
             {/* Page header */}
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 font-medium mb-1">
+                <p className="text-xs text-muted-foreground font-medium mb-1">
                   {assessment.template.nome}
                 </p>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                   {t('publicPortal.assessment.page', { page: currentPage + 1 })}
-                  <span className="text-slate-400 font-normal text-base ml-2">{t('publicPortal.assessment.ofPages', { total: totalPages })}</span>
+                  <span className="text-muted-foreground/70 font-normal text-base ml-2">{t('publicPortal.assessment.ofPages', { total: totalPages })}</span>
                 </h2>
               </div>
             </div>
@@ -988,10 +988,10 @@ export default function Assessment() {
                   <Card
                     key={question.id}
                     className={cn(
-                      'border bg-white transition-ui duration-200 overflow-hidden animate-fade-in shadow-sm',
+                      'border bg-card transition-ui duration-200 overflow-hidden animate-fade-in shadow-sm',
                       answered
-                        ? 'border-slate-300 shadow-[0_0_0_1px_hsl(250,80%,60%,0.08),0_8px_24px_-12px_hsl(250,80%,60%,0.18)]'
-                        : 'border-slate-200 hover:border-slate-300'
+                        ? 'border-border shadow-[0_0_0_1px_hsl(250,80%,60%,0.08),0_8px_24px_-12px_hsl(250,80%,60%,0.18)]'
+                        : 'border-border hover:border-border'
                     )}
                     style={{ animationDelay: `${index * 60}ms` }}
                   >
@@ -1002,25 +1002,25 @@ export default function Assessment() {
                         <div className={cn(
                           'h-9 w-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors',
                           answered
-                            ? 'bg-slate-900 text-white border border-slate-900'
-                            : 'bg-muted text-slate-600 border border-slate-200'
+                            ? 'bg-primary text-primary-foreground border border-primary'
+                            : 'bg-muted text-muted-foreground border border-border'
                         )}>
                           {answered ? <Check className="h-4 w-4" /> : questionNumber}
                         </div>
 
                         <div className="flex-1 min-w-0 space-y-1.5">
                           <div className="flex items-start gap-2 flex-wrap">
-                            <h3 className="text-base sm:text-lg font-semibold text-slate-900 leading-snug">
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground leading-snug">
                               {question.titulo || question.pergunta}
                             </h3>
                             {question.obrigatoria && (
-                              <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-muted text-slate-600 border border-slate-200 mt-1">
+                              <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border mt-1">
                                 {t('publicPortal.assessment.requiredBadge')}
                               </span>
                             )}
                           </div>
                           {question.descricao && (
-                            <p className="text-sm text-slate-600 leading-relaxed">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
                               {question.descricao}
                             </p>
                           )}
@@ -1034,7 +1034,7 @@ export default function Assessment() {
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             placeholder={t('publicPortal.assessment.textPlaceholder')}
-                            className="min-h-[120px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
+                            className="min-h-[120px] bg-card border-border text-foreground placeholder:text-muted-foreground/70 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                           />
                         )}
 
@@ -1053,12 +1053,12 @@ export default function Assessment() {
                                     'flex items-center space-x-3 p-3 rounded-lg border transition-ui duration-200 cursor-pointer',
                                     selected
                                       ? 'bg-[hsl(250,80%,60%)]/10 border-[hsl(250,80%,60%)]/40'
-                                      : 'bg-white border-slate-200 hover:bg-accent hover:border-slate-300'
+                                      : 'bg-card border-border hover:bg-accent hover:border-border'
                                   )}
                                   onClick={() => handleResponseChange(question.id, opcao)}
                                 >
-                                  <RadioGroupItem value={opcao} id={`${question.id}-${idx}`} className="border-slate-300 text-[hsl(250,80%,55%)]" />
-                                  <Label htmlFor={`${question.id}-${idx}`} className="text-sm font-medium cursor-pointer flex-1 text-slate-800">{opcao}</Label>
+                                  <RadioGroupItem value={opcao} id={`${question.id}-${idx}`} className="border-border text-[hsl(250,80%,55%)]" />
+                                  <Label htmlFor={`${question.id}-${idx}`} className="text-sm font-medium cursor-pointer flex-1 text-foreground">{opcao}</Label>
                                 </div>
                               );
                             })}
@@ -1074,7 +1074,7 @@ export default function Assessment() {
                             value={responses[question.id] ?? ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             placeholder={t('publicPortal.assessment.numberPlaceholder')}
-                            className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
+                            className="bg-card border-border text-foreground placeholder:text-muted-foreground/70 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                           />
                         )}
 
@@ -1096,12 +1096,12 @@ export default function Assessment() {
                                     'flex items-center justify-center space-x-3 p-4 rounded-lg border transition-ui duration-200 cursor-pointer',
                                     selected
                                       ? 'bg-[hsl(250,80%,60%)]/10 border-[hsl(250,80%,60%)]/40'
-                                      : 'bg-white border-slate-200 hover:bg-accent hover:border-slate-300'
+                                      : 'bg-card border-border hover:bg-accent hover:border-border'
                                   )}
                                   onClick={() => handleResponseChange(question.id, opt.value)}
                                 >
-                                  <RadioGroupItem value={opt.value} id={`${question.id}-${opt.value}`} className="border-slate-300 text-[hsl(250,80%,55%)]" />
-                                  <Label htmlFor={`${question.id}-${opt.value}`} className="text-sm font-semibold cursor-pointer text-slate-800">{opt.label}</Label>
+                                  <RadioGroupItem value={opt.value} id={`${question.id}-${opt.value}`} className="border-border text-[hsl(250,80%,55%)]" />
+                                  <Label htmlFor={`${question.id}-${opt.value}`} className="text-sm font-semibold cursor-pointer text-foreground">{opt.label}</Label>
                                 </div>
                               );
                             })}
@@ -1113,7 +1113,7 @@ export default function Assessment() {
                             value={responses[question.id] || ''}
                             onValueChange={(value) => handleResponseChange(question.id, value)}
                           >
-                            <SelectTrigger className="bg-white border-slate-200 text-slate-900 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200">
+                            <SelectTrigger className="bg-card border-border text-foreground focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200">
                               <SelectValue placeholder={t('publicPortal.assessment.selectPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -1141,7 +1141,7 @@ export default function Assessment() {
                                     'flex items-center space-x-3 p-3 rounded-lg border transition-ui duration-200 cursor-pointer',
                                     marcada
                                       ? 'bg-[hsl(250,80%,60%)]/10 border-[hsl(250,80%,60%)]/40'
-                                      : 'bg-white border-slate-200 hover:bg-accent hover:border-slate-300'
+                                      : 'bg-card border-border hover:bg-accent hover:border-border'
                                   )}
                                   onClick={() => {
                                     const proximas = marcada
@@ -1150,8 +1150,8 @@ export default function Assessment() {
                                     handleResponseChange(question.id, proximas.join('; '));
                                   }}
                                 >
-                                  <Checkbox checked={marcada} className="border-slate-300" />
-                                  <Label className="text-sm font-medium cursor-pointer flex-1 text-slate-800">{opcao}</Label>
+                                  <Checkbox checked={marcada} className="border-border" />
+                                  <Label className="text-sm font-medium cursor-pointer flex-1 text-foreground">{opcao}</Label>
                                 </div>
                               );
                             })}
@@ -1163,20 +1163,20 @@ export default function Assessment() {
                             type="date"
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                            className="bg-white border-slate-200 text-slate-900 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
+                            className="bg-card border-border text-foreground focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                           />
                         )}
 
                         {tipoDeCampo(question.tipo) === 'arquivo' && (
                           <div className="space-y-3">
-                            <div className="border-2 border-dashed border-slate-200 hover:border-[hsl(250,80%,60%)]/40 rounded-xl p-6 text-center transition-colors duration-200 bg-muted/20">
-                              <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                              <p className="text-sm text-slate-500 mb-3">
+                            <div className="border-2 border-dashed border-border hover:border-[hsl(250,80%,60%)]/40 rounded-xl p-6 text-center transition-colors duration-200 bg-muted/20">
+                              <Upload className="h-8 w-8 text-muted-foreground/70 mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground mb-3">
                                 {t('publicPortal.assessment.dropFile')}
                               </p>
                               <Input
                                 type="file"
-                                className="bg-white border-slate-200 text-slate-700"
+                                className="bg-card border-border text-foreground"
                                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
@@ -1203,8 +1203,8 @@ export default function Assessment() {
                               />
                             </div>
                             {responses[question.id] && (
-                              <div className="flex items-center space-x-3 text-sm text-slate-700 p-3 bg-card rounded-lg border border-slate-200">
-                                <FileText className="h-4 w-4 text-slate-500" />
+                              <div className="flex items-center space-x-3 text-sm text-foreground p-3 bg-card rounded-lg border border-border">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium">{responses[question.id]}</span>
                                 {responses[`${question.id}_arquivo_url`] && (
                                   <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline text-xs ml-auto">
@@ -1221,28 +1221,28 @@ export default function Assessment() {
                           <>
                             {question.configuracoes.mostrar_evidencia_quando &&
                              question.configuracoes.mostrar_evidencia_quando.split(',').includes(responses[question.id]) && (
-                              <div className="mt-4 p-4 bg-card border border-slate-200 rounded-lg animate-fade-in">
-                                <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                              <div className="mt-4 p-4 bg-card border border-border rounded-lg animate-fade-in">
+                                <Label className="text-sm font-medium text-foreground mb-3 block">
                                   {question.configuracoes.label_evidencia || t('publicPortal.assessment.evidenceLabel')}
                                 </Label>
                                 <Textarea
                                   value={responses[`${question.id}_evidencia`] || ''}
                                   onChange={(e) => handleResponseChange(`${question.id}_evidencia`, e.target.value)}
                                   placeholder={t('publicPortal.assessment.evidencePlaceholder')}
-                                  className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200 mb-4"
+                                  className="min-h-[100px] bg-card border-border text-foreground placeholder:text-muted-foreground/70 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200 mb-4"
                                 />
                                 <div className="space-y-3">
-                                  <Label className="text-sm font-medium text-slate-700 block">
+                                  <Label className="text-sm font-medium text-foreground block">
                                     {t('publicPortal.assessment.attachDocument')}
                                   </Label>
-                                  <div className="border-2 border-dashed border-slate-200 hover:border-[hsl(250,80%,60%)]/40 rounded-lg p-4 text-center transition-colors duration-200 bg-white">
-                                    <Upload className="h-6 w-6 text-slate-400 mx-auto mb-2" />
-                                    <p className="text-xs text-slate-600 mb-2">
+                                  <div className="border-2 border-dashed border-border hover:border-[hsl(250,80%,60%)]/40 rounded-lg p-4 text-center transition-colors duration-200 bg-card">
+                                    <Upload className="h-6 w-6 text-muted-foreground/70 mx-auto mb-2" />
+                                    <p className="text-xs text-muted-foreground mb-2">
                                       {t('publicPortal.assessment.clickToSelect')}
                                     </p>
                                     <Input
                                       type="file"
-                                      className="text-xs bg-white border-slate-200 text-slate-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-muted file:text-slate-700"
+                                      className="text-xs bg-card border-border text-foreground file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-muted file:text-foreground"
                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                       onChange={async (e) => {
                                         const file = e.target.files?.[0];
@@ -1268,8 +1268,8 @@ export default function Assessment() {
                                     />
                                   </div>
                                   {responses[`${question.id}_arquivo`] && (
-                                    <div className="flex items-center space-x-2 text-xs text-slate-700 bg-white p-2 rounded border border-slate-200">
-                                      <FileText className="h-3 w-3 text-slate-500" />
+                                    <div className="flex items-center space-x-2 text-xs text-foreground bg-card p-2 rounded border border-border">
+                                      <FileText className="h-3 w-3 text-muted-foreground" />
                                       <span>{t('publicPortal.assessment.evidenceAttached')}</span>
                                       <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline ml-auto">
                                         {t('publicPortal.assessment.view')}
@@ -1282,15 +1282,15 @@ export default function Assessment() {
 
                             {question.configuracoes.mostrar_justificativa_quando &&
                              question.configuracoes.mostrar_justificativa_quando.split(',').includes(responses[question.id]) && (
-                              <div className="mt-4 p-4 bg-card border border-slate-200 rounded-lg animate-fade-in">
-                                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                              <div className="mt-4 p-4 bg-card border border-border rounded-lg animate-fade-in">
+                                <Label className="text-sm font-medium text-foreground mb-2 block">
                                   {question.configuracoes.label_justificativa || t('publicPortal.assessment.justificationLabel')}
                                 </Label>
                                 <Textarea
                                   value={responses[`${question.id}_justificativa`] || ''}
                                   onChange={(e) => handleResponseChange(`${question.id}_justificativa`, e.target.value)}
                                   placeholder={t('publicPortal.assessment.justificationPlaceholder')}
-                                  className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
+                                  className="min-h-[100px] bg-card border-border text-foreground placeholder:text-muted-foreground/70 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                                 />
                               </div>
                             )}
@@ -1310,7 +1310,7 @@ export default function Assessment() {
                 onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                 disabled={currentPage === 0}
                 size="lg"
-                className="shadow-sm border-slate-200 bg-white text-slate-700 hover:bg-accent hover:text-slate-900"
+                className="shadow-sm border-border bg-card text-foreground hover:bg-accent hover:text-foreground"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t('publicPortal.assessment.previous')}
@@ -1352,52 +1352,52 @@ export default function Assessment() {
 
       {/* === Confirmation dialog (G - enriched) === */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="bg-white border-slate-200 shadow-2xl max-w-lg">
+        <AlertDialogContent className="bg-card border-border shadow-2xl max-w-lg">
           <AlertDialogHeader className="space-y-3">
             <div className={cn(
               'flex items-center justify-center w-12 h-12 rounded-full mx-auto',
               missingRequiredList.length > 0
-                ? 'bg-amber-100'
+                ? 'bg-warning/10'
                 : 'bg-[hsl(250,80%,60%)]/15'
             )}>
               {missingRequiredList.length > 0 ? (
-                <AlertTriangle className="w-6 h-6 text-amber-600" />
+                <AlertTriangle className="w-6 h-6 text-warning" />
               ) : (
                 <CheckCircle2 className="w-6 h-6 text-[hsl(250,80%,55%)]" />
               )}
             </div>
-            <AlertDialogTitle className="text-center text-xl text-slate-900">
+            <AlertDialogTitle className="text-center text-xl text-foreground">
               {missingRequiredList.length > 0
                 ? t('publicPortal.assessment.pendingRequiredTitle')
                 : t('publicPortal.assessment.finish')}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="text-center text-slate-600 leading-relaxed space-y-4">
+              <div className="text-center text-muted-foreground leading-relaxed space-y-4">
                 {/* Summary */}
                 <div className="grid grid-cols-3 gap-2 pt-2">
-                  <div className="p-3 bg-card border border-slate-200 rounded-lg">
-                    <p className="text-2xl font-bold text-slate-900">{questions.length}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('publicPortal.assessment.total')}</p>
+                  <div className="p-3 bg-card border border-border rounded-lg">
+                    <p className="text-2xl font-bold text-foreground">{questions.length}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('publicPortal.assessment.total')}</p>
                   </div>
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <p className="text-2xl font-bold text-emerald-700">{answeredCount}</p>
-                    <p className="text-xs text-emerald-700/80 mt-0.5">{t('publicPortal.assessment.answered')}</p>
+                  <div className="p-3 bg-success/10 border border-success/30 rounded-lg">
+                    <p className="text-2xl font-bold text-success">{answeredCount}</p>
+                    <p className="text-xs text-success/80 mt-0.5">{t('publicPortal.assessment.answered')}</p>
                   </div>
                   <div className={cn(
                     'p-3 border rounded-lg',
                     missingRequiredList.length > 0
-                      ? 'bg-amber-50 border-amber-200'
-                      : 'bg-muted/40 border-slate-200'
+                      ? 'bg-warning/10 border-warning/30'
+                      : 'bg-muted/40 border-border'
                   )}>
                     <p className={cn(
                       'text-2xl font-bold',
-                      missingRequiredList.length > 0 ? 'text-amber-700' : 'text-slate-600'
+                      missingRequiredList.length > 0 ? 'text-warning' : 'text-muted-foreground'
                     )}>
                       {missingRequiredList.length}
                     </p>
                     <p className={cn(
                       'text-xs mt-0.5',
-                      missingRequiredList.length > 0 ? 'text-amber-700/80' : 'text-slate-500'
+                      missingRequiredList.length > 0 ? 'text-warning/80' : 'text-muted-foreground'
                     )}>
                       {t('publicPortal.assessment.pending')}
                     </p>
@@ -1407,7 +1407,7 @@ export default function Assessment() {
                 {/* Missing list */}
                 {missingRequiredList.length > 0 ? (
                   <div className="text-left space-y-2 mt-2">
-                    <p className="text-sm text-amber-700 font-medium flex items-center gap-2">
+                    <p className="text-sm text-warning font-medium flex items-center gap-2">
                       <FileQuestion className="h-4 w-4" />
                       {t('publicPortal.assessment.unansweredRequired')}
                     </p>
@@ -1423,17 +1423,17 @@ export default function Assessment() {
                                   setShowConfirmDialog(false);
                                   setCurrentPage(pageOfQ);
                                 }}
-                                className="w-full text-left flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900 p-2 rounded hover:bg-accent transition-colors"
+                                className="w-full text-left flex items-center gap-2 text-sm text-foreground hover:text-foreground p-2 rounded hover:bg-accent transition-colors"
                               >
-                                <ChevronRight className="h-3 w-3 text-amber-600 shrink-0" />
+                                <ChevronRight className="h-3 w-3 text-warning shrink-0" />
                                 <span className="flex-1 truncate">{q.titulo || q.pergunta}</span>
-                                <span className="text-micro text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
+                                <span className="text-micro text-muted-foreground shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
                               </button>
                             </li>
                           );
                         })}
                         {missingRequiredList.length > 10 && (
-                          <li className="text-xs text-slate-500 px-2">
+                          <li className="text-xs text-muted-foreground px-2">
                             {t('publicPortal.assessment.andMore', { count: missingRequiredList.length - 10 })}
                           </li>
                         )}
@@ -1444,7 +1444,7 @@ export default function Assessment() {
                   <p className="text-sm leading-relaxed">
                     {t('publicPortal.assessment.confirmText')}
                     <br />
-                    <span className="text-slate-500 text-xs">{t('publicPortal.assessment.confirmNote')}</span>
+                    <span className="text-muted-foreground text-xs">{t('publicPortal.assessment.confirmNote')}</span>
                   </p>
                 )}
               </div>
@@ -1455,7 +1455,7 @@ export default function Assessment() {
               variant="outline" 
               onClick={() => setShowConfirmDialog(false)}
               disabled={submitting}
-              className="flex-1 bg-white border-slate-200 text-slate-700 hover:bg-accent hover:text-slate-900"
+              className="flex-1 bg-card border-border text-foreground hover:bg-accent hover:text-foreground"
             >
               {missingRequiredList.length > 0 ? t('publicPortal.assessment.backAndAnswer') : t('publicPortal.assessment.cancel')}
             </Button>

@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/date-utils';
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { DialogShell } from '@/components/ui/dialog-shell';
@@ -1382,7 +1383,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           {it.tipo_documento_identificado && (
                             <Badge variant="secondary" className="text-micro py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
                           )}
-                          <span>{new Date(it.updated_at).toLocaleString()}</span>
+                          <span>{formatDateTime(it.updated_at)}</span>
                         </div>
                       </button>
                     ))}
@@ -1434,7 +1435,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         {it.tipo_documento_identificado && (
                           <Badge variant="secondary" className="text-micro py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
                         )}
-                        <span>{new Date(it.updated_at).toLocaleString()}</span>
+                        <span>{formatDateTime(it.updated_at)}</span>
                       </div>
                     </button>
                   ))}
