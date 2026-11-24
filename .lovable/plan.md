@@ -34,7 +34,7 @@ Sem copiar Tenant ID, sem criar "app registration", sem segredo para colar. É o
 - Resultado e erros vão para o sino.
 
 ## Etapas
-1. Akuris (você) registra uma vez o aplicativo multi-tenant no Entra ID da Akuris, com permissões só de leitura: DeviceManagementManagedDevices.Read.All, User.Read.All, Group.Read.All, Organization.Read.All (e Sites.Read.All só se ligar documentos). Guia passo a passo entregue junto.
+1. Akuris (você) registra uma vez o aplicativo multi-tenant no Entra ID da Akuris, com permissões só de leitura: DeviceManagementManagedDevices.Read.All, User.Read.All, GroupMember.Read.All, RoleManagement.Read.Directory, AuditLog.Read.All, Organization.Read.All (e Sites.Read.All só se ligar documentos). Guia passo a passo entregue junto.
 2. Cartão único "Microsoft 365" no catálogo, substituindo Teams, Azure e os 5 cartões da coleta.
 3. Fluxo de consentimento do administrador e tela de escolha dos dados.
 4. Sincronização do Intune para Ativos (manual + agendada), com aviso no sino.
@@ -53,7 +53,7 @@ Sem copiar Tenant ID, sem criar "app registration", sem segredo para colar. É o
 - A Akuris usa Google Workspace, e isso não muda nada: o e-mail continua no Google. Basta criar um tenant Entra ID gratuito só para registrar o aplicativo:
   1. Em azure.microsoft.com/free (ou entra.microsoft.com), criar a conta com um e-mail da Akuris (ex.: integracoes@akuris.com.br); isso cria um tenant tipo akuris.onmicrosoft.com, sem custo e sem licença Microsoft 365.
   2. Opcional: verificar o domínio akuris.com.br nesse tenant (registro TXT no DNS) — necessário para o "editor verificado".
-  3. Entra ID > Registros de aplicativo > Novo: tipo de conta "Contas em qualquer diretório organizacional (multilocatário)"; URL de redirecionamento = callback do Akuris (eu informo).
-  4. Permissões de API > Microsoft Graph > Permissões de aplicativo (só leitura, listadas acima).
-  5. Certificados e segredos > novo segredo; Client ID e segredo vão para os Segredos do projeto.
+  3. Entra ID > Registros de aplicativo > Novo: tipo de conta "Contas em qualquer diretório organizacional (multilocatário)"; URL de redirecionamento (Web) = https://lnlkahtugwmkznasapfd.supabase.co/functions/v1/integration-connect.
+  4. Permissões de API > Microsoft Graph > Permissões de aplicativo (Application, só leitura): DeviceManagementManagedDevices.Read.All, User.Read.All, GroupMember.Read.All, RoleManagement.Read.Directory, AuditLog.Read.All, Organization.Read.All; Sites.Read.All só com documentos. Nenhuma delegada. Conceder consentimento do administrador.
+  5. Certificados e segredos > novo segredo; Client ID e segredo vão para os Segredos das funções do projeto Supabase lnlkahtugwmkznasapfd como MICROSOFT_INTEGRATION_CLIENT_ID e MICROSOFT_INTEGRATION_CLIENT_SECRET (formulário seguro na construção).
 - A Microsoft pode pedir "editor verificado" (Publisher verification) para clientes aceitarem sem alerta; recomendado, mas não bloqueia.
