@@ -172,6 +172,16 @@ const copy: Record<string, [string, string]> = {
   cineFooterTag1: ['Conformidade hoje.', 'Compliance today.'], cineFooterTag2: ['Um amanhã mais seguro.', 'A safer tomorrow.'],
   cineNavFrameworks: ['Frameworks', 'Frameworks'], cineFootProduct: ['Produto', 'Product'], cineFootFeatures: ['Funcionalidades', 'Features'], cineFootResources: ['Recursos', 'Resources'], cineFootCompany: ['Empresa', 'Company'], cineFootContact: ['Contato', 'Contact'],
   cineRights: ['Todos os direitos reservados.', 'All rights reserved.'], cinePrivacy: ['Privacidade', 'Privacy'],
+  cineLeadClear: ['Plataforma de GRC que reúne riscos, controles, evidências, privacidade e auditorias, com IA para acelerar a conformidade.', 'A GRC platform that brings risks, controls, evidence, privacy and audits together, with AI to speed up compliance.'],
+  cineHowLink: ['Ver como funciona', 'See how it works'],
+  cineBenA: ['Gap Analysis com IA por framework', 'AI Gap Analysis per framework'], cineBenB: ['Evidências reaproveitadas entre normas', 'Evidence reused across standards'], cineBenC: ['Relatórios prontos para auditoria', 'Audit-ready reports'],
+  cineChipsTitle: ['E também', 'And also'], cineChipAtivos: ['Ativos', 'Assets'], cineChipContratos: ['Contratos', 'Contracts'], cineChipFornecedores: ['Fornecedores', 'Suppliers'], cineChipIncidentes: ['Incidentes', 'Incidents'], cineChipDenuncias: ['Canal de denúncias', 'Whistleblowing'], cineChipDocumentos: ['Documentos', 'Documents'], cineChipProjetos: ['Projetos', 'Projects'], cineChipPlanos: ['Planos de ação', 'Action plans'], cineChipAcessos: ['Revisão de acessos', 'Access reviews'], cineChipDados: ['Mapeamento de dados', 'Data mapping'],
+  cinePeekLabel: ['O produto', 'The product'], cinePeekTitle: ['Veja o Akuris por dentro', 'See Akuris from the inside'], cinePeekSub: ['Do requisito à evidência: riscos, controles e auditorias ligados no mesmo fluxo.', 'From requirement to evidence: risks, controls and audits linked in one flow.'],
+  cineAudLabel: ['Para quem é', 'Who it is for'], cineAudTitle: ['Feito para as equipas que respondem pela conformidade', 'Built for the teams accountable for compliance'],
+  cineAud1: ['Segurança da Informação e CISO', 'Information Security and CISO'], cineAud1Body: ['Prepare ISO 27001, SOC 2 e NIS2 com controles, evidências e riscos ligados, e mostre a maturidade à direção.', 'Prepare ISO 27001, SOC 2 and NIS2 with linked controls, evidence and risks, and show maturity to leadership.'],
+  cineAud2: ['Compliance, Jurídico e DPO', 'Compliance, Legal and DPO'], cineAud2Body: ['Mantenha o registo de tratamentos, pedidos de titulares, contratos e canal de denúncias num só lugar.', 'Keep processing records, data subject requests, contracts and the whistleblowing channel in one place.'],
+  cineAud3: ['Auditoria e Gestão de Riscos', 'Audit and Risk Management'], cineAud3Body: ['Planeie auditorias, acompanhe achados e planos de ação e avalie riscos com matriz e indicadores.', 'Plan audits, track findings and action plans, and assess risks with a matrix and indicators.'],
+  cineFaqLabel: ['Dúvidas', 'Questions'], cineFaqTitle: ['Perguntas frequentes', 'Frequently asked questions'],
 };
 export const site = {
   pt: { site: Object.fromEntries(Object.entries(copy).map(([key, pair]) => [key, pair[0]])) },

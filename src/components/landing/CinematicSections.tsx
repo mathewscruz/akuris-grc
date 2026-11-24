@@ -5,7 +5,9 @@ import akurisLogo from '@/assets/akuris-logo.png';
 import { DemoButton } from '@/components/public/PublicShell';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconShieldCheck, IconRefresh, IconFileText, IconChart, IconLock, IconArrowRight, IconUsers, IconBolt, IconSettings, IconChevronLeft } from '@/components/icons';
+import { ProductScreens } from '@/components/landing/ProductScreens';
+import { FRAMEWORK_LOGOS } from '@/components/landing/FrameworkLogos';
+import { IconBriefcase, IconDatabase, IconFolder, IconKey, IconMegaphone, IconServer, IconTarget, IconUserCheck, IconShieldCheck, IconRefresh, IconFileText, IconChart, IconLock, IconArrowRight, IconUsers, IconBolt, IconSettings, } from '@/components/icons';
 
 const Accent = ({ text, word }: { text: string; word: string }) => {
   const i = text.indexOf(word);
@@ -32,7 +34,7 @@ const Vertical = ({ lines, className }: { lines: string[]; className: string }) 
 
 export function HeroCinematic() {
   const { t } = useLanguage();
-  const benefits: [ReactNode, string][] = [[<IconChart strokeWidth={1.5} />, t('site.cineBen1')], [<IconShieldCheck strokeWidth={1.5} />, t('site.cineBen2')], [<IconUsers strokeWidth={1.5} />, t('site.cineBen3')]];
+  const benefits: [ReactNode, string][] = [[<IconChart strokeWidth={1.5} />, t('site.cineBenA')], [<IconRefresh strokeWidth={1.5} />, t('site.cineBenB')], [<IconFileText strokeWidth={1.5} />, t('site.cineBenC')]];
   return <section className="cine-hero" aria-labelledby="cine-hero-title">
     <img className="cine-hero-photo" src={heroSkyline} alt="" width={1920} height={1088} fetchPriority="high" />
     <div className="cine-hero-tint" aria-hidden="true" />
@@ -43,12 +45,12 @@ export function HeroCinematic() {
     <Vertical className="cine-v-top" lines={t('site.cineVTop').split('|')} />
     <Vertical className="cine-v-bottom" lines={t('site.cineVBottom').split('|')} />
     <div className="lp-container cine-hero-inner">
-      <p className="cine-eyebrow">{t('site.cineEyebrow')}</p>
       <h1 id="cine-hero-title">{t('site.cineTitle')}</h1>
-      <p className="cine-hero-lead">{t('site.cineLead1')}<br />{t('site.cineLead2')}</p>
-      <DemoButton className="lp-btn cine-btn-outline">{t('site.cineDemo')}</DemoButton>
+      <p className="cine-hero-lead">{t('site.cineLeadClear')}</p>
+      <div className="cine-hero-actions"><DemoButton className="lp-btn cine-btn-outline">{t('site.cineDemo')}</DemoButton><a className="cine-link-btn" href="#como-funciona">{t('site.cineHowLink')} ↓</a></div>
       <ul className="cine-benefits">{benefits.map(([icon, label]) => <li key={label}>{icon}<span>{label}</span></li>)}</ul>
     </div>
+    <FrameworkMarquee />
   </section>;
 }
 
@@ -76,7 +78,7 @@ export function AboutModules() {
     [<IconShieldCheck strokeWidth={1.5} />, 'Riscos'], [<IconSettings strokeWidth={1.5} />, 'Controles'], [<IconChart strokeWidth={1.5} />, 'Gap'],
     [<IconLock strokeWidth={1.5} />, 'Privacidade'], [<IconFileText strokeWidth={1.5} />, 'Auditorias'], [<IconRefresh strokeWidth={1.5} />, 'Continuidade'],
   ];
-  return <section className="cine-about" id="produto" aria-labelledby="cine-about-title"><div className="lp-container">
+  return <section className="cine-about cine-sec" id="produto" aria-labelledby="cine-about-title"><div className="lp-container" data-reveal>
     <p className="cine-label cine-label-lines">{t('site.cineAboutLabel')}</p>
     <h2 id="cine-about-title"><Accent text={t('site.cineAboutTitle')} word={t('site.cineAboutAccent')} /></h2>
     <p className="cine-about-body">{t('site.cineAboutBody')}</p>
@@ -86,28 +88,57 @@ export function AboutModules() {
       <span><strong>{t(`site.cineMod${k}`)}</strong><span>{t(`site.cineMod${k}Body`)}</span></span>
       <span className="cine-module-arrow"><IconArrowRight strokeWidth={1.5} /></span>
     </Link>)}</div>
+    <ModuleChips />
     <p className="cine-tagline-lines">{t('site.cineTagline')}</p>
   </div></section>;
 }
 
-const FRAMEWORKS: [string, ReactNode][] = [
-  ['ISO 27001', <b className="cine-fw-iso">ISO</b>], ['SOC 2', <span className="cine-fw-ring">SOC</span>], ['LGPD', <IconShieldCheck strokeWidth={1.5} />],
-  ['RGPD', <span className="cine-fw-stars">★</span>], ['NIS2', <IconShieldCheck strokeWidth={1.5} />], ['DORA', <IconBolt strokeWidth={1.5} />], ['NIST CSF', <b className="cine-fw-nist">NIST</b>],
-];
 export function FrameworkMarquee() {
   const { t } = useLanguage();
-  return <section className="cine-marquee" id="frameworks" aria-label={t('site.cineMarqueeLeft')}>
+  return <div className="cine-marquee" id="frameworks" role="region" aria-label={t('site.cineMarqueeLeft')}>
     <p className="cine-marquee-side">{t('site.cineMarqueeLeft')}</p>
-    <span className="cine-marquee-chev" aria-hidden="true"><IconChevronLeft strokeWidth={1.5} /></span>
-    <div className="cine-marquee-window"><div className="cine-marquee-track">{[...FRAMEWORKS, ...FRAMEWORKS].map(([name, icon], i) => <span key={i} aria-hidden={i >= FRAMEWORKS.length}><i>{icon}</i>{name}</span>)}</div></div>
-    <span className="cine-marquee-chev cine-flip" aria-hidden="true"><IconChevronLeft strokeWidth={1.5} /></span>
-    <p className="cine-marquee-side cine-right">{t('site.cineMarqueeRight')}</p>
-  </section>;
+    <div className="cine-marquee-window"><div className="cine-marquee-track">{[...FRAMEWORK_LOGOS, ...FRAMEWORK_LOGOS].map(([name, logo], i) => <span key={i} aria-hidden={i >= FRAMEWORK_LOGOS.length}><i>{logo}</i>{name}</span>)}</div></div>
+  </div>;
+}
+
+function ModuleChips() {
+  const { t } = useLanguage();
+  const chips: [ReactNode, string][] = [[<IconServer strokeWidth={1.5} />, 'Ativos'], [<IconBriefcase strokeWidth={1.5} />, 'Contratos'], [<IconUsers strokeWidth={1.5} />, 'Fornecedores'], [<IconBolt strokeWidth={1.5} />, 'Incidentes'], [<IconMegaphone strokeWidth={1.5} />, 'Denuncias'], [<IconFolder strokeWidth={1.5} />, 'Documentos'], [<IconTarget strokeWidth={1.5} />, 'Projetos'], [<IconFileText strokeWidth={1.5} />, 'Planos'], [<IconKey strokeWidth={1.5} />, 'Acessos'], [<IconDatabase strokeWidth={1.5} />, 'Dados']];
+  return <div className="cine-chips"><p>{t('site.cineChipsTitle')}</p><ul>{chips.map(([icon, k]) => <li key={k}>{icon}{t('site.cineChip' + k)}</li>)}</ul></div>;
+}
+
+export function ProductPeek() {
+  const { t } = useLanguage();
+  return <section className="cine-sec cine-peek" aria-labelledby="cine-peek-title"><div className="lp-container" data-reveal>
+    <p className="cine-label">{t('site.cinePeekLabel')}</p>
+    <h2 id="cine-peek-title" className="cine-h2">{t('site.cinePeekTitle')}</h2>
+    <p className="cine-sub">{t('site.cinePeekSub')}</p>
+    <div className="cine-product-frame"><ProductScreens autoplay /></div>
+  </div></section>;
+}
+
+export function Audience() {
+  const { t } = useLanguage();
+  const items: [ReactNode, number][] = [[<IconShieldCheck strokeWidth={1.5} />, 1], [<IconUserCheck strokeWidth={1.5} />, 2], [<IconChart strokeWidth={1.5} />, 3]];
+  return <section className="cine-sec cine-audience" aria-labelledby="cine-aud-title"><div className="lp-container" data-reveal>
+    <p className="cine-label">{t('site.cineAudLabel')}</p>
+    <h2 id="cine-aud-title" className="cine-h2">{t('site.cineAudTitle')}</h2>
+    <div className="cine-aud-grid">{items.map(([icon, n]) => <article key={n}><span className="cine-module-icon">{icon}</span><h3>{t(`site.cineAud${n}`)}</h3><p>{t(`site.cineAud${n}Body`)}</p></article>)}</div>
+  </div></section>;
+}
+
+export function FaqCompact({ faqs }: { faqs: { question: string; answer: string }[] }) {
+  const { t } = useLanguage();
+  return <section className="cine-sec cine-faq" aria-labelledby="cine-faq-title"><div className="lp-container" data-reveal>
+    <p className="cine-label">{t('site.cineFaqLabel')}</p>
+    <h2 id="cine-faq-title" className="cine-h2">{t('site.cineFaqTitle')}</h2>
+    <div className="cine-faq-list">{faqs.map(f => <details key={f.question}><summary>{f.question}<span aria-hidden="true">+</span></summary><p>{f.answer}</p></details>)}</div>
+  </div></section>;
 }
 
 export function GlowSteps() {
   const { t } = useLanguage();
-  return <section className="cine-steps" id="solucoes" aria-labelledby="cine-steps-title"><div className="lp-container">
+  return <section className="cine-steps cine-sec" id="como-funciona" aria-labelledby="cine-steps-title"><div className="lp-container" data-reveal>
     <p className="cine-label">{t('site.cineStepsLabel')}</p>
     <h2 id="cine-steps-title">{t('site.cineStepsTitle')}</h2>
     <p className="cine-steps-sub">{t('site.cineStepsSub')}</p>
@@ -118,7 +149,7 @@ export function GlowSteps() {
 export function CtaShield() {
   const { t } = useLanguage();
   const items: [ReactNode, string, string][] = [[<IconBolt strokeWidth={1.5} />, 'cineCtaB1', 'cineCtaB1Body'], [<IconChart strokeWidth={1.5} />, 'cineCtaB2', 'cineCtaB2Body'], [<IconUsers strokeWidth={1.5} />, 'cineCtaB3', 'cineCtaB3Body']];
-  return <section className="lp-container cine-cta-wrap" id="contato"><div className="cine-cta">
+  return <section className="lp-container cine-cta-wrap cine-sec" id="contato"><div className="cine-cta" data-reveal>
     <div className="cine-cta-copy">
       <p className="cine-label cine-label-bar">{t('site.cineCtaLabel')}</p>
       <h2><Accent text={t('site.cineCtaTitle')} word={t('site.cineCtaAccent')} /></h2>
