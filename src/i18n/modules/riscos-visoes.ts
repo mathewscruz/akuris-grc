@@ -1,6 +1,7 @@
 export const riscosVisoes = {
   pt: {
     riscosVisoes: {
+      extra: { rascunho: 'Rascunho', emRevisao: 'Em revisão', rascunhos: 'Rascunhos', arquivarRisco: 'Arquivar risco' },
       matrix: {
         appetiteFooter: {
           apetite: 'Apetite:',
@@ -110,6 +111,7 @@ export const riscosVisoes = {
   },
   en: {
     riscosVisoes: {
+      extra: { rascunho: 'Draft', emRevisao: 'Under review', rascunhos: 'Drafts', arquivarRisco: 'Archive risk' },
       matrix: {
         appetiteFooter: {
           apetite: 'Appetite:',

@@ -67,6 +67,8 @@ interface DialogShellProps {
   noScroll?: boolean;
   /** Hide the default footer entirely (e.g. read-only) */
   hideFooter?: boolean;
+  /** 'side' abre como painel lateral direito, igual ao RecordDetailDrawer (fichas de leitura). */
+  variant?: 'dialog' | 'side';
 }
 
 /**
@@ -120,6 +122,7 @@ export function DialogShell({
   className,
   noScroll = false,
   hideFooter = false,
+  variant = 'dialog',
 }: DialogShellProps) {
   const { t } = useLanguage();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -151,8 +154,9 @@ export function DialogShell({
           ref={dialogRef}
           className={cn(
             'p-0 gap-0 overflow-hidden flex flex-col',
-            'max-w-full max-h-[100dvh] sm:max-h-[92vh]',
-            SIZE_CLASSES[size],
+            variant === 'side'
+              ? 'inset-y-0 right-0 left-auto h-[100dvh] max-h-[100dvh] w-full rounded-none border-y-0 border-r-0 border-l bg-surface-1 sm:inset-y-0 sm:right-0 sm:left-auto sm:top-0 sm:translate-x-0 sm:translate-y-0 sm:w-full sm:max-w-2xl sm:max-h-[100dvh] sm:rounded-none data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right data-[state=open]:sm:slide-in-from-right data-[state=closed]:sm:slide-out-to-right data-[state=open]:sm:slide-in-from-left-0 data-[state=open]:sm:slide-in-from-top-0 data-[state=closed]:sm:slide-out-to-left-0 data-[state=closed]:sm:slide-out-to-top-0 data-[state=open]:sm:zoom-in-100 data-[state=closed]:sm:zoom-out-100'
+              : cn('max-w-full max-h-[100dvh] sm:max-h-[92vh]', SIZE_CLASSES[size]),
             className
           )}
         >

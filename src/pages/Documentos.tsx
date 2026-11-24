@@ -658,7 +658,7 @@ export default function Documentos() {
                   action={!temFiltrosAtivos ? {
                     label: t('documentos.lista.novoDocumento'),
                     onClick: () => setDocumentoDialog({ open: true })
-                  } : undefined}
+                  } : { label: t('common.clearFilters'), onClick: limparFiltros }}
                 />
               }
               onPreview={(documento) => setPreviewDialog({ open: true, documento })}

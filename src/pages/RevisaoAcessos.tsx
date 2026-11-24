@@ -445,6 +445,7 @@ export default function RevisaoAcessos() {
                 onSearchChange={setHistorySearch}
                 filtering={{ active: !!systemId, onClear: clearSystem }}
                 columns={historicoColumns}
+                onRowClick={(review) => handleViewItems(review)}
                 sortField={sortConfig?.field}
                 sortDirection={sortConfig?.direction}
                 onSort={handleSort}
@@ -454,7 +455,8 @@ export default function RevisaoAcessos() {
                 searchPlaceholder={t('fin.revisao.buscarHistorico')}
                 emptyState={{
                   title: t('fin.revisao.nenhumaConcluida'),
-                  description: t('fin.revisao.historicoVazio')
+                  description: t('fin.revisao.historicoVazio'),
+                  action: { label: t('fin.revisao.ativas'), onClick: () => setActiveTab('ativas') },
                 }}
               />
             </CardContent>

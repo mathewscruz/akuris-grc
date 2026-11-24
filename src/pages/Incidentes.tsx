@@ -589,7 +589,8 @@ export default function Incidentes() {
             emptyState={{
               icon: <IncidentesIcon className="h-8 w-8" />,
               title: t('fin.incidentes.nenhum'),
-              description: t('sweepRiscos.incidentes.emptyStateDesc')
+              description: t('sweepRiscos.incidentes.emptyStateDesc'),
+              action: { label: t('p3Import.importButtonLabel'), onClick: () => setImportDialogOpen(true) },
             }}
           />
         </CardContent>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useListState } from '@/hooks/useListState';
 import { useState, useMemo } from 'react';
 import { useFocusRow } from '@/hooks/useFocusRow';
@@ -25,14 +26,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { RecordProgress } from '@/components/ui/record-progress';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveCriticidadeTone } from '@/lib/status-tone';
+import { resolveCriticidadeTone, resolvePlanoStatusTone } from '@/lib/status-tone';
 
-const statusMap: Record<string, { label: string; variant: any }> = {
-  rascunho: { label: 'Rascunho', variant: 'secondary' },
-  ativo: { label: 'Ativo', variant: 'success' },
-  em_revisao: { label: 'Em Revisão', variant: 'warning' },
-  desativado: { label: 'Desativado', variant: 'destructive' },
-};
 
 const tipoMap: Record<string, string> = {
   bcp: 'BCP',
@@ -67,7 +62,7 @@ export default function Continuidade() {
       if (!empresaId) return [];
       const { data, error } = await supabase
         .from('continuidade_planos')
-        .select('*, sistema:sistemas_privilegiados(nome_sistema)')
+        .select('*, sistema:sistemas_privilegiados(id, nome_sistema)')
         .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -151,13 +146,15 @@ export default function Continuidade() {
       mobilePriority: 0,
       label: t('fin.comum.status'),
       render: (_val, row) => {
-        const st = statusMap[row.status] || statusMap.rascunho;
-        return <Badge variant={st.variant}>{st.label}</Badge>;
+        const st = row.status || 'rascunho';
+        return <StatusBadge {...resolvePlanoStatusTone(st)}>{t(`continuidadeComp.status.${st}`)}</StatusBadge>;
       },
     },
     {
       key: 'sistema', label: t('continuidadeComp.planoDialog.fieldSistema'),
-      render: (_v, row) => <span className="text-muted-foreground">{row.sistema?.nome_sistema || '—'}</span>,
+      render: (_v, row) => row.sistema?.id ? (
+        <Link to={`/sistemas?focus=${row.sistema.id}`} onClick={(e) => e.stopPropagation()} className="text-foreground underline-offset-4 hover:underline hover:text-primary">{row.sistema.nome_sistema}</Link>
+      ) : <span className="text-muted-foreground">{row.sistema?.nome_sistema || '—'}</span>,
     },
     {
       key: 'criticidade', label: t('continuidadeComp.planoDialog.fieldCriticidade'), sortable: true,
@@ -228,7 +225,7 @@ export default function Continuidade() {
                 [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), t('continuidadeComp.planoDialog.fieldSistema'), t('continuidadeComp.planoDialog.fieldCriticidade'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
                 planosFiltrados.map((p: any) => [
                   p.nome || '', tipoMap[p.tipo] || p.tipo || '',
-                  statusMap[p.status]?.label || p.status || '',
+                  p.status ? t(`continuidadeComp.status.${p.status}`) : '',
                   p.sistema?.nome_sistema || '',
                   t(`continuidadeComp.planoDialog.criticidade.${p.criticidade || 'media'}`),
                   p.rto_horas != null ? String(p.rto_horas) : '',

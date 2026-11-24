@@ -24,3 +24,4 @@
 - Evidence-collection providers are enabled by the server, not the frontend: the catalog shows "Connect" only when integration-connect reports the provider ready (platform credentials + INTEGRATION_COLLECTIONS_ENABLED); this lets providers go live one at a time without a code change.
 - Task evidence lives in projeto_tarefa_anexos (file in private projeto-anexos bucket under empresa/projeto/tarefa, or https link); a DB trigger blocks completing a leaf task without evidence when projetos.exigir_evidencia, so every completion path obeys it.
 - Save buttons pass `loading` to the shared Button (AkurisPulse while saving, brief check when done); this gives in-place save feedback without per-form spinners.
+- Read-only record views that still need DialogShell features open with `variant="side"` (right panel like RecordDetailDrawer); this keeps one detail-panel pattern without rewriting complex workflows.

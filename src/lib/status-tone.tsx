@@ -772,3 +772,17 @@ export const resolveGenericTone = comoTaxonomia(_resolveGenericTone);
 /** Estado do projeto → tom de estado do Chip (ativo, pausado, concluído, arquivado). */
 export const projetoStatusChip = (status?: string | null): 'active' | 'attention' | 'done' | 'rest' =>
   status === 'ativo' ? 'active' : status === 'pausado' ? 'attention' : status === 'concluido' ? 'done' : 'rest';
+
+/** Estado de publicação/ciclo de vida (planos de continuidade, relatórios). */
+export const resolvePlanoStatusTone = (raw?: string | null): ToneResult => {
+  switch (norm(raw)) {
+    case 'ativo':
+    case 'publicado':
+      return { tone: 'success' };
+    case 'em_revisao':
+    case 'em revisao':
+      return { tone: 'warning' };
+    default:
+      return { tone: 'neutral' };
+  }
+};

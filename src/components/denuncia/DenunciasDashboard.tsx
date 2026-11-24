@@ -1,3 +1,4 @@
+import { toast as sonnerToast } from '@/lib/toast';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { IconView, IconSuccess, IconWarning, IconTime, IconCalendar, IconShield, IconUserCheck } from '@/components/icons';
@@ -72,6 +73,23 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
   const [selectedDenuncia, setSelectedDenuncia] = useState<Denuncia | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Estado vazio: o próximo passo útil é divulgar o canal público.
+  const copiarLinkCanal = async () => {
+    if (!empresaId) return;
+    const [{ data: cfg }, { data: emp }] = await Promise.all([
+      supabase.from('denuncias_configuracoes').select('token_publico').eq('empresa_id', empresaId).maybeSingle(),
+      supabase.from('empresas').select('slug').eq('id', empresaId).maybeSingle(),
+    ]);
+    const url = emp?.slug
+      ? `${window.location.origin}/${emp.slug}/denuncia`
+      : cfg?.token_publico ? `${window.location.origin}/denuncia/externa/${cfg.token_publico}` : '';
+    if (!url) { sonnerToast.error(t('canalExperience.copyFailed')); return; }
+    try {
+      await navigator.clipboard.writeText(url);
+      sonnerToast.success(t('p3Denuncia.channel.copied'), { description: t('p3Denuncia.channel.copiedDescription') });
+    } catch { sonnerToast.error(t('canalExperience.copyFailed')); }
+  };
   const [statusFilter, setStatusFilter] = useState('todos');
   const [gravidadeFilter, setGravidadeFilter] = useState('todos');
   /* O filtro que faltava: quem gere o canal procura o que está a arder. */
@@ -518,6 +536,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionad
               description: searchTerm 
                 ? t('denunciasAdmin.dashboard.emptyDescriptionSearch')
                 : t('denunciasAdmin.dashboard.emptyDescription'),
+              action: searchTerm ? undefined : { label: t('p3Denuncia.channel.copy'), onClick: () => void copiarLinkCanal() },
             }}
           />
         </CardContent>

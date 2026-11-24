@@ -787,13 +787,13 @@ export function Riscos() {
       type: 'select' as const,
       options: [
         { value: 'all', label: t('riscos.page.filters.all') },
-        { value: 'rascunho', label: 'Rascunho' },
+        { value: 'rascunho', label: t('riscosVisoes.extra.rascunho') },
         { value: 'identificado', label: t('riscos.page.status.identificado') },
         { value: 'analisado', label: t('riscos.page.status.analisado') },
         { value: 'em_tratamento', label: t('riscos.page.status.em_tratamento') },
         { value: 'tratado', label: t('riscos.page.status.tratado') },
         { value: 'monitorado', label: t('riscos.page.status.monitorado') },
-        { value: 'em_revisao', label: 'Em revisão' }
+        { value: 'em_revisao', label: t('riscosVisoes.extra.emRevisao') }
       ],
       value: statusFilter,
       onChange: (value: string) => setStatusFilter(value === 'all' ? '' : value)
@@ -965,7 +965,7 @@ export function Riscos() {
           // `viewFilters` e `viewedRiscos` vivem no escopo do componente.
           const viewItems = [
             { id: 'todos' as SavedView, label: t('riscos.page.filters.all'), count: sortedRiscos.length },
-            { id: 'rascunhos' as SavedView, label: 'Rascunhos', count: sortedRiscos.filter(viewFilters.rascunhos).length },
+            { id: 'rascunhos' as SavedView, label: t('riscosVisoes.extra.rascunhos'), count: sortedRiscos.filter(viewFilters.rascunhos).length },
             { id: 'acima_apetite' as SavedView, label: t('riscos.page.kpi.aboveAppetite'), count: sortedRiscos.filter(viewFilters.acima_apetite).length },
             { id: 'sem_responsavel' as SavedView, label: t('riscos.page.kpi.noResponsible'), count: sortedRiscos.filter(viewFilters.sem_responsavel).length },
             { id: 'revisao_vencida' as SavedView, label: t('riscos.page.kpi.overdueReview'), count: sortedRiscos.filter(viewFilters.revisao_vencida).length },
@@ -1077,7 +1077,7 @@ export function Riscos() {
         <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
-          title="Arquivar risco"
+          title={t('riscosVisoes.extra.arquivarRisco')}
           description={`O risco “${riscoToDelete?.nome ?? ''}” sairá da carteira ativa, mas seu histórico, aprovações e evidências serão preservados.`}
           confirmText="Arquivar"
           onConfirm={handleDelete}

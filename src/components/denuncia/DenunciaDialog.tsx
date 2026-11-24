@@ -276,6 +276,7 @@ export function DenunciaDialog({
 
   return (
     <DialogShell
+        variant="side"
       open={open}
       onOpenChange={onOpenChange}
       title={t('denunciasAdmin.dialog.title', { protocolo: denuncia.protocolo })}

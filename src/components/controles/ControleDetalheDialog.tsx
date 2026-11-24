@@ -465,6 +465,7 @@ export function ControleDetalheDialog({
   return (
     <>
       <DialogShell
+        variant="side"
         open={open}
         onOpenChange={onOpenChange}
         title={controle.nome}

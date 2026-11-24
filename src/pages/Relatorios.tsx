@@ -1,3 +1,5 @@
+import { resolvePlanoStatusTone } from '@/lib/status-tone';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useSearchParams } from 'react-router-dom';
 import { readAllPages } from '@/lib/read-all-pages';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -325,9 +327,9 @@ export default function Relatorios() {
                         <CardTitle className="text-base truncate">{rel.nome}</CardTitle>
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{rel.descricao || t('fin.comum.semDescricao')}</p>
                       </div>
-                      <Badge variant={rel.status === 'publicado' ? 'success' : rel.status === 'arquivado' ? 'secondary' : 'warning'}>
+                      <StatusBadge {...resolvePlanoStatusTone(rel.status)}>
                         {rel.status === 'publicado' ? t('sweepCore.reports.publishedStatus') : rel.status === 'arquivado' ? t('sweepCore.reports.archivedStatus') : t('sweepCore.reports.draftStatus')}
-                      </Badge>
+                      </StatusBadge>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">

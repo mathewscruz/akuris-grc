@@ -329,6 +329,7 @@ export function ItemAuditoriaDetalheDialog({
   return (
     <>
       <DialogShell
+        variant="side"
         open={open}
         onOpenChange={onOpenChange}
         title={item.titulo}
