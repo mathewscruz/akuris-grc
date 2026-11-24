@@ -143,10 +143,9 @@ export function PartnersStrip() {
     <p className="cine-label">{t('site.partnersLabel')}</p>
     <h2 id="cine-partners-title" className="ed-h2">{t('site.partnersTitle')}</h2>
     <ul className="ed-partners-logos">
-      <li><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /></li>
-      <li><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /></li>
+      <li><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /><span className="ed-partners-region">{t('site.partnersRegionCyberme')}</span></li>
+      <li><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /><span className="ed-partners-region">{t('site.partnersRegionMercurius')}</span></li>
     </ul>
-    <p className="ed-partners-invite">{t('site.partnersInvite')} <DemoButton className="ed-partners-link">{t('site.partnersCta')}</DemoButton></p>
   </div></section>;
 }
 

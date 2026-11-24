@@ -198,7 +198,7 @@ const copy: Record<string, [string, string]> = {
   cineAud1: ['Segurança da Informação e CISO', 'Information Security and CISO'], cineAud1Body: ['Prepare ISO 27001, SOC 2 e NIS2 com controles, evidências e riscos ligados, e mostre a maturidade à direção.', 'Prepare ISO 27001, SOC 2 and NIS2 with linked controls, evidence and risks, and show maturity to leadership.'],
   cineAud2: ['Compliance, Jurídico e DPO', 'Compliance, Legal and DPO'], cineAud2Body: ['Mantenha o registo de tratamentos, pedidos de titulares, contratos e canal de denúncias num só lugar.', 'Keep processing records, data subject requests, contracts and the whistleblowing channel in one place.'],
   cineAud3: ['Auditoria e Gestão de Riscos', 'Audit and Risk Management'], cineAud3Body: ['Planeie auditorias, acompanhe achados e planos de ação e avalie riscos com matriz e indicadores.', 'Plan audits, track findings and action plans, and assess risks with a matrix and indicators.'],
-  partnersLabel: ['Parceiros e revendedores', 'Partners and resellers'], partnersTitle: ['Quem leva o Akuris aos clientes', 'Who brings Akuris to clients'], partnersInvite: ['Quer revender o Akuris?', 'Want to resell Akuris?'], partnersCta: ['Seja parceiro', 'Become a partner'],
+  partnersLabel: ['Parceiros e revendedores', 'Partners and resellers'], partnersTitle: ['Quem leva o Akuris aos clientes', 'Who brings Akuris to clients'], partnersRegionCyberme: ['Revende o Akuris na Europa', 'Resells Akuris in Europe'], partnersRegionMercurius: ['Revende o Akuris no Brasil e no Chile', 'Resells Akuris in Brazil and Chile'],
   cineFaqLabel: ['Dúvidas', 'Questions'], cineFaqTitle: ['Perguntas frequentes', 'Frequently asked questions'],
 };
 export const site = {
