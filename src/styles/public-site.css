@@ -793,6 +793,8 @@
 .ed-partners-logos li { display:grid; grid-template-rows:96px auto; justify-items:center; align-content:center; gap:1.25rem; }
 .ed-partners-logos img { display:block; align-self:center; height:38px; width:auto; opacity:.6; transition:opacity .3s ease, transform .3s ease; }
 .ed-partners-logos img.is-tall { height:96px; }
+.ed-partners-link { display:block; align-self:center; cursor:pointer; border-radius:6px; }
+.ed-partners-link:focus-visible { outline:2px solid hsl(var(--primary)); outline-offset:6px; }
 .ed-partners-logos li:hover img { opacity:1; transform:translateY(-2px); }
 .ed-partners-logos li { grid-template-rows:96px auto; }
 .ed-partners-geo { display:flex; flex-direction:column; align-items:center; gap:.55rem; --geo:190 85% 60%; }

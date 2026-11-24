@@ -143,8 +143,8 @@ export function PartnersStrip() {
     <p className="cine-label">{t('site.partnersLabel')}</p>
     <h2 id="cine-partners-title" className="ed-h2">{t('site.partnersTitle')}</h2>
     <ul className="ed-partners-logos">
-      <li><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /><PartnerGeo map={GEO_EU} tone="cyan" label={t('site.partnersGeoEurope')} kicker={t('site.partnersOfficialReseller')} /></li>
-      <li><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /><PartnerGeo map={GEO_SA} tone="amber" label={t('site.partnersGeoBrChile')} kicker={t('site.partnersOfficialReseller')} /></li>
+      <li><a href={PARTNER_URLS.cyberme} target="_blank" rel="noopener noreferrer" className="ed-partners-link" aria-label="CyberME"><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /></a><PartnerGeo map={GEO_EU} tone="cyan" label={t('site.partnersGeoEurope')} kicker={t('site.partnersOfficialReseller')} /></li>
+      <li><a href={PARTNER_URLS.mercurius} target="_blank" rel="noopener noreferrer" className="ed-partners-link" aria-label="Mercurius"><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /></a><PartnerGeo map={GEO_SA} tone="amber" label={t('site.partnersGeoBrChile')} kicker={t('site.partnersOfficialReseller')} /></li>
     </ul>
   </div></section>;
 }
@@ -253,3 +253,5 @@ function PartnerGeo({ map, tone, label, kicker }: { map: string[]; tone: 'cyan' 
     <span className="ed-partners-place">{label}</span>
   </div>;
 }
+
+const PARTNER_URLS = { cyberme: 'https://cyberme.pt', mercurius: 'https://mercurius.com.br' };
