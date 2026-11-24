@@ -156,6 +156,7 @@ const copy: Record<string, [string, string]> = {
   edAudQuote2: ['Para quem cuida da conformidade.', 'For those who own compliance.'],
   edAudQuote3: ['Para quem precisa decidir.', 'For those who need to decide.'],
   edCtaTitle: ['Vamos tornar a sua próxima auditoria a mais tranquila.', "Let's make your next audit the calmest one yet."],
+  edCtaLabel2: ['Próximo passo', 'Next step'], edCtaTitle2: ['A sua próxima auditoria,', 'Your next audit,'], edCtaAccent2: ['mais tranquila.', 'a calmer one.'], edCtaSub2: ['Veja o Akuris com os seus frameworks, numa conversa de 30 minutos.', 'See Akuris with your own frameworks in a 30-minute conversation.'],
   edCtaAccent: ['a mais tranquila', 'the calmest one'],
   cineTitleAccent: ['compliance', 'compliance'],
   cineTitle: ['Fique um passo à frente em governança, risco e compliance', 'Stay one step ahead in governance, risk and compliance'],

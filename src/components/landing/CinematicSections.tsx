@@ -156,13 +156,19 @@ export function GlowSteps() {
 
 export function CtaShield() {
   const { t } = useLanguage();
-  return <section className="cine-sec ed-cta" id="contato" aria-labelledby="ed-cta-title">
-    <div className="ed-cta-art" aria-hidden="true"><div className="cine-glow" /><BrandMark /></div>
-    <div className="lp-container ed-cta-inner">
-      <p className="cine-label">{t('site.cineCtaLabel')}</p>
-      <h2 id="ed-cta-title"><Accent text={t('site.edCtaTitle')} word={t('site.edCtaAccent')} /></h2>
-      <p className="ed-side">{t('site.cineCtaBody')}</p>
-      <DemoButton className="lp-btn cine-btn-solid">{t('site.cineDemo')}</DemoButton>
+  return <section className="cine-sec ed-cta2" id="contato" aria-labelledby="ed-cta-title">
+    <div className="lp-container">
+      <div className="ed-steps-line" aria-hidden="true"><i /></div>
+      <div className="ed-cta2-grid">
+        <div>
+          <p className="ed-cta2-label">{t('site.edCtaLabel2')}</p>
+          <h2 id="ed-cta-title">{t('site.edCtaTitle2')}<br /><em>{t('site.edCtaAccent2')}</em></h2>
+        </div>
+        <div className="ed-cta2-side">
+          <p>{t('site.edCtaSub2')}</p>
+          <DemoButton className="ed-cta2-link">{t('site.cineDemo')}</DemoButton>
+        </div>
+      </div>
     </div>
   </section>;
 }
