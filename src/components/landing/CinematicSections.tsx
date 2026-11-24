@@ -6,7 +6,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProductScreens } from '@/components/landing/ProductScreens';
 import { FRAMEWORK_LOGOS } from '@/components/landing/FrameworkLogos';
-import { IconBriefcase, IconDatabase, IconFolder, IconKey, IconMegaphone, IconServer, IconTarget, IconUserCheck, IconShieldCheck, IconRefresh, IconFileText, IconChart, IconLock, IconArrowRight, IconUsers, IconBolt, IconSettings, } from '@/components/icons';
+import { IconUserCheck, IconShieldCheck, IconChart, IconUsers, IconBolt } from '@/components/icons';
 
 const Accent = ({ text, word }: { text: string; word: string }) => {
   const i = text.indexOf(word);
@@ -52,56 +52,55 @@ function useSpotlight() {
 export function HeroCinematic() {
   const { t } = useLanguage();
   useSpotlight();
-  const benefits: [ReactNode, string][] = [[<IconChart strokeWidth={1.5} />, t('site.cineBenA')], [<IconRefresh strokeWidth={1.5} />, t('site.cineBenB')], [<IconFileText strokeWidth={1.5} />, t('site.cineBenC')]];
   return <section className="cine-hero" aria-labelledby="cine-hero-title">
     <div className="cine-stage" aria-hidden="true"><div className="cine-glow" /><div className="cine-dots" /><BrandMark /></div>
     <div className="lp-container cine-hero-inner">
       <h1 id="cine-hero-title"><Accent text={t('site.cineTitle')} word={t('site.cineTitleAccent')} /></h1>
       <p className="cine-hero-lead">{t('site.cineLeadClear')}</p>
       <div className="cine-hero-actions"><DemoButton className="lp-btn cine-btn-outline">{t('site.cineDemo')}</DemoButton><a className="cine-link-btn" href="#como-funciona">{t('site.cineHowLink')} ↓</a></div>
-      <ul className="cine-benefits">{benefits.map(([icon, label]) => <li key={label}>{icon}<span>{label}</span></li>)}</ul>
     </div>
     <FrameworkMarquee />
   </section>;
 }
 
-function Counter({ value, suffix = '' }: { value: number; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setN(value); return; }
-    const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return; io.disconnect();
-      const start = performance.now();
-      const tick = (now: number) => { const p = Math.min(1, (now - start) / 1400); setN(Math.round(value * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(tick); };
-      requestAnimationFrame(tick);
-    }, { threshold: 0.4 });
-    io.observe(el); return () => io.disconnect();
-  }, [value]);
-  return <span ref={ref}>{n}{suffix && <em>{suffix}</em>}</span>;
-}
-
 export function AboutModules() {
   const { t } = useLanguage();
-  const stats = [[29, '+', 'cineStat1'], [15, '', 'cineStat2'], [82, '', 'cineStat3'], [3, '', 'cineStat4']] as const;
-  const modules: [ReactNode, string][] = [
-    [<IconShieldCheck strokeWidth={1.5} />, 'Riscos'], [<IconSettings strokeWidth={1.5} />, 'Controles'], [<IconChart strokeWidth={1.5} />, 'Gap'],
-    [<IconLock strokeWidth={1.5} />, 'Privacidade'], [<IconFileText strokeWidth={1.5} />, 'Auditorias'], [<IconRefresh strokeWidth={1.5} />, 'Continuidade'],
-  ];
-  return <section className="cine-about cine-sec" id="produto" aria-labelledby="cine-about-title"><div className="lp-container" data-reveal>
-    <p className="cine-label cine-label-lines">{t('site.cineAboutLabel')}</p>
-    <h2 id="cine-about-title"><Accent text={t('site.cineAboutTitle')} word={t('site.cineAboutAccent')} /></h2>
-    <p className="cine-about-body">{t('site.cineAboutBody')}</p>
-    <dl className="cine-stats">{stats.map(([v, s, k]) => <div key={k}><dt><Counter value={v} suffix={s} /></dt><dd>{t('site.' + k)}</dd></div>)}</dl>
-    <div className="cine-modules">{modules.map(([icon, k]) => <Link to="/auth" key={k} className="cine-module">
-      <span className="cine-module-icon">{icon}</span>
-      <span><strong>{t(`site.cineMod${k}`)}</strong><span>{t(`site.cineMod${k}Body`)}</span></span>
-      <span className="cine-module-arrow"><IconArrowRight strokeWidth={1.5} /></span>
-    </Link>)}</div>
-    <ModuleChips />
-    <p className="cine-tagline-lines">{t('site.cineTagline')}</p>
+  const words = t('site.cineManifesto').split(' ');
+  return <section className="cine-about cine-sec" id="produto" aria-labelledby="cine-about-title"><div className="lp-container">
+    <div className="cine-manifesto">
+      <h2 id="cine-about-title">{words.map((w, i) => <span key={i} style={{ ['--i' as string]: i }}>{w} </span>)}</h2>
+      <p>{t('site.cineManifestoSide')}</p>
+    </div>
+    <ModuleThread />
   </div></section>;
+}
+
+const THREAD = ['Riscos', 'Controles', 'Gap', 'Privacidade', 'Auditorias', 'Continuidade'] as const;
+function ModuleThread() {
+  const { t } = useLanguage();
+  const [active, setActive] = useState(0);
+  const refs = useRef<(HTMLLIElement | null)[]>([]);
+  useEffect(() => {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.i)); }), { rootMargin: '-45% 0px -45% 0px' });
+    refs.current.forEach(el => el && io.observe(el)); return () => io.disconnect();
+  }, []);
+  const progress = active / (THREAD.length - 1);
+  return <div className="cine-thread">
+    <p className="cine-label">{t('site.cineThreadLabel')}</p>
+    <div className="cine-thread-grid">
+      <ol>{THREAD.map((k, i) => <li key={k} data-i={i} ref={el => { refs.current[i] = el; }} className={i === active ? 'is-active' : i < active ? 'is-past' : ''}>
+        <span className="cine-thread-n">{String(i + 1).padStart(2, '0')}</span>
+        <strong>{t(`site.cineMod${k}`)}</strong>
+        <em>{t(`site.cineThread${k}`)}</em>
+      </li>)}</ol>
+      <div className="cine-thread-art" aria-hidden="true"><svg viewBox="0 0 200 600">
+        <path className="cine-thread-base" d="M100 20 C 20 110, 180 190, 100 300 S 20 490, 100 580" />
+        <path className="cine-thread-lit" pathLength="1" style={{ strokeDashoffset: 1 - progress }} d="M100 20 C 20 110, 180 190, 100 300 S 20 490, 100 580" />
+        {THREAD.map((_, i) => <circle key={i} cx={100} cy={20 + i * 112} r={i <= active ? 5 : 3} className={i <= active ? 'on' : ''} />)}
+      </svg></div>
+    </div>
+    <p className="cine-thread-more">{t('site.cineThreadMore')}</p>
+  </div>;
 }
 
 export function FrameworkMarquee() {
@@ -110,12 +109,6 @@ export function FrameworkMarquee() {
     <p className="cine-marquee-side">{t('site.cineMarqueeLeft')}</p>
     <div className="cine-marquee-window"><div className="cine-marquee-track">{[...FRAMEWORK_LOGOS, ...FRAMEWORK_LOGOS].map(([name, logo], i) => <span key={i} aria-hidden={i >= FRAMEWORK_LOGOS.length}><i>{logo}</i>{name}</span>)}</div></div>
   </div>;
-}
-
-function ModuleChips() {
-  const { t } = useLanguage();
-  const chips: [ReactNode, string][] = [[<IconServer strokeWidth={1.5} />, 'Ativos'], [<IconBriefcase strokeWidth={1.5} />, 'Contratos'], [<IconUsers strokeWidth={1.5} />, 'Fornecedores'], [<IconBolt strokeWidth={1.5} />, 'Incidentes'], [<IconMegaphone strokeWidth={1.5} />, 'Denuncias'], [<IconFolder strokeWidth={1.5} />, 'Documentos'], [<IconTarget strokeWidth={1.5} />, 'Projetos'], [<IconFileText strokeWidth={1.5} />, 'Planos'], [<IconKey strokeWidth={1.5} />, 'Acessos'], [<IconDatabase strokeWidth={1.5} />, 'Dados']];
-  return <div className="cine-chips"><p>{t('site.cineChipsTitle')}</p><ul>{chips.map(([icon, k]) => <li key={k}>{icon}{t('site.cineChip' + k)}</li>)}</ul></div>;
 }
 
 export function ProductPeek() {
