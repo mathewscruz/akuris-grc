@@ -1,0 +1,1 @@
+REVOKE ALL ON public.mesh_grupos FROM anon;

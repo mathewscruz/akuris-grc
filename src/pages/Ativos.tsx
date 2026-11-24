@@ -27,6 +27,7 @@ import AtivoDialog from '@/components/ativos/AtivoDialog';
 import AtivoFicha from '@/components/ativos/AtivoFicha';
 import ManutencaoDialog from '@/components/ativos/ManutencaoDialog';
 import TrilhaAuditoriaAtivos from '@/components/ativos/TrilhaAuditoriaAtivos';
+import AgenteInventarioDialog from '@/components/ativos/AgenteInventarioDialog';
 import { exportCSV } from '@/lib/csv-utils';
 import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
@@ -151,6 +152,7 @@ const Ativos = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [importDialog, setImportDialog] = useState(false);
+  const [agenteDialog, setAgenteDialog] = useState(false);
   const [azureSyncing, setAzureSyncing] = useState(false);
   const [editingAtivo, setEditingAtivo] = useState<Ativo | null>(null);
   const [detalheAtivo, setDetalheAtivo] = useState<Ativo | null>(null);
@@ -544,6 +546,11 @@ const Ativos = () => {
             onClick: () => setImportDialog(true),
           },
           {
+            label: t('agenteInventario.menu'),
+            icon: <IconServer className="h-4 w-4" />,
+            onClick: () => setAgenteDialog(true),
+          },
+          {
             label: t('modules.ativos.auditTrail'),
             icon: <IconHistory className="h-4 w-4" />,
             onClick: () => setTrilhaDialog({ open: true }),
@@ -551,6 +558,7 @@ const Ativos = () => {
         ]}
       />
 
+      <AgenteInventarioDialog open={agenteDialog} onOpenChange={setAgenteDialog} />
       <AtivoDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}

@@ -29,3 +29,4 @@
 - Save buttons pass `loading` to the shared Button (AkurisPulse while saving, brief check when done); this gives in-place save feedback without per-form spinners.
 - Read-only record views that still need DialogShell features open with `variant="side"` (right panel like RecordDetailDrawer); this keeps one detail-panel pattern without rewriting complex workflows.
 - Campaign visual editing sanitizes HTML through `campaign-html.ts`, and scanned form labels use literal ID comparison through `labels.ts`; editable and remote content must not become executable browser code or regular expressions.
+- Machine inventory comes from one Akuris-hosted MeshCentral server (one device group per empresa in mesh_grupos); mesh-provisionar creates the group, mesh-sincronizar upserts ativos by (empresa_id, mesh_node_id) with pure mapping in its regras.ts; the old agent-* endpoints stay retired, so tenant isolation rests on the group↔empresa link.

@@ -622,6 +622,8 @@ export type Database = {
       }
       ativos: {
         Row: {
+          agente_online: boolean | null
+          agente_ultimo_contato: string | null
           atributos: Json
           cliente: string | null
           created_at: string
@@ -633,6 +635,7 @@ export type Database = {
           id: string
           imei: string | null
           localizacao: string | null
+          mesh_node_id: string | null
           nome: string
           proprietario: string | null
           quantidade: number | null
@@ -644,6 +647,8 @@ export type Database = {
           versao: string | null
         }
         Insert: {
+          agente_online?: boolean | null
+          agente_ultimo_contato?: string | null
           atributos?: Json
           cliente?: string | null
           created_at?: string
@@ -655,6 +660,7 @@ export type Database = {
           id?: string
           imei?: string | null
           localizacao?: string | null
+          mesh_node_id?: string | null
           nome: string
           proprietario?: string | null
           quantidade?: number | null
@@ -666,6 +672,8 @@ export type Database = {
           versao?: string | null
         }
         Update: {
+          agente_online?: boolean | null
+          agente_ultimo_contato?: string | null
           atributos?: Json
           cliente?: string | null
           created_at?: string
@@ -677,6 +685,7 @@ export type Database = {
           id?: string
           imei?: string | null
           localizacao?: string | null
+          mesh_node_id?: string | null
           nome?: string
           proprietario?: string | null
           quantidade?: number | null
@@ -7580,6 +7589,44 @@ export type Database = {
             columns: ["evidence_id"]
             isOneToOne: false
             referencedRelation: "evidence_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mesh_grupos: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          instalador_url: string | null
+          mesh_id: string
+          ultima_sincronizacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          instalador_url?: string | null
+          mesh_id: string
+          ultima_sincronizacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          instalador_url?: string | null
+          mesh_id?: string
+          ultima_sincronizacao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mesh_grupos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
