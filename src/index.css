@@ -2401,6 +2401,28 @@ input:-webkit-autofill:focus {
   .akuris-table [data-chip-family="state"][data-chip-tone="done"] { --table-state-dot: var(--state-done); }
   .akuris-table [data-chip-family="state"][data-chip-tone="attention"] { --table-state-dot: var(--severity-medium); }
   .akuris-table [data-chip-family="state"][data-chip-tone="blocked"] { --table-state-dot: var(--destructive); }
+  .akuris-table > thead th button { font-size: 13px; font-weight: 400; color: inherit; }
+  /* Mockup A dot colours: livelier than the detail-view rings, table only. */
+  .akuris-table { --table-dot-rest: 215 12% 62%; --table-dot-active: 142 60% 45%; --table-dot-done: 172 55% 38%; --table-dot-attention: 38 92% 50%; }
+  .dark .akuris-table { --table-dot-rest: 215 12% 55%; --table-dot-active: 142 60% 52%; --table-dot-done: 172 50% 48%; }
+  .akuris-table [data-chip-family="state"] { --table-state-dot: var(--table-dot-rest); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="active"] { --table-state-dot: var(--table-dot-active); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="done"] { --table-state-dot: var(--table-dot-done); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="attention"] { --table-state-dot: var(--table-dot-attention); }
+  .akuris-table [data-chip-family="state"][data-chip-tone="blocked"] { --table-state-dot: var(--destructive); }
+  .akuris-table [data-chip-family="state"] { color: hsl(var(--muted-foreground)) !important; }
+  /* Selection box: small square with a soft border; purple only when checked. */
+  .akuris-table [role="checkbox"] {
+    width: 14px; height: 14px; min-height: 14px; padding: 0;
+    border-radius: 3px; border-color: hsl(var(--border));
+  }
+  .akuris-table [role="checkbox"]:hover { border-color: hsl(var(--muted-foreground)); }
+  .akuris-table [role="checkbox"][data-state="checked"] { border-color: hsl(var(--primary)); }
+  .akuris-table [role="checkbox"] svg { width: 12px; height: 12px; }
+  /* One line per cell like the mockup; full text stays in the tooltip/detail. */
+  .akuris-table > tbody > tr > td:not([colspan]) { white-space: nowrap; }
+  .akuris-table > tbody > tr > td:not([colspan]) [data-primary-cell] { max-width: 48ch; }
+  .akuris-table > tbody > tr > td:not([colspan]) > span:not([data-chip]):not([data-primary-cell]) { display: inline-block; max-width: 28ch; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
   /* A measured ring is data, not decoration: never replace it with a dot. */
   .akuris-table [data-chip-family="state"]:not([data-chip-measured]) > [data-chip-indicator] > * { display: none; }
   .akuris-table [data-chip-family="state"]:not([data-chip-measured]) > [data-chip-indicator]::before {
@@ -2415,8 +2437,8 @@ input:-webkit-autofill:focus {
   /* Pointer targets stay comfortable on touch screens; names and multiline
      content determine row height instead of being clipped to a fixed box. */
   @media (hover: hover) and (pointer: fine) {
-    .akuris-table > tbody > tr > td:not([colspan]) > button,
-    .akuris-table > tbody > tr > td:not([colspan]) > div > button {
+    .akuris-table > tbody > tr > td:not([colspan]) > button:not([role="checkbox"]),
+    .akuris-table > tbody > tr > td:not([colspan]) > div > button:not([role="checkbox"]) {
       height: 24px;
       min-height: 24px;
       padding-top: 0;

@@ -59,7 +59,7 @@ const STATE_FROM_TONE: Record<StatusTone, StateLevel> = {
   orange: 'attention',
   destructive: 'blocked',
   info: 'rest',
-  primary: 'rest',
+  primary: 'active',
   neutral: 'rest',
 };
 

@@ -677,7 +677,7 @@ export function DataTable<T extends Record<string, any>>({
                     {sortable ? (
                       <Button variant="ghost" size="sm"
                         type="button"
-                        className="inline-flex h-7 w-full items-center gap-1.5 rounded-md px-0 py-1 text-micro text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="inline-flex h-7 w-full items-center justify-start gap-1.5 rounded-md px-0 py-1 text-micro text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         onClick={() => handleSort(String(column.key))}
                       >
                         {column.label}
@@ -768,17 +768,12 @@ export function DataTable<T extends Record<string, any>>({
                            "—" na tabela e "0" no cartão do telemóvel -- o mesmo
                            dado com duas verdades conforme o tamanho do ecrã. */
                         if (column !== colunaPrincipal) return conteudo;
+                        // Mockup A: só o título, numa linha. A descrição fica
+                        // no tooltip e no painel do registo.
                         const desc = (item as any).descricao;
-                        const sub = typeof desc === 'string' && desc.trim() ? desc.trim() : null;
-                        const icone = emptyState?.icon;
+                        const sub = typeof desc === 'string' && desc.trim() ? desc.trim() : undefined;
                         return (
-                          <span className="flex min-w-0 items-center gap-3">
-                            {icone && <span aria-hidden="true" className="hidden shrink-0 text-muted-foreground sm:inline-flex [&_svg]:h-[18px] [&_svg]:w-[18px]">{icone}</span>}
-                            <span className="min-w-0">
-                              <span className="block">{conteudo}</span>
-                              {sub && <span className="mt-0.5 block max-w-[42ch] truncate text-micro font-normal text-muted-foreground" title={sub}>{sub}</span>}
-                            </span>
-                          </span>
+                          <span data-primary-cell="" className="block min-w-0 truncate" title={sub}>{conteudo}</span>
                         );
                       })()}
                     </TableCell>

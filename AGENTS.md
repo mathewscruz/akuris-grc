@@ -5,7 +5,7 @@
 - List/grid views reuse the same DataTable columns, sorting, pagination and row actions; this prevents divergent results across representations.
 - Module tab bars (ModuleSubbar) carry no search; each list keeps a single local search in its DataTable toolbar, so users never see two boxes editing the same filter.
 - OwnerCell and RecordProgress are shared record-cell presentations; progress accepts measured values only, never inferred workflow percentages.
-- Operational tables share compact styling scoped to `.akuris-table`: state chips use a dot and text, severity keeps its meter, avatars shrink and row frames disappear; detail views and measured progress retain their presentation to prevent module-specific drift or loss of data.
+- Operational tables share compact styling scoped to `.akuris-table`: state chips use a coloured dot and text, the DataTable primary cell is one line (description only as tooltip), severity shows as a coloured word, avatars shrink and row frames disappear; detail views and measured progress retain their presentation to prevent module-specific drift or loss of data.
 - Supplier tab counts use useSupplierCount rather than assessment-email counts; this keeps navigation aligned with the actual supplier list.
 - A Card nested in another Card loses its frame via global CSS (`data-slot="card"`; opt out with `data-keep-frame`); this keeps one rounded border per area.
 - Form drafts use useWizardDraft with keys scoped by empresa + user, and deletes use undoableAction (commit after the undo window); this keeps drafts tenant-isolated and deletions reversible.
