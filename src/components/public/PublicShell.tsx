@@ -13,7 +13,7 @@ export function DemoButton({ children, interest = 'general', plan, className = '
   const { t } = useLanguage();
   return <button type="button" className={className} onClick={() => open(interest, plan)}>{children || t('site.demo')}<span aria-hidden="true"> →</span></button>;
 }
-export function PublicShell({ children }: { children: ReactNode }) {
+export function PublicShell({ children, cinematic = false }: { children: ReactNode; cinematic?: boolean }) {
   const { t } = useLanguage();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
@@ -51,9 +51,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const repeatAnchor = (href: string) => {
     if (location.pathname === '/' && href === '/' + location.hash && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
   };
-  const links = [['/#produto', 'product'], ['/#solucoes', 'solutions'], ['/frameworks', 'guides'], ['/blog', 'content']] as const;
+  const links = (cinematic ? [['/#produto', 'product'], ['/#frameworks', 'cineNavFrameworks'], ['/blog', 'cineFootResources'], ['/#contato', 'cineFootContact']] : [['/#produto', 'product'], ['/#solucoes', 'solutions'], ['/frameworks', 'guides'], ['/blog', 'content']]) as readonly (readonly [string, string])[];
   return <DemoContext.Provider value={requestDemo}>
-    <div className="lp-root public-site">
+    <div className={`lp-root public-site${cinematic ? ' public-cinematic' : ''}`}>
       <a href="#public-main" className="public-skip">{t('site.skip')}</a>
       <header className="public-header">
         <div className="lp-container public-header-inner">
@@ -74,7 +74,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </nav>}
       </header>
       <main id="public-main" tabIndex={-1}>{children}</main>
-      <footer className="public-footer lp-container">
+      {!cinematic && <footer className="public-footer lp-container">
         <div><Link to="/" aria-label="Akuris"><img src={akurisLogo} alt="Akuris" width="134" height="40" /></Link><p>{t('publico.landing.footer.tagline')}</p></div>
         <nav aria-label={t('publico.landing.footer.produto')}>
           <Link to="/#produto">{t('site.product')}</Link><Link to="/solucoes/canal-de-denuncias">{t('site.channel')}</Link><Link to="/migracao">{t('site.migration')}</Link>
@@ -83,7 +83,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           <Link to="/seguranca">{t('site.trust')}</Link><Link to="/blog">{t('site.content')}</Link><Link to="/politica-privacidade">{t('publico.landing.footer.politica')}</Link>
         </nav>
         <div><a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a><p>© {new Date().getFullYear()} Akuris</p></div>
-      </footer>
+      </footer>}
       {(demoLoaded || open) && <Suspense fallback={<p role="status" className="public-demo-loading">{t('publico.blog.carregando')}</p>}><DemoRequestDialog open={open} interest={interest} plan={plan} source={location.pathname} onOpenChange={value => {
         if (!value) setParams(p => { p.delete('demo'); p.delete('interest'); p.delete('plan'); return p; }, { replace: true, preventScrollReset: true });
       }} onCloseAutoFocus={() => lastTrigger.current?.focus()} /></Suspense>}

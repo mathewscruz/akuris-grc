@@ -1,32 +1,17 @@
-import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
-import { PublicShell, DemoButton } from '@/components/public/PublicShell';
-import { ProductScreens } from '@/components/landing/ProductScreens';
-import { TrustStrip } from '@/components/landing/LandingProof';
-import { HeroCinematic, AboutCounters, FrameworkMarquee, GlowSteps } from '@/components/landing/CinematicSections';
-import { ModuleCatalog } from '@/components/landing/ModuleCatalog';
-import { useLandingReveal } from '@/hooks/useLandingAnimations';
+import { PublicShell } from '@/components/public/PublicShell';
+import { HeroCinematic, AboutModules, FrameworkMarquee, GlowSteps, CtaShield, LandingFooter } from '@/components/landing/CinematicSections';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AKURIS_PATH } from '@/components/ui/AkurisPulse';
-import { FrameworkGlyph } from '@/components/frameworks/FrameworkGlyph';
-import { frameworksSeo } from '@/data/frameworks-seo';
 
 export default function LandingPage() {
   const { t } = useLanguage();
-  useLandingReveal();
-  const faqs = [1, 2, 3, 4, 5, 6].map(n => ({ question: t(`publico.landing.faq.q${n}`), answer: t(`publico.landing.faq.a${n}`) }));
-  return <PublicShell>
-    <SEO title={t('site.seoTitle')} description={t('site.seoDescription')} canonical="/" jsonLd={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+  return <PublicShell cinematic>
+    <SEO title={t('site.seoTitle')} description={t('site.seoDescription')} canonical="/" />
     <HeroCinematic />
+    <AboutModules />
     <FrameworkMarquee />
-    <AboutCounters />
-    <section className="cine-product lp-container" aria-label={t('site.exploreDemo')}><div className="cine-product-frame" data-reveal><ProductScreens autoplay /></div></section>
-    <TrustStrip />
     <GlowSteps />
-    <ModuleCatalog />
-    <section className="site-section site-guides-section" id="frameworks"><div className="lp-container"><div className="site-heading" data-reveal><h2>{t('site.guidesTitle')}</h2><p>{t('site.guidesNote')}</p></div><div className="site-guides">{frameworksSeo.slice(0, 6).map(f => <Link to={'/frameworks/' + f.slug} key={f.slug} className="site-guide"><FrameworkGlyph nome={f.nome} size={25} /><strong>{f.nome}</strong><span aria-hidden="true">↗</span></Link>)}</div><div className="site-actions"><Link className="site-text-link" to="/frameworks">{t('site.allGuides')} →</Link></div></div></section>
-    <section className="site-section site-security" id="seguranca"><div className="lp-container site-security-grid" data-reveal><svg className="site-shield" viewBox="0 0 64 64" aria-hidden="true"><path pathLength="1" d="M32 6 10 14v16c0 14 9.5 24 22 28 12.5-4 22-14 22-28V14L32 6Z" /><path pathLength="1" d="m22 32 7 7 13-14" /></svg><div><div className="site-heading"><h2>{t('site.trustTitle')}</h2><p>{t('site.trustBody')}</p></div><div className="site-resource-links"><Link className="site-text-link" to="/seguranca">{t('site.trust')} →</Link><Link className="site-text-link" to="/migracao">{t('site.migration')} →</Link><Link className="site-text-link" to="/politica-privacidade">{t('publico.landing.footer.politica')} →</Link></div></div></div></section>
-    <section className="site-section site-faq"><div className="lp-container" data-reveal><div className="site-heading"><h2>{t('publico.landing.faq.eyebrow')}</h2></div><div className="lp-faq-list">{faqs.map(f => <details className="lp-faq" key={f.question}><summary>{f.question}<span className="plus" aria-hidden="true" /></summary><div className="body">{f.answer}</div></details>)}</div></div></section>
-    <section className="site-cta lp-container" id="contato"><div className="site-cta-card" data-reveal><svg className="site-cta-mark" viewBox="0 0 80 80" aria-hidden="true"><path d={AKURIS_PATH} pathLength="1" /></svg><div><h2>{t('site.ctaTitle')}</h2><p>{t('site.ctaBody')}</p></div><DemoButton /></div></section>
+    <CtaShield />
+    <LandingFooter />
   </PublicShell>;
 }
