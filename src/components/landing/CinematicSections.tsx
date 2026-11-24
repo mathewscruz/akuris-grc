@@ -5,6 +5,8 @@ import { DemoButton } from '@/components/public/PublicShell';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/contexts/LanguageContext';
 import dashboardArt from '@/assets/akuris-dashboard.png.asset.json';
+import cymeLogo from '@/assets/parceiros/cyberme-logo.png.asset.json';
+import mercuriusLogo from '@/assets/parceiros/mercurius-logo.png.asset.json';
 import { FRAMEWORK_LOGOS } from '@/components/landing/FrameworkLogos';
 
 const Accent = ({ text, word }: { text: string; word: string }) => {
@@ -132,6 +134,19 @@ export function Audience() {
       <p className="ed-quote">{t(`site.edAudQuote${n}`)}</p>
       <div className="ed-aud-meta"><strong>{t(`site.cineAud${n}`)}</strong><span>{t(`site.cineAud${n}Body`)}</span></div>
     </li>)}</ol>
+  </div></section>;
+}
+
+export function PartnersStrip() {
+  const { t } = useLanguage();
+  return <section className="cine-sec ed-partners" aria-labelledby="cine-partners-title"><div className="lp-container">
+    <p className="cine-label">{t('site.partnersLabel')}</p>
+    <h2 id="cine-partners-title" className="ed-h2">{t('site.partnersTitle')}</h2>
+    <ul className="ed-partners-logos">
+      <li><img src={cymeLogo.url} alt="CyberME" className="is-tall" loading="lazy" /></li>
+      <li><img src={mercuriusLogo.url} alt="Mercurius" loading="lazy" /></li>
+    </ul>
+    <p className="ed-partners-invite">{t('site.partnersInvite')} <DemoButton className="ed-partners-link">{t('site.partnersCta')}</DemoButton></p>
   </div></section>;
 }
 
