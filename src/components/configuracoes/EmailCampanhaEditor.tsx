@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
+import { sanitizeCampaignHtml } from '@/lib/campaign-html';
 import { EmailPreview } from './EmailPreview';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -369,8 +370,8 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
                       role="textbox"
                       aria-multiline="true"
                       className="min-h-[280px] rounded-md border border-input bg-background px-4 py-3 text-sm leading-7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      onInput={(event) => setConteudoHtml(event.currentTarget.innerHTML)}
-                      dangerouslySetInnerHTML={{ __html: conteudoHtml }}
+                      onInput={(event) => setConteudoHtml(sanitizeCampaignHtml(event.currentTarget.innerHTML))}
+                      dangerouslySetInnerHTML={{ __html: sanitizeCampaignHtml(conteudoHtml) }}
                     />
                   </TabsContent>
                   <TabsContent value="html">

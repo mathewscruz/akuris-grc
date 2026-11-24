@@ -13,7 +13,7 @@ export function spreadsheetText(value: unknown): string {
 export function csvRow(cells: unknown[], sep = ';'): string {
   return cells.map((cell) => {
     const val = typeof cell === 'number' ? String(cell) : spreadsheetText(cell);
-    return val.includes(sep) || val.includes('"') || val.includes('\n') ? `"${val.replace(/"/g, '""')}"` : val;
+    return val.includes(sep) || val.includes('"') || /[\r\n]/.test(val) ? `"${val.replace(/"/g, '""')}"` : val;
   }).join(sep);
 }
 

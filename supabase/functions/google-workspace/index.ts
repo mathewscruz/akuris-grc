@@ -249,6 +249,14 @@ Deno.serve(async (req) => {
     return json({ success: false, error: `acao desconhecida: ${acao}` }, 400);
   }
 
+  // Directory administration is a system-role action, not tenant membership.
+  const roles = await Promise.all(['admin', 'super_admin'].map((role) =>
+    ctx.supabase.rpc('has_role', { _user_id: ctx.userId, _role: role })
+  ));
+  if (roles.some(({ error }) => error) || !roles.some(({ data }) => data === true)) {
+    return json({ success: false, error: 'nao_autorizado' }, 403);
+  }
+
   const { data: cfg } = await ctx.supabase
     .from('integracoes_config')
     .select('*')

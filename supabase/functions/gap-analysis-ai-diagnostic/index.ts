@@ -79,8 +79,9 @@ serve(async (req) => {
     // Busca o requisito
     const { data: req_, error: reqErr } = await supabase
       .from('gap_analysis_requirements')
-      .select('id, codigo, titulo, descricao, categoria, orientacao_implementacao, exemplos_evidencias, framework_id')
+      .select('id, codigo, titulo, descricao, categoria, orientacao_implementacao, exemplos_evidencias, framework_id, gap_analysis_frameworks!inner(empresa_id)')
       .eq('id', requirementId)
+      .or(`empresa_id.is.null,empresa_id.eq.${empresaId}`, { referencedTable: 'gap_analysis_frameworks' })
       .single();
     if (reqErr || !req_) {
       return new Response(

@@ -1,3 +1,4 @@
-- [x] Apply compact rows, inline status and smaller avatars to shared and operational tables.
-- [x] Verify shared table rendering in light/dark at desktop, tablet and mobile widths; sorting, pagination and row opening work, and 22 relevant tests pass.
-- [x] Save changes and report verification limits: customer module pages require sign-in unavailable in this sandbox; browser verification used isolated shared controls, not a signed-in customer session.
+- [x] Fix selected spreadsheet and campaign injection findings.
+- [x] Restrict selected Google directory actions, requirement diagnostics, framework assignment and new audit risk acceptance; existing decisions unchanged.
+- [x] Deploy four functions; confirm unsigned calls return 401 and database guards are installed. Regression tests and browser sanitization verified; signed-in external-service flows unavailable here.
+- [ ] Confirm approved destinations before restricting scan and webhook targets (four selected findings).

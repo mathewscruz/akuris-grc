@@ -28,3 +28,4 @@
 - The weekly task summary runs inside the daily send-projeto-tarefa-notification job on Mondays (profiles.resumo_semanal opt-out); no extra cron, same bell+e-mail path.
 - Save buttons pass `loading` to the shared Button (AkurisPulse while saving, brief check when done); this gives in-place save feedback without per-form spinners.
 - Read-only record views that still need DialogShell features open with `variant="side"` (right panel like RecordDetailDrawer); this keeps one detail-panel pattern without rewriting complex workflows.
+- Campaign visual editing sanitizes HTML through `campaign-html.ts`, and scanned form labels use literal ID comparison through `labels.ts`; editable and remote content must not become executable browser code or regular expressions.

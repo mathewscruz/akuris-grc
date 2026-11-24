@@ -13,6 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatarDiaParaDB, intlLocale } from '@/lib/date-utils';
+import { csvRow } from '@/lib/csv-utils';
 interface TrilhaAuditoriaProps {
   ativoId?: string;
   open: boolean;
@@ -120,17 +121,17 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
 
   const exportLogs = () => {
     const csvContent = [
-      [t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderDate'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderAction'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderUser'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderChangedFields'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderIp')].join(','),
-      ...auditLogs.map(log => [
+      csvRow([t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderDate'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderAction'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderUser'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderChangedFields'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderIp')], ','),
+      ...auditLogs.map(log => csvRow([
         new Date(log.created_at).toLocaleString(intlLocale()),
         log.action,
         log.profiles?.nome || t('contratosAtivos.trilhaAuditoriaAtivos.systemFallback'),
         formatChangedFields(log.changed_fields),
         'N/A'
-      ].join(','))
+      ], ','))
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -139,6 +140,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (

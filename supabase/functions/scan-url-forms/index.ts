@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { hostInterno } from "../_shared/ssrf.ts";
+import { formLabel } from './labels.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -297,17 +298,7 @@ function parseFormsFromHtml(html: string): DetectedForm[] {
         inputHtml.match(/placeholder\s*=\s*["']([^"']*)["']/i)?.[1] || "";
       const required = /required/i.test(inputHtml);
 
-      let label = "";
-      if (inputId) {
-        const labelRegex = new RegExp(
-          `<label[^>]*for\\s*=\\s*["']${inputId}["'][^>]*>([^<]*)<\\/label>`,
-          "i",
-        );
-        const labelMatch = formContent.match(labelRegex);
-        if (labelMatch) {
-          label = labelMatch[1].trim();
-        }
-      }
+      const label = formLabel(formContent, inputId);
 
       const classification = classifyField(
         inputName,
@@ -342,17 +333,7 @@ function parseFormsFromHtml(html: string): DetectedForm[] {
         textareaHtml.match(/placeholder\s*=\s*["']([^"']*)["']/i)?.[1] || "";
       const required = /required/i.test(textareaHtml);
 
-      let label = "";
-      if (textareaId) {
-        const labelRegex = new RegExp(
-          `<label[^>]*for\\s*=\\s*["']${textareaId}["'][^>]*>([^<]*)<\\/label>`,
-          "i",
-        );
-        const labelMatch = formContent.match(labelRegex);
-        if (labelMatch) {
-          label = labelMatch[1].trim();
-        }
-      }
+      const label = formLabel(formContent, textareaId);
 
       const classification = classifyField(
         textareaName,
@@ -385,17 +366,7 @@ function parseFormsFromHtml(html: string): DetectedForm[] {
         selectHtml.match(/id\s*=\s*["']([^"']*)["']/i)?.[1] || "";
       const required = /required/i.test(selectHtml);
 
-      let label = "";
-      if (selectId) {
-        const labelRegex = new RegExp(
-          `<label[^>]*for\\s*=\\s*["']${selectId}["'][^>]*>([^<]*)<\\/label>`,
-          "i",
-        );
-        const labelMatch = formContent.match(labelRegex);
-        if (labelMatch) {
-          label = labelMatch[1].trim();
-        }
-      }
+      const label = formLabel(formContent, selectId);
 
       const classification = classifyField(
         selectName,

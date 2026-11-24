@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const body: EmailRequest = await req.json();
-    const { type, assessment_id, template_nome: bodyTemplateNome } = body;
+    const { type, assessment_id } = body;
 
     if (!assessment_id) {
       return new Response(JSON.stringify({ error: 'assessment_id obrigatório' }), {
@@ -107,10 +107,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    let template_nome = bodyTemplateNome || 'Due Diligence';
+    // Caller-supplied template labels must never determine outgoing content.
+    let template_nome = 'Due Diligence';
     if (assessment.template_id) {
       const { data: tpl } = await supabase
-        .from('due_diligence_templates').select('nome').eq('id', assessment.template_id).maybeSingle();
+        .from('due_diligence_templates').select('nome').eq('id', assessment.template_id)
+        .or(`empresa_id.is.null,empresa_id.eq.${assessment.empresa_id}`).maybeSingle();
       if (tpl?.nome) template_nome = tpl.nome;
     }
 
