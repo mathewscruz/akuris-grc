@@ -121,6 +121,7 @@ Deno.serve(async (req) => {
       return json({ error: "authorization_required" }, 403);
     let result = "authorized";
     let enqueueAfter = false;
+    let devicesActive = false;
     try {
       let update: Record<string, unknown>;
       if (connection.data.provider === "microsoft") {
@@ -132,6 +133,9 @@ Deno.serve(async (req) => {
           !TENANT_ID.test(msTenant)
         )
           throw new ProviderError("consent_denied");
+        // Re-consent never switches the customer's Microsoft tenant.
+        const savedTenant = connection.data.settings?.tenant_id;
+        if (savedTenant && savedTenant !== msTenant) throw new ProviderError("organization_changed");
         update = {
           settings: { ...(connection.data.settings || {}), tenant_id: msTenant },
           status: "authorized",
@@ -174,9 +178,11 @@ Deno.serve(async (req) => {
             cloud_identity: devices.state,
           };
           // Computers arrive automatically once OAuth + admin delegation are proven (this connection only).
-          if (devices.state.status === "active") enqueueAfter = true;
+          if (devices.state.status === "active") devicesActive = true;
         }
       }
+      // Initial risk scan on connect (same queue; imports no module data by itself).
+      if (["microsoft", "google_workspace"].includes(connection.data.provider)) enqueueAfter = true;
       const completed = await client
         .from("integration_connections")
         .update(update)
@@ -189,7 +195,9 @@ Deno.serve(async (req) => {
       if (!completed.data) throw new ProviderError("consent_superseded");
       if (enqueueAfter) {
         // Idempotent: marks "dispositivos" imported (daily only if the scheduler is ready) and reuses any queued run.
-        const runId = await autoEnableDevices(client, { status: "active" }, saved.connection_id, tenant, await schedulerReady(client));
+        const runId = devicesActive
+          ? await autoEnableDevices(client, { status: "active" }, saved.connection_id, tenant, await schedulerReady(client))
+          : (await client.rpc("integration_enqueue", { p_id: saved.connection_id, p_empresa: tenant })).data ?? null;
         const run = { error: runId ? null : true, data: runId };
         if (!run.error && run.data) {
           const work = processIntegrationRun(client, run.data, { allowRetry: false }).catch(() => undefined);
@@ -586,6 +594,9 @@ Deno.serve(async (req) => {
       connection = fresh.data;
     }
     if (body.action === "collect" || action === "collect" || action === "import_module") {
+      // A Microsoft connection without a consented tenant is not real coverage.
+      if (connection.provider === "microsoft" && !connection.settings?.tenant_id)
+        return json({ error: "connection_not_authorized" }, 400);
       if (
         connection.provider === "aws" &&
         connection.status === "pending" &&

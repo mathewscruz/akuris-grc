@@ -9,7 +9,7 @@ const SUG = [{ id: "s1", provider: "microsoft", regra_id: "alerta_malware", esta
   alcance: { escopo: "x" }, risco_id: null, motivo_descarte: null, ultima_deteccao: "2026-11-25T10:00:00Z", corrigida_em: null,
   fonte: "Microsoft Defender XDR", severidade_tecnica: "alta", recorrencias: 0, suprimido_ate: null,
   evidencia: { total: 1, itens: ["Incident 29"], refs: [{ id: "29", nome: "Incident 29", url: "https://security.microsoft.com/incident2/29" }] } }];
-const CON = [{ id: "c1", provider: "microsoft", settings: { risk_coverage: { at: "2026-11-25T10:00:00Z", rules: {
+const CON = [{ id: "c1", provider: "microsoft", settings: { tenant_id: "t1", risk_coverage: { at: "2026-11-25T10:00:00Z", rules: {
   alerta_malware: { status: "ok" }, recomendacoes_defender: { status: "permission_missing", motivo: "permission_missing" } } } } }];
 const chain = (rows: unknown[]) => { const c: Record<string, unknown> = {}; for (const m of ["select", "eq", "in", "order"]) c[m] = () => c;
   (c as { then: unknown }).then = (r: (v: unknown) => void) => r({ data: rows, error: null }); return c; };

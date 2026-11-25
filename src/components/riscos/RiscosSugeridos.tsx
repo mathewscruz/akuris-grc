@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { logger } from "@/lib/logger";
+import { invokeEdgeFunction } from "@/lib/edge-function-utils";
 
 type Sugestao = {
   id: string; provider: string; regra_id: string; estado: "aberta" | "aceita" | "descartada" | "corrigida";
@@ -39,7 +40,7 @@ const PERMISSOES: Record<string, string> = {
 const permissaoDe = (regra: string) => PERMISSOES[regra.startsWith("alerta_") ? "alerta" : regra];
 const safeUrl = (u: string | null | undefined) => (u && /^https:\/\//.test(u) ? u : null);
 type Cobertura = { status: keyof typeof COB_TONE; motivo?: string };
-type Conexao = { id: string; provider: string; settings: { risk_coverage?: { at: string; rules: Record<string, Cobertura> } } | null };
+type Conexao = { id: string; provider: string; settings: { tenant_id?: string; risk_coverage?: { at: string; rules: Record<string, Cobertura> } } | null };
 const ESTADO_TONE = { aberta: "warning", aceita: "primary", descartada: "neutral", corrigida: "success" } as const;
 
 export function RiscosSugeridos() {
@@ -69,11 +70,32 @@ export function RiscosSugeridos() {
     queryKey: ["riscos-sugeridos-cobertura", empresaId], enabled: !!empresaId,
     queryFn: async () => {
       const { data, error } = await supabase.from("integration_connections").select("id,provider,settings")
-        .eq("empresa_id", empresaId!).in("provider", ["google_workspace", "microsoft"]);
+        .eq("empresa_id", empresaId!).in("provider", ["google_workspace", "microsoft"])
+        .in("status", ["authorized", "connected", "partial"]);
       if (error) throw error;
-      return (data ?? []) as unknown as Conexao[];
+      // A Microsoft connection without consented tenant is not real coverage.
+      return ((data ?? []) as unknown as Conexao[]).filter((c) => c.provider !== "microsoft" || !!c.settings?.tenant_id);
     },
   });
+  const [verificando, setVerificando] = useState(false);
+  const verificarAgora = async () => {
+    setVerificando(true);
+    let falhas = 0;
+    for (const c of conexoes) {
+      const { error } = await invokeEdgeFunction("integration-connect", { body: { action: "collect", connection_id: c.id }, showToast: false });
+      if (error) falhas++;
+    }
+    setVerificando(false);
+    if (falhas) toast.error(t("riscosSugeridos.verificarFalha"));
+    else toast.success(t("riscosSugeridos.verificarOk"));
+    window.setTimeout(() => qc.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("riscos-sugeridos") }), 15000);
+  };
+  const avaliadas = conexoes.some((c) => Object.values(c.settings?.risk_coverage?.rules ?? {}).some((r) => r.status === "ok"));
+  const vazio = conexoes.length === 0
+    ? { title: t("riscosSugeridos.vazioSemConexao"), description: t("riscosSugeridos.vazioDesc") }
+    : avaliadas
+      ? { title: t("riscosSugeridos.vazio"), description: t("riscosSugeridos.vazioAvaliadoDesc") }
+      : { title: t("riscosSugeridos.vazioNaoAvaliado"), description: t("riscosSugeridos.vazioNaoAvaliadoDesc") };
   const rotuloCheck = (r: string) => {
     const k = `riscosSugeridos.regras.${r}.titulo`; const v = t(k);
     return v === k ? t(`riscosSugeridos.cobertura.checks.${r}`) : v;
@@ -126,7 +148,12 @@ export function RiscosSugeridos() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{t("riscosSugeridos.intro")}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{t("riscosSugeridos.intro")}</p>
+        {conexoes.length > 0 && (
+          <Button variant="outline" size="sm" loading={verificando} onClick={verificarAgora}>{t("riscosSugeridos.verificarAgora")}</Button>
+        )}
+      </div>
       {conexoes.length > 0 && (
         <details className="rounded-lg border border-border p-3 text-sm">
           <summary className="cursor-pointer font-medium">{t("riscosSugeridos.cobertura.titulo")}</summary>
@@ -162,7 +189,7 @@ export function RiscosSugeridos() {
       <DataTable
         data={data} columns={columns} loading={isLoading} error={isError} onRefresh={() => refetch()}
         exportName="riscos-sugeridos" onRowClick={(s) => setAberta(s)}
-        emptyState={{ title: t("riscosSugeridos.vazio"), description: t("riscosSugeridos.vazioDesc") }}
+        emptyState={vazio}
       />
       {aberta && (
         <DialogShell

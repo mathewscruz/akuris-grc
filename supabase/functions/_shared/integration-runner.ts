@@ -323,7 +323,8 @@ export async function processIntegrationRun(
       };
     }
     // Risks: configuration rules only over a warning-free collection; security sources each report their own status.
-    if (RISK_PROVIDERS.includes(connection.provider)) {
+    // A Microsoft connection without a consented tenant is never treated as risk coverage.
+    if (RISK_PROVIDERS.includes(connection.provider) && !(connection.provider === "microsoft" && !connection.settings?.tenant_id)) {
       let security: SecurityCollection | null = null;
       try {
         if (connection.provider === "microsoft" && credentials.access_token)
