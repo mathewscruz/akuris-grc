@@ -4,7 +4,10 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { IntegrationCollections } from "@/components/configuracoes/integrations/IntegrationCollections";
-import { COLLECTION_PROVIDERS } from "@/lib/integration-platform";
+import { COLLECTION_PROVIDERS as ALL, LEGACY_MICROSOFT_PROVIDERS } from "@/lib/integration-platform";
+// Legacy per-product Microsoft cards are hidden unless already connected.
+const COLLECTION_PROVIDERS = ALL.filter((p) => !LEGACY_MICROSOFT_PROVIDERS.has(p.id));
+const N = COLLECTION_PROVIDERS.length;
 import { persistExplicitLocale } from "@/lib/i18n-locale";
 
 const invoke = vi.hoisted(() => vi.fn());
@@ -51,18 +54,20 @@ beforeEach(() => {
 });
 
 describe("integration release hold", () => {
-  it("scopes the catalog connection reads to the current company", () => {
+  it("scopes the catalog connection reads to the current company", async () => {
     mount();
+    await vi.waitFor(() => expect(from).toHaveBeenCalled());
     expect(from).toHaveBeenCalledWith("integration_connections");
-    const query = from.mock.results[0].value;
+    const i = from.mock.calls.findIndex(([t]) => t === "integration_connections");
+    const query = from.mock.results[i].value;
     expect(query.eq).toHaveBeenCalledWith("empresa_id", "tenant-a");
     expect(query.eq).toHaveBeenCalledWith("status", "connected");
     expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });
-  it("shows all eight original brands as coming soon without starting queries or OAuth", () => {
+  it("shows every catalog brand as coming soon without starting queries or OAuth", () => {
     const { container } = mount();
-    expect(screen.getAllByRole("article")).toHaveLength(8);
-    expect(screen.getAllByText("Em breve")).toHaveLength(8);
+    expect(screen.getAllByRole("article")).toHaveLength(N);
+    expect(screen.getAllByText("Em breve")).toHaveLength(N);
     for (const provider of COLLECTION_PROVIDERS) {
       expect(screen.getByText(provider.name)).toBeVisible();
       const button = screen.getByRole("button", { name: `${provider.name}: Em breve` });
@@ -84,14 +89,14 @@ describe("integration release hold", () => {
     fireEvent.change(search, { target: { value: "unlisted-tool" } });
     expect(screen.getByRole("status")).toHaveTextContent("Nenhuma ferramenta encontrada.");
     fireEvent.change(search, { target: { value: "" } });
-    expect(screen.getAllByRole("article")).toHaveLength(8);
+    expect(screen.getAllByRole("article")).toHaveLength(N);
     expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });
 
   it("translates the unavailable state for English users", () => {
     persistExplicitLocale("en");
     mount();
-    expect(screen.getAllByText("Coming soon")).toHaveLength(8);
+    expect(screen.getAllByText("Coming soon")).toHaveLength(N);
     expect(screen.getByText(/Connections and collections are not available yet/)).toBeVisible();
     expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });

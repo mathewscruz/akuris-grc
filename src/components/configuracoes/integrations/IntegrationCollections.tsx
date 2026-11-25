@@ -1,5 +1,6 @@
 import { formatDateTime } from '@/lib/date-utils';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { IntegrationStatusButton, type IntegrationState } from "./IntegrationStatusButton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,7 +8,6 @@ import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -26,9 +26,7 @@ import {
 import { toast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamsConfigDialog } from "./TeamsConfigDialog";
-import { ConexoesAtivas, useConexoesAtivas } from "./ConexoesAtivas";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { resolveItemStatusTone } from "@/lib/status-tone";
+import { useConexoesAtivas } from "./ConexoesAtivas";
 import {
   COLLECTION_PROVIDERS,
   LEGACY_MICROSOFT_PROVIDERS,
@@ -58,7 +56,7 @@ function ProviderLogo({ provider }: { provider: CollectionProvider }) {
   );
 }
 
-export function IntegrationCollections({ empresaId }: { empresaId: string }) {
+export function IntegrationCollections({ empresaId, extraCards, toolbar }: { empresaId: string; extraCards?: ReactNode; toolbar?: ReactNode }) {
   // The server decides availability: a provider turns on by itself once its
   // platform credentials exist and the server-side release switch is on.
   const probe = useQuery({
@@ -74,16 +72,13 @@ export function IntegrationCollections({ empresaId }: { empresaId: string }) {
       setOnHold((probe.error as Error).message === "integrations_coming_soon");
   }, [probe.data, probe.isError, probe.error]);
   return !onHold ? (
-    <AvailableIntegrationCollections empresaId={empresaId} />
+    <AvailableIntegrationCollections empresaId={empresaId} extraCards={extraCards} toolbar={toolbar} />
   ) : (
-    <div className="space-y-8">
-      <ConexoesAtivas empresaId={empresaId} />
-      <ComingSoonCollections empresaId={empresaId} />
-    </div>
+    <ComingSoonCollections empresaId={empresaId} extraCards={extraCards} toolbar={toolbar} />
   );
 }
 
-function ComingSoonCollections({ empresaId }: { empresaId: string }) {
+function ComingSoonCollections({ empresaId, extraCards, toolbar }: { empresaId: string; extraCards?: ReactNode; toolbar?: ReactNode }) {
   const { t } = useLanguage();
   const { data } = useConexoesAtivas(empresaId);
   const connectedProviders = new Set(data?.conns.map((connection) => connection.provider));
@@ -108,7 +103,7 @@ function ComingSoonCollections({ empresaId }: { empresaId: string }) {
             {t("collectionHub.comingSoonIntro")}
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">{toolbar}<div className="relative w-full sm:w-72">
           <IconSearch className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -117,7 +112,7 @@ function ComingSoonCollections({ empresaId }: { empresaId: string }) {
             placeholder={t("collectionHub.search")}
             aria-label={t("collectionHub.search")}
           />
-        </div>
+        </div></div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {providers.map((provider) => (
@@ -135,22 +130,10 @@ function ComingSoonCollections({ empresaId }: { empresaId: string }) {
               {t(`collectionHub.provider.${provider.id}`)}
             </p>
             {provider.id === "microsoft" && <TeamsAvisosButton empresaId={empresaId} />}
-            {connectedProviders.has(provider.id) ? (
-              <div className="self-start">
-                <StatusBadge {...resolveItemStatusTone("concluido")}>
-                  {t("collectionHub.conectadas.conectado")}
-                </StatusBadge>
-              </div>
-            ) : <Button
-              disabled
-              variant="secondary"
-              className="self-start disabled:opacity-100"
-              aria-label={`${provider.name}: ${t("collectionHub.comingSoon")}`}
-            >
-              {t("collectionHub.comingSoon")}
-            </Button>}
+            <IntegrationStatusButton name={provider.name} state={connectedProviders.has(provider.id) ? "connected" : "unavailable"} />
           </article>
         ))}
+        {extraCards}
       </div>
       {!providers.length && (
         <p role="status" className="py-8 text-center text-sm text-muted-foreground">
@@ -161,10 +144,9 @@ function ComingSoonCollections({ empresaId }: { empresaId: string }) {
   );
 }
 
-function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
+function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { empresaId: string; extraCards?: ReactNode; toolbar?: ReactNode }) {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [view, setView] = useState("connected");
   const [search, setSearch] = useState("");
   const [newProvider, setNewProvider] = useState<CollectionProvider | null>(
     null,
@@ -191,7 +173,6 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
     if (!id || !query.data) return;
     const result = searchParams.get("integration_result");
     // Back from OAuth: show "Connected" in the list; config opens only on click.
-    setView("connected");
     if (result && result !== "authorized")
       toast.error(t(integrationErrorKey(result)));
     else toast.success(t("collectionHub.connectedBack"));
@@ -202,13 +183,6 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
   }, [query.data, searchParams, setSearchParams, t]);
   const matches = (value: string) =>
     value.toLocaleLowerCase().includes(search.toLocaleLowerCase().trim());
-  const visible = connections
-    .filter((c) =>
-      matches(
-        `${c.name} ${COLLECTION_PROVIDERS.find((p) => p.id === c.provider)?.name}`,
-      ),
-    )
-    .filter((c) => view !== "attention" || connectionNeedsAttention(c));
   const providers = COLLECTION_PROVIDERS.filter(
     (p) =>
       !(LEGACY_MICROSOFT_PROVIDERS.has(p.id) || LEGACY_GOOGLE_PROVIDERS.has(p.id)) ||
@@ -216,6 +190,20 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
   ).filter((p) =>
     matches(`${p.name} ${t(`collectionHub.family.${p.family}`)}`),
   );
+  // One card per tool; its button carries the status of the tool's connection.
+  const stateOf = (p: CollectionProvider): { state: IntegrationState; conn?: CollectionConnection } => {
+    const list = connections.filter((c) => c.provider === p);
+    const conn = list.find((c) => c.status === "error") ?? list.find(connectionNeedsAttention) ?? list[0];
+    if (conn) {
+      const state = conn.status === "error" ? "error" : connectionNeedsAttention(conn) ? "attention" : "connected";
+      return { state, conn };
+    }
+    return { state: query.data?.availability[p] === true ? "disconnected" : "unavailable" };
+  };
+  const ordered = [...providers].sort((a, b) => {
+    const ra = stateOf(a.id).conn ? 0 : 1, rb = stateOf(b.id).conn ? 0 : 1;
+    return ra - rb || a.name.localeCompare(b.name);
+  });
 
   return (
     <section className="space-y-6" aria-label={t("collectionHub.tab")}>
@@ -238,145 +226,53 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
           </Button>
         </div>
       )}
-      <Tabs value={view} onValueChange={setView}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <TabsList className="h-auto flex-wrap">
-            {["connected", "attention", "catalog"].map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {t(`collectionHub.${tab}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <div className="relative w-full sm:w-72">
-            <IconSearch className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("collectionHub.search")}
-              aria-label={t("collectionHub.search")}
-            />
-          </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {toolbar}
+        <div className="relative w-full sm:w-72">
+          <IconSearch className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("collectionHub.search")}
+            aria-label={t("collectionHub.search")}
+          />
         </div>
-        {["connected", "attention"].map((tab) => (
-          <TabsContent key={tab} value={tab} className="space-y-3 pt-3">
-            {query.isPending ? (
-              <p role="status" className="py-8 text-sm text-muted-foreground">
-                {t("common.loading")}
-              </p>
-            ) : visible.length ? (
-              visible.map((connection) => {
-                const needsAttention = connectionNeedsAttention(connection);
-                return (
-                  <article
-                    key={connection.id}
-                    className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4 sm:p-5"
-                  >
-                    <ProviderLogo provider={connection.provider} />
-                    <div className="min-w-0 flex-1">
-                      <h4 className="truncate font-semibold">
-                        {connection.name}
-                      </h4>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {
-                          COLLECTION_PROVIDERS.find(
-                            (p) => p.id === connection.provider,
-                          )?.name
-                        }
-                      </p>
-                    </div>
-                    <div className="text-sm sm:text-right">
-                      <p
-                        className={
-                          needsAttention
-                            ? "text-warning"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {t(
-                          `collectionHub.${needsAttention && connection.status === "connected" ? "stale" : `status.${connection.status}`}`,
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {t("collectionHub.lastSuccess")}:{" "}
-                        {connection.last_success_at
-                          ? formatDateTime(connection.last_success_at)
-                          : t("collectionHub.never")}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setActiveId(connection.id)}
-                    >
-                      {t("collectionHub.manage")}
-                    </Button>
-                  </article>
-                );
-              })
-            ) : (
-              <div className="rounded-lg border border-dashed p-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {t("collectionHub.empty")}
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => setView("catalog")}
-                >
-                  {t("collectionHub.catalog")}
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-        ))}
-        <TabsContent value="catalog" className="pt-3">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {providers.map((provider) => (
-              <article
-                key={provider.id}
-                className="flex flex-col rounded-lg border bg-card p-5 transition-shadow hover:shadow-sm"
-              >
+      </div>
+      {query.isPending ? (
+        <div role="status" className="flex justify-center py-8"><AkurisPulse size={28} /></div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {ordered.map((provider) => {
+            const { state, conn } = stateOf(provider.id);
+            return (
+              <article key={provider.id} className="flex flex-col rounded-lg border bg-card p-5 transition-shadow hover:shadow-sm">
                 <div className="flex items-center gap-3">
                   <ProviderLogo provider={provider.id} />
                   <div>
                     <h4 className="font-semibold">{provider.name}</h4>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {t(`collectionHub.family.${provider.family}`)}
-                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t(`collectionHub.family.${provider.family}`)}</p>
                   </div>
                 </div>
                 <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
                   {t(`collectionHub.provider.${provider.id}`)}
                 </p>
                 {provider.id === "microsoft" && <TeamsAvisosButton empresaId={empresaId} />}
-                {query.data?.availability[provider.id] === true ? (
-                  <Button
-                    variant="outline"
-                    className="self-start"
-                    onClick={() => setNewProvider(provider.id)}
-                  >
-                    {t("collectionHub.connect")}
-                  </Button>
-                ) : (
-                  <Button
-                    disabled
-                    variant="secondary"
-                    className="self-start disabled:opacity-100"
-                    aria-label={`${provider.name}: ${t("collectionHub.comingSoon")}`}
-                  >
-                    {t("collectionHub.comingSoon")}
-                  </Button>
-                )}
+                <IntegrationStatusButton
+                  name={provider.name}
+                  state={state}
+                  title={conn ? `${t("collectionHub.lastSuccess")}: ${conn.last_success_at ? formatDateTime(conn.last_success_at) : t("collectionHub.never")}` : undefined}
+                  onClick={() => (conn ? setActiveId(conn.id) : setNewProvider(provider.id))}
+                />
               </article>
-            ))}
-          </div>
-          {!providers.length && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              {t("collectionHub.noMatch")}
-            </p>
-          )}
-        </TabsContent>
-      </Tabs>
+            );
+          })}
+          {extraCards}
+        </div>
+      )}
+      {!ordered.length && !query.isPending && (
+        <p role="status" className="py-8 text-center text-sm text-muted-foreground">{t("collectionHub.noMatch")}</p>
+      )}
       <p className="max-w-4xl text-xs leading-relaxed text-muted-foreground">
         {t("collectionHub.caveat")}
       </p>

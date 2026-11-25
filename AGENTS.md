@@ -39,3 +39,4 @@
 - Google devices sync into ativos by (empresa_id, google_device_id) with google_connection_id, falling back to a trustworthy serial on assets not yet linked to Google, and only fill empty fields, so MeshCentral/Intune/manual data is preserved.
 - Returning from OAuth lands on the integrations list as "Connected" (no auto-opened settings); the authorized status is shown as Connected.
 - Google Cloud Identity computers is not requested via OAuth (not a public scope); it stays an unavailable capability until a tenant-scoped delegated service account exists, so OAuth never fails with invalid_scope.
+- Settings → Integrations is one tab: collection providers and legacy connectors share one card grid, and each card's status lives only in IntegrationStatusButton; this avoids duplicated/contradictory status labels.

@@ -71,11 +71,6 @@ describe("collection connections", () => {
       error: null,
     });
     mount();
-    await screen.findByText("Nenhuma conexão nesta visão.");
-    fireEvent.mouseDown(
-      screen.getByRole("tab", { name: "Adicionar conexão" }),
-      { button: 0, ctrlKey: false },
-    );
     const github = await screen.findByText("GitHub");
     const button = github.closest("article")!.querySelector("button")!;
     expect(button).toBeDisabled();
@@ -88,6 +83,19 @@ describe("collection connections", () => {
       invoke.mock.calls.every((call) => call[1].body.action === "list"),
     ).toBe(true);
   });
+  it("card button reflects each connection state", async () => {
+    invoke.mockResolvedValue({
+      data: {
+        connections: [{ ...connection, status: "error" }],
+        availability: { github: true, aws: true },
+        scheduler_ready: false,
+      },
+      error: null,
+    });
+    mount();
+    expect(await screen.findByRole("button", { name: "GitHub: Erro · Corrigir" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Amazon Web Services: Conectar" })).toBeEnabled();
+  });
   it("authorized does not display as a complete collection", async () => {
     invoke.mockResolvedValue({
       data: {
@@ -98,7 +106,7 @@ describe("collection connections", () => {
       error: null,
     });
     mount();
-    expect(await screen.findByText("Autorizada · falta coletar")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "GitHub: Conectado" })).toBeTruthy();
     expect(screen.queryByText("Coleta completa")).toBeNull();
   });
   it("failures do not look like an empty successful account", async () => {

@@ -2,6 +2,8 @@ export const integrationPlatform = {
   pt: {
     entidades: { sistema: "Sistema" },
     collectionHub: {
+      btnReview: "Revisar",
+      btnFix: "Erro · Corrigir",
       conectadas: { titulo: "Conectadas", conectado: "Conectado", ultimoScan: "Último scan", recursos: "recursos encontrados", historico: "Últimos scans", nenhum: "Nenhum scan registrado", sucesso: "Concluído", falha: "Falhou" },
       tab: "Coleta de evidências",
       legacy: "Notificações e conectores existentes",
@@ -230,6 +232,8 @@ export const integrationPlatform = {
   en: {
     entidades: { sistema: "System" },
     collectionHub: {
+      btnReview: "Review",
+      btnFix: "Error · Fix",
       conectadas: { titulo: "Connected", conectado: "Connected", ultimoScan: "Last scan", recursos: "resources found", historico: "Recent scans", nenhum: "No scans recorded", sucesso: "Completed", falha: "Failed" },
       tab: "Evidence collection",
       legacy: "Notifications and existing connectors",

@@ -18,6 +18,7 @@ import { IntegrationLogViewer } from './integrations/IntegrationLogViewer';
 import { ApiKeysManager } from './ApiKeysManager';
 import { InboundWebhooksManager } from './InboundWebhooksManager';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IntegrationStatusButton } from './integrations/IntegrationStatusButton';
 import { IntegrationCollections } from './integrations/IntegrationCollections';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -358,70 +359,22 @@ export function IntegrationHub() {
   const renderIntegrationCard = (integration: Integration) => {
     const status = getIntegrationStatus(integration.tipo);
     const Logo = integration.Logo;
-
     return (
-      <Card 
-        key={integration.id} 
-        className={`relative overflow-hidden transition-ui hover:shadow-sm ${
-          !integration.disponivel ? 'opacity-60' : ''
-        }`}
-      >
-        {!integration.disponivel && (
-          <Badge variant="secondary" className="absolute top-3 right-3 text-xs">
-            {t('configIntegrations.hub.emBreve')}
-          </Badge>
-        )}
-        {integration.disponivel && integration.betaLabel && (
-          <Badge variant="outline" className="absolute top-3 right-3 text-xs border-primary/30 text-primary">
-            {integration.betaLabel}
-          </Badge>
-        )}
-        
-        <CardHeader className="pb-3">
-          <div className="flex items-start gap-3">
-            <div 
-              className="p-2 rounded-lg flex items-center justify-center" 
-              style={{ backgroundColor: `${integration.cor}15` }}
-            >
-              <Logo />
-            </div>
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-base flex items-center gap-2">
-                {integration.nome}
-                {status === 'conectado' && (
-                  <IconSuccess className="h-4 w-4 text-success" />
-                )}
-                {status === 'erro' && (
-                  <IconError className="h-4 w-4 text-destructive" />
-                )}
-              </CardTitle>
-              <CardDescription className="text-xs mt-1 line-clamp-2">
-                {integration.descricao}
-              </CardDescription>
-            </div>
+      <article key={integration.id} className="flex flex-col rounded-lg border bg-card p-5 transition-shadow hover:shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border bg-background"><Logo /></span>
+          <div>
+            <h4 className="font-semibold">{integration.nome}</h4>
+            <p className="mt-1 text-xs text-muted-foreground">{CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome}</p>
           </div>
-        </CardHeader>
-        
-        <CardContent className="pt-0">
-          <div className="flex items-center justify-between">
-            <Badge 
-              variant={status === 'conectado' ? 'default' : 'outline'}
-              className={status === 'conectado' ? 'bg-success/10 text-success border-success/30' : ''}
-            >
-              {status === 'conectado' ? t('configIntegrations.hub.conectado') : status === 'erro' ? t('collectionHub.status.error') : t('configIntegrations.hub.desconectado')}
-            </Badge>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleConfigureClick(integration)}
-              disabled={!integration.disponivel}
-            >
-              {status === 'conectado' ? t('configIntegrations.hub.btnConfigurar') : t('configIntegrations.hub.btnConectar')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">{integration.descricao}</p>
+        <IntegrationStatusButton
+          name={integration.nome}
+          state={!integration.disponivel ? 'unavailable' : status === 'conectado' ? 'connected' : status === 'erro' ? 'error' : 'disconnected'}
+          onClick={() => handleConfigureClick(integration)}
+        />
+      </article>
     );
   };
 
@@ -434,22 +387,16 @@ export function IntegrationHub() {
   }
 
   // Microsoft lives in one card under Coletas; Azure stays only for legacy setups.
-  const integracoesPorCategoria = INTEGRACOES_DISPONIVEIS.filter(
-    (i) => i.tipo !== 'teams' && (i.tipo !== 'azure' || !!getExistingConfig('azure')),
-  ).reduce((acc, int) => {
-    if (!acc[int.categoria]) acc[int.categoria] = [];
-    acc[int.categoria].push(int);
-    return acc;
-  }, {} as Record<string, Integration[]>);
+  // Microsoft lives in one card under Coletas; Azure and the old Google dialog stay only for legacy setups.
+  const conectores = INTEGRACOES_DISPONIVEIS.filter(
+    (i) => i.tipo !== 'teams' && ((i.tipo !== 'azure' && i.tipo !== 'google_workspace') || !!getExistingConfig(i.tipo)),
+  );
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="collections">
+      <Tabs defaultValue="integracoes">
         <TabsList className="h-auto flex-wrap">
-          <TabsTrigger value="collections" className="gap-2"><IconPlug className="h-4 w-4" /> {t('collectionHub.tab')}</TabsTrigger>
-          <TabsTrigger value="conectores" className="gap-2">
-            <IconPlug className="h-4 w-4" /> {t('collectionHub.legacy')}
-          </TabsTrigger>
+          <TabsTrigger value="integracoes" className="gap-2"><IconPlug className="h-4 w-4" /> {t('configGeral.page.tabIntegracoes')}</TabsTrigger>
           <TabsTrigger value="api-keys" className="gap-2">
             <IconKey className="h-4 w-4" /> {t('configIntegrations.hub.tabApiKeys')}
           </TabsTrigger>
@@ -458,36 +405,19 @@ export function IntegrationHub() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="collections" className="pt-4">{empresaId && <IntegrationCollections empresaId={empresaId} />}</TabsContent>
-        <TabsContent value="conectores">
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border flex-1">
-                <IconInfo className="h-5 w-5 text-primary shrink-0" />
-                <p className="text-sm text-muted-foreground">
-                  {t('configIntegrations.hub.infoBanner')}
-                </p>
-              </div>
-              <Button variant="outline" className="ml-4" onClick={() => setLogViewerOpen(true)}>
-                <IconHistory className="h-4 w-4 mr-2" />
-                {t('configIntegrations.hub.verLogs')}
-              </Button>
-            </div>
-
-            {Object.entries(integracoesPorCategoria).map(([categoria, integracoes]) => (
-              <div key={categoria} className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{CATEGORIAS[categoria as keyof typeof CATEGORIAS]?.nome}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {CATEGORIAS[categoria as keyof typeof CATEGORIAS]?.descricao}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {integracoes.map(renderIntegrationCard)}
-                </div>
-              </div>
-            ))}
-          </div>
+        <TabsContent value="integracoes" className="pt-4">
+          {empresaId && (
+            <IntegrationCollections
+              empresaId={empresaId}
+              toolbar={
+                <Button variant="outline" onClick={() => setLogViewerOpen(true)}>
+                  <IconHistory className="h-4 w-4 mr-2" />
+                  {t('configIntegrations.hub.verLogs')}
+                </Button>
+              }
+              extraCards={conectores.map(renderIntegrationCard)}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="api-keys">
