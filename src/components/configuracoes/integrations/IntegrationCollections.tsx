@@ -672,6 +672,10 @@ function ConnectionManager({
                     ? formatDateTime(connection.last_success_at)
                     : t("collectionHub.never")}
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t(connection.settings.automatic_sync_enabled === true && connection.frequency !== "manual"
+                    ? "collectionHub.autoSyncOn" : "collectionHub.autoSyncOff")}
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -696,7 +700,7 @@ function ConnectionManager({
                 {running
                   ? t("collectionHub.status.running")
                   : t(
-                      scope.size
+                      scope.size || (connection.settings.imported_modules?.length ?? 0) > 0
                         ? "collectionHub.collect"
                         : "collectionHub.discover",
                     )}

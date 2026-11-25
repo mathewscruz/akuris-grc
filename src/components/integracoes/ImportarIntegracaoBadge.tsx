@@ -22,7 +22,7 @@ const FONTES: Record<string, Fonte[]> = {
     { provider: "google_workspace", module: "drive", logo: "/integrations/google-workspace.svg", nome: "Google Drive" },
   ],
 };
-type Conn = { id: string; provider: string; frequency?: string; settings: { modules?: string[]; imported_modules?: string[] } };
+type Conn = { id: string; provider: string; frequency?: string; settings: { modules?: string[]; imported_modules?: string[]; automatic_sync_enabled?: boolean } };
 
 /**
  * Shows each connected tool's logo on a module page. While its data has not
@@ -98,7 +98,7 @@ function Badge({ fonte, conn, empresaId, pagina }: { fonte: Fonte; conn: Conn; e
   const label = ativo
     ? t("integracaoImport.importando", { fonte: fonte.nome, pct: String(pct) })
     : importado
-    ? t(conn.frequency && conn.frequency !== "manual" ? "integracaoImport.sincronizado" : "integracaoImport.importadoManual", { fonte: fonte.nome })
+    ? t(conn.settings?.automatic_sync_enabled === true && conn.frequency && conn.frequency !== "manual" ? "integracaoImport.sincronizado" : "integracaoImport.importadoManual", { fonte: fonte.nome })
     : t(fonte.module === "drive" ? "integracaoImport.disponivelDrive" : "integracaoImport.disponivel", { fonte: fonte.nome });
   async function importar() {
     if (importado || ativo) return;

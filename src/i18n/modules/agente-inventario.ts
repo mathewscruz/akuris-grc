@@ -1,9 +1,9 @@
 /** Agente de inventário (MeshCentral com a marca Akuris). */
 export const agenteInventario = {
   pt: { integracaoImport: {
-    disponivel: 'Há dados do {fonte} para importar. Clique para importar e manter sincronizado.',
-    sincronizado: 'Sincronizado com {fonte} automaticamente.',
-    iniciado: 'Importação do {fonte} iniciada. Os dados serão atualizados todos os dias.',
+    disponivel: 'Há dados do {fonte} para importar. Clique para importar.',
+    sincronizado: 'Importado do {fonte}. Atualização diária ativada para esta conexão.',
+    iniciado: 'Importação do {fonte} iniciada.',
     importando: 'Importando do {fonte}… {pct}%',
     importadoManual: 'Importado do {fonte}. A atualização automática ainda não está ativa; os dados mudam só quando você clicar em Coletar agora na integração.',
     disponivelDrive: 'Metadados do {fonte} (nome, link, datas, versão) podem entrar na Biblioteca de evidências. O conteúdo dos arquivos não é copiado. Clique para importar.',
@@ -18,9 +18,9 @@ export const agenteInventario = {
     somenteInventario: 'O agente só coleta inventário; acesso remoto fica desligado.',
   } },
   en: { integracaoImport: {
-    disponivel: '{fonte} data is ready to import. Click to import and keep it in sync.',
-    sincronizado: 'Automatically synced with {fonte}.',
-    iniciado: '{fonte} import started. Data will refresh every day.',
+    disponivel: '{fonte} data is ready to import. Click to import.',
+    sincronizado: 'Imported from {fonte}. Daily refresh is enabled for this connection.',
+    iniciado: '{fonte} import started.',
     importando: 'Importing from {fonte}… {pct}%',
     importadoManual: 'Imported from {fonte}. Automatic refresh is not active yet; data changes only when you click Collect now on the integration.',
     disponivelDrive: '{fonte} metadata (name, link, dates, version) can go into the Evidence Library. File contents are not copied. Click to import.',
