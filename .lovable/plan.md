@@ -14,7 +14,7 @@
 ## Regras de remoção
 - Remove só o que foi criado pela integração daquela empresa. Nada que foi criado à mão é apagado.
 - Ativo que também veio do MeshCentral: o ativo fica, e só os dados do Intune são limpos.
-- Ativo do Intune ligado a riscos, incidentes ou controles: depende da resposta à pergunta em aberto.
+- Ativo do Intune ligado a riscos, incidentes ou controles: é arquivado como "Desativado" em vez de apagado. Ele sai das listas, mas o histórico das ligações fica.
 
 ## Etapas
 1. Migração dos dados: converter a ligação `intune` existente em `microsoft` com `modules=['intune']`, guardando as credenciais e o histórico.
