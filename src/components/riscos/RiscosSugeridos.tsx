@@ -16,7 +16,8 @@ import { logger } from "@/lib/logger";
 
 type Sugestao = {
   id: string; provider: string; regra_id: string; estado: "aberta" | "aceita" | "descartada" | "corrigida";
-  evidencia: { total?: number; itens?: string[] }; probabilidade: number; impacto: number;
+  evidencia: { total?: number; itens?: string[]; refs?: { id: string; nome: string; url: string | null }[]; alvos?: string[] };
+  probabilidade: number; impacto: number; relevancia: number; alcance: Record<string, unknown> | null;
   risco_id: string | null; motivo_descarte: string | null; ultima_deteccao: string; corrigida_em: string | null;
   fonte: string | null; severidade_tecnica: string | null; recorrencias: number; suprimido_ate: string | null;
 };
@@ -27,12 +28,18 @@ const LOGO: Record<string, { src: string; nome: string }> = {
 };
 const logoOf = (p: string) => LOGO[p] ?? LOGO.microsoft;
 
-export function nivelSugerido(p: number, i: number) {
-  const s = p * i;
-  return s >= 20 ? "critico" : s >= 12 ? "alto" : s >= 6 ? "medio" : "baixo";
-}
-const NIVEL_TONE = { critico: "destructive", alto: "warning", medio: "info", baixo: "neutral" } as const;
-const NIVEL_LABEL: Record<string, string> = { critico: "Crítico", alto: "Alto", medio: "Médio", baixo: "Baixo" };
+// Technical severity from the provider; the business level is assessed in the company's own matrix when accepting.
+const SEV_TONE: Record<string, "destructive" | "warning" | "neutral"> = { alta: "destructive", media: "warning", baixa: "neutral" };
+const SEV_ORDER: Record<string, number> = { alta: 3, media: 2, baixa: 1 };
+const COB_TONE = { ok: "success", partial: "warning", permission_missing: "warning", unavailable: "neutral", not_evaluated: "neutral" } as const;
+const PERMISSOES: Record<string, string> = {
+  alerta: "Microsoft Graph · SecurityIncident.Read.All", usuarios_alto_risco: "Microsoft Graph · IdentityRiskyUser.Read.All",
+  secure_score_recomendacoes: "Microsoft Graph · SecurityEvents.Read.All", recomendacoes_defender: "Microsoft Defender for Endpoint · SecurityRecommendation.Read.All",
+};
+const permissaoDe = (regra: string) => PERMISSOES[regra.startsWith("alerta_") ? "alerta" : regra];
+const safeUrl = (u: string | null | undefined) => (u && /^https:\/\//.test(u) ? u : null);
+type Cobertura = { status: keyof typeof COB_TONE; motivo?: string };
+type Conexao = { id: string; provider: string; settings: { risk_coverage?: { at: string; rules: Record<string, Cobertura> } } | null };
 const ESTADO_TONE = { aberta: "warning", aceita: "primary", descartada: "neutral", corrigida: "success" } as const;
 
 export function RiscosSugeridos() {
@@ -51,12 +58,26 @@ export function RiscosSugeridos() {
     queryKey: key, enabled: !!empresaId,
     queryFn: async () => {
       const { data, error } = await supabase.from("integracao_riscos_sugeridos" as never)
-        .select("id,provider,regra_id,estado,evidencia,probabilidade,impacto,risco_id,motivo_descarte,ultima_deteccao,corrigida_em,fonte,severidade_tecnica,recorrencias,suprimido_ate")
-        .eq("empresa_id", empresaId).order("ultima_deteccao", { ascending: false });
+        .select("id,provider,regra_id,estado,evidencia,probabilidade,impacto,relevancia,alcance,risco_id,motivo_descarte,ultima_deteccao,corrigida_em,fonte,severidade_tecnica,recorrencias,suprimido_ate")
+        .eq("empresa_id", empresaId).order("relevancia", { ascending: false }).order("ultima_deteccao", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Sugestao[];
     },
   });
+
+  const { data: conexoes = [] } = useQuery({
+    queryKey: ["riscos-sugeridos-cobertura", empresaId], enabled: !!empresaId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("integration_connections").select("id,provider,settings")
+        .eq("empresa_id", empresaId!).in("provider", ["google_workspace", "microsoft"]);
+      if (error) throw error;
+      return (data ?? []) as unknown as Conexao[];
+    },
+  });
+  const rotuloCheck = (r: string) => {
+    const k = `riscosSugeridos.regras.${r}.titulo`; const v = t(k);
+    return v === k ? t(`riscosSugeridos.cobertura.checks.${r}`) : v;
+  };
 
   const titulo = (s: Sugestao) => t(`riscosSugeridos.regras.${s.regra_id}.titulo`);
   const descricao = (s: Sugestao) => t(`riscosSugeridos.regras.${s.regra_id}.descricao`);
@@ -67,10 +88,9 @@ export function RiscosSugeridos() {
     { key: "provider", label: t("riscosSugeridos.colOrigem"), render: (_v, s) => (
       <span className="inline-flex items-center gap-2"><img src={logoOf(s.provider).src} alt="" className="h-4 w-4" />{logoOf(s.provider).nome}</span>) },
     { key: "afetados", label: t("riscosSugeridos.colAfetados"), sortable: true, sortAccessor: (s) => s.evidencia?.total ?? 0, render: (_v, s) => s.evidencia?.total ?? "—" },
-    { key: "nivel", label: t("riscosSugeridos.colNivel"), sortable: true, sortAccessor: (s) => s.probabilidade * s.impacto, render: (_v, s) => {
-      const n = nivelSugerido(s.probabilidade, s.impacto);
-      return <StatusBadge mark="severity" tone={NIVEL_TONE[n]}>{NIVEL_LABEL[n]}</StatusBadge>;
-    } },
+    { key: "severidade_tecnica", label: t("riscosSugeridos.colSeveridade"), sortable: true, sortAccessor: (s) => SEV_ORDER[s.severidade_tecnica ?? ""] ?? 0, render: (_v, s) =>
+      s.severidade_tecnica ? <StatusBadge mark="severity" tone={SEV_TONE[s.severidade_tecnica] ?? "neutral"}>{t(`riscosSugeridos.severidades.${s.severidade_tecnica}`)}</StatusBadge> : "—" },
+    { key: "relevancia", label: t("riscosSugeridos.colRelevancia"), sortable: true, sortAccessor: (s) => s.relevancia ?? 0, render: (_v, s) => s.relevancia ?? 0 },
     { key: "estado", label: t("riscosSugeridos.colEstado"), sortable: true, render: (_v, s) => <StatusBadge tone={ESTADO_TONE[s.estado]}>{t(`riscosSugeridos.estados.${s.estado}`)}</StatusBadge> },
     { key: "ultima_deteccao", label: t("riscosSugeridos.colDetectado"), sortable: true, kind: "date", render: (v) => fmt(v) },
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,7 +102,8 @@ export function RiscosSugeridos() {
     setSalvando("aceitar");
     const { data: riscoId, error } = await supabase.rpc("aceitar_risco_sugerido" as never, {
       p_id: aberta.id, p_nome: titulo(aberta),
-      p_descricao: `${descricao(aberta)}\n\n${logoOf(aberta.provider).nome}: ${(aberta.evidencia?.itens ?? []).join(", ")}`,
+      p_descricao: [descricao(aberta), `${aberta.fonte ?? logoOf(aberta.provider).nome}: ${(aberta.evidencia?.itens ?? []).join(", ")}`,
+        ...(aberta.evidencia?.refs ?? []).map((r) => safeUrl(r.url)).filter(Boolean)].join("\n\n"),
     } as never);
     setSalvando(null);
     if (error) { logger.error("aceitar_risco_sugerido", error); toast.error(t("riscosSugeridos.erro")); return; }
@@ -106,6 +127,38 @@ export function RiscosSugeridos() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{t("riscosSugeridos.intro")}</p>
+      {conexoes.length > 0 && (
+        <details className="rounded-lg border border-border p-3 text-sm">
+          <summary className="cursor-pointer font-medium">{t("riscosSugeridos.cobertura.titulo")}</summary>
+          <p className="mt-2 text-xs text-muted-foreground">{t("riscosSugeridos.cobertura.intro")}</p>
+          <div className="mt-3 space-y-4">
+            {conexoes.map((c) => {
+              const cob = c.settings?.risk_coverage;
+              const faltam = [...new Set(Object.entries(cob?.rules ?? {}).filter(([, v]) => v.status === "permission_missing").map(([r]) => permissaoDe(r)).filter(Boolean))];
+              return (
+                <div key={c.id}>
+                  <p className="mb-1 flex items-center gap-2 font-medium"><img src={logoOf(c.provider).src} alt="" className="h-4 w-4" />{logoOf(c.provider).nome}
+                    <span className="text-xs font-normal text-muted-foreground">{cob ? t("riscosSugeridos.cobertura.em", { data: new Date(cob.at).toLocaleString(String(locale).startsWith("en") ? "en-GB" : "pt-BR") }) : t("riscosSugeridos.cobertura.semColeta")}</span></p>
+                  {cob && (
+                    <ul className="space-y-1">
+                      {Object.entries(cob.rules).map(([r, v]) => (
+                        <li key={r} className="flex flex-wrap items-center gap-2">
+                          <StatusBadge tone={COB_TONE[v.status] ?? "neutral"}>{t(`riscosSugeridos.cobertura.status.${v.status}`)}</StatusBadge>
+                          <span>{rotuloCheck(r)}</span>
+                          {v.motivo && <span className="text-xs text-muted-foreground">· {t(`riscosSugeridos.cobertura.motivos.${v.motivo.split(":")[0]}`)}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {faltam.length > 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">{t("riscosSugeridos.cobertura.permissoes")} {faltam.join("; ")}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
       <DataTable
         data={data} columns={columns} loading={isLoading} error={isError} onRefresh={() => refetch()}
         exportName="riscos-sugeridos" onRowClick={(s) => setAberta(s)}
@@ -127,18 +180,28 @@ export function RiscosSugeridos() {
           <div className="space-y-5 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge tone={ESTADO_TONE[aberta.estado]}>{t(`riscosSugeridos.estados.${aberta.estado}`)}</StatusBadge>
-              <StatusBadge mark="severity" tone={NIVEL_TONE[nivelSugerido(aberta.probabilidade, aberta.impacto)]}>{NIVEL_LABEL[nivelSugerido(aberta.probabilidade, aberta.impacto)]}</StatusBadge>
-              <span className="text-muted-foreground">{t("riscosSugeridos.probImpacto", { p: aberta.probabilidade, i: aberta.impacto })}</span>
+              {aberta.severidade_tecnica && <StatusBadge mark="severity" tone={SEV_TONE[aberta.severidade_tecnica] ?? "neutral"}>{t("riscosSugeridos.severidadeTecnica")}: {t(`riscosSugeridos.severidades.${aberta.severidade_tecnica}`)}</StatusBadge>}
+              <span className="text-muted-foreground">{t("riscosSugeridos.colRelevancia")}: {aberta.relevancia ?? 0}</span>
               {aberta.fonte && <span className="text-muted-foreground">· {t("riscosSugeridos.fonte")}: {aberta.fonte}</span>}
-              {aberta.severidade_tecnica && <span className="text-muted-foreground">· {t("riscosSugeridos.severidadeTecnica")}: {t(`riscosSugeridos.severidades.${aberta.severidade_tecnica}`)}</span>}
+              <span className="text-muted-foreground">· {t("riscosSugeridos.colDetectado")}: {fmt(aberta.ultima_deteccao)}</span>
               {aberta.recorrencias > 0 && <span className="text-muted-foreground">· {t("riscosSugeridos.recorrencias", { n: aberta.recorrencias })}</span>}
             </div>
+            <p className="text-xs text-muted-foreground">{t("riscosSugeridos.prioridadeNota")}</p>
             {aberta.corrigida_em && <p className="text-success">{t("riscosSugeridos.corrigidoEm", { data: fmt(aberta.corrigida_em) })}</p>}
             <div>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("riscosSugeridos.afetados", { n: aberta.evidencia?.total ?? 0 })}</p>
-              <ul className="space-y-1">{itens.map((x) => <li key={x} className="truncate">{x}</li>)}</ul>
+              {aberta.evidencia?.refs?.length ? (
+                <ul className="space-y-1">{aberta.evidencia.refs.map((r) => (
+                  <li key={r.id} className="truncate">{safeUrl(r.url)
+                    ? <a href={safeUrl(r.url)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{r.nome}</a> : r.nome}</li>))}</ul>
+              ) : <ul className="space-y-1">{itens.map((x) => <li key={x} className="truncate">{x}</li>)}</ul>}
               {resto > 0 && <p className="mt-1 text-muted-foreground">{t("riscosSugeridos.maisItens", { n: resto })}</p>}
             </div>
+            {aberta.evidencia?.alvos?.length ? (
+              <div><p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("riscosSugeridos.alvos")}</p>
+                <p className="text-muted-foreground">{aberta.evidencia.alvos.join(", ")}</p></div>) : null}
+            {aberta.alcance && Object.keys(aberta.alcance).length > 0 && (
+              <p className="text-xs text-muted-foreground">{t("riscosSugeridos.alcance")}: {Object.entries(aberta.alcance).map(([k, v]) => `${k.replace(/_/g, " ")}: ${Array.isArray(v) ? v.length : String(v)}`).join(" · ")}</p>)}
             {aberta.motivo_descarte && <p className="text-muted-foreground">{aberta.motivo_descarte}</p>}
             {aberta.estado === "aberta" && (
               <div className="space-y-2">

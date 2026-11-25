@@ -1,5 +1,5 @@
 import { collectProvider, ProviderError, providerJson } from "./integration-providers.ts";
-import { collectMicrosoftSecurity, type SecurityCollection } from "./integration-security.ts";
+import { collectMicrosoftSecurity, MDE_SCOPE, type SecurityCollection } from "./integration-security.ts";
 import { connectionCredentials, digest, microsoftAppToken } from "./integration-oauth.ts";
 import { integrationCollectionsEnabled } from "./integration-release.ts";
 import {
@@ -11,7 +11,7 @@ import {
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
 import { platformServiceAccount } from "./google-delegated.ts";
-import { coveredConfigRules, evaluateRiskRules, evaluateSecurity, RISK_PROVIDERS } from "./integration-risk-rules.ts";
+import { coveredConfigRules, evaluateRiskRules, evaluateSecurity, RISK_PROVIDERS, riskCoverage } from "./integration-risk-rules.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -328,7 +328,7 @@ export async function processIntegrationRun(
       try {
         if (connection.provider === "microsoft" && credentials.access_token)
           security = await collectMicrosoftSecurity(providerJson, credentials.access_token, async () =>
-            (await microsoftAppToken(connection.settings?.tenant_id, "https://api.securitycenter.microsoft.com/.default")).access_token);
+            (await microsoftAppToken(connection.settings?.tenant_id, MDE_SCOPE)).access_token);
       } catch { security = null; }
       const clean = collection.warnings.length === 0;
       const sec = evaluateSecurity(security);
@@ -337,14 +337,16 @@ export async function processIntegrationRun(
         p_achados: [...(clean ? evaluateRiskRules(collection.resources) : []), ...sec.findings],
         p_cobertas: [...(clean ? coveredConfigRules(collection.resources) : []), ...sec.covered],
       }));
-      if (security) {
-        const fresh = await db.from("integration_connections").select("settings")
-          .eq("id", connection.id).eq("empresa_id", run.empresa_id).single();
-        checked(fresh);
-        checked(await db.from("integration_connections")
-          .update({ settings: { ...fresh.data.settings, security_status: security.status, security_status_at: new Date().toISOString() } })
-          .eq("id", connection.id).eq("empresa_id", run.empresa_id));
-      }
+      // Per-rule coverage with time and reason, so the UI never shows "no result" as "no risk".
+      const fresh = await db.from("integration_connections").select("settings")
+        .eq("id", connection.id).eq("empresa_id", run.empresa_id).single();
+      checked(fresh);
+      const at = new Date().toISOString();
+      checked(await db.from("integration_connections")
+        .update({ settings: { ...fresh.data.settings,
+          ...(security ? { security_status: security.status, security_status_at: at } : {}),
+          risk_coverage: { at, rules: riskCoverage(connection.provider, collection.resources, clean, security) } } })
+        .eq("id", connection.id).eq("empresa_id", run.empresa_id));
     }
     await progress.finish();
     const partial = collection.warnings.length > 0;

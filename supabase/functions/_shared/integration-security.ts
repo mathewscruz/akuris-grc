@@ -1,6 +1,6 @@
 // Microsoft security posture sources: Defender XDR incidents, Entra ID Protection, Secure Score and
 // Defender for Endpoint recommendations. Read-only; each source reports its own status, and a source
-// that is unlicensed, forbidden, partial or timed out produces no finding and no coverage.
+// that is unlicensed, forbidden, partial or timed out produces no coverage (never "resolved").
 import { ProviderError } from "./integration-providers.ts";
 
 export type SecuritySource = "ms_incidents" | "ms_risky_users" | "ms_secure_score" | "ms_recommendations";
@@ -8,93 +8,181 @@ export type AlertCategory = "ransomware" | "malware" | "phishing" | "conta_compr
   | "vazamento_dados" | "configuracao" | "dispositivo" | "outros";
 export const ALERT_CATEGORIES: AlertCategory[] = ["ransomware", "malware", "phishing", "conta_comprometida",
   "movimento_lateral", "vazamento_dados", "configuracao", "dispositivo", "outros"];
-export type SecuritySignal =
-  | { source: "ms_incidents"; incidente: string; category: AlertCategory; alvos: string[] }
-  | { source: "ms_risky_users"; target: string }
-  | { source: "ms_secure_score"; target: string; gap: number }
-  | { source: "ms_recommendations"; target: string; devices: number };
-export type SourceStatus = "ok" | "partial" | "permission_missing" | "unavailable";
-export type SecurityCollection = { signals: SecuritySignal[]; status: Partial<Record<SecuritySource, SourceStatus>> };
+export type IncidentSignal = { source: "ms_incidents"; id: string; nome: string; url: string | null; category: AlertCategory;
+  classificacao: string; alvos: string[] };
+export type ScoreSignal = { source: "ms_secure_score"; id: string; nome: string; url: string | null; gap: number; max: number; atual: number };
+export type RecSignal = { source: "ms_recommendations"; id: string; nome: string; activeAlert: boolean; publicExploit: boolean;
+  criticos: number; expostos: number };
+export type SecuritySignal = IncidentSignal | ScoreSignal | RecSignal | { source: "ms_risky_users"; id: string; nome: string };
+export type SourceStatus = "ok" | "partial" | "permission_missing" | "unavailable" | "not_evaluated";
+export type SourceReport = { status: SourceStatus; motivo?: string; total?: number };
+export type SecurityCollection = { signals: SecuritySignal[]; status: Partial<Record<SecuritySource, SourceStatus>>;
+  detalhes?: Partial<Record<SecuritySource, SourceReport>> };
 
-export const WINDOW_DAYS = 30;
+/** Minimum new application permissions per source (never granted automatically). */
+export const SECURITY_PERMISSIONS: Record<SecuritySource, { api: string; permissao: string }> = {
+  ms_incidents: { api: "Microsoft Graph", permissao: "SecurityIncident.Read.All" },
+  ms_secure_score: { api: "Microsoft Graph", permissao: "SecurityEvents.Read.All" },
+  ms_risky_users: { api: "Microsoft Graph", permissao: "IdentityRiskyUser.Read.All" },
+  ms_recommendations: { api: "Microsoft Defender for Endpoint (WindowsDefenderATP)", permissao: "SecurityRecommendation.Read.All" },
+};
+export const MDE_BASE = "https://api.securitycenter.microsoft.com";
+export const MDE_SCOPE = "https://api.securitycenter.microsoft.com/.default";
 const GRAPH = "https://graph.microsoft.com";
-const MDE = "https://api.securitycenter.microsoft.com";
+// deno-lint-ignore no-explicit-any
 type Read = (url: string, token: string, origin: string) => Promise<any>;
 
+const DETERMINATION: Record<string, AlertCategory> = {
+  malware: "malware", unwantedSoftware: "malware", phishing: "phishing", compromisedUser: "conta_comprometida",
+  maliciousUserActivity: "conta_comprometida", multiStagedAttack: "malware", apt: "malware",
+};
 export function incidentCategory(text: string): AlertCategory {
   const c = text.toLowerCase();
   if (c.includes("ransom")) return "ransomware";
   if (c.includes("phish")) return "phishing";
   if (/exfil|data loss|dlp|collection/.test(c)) return "vazamento_dados";
   if (c.includes("lateral")) return "movimento_lateral";
-  if (/malware|trojan|virus|execution/.test(c)) return "malware";
+  if (/malware|trojan|virus|worm|execution|command and control/.test(c)) return "malware";
   if (/credential|password|sign-in|login|account|privilege|initialaccess/.test(c)) return "conta_comprometida";
   if (/device|endpoint/.test(c)) return "dispositivo";
   if (/policy|configuration|setting/.test(c)) return "configuracao";
   return "outros";
 }
-const statusOf = (e: unknown): SourceStatus =>
-  e instanceof ProviderError && (e.code === "permission_missing" || e.code === "authorization_expired") ? "permission_missing" : "unavailable";
+const statusOf = (e: unknown): SourceReport => {
+  if (e instanceof ProviderError && (e.code === "permission_missing" || e.code === "authorization_expired"))
+    return { status: "permission_missing", motivo: e.code };
+  const code = e instanceof ProviderError ? e.code : e instanceof Error && e.name === "TimeoutError" ? "timeout" : "erro";
+  return { status: "unavailable", motivo: code };
+};
 
+/** Follows nextLink up to max pages; a remaining link means the read is explicitly partial. */
 async function pages(read: Read, url: string, token: string, origin: string, max = 10) {
+  // deno-lint-ignore no-explicit-any
   const items: any[] = [];
   let next: string | undefined = url;
-  let page = 0;
-  for (; next && page < max; page++) {
+  for (let page = 0; next && page < max; page++) {
     const d = await read(next, token, origin);
-    items.push(...(d.value || []));
-    next = d["@odata.nextLink"];
+    items.push(...(Array.isArray(d?.value) ? d.value : []));
+    next = d?.["@odata.nextLink"];
   }
-  // A page limit reached means the source was not read completely: never "ok".
   return { items, complete: !next };
 }
-const since = (now: Date) => new Date(now.getTime() - WINDOW_DAYS * 86400000).toISOString().replace(".000Z", "Z");
 
-async function source(out: SecurityCollection, id: SecuritySource, fn: () => Promise<{ items: SecuritySignal[]; complete: boolean }>) {
+async function source(out: SecurityCollection, id: SecuritySource,
+  fn: () => Promise<{ items: SecuritySignal[]; complete: boolean; motivo?: string }>) {
+  out.detalhes ??= {};
   try {
     const r = await fn();
     out.signals.push(...r.items);
     out.status[id] = r.complete ? "ok" : "partial";
-  } catch (e) { out.status[id] = statusOf(e); }
+    out.detalhes[id] = { status: out.status[id]!, total: r.items.length, ...(r.motivo ? { motivo: r.motivo } : {}) };
+  } catch (e) {
+    const rep = statusOf(e);
+    out.status[id] = rep.status;
+    out.detalhes[id] = rep;
+  }
 }
 
-export async function collectMicrosoftSecurity(read: Read, graphToken: string, mdeToken: () => Promise<string>, now = new Date()) {
-  const out: SecurityCollection = { signals: [], status: {} };
+const BENIGN = new Set(["falsepositive", "informationalexpectedactivity", "benignpositive"]);
+const OPEN = new Set(["active", "inprogress", "awaitingaction"]);
+// deno-lint-ignore no-explicit-any
+const evidenceTarget = (e: any): string | null => {
+  const t = String(e?.["@odata.type"] ?? "");
+  if (t.endsWith("deviceEvidence")) return e.deviceDnsName || e.hostName || null;
+  if (t.endsWith("userEvidence")) {
+    const u = e.userAccount ?? {};
+    return u.userPrincipalName || u.displayName || (u.accountName ? (u.domainName ? `${u.domainName}\\${u.accountName}` : u.accountName) : null);
+  }
+  return null;
+};
+
+// deno-lint-ignore no-explicit-any
+export function incidentSignal(i: any): IncidentSignal | null {
+  if (String(i?.severity) !== "high" || !OPEN.has(String(i?.status ?? "").toLowerCase())) return null;
+  if (BENIGN.has(String(i?.classification ?? "").toLowerCase())) return null;
+  // deno-lint-ignore no-explicit-any
+  const alerts: any[] = Array.isArray(i.alerts) ? i.alerts : [];
+  const det = DETERMINATION[String(i.determination ?? "")];
+  const text = `${i.displayName ?? ""} ${alerts.map((a) => `${a.category ?? ""} ${a.title ?? ""}`).join(" ")}`;
+  const textual = incidentCategory(text);
+  return {
+    source: "ms_incidents", id: String(i.id), nome: String(i.displayName ?? `Incidente ${i.id}`),
+    url: typeof i.incidentWebUrl === "string" ? i.incidentWebUrl : null,
+    category: textual === "ransomware" || !det ? textual : det,
+    classificacao: String(i.classification ?? "unknown"),
+    alvos: [...new Set(alerts.flatMap((a) => (Array.isArray(a.evidence) ? a.evidence : []).map(evidenceTarget)).filter((x): x is string => !!x))].sort(),
+  };
+}
+
+const IGNORED_STATES = new Set(["ignored", "thirdparty", "reviewed"]);
+/** Secure Score gaps: only controls with an explicit finite score, applicable and not accepted/handled elsewhere. */
+// deno-lint-ignore no-explicit-any
+export function secureScoreSignals(score: any, profiles: any[]): { items: ScoreSignal[]; complete: boolean; motivo?: string } {
+  if (!score || !Array.isArray(score.controlScores)) return { items: [], complete: false, motivo: "sem_pontuacao" };
+  const explicit = new Map<string, number | null>();
+  for (const c of score.controlScores) {
+    const v = typeof c?.score === "number" && Number.isFinite(c.score) ? c.score : null;
+    if (c?.controlName) explicit.set(String(c.controlName), v);
+  }
+  let unknown = 0;
+  const items: ScoreSignal[] = [];
+  for (const p of profiles) {
+    const max = typeof p?.maxScore === "number" ? p.maxScore : Number(p?.maxScore);
+    if (p?.deprecated === true || !Number.isFinite(max) || max <= 0) continue;
+    const updates = Array.isArray(p.controlStateUpdates) ? p.controlStateUpdates : [];
+    const state = String(updates[updates.length - 1]?.state ?? "default").toLowerCase();
+    if (IGNORED_STATES.has(state)) continue;
+    // Not present in the tenant score = not applicable/licensed here: no gap is inferred.
+    if (!explicit.has(String(p.id))) continue;
+    const atual = explicit.get(String(p.id));
+    if (atual === null || atual === undefined) { unknown++; continue; }
+    const gap = Math.round((max - atual) * 100) / 100;
+    if (gap > 0 && max >= 5) items.push({ source: "ms_secure_score", id: String(p.id), nome: String(p.title ?? p.id),
+      url: typeof p.actionUrl === "string" && p.actionUrl ? p.actionUrl : null, gap, max, atual });
+  }
+  items.sort((a, b) => b.gap - a.gap || a.id.localeCompare(b.id));
+  return { items, complete: unknown === 0, ...(unknown ? { motivo: `controles_sem_pontuacao:${unknown}` } : {}) };
+}
+
+/** Defender for Endpoint: active recommendations with an active alert, public exploit on exposed machines, or exposed critical devices. */
+// deno-lint-ignore no-explicit-any
+export function recommendationSignals(items: any[]): RecSignal[] {
+  return items.filter((r) => String(r?.status) === "Active").map((r) => ({
+    source: "ms_recommendations" as const, id: String(r.id), nome: String(r.recommendationName ?? r.id),
+    activeAlert: r.activeAlert === true, publicExploit: r.publicExploit === true,
+    criticos: Number.isFinite(Number(r.exposedCriticalDevices)) ? Number(r.exposedCriticalDevices) : 0,
+    expostos: Number.isFinite(Number(r.exposedMachinesCount)) ? Number(r.exposedMachinesCount) : 0,
+  })).filter((r) => r.expostos > 0 && (r.activeAlert || r.publicExploit || r.criticos > 0))
+    .sort((a, b) => Number(b.activeAlert) - Number(a.activeAlert) || b.criticos - a.criticos
+      || Number(b.publicExploit) - Number(a.publicExploit) || b.expostos - a.expostos || a.id.localeCompare(b.id));
+}
+
+export async function collectMicrosoftSecurity(read: Read, graphToken: string, mdeToken: () => Promise<string>) {
+  const out: SecurityCollection = { signals: [], status: {}, detalhes: {} };
   await source(out, "ms_incidents", async () => {
-    // High severity, still active, classification not yet determined counts too; false positives and
-    // benign positives are excluded from triage.
-    const f = encodeURIComponent(`severity eq 'high' and status eq 'active' and classification ne 'falsePositive' and classification ne 'benignPositive' and createdDateTime ge ${since(now)}`);
-    const { items, complete } = await pages(read, `${GRAPH}/v1.0/security/incidents?$top=50&$filter=${f}`, graphToken, GRAPH);
-    const signals = items.filter((i) => i.severity === "high" && i.status === "active"
-      && i.classification !== "falsePositive" && i.classification !== "benignPositive")
-      .map((i) => ({
-        source: "ms_incidents" as const, incidente: String(i.id),
-        category: incidentCategory(`${(i.alerts ?? []).map((a: any) => `${a.category ?? ""} ${a.title ?? ""}`).join(" ")} ${i.title ?? ""}`),
-        alvos: (i.alerts ?? []).flatMap((a: any) => (a.alertEvidence ?? []).map((e: any) => e.entityPath ?? e.user?.name ?? "")).filter(Boolean),
-      }));
-    return { items: signals, complete };
+    // No date window: an incident still open stays relevant however old it is.
+    const f = encodeURIComponent("severity eq 'high' and (status eq 'active' or status eq 'inProgress' or status eq 'awaitingAction')");
+    const { items, complete } = await pages(read, `${GRAPH}/v1.0/security/incidents?$expand=alerts&$top=50&$filter=${f}`, graphToken, GRAPH);
+    return { items: items.map(incidentSignal).filter((x): x is IncidentSignal => !!x), complete };
   });
   await source(out, "ms_risky_users", async () => {
     const f = encodeURIComponent("riskLevel eq 'high' and riskState eq 'atRisk'");
     const { items, complete } = await pages(read, `${GRAPH}/v1.0/identityProtection/riskyUsers?$top=200&$filter=${f}`, graphToken, GRAPH);
     return { items: items.filter((u) => u.riskLevel === "high" && u.riskState === "atRisk")
-      .map((u) => ({ source: "ms_risky_users" as const, target: u.userPrincipalName ?? u.id })), complete };
+      .map((u) => ({ source: "ms_risky_users" as const, id: String(u.id), nome: String(u.userPrincipalName ?? u.userDisplayName ?? u.id) })), complete };
   });
   await source(out, "ms_secure_score", async () => {
-    const score = (await read(`${GRAPH}/v1.0/security/secureScores?$top=1`, graphToken, GRAPH)).value?.[0];
-    if (!score) return { items: [], complete: true };
+    const score = (await read(`${GRAPH}/v1.0/security/secureScores?$top=1`, graphToken, GRAPH))?.value?.[0];
     const { items: profiles, complete } = await pages(read, `${GRAPH}/v1.0/security/secureScoreControlProfiles?$top=200`, graphToken, GRAPH);
-    const current = new Map<string, number>((score.controlScores || []).map((c: any) => [c.controlName, Number(c.score) || 0]));
-    return { items: profiles.filter((p) => !p.deprecated && Number(p.maxScore) >= 5)
-      .map((p) => ({ source: "ms_secure_score" as const, target: p.title ?? p.id, gap: Number(p.maxScore) - (current.get(p.id) ?? 0) }))
-      .filter((p) => p.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 5), complete };
+    const r = secureScoreSignals(score, profiles);
+    return { items: r.items, complete: complete && r.complete, motivo: !complete ? "paginacao_parcial" : r.motivo };
   });
   await source(out, "ms_recommendations", async () => {
     const token = await mdeToken();
-    const { items, complete } = await pages(read, `${MDE}/api/recommendations?$filter=status eq 'Active'&$top=500`, token, MDE, 4);
-    const relevant = items.filter((r) => r.publicExploit === true || Number(r.exposedCriticalDevices) > 0 || r.severity === "High")
-      .sort((a, b) => (b.exposedCriticalDevices ?? 0) - (a.exposedCriticalDevices ?? 0));
-    return { items: relevant.map((r) => ({ source: "ms_recommendations" as const, target: r.recommendationName ?? r.id, devices: Number(r.exposedDevices ?? r.exposedCriticalDevices ?? 0) })), complete };
+    const { items, complete } = await pages(read, `${MDE_BASE}/api/recommendations?$filter=${encodeURIComponent("status eq 'Active'")}&$top=10000`, token, MDE_BASE, 5);
+    // A full page with no continuation link cannot prove the list ended.
+    const ambiguous = complete && items.length > 0 && items.length % 10000 === 0;
+    return { items: recommendationSignals(items), complete: complete && !ambiguous, motivo: complete && !ambiguous ? undefined : "paginacao_parcial" };
   });
   return out;
 }
