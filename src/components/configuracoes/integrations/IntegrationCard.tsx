@@ -4,6 +4,14 @@ import { IconEdit } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type { IntegrationState } from "./IntegrationStatusButton";
 
+const BAND: Record<IntegrationState, string> = {
+  connected: "bg-success",
+  attention: "bg-warning",
+  error: "bg-destructive",
+  disconnected: "bg-border",
+  unavailable: "bg-border",
+};
+
 const DOT: Record<IntegrationState, string> = {
   connected: "bg-success",
   attention: "bg-warning",
@@ -32,45 +40,57 @@ export function IntegrationCard({
     <article
       data-state={state}
       className={cn(
-        "relative flex flex-col rounded-xl border bg-card p-5 transition-colors",
+        "relative flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-colors dark:shadow-none",
         clickable && "cursor-pointer hover:border-primary/40",
         state === "unavailable" && "opacity-70",
       )}
       onClick={clickable ? onOpen : undefined}
     >
-      <div className="flex items-start gap-4">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center">{logo}</span>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <h4 className={cn("truncate font-semibold", onEdit && "pr-8")} title={description}>{name}</h4>
-          <span className="inline-flex rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{category}</span>
-          <p className="flex items-center gap-2 text-sm">
-            <span aria-hidden className={cn("h-2 w-2 rounded-full", DOT[state])} />
+      <span aria-hidden className={cn("h-1 w-full", BAND[state])} />
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex items-start gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center">{logo}</span>
+          <div className="min-w-0 flex-1">
+            <h4 className={cn("truncate font-semibold", onEdit && "pr-8")}>{name}</h4>
+            {description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground" title={description}>{description}</p>}
+          </div>
+          {onEdit && (
+            <button
+              type="button"
+              className="absolute right-4 top-5 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={`${name}: ${label}`}
+              title={t("collectionHub.cardEdit")}
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            >
+              <IconEdit className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <div className="mt-auto flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">{category}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium">
+            <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", DOT[state])} />
             <span className={cn(state === "error" && "text-destructive")}>{label}</span>
-          </p>
+          </span>
         </div>
-        {onEdit && (
-          <button
-            type="button"
-            className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label={`${name}: ${label}`}
-            title={t("collectionHub.cardEdit")}
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          >
-            <IconEdit className="h-4 w-4" />
-          </button>
-        )}
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
-        <div className="min-w-0">
+      <div className="flex items-center gap-4 border-t bg-muted/40 px-5 py-3 text-sm">
+        <div className="min-w-0 flex-1" title={modules}>
           <p className="text-xs text-muted-foreground">{t("collectionHub.cardModules")}</p>
-          <p className="mt-1 truncate">{modules || "—"}</p>
+          <p className="mt-0.5 truncate">{shortModules(modules)}</p>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 border-l pl-4">
           <p className="text-xs text-muted-foreground">{t("collectionHub.cardLastRun")}</p>
-          <p className="mt-1 truncate">{lastRun || "—"}</p>
+          <p className="mt-0.5 truncate">{lastRun || "—"}</p>
         </div>
+        {extra && <div className="flex shrink-0 flex-wrap items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>{extra}</div>}
       </div>
-      {extra && <div className="mt-4" onClick={(e) => e.stopPropagation()}>{extra}</div>}
     </article>
   );
+}
+
+function shortModules(modules?: string) {
+  if (!modules) return "—";
+  const parts = modules.split(", ");
+  return parts.length > 1 ? `${parts[0]} +${parts.length - 1}` : parts[0];
 }
