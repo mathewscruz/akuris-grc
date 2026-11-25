@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { coveredConfigRules, evaluateRiskRules, evaluateSecurity } from "./integration-risk-rules.ts";
+import { configFixed, coveredConfigRules, evaluateRiskRules, evaluateSecurity, provenRules } from "./integration-risk-rules.ts";
 import { collectMicrosoftSecurity, incidentCategory } from "./integration-security.ts";
 import { ProviderError } from "./integration-providers.ts";
 import { riskCoverage } from "./integration-risk-rules.ts";
@@ -70,7 +70,7 @@ Deno.test("re-evaluation is deterministic (same key, no duplicates)", () => {
   const r = [iDev({ complianceState: "noncompliant" }), iDev({ id: "d2", deviceName: "PC-1", complianceState: "noncompliant" })];
   const a = evaluateRiskRules(r as never, NOW), b = evaluateRiskRules(r as never, NOW);
   assertEquals(a, b);
-  assertEquals(a[0].evidencia, { total: 1, itens: ["PC-1"], ids: ["PC-1"] });
+  assertEquals(a[0].evidencia, { total: 2, itens: ["PC-1"], ids: ["device:d1", "device:d2"] }, "ids are stable externalIds, not names");
 });
 
 
@@ -158,7 +158,7 @@ Deno.test("secure score: explicit finite scores only; ignored/deprecated/unlicen
   assertEquals(f.evidencia.ids, ["MFARegistrationV2"]);
   assertEquals(f.relevancia, 5, "4.5 gap rounds to an int, never a '4.5'::int cast");
   assertEquals(f.evidencia.refs![0].url, "https://security.microsoft.com/securescore?actionId=MFARegistrationV2");
-  assertEquals(sec.status.ms_secure_score, "ok");
+  assertEquals(sec.status.ms_secure_score, "partial", "a control absent from the tenant score is unknown, not 'not applicable'");
 });
 
 Deno.test("secure score: null score is not evaluated and source is partial (no coverage)", async () => {
@@ -221,4 +221,70 @@ Deno.test("google coverage lists not-collected checks explicitly", () => {
 Deno.test("incident category mapping", () => {
   assertEquals(incidentCategory("Ransomware behavior"), "ransomware");
   assertEquals(incidentCategory("Suspicious sign-in"), "conta_comprometida");
+});
+
+
+// ---- Lifecycle authorisation: read coverage never resolves; only per-id remediation proof does (collector + decision).
+const msDecide = async (routes: Routes, open: { regra_id: string; ids: string[] | null }[]) => {
+  const { sec, calls } = await run(routes);
+  const achados = evaluateSecurity(sec).findings;
+  return { resolved: await provenRules(open, achados, (r, id) => sec.proveFixed!(r, id)), calls, sec };
+};
+const PROFILES_NO_UNLICENSED = { value: PROFILES.value.filter((p) => p.id !== "NotLicensed") };
+const byIncident = (one: unknown) => (u: string) => u.includes("/security/incidents/") ? one : { value: [] };
+
+Deno.test("secure score gap -> controlScores [] with profiles present never resolves", async () => {
+  const { resolved, sec } = await msDecide(ALL_OK({ "/security/secureScores": SCORE([]), "/security/secureScoreControlProfiles": PROFILES_NO_UNLICENSED }),
+    [{ regra_id: "secure_score_recomendacoes", ids: ["MFARegistrationV2"] }]);
+  assertEquals(sec.status.ms_secure_score, "partial");
+  assertEquals(resolved, []);
+});
+Deno.test("secure score: same control now at max with explicit score resolves", async () => {
+  const { resolved } = await msDecide(ALL_OK({ "/security/secureScoreControlProfiles": PROFILES_NO_UNLICENSED,
+    "/security/secureScores": SCORE([{ controlName: "MFARegistrationV2", score: 9 }, { controlName: "AdminMFAV2", score: 10 }, { controlName: "IgnoredCtl", score: 0 }]) }),
+    [{ regra_id: "secure_score_recomendacoes", ids: ["MFARegistrationV2"] }]);
+  assertEquals(resolved, ["secure_score_recomendacoes"]);
+});
+Deno.test("incident gone from filter (retention/severity/category change) is not fixed unless GET says resolved", async () => {
+  const open = [{ regra_id: "alerta_malware", ids: ["29"] }];
+  const gone404 = await msDecide(ALL_OK({ "/security/incidents": byIncident(new ProviderError("not_found")) }), open);
+  assertEquals(gone404.resolved, [], "404/retention never proves");
+  const medium = await msDecide(ALL_OK({ "/security/incidents": byIncident(INCIDENT({ severity: "medium" })) }), open);
+  assertEquals(medium.resolved, [], "severity changed but still active");
+  const forbidden = await msDecide(ALL_OK({ "/security/incidents": byIncident(new ProviderError("permission_missing")) }), open);
+  assertEquals(forbidden.resolved, []);
+  const fixed = await msDecide(ALL_OK({ "/security/incidents": byIncident(INCIDENT({ status: "resolved" })) }), open);
+  assertEquals(fixed.resolved, ["alerta_malware"]);
+  assertEquals(fixed.calls.some((c) => c.includes("/security/incidents/29")), true);
+});
+Deno.test("incident list 403: source not ok, nothing resolves", async () => {
+  const r = await msDecide(ALL_OK({ "/security/incidents": new ProviderError("permission_missing") }), [{ regra_id: "alerta_malware", ids: ["29"] }]);
+  assertEquals(r.resolved, []);
+});
+Deno.test("defender recommendation resolves only with exposedMachinesCount explicitly 0", async () => {
+  const open = [{ regra_id: "recomendacoes_defender", ids: ["va-_-microsoft-_-edge"] }];
+  const rec = (one: unknown) => (u: string) => u.includes("/api/recommendations/") ? one : { value: [] };
+  assertEquals((await msDecide(ALL_OK({ "/api/recommendations": rec(REC({ exposedMachinesCount: null })) }), open)).resolved, []);
+  assertEquals((await msDecide(ALL_OK({ "/api/recommendations": rec(new ProviderError("not_found")) }), open)).resolved, []);
+  assertEquals((await msDecide(ALL_OK({ "/api/recommendations": rec(REC({ exposedMachinesCount: 0 })) }), open)).resolved, ["recomendacoes_defender"]);
+});
+Deno.test("legacy suggestion without ids never auto-resolves; current finding blocks resolution", async () => {
+  assertEquals(await provenRules([{ regra_id: "alerta_malware", ids: null }], [], () => true), []);
+  const f = evaluateRiskRules([iDev({ complianceState: "noncompliant" })] as never, NOW);
+  assertEquals(await provenRules([{ regra_id: "dispositivos_nao_conformes", ids: ["device:d1"] }], f, () => true), []);
+});
+Deno.test("config: only problematic device vanishes while another is healthy -> not fixed", async () => {
+  const now = [iDev({ id: "d2", deviceName: "PC-2" })];
+  const open = [{ regra_id: "dispositivos_nao_conformes", ids: ["device:d1"] }];
+  assertEquals(coveredConfigRules(now as never).includes("dispositivos_nao_conformes"), true, "read coverage stays visible");
+  assertEquals(await provenRules(open, evaluateRiskRules(now as never, NOW), (r, id) => configFixed(now as never, r, id, NOW)), []);
+});
+Deno.test("config: scope change (old ids absent) not fixed; all old ids present and remediated -> fixed", async () => {
+  const open = [{ regra_id: "dispositivos_sem_criptografia", ids: ["device:d1", "device:d2"] }];
+  const partial = [iDev({ id: "d1" })];
+  assertEquals(await provenRules(open, [], (r, id) => configFixed(partial as never, r, id, NOW)), []);
+  const unknown = [iDev({ id: "d1" }), iDev({ id: "d2", isEncrypted: null })];
+  assertEquals(await provenRules(open, evaluateRiskRules(unknown as never, NOW), (r, id) => configFixed(unknown as never, r, id, NOW)), []);
+  const fixed = [iDev({ id: "d1" }), iDev({ id: "d2" })];
+  assertEquals(await provenRules(open, evaluateRiskRules(fixed as never, NOW), (r, id) => configFixed(fixed as never, r, id, NOW)), ["dispositivos_sem_criptografia"]);
 });

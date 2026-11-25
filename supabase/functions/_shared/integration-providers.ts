@@ -32,6 +32,7 @@ export async function providerJson(
   url: string,
   token: string,
   origin: string,
+  extraHeaders: Record<string, string> = {},
 ): Promise<any> {
   const target = new URL(url);
   if (target.origin !== origin || target.username || target.password)
@@ -40,6 +41,7 @@ export async function providerJson(
     redirect: "error",
     signal: AbortSignal.timeout(20000),
     headers: {
+      ...extraHeaders,
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
       ...(origin === GITHUB

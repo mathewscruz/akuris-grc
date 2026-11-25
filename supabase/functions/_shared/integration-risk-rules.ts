@@ -2,7 +2,7 @@ import { ALERT_CATEGORIES, type IncidentSignal, type RecSignal, type ScoreSignal
 // Pure risk rules over collected resources and security sources. Missing data never fires a rule and
 // never marks an earlier finding as fixed: coverage is granted per rule, only when the field the rule
 // needs was actually collected.
-type Res = { kind: string; name?: string; signals: Record<string, unknown> };
+type Res = { kind: string; name?: string; externalId?: string; signals: Record<string, unknown> };
 export type RiskFinding = {
   regra_id: string; chave: string; fonte: string; severidade: string | null; relevancia: number;
   probabilidade: number; impacto: number; alcance: Record<string, unknown>;
@@ -14,13 +14,14 @@ export const STALE_DEVICE_DAYS = 30;
 const SAMPLE = 20;
 
 const uniq = (v: string[]) => [...new Set(v)];
-const pack = (regra_id: string, p: number, i: number, itens: (string | Res)[], opts: Partial<RiskFinding> = {}): RiskFinding | null => {
-  const list = itens.map((x) => typeof x === "string" ? x
-    : String(x.signals.email ?? x.name ?? x.signals.serial_number ?? x.signals.target ?? x.signals.id ?? "").trim()).filter(Boolean);
-  const total = opts.evidencia?.total ?? uniq(list).length;
-  return total ? { regra_id, chave: opts.chave ?? "", fonte: opts.fonte ?? "coleta", severidade: opts.severidade ?? null,
+const label = (x: Res) => String(x.signals.email ?? x.name ?? x.signals.serial_number ?? x.signals.target ?? x.signals.id ?? "").trim();
+/** Evidence ids are the collector's stable externalId (never names/e-mails); an item without one makes the finding unprovable later. */
+const pack = (regra_id: string, p: number, i: number, itens: Res[], opts: Partial<RiskFinding> = {}): RiskFinding | null => {
+  if (!itens.length) return null;
+  const ids = itens.every((x) => x.externalId) ? uniq(itens.map((x) => x.externalId!)).sort() : undefined;
+  return { regra_id, chave: opts.chave ?? "", fonte: opts.fonte ?? "coleta", severidade: opts.severidade ?? null,
     relevancia: opts.relevancia ?? 0, probabilidade: p, impacto: i, alcance: opts.alcance ?? {},
-    evidencia: { total, itens: uniq(list).slice(0, SAMPLE), ids: uniq(list).sort() } } : null;
+    evidencia: { total: ids?.length ?? itens.length, itens: uniq(itens.map(label).filter(Boolean)).slice(0, SAMPLE), ...(ids ? { ids } : {}) } };
 };
 
 /** Users that are usable today: enabled, not suspended, not archived. */
@@ -70,13 +71,12 @@ export function evaluateRiskRules(resources: Res[], now = new Date()): RiskFindi
   const users = activeUsers(resources);
   const admins = globalAdmins(users);
   const devices = resources.filter((r) => r.kind === "device");
-  const name = (d: Res) => String(d.name ?? d.signals.serial_number ?? "");
   const out: (RiskFinding | null)[] = [
     pack("admin_sem_mfa", 4, 5, admins.filter(mfaNotRegistered), { fonte: "coleta", severidade: "alta" }),
     admins.length > MAX_ADMINS ? pack("excesso_admins", 3, 4, admins, { fonte: "coleta", severidade: "media" }) : null,
-    pack("dispositivos_nao_conformes", 3, 4, devices.filter((d) => NONCOMPLIANT.has(compliance(d))).map(name), { fonte: "coleta", severidade: "media" }),
-    pack("dispositivos_sem_criptografia", 3, 5, devices.filter((d) => d.signals.encrypted === false).map(name), { fonte: "coleta", severidade: "alta" }),
-    pack("dispositivos_sem_sincronizar", 2, 3, devices.filter((d) => { const s = daysSince(d.signals.provider_last_sync, now); return s !== null && s > STALE_DEVICE_DAYS; }).map(name), { fonte: "coleta", severidade: "baixa" }),
+    pack("dispositivos_nao_conformes", 3, 4, devices.filter((d) => NONCOMPLIANT.has(compliance(d))), { fonte: "coleta", severidade: "media" }),
+    pack("dispositivos_sem_criptografia", 3, 5, devices.filter((d) => d.signals.encrypted === false), { fonte: "coleta", severidade: "alta" }),
+    pack("dispositivos_sem_sincronizar", 2, 3, devices.filter((d) => { const s = daysSince(d.signals.provider_last_sync, now); return s !== null && s > STALE_DEVICE_DAYS; }), { fonte: "coleta", severidade: "baixa" }),
   ];
   return out.filter((x): x is RiskFinding => x !== null);
 }
@@ -159,3 +159,41 @@ export function riskCoverage(provider: string, resources: Res[], clean: boolean,
 
 /** Providers whose collected data may be analysed for configuration risks. */
 export const RISK_PROVIDERS = ["google_workspace", "microsoft", "microsoft365", "entra_id", "intune"];
+
+/**
+ * Config remediation proof for one previously affected id: the same resource (by externalId) was collected
+ * again in a warning-free run with a known value that now passes the rule. A vanished target is never "fixed".
+ */
+export function configFixed(resources: Res[], regra: string, id: string, now = new Date()): boolean {
+  const r = resources.find((x) => x.externalId === id);
+  if (!r) return false;
+  const s = r.signals;
+  switch (regra) {
+    case "admin_sem_mfa": return s.super_admin === false || s.mfa_registered === true;
+    case "excesso_admins": return coveredConfigRules(resources).includes("excesso_admins") && globalAdmins(activeUsers(resources)).length <= MAX_ADMINS;
+    case "dispositivos_nao_conformes": return compliance(r) === "compliant";
+    case "dispositivos_sem_criptografia": return s.encrypted === true;
+    case "dispositivos_sem_sincronizar": { const d = daysSince(s.provider_last_sync, now); return d !== null && d <= STALE_DEVICE_DAYS; }
+  }
+  return false;
+}
+
+export type OpenSuggestion = { regra_id: string; ids: string[] | null };
+/**
+ * Lifecycle authorisation (separate from read coverage): a rule may resolve only when it has no current finding
+ * and every previously affected id of every open suggestion is positively proven remediated. Legacy rows
+ * without ids, unknown, 403/404 or absence never resolve.
+ */
+export async function provenRules(open: OpenSuggestion[], findings: RiskFinding[], prove: (regra: string, id: string) => Promise<boolean> | boolean): Promise<string[]> {
+  const active = new Set(findings.map((f) => f.regra_id));
+  const byRule = new Map<string, OpenSuggestion[]>();
+  for (const o of open) byRule.set(o.regra_id, [...(byRule.get(o.regra_id) ?? []), o]);
+  const out: string[] = [];
+  for (const [regra, rows] of byRule) {
+    if (active.has(regra) || rows.some((r) => !r.ids?.length)) continue;
+    let ok = true;
+    for (const id of new Set(rows.flatMap((r) => r.ids!))) if (!(await prove(regra, id))) { ok = false; break; }
+    if (ok) out.push(regra);
+  }
+  return out;
+}
