@@ -13,3 +13,11 @@
 - [x] Voltar do OAuth como "Conectado" sem abrir configurações; ícone do módulo aparece logo após autorizar
 - [x] Google Workspace somente leitura (cartão único): usuários/grupos/papéis, dispositivos → Ativos, auditoria de login, metadados Drive; importar só pelo ícone no módulo
 - [ ] Validar autorização e coleta real do Google Workspace com a conta da Akuris (aguarda configuração no Google Console)
+
+## Riscos sugeridos (revisão técnica)
+- [ ] Remover apps.alerts do OAuth Google (não autorizado) e reimplantar
+- [ ] Defender: incidentes /security/incidents, Secure Score por controle, recomendações MDE /api/recommendations
+- [ ] Chave estável por origem, severidade técnica separada, supressão com prazo/recorrência, sem corte que esconda achados
+- [ ] Cobertura: parcial/403/timeout nunca marca corrigido; desconectar preserva histórico
+- [ ] Regras Google só com campos explícitos (sem falhas de login como ataque; inatividade só com lastLoginTime)
+- [ ] Plano consolidado + lista de permissões

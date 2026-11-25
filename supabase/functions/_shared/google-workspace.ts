@@ -25,8 +25,6 @@ export const LOGIN_WINDOW_DAYS = 30;
 const MAX_PAGES = 40;
 export const MEMBERS_LIST_LIMIT = 500;
 
-/** Optional (not required on callback): Alert Center, read via alerts.list only. Missing grant = alerts source unavailable. */
-export const GOOGLE_SECURITY_SCOPES = ["https://www.googleapis.com/auth/apps.alerts"];
 /** Identity only, to derive the connecting admin server-side (no extra data access). */
 export const GOOGLE_IDENTITY_SCOPES = ["openid", "email"];
 /** True when openid + email were granted (Google may echo email as userinfo.email). */
