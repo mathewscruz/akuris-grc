@@ -146,8 +146,8 @@ export const integrationPlatform = {
       resume: "Retomar",
       reconnect: "Autorizar novamente",
       addComputers: "Computadores",
-      googleDevicesAuto: "Após a autorização do administrador, os dispositivos (incluindo computadores) são importados para Ativos automaticamente e atualizados todos os dias.",
-      googleDevicesAutoNoSchedule: "Após a autorização do administrador, os dispositivos (incluindo computadores) são importados para Ativos automaticamente; a atualização diária ainda não está disponível.",
+      googleDevicesAuto: "Os computadores entram em Ativos automaticamente e são actualizados todos os dias.",
+      googleDevicesAutoNoSchedule: "Os computadores entram em Ativos automaticamente; a actualização diária ainda não está disponível.",
       disconnect: "Desconectar",
       disconnectTitle: "Desconectar esta ferramenta?",
       disconnectHelp:
@@ -200,24 +200,24 @@ export const integrationPlatform = {
       },
       provider: {
         google_workspace:
-          "Um administrador do Google Workspace autoriza só leitura: usuários, MFA e papéis para revisão de acessos, dispositivos para Ativos, auditoria de login e metadados do Drive.",
+          "Usuários, dispositivos, auditoria de login e metadados do Drive, somente leitura.",
         microsoft:
-          "Um clique do administrador do seu tenant conecta tudo: dispositivos do Intune para Ativos, usuários do Entra ID para revisão de acessos e documentos do SharePoint como evidência.",
+          "Intune, Entra ID e SharePoint, autorizados pelo administrador do tenant.",
         microsoft365:
-          "Visão conjunta de usuários, cadastro de MFA, atribuições de função e dispositivos gerenciados pelo Intune.",
+          "Usuários, MFA, papéis de diretório e dispositivos gerenciados.",
         entra_id:
-          "Usuários, cadastro de MFA e atribuições de função do diretório. Apoia a revisão de acessos.",
+          "Usuários, MFA e papéis do diretório para revisão de acessos.",
         intune:
-          "Inventário de dispositivos, sistema operacional, responsável e estado de conformidade reportado pelo Intune.",
-        aws: "MFA da conta raiz, bloqueios de acesso público dos buckets S3 e registro de eventos do CloudTrail na região configurada. Acesso entre contas somente de leitura.",
+          "Inventário de dispositivos, sistema operacional, responsável e conformidade.",
+        aws: "MFA da conta raiz, bloqueios de acesso público no S3 e eventos do CloudTrail.",
         github:
-          "Repositórios acessíveis ao aplicativo e proteção da branch padrão nos repositórios escolhidos. Sem copiar código-fonte.",
+          "Repositórios e proteção da branch padrão. O código-fonte não é copiado.",
         sharepoint:
-          "Bibliotecas dos sites acessíveis à conta, metadados dos documentos, versão atual e link de origem.",
+          "Bibliotecas, metadados dos documentos e link de origem.",
         onedrive:
-          "Arquivos dos drives acessíveis à conta conectada, metadados, versão atual e link de origem.",
+          "Arquivos, metadados e link de origem dos drives conectados.",
         google_drive:
-          "Arquivos acessíveis à conta conectada, incluindo drives compartilhados, metadados, versão atual e link de origem.",
+          "Arquivos e metadados, incluindo drives compartilhados.",
       },
       errors: {
         authorization_required:
@@ -420,8 +420,8 @@ export const integrationPlatform = {
       resume: "Resume",
       reconnect: "Authorize again",
       addComputers: "Computers",
-      googleDevicesAuto: "Once the administrator authorises, devices (computers included) are imported into Assets automatically and refreshed daily.",
-      googleDevicesAutoNoSchedule: "Once the administrator authorises, devices (computers included) are imported into Assets automatically; daily refresh is not available yet.",
+      googleDevicesAuto: "Computers are added to Assets automatically and refreshed daily.",
+      googleDevicesAutoNoSchedule: "Computers are added to Assets automatically; daily refresh is not available yet.",
       disconnect: "Disconnect",
       disconnectTitle: "Disconnect this tool?",
       disconnectHelp:
@@ -474,24 +474,24 @@ export const integrationPlatform = {
       },
       provider: {
         google_workspace:
-          "A Google Workspace admin grants read-only access: users, MFA and roles for access reviews, devices for Assets, login audit and Drive metadata.",
+          "Users, devices, login audit and Drive metadata, read-only.",
         microsoft:
-          "One click from your tenant admin connects everything: Intune devices to Assets, Entra ID users to access reviews and SharePoint documents as evidence.",
+          "Intune, Entra ID and SharePoint, authorised by your tenant admin.",
         microsoft365:
-          "Combined view of users, MFA registration, directory role assignments and Intune-managed devices.",
+          "Users, MFA, directory roles and managed devices.",
         entra_id:
-          "Directory users, MFA registration and role assignments. Supports access reviews.",
+          "Users, MFA and directory roles for access reviews.",
         intune:
-          "Device inventory, operating system, owner and the compliance state reported by Intune.",
-        aws: "Root account MFA, S3 bucket public access blocks and CloudTrail event logging in the configured region. Read-only cross-account access.",
+          "Device inventory, operating system, owner and compliance state.",
+        aws: "Root account MFA, S3 public access blocks and CloudTrail events.",
         github:
-          "Repositories accessible to the app and default branch protection for selected repositories. No source code is copied.",
+          "Repositories and default branch protection. Source code is not copied.",
         sharepoint:
-          "Libraries in accessible sites, document metadata, current version and source link.",
+          "Libraries, document metadata and source links.",
         onedrive:
-          "Files in drives accessible to the connected account, metadata, current version and source link.",
+          "Files, metadata and source links from connected drives.",
         google_drive:
-          "Files accessible to the connected account, including shared drives, metadata, current version and source link.",
+          "Files and metadata, including shared drives.",
       },
       errors: {
         authorization_required:
