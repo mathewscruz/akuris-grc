@@ -186,6 +186,7 @@ export const integrationPlatform = {
         permission_missing:
           "A conta não concedeu uma permissão necessária. Revise o consentimento com seu administrador.",
         consent_revoked: "O administrador do tenant retirou a autorização do Akuris. Conecte de novo.",
+        cloud_identity_pending: "Celulares e ChromeOS são coletados. Computadores do Cloud Identity estão indisponíveis: exigem uma credencial delegada que ainda não foi configurada.",
         scopes_missing: "Nem todas as permissões de leitura foram aceitas. Clique em Reautorizar e aceite todas.",
         organization_changed: "Essa conta é de outra organização Google. Reconecte com uma conta da mesma organização ou crie uma nova conexão.",
         system_required: "Escolha o sistema de destino nas configurações da conexão antes de importar os usuários.",
@@ -409,6 +410,7 @@ export const integrationPlatform = {
         permission_missing:
           "A required permission was not granted. Review consent with your administrator.",
         consent_revoked: "Your tenant admin removed Akuris authorization. Connect again.",
+        cloud_identity_pending: "Mobile and ChromeOS devices are collected. Cloud Identity computers are unavailable: they need a delegated credential that has not been set up yet.",
         scopes_missing: "Not all read permissions were accepted. Click Reauthorize and accept them all.",
         organization_changed: "This account belongs to another Google organisation. Reconnect with an account from the same organisation or create a new connection.",
         system_required: "Choose the target system in the connection settings before importing users.",

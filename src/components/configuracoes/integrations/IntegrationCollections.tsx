@@ -813,6 +813,11 @@ function ConnectionManager({
                       <span className="mt-0.5 block text-xs text-muted-foreground">
                         {t(`collectionHub.microsoft.moduleDest.${m}`)}
                       </span>
+                      {connection.provider === "google_workspace" && m === "dispositivos" && (
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {t("collectionHub.errors.cloud_identity_pending")}
+                        </span>
+                      )}
                       {connection.settings.module_status?.[m] && (
                         <span className="mt-1 block text-xs text-destructive">
                           {t(integrationErrorKey(moduleStatusCode(connection.settings.module_status[m])))}

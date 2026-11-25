@@ -12,14 +12,15 @@ export const GOOGLE_WORKSPACE_SCOPES = [
   "admin.directory.device.mobile.readonly",
   "admin.directory.device.chromeos.readonly",
   "admin.reports.audit.readonly",
-  "cloud-identity.devices.readonly",
   "drive.metadata.readonly",
 ].map((s) => S + s);
 export const GOOGLE_MODULES = ["usuarios", "dispositivos", "auditoria", "drive"] as const;
 export type GoogleModule = (typeof GOOGLE_MODULES)[number];
 const ADMIN = "https://admin.googleapis.com";
 const WWW = "https://www.googleapis.com";
-const CLOUDID = "https://cloudidentity.googleapis.com";
+// Cloud Identity computers (cloud-identity.devices.readonly) is not a public OAuth scope; it needs
+// a tenant-scoped delegated service account, not configured yet. Reported as a capability, never as 0 devices.
+export const GOOGLE_CLOUD_IDENTITY_STATUS = "delegation_required" as const;
 export const LOGIN_WINDOW_DAYS = 30;
 const MAX_PAGES = 40;
 
@@ -229,10 +230,9 @@ export async function collectGoogleWorkspace(read: Read, token: string, customer
     }
   }
   if (want("dispositivos")) {
-    const parts: [string, () => Promise<Paged>, "mobile" | "chromeos" | "cloud"][] = [
+    const parts: [string, () => Promise<Paged>, "mobile" | "chromeos"][] = [
       ["mobile", () => googlePages(read, token, ADMIN, `/admin/directory/v1/customer/${customer}/devices/mobile`, { maxResults: "100", projection: "FULL" }, "mobiledevices"), "mobile"],
       ["chromeos", () => googlePages(read, token, ADMIN, `/admin/directory/v1/customer/${customer}/devices/chromeos`, { maxResults: "200", projection: "FULL" }, "chromeosdevices"), "chromeos"],
-      ["cloud", () => googlePages(read, token, CLOUDID, "/v1/devices", { customer: `customers/${customerId}`, pageSize: "100" }, "devices"), "cloud"],
     ];
     for (const [label, run, kind] of parts) {
       try {

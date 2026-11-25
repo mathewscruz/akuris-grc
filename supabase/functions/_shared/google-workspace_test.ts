@@ -5,8 +5,8 @@ import {
 } from "./google-workspace.ts";
 import { identityImportRow } from "./integration-model.ts";
 
-Deno.test("only the 9 read-only scopes, no write/gmail/cloud-platform", () => {
-  assertEquals(GOOGLE_WORKSPACE_SCOPES.length, 9);
+Deno.test("only the 8 read-only scopes, no write/gmail/cloud-platform", () => {
+  assertEquals(GOOGLE_WORKSPACE_SCOPES.length, 8);
   for (const s of GOOGLE_WORKSPACE_SCOPES) {
     assert(s.startsWith("https://www.googleapis.com/auth/"));
     assert(s.endsWith(".readonly"), s);
@@ -16,7 +16,7 @@ Deno.test("only the 9 read-only scopes, no write/gmail/cloud-platform", () => {
 Deno.test("missing scopes detected on partial grant", () => {
   assertEquals(missingScopes(GOOGLE_WORKSPACE_SCOPES.join(" ")), []);
   assertEquals(missingScopes(GOOGLE_WORKSPACE_SCOPES.slice(1).join(" ")).length, 1);
-  assertEquals(missingScopes(undefined).length, 9);
+  assertEquals(missingScopes(undefined).length, 8);
 });
 Deno.test("reconnect refuses silent organisation change", () => {
   assertEquals(customerChange(undefined, "C01"), "ok");
@@ -72,14 +72,13 @@ Deno.test("devices: stable id, untrusted serial dropped, no compliance claim", (
 });
 Deno.test("one module failing never drops the others", async () => {
   const read = async (url: string) => {
-    if (url.includes("cloudidentity")) { const e: any = new Error("x"); e.code = "permission_missing"; throw e; }
+    if (url.includes("/chromeos")) { const e: any = new Error("x"); e.code = "permission_missing"; throw e; }
     if (url.includes("/mobile")) return { mobiledevices: [{ resourceId: "m1", model: "P" }] };
-    if (url.includes("/chromeos")) return { chromeosdevices: [] };
     return {};
   };
   const r = await collectGoogleWorkspace(read, "t", "C01", ["dispositivos"]);
   assertEquals(r.resources.length, 1);
-  assert(r.warnings.includes("module:dispositivos:cloud_permission_missing"));
+  assert(r.warnings.includes("module:dispositivos:chromeos_permission_missing"));
 });
 Deno.test("partial role listing never means 'no privileges'", async () => {
   const read = async (url: string) => {
@@ -93,4 +92,12 @@ Deno.test("partial role listing never means 'no privileges'", async () => {
   assertEquals(u.signals.admin_roles, null);
   assertEquals(u.signals.privileged, true);
   assert(r.warnings.includes("module:usuarios:roles_partial"));
+});
+
+Deno.test("Cloud Identity is never requested via OAuth nor called", async () => {
+  assert(!GOOGLE_WORKSPACE_SCOPES.some((x) => x.includes("cloud-identity") || x.includes("cloud-platform")));
+  const urls: string[] = [];
+  const r = await collectGoogleWorkspace(async (u: string) => { urls.push(u); return {}; }, "t", "C01", ["dispositivos"]);
+  assert(!urls.some((u) => u.includes("cloudidentity")));
+  assert(!r.warnings.some((w) => w.startsWith("module:dispositivos")));
 });
