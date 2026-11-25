@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { IconCheck } from "@/components/icons";
 import { integrationRequest, integrationErrorKey, importProgressPct } from "@/lib/integration-platform";
 
 interface Fonte { provider: string; module: string; logo: string; nome: string }
@@ -85,17 +86,26 @@ function Badge({ fonte, conn, empresaId, pagina }: { fonte: Fonte; conn: Conn; e
   });
   const ativo = !!run.data || busy;
   const [wasActive, setWasActive] = useState(false);
+  const [justDone, setJustDone] = useState(false);
+  useEffect(() => {
+    if (!justDone) return;
+    const id = window.setTimeout(() => setJustDone(false), 2200);
+    return () => window.clearTimeout(id);
+  }, [justDone]);
   useEffect(() => {
     if (run.data) { setWasActive(true); return; }
     if (wasActive && !busy) {
       setWasActive(false);
       setWatching(false);
+      setJustDone(true);
       // Import finished: refresh the badge and the module list behind it.
       void qc.invalidateQueries();
     }
   }, [run.data, wasActive, busy, qc, empresaId, pagina]);
   const pct = importProgressPct(run.data?.progress_done, run.data?.progress_total);
-  const label = ativo
+  const label = justDone && !ativo
+    ? t("integracaoImport.concluido", { fonte: fonte.nome })
+    : ativo
     ? t("integracaoImport.importando", { fonte: fonte.nome, pct: String(pct) })
     : importado
     ? t(conn.settings?.automatic_sync_enabled === true && conn.frequency && conn.frequency !== "manual" ? "integracaoImport.sincronizado" : "integracaoImport.importadoManual", { fonte: fonte.nome })
@@ -125,10 +135,11 @@ function Badge({ fonte, conn, empresaId, pagina }: { fonte: Fonte; conn: Conn; e
           disabled={ativo}
           aria-label={label}
           aria-busy={ativo}
-          className={`akuris-import-badge ${ativo ? "is-importing" : importado ? "is-synced" : "is-pending"}${ativo && !run.data?.progress_total ? " is-waiting" : ""}`}
+          className={`akuris-import-badge ${ativo ? "is-importing" : importado ? "is-synced" : "is-pending"}${justDone && !ativo ? " is-done" : ""}${ativo && !run.data?.progress_total ? " is-waiting" : ""}`}
         >
           <span className="akuris-import-ring" aria-hidden />
           <img src={fonte.logo} alt="" width={20} height={20} />
+          {justDone && !ativo && <span className="akuris-import-check" aria-hidden><IconCheck className="h-3 w-3" strokeWidth={2} /></span>}
           {ativo && <span className="akuris-import-pct" aria-hidden>{pct}%</span>}
         </button>
       </TooltipTrigger>

@@ -2526,11 +2526,13 @@ input:-webkit-autofill:focus {
 .akuris-import-badge.is-pending{cursor:pointer}
 .akuris-import-ring{position:absolute;inset:-4px;border-radius:9999px;pointer-events:none}
 .akuris-import-badge.is-pending .akuris-import-ring{background:conic-gradient(from 0deg,hsl(var(--primary)) 0 25%,transparent 25% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:akurisImportRing 1.6s linear infinite}
-.akuris-import-badge.is-synced{opacity:.85}
+.akuris-import-badge.is-synced{border:1.5px solid hsl(var(--primary))}
+.akuris-import-check{position:absolute;right:-4px;top:-4px;z-index:3;display:flex;height:1rem;width:1rem;align-items:center;justify-content:center;border-radius:9999px;background:hsl(var(--primary));color:hsl(var(--primary-foreground));animation:akurisImportDone .35s ease-out}
+@keyframes akurisImportDone{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
 .akuris-import-badge.is-importing{cursor:progress}
 .akuris-import-badge.is-importing img{opacity:.35}
 .akuris-import-pct{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-size:.625rem;font-weight:700;font-variant-numeric:tabular-nums;color:#0a1628}
 .akuris-import-badge.is-waiting .akuris-import-pct{animation:akurisImportPulse 1.4s ease-in-out infinite}
 @keyframes akurisImportPulse{50%{opacity:.45}}
 @keyframes akurisImportRing{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.akuris-import-badge.is-pending .akuris-import-ring{animation:none;background:hsl(var(--primary))}.akuris-import-badge.is-waiting .akuris-import-pct{animation:none}}
+@media (prefers-reduced-motion:reduce){.akuris-import-badge.is-pending .akuris-import-ring{animation:none;background:hsl(var(--primary))}.akuris-import-badge.is-waiting .akuris-import-pct{animation:none}.akuris-import-check{animation:none}}
