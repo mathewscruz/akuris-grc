@@ -14,10 +14,10 @@ const DOT: Record<IntegrationState, string> = {
 
 /** Shared integration card: logo, name, category chip, status dot + text and a two-column footer. */
 export function IntegrationCard({
-  logo, name, category, description, state, modules, lastRun, onOpen, extra,
+  logo, name, category, description, state, modules, lastRun, onOpen, onEdit, extra,
 }: {
   logo: ReactNode; name: string; category: string; description?: string; state: IntegrationState;
-  modules?: string; lastRun?: string; onOpen?: () => void; extra?: ReactNode;
+  modules?: string; lastRun?: string; onOpen?: () => void; onEdit?: () => void; extra?: ReactNode;
 }) {
   const { t } = useLanguage();
   const label = {
@@ -41,23 +41,24 @@ export function IntegrationCard({
       <div className="flex items-start gap-4">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center">{logo}</span>
         <div className="min-w-0 flex-1 space-y-1.5">
-          <h4 className="truncate pr-8 font-semibold" title={description}>{name}</h4>
+          <h4 className={cn("truncate font-semibold", onEdit && "pr-8")} title={description}>{name}</h4>
           <span className="inline-flex rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{category}</span>
           <p className="flex items-center gap-2 text-sm">
             <span aria-hidden className={cn("h-2 w-2 rounded-full", DOT[state])} />
             <span className={cn(state === "error" && "text-destructive")}>{label}</span>
           </p>
         </div>
-        <button
-          type="button"
-          disabled={!clickable}
-          className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-0"
-          aria-label={`${name}: ${label}`}
-          title={t("collectionHub.cardEdit")}
-          onClick={(e) => { e.stopPropagation(); onOpen?.(); }}
-        >
-          <IconEdit className="h-4 w-4" />
-        </button>
+        {onEdit && (
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={`${name}: ${label}`}
+            title={t("collectionHub.cardEdit")}
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          >
+            <IconEdit className="h-4 w-4" />
+          </button>
+        )}
       </div>
       <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
         <div className="min-w-0">

@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
           provider === "aws"
             ? { external_id: randomSecret() }
             : provider === "microsoft"
-              ? { modules: ["intune", "entra"] }
+              ? { modules: [...MODULES.microsoft] }
               : provider === "google_workspace"
                 ? { modules: [...GOOGLE_MODULES], imported_modules: [] }
               : {};

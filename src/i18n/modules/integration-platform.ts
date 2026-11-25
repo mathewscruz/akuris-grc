@@ -142,6 +142,7 @@ export const integrationPlatform = {
       pause: "Pausar",
       resume: "Retomar",
       reconnect: "Autorizar novamente",
+      addComputers: "Adicionar computadores (opcional)",
       disconnect: "Desconectar",
       disconnectTitle: "Desconectar esta ferramenta?",
       disconnectHelp:
@@ -408,6 +409,7 @@ export const integrationPlatform = {
       pause: "Pause",
       resume: "Resume",
       reconnect: "Authorize again",
+      addComputers: "Add computers (optional)",
       disconnect: "Disconnect",
       disconnectTitle: "Disconnect this tool?",
       disconnectHelp:

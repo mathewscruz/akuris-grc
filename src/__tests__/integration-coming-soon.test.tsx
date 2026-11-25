@@ -70,9 +70,9 @@ describe("integration release hold", () => {
     expect(screen.getAllByText("Em breve")).toHaveLength(N);
     for (const provider of COLLECTION_PROVIDERS) {
       expect(screen.getByText(provider.name)).toBeVisible();
-      const button = screen.getByRole("button", { name: `${provider.name}: Em breve` });
-      expect(button).toBeDisabled();
-      fireEvent.click(button);
+      const card = screen.getByText(provider.name).closest("article")!;
+      expect(card).toHaveAttribute("data-state", "unavailable");
+      fireEvent.click(card);
       expect(container.querySelector(`img[src="/integrations/${provider.logo}"]`)).not.toBeNull();
     }
     expect(screen.queryByRole("dialog")).toBeNull();

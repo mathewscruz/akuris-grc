@@ -302,8 +302,17 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
                 state={state}
                 modules={conn?.settings?.imported_modules?.length ? conn.settings.imported_modules.map((m) => t(`collectionHub.microsoft.module.${m}`)).join(", ") : undefined}
                 lastRun={conn ? (conn.last_success_at ? formatDateTime(conn.last_success_at) : t("collectionHub.never")) : undefined}
-                onOpen={() => (conn ? setActiveId(conn.id) : provider.id === "aws" || provider.id === "github" ? setNewProvider(provider.id) : void connectDirect(provider.id))}
-                extra={provider.id === "microsoft" && conn ? <TeamsAvisosButton empresaId={empresaId} /> : undefined}
+                onOpen={
+                  conn
+                    ? conn.status === "pending" && (provider.id === "aws" || provider.id === "github")
+                      ? () => setActiveId(conn.id) // finish the provider's own setup step
+                      : undefined
+                    : provider.id === "aws" || provider.id === "github" ? () => setNewProvider(provider.id) : () => void connectDirect(provider.id)
+                }
+                extra={conn ? (
+                  <ConnectionActions connection={conn} state={state} reload={reload}
+                    extra={provider.id === "microsoft" ? <TeamsAvisosButton empresaId={empresaId} /> : undefined} />
+                ) : undefined}
               />
             );
           })}
@@ -327,7 +336,7 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
           }}
           onCreated={async (id) => {
             await reload();
-            setActiveId(id);
+            if (newProvider === "aws" || newProvider === "github") setActiveId(id);
           }}
         />
       )}
@@ -1208,5 +1217,80 @@ function TeamsAvisosButton({ empresaId }: { empresaId: string }) {
         />
       )}
     </>
+  );
+}
+
+
+/** Connected card actions: only Disconnect (or Reconnect on error); modules and scope are always complete. */
+function ConnectionActions({ connection, state, reload, extra }: {
+  connection: CollectionConnection; state: IntegrationState; reload: () => Promise<unknown> | void; extra?: ReactNode;
+}) {
+  const { t } = useLanguage();
+  const [confirm, setConfirm] = useState(false);
+  const [devices, setDevices] = useState(false);
+  const [busy, setBusy] = useState(false);
+  type Purge = { module: string; removidos: number; arquivados: number; limpos: number };
+  const [purge, setPurge] = useState<Purge[] | null>(null);
+  const unified = connection.provider === "microsoft" || connection.provider === "google_workspace";
+  async function openConfirm() {
+    setConfirm(true);
+    if (!unified) return;
+    setPurge(null);
+    try {
+      const r = await integrationRequest<{ modules: Purge[] }>({ action: "purge_preview", connection_id: connection.id });
+      setPurge(r.modules || []);
+    } catch { setPurge([]); }
+  }
+  async function disconnect() {
+    setBusy(true);
+    try {
+      await integrationRequest({ action: "disconnect", connection_id: connection.id });
+      setConfirm(false);
+      await reload();
+    } catch (e) {
+      toast.error(t(integrationErrorKey((e as Error).message)));
+    } finally { setBusy(false); }
+  }
+  async function reconnect() {
+    const popup = window.open("about:blank", "akuris-oauth", "popup,width=520,height=680");
+    try {
+      const r = await integrationRequest<{ authorize_url?: string }>({ action: "start", connection_id: connection.id, return_origin: window.location.origin });
+      if (!r.authorize_url) { popup?.close(); return; }
+      if (popup && !popup.closed) popup.location.href = r.authorize_url;
+      else window.open(r.authorize_url, "_blank", "noopener");
+    } catch (e) {
+      popup?.close();
+      toast.error(t(integrationErrorKey((e as Error).message)));
+    }
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {state === "error" && connection.provider !== "aws" && connection.provider !== "github" && (
+        <Button size="sm" onClick={() => void reconnect()}>{t("collectionHub.reconnect")}</Button>
+      )}
+      <Button size="sm" variant="outline" onClick={() => void openConfirm()}>{t("collectionHub.disconnect")}</Button>
+      {connection.provider === "google_workspace" && (
+        <Button size="sm" variant="ghost" onClick={() => setDevices(true)}>{t("collectionHub.addComputers")}</Button>
+      )}
+      {extra}
+      <DialogShell
+        open={confirm}
+        onOpenChange={setConfirm}
+        title={t("collectionHub.disconnectTitle")}
+        description={t("collectionHub.disconnectHelp")}
+        size="sm"
+        onSubmit={() => void disconnect()}
+        submitLabel={t("collectionHub.disconnect")}
+        isSubmitting={busy}
+      >
+        <p className="text-sm">{connection.name}</p>
+        {unified && <PurgeSummary items={purge} />}
+      </DialogShell>
+      {devices && (
+        <DialogShell open onOpenChange={setDevices} title={t("collectionHub.addComputers")} size="md">
+          <GoogleCloudIdentityCredential connectionId={connection.id} onChange={() => void reload()} />
+        </DialogShell>
+      )}
+    </div>
   );
 }

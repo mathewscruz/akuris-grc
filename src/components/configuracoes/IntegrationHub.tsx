@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink, IconScale } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -310,6 +311,19 @@ export function IntegrationHub() {
     }
   };
 
+  const [disconnectTipo, setDisconnectTipo] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const disconnectLegacy = async () => {
+    if (!disconnectTipo || !empresaId) return;
+    setDisconnecting(true);
+    const { error } = await supabase.from('integracoes_config').delete()
+      .eq('empresa_id', empresaId).eq('tipo_integracao', disconnectTipo);
+    setDisconnecting(false);
+    if (error) { toast.error(t('configIntegrations.hub.toastErrorLoad')); return; }
+    setDisconnectTipo(null);
+    await fetchIntegrations();
+  };
+
   const getIntegrationStatus = (tipo: string): 'conectado' | 'desconectado' | 'erro' => {
     const config = configuredIntegrations.find(c => c.tipo_integracao === tipo);
     if (!config) return 'desconectado';
@@ -367,7 +381,12 @@ export function IntegrationHub() {
         category={CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome ?? ''}
         description={integration.descricao}
         state={!integration.disponivel ? 'unavailable' : status === 'conectado' ? 'connected' : status === 'erro' ? 'error' : 'disconnected'}
-        onOpen={() => handleConfigureClick(integration)}
+        onOpen={status === 'conectado' ? undefined : () => handleConfigureClick(integration)}
+        extra={status !== 'desconectado' && integration.disponivel ? (
+          <Button size="sm" variant="outline" onClick={() => setDisconnectTipo(integration.tipo)}>
+            {t('collectionHub.disconnect')}
+          </Button>
+        ) : undefined}
       />
     );
   };
@@ -412,6 +431,18 @@ export function IntegrationHub() {
               extraCards={conectores.map(renderIntegrationCard)}
             />
           )}
+          <DialogShell
+            open={!!disconnectTipo}
+            onOpenChange={(o) => !o && setDisconnectTipo(null)}
+            title={t('collectionHub.disconnectTitle')}
+            description={t('collectionHub.disconnectHelp')}
+            size="sm"
+            onSubmit={() => void disconnectLegacy()}
+            submitLabel={t('collectionHub.disconnect')}
+            isSubmitting={disconnecting}
+          >
+            <span />
+          </DialogShell>
         </TabsContent>
 
         <TabsContent value="api-keys">
