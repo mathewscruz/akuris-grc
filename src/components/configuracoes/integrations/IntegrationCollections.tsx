@@ -579,14 +579,19 @@ function ConnectionManager({
   const running = runs.some((run) =>
     ["queued", "running"].includes(run.status),
   );
+  const scopeChanged =
+    scope.size !== connection.scope_ids.length ||
+    connection.scope_ids.some((id) => !scope.has(id));
+  // Modules imported with no explicit selection collect everything ("all").
+  const allModules = Object.entries((connection.settings as { module_scope?: Record<string, unknown> }).module_scope ?? {})
+    .filter(([, v]) => v === "all").map(([m]) => m);
   const dirty =
     frequency !== connection.frequency ||
     region !== (connection.settings.region || "us-east-1") ||
     system !== (connection.settings.system_id || "") ||
     modules.size !== savedModules.length ||
     savedModules.some((m) => !modules.has(m)) ||
-    scope.size !== connection.scope_ids.length ||
-    connection.scope_ids.some((id) => !scope.has(id));
+    scopeChanged;
   const latestStatus = runs[0]?.status;
   useEffect(() => {
     void reload();
@@ -660,6 +665,7 @@ function ConnectionManager({
             frequency,
             region,
             scope_ids: [...scope],
+            scope_changed: scopeChanged,
             system_id: system || null,
             ...(unified ? { modules: [...modules] } : {}),
           });
@@ -796,7 +802,9 @@ function ConnectionManager({
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm">
-                {scope.size} {t("collectionHub.selected")}
+                {!scopeChanged && scope.size === 0 && allModules.length
+                  ? t("collectionHub.scopeAll")
+                  : `${scope.size} ${t("collectionHub.selected")}`}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -1134,7 +1142,7 @@ function ConnectionManager({
         onSubmit={() => {
           setConfirmModules(false);
           void perform("configure", {
-            frequency, region, scope_ids: [...scope], system_id: system || null, modules: [...modules],
+            frequency, region, scope_ids: [...scope], scope_changed: scopeChanged, system_id: system || null, modules: [...modules],
           });
         }}
       >

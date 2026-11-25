@@ -13375,6 +13375,7 @@ export type Database = {
           p_id: string
           p_region?: string
           p_scope: string[]
+          p_scope_explicit?: boolean
           p_system?: string
         }
         Returns: undefined

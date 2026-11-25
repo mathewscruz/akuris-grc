@@ -528,6 +528,7 @@ Deno.serve(async (req) => {
           p_scope: [...new Set(body.scope_ids)],
           p_system: body.system_id || null,
           p_region: body.region || connection.settings.region || "us-east-1",
+          p_scope_explicit: body.scope_changed === true,
         }),
       );
       return json({ success: true });

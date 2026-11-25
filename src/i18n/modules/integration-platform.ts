@@ -121,6 +121,7 @@ export const integrationPlatform = {
       selectPage: "Selecionar esta página",
       clearPage: "Limpar esta página",
       selected: "selecionados",
+      scopeAll: "Todos os itens dos módulos importados",
       resources: "recursos",
       noResources:
         "Execute a descoberta para listar os recursos acessíveis à conta autorizada.",
@@ -388,6 +389,7 @@ export const integrationPlatform = {
       selectPage: "Select this page",
       clearPage: "Clear this page",
       selected: "selected",
+      scopeAll: "All items of the imported modules",
       resources: "resources",
       noResources:
         "Run discovery to list resources accessible to the authorized account.",

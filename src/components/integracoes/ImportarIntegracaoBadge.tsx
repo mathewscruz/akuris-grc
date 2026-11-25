@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { IconCheck } from "@/components/icons";
-import { integrationRequest, integrationErrorKey, importProgressPct } from "@/lib/integration-platform";
+import { integrationRequest, integrationErrorKey, importProgressPct, importOutcome } from "@/lib/integration-platform";
 
 interface Fonte { provider: string; module: string; logo: string; nome: string }
 /** Akuris page → connected tools (and their module) that can feed it. */
@@ -86,25 +86,42 @@ function Badge({ fonte, conn, empresaId, pagina }: { fonte: Fonte; conn: Conn; e
   });
   const ativo = !!run.data || busy;
   const [wasActive, setWasActive] = useState(false);
-  const [justDone, setJustDone] = useState(false);
+  const [lastRunId, setLastRunId] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<"success" | "partial" | "error" | null>(null);
+  const justDone = outcome === "success";
   useEffect(() => {
-    if (!justDone) return;
-    const id = window.setTimeout(() => setJustDone(false), 2200);
+    if (outcome !== "success") return;
+    const id = window.setTimeout(() => setOutcome(null), 2200);
     return () => window.clearTimeout(id);
-  }, [justDone]);
+  }, [outcome]);
   useEffect(() => {
-    if (run.data) { setWasActive(true); return; }
+    if (run.data) { setWasActive(true); setLastRunId(run.data.id); return; }
     if (wasActive && !busy) {
       setWasActive(false);
       setWatching(false);
-      setJustDone(true);
-      // Import finished: refresh the badge and the module list behind it.
-      void qc.invalidateQueries();
+      // The run left queued/running: confirm its terminal status before showing any success.
+      void (async () => {
+        let status: string | null = null;
+        if (lastRunId) {
+          const { data } = await supabase.from("integration_runs").select("status")
+            .eq("empresa_id", empresaId).eq("id", lastRunId).maybeSingle();
+          status = (data as { status: string } | null)?.status ?? null;
+        }
+        const o = importOutcome(status);
+        setOutcome(o);
+        if (o === "partial") toast.warning(t("integracaoImport.parcial", { fonte: fonte.nome }));
+        if (o === "error") toast.error(t("integracaoImport.falhou", { fonte: fonte.nome }));
+        void qc.invalidateQueries();
+      })();
     }
-  }, [run.data, wasActive, busy, qc, empresaId, pagina]);
+  }, [run.data, wasActive, busy, qc, empresaId, pagina, lastRunId, t, fonte.nome]);
   const pct = importProgressPct(run.data?.progress_done, run.data?.progress_total);
   const label = justDone && !ativo
     ? t("integracaoImport.concluido", { fonte: fonte.nome })
+    : outcome === "partial" && !ativo
+    ? t("integracaoImport.parcial", { fonte: fonte.nome })
+    : outcome === "error" && !ativo
+    ? t("integracaoImport.falhou", { fonte: fonte.nome })
     : ativo
     ? t("integracaoImport.importando", { fonte: fonte.nome, pct: String(pct) })
     : importado

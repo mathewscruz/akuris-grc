@@ -191,3 +191,8 @@ export function importProgressPct(done: number | null | undefined, total: number
   if (!total || total <= 0) return 0;
   return Math.max(0, Math.min(100, Math.floor(((done ?? 0) / total) * 100)));
 }
+
+/** Outcome shown on a module badge once a run leaves queued/running; only "success" earns the check. */
+export function importOutcome(status: string | null | undefined): "success" | "partial" | "error" {
+  return status === "success" ? "success" : status === "partial" ? "partial" : "error";
+}

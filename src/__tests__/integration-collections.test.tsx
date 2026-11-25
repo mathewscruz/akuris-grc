@@ -64,6 +64,13 @@ beforeEach(() => {
   );
 });
 afterEach(() => vi.unstubAllGlobals());
+async function cardOf(name: string): Promise<HTMLElement> {
+  await screen.findAllByRole("article");
+  const card = (await screen.findAllByRole("article")).find((a) => a.querySelector("h4")?.textContent === name);
+  if (!card) throw new Error(`card ${name} not found`);
+  return card;
+}
+
 describe("collection connections", () => {
   it("explains missing platform setup instead of pretending the connection is ready", async () => {
     invoke.mockResolvedValue({
@@ -72,10 +79,10 @@ describe("collection connections", () => {
     });
     mount();
     const github = await screen.findByText("GitHub");
-    const button = github.closest("article")!.querySelector("button")!;
-    expect(button).toBeDisabled();
-    expect(button).toHaveAccessibleName("GitHub: Em breve");
-    fireEvent.click(button);
+    const card = github.closest("article")!;
+    expect(card).toHaveAttribute("data-state", "unavailable");
+    expect(card).toHaveTextContent("Em breve");
+    fireEvent.click(card);
     expect(
       screen.queryByRole("button", { name: "Autorizar conexão" }),
     ).toBeNull();
@@ -91,7 +98,8 @@ describe("collection connections", () => {
         ? { data: { connection_id: "c1", authorize_url: "https://accounts.google.com/o/oauth2/v2/auth?x=1" }, error: null }
         : { data: { connections: [], availability: { google_workspace: true }, scheduler_ready: false }, error: null });
     mount();
-    fireEvent.click(await screen.findByRole("button", { name: "Google Workspace: Não conectado" }));
+    await waitFor(async () => expect(await cardOf("Google Workspace")).toHaveAttribute("data-state", "disconnected"));
+    fireEvent.click(await cardOf("Google Workspace"));
     await waitFor(() => expect(popup.location.href).toContain("accounts.google.com"));
     expect(invoke.mock.calls.find(([, o]) => o.body.action === "start")![1].body.provider).toBe("google_workspace");
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -116,8 +124,12 @@ describe("collection connections", () => {
       error: null,
     });
     mount();
-    expect(await screen.findByRole("button", { name: "GitHub: Falhou" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Amazon Web Services: Não conectado" })).toBeEnabled();
+    await waitFor(async () => expect(await cardOf("GitHub")).toHaveAttribute("data-state", "error"));
+    const gh = await cardOf("GitHub");
+    expect(gh).toHaveTextContent("Falhou");
+    expect(gh).toHaveTextContent("Desconectar"); // connected cards only offer Disconnect
+    const aws = await cardOf("Amazon Web Services");
+    expect(aws).toHaveAttribute("data-state", "disconnected");
   });
   it("authorized does not display as a complete collection", async () => {
     invoke.mockResolvedValue({
@@ -129,7 +141,9 @@ describe("collection connections", () => {
       error: null,
     });
     mount();
-    expect(await screen.findByRole("button", { name: "GitHub: Conectado" })).toBeTruthy();
+    await waitFor(async () => expect(await cardOf("GitHub")).toHaveAttribute("data-state", "connected"));
+    const gh = await cardOf("GitHub");
+    expect(gh).toHaveTextContent("Conectado");
     expect(screen.queryByText("Coleta completa")).toBeNull();
   });
   it("failures do not look like an empty successful account", async () => {
