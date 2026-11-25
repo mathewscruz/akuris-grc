@@ -38,6 +38,9 @@ const PERMISSOES: Record<string, string> = {
   secure_score_recomendacoes: "Microsoft Graph · SecurityEvents.Read.All", recomendacoes_defender: "Microsoft Defender for Endpoint · SecurityRecommendation.Read.All",
 };
 const permissaoDe = (regra: string) => PERMISSOES[regra.startsWith("alerta_") ? "alerta" : regra];
+// Checks Akuris never collects (no rule entry): explicit labels, never a humanised missing key.
+const CHECKS_NAO_COLETADOS = new Set(["google_alert_center", "google_drive_compartilhamento", "google_politicas"]);
+const origemId = (id: string) => id.startsWith("device:google:") ? "Google" : id.startsWith("device:") ? "Intune" : id.startsWith("user:") ? "Conta" : null;
 const safeUrl = (u: string | null | undefined) => (u && /^https:\/\//.test(u) ? u : null);
 type Cobertura = { status: keyof typeof COB_TONE; motivo?: string };
 type Conexao = { id: string; provider: string; settings: { tenant_id?: string; risk_coverage?: { at: string; rules: Record<string, Cobertura> } } | null };
@@ -96,10 +99,8 @@ export function RiscosSugeridos() {
     : avaliadas
       ? { title: t("riscosSugeridos.vazio"), description: t("riscosSugeridos.vazioAvaliadoDesc") }
       : { title: t("riscosSugeridos.vazioNaoAvaliado"), description: t("riscosSugeridos.vazioNaoAvaliadoDesc") };
-  const rotuloCheck = (r: string) => {
-    const k = `riscosSugeridos.regras.${r}.titulo`; const v = t(k);
-    return v === k ? t(`riscosSugeridos.cobertura.checks.${r}`) : v;
-  };
+  const rotuloCheck = (r: string) => CHECKS_NAO_COLETADOS.has(r)
+    ? t(`riscosSugeridos.cobertura.checks.${r}`) : t(`riscosSugeridos.regras.${r}.titulo`);
 
   const titulo = (s: Sugestao) => t(`riscosSugeridos.regras.${s.regra_id}.titulo`);
   const descricao = (s: Sugestao) => t(`riscosSugeridos.regras.${s.regra_id}.descricao`);
@@ -220,7 +221,8 @@ export function RiscosSugeridos() {
               {aberta.evidencia?.refs?.length ? (
                 <ul className="space-y-1">{aberta.evidencia.refs.map((r) => (
                   <li key={r.id} className="truncate">{safeUrl(r.url)
-                    ? <a href={safeUrl(r.url)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{r.nome}</a> : r.nome}</li>))}</ul>
+                    ? <a href={safeUrl(r.url)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{r.nome}</a> : r.nome}
+                    <span className="ml-2 font-mono text-xs text-muted-foreground" title={r.id}>{origemId(r.id) ? `${origemId(r.id)} · ` : ""}{r.id}</span></li>))}</ul>
               ) : <ul className="space-y-1">{itens.map((x) => <li key={x} className="truncate">{x}</li>)}</ul>}
               {resto > 0 && <p className="mt-1 text-muted-foreground">{t("riscosSugeridos.maisItens", { n: resto })}</p>}
             </div>

@@ -21,7 +21,9 @@ const pack = (regra_id: string, p: number, i: number, itens: Res[], opts: Partia
   const ids = itens.every((x) => x.externalId) ? uniq(itens.map((x) => x.externalId!)).sort() : undefined;
   return { regra_id, chave: opts.chave ?? "", fonte: opts.fonte ?? "coleta", severidade: opts.severidade ?? null,
     relevancia: opts.relevancia ?? 0, probabilidade: p, impacto: i, alcance: opts.alcance ?? {},
-    evidencia: { total: ids?.length ?? itens.length, itens: uniq(itens.map(label).filter(Boolean)).slice(0, SAMPLE), ...(ids ? { ids } : {}) } };
+    evidencia: { total: ids?.length ?? itens.length, itens: uniq(itens.map(label).filter(Boolean)).slice(0, SAMPLE), ...(ids ? { ids } : {}),
+      // Current name next to the stable id, so each target is identifiable (no secrets; ids are provider identifiers).
+      refs: itens.filter((x) => x.externalId).slice(0, SAMPLE).map((x) => ({ id: x.externalId!, nome: [label(x) || x.externalId!, x.signals.serial_number ? `SN ${x.signals.serial_number}` : ""].filter(Boolean).join(" · "), url: null })) } };
 };
 
 /** Users that are usable today: enabled, not suspended, not archived. */

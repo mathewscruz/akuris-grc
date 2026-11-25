@@ -122,7 +122,7 @@ export function googleDeviceResource(kind: "mobile" | "chromeos" | "cloud", d: a
   return {
     externalId: `device:google:${kind}:${id}`,
     kind: "device",
-    name: (kind === "mobile" ? d.model || d.name?.[0] : kind === "chromeos" ? d.annotatedAssetId || d.model : d.model) || id,
+    name: (kind === "mobile" ? d.model || d.name?.[0] : kind === "chromeos" ? d.annotatedAssetId || d.model : d.hostname || d.model || trusted(d.serialNumber)) || id,
     signals: {
       source: "google_workspace",
       google_kind: kind,

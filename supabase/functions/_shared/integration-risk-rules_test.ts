@@ -70,7 +70,8 @@ Deno.test("re-evaluation is deterministic (same key, no duplicates)", () => {
   const r = [iDev({ complianceState: "noncompliant" }), iDev({ id: "d2", deviceName: "PC-1", complianceState: "noncompliant" })];
   const a = evaluateRiskRules(r as never, NOW), b = evaluateRiskRules(r as never, NOW);
   assertEquals(a, b);
-  assertEquals(a[0].evidencia, { total: 2, itens: ["PC-1"], ids: ["device:d1", "device:d2"] }, "ids are stable externalIds, not names");
+  assertEquals([a[0].evidencia.total, a[0].evidencia.itens, a[0].evidencia.ids], [2, ["PC-1"], ["device:d1", "device:d2"]], "ids are stable externalIds, not names");
+  assertEquals(a[0].evidencia.refs!.map((r) => r.nome), ["PC-1 · SN SN12345", "PC-1 · SN SN12345"]);
 });
 
 
@@ -387,4 +388,11 @@ Deno.test("google encryption resolution needs explicit ENCRYPTED on the same dev
   for (const v of [undefined, "ENCRYPTION_STATE_UNSPECIFIED", "UNSUPPORTED_BY_DEVICE", "NOT_ENCRYPTED"])
     assertEquals(configFixed([gCloud({ encryptionState: v })] as never, "dispositivos_sem_criptografia", id), false);
   assertEquals(configFixed([gCloud({ name: "devices/other", encryptionState: "ENCRYPTED" })] as never, "dispositivos_sem_criptografia", id), false);
+});
+Deno.test("google cloud name prefers hostname, then model/serial; id unchanged", () => {
+  const d = googleDeviceResource("cloud", { name: "devices/c9", hostname: "LAPTOP-FIN-07", model: "Windows", serialNumber: "5CD123XYZ" })!;
+  assertEquals([d.name, d.externalId], ["LAPTOP-FIN-07", "device:google:cloud:devices/c9"]);
+  assertEquals(googleDeviceResource("cloud", { name: "devices/c9", model: "Windows" })!.name, "Windows");
+  const f = evaluateRiskRules([googleDeviceResource("cloud", { name: "devices/c9", hostname: "LAPTOP-FIN-07", serialNumber: "5CD123XYZ", encryptionState: "NOT_ENCRYPTED" })] as never, NOW)[0];
+  assertEquals(f.evidencia.refs, [{ id: "device:google:cloud:devices/c9", nome: "LAPTOP-FIN-07 · SN 5CD123XYZ", url: null }]);
 });
