@@ -426,7 +426,10 @@ Deno.serve(async (req) => {
         const antes: string[] = connection.settings.modules ?? ["intune"];
         for (const m of antes.filter((m) => !body.modules.includes(m)))
           checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
-        connection.settings = { ...connection.settings, modules: body.modules };
+        const imported = (connection.settings.imported_modules ?? []).filter((m: string) => body.modules.includes(m));
+        connection.settings = { ...connection.settings, modules: body.modules, imported_modules: imported };
+        checked(await client.from("integration_connections").update({ settings: connection.settings })
+          .eq("id", connection.id).eq("empresa_id", empresa));
       }
       checked(
         await client.rpc("integration_configure", {
@@ -457,6 +460,9 @@ Deno.serve(async (req) => {
     if (action === "disconnect" && connection.provider === "microsoft") {
       for (const m of ["intune", "entra", "documentos"])
         checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
+      checked(await client.from("integration_connections")
+        .update({ settings: { ...connection.settings, imported_modules: [] } })
+        .eq("id", connection.id).eq("empresa_id", empresa));
     }
     if (["pause", "resume", "disconnect"].includes(action)) {
       checked(
@@ -468,7 +474,20 @@ Deno.serve(async (req) => {
       );
       return json({ success: true });
     }
-    if (action === "collect") {
+    if (action === "import_module") {
+      // User accepted importing this module's data: mark it and keep it in sync.
+      const mods: string[] = connection.settings.modules ?? ["intune"];
+      if (connection.provider !== "microsoft" || !mods.includes(body.module))
+        return json({ error: "invalid_configuration" }, 400);
+      const imported = [...new Set([...(connection.settings.imported_modules ?? []), body.module])];
+      const periodic = connection.frequency === "manual" && (await schedulerReady(client));
+      checked(await client.from("integration_connections").update({
+        settings: { ...connection.settings, imported_modules: imported },
+        ...(periodic ? { frequency: "daily", next_run_at: new Date(Date.now() + 86400000).toISOString() } : {}),
+      }).eq("id", connection.id).eq("empresa_id", empresa));
+      connection.settings = { ...connection.settings, imported_modules: imported };
+    }
+    if (action === "collect" || action === "import_module") {
       if (
         connection.provider === "aws" &&
         connection.status === "pending" &&

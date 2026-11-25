@@ -27,6 +27,7 @@ import AtivoDialog from '@/components/ativos/AtivoDialog';
 import AtivoFicha from '@/components/ativos/AtivoFicha';
 import ManutencaoDialog from '@/components/ativos/ManutencaoDialog';
 import TrilhaAuditoriaAtivos from '@/components/ativos/TrilhaAuditoriaAtivos';
+import { ImportarIntegracaoBadge } from '@/components/integracoes/ImportarIntegracaoBadge';
 import AgenteInventarioDialog from '@/components/ativos/AgenteInventarioDialog';
 import { exportCSV } from '@/lib/csv-utils';
 import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
@@ -524,6 +525,8 @@ const Ativos = () => {
         title={t('modules.ativos.title')}
         description={t('modules.ativos.description')}
         actions={
+          <div className="flex items-center gap-3">
+          <ImportarIntegracaoBadge modulo="intune" />
           <Button size="sm" onClick={() => {
             setEditingAtivo(null);
             setFormData(initialFormData);
@@ -532,6 +535,7 @@ const Ativos = () => {
             <IconAdd className="h-4 w-4 mr-2" />
             {t('sweepCore.assets.newAsset')}
           </Button>
+          </div>
         }
         secondaryActions={[
           ...(azureIntegration ? [{

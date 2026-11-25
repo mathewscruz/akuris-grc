@@ -2519,3 +2519,13 @@ input:-webkit-autofill:focus {
 .akuris-stat-band .band-rest { background: hsl(var(--band-rest)); }
 .akuris-stat-band .band-primary { background: hsl(var(--band-accent)); }
 .akuris-stat-band-glow { background: radial-gradient(45% 90% at 100% 100%, hsl(var(--band-glow) / 0.35), transparent 70%), radial-gradient(35% 70% at 70% 0%, hsl(var(--band-accent) / 0.10), transparent 70%); }
+
+/* Connected-tool import badge on module pages */
+.akuris-import-badge{position:relative;display:inline-flex;height:2.25rem;width:2.25rem;align-items:center;justify-content:center;border-radius:9999px;background:#fff;border:1px solid hsl(var(--border))}
+.akuris-import-badge img{position:relative;z-index:1}
+.akuris-import-badge.is-pending{cursor:pointer}
+.akuris-import-ring{position:absolute;inset:-4px;border-radius:9999px;pointer-events:none}
+.akuris-import-badge.is-pending .akuris-import-ring{background:conic-gradient(from 0deg,hsl(var(--primary)) 0 25%,transparent 25% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:akurisImportRing 1.6s linear infinite}
+.akuris-import-badge.is-synced{opacity:.85}
+@keyframes akurisImportRing{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.akuris-import-badge.is-pending .akuris-import-ring{animation:none;background:hsl(var(--primary))}}

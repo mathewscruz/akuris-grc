@@ -138,7 +138,9 @@ export async function processIntegrationRun(
     if (
       connection.provider === "intune" ||
       (connection.provider === "microsoft" &&
-        (connection.settings.modules ?? ["intune"]).includes("intune"))
+        (connection.settings.modules ?? ["intune"]).includes("intune") &&
+        // Data reaches the module only after the user clicks "import" there.
+        (connection.settings.imported_modules ?? []).includes("intune"))
     ) {
       const devices = collection.resources.filter((r) => r.kind === "device");
       if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices, connection.id);
