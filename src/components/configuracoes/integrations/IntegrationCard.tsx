@@ -80,6 +80,9 @@ export function IntegrationCard({
           <p className="text-xs text-muted-foreground">{t("collectionHub.cardLastRun")}</p>
           <p className="mt-0.5 truncate">{lastRun || "—"}</p>
         </div>
+        {state === "unavailable" && (
+          <Button size="sm" variant="outline" disabled>{t("collectionHub.comingSoon")}</Button>
+        )}
         {!extra && state === "disconnected" && onOpen && (
           <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onOpen(); }}>{t("collectionHub.connect")}</Button>
         )}

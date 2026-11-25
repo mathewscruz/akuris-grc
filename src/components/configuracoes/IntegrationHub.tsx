@@ -372,6 +372,12 @@ export function IntegrationHub() {
 
   const renderIntegrationCard = (integration: Integration) => {
     const status = getIntegrationStatus(integration.tipo);
+    const live = /google|microsoft|azure|intune|teams|sharepoint/i.test(integration.tipo);
+    if (!live) return (
+      <IntegrationCard key={integration.id} logo={<integration.Logo />} name={integration.nome}
+        category={CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome ?? ''}
+        description={integration.descricao} state="unavailable" />
+    );
     const Logo = integration.Logo;
     return (
       <IntegrationCard

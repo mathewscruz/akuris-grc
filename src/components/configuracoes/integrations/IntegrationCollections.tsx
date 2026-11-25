@@ -291,7 +291,10 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {ordered.map((provider) => {
-            const { state, conn } = stateOf(provider.id);
+            const live = provider.id === "google_workspace" || provider.id === "microsoft";
+            const { state: realState, conn: realConn } = stateOf(provider.id);
+            const state: IntegrationState = live ? realState : "unavailable";
+            const conn = live ? realConn : undefined;
             return (
               <IntegrationCard
                 key={provider.id}
