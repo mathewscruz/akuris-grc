@@ -198,3 +198,21 @@ Deno.test("probe uses my_customer, one page, company inventory, and still valida
   assertEquals(u.searchParams.get("view"), "COMPANY_INVENTORY");
   await assertRejects(() => probeDevices(async () => ({}), "tok", ""), DelegatedError, "organization_changed");
 });
+
+Deno.test("auto-enable devices: only when delegation proven, idempotent, scoped to one connection", async () => {
+  const { autoEnableDevices } = await import("./google-delegated.ts");
+  const imported = new Map<string, Set<string>>(); let queued: string | null = null; let runs = 0; const calls: any[] = [];
+  const client = { rpc: async (name: string, a: any) => {
+    calls.push([name, a.p_id, a.p_empresa]);
+    if (name === "integration_import_module") { const s = imported.get(a.p_id) ?? new Set(); s.add(a.p_module); imported.set(a.p_id, s); return { data: {}, error: null }; }
+    if (!queued) { queued = `run-${++runs}`; } return { data: queued, error: null };
+  } };
+  for (const st of [{ status: "delegation_pending" }, { status: "unavailable" }, { status: "reauthorization_required" }, { status: "error", error: "x" }] as const)
+    assertEquals(await autoEnableDevices(client, st, "conn-A", "emp-A", true), null);
+  assertEquals(calls.length, 0); // pending authorisation never imports nor collects
+  const r1 = await autoEnableDevices(client, { status: "active" }, "conn-A", "emp-A", true);
+  const r2 = await autoEnableDevices(client, { status: "active" }, "conn-A", "emp-A", true); // repeated callback/verify
+  assertEquals(r1, r2); assertEquals(runs, 1);
+  assertEquals([...imported.keys()], ["conn-A"]); assertEquals([...imported.get("conn-A")!], ["dispositivos"]);
+  assert(calls.every((c) => c[1] === "conn-A" && c[2] === "emp-A"));
+});

@@ -26,7 +26,7 @@ const MODULES: Record<string, readonly string[]> = {
   google_workspace: GOOGLE_MODULES,
 };
 import { connectionCredentials } from "../_shared/integration-oauth.ts";
-import { type AdminIdentity, checkPlatformDevices, type DeviceStatus, platformServiceAccount, probeDevices, verifyConnectingAdmin } from "../_shared/google-delegated.ts";
+import { type AdminIdentity, autoEnableDevices, checkPlatformDevices, type DeviceStatus, platformServiceAccount, probeDevices, verifyConnectingAdmin } from "../_shared/google-delegated.ts";
 import { processIntegrationRun } from "../_shared/integration-runner.ts";
 import { integrationReleaseResponse } from "../_shared/integration-release.ts";
 
@@ -173,8 +173,8 @@ Deno.serve(async (req) => {
             admin_identity: devices.identity,
             cloud_identity: devices.state,
           };
-          if (devices.state.status === "active" && (connection.data.settings?.imported_modules ?? []).includes("dispositivos"))
-            enqueueAfter = true;
+          // Computers arrive automatically once OAuth + admin delegation are proven (this connection only).
+          if (devices.state.status === "active") enqueueAfter = true;
         }
       }
       const completed = await client
@@ -188,8 +188,9 @@ Deno.serve(async (req) => {
       checked(completed);
       if (!completed.data) throw new ProviderError("consent_superseded");
       if (enqueueAfter) {
-        // Devices already imported and delegation proven: collect computers now (same Ativos import path).
-        const run = await client.rpc("integration_enqueue", { p_id: saved.connection_id, p_empresa: tenant });
+        // Idempotent: marks "dispositivos" imported (daily only if the scheduler is ready) and reuses any queued run.
+        const runId = await autoEnableDevices(client, { status: "active" }, saved.connection_id, tenant, await schedulerReady(client));
+        const run = { error: runId ? null : true, data: runId };
         if (!run.error && run.data) {
           const work = processIntegrationRun(client, run.data, { allowRetry: false }).catch(() => undefined);
           const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
@@ -466,9 +467,14 @@ Deno.serve(async (req) => {
       checked(await client.from("integration_connections").update({ settings })
         .eq("id", connection.id).eq("empresa_id", empresa));
       connection = { ...connection, settings };
-      if (devices.state.status !== "active" || !(connection.settings.imported_modules ?? []).includes("dispositivos"))
-        return json({ cloud_identity: devices.state });
-      body.action = "collect";
+      if (devices.state.status !== "active") return json({ cloud_identity: devices.state });
+      // Delegation proven: enable devices for this connection (idempotent) and collect now.
+      const runId = await autoEnableDevices(client, devices.state, connection.id, empresa, await schedulerReady(client));
+      if (!runId) return json({ error: "storage_write_failed" }, 500);
+      const work = processIntegrationRun(client, runId, { allowRetry: await schedulerReady(client) });
+      const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+      if (rt) rt.waitUntil(work); else await work;
+      return json({ cloud_identity: devices.state, run_id: runId }, 202);
     }
     if (action === "configure") {
       if (

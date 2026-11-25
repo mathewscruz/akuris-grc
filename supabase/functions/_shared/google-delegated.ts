@@ -217,3 +217,18 @@ export function delegatedErrorCode(e: unknown): string {
   if (c === "authorization_expired") return "delegation_missing";
   return typeof c === "string" && /^[a-z_0-9]{3,40}$/.test(c) ? c : "provider_error";
 }
+
+/**
+ * Computers arrive automatically: only after delegation is proven ("active"), enable the devices module
+ * for THIS connection (idempotent RPC) and reuse/enqueue one run. Anything else never imports or collects.
+ */
+export async function autoEnableDevices(
+  client: { rpc(name: string, args: Record<string, unknown>): PromiseLike<{ data: any; error: any }> },
+  state: DeviceStatus, connectionId: string, empresaId: string, periodic: boolean,
+): Promise<string | null> {
+  if (state.status !== "active") return null;
+  const imported = await client.rpc("integration_import_module", { p_id: connectionId, p_empresa: empresaId, p_module: "dispositivos", p_periodic: periodic });
+  if (imported.error) return null;
+  const run = await client.rpc("integration_enqueue", { p_id: connectionId, p_empresa: empresaId });
+  return run.error ? null : run.data;
+}

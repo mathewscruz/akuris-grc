@@ -298,7 +298,9 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
                 logo={<ProviderLogo provider={provider.id} />}
                 name={provider.name}
                 category={t(`collectionHub.family.${provider.family}`)}
-                description={t(`collectionHub.provider.${provider.id}`)}
+                description={provider.id === "google_workspace" && !conn
+                  ? `${t("collectionHub.provider.google_workspace")} ${t(query.data?.scheduler_ready === true ? "collectionHub.googleDevicesAuto" : "collectionHub.googleDevicesAutoNoSchedule")}`
+                  : t(`collectionHub.provider.${provider.id}`)}
                 state={state}
                 modules={conn?.settings?.imported_modules?.length ? conn.settings.imported_modules.map((m) => t(`collectionHub.microsoft.module.${m}`)).join(", ") : undefined}
                 lastRun={conn ? (conn.last_success_at ? formatDateTime(conn.last_success_at) : t("collectionHub.never")) : undefined}

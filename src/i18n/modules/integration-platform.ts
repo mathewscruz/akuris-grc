@@ -146,6 +146,8 @@ export const integrationPlatform = {
       resume: "Retomar",
       reconnect: "Autorizar novamente",
       addComputers: "Computadores",
+      googleDevicesAuto: "Após a autorização do administrador, os dispositivos (incluindo computadores) são importados para Ativos automaticamente e atualizados todos os dias.",
+      googleDevicesAutoNoSchedule: "Após a autorização do administrador, os dispositivos (incluindo computadores) são importados para Ativos automaticamente; a atualização diária ainda não está disponível.",
       disconnect: "Desconectar",
       disconnectTitle: "Desconectar esta ferramenta?",
       disconnectHelp:
@@ -418,6 +420,8 @@ export const integrationPlatform = {
       resume: "Resume",
       reconnect: "Authorize again",
       addComputers: "Computers",
+      googleDevicesAuto: "Once the administrator authorises, devices (computers included) are imported into Assets automatically and refreshed daily.",
+      googleDevicesAutoNoSchedule: "Once the administrator authorises, devices (computers included) are imported into Assets automatically; daily refresh is not available yet.",
       disconnect: "Disconnect",
       disconnectTitle: "Disconnect this tool?",
       disconnectHelp:
