@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -592,6 +593,20 @@ function ConnectionManager({
   const [busy, setBusy] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [reconnectUrl, setReconnectUrl] = useState("");
+  type Purge = { module: string; removidos: number; arquivados: number; limpos: number };
+  const [purge, setPurge] = useState<Purge[] | null>(null);
+  const [confirmModules, setConfirmModules] = useState(false);
+  async function loadPurge(mods?: string[]) {
+    setPurge(null);
+    try {
+      const r = await integrationRequest<{ modules: Purge[] }>({
+        action: "purge_preview", connection_id: connection.id, ...(mods ? { modules: mods } : {}),
+      });
+      setPurge(r.modules || []);
+    } catch {
+      setPurge([]);
+    }
+  }
   const query = useQuery({
     queryKey: ["integration-details", empresaId, connection.id, page],
     queryFn: () =>
@@ -682,15 +697,21 @@ function ConnectionManager({
         description={t(`collectionHub.provider.${connection.provider}`)}
         isDirty={dirty}
         isSubmitting={busy}
-        onSubmit={() =>
+        onSubmit={() => {
+          const removed = unified ? savedModules.filter((m) => !modules.has(m)) : [];
+          if (removed.length && !confirmModules) {
+            setConfirmModules(true);
+            void loadPurge(removed);
+            return;
+          }
           void perform("configure", {
             frequency,
             region,
             scope_ids: [...scope],
             system_id: system || null,
             ...(unified ? { modules: [...modules] } : {}),
-          })
-        }
+          });
+        }}
         submitLabel={t("collectionHub.save")}
         submitDisabled={locked || !dirty}
       >
@@ -1098,7 +1119,7 @@ function ConnectionManager({
               variant="ghost"
               className="text-destructive"
               disabled={locked}
-              onClick={() => setConfirmDisconnect(true)}
+              onClick={() => { setConfirmDisconnect(true); if (unified) void loadPurge(); }}
             >
               {t("collectionHub.disconnect")}
             </Button>
@@ -1127,8 +1148,50 @@ function ConnectionManager({
         isSubmitting={busy}
       >
         <p className="text-sm">{connection.name}</p>
+        {unified && <PurgeSummary items={purge} />}
+      </DialogShell>
+      <DialogShell
+        open={confirmModules}
+        onOpenChange={setConfirmModules}
+        title={t("collectionHub.microsoft.purgeTitle")}
+        description={t("collectionHub.microsoft.purgeHelp")}
+        size="sm"
+        isSubmitting={busy}
+        submitLabel={t("collectionHub.save")}
+        onSubmit={() => {
+          setConfirmModules(false);
+          void perform("configure", {
+            frequency, region, scope_ids: [...scope], system_id: system || null, modules: [...modules],
+          });
+        }}
+      >
+        <PurgeSummary items={purge} />
       </DialogShell>
     </>
+  );
+}
+
+function PurgeSummary({
+  items,
+}: {
+  items: { module: string; removidos: number; arquivados: number; limpos: number }[] | null;
+}) {
+  const { t } = useLanguage();
+  if (!items) return <AkurisPulse size={24} />;
+  return (
+    <ul className="mt-3 space-y-1.5 text-sm">
+      {items.map((i) => (
+        <li key={i.module} className="flex flex-col">
+          <span className="font-medium">{t(`collectionHub.microsoft.module.${i.module}`)}</span>
+          <span className="text-muted-foreground">
+            {t("collectionHub.microsoft.purgeCounts", {
+              removidos: String(i.removidos),
+              arquivados: String(i.arquivados + i.limpos),
+            })}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

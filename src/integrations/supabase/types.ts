@@ -634,6 +634,7 @@ export type Database = {
           fornecedor: string | null
           id: string
           imei: string | null
+          integration_connection_id: string | null
           intune_device_id: string | null
           localizacao: string | null
           mesh_node_id: string | null
@@ -660,6 +661,7 @@ export type Database = {
           fornecedor?: string | null
           id?: string
           imei?: string | null
+          integration_connection_id?: string | null
           intune_device_id?: string | null
           localizacao?: string | null
           mesh_node_id?: string | null
@@ -686,6 +688,7 @@ export type Database = {
           fornecedor?: string | null
           id?: string
           imei?: string | null
+          integration_connection_id?: string | null
           intune_device_id?: string | null
           localizacao?: string | null
           mesh_node_id?: string | null
@@ -13304,6 +13307,15 @@ export type Database = {
       integration_import_accounts: {
         Args: { p_attempt: number; p_rows: Json; p_run: string }
         Returns: number
+      }
+      integration_purge_module: {
+        Args: {
+          p_dry_run?: boolean
+          p_empresa: string
+          p_id: string
+          p_module: string
+        }
+        Returns: Json
       }
       integration_read_credentials: {
         Args: { p_empresa: string; p_id: string }

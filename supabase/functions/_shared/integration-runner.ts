@@ -11,7 +11,7 @@ import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
-async function syncIntuneAtivos(db: any, empresaId: string, resources: any[]) {
+async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], connectionId: string) {
   const rows = resources.map(ativoDoIntune).filter(Boolean) as any[];
   let novos = 0;
   for (const a of rows) {
@@ -30,12 +30,13 @@ async function syncIntuneAtivos(db: any, empresaId: string, resources: any[]) {
     if (atual) {
       await db.from("ativos").update({
         intune_device_id: a.intune_device_id,
+        integration_connection_id: connectionId,
         versao: a.versao,
         atributos: { ...(atual.atributos ?? {}), ...a.atributos, intune_nao_visto: false },
       }).eq("id", atual.id).eq("empresa_id", empresaId);
     } else {
       const ins = await db.from("ativos").insert({
-        ...a, empresa_id: empresaId, status: "pendente", tags: ["descoberto-intune"],
+        ...a, empresa_id: empresaId, integration_connection_id: connectionId, status: "pendente", tags: ["descoberto-intune"],
       });
       if (!ins.error) novos++;
     }
@@ -140,7 +141,7 @@ export async function processIntegrationRun(
         (connection.settings.modules ?? ["intune"]).includes("intune"))
     ) {
       const devices = collection.resources.filter((r) => r.kind === "device");
-      if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices);
+      if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices, connection.id);
     }
     // Imported accounts feed the existing access review, in the chosen system.
     // Do not revoke disappeared accounts on a partial or filtered collection.

@@ -423,6 +423,9 @@ Deno.serve(async (req) => {
             .eq("id", connection.id)
             .eq("empresa_id", empresa),
         );
+        const antes: string[] = connection.settings.modules ?? ["intune"];
+        for (const m of antes.filter((m) => !body.modules.includes(m)))
+          checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
         connection.settings = { ...connection.settings, modules: body.modules };
       }
       checked(
@@ -436,6 +439,24 @@ Deno.serve(async (req) => {
         }),
       );
       return json({ success: true });
+    }
+    if (action === "purge_preview") {
+      const mods = connection.provider === "microsoft"
+        ? (Array.isArray(body.modules) ? body.modules : (connection.settings.modules ?? ["intune"]))
+            .filter((m: unknown) => ["intune", "entra", "documentos"].includes(m as string))
+        : [];
+      const out = [];
+      for (const m of mods)
+      {
+        const r = await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: true });
+        checked(r);
+        out.push(r.data);
+      }
+      return json({ modules: out });
+    }
+    if (action === "disconnect" && connection.provider === "microsoft") {
+      for (const m of ["intune", "entra", "documentos"])
+        checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
     }
     if (["pause", "resume", "disconnect"].includes(action)) {
       checked(
