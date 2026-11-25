@@ -200,7 +200,9 @@ Deno.serve(async (req) => {
     } catch (error) {
       result =
         error instanceof ProviderError ? error.code : "authorization_failed";
-      await client
+      // A cancelled/failed maintenance re-authorisation never breaks a working Google connection.
+      const maintenance = connection.data.provider === "google_workspace" && ["authorized", "connected", "partial"].includes(connection.data.status);
+      if (!maintenance) await client
         .from("integration_connections")
         .update({ status: "error", error_code: result })
         .eq("id", saved.connection_id)
@@ -287,8 +289,10 @@ Deno.serve(async (req) => {
           .single();
         checked(existing);
         connection = existing.data;
+        // Google maintenance re-authorisation (same org enforced at callback) keeps the working connection live.
+        const maintenance = provider === "google_workspace" && ["authorized", "connected", "partial"].includes(connection.status);
         // Prevent an existing worker from using a credential being replaced.
-        checked(
+        if (!maintenance) checked(
           await client.rpc("integration_change_state", {
             p_id: connection.id,
             p_empresa: empresa,
