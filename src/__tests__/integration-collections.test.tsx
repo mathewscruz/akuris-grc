@@ -83,6 +83,28 @@ describe("collection connections", () => {
       invoke.mock.calls.every((call) => call[1].body.action === "list"),
     ).toBe(true);
   });
+  it("Conectar opens the authorization window directly, with no intermediate dialog", async () => {
+    const popup = { closed: false, close: vi.fn(), location: { href: "" } };
+    vi.stubGlobal("open", vi.fn(() => popup));
+    invoke.mockImplementation(async (_n: string, o: { body: { action: string } }) =>
+      o.body.action === "start"
+        ? { data: { connection_id: "c1", authorize_url: "https://accounts.google.com/o/oauth2/v2/auth?x=1" }, error: null }
+        : { data: { connections: [], availability: { google_workspace: true }, scheduler_ready: false }, error: null });
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Google Workspace: Não conectado" }));
+    await waitFor(() => expect(popup.location.href).toContain("accounts.google.com"));
+    expect(invoke.mock.calls.find(([, o]) => o.body.action === "start")![1].body.provider).toBe("google_workspace");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+  it("ignores authorization messages from another origin", async () => {
+    invoke.mockResolvedValue({ data: { connections: [], availability: {}, scheduler_ready: false }, error: null });
+    mount();
+    await screen.findByText("GitHub");
+    const before = invoke.mock.calls.length;
+    window.dispatchEvent(new MessageEvent("message", { origin: "https://evil.example", data: { type: "akuris-oauth", result: "authorized" } }));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(invoke.mock.calls.length).toBe(before);
+  });
   it("card button reflects each connection state", async () => {
     invoke.mockResolvedValue({
       data: {

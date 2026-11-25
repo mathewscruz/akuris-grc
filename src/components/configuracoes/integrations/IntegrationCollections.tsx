@@ -147,6 +147,7 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
     null,
   );
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState<CollectionProvider | null>(null);
   const client = useQueryClient();
   const key = ["integration-collections", empresaId];
   const query = useQuery({
@@ -163,6 +164,54 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
       }),
     [client, empresaId],
   );
+  // Authorization window: tell the Akuris tab that opened it and close itself.
+  useEffect(() => {
+    const id = searchParams.get("connection");
+    const result = searchParams.get("integration_result");
+    if (!id || !result) return;
+    try {
+      if (window.opener && window.opener !== window && window.opener.location.origin === window.location.origin) {
+        window.opener.postMessage({ type: "akuris-oauth", result }, window.location.origin);
+        window.close();
+      }
+    } catch { /* cross-origin opener: keep the normal in-page flow */ }
+  }, [searchParams]);
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin || event.data?.type !== "akuris-oauth") return;
+      const result = String(event.data.result || "");
+      setConnecting(null);
+      void reload();
+      if (result !== "authorized") toast.error(t(integrationErrorKey(result)));
+      else toast.success(t("collectionHub.connectedBack"));
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [reload, t]);
+  // Fallback while the window is open: poll the list for up to 3 minutes.
+  useEffect(() => {
+    if (!connecting) return;
+    const timer = window.setInterval(() => void reload(), 3000);
+    const stop = window.setTimeout(() => setConnecting(null), 180000);
+    return () => { window.clearInterval(timer); window.clearTimeout(stop); };
+  }, [connecting, reload]);
+  async function connectDirect(provider: CollectionProvider) {
+    // Open synchronously on the click so the browser does not block the window.
+    const popup = window.open("about:blank", "akuris-oauth", "popup,width=520,height=680");
+    setConnecting(provider);
+    try {
+      const r = await integrationRequest<{ authorize_url: string }>({
+        action: "start", return_origin: window.location.origin, provider,
+        name: COLLECTION_PROVIDERS.find((p) => p.id === provider)!.name,
+      });
+      if (popup && !popup.closed) popup.location.href = r.authorize_url;
+      else window.open(r.authorize_url, "_blank", "noopener");
+    } catch (error) {
+      popup?.close();
+      setConnecting(null);
+      toast.error(t(integrationErrorKey((error as Error).message)));
+    }
+  }
   useEffect(() => {
     const id = searchParams.get("connection");
     if (!id || !query.data) return;
@@ -253,7 +302,7 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
                 state={state}
                 modules={conn?.settings?.imported_modules?.length ? conn.settings.imported_modules.map((m) => t(`collectionHub.microsoft.module.${m}`)).join(", ") : undefined}
                 lastRun={conn ? (conn.last_success_at ? formatDateTime(conn.last_success_at) : t("collectionHub.never")) : undefined}
-                onOpen={() => (conn ? setActiveId(conn.id) : setNewProvider(provider.id))}
+                onOpen={() => (conn ? setActiveId(conn.id) : provider.id === "aws" || provider.id === "github" ? setNewProvider(provider.id) : void connectDirect(provider.id))}
                 extra={provider.id === "microsoft" && conn ? <TeamsAvisosButton empresaId={empresaId} /> : undefined}
               />
             );
