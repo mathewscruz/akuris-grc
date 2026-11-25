@@ -52,9 +52,26 @@ export function incidentCategory(text: string): AlertCategory {
   if (/policy|configuration|setting/.test(c)) return "configuracao";
   return "outros";
 }
-const statusOf = (e: unknown): SourceReport => {
-  if (e instanceof ProviderError && (e.code === "permission_missing" || e.code === "authorization_expired"))
-    return { status: "permission_missing", motivo: e.code };
+/** Application roles granted in an app-only token (payload claim only; the token is never stored or logged). */
+export function tokenRoles(token: string | null | undefined): string[] | null {
+  try {
+    const p = token?.split(".")[1];
+    if (!p) return null;
+    const roles = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(p.length / 4) * 4, "=")))?.roles;
+    return Array.isArray(roles) ? roles.filter((r): r is string => typeof r === "string") : null;
+  } catch { return null; }
+}
+/**
+ * 403 is never assumed to mean "missing permission": consent is missing only when the token proves the role is absent;
+ * license only when the provider says so; otherwise an unexplained refusal. 401 is an expired authorisation.
+ */
+export const statusOf = (e: unknown, roles: string[] | null = null, permissao?: string): SourceReport => {
+  if (e instanceof ProviderError && e.code === "authorization_expired") return { status: "unavailable", motivo: "authorization_expired" };
+  if (e instanceof ProviderError && e.code === "permission_missing") {
+    if (e.reason === "license_missing") return { status: "unavailable", motivo: "licenca_ausente" };
+    if (roles && permissao && !roles.includes(permissao)) return { status: "permission_missing", motivo: "consentimento_ausente" };
+    return { status: "unavailable", motivo: "acesso_recusado" };
+  }
   const code = e instanceof ProviderError ? e.code : e instanceof Error && e.name === "TimeoutError" ? "timeout" : "erro";
   return { status: "unavailable", motivo: code };
 };
@@ -74,7 +91,7 @@ async function pages(read: Read, url: string, token: string, origin: string, max
 }
 
 async function source(out: SecurityCollection, id: SecuritySource,
-  fn: () => Promise<{ items: SecuritySignal[]; complete: boolean; motivo?: string }>) {
+  fn: () => Promise<{ items: SecuritySignal[]; complete: boolean; motivo?: string }>, token: () => string | null = () => null) {
   out.detalhes ??= {};
   try {
     const r = await fn();
@@ -82,7 +99,7 @@ async function source(out: SecurityCollection, id: SecuritySource,
     out.status[id] = r.complete ? "ok" : "partial";
     out.detalhes[id] = { status: out.status[id]!, total: r.items.length, ...(r.motivo ? { motivo: r.motivo } : {}) };
   } catch (e) {
-    const rep = statusOf(e);
+    const rep = statusOf(e, tokenRoles(token()), SECURITY_PERMISSIONS[id].permissao);
     out.status[id] = rep.status;
     out.detalhes[id] = rep;
   }
@@ -171,27 +188,28 @@ export async function collectMicrosoftSecurity(read: Read, graphToken: string, m
     // awaitingAction is an evolvable enum member: Graph only returns it with this Prefer header.
     const { items, complete } = await pages(read, `${GRAPH}/v1.0/security/incidents?$expand=alerts&$top=50&$filter=${f}`, graphToken, GRAPH, 10, PREFER);
     return { items: items.map(incidentSignal).filter((x): x is IncidentSignal => !!x), complete };
-  });
+  }, () => graphToken);
   await source(out, "ms_risky_users", async () => {
     const f = encodeURIComponent("riskLevel eq 'high' and riskState eq 'atRisk'");
     const { items, complete } = await pages(read, `${GRAPH}/v1.0/identityProtection/riskyUsers?$top=200&$filter=${f}`, graphToken, GRAPH);
     return { items: items.filter((u) => u.riskLevel === "high" && u.riskState === "atRisk")
       .map((u) => ({ source: "ms_risky_users" as const, id: String(u.id), nome: String(u.userPrincipalName ?? u.userDisplayName ?? u.id) })), complete };
-  });
+  }, () => graphToken);
   await source(out, "ms_secure_score", async () => {
     const score = (await read(`${GRAPH}/v1.0/security/secureScores?$top=1`, graphToken, GRAPH))?.value?.[0];
     const { items: profiles, complete } = await pages(read, `${GRAPH}/v1.0/security/secureScoreControlProfiles?$top=200`, graphToken, GRAPH);
     const r = secureScoreSignals(score, profiles);
     if (complete) out.scores = r.scores;
     return { items: r.items, complete: complete && r.complete, motivo: !complete ? "paginacao_parcial" : r.motivo };
-  });
+  }, () => graphToken);
+  let mde: string | null = null;
   await source(out, "ms_recommendations", async () => {
-    const token = await mdeToken();
+    const token = mde = await mdeToken();
     const { items, complete } = await pages(read, `${MDE_BASE}/api/recommendations?$filter=${encodeURIComponent("status eq 'Active'")}&$top=10000`, token, MDE_BASE, 5);
     // A full page with no continuation link cannot prove the list ended.
     const ambiguous = complete && items.length > 0 && items.length % 10000 === 0;
     return { items: recommendationSignals(items), complete: complete && !ambiguous, motivo: complete && !ambiguous ? undefined : "paginacao_parcial" };
-  });
+  }, () => mde);
   out.proveFixed = (regra, id) => proveFixed(read, graphToken, mdeToken, out, regra, id);
   return out;
 }

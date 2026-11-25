@@ -12,6 +12,8 @@ export class ProviderError extends Error {
     public code: string,
     public retryable = false,
     public retryAfter: string | null = null,
+    /** Allowlisted 403 classification only; raw provider messages are never kept. */
+    public reason: "license_missing" | null = null,
   ) {
     super(code);
   }
@@ -52,7 +54,8 @@ export async function providerJson(
         : {}),
     },
   });
-  if (!response.ok)
+  if (!response.ok) {
+    const reason = response.status === 403 ? await forbiddenReason(response) : null;
     throw new ProviderError(
       response.status === 401
         ? "authorization_expired"
@@ -61,8 +64,22 @@ export async function providerJson(
           : `provider_http_${response.status}`,
       response.status === 429 || response.status >= 500,
       response.headers.get("retry-after"),
+      reason,
     );
+  }
   return response.json();
+}
+
+/** License absence only when the provider says so explicitly; anything else stays an unexplained refusal. */
+export function licenseMissingText(code: unknown, message: unknown): boolean {
+  return /not licensed|licen[cs]e (is )?(required|missing)|requires? .*licen[cs]e|AadPremiumLicenseRequired|premium license/i
+    .test(`${typeof code === "string" ? code : ""} ${typeof message === "string" ? message : ""}`);
+}
+async function forbiddenReason(response: Response): Promise<"license_missing" | null> {
+  try {
+    const body = JSON.parse((await response.text()).slice(0, 4000));
+    return licenseMissingText(body?.error?.code, body?.error?.message) ? "license_missing" : null;
+  } catch { return null; }
 }
 
 async function graphPages(

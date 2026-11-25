@@ -1,6 +1,7 @@
 import { assertEquals } from "jsr:@std/assert";
 import { configFixed, coveredConfigRules, decideLifecycle, evaluateRiskRules, evaluateSecurity, provenRules } from "./integration-risk-rules.ts";
-import { collectMicrosoftSecurity, incidentCategory } from "./integration-security.ts";
+import { collectMicrosoftSecurity, incidentCategory, statusOf, tokenRoles } from "./integration-security.ts";
+import { providerJson } from "./integration-providers.ts";
 import { ProviderError } from "./integration-providers.ts";
 import { riskCoverage } from "./integration-risk-rules.ts";
 import { googleDeviceResource, googleUserResource } from "./google-workspace.ts";
@@ -202,12 +203,14 @@ Deno.test("403, missing license and timeout never cover and never count as succe
     "/identityProtection/riskyUsers": new ProviderError("provider_http_4xx"),
     "/api/recommendations": timeout,
   }));
-  assertEquals([sec.status.ms_incidents, sec.status.ms_risky_users, sec.status.ms_recommendations], ["permission_missing", "unavailable", "unavailable"]);
+  // Generic 403 without proof: refusal, never "missing permission".
+  assertEquals([sec.status.ms_incidents, sec.status.ms_risky_users, sec.status.ms_recommendations], ["unavailable", "unavailable", "unavailable"]);
+  assertEquals(sec.detalhes!.ms_incidents!.motivo, "acesso_recusado");
   assertEquals(sec.detalhes!.ms_recommendations!.motivo, "timeout");
   const r = evaluateSecurity(sec);
   assertEquals(r.covered.some((x) => x.startsWith("alerta_") || x === "usuarios_alto_risco" || x === "recomendacoes_defender"), false);
   const cov = riskCoverage("microsoft", [], true, sec);
-  assertEquals(cov.alerta_malware.status, "permission_missing");
+  assertEquals(cov.alerta_malware, { status: "unavailable", motivo: "acesso_recusado" });
   assertEquals(cov.recomendacoes_defender, { status: "unavailable", motivo: "timeout" });
 });
 
@@ -421,4 +424,43 @@ Deno.test("coleta parcial (collection_limit em documentos) mantém achados forte
   const d = await decideLifecycle(open as never, achados, (r, id) => clean && configFixed(resources as never, r, id, NOW));
   assertEquals(d.resolved, []);
   assertEquals(d.findings.find((f) => f.regra_id === "dispositivos_sem_criptografia")!.evidencia.prova_ids, ["device:b", "device:d", "device:z"]);
+});
+
+
+const jwt = (roles: string[]) => `h.${btoa(JSON.stringify({ roles })).replace(/=+$/, "")}.s`;
+async function forbidden(status: number, body: unknown) {
+  const orig = globalThis.fetch;
+  globalThis.fetch = () => Promise.resolve(new Response(JSON.stringify(body), { status }));
+  try { await providerJson("https://graph.microsoft.com/v1.0/identityProtection/riskyUsers", "t", "https://graph.microsoft.com"); }
+  catch (e) { return e as ProviderError; } finally { globalThis.fetch = orig; }
+  throw new Error("expected error");
+}
+
+Deno.test("403 com licença explicitamente ausente → licenca_ausente, sem guardar a mensagem", async () => {
+  const e = await forbidden(403, { error: { code: "Forbidden", message: "Your tenant is not licensed for this feature. user@x.com" } });
+  assertEquals([e.code, e.reason], ["permission_missing", "license_missing"]);
+  assertEquals(e.message.includes("@"), false);
+  assertEquals(statusOf(e, tokenRoles(jwt(["IdentityRiskyUser.Read.All"])), "IdentityRiskyUser.Read.All"), { status: "unavailable", motivo: "licenca_ausente" });
+});
+
+Deno.test("403 genérico: acesso recusado, nunca afirma permissão ausente sem prova", async () => {
+  const e = await forbidden(403, { error: { code: "Authorization_RequestDenied", message: "Insufficient privileges" } });
+  assertEquals(e.reason, null);
+  assertEquals(statusOf(e, null, "IdentityRiskyUser.Read.All"), { status: "unavailable", motivo: "acesso_recusado" });
+  assertEquals(statusOf(e, tokenRoles(jwt(["IdentityRiskyUser.Read.All"])), "IdentityRiskyUser.Read.All").motivo, "acesso_recusado");
+  // Consent missing only when the token proves the role is absent.
+  assertEquals(statusOf(e, tokenRoles(jwt(["SecurityIncident.Read.All"])), "IdentityRiskyUser.Read.All"), { status: "permission_missing", motivo: "consentimento_ausente" });
+  const bad = await forbidden(403, "not json");
+  assertEquals(statusOf(bad, null, "x").motivo, "acesso_recusado");
+});
+
+Deno.test("401 = autorização expirada, não permissão ausente", async () => {
+  const e = await forbidden(401, {});
+  assertEquals(statusOf(e, null, "IdentityRiskyUser.Read.All"), { status: "unavailable", motivo: "authorization_expired" });
+});
+
+Deno.test("riskyUsers recusado (403 licença) nunca resolve sugestão aberta", async () => {
+  const lic = new ProviderError("permission_missing", false, null, "license_missing");
+  const r = await msDecide(ALL_OK({ "/identityProtection/riskyUsers": lic }), [{ regra_id: "usuarios_alto_risco", ids: ["u1"] }]);
+  assertEquals(r.resolved, []);
 });

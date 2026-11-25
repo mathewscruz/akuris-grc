@@ -34,7 +34,7 @@ const SEV_TONE: Record<string, "destructive" | "warning" | "neutral"> = { alta: 
 const SEV_ORDER: Record<string, number> = { alta: 3, media: 2, baixa: 1 };
 const COB_TONE = { ok: "success", partial: "warning", permission_missing: "warning", unavailable: "neutral", not_evaluated: "neutral" } as const;
 const PERMISSOES: Record<string, string> = {
-  alerta: "Microsoft Graph · SecurityIncident.Read.All", usuarios_alto_risco: "Microsoft Graph · IdentityRiskyUser.Read.All",
+  alerta: "Microsoft Graph · SecurityIncident.Read.All", usuarios_alto_risco: "Microsoft Graph · IdentityRiskyUser.Read.All · Microsoft Entra ID P2",
   secure_score_recomendacoes: "Microsoft Graph · SecurityEvents.Read.All", recomendacoes_defender: "Microsoft Defender for Endpoint · SecurityRecommendation.Read.All",
 };
 const permissaoDe = (regra: string) => PERMISSOES[regra.startsWith("alerta_") ? "alerta" : regra];
@@ -162,7 +162,7 @@ export function RiscosSugeridos() {
           <div className="mt-3 space-y-4">
             {conexoes.map((c) => {
               const cob = c.settings?.risk_coverage;
-              const faltam = [...new Set(Object.entries(cob?.rules ?? {}).filter(([, v]) => v.status === "permission_missing").map(([r]) => permissaoDe(r)).filter(Boolean))];
+              const faltam = [...new Set(Object.entries(cob?.rules ?? {}).filter(([, v]) => v.status === "permission_missing" || ["acesso_recusado", "licenca_ausente"].includes(String(v.motivo ?? ""))).map(([r]) => permissaoDe(r)).filter(Boolean))];
               return (
                 <div key={c.id}>
                   <p className="mb-1 flex items-center gap-2 font-medium"><img src={logoOf(c.provider).src} alt="" className="h-4 w-4" />{logoOf(c.provider).nome}
