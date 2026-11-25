@@ -1,18 +1,31 @@
-# Cartões de Integrações no estilo do anexo 1
+# Refinar visual dos cards de integração
 
-Mudança só visual no cartão compartilhado de Integrações (Configurações → Integrações). Conectar, desconectar, importação e dados exibidos continuam iguais.
+Objetivo: cards mais limpos, hierarquia clara e altura uniforme, mantendo a identidade Akuris (roxo só em ação, estado com ponto + texto, Chip único).
 
-## O que muda em cada cartão
-- Fundo levemente tingido (cinza-azulado suave) com borda fina colorida em tom verde-azulado, cantos mais arredondados — como no anexo 1. No tema escuro, a mesma ideia com superfície elevada e borda sutil.
-- Logo maior (≈56px), nome em negrito maior.
-- Chip de categoria colorido (fundo suave + texto na cor do tom), em vez de cinza; cada categoria ganha um tom fixo (ex.: Nuvem, Identidade, Desenvolvimento, Comunicação, Automação).
-- Estado com bolinha + texto: vermelho para falha, âmbar para revisar, verde para conectado, cinza para não conectado.
-- Ícones de ação no canto superior direito: lápis (quando existir edição) e lixeira vermelha para Desconectar quando o cartão estiver conectado — substituindo o botão "Desconectar" grande.
-- Rodapé em duas colunas como "Dono/Revisor": "Módulos importados" e "Última coleta", cada valor com um pequeno círculo de ícone à esquerda (como os avatares do anexo); quando vazio, aparece em âmbar ("Nenhum módulo" / "Ainda não coletado"), igual a "Sem revisor".
-- Ações extras (Avisos no Teams, Adicionar computadores) ficam como links discretos abaixo do rodapé.
+## O que muda (visual apenas)
+
+```text
+┌──────────────────────────────────────────┐
+│ [logo]  Google Workspace      ● Conectado│
+│  tile   Identidade                       │
+│──────────────────────────────────────────│
+│ MÓDULOS             ÚLTIMA COLETA        │
+│ Dispositivos +2     25/11/2026 11:48     │
+│──────────────────────────────────────────│
+│ Computadores                 Desconectar │
+└──────────────────────────────────────────┘
+```
+
+1. Logo dentro de um "tile" 44px com fundo de superfície elevada e borda suave, para logos de cores/formatos diferentes ficarem equilibrados.
+2. Estado sai de baixo do chip e vira um indicador compacto no canto superior direito (ponto + texto), libertando altura.
+3. Categoria usa o `<Chip/>` padrão (neutro), sem fundo cinzento cru.
+4. Rodapé de dados separado por divisória fina; rótulos em eyebrow (pequenos, maiúsculos, muted); quando não há dados, mostra "Ainda não coletado" discreto em vez de duas linhas de "—" — em cards não conectados o bloco de dados é substituído por uma linha curta "Conecte para começar a coletar".
+5. Ações num rodapé fixo alinhado: ação secundária (Computadores, Avisos no Teams) como link à esquerda, Desconectar/Conectar como botão pequeno à direita. Todos os cards ficam com a mesma altura (flex + mt-auto).
+6. Lista de módulos longa: mostra o primeiro + "+N" com tooltip completo, em vez de truncar "Dispositivos (móveis…".
+7. Hover: borda primária leve + elevação por aresta (dark sem sombra).
 
 ## Detalhes técnicos
-- Editar só `IntegrationCard.tsx` (nova prop `onDisconnect` e `extra`) e os pontos que hoje passam o botão Desconectar via `extra`.
-- Cores via tokens semânticos (`--success`, `--warning`, `--destructive`, `--primary`, novo tom `--teal` se necessário) e `Chip`, sem classes de cor cruas.
-- Textos novos em PT/EN via `t()`.
-- Desconectar mantém a confirmação/undo atual.
+- Alterar só `IntegrationCard.tsx` (componente partilhado) e, se preciso, a forma como `IntegrationCollections.tsx` passa `extra` (separar ação primária/secundária em props `primaryAction`/`secondaryAction`, mantendo `extra` compatível).
+- Novas chaves i18n PT/EN: "Ainda não coletado", "Conecte para começar a coletar".
+- Sem mudanças de lógica, estados, conexão, dados ou backend.
+- Validar com typecheck e screenshot da aba Integrações em claro e escuro.
