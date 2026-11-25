@@ -1,5 +1,5 @@
 import { collectProvider, ProviderError, providerJson } from "./integration-providers.ts";
-import { collectGoogleSecurity, collectMicrosoftSecurity, type SecurityCollection } from "./integration-security.ts";
+import { collectMicrosoftSecurity, type SecurityCollection } from "./integration-security.ts";
 import { connectionCredentials, digest, microsoftAppToken } from "./integration-oauth.ts";
 import { integrationCollectionsEnabled } from "./integration-release.ts";
 import {
@@ -11,7 +11,7 @@ import {
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
 import { platformServiceAccount } from "./google-delegated.ts";
-import { capFindings, coveredRules, evaluateRiskRules, evaluateSecurity, RISK_PROVIDERS } from "./integration-risk-rules.ts";
+import { coveredConfigRules, evaluateRiskRules, evaluateSecurity, RISK_PROVIDERS } from "./integration-risk-rules.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -326,21 +326,16 @@ export async function processIntegrationRun(
     if (RISK_PROVIDERS.includes(connection.provider)) {
       let security: SecurityCollection | null = null;
       try {
-        if (connection.provider === "google_workspace")
-          security = await collectGoogleSecurity(providerJson, credentials.access_token);
-        else if (connection.provider === "microsoft" && credentials.access_token)
+        if (connection.provider === "microsoft" && credentials.access_token)
           security = await collectMicrosoftSecurity(providerJson, credentials.access_token, async () =>
             (await microsoftAppToken(connection.settings?.tenant_id, "https://api.securitycenter.microsoft.com/.default")).access_token);
       } catch { security = null; }
       const clean = collection.warnings.length === 0;
       const sec = evaluateSecurity(security);
-      const capped = capFindings(
-        [...(clean ? evaluateRiskRules(collection.resources) : []), ...sec.findings],
-        [...(clean ? coveredRules(collection.resources) : []), ...sec.covered],
-      );
       checked(await db.rpc("integracao_registrar_riscos", {
         p_empresa: run.empresa_id, p_connection: connection.id, p_provider: connection.provider,
-        p_achados: capped.findings, p_cobertas: capped.covered,
+        p_achados: [...(clean ? evaluateRiskRules(collection.resources) : []), ...sec.findings],
+        p_cobertas: [...(clean ? coveredConfigRules(collection.resources) : []), ...sec.covered],
       }));
       if (security) {
         const fresh = await db.from("integration_connections").select("settings")

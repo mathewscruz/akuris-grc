@@ -7238,7 +7238,9 @@ export type Database = {
       }
       integracao_riscos_sugeridos: {
         Row: {
-          connection_id: string
+          alcance: Json
+          chave: string
+          connection_id: string | null
           corrigida_em: string | null
           created_at: string
           decidido_em: string | null
@@ -7246,19 +7248,26 @@ export type Database = {
           empresa_id: string
           estado: string
           evidencia: Json
+          fonte: string | null
           id: string
           impacto: number
           motivo_descarte: string | null
           primeira_deteccao: string
           probabilidade: number
           provider: string
+          recorrencias: number
           regra_id: string
+          relevancia: number
           risco_id: string | null
+          severidade_tecnica: string | null
+          suprimido_ate: string | null
           ultima_deteccao: string
           updated_at: string
         }
         Insert: {
-          connection_id: string
+          alcance?: Json
+          chave?: string
+          connection_id?: string | null
           corrigida_em?: string | null
           created_at?: string
           decidido_em?: string | null
@@ -7266,19 +7275,26 @@ export type Database = {
           empresa_id: string
           estado?: string
           evidencia?: Json
+          fonte?: string | null
           id?: string
           impacto: number
           motivo_descarte?: string | null
           primeira_deteccao?: string
           probabilidade: number
           provider: string
+          recorrencias?: number
           regra_id: string
+          relevancia?: number
           risco_id?: string | null
+          severidade_tecnica?: string | null
+          suprimido_ate?: string | null
           ultima_deteccao?: string
           updated_at?: string
         }
         Update: {
-          connection_id?: string
+          alcance?: Json
+          chave?: string
+          connection_id?: string | null
           corrigida_em?: string | null
           created_at?: string
           decidido_em?: string | null
@@ -7286,14 +7302,19 @@ export type Database = {
           empresa_id?: string
           estado?: string
           evidencia?: Json
+          fonte?: string | null
           id?: string
           impacto?: number
           motivo_descarte?: string | null
           primeira_deteccao?: string
           probabilidade?: number
           provider?: string
+          recorrencias?: number
           regra_id?: string
+          relevancia?: number
           risco_id?: string | null
+          severidade_tecnica?: string | null
+          suprimido_ate?: string | null
           ultima_deteccao?: string
           updated_at?: string
         }
@@ -13181,7 +13202,7 @@ export type Database = {
         }[]
       }
       descartar_risco_sugerido: {
-        Args: { p_id: string; p_motivo: string }
+        Args: { p_ate?: string; p_id: string; p_motivo: string }
         Returns: undefined
       }
       destinatario_do_aviso_ao_denunciante: {

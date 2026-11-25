@@ -11,12 +11,14 @@ import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { logger } from "@/lib/logger";
 
 type Sugestao = {
   id: string; provider: string; regra_id: string; estado: "aberta" | "aceita" | "descartada" | "corrigida";
   evidencia: { total?: number; itens?: string[] }; probabilidade: number; impacto: number;
   risco_id: string | null; motivo_descarte: string | null; ultima_deteccao: string; corrigida_em: string | null;
+  fonte: string | null; severidade_tecnica: string | null; recorrencias: number; suprimido_ate: string | null;
 };
 
 const LOGO: Record<string, { src: string; nome: string }> = {
@@ -41,6 +43,7 @@ export function RiscosSugeridos() {
   const navigate = useNavigate();
   const [aberta, setAberta] = useState<Sugestao | null>(null);
   const [motivo, setMotivo] = useState("");
+  const [ate, setAte] = useState("");
   const [salvando, setSalvando] = useState<"aceitar" | "descartar" | null>(null);
 
   const key = ["riscos-sugeridos", empresaId];
@@ -48,7 +51,7 @@ export function RiscosSugeridos() {
     queryKey: key, enabled: !!empresaId,
     queryFn: async () => {
       const { data, error } = await supabase.from("integracao_riscos_sugeridos" as never)
-        .select("id,provider,regra_id,estado,evidencia,probabilidade,impacto,risco_id,motivo_descarte,ultima_deteccao,corrigida_em")
+        .select("id,provider,regra_id,estado,evidencia,probabilidade,impacto,risco_id,motivo_descarte,ultima_deteccao,corrigida_em,fonte,severidade_tecnica,recorrencias,suprimido_ate")
         .eq("empresa_id", empresaId).order("ultima_deteccao", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Sugestao[];
@@ -73,7 +76,7 @@ export function RiscosSugeridos() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [t, locale]);
 
-  const fechar = () => { setAberta(null); setMotivo(""); };
+  const fechar = () => { setAberta(null); setMotivo(""); setAte(""); };
   const aceitar = async () => {
     if (!aberta) return;
     setSalvando("aceitar");
@@ -90,7 +93,7 @@ export function RiscosSugeridos() {
   const descartar = async () => {
     if (!aberta || !motivo.trim()) return;
     setSalvando("descartar");
-    const { error } = await supabase.rpc("descartar_risco_sugerido" as never, { p_id: aberta.id, p_motivo: motivo.trim() } as never);
+    const { error } = await supabase.rpc("descartar_risco_sugerido" as never, { p_id: aberta.id, p_motivo: motivo.trim(), p_ate: ate || null } as never);
     setSalvando(null);
     if (error) { logger.error("descartar_risco_sugerido", error); toast.error(t("riscosSugeridos.erro")); return; }
     toast.success(t("riscosSugeridos.descartado"));
@@ -126,6 +129,9 @@ export function RiscosSugeridos() {
               <StatusBadge tone={ESTADO_TONE[aberta.estado]}>{t(`riscosSugeridos.estados.${aberta.estado}`)}</StatusBadge>
               <StatusBadge mark="severity" tone={NIVEL_TONE[nivelSugerido(aberta.probabilidade, aberta.impacto)]}>{NIVEL_LABEL[nivelSugerido(aberta.probabilidade, aberta.impacto)]}</StatusBadge>
               <span className="text-muted-foreground">{t("riscosSugeridos.probImpacto", { p: aberta.probabilidade, i: aberta.impacto })}</span>
+              {aberta.fonte && <span className="text-muted-foreground">· {t("riscosSugeridos.fonte")}: {aberta.fonte}</span>}
+              {aberta.severidade_tecnica && <span className="text-muted-foreground">· {t("riscosSugeridos.severidadeTecnica")}: {t(`riscosSugeridos.severidades.${aberta.severidade_tecnica}`)}</span>}
+              {aberta.recorrencias > 0 && <span className="text-muted-foreground">· {t("riscosSugeridos.recorrencias", { n: aberta.recorrencias })}</span>}
             </div>
             {aberta.corrigida_em && <p className="text-success">{t("riscosSugeridos.corrigidoEm", { data: fmt(aberta.corrigida_em) })}</p>}
             <div>
@@ -138,6 +144,9 @@ export function RiscosSugeridos() {
               <div className="space-y-2">
                 <Label htmlFor="motivo-descarte">{t("riscosSugeridos.motivo")}</Label>
                 <Textarea id="motivo-descarte" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder={t("riscosSugeridos.motivoPh")} maxLength={1000} />
+                <Label htmlFor="ate-descarte">{t("riscosSugeridos.suprimirAte")}</Label>
+                <Input id="ate-descarte" type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-full" />
+                <p className="text-xs text-muted-foreground">{t("riscosSugeridos.suprimirAteDesc")}</p>
               </div>
             )}
           </div>
