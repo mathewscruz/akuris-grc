@@ -43,6 +43,8 @@ const db = () =>
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+import { safeReturnOrigin } from "./return-origin.ts";
+const LEGACY_CLIENT_PROVIDERS = ["microsoft", "microsoft365", "entra_id", "intune", "aws", "github", "sharepoint", "onedrive", "google_drive"];
 const appUrl = () =>
   Deno.env.get("INTEGRATIONS_APP_URL") || "https://akuris.pt";
 function checked(result: { error: any }) {
@@ -185,7 +187,7 @@ Deno.serve(async (req) => {
         .eq("empresa_id", tenant)
         .eq("updated_at", connection.data.updated_at);
     }
-    const target = new URL("/configuracoes", appUrl());
+    const target = new URL("/configuracoes", safeReturnOrigin(saved.return_origin) ?? appUrl());
     target.search = new URLSearchParams({
       tab: "integracoes",
       connection: saved.connection_id,
@@ -229,8 +231,14 @@ Deno.serve(async (req) => {
         .eq("empresa_id", empresa)
         .order("created_at", { ascending: false });
       checked(connections);
+      // Compatibility: an older published frontend does not know newer providers and
+      // would crash rendering them. Clients declare what they render; legacy clients
+      // (no declaration) get only the providers they shipped with.
+      const known: string[] = Array.isArray(body.client_providers)
+        ? body.client_providers.filter((p: unknown) => typeof p === "string").slice(0, 50)
+        : LEGACY_CLIENT_PROVIDERS;
       return json({
-        connections: connections.data,
+        connections: connections.data.filter((c: any) => known.includes(c.provider)),
         availability: Object.fromEntries(
           PROVIDERS.map((id) => [id, providerReady(id)]),
         ),
@@ -334,6 +342,7 @@ Deno.serve(async (req) => {
           user_id: ctx.userId,
           session_id: ctx.sessionId,
           verifier,
+          return_origin: safeReturnOrigin(body.return_origin),
         }),
       );
       return json({
@@ -354,7 +363,7 @@ Deno.serve(async (req) => {
       .single();
     if (found.error || !found.data)
       return json({ error: "connection_missing" }, 404);
-    const connection = found.data;
+    let connection = found.data;
     if (action === "download_evidence") {
       const run = await client
         .from("integration_runs")
@@ -502,19 +511,26 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
     if (action === "import_module") {
-      // User accepted importing this module's data: mark it and keep it in sync.
-      const mods: string[] = connection.settings.modules ?? [...(MODULES[connection.provider] || [])];
-      if (!MODULES[connection.provider] || !mods.includes(body.module))
+      // Explicit user click: one atomic, idempotent DB step marks the module imported,
+      // persists its scope ("all" unless already chosen) and, for Google users, creates or
+      // reuses this company's "Google Workspace – <domain>" system.
+      if (typeof body.module !== "string" || body.module.length > 40)
         return json({ error: "invalid_configuration" }, 400);
-      if (["usuarios", "entra"].includes(body.module) && !connection.settings.system_id)
-        return json({ error: "system_required" }, 409);
-      const imported = [...new Set([...(connection.settings.imported_modules ?? []), body.module])];
-      const periodic = connection.frequency === "manual" && (await schedulerReady(client));
-      checked(await client.from("integration_connections").update({
-        settings: { ...connection.settings, imported_modules: imported },
-        ...(periodic ? { frequency: "daily", next_run_at: new Date(Date.now() + 86400000).toISOString() } : {}),
-      }).eq("id", connection.id).eq("empresa_id", empresa));
-      connection.settings = { ...connection.settings, imported_modules: imported };
+      const imported = await client.rpc("integration_import_module", {
+        p_id: connection.id,
+        p_empresa: empresa,
+        p_module: body.module,
+        p_periodic: await schedulerReady(client),
+      });
+      if (imported.error) {
+        const known = ["system_required", "invalid_configuration", "connection_not_authorized"]
+          .find((k) => imported.error.message?.includes(k));
+        return json({ error: known ?? "storage_write_failed" }, known === "system_required" ? 409 : known ? 400 : 500);
+      }
+      const fresh = await client.from("integration_connections").select("*")
+        .eq("id", connection.id).eq("empresa_id", empresa).single();
+      checked(fresh);
+      connection = fresh.data;
     }
     if (action === "collect" || action === "import_module") {
       if (

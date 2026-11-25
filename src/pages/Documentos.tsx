@@ -1,4 +1,3 @@
-import { ImportarIntegracaoBadge } from '@/components/integracoes/ImportarIntegracaoBadge';
 import { csvRow } from '@/lib/csv-utils';
 import { paginationPages } from '@/lib/pagination';
 import { readAllPages } from '@/lib/read-all-pages';
@@ -508,7 +507,6 @@ export default function Documentos() {
           description={t('modules.documentos.description')}
           actions={
             <div className="flex items-center gap-3">
-            <ImportarIntegracaoBadge pagina="documentos" />
             <Button size="sm" onClick={() => setDocumentoDialog({ open: true })}>
               <IconAdd className="h-4 w-4 mr-2" />
               {t('documentos.lista.novoDocumento')}

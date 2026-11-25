@@ -17,11 +17,12 @@ const FONTES: Record<string, Fonte[]> = {
   acessos: [
     { provider: "google_workspace", module: "usuarios", logo: "/integrations/google-workspace.svg", nome: "Google Workspace" },
   ],
-  documentos: [
+  // Drive metadata becomes integration evidence in the Evidence Library, not Documentos.
+  evidencias: [
     { provider: "google_workspace", module: "drive", logo: "/integrations/google-workspace.svg", nome: "Google Drive" },
   ],
 };
-type Conn = { id: string; provider: string; settings: { modules?: string[]; imported_modules?: string[] } };
+type Conn = { id: string; provider: string; frequency?: string; settings: { modules?: string[]; imported_modules?: string[] } };
 
 /**
  * Shows each connected tool's logo on a module page. While its data has not
@@ -38,7 +39,7 @@ export function ImportarIntegracaoBadge({ pagina }: { pagina: keyof typeof FONTE
     queryFn: async () => {
       const { data } = await supabase
         .from("integration_connections")
-        .select("id, provider, settings")
+        .select("id, provider, frequency, settings")
         .eq("empresa_id", empresaId!)
         .in("provider", [...new Set(fontes.map((f) => f.provider))])
         .in("status", ["connected", "authorized", "partial"]);
@@ -97,8 +98,8 @@ function Badge({ fonte, conn, empresaId, pagina }: { fonte: Fonte; conn: Conn; e
   const label = ativo
     ? t("integracaoImport.importando", { fonte: fonte.nome, pct: String(pct) })
     : importado
-    ? t("integracaoImport.sincronizado", { fonte: fonte.nome })
-    : t("integracaoImport.disponivel", { fonte: fonte.nome });
+    ? t(conn.frequency && conn.frequency !== "manual" ? "integracaoImport.sincronizado" : "integracaoImport.importadoManual", { fonte: fonte.nome })
+    : t(fonte.module === "drive" ? "integracaoImport.disponivelDrive" : "integracaoImport.disponivel", { fonte: fonte.nome });
   async function importar() {
     if (importado || ativo) return;
     setBusy(true);

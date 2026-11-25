@@ -8,49 +8,58 @@ import {
   identityImportRow,
 } from "./integration-model.ts";
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
-import { ativoDoGoogle } from "./google-workspace.ts";
+import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
-async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], connectionId: string, tick: () => Promise<void> = async () => {}) {
+export async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], connectionId: string, tick: () => Promise<void> = async () => {}) {
   const rows = resources.map(ativoDoIntune).filter(Boolean) as any[];
   let novos = 0;
+  const cols = "id,atributos,tags,mesh_node_id,google_device_id";
   for (const a of rows) {
     await tick();
-    let atual = (
-      await db.from("ativos").select("id,atributos")
-        .eq("empresa_id", empresaId).eq("intune_device_id", a.intune_device_id).maybeSingle()
-    ).data;
+    let atual = must(await db.from("ativos").select(cols)
+      .eq("empresa_id", empresaId).eq("intune_device_id", a.intune_device_id).maybeSingle()).data;
+    let ambiguo = false;
     const serial = serialConfiavel(a.atributos.numero_serie);
     if (!atual && serial) {
-      atual = (
-        await db.from("ativos").select("id,atributos")
-          .eq("empresa_id", empresaId).is("intune_device_id", null)
-          .eq("atributos->>numero_serie", serial).limit(1).maybeSingle()
-      ).data;
+      // Link by serial only when exactly one asset matches.
+      const cand = must(await db.from("ativos").select(cols)
+        .eq("empresa_id", empresaId).is("intune_device_id", null)
+        .eq("atributos->>numero_serie", serial).limit(2)).data || [];
+      if (cand.length === 1) atual = cand[0];
+      else ambiguo = cand.length > 1;
     }
     if (atual) {
-      await db.from("ativos").update({
+      const prev = atual.atributos ?? {};
+      const own = (atual.tags ?? []).includes("descoberto-intune") && !atual.mesh_node_id && !atual.google_device_id;
+      const next: Record<string, unknown> = { ...prev, intune_nao_visto: false };
+      for (const [k, v] of Object.entries(a.atributos)) {
+        if (v == null) continue;
+        if (own || prev[k] == null || k.startsWith("intune_")) next[k] = v;
+      }
+      must(await db.from("ativos").update({
         intune_device_id: a.intune_device_id,
         integration_connection_id: connectionId,
-        versao: a.versao,
-        atributos: { ...(atual.atributos ?? {}), ...a.atributos, intune_nao_visto: false },
-      }).eq("id", atual.id).eq("empresa_id", empresaId);
+        ...(own ? { versao: a.versao } : {}),
+        atributos: next,
+      }).eq("id", atual.id).eq("empresa_id", empresaId));
     } else {
-      const ins = await db.from("ativos").insert({
-        ...a, empresa_id: empresaId, integration_connection_id: connectionId, status: "pendente", tags: ["descoberto-intune"],
-      });
-      if (!ins.error) novos++;
+      must(await db.from("ativos").insert({
+        ...a, atributos: { ...a.atributos, ...(ambiguo ? { intune_serial_ambiguo: true } : {}) },
+        empresa_id: empresaId, integration_connection_id: connectionId, status: "pendente", tags: ["descoberto-intune"],
+      }));
+      novos++;
     }
   }
   // Devices no longer in Intune are flagged, never deleted.
   const vistos = new Set(rows.map((a) => a.intune_device_id));
-  const { data: existentes } = await db.from("ativos").select("id,intune_device_id,atributos")
-    .eq("empresa_id", empresaId).not("intune_device_id", "is", null);
+  const { data: existentes } = must(await db.from("ativos").select("id,intune_device_id,atributos")
+    .eq("empresa_id", empresaId).not("intune_device_id", "is", null));
   for (const e of existentes || []) {
     if (!vistos.has(e.intune_device_id) && !e.atributos?.intune_nao_visto)
-      await db.from("ativos").update({ atributos: { ...(e.atributos ?? {}), intune_nao_visto: true } })
-        .eq("id", e.id).eq("empresa_id", empresaId);
+      must(await db.from("ativos").update({ atributos: { ...(e.atributos ?? {}), intune_nao_visto: true } })
+        .eq("id", e.id).eq("empresa_id", empresaId));
   }
   if (novos) {
     const { data: admins } = await db.from("profiles").select("user_id")
@@ -66,32 +75,50 @@ async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], co
   }
 }
 
-// Google devices: match by Google id, then by a trustworthy serial on an asset not yet
-// linked to Google. Existing MeshCentral/Intune/manual fields are never overwritten.
-async function syncGoogleAtivos(db: any, empresaId: string, resources: any[], connectionId: string, tick: () => Promise<void> = async () => {}) {
+// Google devices: match by Google id, then by a serial that matches exactly ONE asset not yet
+// linked to Google. Assets the integration created get Google-managed fields refreshed;
+// MeshCentral/Intune/manual assets only get empty fields filled. DB errors abort the run.
+const GOOGLE_MANAGED = ["numero_serie", "sistema_operacional", "modelo", "fabricante", "usuario", "google_origem", "google_ultimo_sync"];
+function must<T extends { error?: any }>(r: T): T {
+  if (r?.error) throw new ProviderError("storage_write_failed");
+  return r;
+}
+export async function syncGoogleAtivos(db: any, empresaId: string, resources: any[], connectionId: string, tick: () => Promise<void> = async () => {}) {
   const rows = resources.map(ativoDoGoogle).filter(Boolean) as any[];
   let novos = 0;
+  const cols = "id,atributos,tags,mesh_node_id,intune_device_id,google_connection_id";
   for (const a of rows) {
     await tick();
-    let atual = (await db.from("ativos").select("id,atributos")
+    let atual = must(await db.from("ativos").select(cols)
       .eq("empresa_id", empresaId).eq("google_device_id", a.google_device_id).maybeSingle()).data;
+    let ambiguo = false;
     const serial = serialConfiavel(a.atributos.numero_serie);
-    if (!atual && serial)
-      atual = (await db.from("ativos").select("id,atributos")
+    if (!atual && serial) {
+      const cand = must(await db.from("ativos").select(cols)
         .eq("empresa_id", empresaId).is("google_device_id", null)
-        .eq("atributos->>numero_serie", serial).limit(1).maybeSingle()).data;
+        .eq("atributos->>numero_serie", serial).limit(2)).data || [];
+      if (cand.length === 1) atual = cand[0];
+      else ambiguo = cand.length > 1;
+    }
     if (atual) {
       const prev = atual.atributos ?? {};
-      const fill = Object.fromEntries(Object.entries(a.atributos).filter(([k, v]) => v != null && (prev[k] == null || k.startsWith("google_"))));
-      await db.from("ativos").update({
-        google_device_id: a.google_device_id, google_connection_id: connectionId,
-        atributos: { ...prev, ...fill, google_nao_visto: false },
-      }).eq("id", atual.id).eq("empresa_id", empresaId);
+      const own = (atual.tags ?? []).includes("descoberto-google") && !atual.mesh_node_id && !atual.intune_device_id;
+      const next = { ...prev, google_nao_visto: false } as Record<string, unknown>;
+      for (const k of GOOGLE_MANAGED) {
+        const v = (a.atributos as any)[k];
+        if (v == null) continue;
+        if (own || prev[k] == null || k.startsWith("google_")) next[k] = v;
+      }
+      must(await db.from("ativos").update({
+        google_device_id: a.google_device_id, google_connection_id: connectionId, atributos: next,
+        ...(own ? { nome: a.nome, versao: a.versao } : {}),
+      }).eq("id", atual.id).eq("empresa_id", empresaId));
     } else {
-      const ins = await db.from("ativos").insert({
-        ...a, empresa_id: empresaId, google_connection_id: connectionId, status: "pendente", tags: ["descoberto-google"],
-      });
-      if (!ins.error) novos++;
+      must(await db.from("ativos").insert({
+        ...a, atributos: { ...a.atributos, ...(ambiguo ? { google_serial_ambiguo: true } : {}) },
+        empresa_id: empresaId, google_connection_id: connectionId, status: "pendente", tags: ["descoberto-google"],
+      }));
+      novos++;
     }
   }
   if (novos) {
@@ -157,9 +184,7 @@ export async function processIntegrationRun(
     const googleImported: string[] = connection.settings.imported_modules ?? [];
     if (connection.provider === "google_workspace") {
       // Module data only after the user imported it; per-module status stays visible.
-      selected = selected.filter((r) =>
-        r.kind === "document" ? googleImported.includes("drive")
-          : r.kind === "identity" ? googleImported.includes("usuarios") : false);
+      selected = googleSelected(collection.resources, connection.settings);
       const moduleStatus: Record<string, string> = {};
       for (const w of collection.warnings) {
         const m = /^module:([a-z]+):(.+)$/.exec(w);

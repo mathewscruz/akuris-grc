@@ -5,6 +5,8 @@ export const agenteInventario = {
     sincronizado: 'Sincronizado com {fonte} automaticamente.',
     iniciado: 'Importação do {fonte} iniciada. Os dados serão atualizados todos os dias.',
     importando: 'Importando do {fonte}… {pct}%',
+    importadoManual: 'Importado do {fonte}. A atualização automática ainda não está ativa; os dados mudam só quando você clicar em Coletar agora na integração.',
+    disponivelDrive: 'Metadados do {fonte} (nome, link, datas, versão) podem entrar na Biblioteca de evidências. O conteúdo dos arquivos não é copiado. Clique para importar.',
   }, agenteInventario: {
     menu: 'Agente de inventário', titulo: 'Agente de inventário Akuris',
     descricao: 'Instale o Akuris Agent nas máquinas da empresa. Elas aparecem em Ativos com hardware, sistema e programas, e são atualizadas de hora em hora.',
@@ -20,6 +22,8 @@ export const agenteInventario = {
     sincronizado: 'Automatically synced with {fonte}.',
     iniciado: '{fonte} import started. Data will refresh every day.',
     importando: 'Importing from {fonte}… {pct}%',
+    importadoManual: 'Imported from {fonte}. Automatic refresh is not active yet; data changes only when you click Collect now on the integration.',
+    disponivelDrive: '{fonte} metadata (name, link, dates, version) can go into the Evidence Library. File contents are not copied. Click to import.',
   }, agenteInventario: {
     menu: 'Inventory agent', titulo: 'Akuris inventory agent',
     descricao: 'Install the Akuris Agent on company machines. They appear in Assets with hardware, OS and software, refreshed every hour.',

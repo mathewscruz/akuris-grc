@@ -1,3 +1,4 @@
+import { ImportarIntegracaoBadge } from '@/components/integracoes/ImportarIntegracaoBadge';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { calcularScoreFramework, type RequisitoParaScore } from '@/lib/gap-score';
@@ -712,6 +713,7 @@ function GapAnalysisFrameworkDetailInner() {
                 )}
               </TabsContent>
               <TabsContent value="biblioteca">
+                <div className="mb-3 flex justify-end"><ImportarIntegracaoBadge pagina="evidencias" /></div>
                 <EvidenceLibraryHub />
               </TabsContent>
             </Tabs>

@@ -23,6 +23,7 @@ const WWW = "https://www.googleapis.com";
 export const GOOGLE_CLOUD_IDENTITY_STATUS = "delegation_required" as const;
 export const LOGIN_WINDOW_DAYS = 30;
 const MAX_PAGES = 40;
+export const MEMBERS_LIST_LIMIT = 500;
 
 /** Scopes granted on the token response must include every requested one. */
 export function missingScopes(granted: string | undefined): string[] {
@@ -35,7 +36,7 @@ export function customerChange(saved: unknown, discovered: string): "ok" | "chan
 }
 
 type Read = (url: string, token: string, origin: string) => Promise<any>;
-interface Paged { items: any[]; partial: boolean }
+interface Paged { items: any[]; partial: boolean; incomplete?: boolean }
 
 /** Follows pageToken within the same origin; stops at MAX_PAGES as partial. */
 export async function googlePages(
@@ -43,15 +44,18 @@ export async function googlePages(
 ): Promise<Paged> {
   const items: any[] = [];
   let next = "";
+  let incomplete = false;
   for (let page = 0; page < MAX_PAGES; page++) {
     const url = new URL(base, origin);
     url.search = new URLSearchParams({ ...params, ...(next ? { pageToken: next } : {}) }).toString();
     const data = await read(url.href, token, origin);
     items.push(...(data?.[key] || []));
+    // Drive reports incompleteSearch when some drives could not be searched.
+    if (data?.incompleteSearch === true) incomplete = true;
     next = data?.nextPageToken || "";
-    if (!next) return { items, partial: false };
+    if (!next) return { items, partial: incomplete, incomplete };
   }
-  return { items, partial: true };
+  return { items, partial: true, incomplete };
 }
 
 export function googleUserResource(u: any, roles: Map<string, string[]> | null, login: Map<string, LoginSummary> | null): CollectedResource {
@@ -211,14 +215,19 @@ export async function collectGoogleWorkspace(read: Read, token: string, customer
           } catch (e) {
             warnings.push(`module:usuarios:members_${code(e)}`);
           }
+          if (members.partial) warnings.push("module:usuarios:members_partial");
+          else if (members.items.length > MEMBERS_LIST_LIMIT) warnings.push("module:usuarios:members_list_limit");
           resources.push({
             externalId: `group:${g.id}`,
             kind: "identity",
             name: g.name || g.email,
             signals: {
               source: "google_workspace", type: "group", email: g.email ?? null,
-              members_count: members.partial ? null : members.items.length,
-              members: members.partial ? null : members.items.map((m: any) => m.email).filter(Boolean).slice(0, 500).join(", "),
+              // Count stays correct even when the stored list is truncated or partial.
+              members_count: !members.partial ? members.items.length
+                : (Number.isFinite(Number(g.directMembersCount)) ? Number(g.directMembersCount) : null),
+              members: members.partial ? null : members.items.map((m: any) => m.email).filter(Boolean).slice(0, MEMBERS_LIST_LIMIT).join(", "),
+              members_partial: members.partial || members.items.length > MEMBERS_LIST_LIMIT,
               privileged: null,
             },
           });
@@ -250,15 +259,16 @@ export async function collectGoogleWorkspace(read: Read, token: string, customer
       const r = await googlePages(read, token, WWW, "/drive/v3/files", {
         pageSize: "100", q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'",
         corpora: "allDrives", supportsAllDrives: "true", includeItemsFromAllDrives: "true",
-        fields: "nextPageToken,files(id,name,mimeType,createdTime,modifiedTime,version,webViewLink,size,md5Checksum,driveId)",
+        fields: "nextPageToken,incompleteSearch,files(id,name,mimeType,createdTime,modifiedTime,version,webViewLink,size,md5Checksum,driveId)",
       }, "files");
-      if (r.partial) warnings.push("module:drive:collection_limit");
+      if (r.incomplete) warnings.push("module:drive:incomplete_search");
+      else if (r.partial) warnings.push("module:drive:collection_limit");
       resources.push(...r.items.map(googleFileResource));
     } catch (e) {
       warnings.push(`module:drive:${code(e)}`);
     }
   }
-  return { resources, warnings };
+  return { resources, warnings: [...new Set(warnings)] };
 }
 
 /** Pure asset mapping for Gestão de Ativos. */
@@ -280,4 +290,23 @@ export function ativoDoGoogle(r: CollectedResource) {
       google_ultimo_sync: s.provider_last_sync ?? null,
     },
   };
+}
+
+/** Module a Google resource feeds, or null when it never feeds a module directly. */
+export function googleModuleOf(r: CollectedResource): GoogleModule | null {
+  return r.kind === "document" ? "drive" : r.kind === "identity" ? "usuarios" : r.kind === "device" ? "dispositivos" : null;
+}
+/**
+ * Resources allowed into Akuris modules: only explicitly imported modules, and within each
+ * module either "all" or the explicitly selected ids. Connecting alone selects nothing.
+ */
+export function googleSelected(resources: CollectedResource[], settings: { imported_modules?: string[]; module_scope?: Record<string, unknown> }) {
+  const imported = new Set(settings.imported_modules ?? []);
+  const scope = settings.module_scope ?? {};
+  return resources.filter((r) => {
+    const m = googleModuleOf(r);
+    if (!m || m === "dispositivos" || !imported.has(m)) return false;
+    const s = scope[m];
+    return s === "all" || (Array.isArray(s) && s.includes(r.externalId));
+  });
 }

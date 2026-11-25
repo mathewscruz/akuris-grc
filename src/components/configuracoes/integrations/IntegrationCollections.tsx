@@ -61,7 +61,7 @@ export function IntegrationCollections({ empresaId, extraCards, toolbar }: { emp
   // platform credentials exist and the server-side release switch is on.
   const probe = useQuery({
     queryKey: ["integration-collections", empresaId],
-    queryFn: () => integrationRequest<CollectionList>({ action: "list" }),
+    queryFn: () => integrationRequest<CollectionList>({ action: "list", client_providers: COLLECTION_PROVIDERS.map((p) => p.id) }),
     retry: false,
   });
   // Decide once: the catalog re-fetches the same query and must not bounce back.
@@ -156,7 +156,7 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
   const key = ["integration-collections", empresaId];
   const query = useQuery({
     queryKey: key,
-    queryFn: () => integrationRequest<CollectionList>({ action: "list" }),
+    queryFn: () => integrationRequest<CollectionList>({ action: "list", client_providers: COLLECTION_PROVIDERS.map((p) => p.id) }),
     retry: false,
   });
   const connections = query.data?.connections || [];
@@ -239,6 +239,9 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
           />
         </div>
       </div>
+      {query.data && query.data.scheduler_ready !== true && (
+        <p className="text-xs text-muted-foreground">{t("collectionHub.schedulerInactive")}</p>
+      )}
       {query.isPending ? (
         <div role="status" className="flex justify-center py-8"><AkurisPulse size={28} /></div>
       ) : (
@@ -333,6 +336,8 @@ function NewConnection({
       setAuthorization(
         await integrationRequest({
           action: "start",
+          // OAuth returns to this same Akuris (preview or site), validated by the server.
+          return_origin: window.location.origin,
           provider,
           name,
           account_id: account,
@@ -402,9 +407,9 @@ function NewConnection({
             <Button asChild>
               <a
                 href={authorization.authorize_url}
-                {...(authorization.aws
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
+                // New top-level tab: Google/Microsoft refuse to load inside the preview frame.
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 {t("collectionHub.authorizedLink")}
                 <IconExternalLink className="ml-2 h-4 w-4" />
@@ -546,7 +551,7 @@ function ConnectionManager({
       const result = await integrationRequest<{
         authorize_url?: string;
         url?: string;
-      }>({ action, connection_id: connection.id, ...extras });
+      }>({ action, connection_id: connection.id, ...(action === "start" ? { return_origin: window.location.origin } : {}), ...extras });
       if (result.authorize_url) setReconnectUrl(result.authorize_url);
       if (result.url) {
         // Signed URL includes Content-Disposition: attachment. A same-tab
@@ -1038,7 +1043,7 @@ function ConnectionManager({
               <Button asChild>
                 <a
                   href={reconnectUrl}
-                  target={connection.provider === "aws" ? "_blank" : undefined}
+                  target="_blank"
                   rel="noopener noreferrer"
                 >
                   {t("collectionHub.authorizedLink")}
@@ -1084,6 +1089,7 @@ function ConnectionManager({
 
 /** Per-module warning (e.g. "cloud_permission_missing") → simple actionable message. */
 function moduleStatusCode(raw: string): string {
+  if (["incomplete_search", "members_partial", "members_list_limit"].includes(raw)) return raw;
   if (/limit|partial/.test(raw)) return "collection_limit";
   if (/permission|403/.test(raw)) return "permission_missing";
   if (/authorization/.test(raw)) return "authorization_expired";

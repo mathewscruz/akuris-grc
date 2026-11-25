@@ -7409,6 +7409,7 @@ export type Database = {
         Row: {
           connection_id: string
           expires_at: string
+          return_origin: string | null
           session_id: string
           state_hash: string
           user_id: string
@@ -7417,6 +7418,7 @@ export type Database = {
         Insert: {
           connection_id: string
           expires_at?: string
+          return_origin?: string | null
           session_id: string
           state_hash: string
           user_id: string
@@ -7425,6 +7427,7 @@ export type Database = {
         Update: {
           connection_id?: string
           expires_at?: string
+          return_origin?: string | null
           session_id?: string
           state_hash?: string
           user_id?: string
@@ -13321,6 +13324,15 @@ export type Database = {
       integration_import_accounts: {
         Args: { p_attempt: number; p_rows: Json; p_run: string }
         Returns: number
+      }
+      integration_import_module: {
+        Args: {
+          p_empresa: string
+          p_id: string
+          p_module: string
+          p_periodic?: boolean
+        }
+        Returns: Json
       }
       integration_purge_module: {
         Args: {

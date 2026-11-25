@@ -3,6 +3,7 @@ export const integrationPlatform = {
     entidades: { sistema: "Sistema" },
     collectionHub: {
       btnReview: "Revisar",
+      schedulerInactive: "A atualização agendada ainda não está ativa: os dados das integrações só são atualizados quando você clica em Coletar agora.",
       btnFix: "Erro · Corrigir",
       conectadas: { titulo: "Conectadas", conectado: "Conectado", ultimoScan: "Último scan", recursos: "recursos encontrados", historico: "Últimos scans", nenhum: "Nenhum scan registrado", sucesso: "Concluído", falha: "Falhou" },
       tab: "Coleta de evidências",
@@ -188,6 +189,9 @@ export const integrationPlatform = {
         permission_missing:
           "A conta não concedeu uma permissão necessária. Revise o consentimento com seu administrador.",
         consent_revoked: "O administrador do tenant retirou a autorização do Akuris. Conecte de novo.",
+        incomplete_search: "O Google não conseguiu pesquisar todos os drives. A lista do Drive está incompleta.",
+        members_partial: "Alguns grupos têm membros que não puderam ser listados; a lista fica em branco e o total vem do Google.",
+        members_list_limit: "Grupos muito grandes: a lista guardada mostra só os primeiros 500 membros, mas o total está correto.",
         cloud_identity_pending: "Celulares e ChromeOS são coletados. Computadores do Cloud Identity estão indisponíveis: exigem uma credencial delegada que ainda não foi configurada.",
         scopes_missing: "Nem todas as permissões de leitura foram aceitas. Clique em Reautorizar e aceite todas.",
         organization_changed: "Essa conta é de outra organização Google. Reconecte com uma conta da mesma organização ou crie uma nova conexão.",
@@ -233,6 +237,7 @@ export const integrationPlatform = {
     entidades: { sistema: "System" },
     collectionHub: {
       btnReview: "Review",
+      schedulerInactive: "Scheduled refresh is not active yet: integration data is refreshed only when you click Collect now.",
       btnFix: "Error · Fix",
       conectadas: { titulo: "Connected", conectado: "Connected", ultimoScan: "Last scan", recursos: "resources found", historico: "Recent scans", nenhum: "No scans recorded", sucesso: "Completed", falha: "Failed" },
       tab: "Evidence collection",
@@ -414,6 +419,9 @@ export const integrationPlatform = {
         permission_missing:
           "A required permission was not granted. Review consent with your administrator.",
         consent_revoked: "Your tenant admin removed Akuris authorization. Connect again.",
+        incomplete_search: "Google could not search every drive. The Drive list is incomplete.",
+        members_partial: "Some groups have members that could not be listed; the list stays empty and the total comes from Google.",
+        members_list_limit: "Very large groups: the stored list shows only the first 500 members, but the total is correct.",
         cloud_identity_pending: "Mobile and ChromeOS devices are collected. Cloud Identity computers are unavailable: they need a delegated credential that has not been set up yet.",
         scopes_missing: "Not all read permissions were accepted. Click Reauthorize and accept them all.",
         organization_changed: "This account belongs to another Google organisation. Reconnect with an account from the same organisation or create a new connection.",
