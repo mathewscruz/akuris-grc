@@ -110,7 +110,7 @@ export function RiscosSugeridos() {
     { key: "regra_id", label: t("riscosSugeridos.colRisco"), sortable: true, render: (_v, s) => titulo(s), sortAccessor: titulo },
     { key: "provider", label: t("riscosSugeridos.colOrigem"), render: (_v, s) => (
       <span className="inline-flex items-center gap-2"><img src={logoOf(s.provider).src} alt="" className="h-4 w-4" />{logoOf(s.provider).nome}</span>) },
-    { key: "afetados", label: t("riscosSugeridos.colAfetados"), sortable: true, sortAccessor: (s) => s.evidencia?.total ?? 0, render: (_v, s) => s.evidencia?.total ?? "—" },
+    { key: "afetados", label: t("riscosSugeridos.colAfetados"), sortable: true, sortAccessor: (s) => s.evidencia?.total ?? 0, render: (_v, s) => s.evidencia?.total == null ? "—" : (s.evidencia as { parcial?: boolean }).parcial ? `≥ ${s.evidencia.total}` : s.evidencia.total },
     { key: "severidade_tecnica", label: t("riscosSugeridos.colSeveridade"), sortable: true, sortAccessor: (s) => SEV_ORDER[s.severidade_tecnica ?? ""] ?? 0, render: (_v, s) =>
       s.severidade_tecnica ? <StatusBadge mark="severity" tone={SEV_TONE[s.severidade_tecnica] ?? "neutral"}>{t(`riscosSugeridos.severidades.${s.severidade_tecnica}`)}</StatusBadge> : "—" },
     { key: "relevancia", label: t("riscosSugeridos.colRelevancia"), sortable: true, sortAccessor: (s) => s.relevancia ?? 0, render: (_v, s) => s.relevancia ?? 0 },
@@ -217,7 +217,7 @@ export function RiscosSugeridos() {
             <p className="text-xs text-muted-foreground">{t("riscosSugeridos.prioridadeNota")}</p>
             {aberta.corrigida_em && <p className="text-success">{t("riscosSugeridos.corrigidoEm", { data: fmt(aberta.corrigida_em) })}</p>}
             <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("riscosSugeridos.afetados", { n: aberta.evidencia?.total ?? 0 })}</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t((aberta.evidencia as { parcial?: boolean } | undefined)?.parcial ? "riscosSugeridos.afetadosMinimo" : "riscosSugeridos.afetados", { n: aberta.evidencia?.total ?? 0 })}</p>
               {aberta.evidencia?.refs?.length ? (
                 <ul className="space-y-1">{aberta.evidencia.refs.map((r) => (
                   <li key={r.id} className="truncate">{safeUrl(r.url)

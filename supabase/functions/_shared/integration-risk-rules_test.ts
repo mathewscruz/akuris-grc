@@ -396,3 +396,29 @@ Deno.test("google cloud name prefers hostname, then model/serial; id unchanged",
   const f = evaluateRiskRules([googleDeviceResource("cloud", { name: "devices/c9", hostname: "LAPTOP-FIN-07", serialNumber: "5CD123XYZ", encryptionState: "NOT_ENCRYPTED" })] as never, NOW)[0];
   assertEquals(f.evidencia.refs, [{ id: "device:google:cloud:devices/c9", nome: "LAPTOP-FIN-07 · SN 5CD123XYZ", url: null }]);
 });
+
+Deno.test("coleta parcial (collection_limit em documentos) mantém achados fortes de dispositivos sem resolver nada", async () => {
+  const dev = (id: string, o: Record<string, unknown>) => intuneDeviceResource({ id, deviceName: `PC-${id}`, complianceState: "compliant",
+    isEncrypted: true, lastSyncDateTime: NOW.toISOString(), ...o });
+  const resources = [
+    dev("a", { complianceState: "noncompliant" }), dev("b", { isEncrypted: false }),
+    dev("c", { complianceState: "unknown", isEncrypted: undefined }), dev("d", { complianceState: "noncompliant", isEncrypted: false }),
+    { externalId: "doc:1", kind: "document", name: "x.docx", signals: {} },
+  ];
+  const achados = evaluateRiskRules(resources as never, NOW, { partial: true });
+  const by = (r: string) => achados.find((f) => f.regra_id === r)!;
+  assertEquals(achados.map((f) => f.regra_id).sort(), ["dispositivos_nao_conformes", "dispositivos_sem_criptografia"]);
+  assertEquals(by("dispositivos_nao_conformes").evidencia.ids, ["device:a", "device:d"]);
+  assertEquals(by("dispositivos_sem_criptografia").evidencia.ids, ["device:b", "device:d"]);
+  assertEquals(achados.every((f) => (f.evidencia as Record<string, unknown>).parcial === true), true);
+  // Coverage stays partial.
+  const cov = riskCoverage("microsoft", resources as never, false, null);
+  assertEquals(cov.dispositivos_nao_conformes.status, "partial");
+  // An open suggestion whose old item vanished is never resolved by the warning (runner passes clean && configFixed).
+  const clean = false;
+  const open = [{ regra_id: "dispositivos_sem_criptografia", chave: "", estado: "aberta", ids: ["device:z"], prova_ids: ["device:z"], sem_prova: false },
+    { regra_id: "excesso_admins", chave: "", estado: "aberta", ids: ["u:1"], prova_ids: ["u:1"], sem_prova: false }];
+  const d = await decideLifecycle(open as never, achados, (r, id) => clean && configFixed(resources as never, r, id, NOW));
+  assertEquals(d.resolved, []);
+  assertEquals(d.findings.find((f) => f.regra_id === "dispositivos_sem_criptografia")!.evidencia.prova_ids, ["device:b", "device:d", "device:z"]);
+});

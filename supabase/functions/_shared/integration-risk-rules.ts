@@ -69,7 +69,11 @@ export function coveredConfigRules(resources: Res[]): string[] {
   return out;
 }
 
-export function evaluateRiskRules(resources: Res[], now = new Date()): RiskFinding[] {
+/**
+ * Positive findings only fire on explicit fields of each resource, so they stay valid on a partial collection;
+ * then counts are a known minimum (evidencia.parcial), never a full inventory. Resolution proof is separate and stays strict.
+ */
+export function evaluateRiskRules(resources: Res[], now = new Date(), opts: { partial?: boolean } = {}): RiskFinding[] {
   const users = activeUsers(resources);
   const admins = globalAdmins(users);
   const devices = resources.filter((r) => r.kind === "device");
@@ -80,7 +84,8 @@ export function evaluateRiskRules(resources: Res[], now = new Date()): RiskFindi
     pack("dispositivos_sem_criptografia", 3, 5, devices.filter((d) => d.signals.encrypted === false), { fonte: "coleta", severidade: "alta" }),
     pack("dispositivos_sem_sincronizar", 2, 3, devices.filter((d) => { const s = daysSince(d.signals.provider_last_sync, now); return s !== null && s > STALE_DEVICE_DAYS; }), { fonte: "coleta", severidade: "baixa" }),
   ];
-  return out.filter((x): x is RiskFinding => x !== null);
+  const found = out.filter((x): x is RiskFinding => x !== null);
+  return opts.partial ? found.map((f) => ({ ...f, evidencia: { ...f.evidencia, parcial: true } as RiskFinding["evidencia"] })) : found;
 }
 
 const ALERT_WEIGHT: Record<string, [number, number]> = {

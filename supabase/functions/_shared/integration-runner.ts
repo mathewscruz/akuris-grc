@@ -322,7 +322,7 @@ export async function processIntegrationRun(
         size: new TextEncoder().encode(snapshot).length,
       };
     }
-    // Risks: configuration rules only over a warning-free collection; security sources each report their own status.
+    // Risks: configuration findings fire on explicit fields even when partial (minimum counts); resolution only on a clean collection; security sources each report their own status.
     // A Microsoft connection without a consented tenant is never treated as risk coverage.
     if (RISK_PROVIDERS.includes(connection.provider) && !(connection.provider === "microsoft" && !connection.settings?.tenant_id)) {
       let security: SecurityCollection | null = null;
@@ -333,7 +333,7 @@ export async function processIntegrationRun(
       } catch { security = null; }
       const clean = collection.warnings.length === 0;
       const sec = evaluateSecurity(security);
-      const achados = [...(clean ? evaluateRiskRules(collection.resources) : []), ...sec.findings];
+      const achados = [...evaluateRiskRules(collection.resources, new Date(), { partial: !clean }), ...sec.findings];
       // Read coverage (UI) never authorises a lifecycle change: resolve only rules whose previously affected ids are proven fixed.
       const abertas = await db.from("integracao_riscos_sugeridos").select("regra_id,chave,estado,evidencia")
         .eq("empresa_id", run.empresa_id).eq("connection_id", connection.id).in("estado", ["aberta", "aceita", "descartada"]);
