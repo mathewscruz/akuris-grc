@@ -9,13 +9,11 @@ export type RiskFinding = {
   evidencia: { total: number; itens: string[] };
 };
 
-export const INACTIVE_DAYS = 90;
 export const MAX_ADMINS = 4;
 export const STALE_DEVICE_DAYS = 30;
 const SAMPLE = 20;
 const WINDOW_DAYS = 30;
 
-const ids = (r: Res[]) => r.map((x) => String(x.signals.email ?? x.name ?? x.signals.serial_number ?? x.signals.target ?? x.signals.id ?? "").trim()).filter(Boolean);
 const uniq = (v: string[]) => [...new Set(v)];
 const pack = (regra_id: string, p: number, i: number, itens: (string | Res)[], opts: Partial<RiskFinding> = {}): RiskFinding | null => {
   const list = itens.map((x) => typeof x === "string" ? x
@@ -29,46 +27,57 @@ const pack = (regra_id: string, p: number, i: number, itens: (string | Res)[], o
 /** Users that are usable today: enabled, not suspended, not archived. */
 const activeUsers = (r: Res[]) => r.filter((x) => x.kind === "identity" && x.signals.type !== "group"
   && x.signals.enabled !== false && x.signals.suspended !== true && x.signals.archived !== true);
-const adminsOf = (u: Res[]) => u.filter((x) => x.signals.privileged === true || x.signals.super_admin === true);
-/** True only when the provider states a second factor is registered; unknown (null) is never "no MFA". */
-const noMfa = (u: Res) => u.signals.mfa_registered === false && u.signals.mfa_enforced !== true;
+/** Only global/super administrators; any other privileged role is not counted as "admin". */
+const globalAdmins = (u: Res[]) => u.filter((x) => x.signals.super_admin === true);
+/** MFA not registered (enrolment). Not enforced is a different fact and is never reported as this. */
+const mfaNotRegistered = (u: Res) => u.signals.mfa_registered === false;
 const daysSince = (v: unknown, now: Date) => typeof v === "string" && !Number.isNaN(Date.parse(v))
   ? (now.getTime() - Date.parse(v)) / 86400000 : null;
+/** Intune complianceState as delivered by the collector ("noncompliant"); unknown/other states never fire. */
+const NONCOMPLIANT = new Set(["noncompliant"]);
+const KNOWN_COMPLIANCE = new Set(["compliant", "noncompliant", "ingraceperiod", "conflict", "error"]);
+const compliance = (d: Res) => String(d.signals.compliance ?? "").toLowerCase();
 
-const CONFIG_RULES = [
-  "admin_sem_mfa", "usuarios_sem_mfa", "excesso_admins", "contas_inativas",
-  "dispositivos_nao_conformes", "dispositivos_sem_criptografia", "dispositivos_sem_sincronizar",
-];
+/**
+ * First automatic version: strong findings only. Generalist checks (all users without MFA, inactive
+ * accounts, login failures) stay off until triage; technical priority never overrides the company matrix.
+ */
+export const ACTIVE_CONFIG_RULES = [
+  "admin_sem_mfa", "excesso_admins", "dispositivos_nao_conformes", "dispositivos_sem_criptografia", "dispositivos_sem_sincronizar",
+] as const;
 
-/** A configuration rule is covered only when the field it needs was really collected for this tenant. */
+const known = (v: unknown) => v !== undefined && v !== null;
+/** True only when every item has the field: one unknown value means the rule was not fully evaluated. */
+const complete = (xs: Res[], ok: (x: Res) => boolean) => xs.length > 0 && xs.every(ok);
+
+/**
+ * Coverage per rule: granted only when every relevant item carries a known value for the exact field
+ * the rule reads. Unknown fields, absent modules or empty populations keep earlier suggestions open.
+ */
 export function coveredConfigRules(resources: Res[]): string[] {
   const users = activeUsers(resources);
+  const admins = globalAdmins(users);
   const devices = resources.filter((r) => r.kind === "device");
-  const has = (xs: Res[], k: string) => xs.some((x) => x.signals[k] !== undefined && x.signals[k] !== null);
-  return [
-    ...(has(users, "mfa_registered") ? ["admin_sem_mfa", "usuarios_sem_mfa"] : []),
-    ...(has(users, "privileged") || has(users, "super_admin") ? ["excesso_admins"] : []),
-    ...(has(users, "last_login_at") ? ["contas_inativas"] : []),
-    ...(has(devices, "compliant") || has(devices, "compliance") ? ["dispositivos_nao_conformes"] : []),
-    ...(has(devices, "encrypted") ? ["dispositivos_sem_criptografia"] : []),
-    ...(has(devices, "lastCheckinDays") || has(devices, "provider_last_sync") ? ["dispositivos_sem_sincronizar"] : []),
-  ].filter((r) => CONFIG_RULES.includes(r));
+  const out: string[] = [];
+  if (complete(users, (u) => known(u.signals.super_admin)) && complete(admins, (u) => known(u.signals.mfa_registered))) out.push("admin_sem_mfa");
+  if (complete(users, (u) => known(u.signals.super_admin))) out.push("excesso_admins");
+  if (complete(devices, (d) => KNOWN_COMPLIANCE.has(compliance(d)))) out.push("dispositivos_nao_conformes");
+  if (complete(devices, (d) => typeof d.signals.encrypted === "boolean")) out.push("dispositivos_sem_criptografia");
+  if (complete(devices, (d) => daysSince(d.signals.provider_last_sync, new Date(0)) !== null)) out.push("dispositivos_sem_sincronizar");
+  return out;
 }
 
 export function evaluateRiskRules(resources: Res[], now = new Date()): RiskFinding[] {
   const users = activeUsers(resources);
-  const admins = adminsOf(users);
+  const admins = globalAdmins(users);
   const devices = resources.filter((r) => r.kind === "device");
-  const stale = (d: Res) => d.signals.lastCheckinDays !== undefined && d.signals.lastCheckinDays !== null
-    ? (d.signals.lastCheckinDays as number) : daysSince(d.signals.provider_last_sync, now);
+  const name = (d: Res) => String(d.name ?? d.signals.serial_number ?? "");
   const out: (RiskFinding | null)[] = [
-    pack("admin_sem_mfa", 4, 5, admins.filter(noMfa)),
-    pack("usuarios_sem_mfa", 4, 4, users.filter((u) => !admins.includes(u) && noMfa(u))),
-    admins.length > MAX_ADMINS ? pack("excesso_admins", 3, 4, admins) : null,
-    pack("contas_inativas", 3, 3, users.filter((u) => { const d = daysSince(u.signals.last_login_at, now); return d !== null && d > INACTIVE_DAYS; })),
-    pack("dispositivos_nao_conformes", 3, 4, devices.filter((d) => d.signals.compliant === false || d.signals.compliance === "non_compliant").map((d) => String(d.name ?? d.signals.serial_number ?? ""))),
-    pack("dispositivos_sem_criptografia", 3, 5, devices.filter((d) => d.signals.encrypted === false).map((d) => String(d.name ?? d.signals.serial_number ?? ""))),
-    pack("dispositivos_sem_sincronizar", 2, 3, devices.filter((d) => { const s = stale(d); return s !== null && s > STALE_DEVICE_DAYS; }).map((d) => String(d.name ?? ""))),
+    pack("admin_sem_mfa", 4, 5, admins.filter(mfaNotRegistered), { fonte: "coleta", severidade: "alta" }),
+    admins.length > MAX_ADMINS ? pack("excesso_admins", 3, 4, admins, { fonte: "coleta", severidade: "media" }) : null,
+    pack("dispositivos_nao_conformes", 3, 4, devices.filter((d) => NONCOMPLIANT.has(compliance(d))).map(name), { fonte: "coleta", severidade: "media" }),
+    pack("dispositivos_sem_criptografia", 3, 5, devices.filter((d) => d.signals.encrypted === false).map(name), { fonte: "coleta", severidade: "alta" }),
+    pack("dispositivos_sem_sincronizar", 2, 3, devices.filter((d) => { const s = daysSince(d.signals.provider_last_sync, now); return s !== null && s > STALE_DEVICE_DAYS; }).map(name), { fonte: "coleta", severidade: "baixa" }),
   ];
   return out.filter((x): x is RiskFinding => x !== null);
 }

@@ -233,22 +233,7 @@ export async function collectProvider(
             warnings,
           );
           resources.push(
-            ...devices.map((device) => ({
-              externalId: `device:${device.id}`,
-              kind: "device" as const,
-              name: device.deviceName || device.id,
-              signals: {
-                compliance: device.complianceState ?? "unknown",
-                os: device.operatingSystem ?? null,
-                version: device.osVersion ?? null,
-                serial_number: device.serialNumber ?? null,
-                owner_email: device.userPrincipalName ?? null,
-                provider_last_sync: device.lastSyncDateTime ?? null,
-                manufacturer: device.manufacturer ?? null,
-                model: device.model ?? null,
-                encrypted: device.isEncrypted ?? null,
-              },
-            })),
+            ...devices.map(intuneDeviceResource),
           );
         } catch (error) {
           if (
@@ -589,4 +574,25 @@ export async function collectCloudIdentity(
     out.warnings.push(`cloud_identity:${error}`);
     return { status: "error", error };
   }
+}
+
+/** Intune managedDevice → collected resource; shared by the collector and the risk-rule tests. */
+// deno-lint-ignore no-explicit-any
+export function intuneDeviceResource(device: any) {
+  return {
+    externalId: `device:${device.id}`,
+    kind: "device" as const,
+    name: device.deviceName || device.id,
+    signals: {
+      compliance: device.complianceState ?? "unknown",
+      os: device.operatingSystem ?? null,
+      version: device.osVersion ?? null,
+      serial_number: device.serialNumber ?? null,
+      owner_email: device.userPrincipalName ?? null,
+      provider_last_sync: device.lastSyncDateTime ?? null,
+      manufacturer: device.manufacturer ?? null,
+      model: device.model ?? null,
+      encrypted: device.isEncrypted ?? null,
+    },
+  };
 }

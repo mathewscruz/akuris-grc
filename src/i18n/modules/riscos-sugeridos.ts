@@ -1,8 +1,8 @@
 /** Riscos sugeridos pelas integrações (Google Workspace / Microsoft). */
 const regrasPt = {
-  admin_sem_mfa: { titulo: "Administradores sem verificação em duas etapas", descricao: "Contas com privilégios de administrador não têm segundo fator registrado. Um roubo de senha dá controle total do ambiente." },
+  admin_sem_mfa: { titulo: "Superadministradores sem MFA cadastrado", descricao: "Contas de administrador global não têm segundo fator cadastrado (cadastro, não exigência). Um roubo de senha dá controle total do ambiente." },
   usuarios_sem_mfa: { titulo: "Usuários sem verificação em duas etapas", descricao: "Contas ativas sem segundo fator ficam expostas a phishing e reutilização de senha." },
-  excesso_admins: { titulo: "Excesso de administradores", descricao: "Há mais administradores do que o recomendado (até 4), aumentando a superfície de ataque e o risco de erro." },
+  excesso_admins: { titulo: "Excesso de administradores globais", descricao: "Há mais administradores globais do que o recomendado (até 4), aumentando a superfície de ataque e o risco de erro." },
   contas_inativas: { titulo: "Contas ativas sem uso há mais de 90 dias", descricao: "Contas sem login recente continuam habilitadas e podem ser usadas sem que ninguém perceba." },
   dispositivos_nao_conformes: { titulo: "Dispositivos fora de conformidade", descricao: "Dispositivos gerenciados que não cumprem as políticas de conformidade da organização." },
   dispositivos_sem_criptografia: { titulo: "Dispositivos sem criptografia de disco", descricao: "A perda ou roubo destes dispositivos expõe os dados armazenados." },
@@ -21,9 +21,9 @@ const regrasPt = {
   recomendacoes_defender: { titulo: "Recomendações do Microsoft Defender for Endpoint", descricao: "Recomendações ativas de alta relevância: exploração pública, dispositivos críticos expostos ou severidade alta (entre parênteses, quantos dispositivos)." },
 };
 const regrasEn = {
-  admin_sem_mfa: { titulo: "Administrators without two-step verification", descricao: "Accounts with administrator privileges have no second factor registered. A stolen password gives full control of the environment." },
+  admin_sem_mfa: { titulo: "Super administrators without MFA enrolled", descricao: "Global administrator accounts have no second factor enrolled (enrolment, not enforcement). A stolen password gives full control of the environment." },
   usuarios_sem_mfa: { titulo: "Users without two-step verification", descricao: "Active accounts without a second factor are exposed to phishing and password reuse." },
-  excesso_admins: { titulo: "Too many administrators", descricao: "There are more administrators than recommended (up to 4), increasing attack surface and error risk." },
+  excesso_admins: { titulo: "Too many global administrators", descricao: "There are more global administrators than recommended (up to 4), increasing attack surface and error risk." },
   contas_inativas: { titulo: "Active accounts unused for over 90 days", descricao: "Accounts with no recent sign-in remain enabled and could be misused unnoticed." },
   dispositivos_nao_conformes: { titulo: "Non-compliant devices", descricao: "Managed devices that do not meet the organisation's compliance policies." },
   dispositivos_sem_criptografia: { titulo: "Devices without disk encryption", descricao: "Loss or theft of these devices exposes stored data." },
