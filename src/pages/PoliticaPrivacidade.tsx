@@ -177,19 +177,6 @@ const PoliticaPrivacidade = () => {
                 ))}
               </ul>
               <p className="leading-relaxed mt-4">{p("s10p2")}</p>
-              <p className="leading-relaxed mt-4">
-                {p("s10p3a")}
-                <a
-                  href="https://lovable.dev/privacy"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="site-inline-link"
-                >
-                  {p("s10p3Link")}
-                </a>
-                {p("s10p3b")}
-              </p>
-              <p className="leading-relaxed mt-4">{p("s10p4")}</p>
             </section>
 
             <section>
