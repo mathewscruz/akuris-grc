@@ -58,8 +58,12 @@ export function GoogleCloudIdentityCredential({ connection, onChange, onReauthor
       <div className="flex flex-wrap gap-2">
         {status === "reauthorization_required" || !connection.settings.admin_identity?.email ? (
           <Button size="sm" onClick={onReauthorize}>{k("reauthorize")}</Button>
-        ) : status !== "unavailable" && (
-          <Button size="sm" variant="outline" loading={busy} onClick={() => void verify()}>{k("verify")}</Button>
+        ) : (
+          <>
+            {/* Verify re-evaluates the current platform configuration, so a stored "unavailable" never traps the user. */}
+            <Button size="sm" variant="outline" loading={busy} onClick={() => void verify()}>{k("verify")}</Button>
+            <Button size="sm" variant="ghost" onClick={onReauthorize}>{k("reauthorize")}</Button>
+          </>
         )}
       </div>
     </section>

@@ -24,19 +24,27 @@ describe("Google computers status (no upload)", () => {
   it("old connection: unavailable + no admin identity still offers re-authorise", () => {
     const { container } = show({ cloud_identity: { status: "unavailable" } });
     expect(screen.getByRole("button", { name: "Authorise again" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Check authorisation" })).toBeNull();
     expect(container.querySelector('input[type="file"]')).toBeNull();
   });
-  it("delegation pending with validated admin: guidance + check button, no re-authorise", () => {
+  it("unavailable stored + validated admin: check and maintenance re-authorise, no upload", () => {
+    const { container } = show({ cloud_identity: { status: "unavailable" }, admin_identity: admin });
+    expect(screen.getByRole("button", { name: "Check authorisation" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Authorise again" })).toBeTruthy();
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+  });
+  it("delegation pending with validated admin: guidance + check button + maintenance re-authorise", () => {
     const { container } = show({ cloud_identity: { status: "delegation_pending" }, admin_identity: admin });
     expect(screen.getByRole("button", { name: "Check authorisation" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Authorise again" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Authorise again" })).toBeTruthy();
     expect(screen.getByText("110121051822981322395")).toBeTruthy();
     expect(container.querySelector('input[type="file"]')).toBeNull();
   });
-  it("active: shows count, no re-authorise, no upload", () => {
+  it("active: shows count, check + maintenance re-authorise, no upload", () => {
     const { container } = show({ cloud_identity: { status: "active", count: 6 }, admin_identity: admin });
     expect(screen.getByText(/6 computers/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Authorise again" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Check authorisation" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Authorise again" })).toBeTruthy();
     expect(container.querySelector('input[type="file"]')).toBeNull();
   });
 });
