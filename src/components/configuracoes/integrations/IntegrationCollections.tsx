@@ -1240,7 +1240,10 @@ function ConnectionActions({ connection, state, reload, extra }: {
   // Old Google connections lack the verified admin identity needed for computers: offer re-authorisation, keeping data.
   // Maintenance re-authorisation: offered whenever no validated admin identity exists, whatever the computers
   // capability says (e.g. "unavailable" while the platform key is missing); never forces error/disconnect/purge.
-  const needsReauth = connection.provider === "google_workspace" && state !== "error" && !connection.settings.admin_identity?.email;
+  const securityNeedsConsent = Object.values(((connection.settings as { security_status?: Record<string, string> }).security_status ?? {})).includes("permission_missing");
+  const needsReauth = state !== "error" && (
+    (connection.provider === "google_workspace" && (!connection.settings.admin_identity?.email || securityNeedsConsent)) ||
+    (connection.provider === "microsoft" && securityNeedsConsent));
   async function openConfirm() {
     setConfirm(true);
     if (!unified) return;

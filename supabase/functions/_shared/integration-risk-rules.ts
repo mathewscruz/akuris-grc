@@ -1,3 +1,4 @@
+import { ALERT_CATEGORIES, type SecurityCollection } from "./integration-security.ts";
 // Pure risk rules over collected resources. Missing data (null/undefined) never fires a rule.
 type Res = { kind: string; name?: string; signals: Record<string, unknown> };
 export type RiskFinding = { regra_id: string; probabilidade: number; impacto: number; evidencia: { total: number; itens: string[] } };
@@ -41,6 +42,43 @@ export function coveredRules(resources: Res[]): string[] {
     ...(resources.some((r) => r.kind === "identity") ? USER_RULES : []),
     ...(resources.some((r) => r.kind === "device") ? DEVICE_RULES : []),
   ];
+}
+
+export const MAX_FINDINGS = 10;
+const ALERT_WEIGHT: Record<string, [number, number]> = {
+  ransomware: [5, 5], conta_comprometida: [4, 5], malware: [4, 5], vazamento_dados: [4, 5], movimento_lateral: [4, 5],
+  phishing: [4, 4], dispositivo: [3, 4], configuracao: [3, 4], outros: [3, 3],
+};
+const ALERT_RULES = ALERT_CATEGORIES.map((c) => `alerta_${c}`);
+const SOURCE_RULES: Record<string, string[]> = {
+  ms_alerts: ALERT_RULES, google_alerts: ALERT_RULES,
+  ms_risky_users: ["usuarios_alto_risco"], ms_secure_score: ["secure_score_recomendacoes"], ms_vulns: ["vulnerabilidades_criticas"],
+};
+const pack = (regra_id: string, p: number, i: number, itens: string[], total = itens.length): RiskFinding | null =>
+  total ? { regra_id, probabilidade: p, impacto: i, evidencia: { total, itens: [...new Set(itens)].slice(0, SAMPLE) } } : null;
+
+/** Grouped, high-severity-only findings from security sources (one finding per theme, never per alert). */
+export function evaluateSecurity(sec: SecurityCollection | null): { findings: RiskFinding[]; covered: string[] } {
+  if (!sec) return { findings: [], covered: [] };
+  const ok = Object.entries(sec.status).filter(([, v]) => v === "ok").map(([k]) => k);
+  const findings: (RiskFinding | null)[] = [];
+  for (const c of ALERT_CATEGORIES) {
+    const hits = sec.signals.filter((s) => (s.source === "ms_alerts" || s.source === "google_alerts") && s.category === c);
+    findings.push(pack(`alerta_${c}`, ...ALERT_WEIGHT[c], hits.map((h) => h.target), new Set(hits.map((h) => h.target)).size));
+  }
+  findings.push(pack("usuarios_alto_risco", 4, 5, sec.signals.filter((s) => s.source === "ms_risky_users").map((s) => s.target)));
+  const score = sec.signals.filter((s) => s.source === "ms_secure_score");
+  findings.push(pack("secure_score_recomendacoes", 3, 4, score.map((s) => s.target)));
+  const vulns = sec.signals.filter((s) => s.source === "ms_vulns") as { target: string; machines: number }[];
+  findings.push(pack("vulnerabilidades_criticas", 4, 5, vulns.map((v) => `${v.target} (${v.machines})`)));
+  return { findings: findings.filter((f): f is RiskFinding => !!f), covered: [...new Set(ok.flatMap((k) => SOURCE_RULES[k] ?? []))] };
+}
+
+/** Keeps only the most relevant findings; rules cut by the cap are removed from coverage so they are never marked fixed. */
+export function capFindings(findings: RiskFinding[], covered: string[], max = MAX_FINDINGS) {
+  const sorted = [...findings].sort((a, b) => b.probabilidade * b.impacto - a.probabilidade * a.impacto || b.evidencia.total - a.evidencia.total);
+  const kept = sorted.slice(0, max), cut = new Set(sorted.slice(max).map((f) => f.regra_id));
+  return { findings: kept, covered: covered.filter((r) => !cut.has(r)) };
 }
 
 export const RISK_PROVIDERS = ["google_workspace", "microsoft", "microsoft365", "entra_id", "intune"];

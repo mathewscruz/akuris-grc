@@ -25,3 +25,33 @@ Deno.test("devices: non compliant, unencrypted, stale", () => {
     ["dispositivos_nao_conformes", "dispositivos_sem_criptografia", "dispositivos_sem_sincronizar"]);
   assertEquals(r([{ kind: "device", signals: { compliance: "unknown" } }]), []);
 });
+import { capFindings, evaluateSecurity } from "./integration-risk-rules.ts";
+import { googleAlertCategory, msAlertCategory } from "./integration-security.ts";
+
+Deno.test("alerts are grouped by theme, one finding per category", () => {
+  const sec = { status: { ms_alerts: "ok" as const }, signals: [
+    { source: "ms_alerts" as const, severity: "high" as const, category: "malware" as const, target: "pc1" },
+    { source: "ms_alerts" as const, severity: "high" as const, category: "malware" as const, target: "pc2" },
+    { source: "ms_alerts" as const, severity: "high" as const, category: "malware" as const, target: "pc1" },
+  ] };
+  const r = evaluateSecurity(sec);
+  assertEquals(r.findings.map((f) => [f.regra_id, f.evidencia.total]), [["alerta_malware", 2]]);
+  assertEquals(r.covered.includes("alerta_ransomware"), true);
+});
+Deno.test("unlicensed source covers nothing and finds nothing", () => {
+  const r = evaluateSecurity({ status: { ms_vulns: "permission_missing", ms_risky_users: "unavailable" }, signals: [] });
+  assertEquals(r, { findings: [], covered: [] });
+});
+Deno.test("cap keeps the 10 most relevant and uncovers the rest", () => {
+  const f = Array.from({ length: 12 }, (_, i) => ({ regra_id: `r${i}`, probabilidade: i < 2 ? 1 : 5, impacto: 5, evidencia: { total: 1, itens: [] } }));
+  const r = capFindings(f, f.map((x) => x.regra_id));
+  assertEquals(r.findings.length, 10);
+  assertEquals(r.covered.includes("r0") || r.covered.includes("r1"), false);
+});
+Deno.test("category mapping", () => {
+  assertEquals(msAlertCategory("Ransomware", "x"), "ransomware");
+  assertEquals(msAlertCategory("InitialAccess", "Phishing email delivered"), "phishing");
+  assertEquals(googleAlertCategory("Suspicious login"), "conta_comprometida");
+  assertEquals(googleAlertCategory("Government-backed attack"), "conta_comprometida");
+  assertEquals(googleAlertCategory("DLP rule triggered"), "vazamento_dados");
+});

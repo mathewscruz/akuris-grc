@@ -1,5 +1,6 @@
-import { collectProvider, ProviderError } from "./integration-providers.ts";
-import { connectionCredentials, digest } from "./integration-oauth.ts";
+import { collectProvider, ProviderError, providerJson } from "./integration-providers.ts";
+import { collectGoogleSecurity, collectMicrosoftSecurity, type SecurityCollection } from "./integration-security.ts";
+import { connectionCredentials, digest, microsoftAppToken } from "./integration-oauth.ts";
 import { integrationCollectionsEnabled } from "./integration-release.ts";
 import {
   evaluateResource,
@@ -10,7 +11,7 @@ import {
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
 import { platformServiceAccount } from "./google-delegated.ts";
-import { coveredRules, evaluateRiskRules, RISK_PROVIDERS } from "./integration-risk-rules.ts";
+import { capFindings, coveredRules, evaluateRiskRules, evaluateSecurity, RISK_PROVIDERS } from "./integration-risk-rules.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -321,13 +322,34 @@ export async function processIntegrationRun(
         size: new TextEncoder().encode(snapshot).length,
       };
     }
-    // Configuration risks: only after a successful collection, over the full (unfiltered) result.
-    if (RISK_PROVIDERS.includes(connection.provider) && collection.warnings.length === 0) {
+    // Risks: configuration rules only over a warning-free collection; security sources each report their own status.
+    if (RISK_PROVIDERS.includes(connection.provider)) {
+      let security: SecurityCollection | null = null;
+      try {
+        if (connection.provider === "google_workspace")
+          security = await collectGoogleSecurity(providerJson, credentials.access_token);
+        else if (connection.provider === "microsoft" && credentials.access_token)
+          security = await collectMicrosoftSecurity(providerJson, credentials.access_token, async () =>
+            (await microsoftAppToken(connection.settings?.tenant_id, "https://api.securitycenter.microsoft.com/.default")).access_token);
+      } catch { security = null; }
+      const clean = collection.warnings.length === 0;
+      const sec = evaluateSecurity(security);
+      const capped = capFindings(
+        [...(clean ? evaluateRiskRules(collection.resources) : []), ...sec.findings],
+        [...(clean ? coveredRules(collection.resources) : []), ...sec.covered],
+      );
       checked(await db.rpc("integracao_registrar_riscos", {
         p_empresa: run.empresa_id, p_connection: connection.id, p_provider: connection.provider,
-        p_achados: evaluateRiskRules(collection.resources),
-        p_cobertas: coveredRules(collection.resources),
+        p_achados: capped.findings, p_cobertas: capped.covered,
       }));
+      if (security) {
+        const fresh = await db.from("integration_connections").select("settings")
+          .eq("id", connection.id).eq("empresa_id", run.empresa_id).single();
+        checked(fresh);
+        checked(await db.from("integration_connections")
+          .update({ settings: { ...fresh.data.settings, security_status: security.status, security_status_at: new Date().toISOString() } })
+          .eq("id", connection.id).eq("empresa_id", run.empresa_id));
+      }
     }
     await progress.finish();
     const partial = collection.warnings.length > 0;

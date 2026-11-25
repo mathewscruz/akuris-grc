@@ -8,6 +8,18 @@ const regrasPt = {
   dispositivos_nao_conformes: { titulo: "Dispositivos fora de conformidade", descricao: "Dispositivos gerenciados que não cumprem as políticas de conformidade da organização." },
   dispositivos_sem_criptografia: { titulo: "Dispositivos sem criptografia de disco", descricao: "A perda ou roubo destes dispositivos expõe os dados armazenados." },
   dispositivos_sem_sincronizar: { titulo: "Dispositivos sem sincronizar há mais de 30 dias", descricao: "Dispositivos que não reportam podem estar sem atualizações ou fora de controle." },
+  alerta_ransomware: { titulo: "Alertas de ransomware ativos", descricao: "Alertas de alta gravidade de ransomware não resolvidos nos últimos 30 dias." },
+  alerta_malware: { titulo: "Malware ativo em dispositivos ou contas", descricao: "Alertas de malware de alta gravidade ainda não resolvidos." },
+  alerta_phishing: { titulo: "Campanhas de phishing atingindo usuários", descricao: "Alertas de phishing de alta gravidade ainda abertos." },
+  alerta_conta_comprometida: { titulo: "Contas possivelmente comprometidas", descricao: "Alertas de alta gravidade de login suspeito, senha vazada ou ataque à conta." },
+  alerta_movimento_lateral: { titulo: "Movimento lateral detectado", descricao: "Sinais de atacante se movendo entre sistemas, ainda não resolvidos." },
+  alerta_vazamento_dados: { titulo: "Possível vazamento de dados", descricao: "Alertas de alta gravidade de exfiltração ou regra de prevenção de perda de dados." },
+  alerta_configuracao: { titulo: "Alterações críticas de configuração", descricao: "Mudanças de segurança de alta gravidade sinalizadas pelo provedor." },
+  alerta_dispositivo: { titulo: "Dispositivos comprometidos", descricao: "Alertas de alta gravidade envolvendo dispositivos gerenciados." },
+  alerta_outros: { titulo: "Outros alertas de segurança de alta gravidade", descricao: "Alertas de alta gravidade ainda não resolvidos que não se encaixam nas demais categorias." },
+  usuarios_alto_risco: { titulo: "Usuários de alto risco no Entra ID", descricao: "O Entra ID Protection classifica estas contas como risco alto e ainda não remediado." },
+  vulnerabilidades_criticas: { titulo: "Vulnerabilidades críticas com exploit público", descricao: "Falhas críticas exploráveis presentes em dispositivos (entre parênteses, quantos dispositivos)." },
+  secure_score_recomendacoes: { titulo: "Recomendações de maior impacto do Secure Score pendentes", descricao: "As 5 recomendações da Microsoft com mais pontos de segurança ainda não implementadas." },
 };
 const regrasEn = {
   admin_sem_mfa: { titulo: "Administrators without two-step verification", descricao: "Accounts with administrator privileges have no second factor registered. A stolen password gives full control of the environment." },
@@ -18,6 +30,18 @@ const regrasEn = {
   dispositivos_nao_conformes: { titulo: "Non-compliant devices", descricao: "Managed devices that do not meet the organisation's compliance policies." },
   dispositivos_sem_criptografia: { titulo: "Devices without disk encryption", descricao: "Loss or theft of these devices exposes stored data." },
   dispositivos_sem_sincronizar: { titulo: "Devices not synced for over 30 days", descricao: "Devices that stop reporting may be unpatched or out of control." },
+  alerta_ransomware: { titulo: "Active ransomware alerts", descricao: "High-severity ransomware alerts unresolved in the last 30 days." },
+  alerta_malware: { titulo: "Active malware on devices or accounts", descricao: "High-severity malware alerts still unresolved." },
+  alerta_phishing: { titulo: "Phishing campaigns reaching users", descricao: "High-severity phishing alerts still open." },
+  alerta_conta_comprometida: { titulo: "Possibly compromised accounts", descricao: "High-severity alerts for suspicious sign-ins, leaked passwords or account attacks." },
+  alerta_movimento_lateral: { titulo: "Lateral movement detected", descricao: "Signs of an attacker moving between systems, still unresolved." },
+  alerta_vazamento_dados: { titulo: "Possible data leakage", descricao: "High-severity exfiltration or data loss prevention alerts." },
+  alerta_configuracao: { titulo: "Critical configuration changes", descricao: "High-severity security changes flagged by the provider." },
+  alerta_dispositivo: { titulo: "Compromised devices", descricao: "High-severity alerts involving managed devices." },
+  alerta_outros: { titulo: "Other high-severity security alerts", descricao: "Unresolved high-severity alerts outside the other categories." },
+  usuarios_alto_risco: { titulo: "High-risk users in Entra ID", descricao: "Entra ID Protection rates these accounts as high risk and not remediated." },
+  vulnerabilidades_criticas: { titulo: "Critical vulnerabilities with public exploits", descricao: "Exploitable critical flaws present on devices (device count in brackets)." },
+  secure_score_recomendacoes: { titulo: "Top Secure Score recommendations pending", descricao: "The 5 Microsoft recommendations worth the most security points still not implemented." },
 };
 export const riscosSugeridos = {
   pt: {

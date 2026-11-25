@@ -1,7 +1,7 @@
 import { microsoftScopes, ProviderError } from "./integration-providers.ts";
 import type { Provider } from "./integration-model.ts";
 import { integrationCollectionsEnabled } from "./integration-release.ts";
-import { GOOGLE_IDENTITY_SCOPES, GOOGLE_WORKSPACE_SCOPES } from "./google-workspace.ts";
+import { GOOGLE_IDENTITY_SCOPES, GOOGLE_SECURITY_SCOPES, GOOGLE_WORKSPACE_SCOPES } from "./google-workspace.ts";
 
 export function oauthConfig(provider: Provider) {
   const callback = `${Deno.env.get("SUPABASE_URL")}/functions/v1/integration-connect`;
@@ -11,7 +11,7 @@ export function oauthConfig(provider: Provider) {
       secret: Deno.env.get("GOOGLE_INTEGRATION_CLIENT_SECRET"),
       authorization: "https://accounts.google.com/o/oauth2/v2/auth",
       token: "https://oauth2.googleapis.com/token",
-      scopes: [...GOOGLE_WORKSPACE_SCOPES, ...GOOGLE_IDENTITY_SCOPES],
+      scopes: [...GOOGLE_WORKSPACE_SCOPES, ...GOOGLE_IDENTITY_SCOPES, ...GOOGLE_SECURITY_SCOPES],
       callback,
     };
   if (provider === "google_drive")
@@ -207,7 +207,7 @@ function microsoftAdminConsentUrl(config: ReturnType<typeof oauthConfig>, state:
   }).toString();
   return url.href;
 }
-export async function microsoftAppToken(tenantId: unknown) {
+export async function microsoftAppToken(tenantId: unknown, scope = "https://graph.microsoft.com/.default") {
   if (typeof tenantId !== "string" || !TENANT_ID.test(tenantId))
     throw new ProviderError("authorization_required");
   const config = oauthConfig("microsoft");
@@ -223,7 +223,7 @@ export async function microsoftAppToken(tenantId: unknown) {
         client_id: config.clientId!,
         client_secret: config.secret!,
         grant_type: "client_credentials",
-        scope: "https://graph.microsoft.com/.default",
+        scope,
       }),
     },
   );
