@@ -15,9 +15,9 @@
 - [ ] Validar autorização e coleta real do Google Workspace com a conta da Akuris (aguarda configuração no Google Console)
 
 ## Riscos sugeridos (revisão técnica)
-- [ ] Remover apps.alerts do OAuth Google (não autorizado) e reimplantar
-- [ ] Defender: incidentes /security/incidents, Secure Score por controle, recomendações MDE /api/recommendations
-- [ ] Chave estável por origem, severidade técnica separada, supressão com prazo/recorrência, sem corte que esconda achados
-- [ ] Cobertura: parcial/403/timeout nunca marca corrigido; desconectar preserva histórico
-- [ ] Regras Google só com campos explícitos (sem falhas de login como ataque; inatividade só com lastLoginTime)
-- [ ] Plano consolidado + lista de permissões
+- [x] Remover apps.alerts do OAuth Google (não autorizado) e reimplantar
+- [x] Defender: incidentes /security/incidents, Secure Score por controle, recomendações MDE /api/recommendations
+- [x] Chave estável por origem, severidade técnica separada, supressão com prazo/recorrência, sem corte que esconda achados
+- [x] Cobertura: parcial/403/timeout nunca marca corrigido; desconectar preserva histórico
+- [x] Regras Google só com campos explícitos (sem falhas de login como ataque; inatividade só com lastLoginTime)
+- [x] Plano consolidado + lista de permissões
