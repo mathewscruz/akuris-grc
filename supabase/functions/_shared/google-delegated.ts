@@ -96,9 +96,14 @@ export async function delegatedToken(key: ServiceAccountKey, subject: string, f:
 }
 
 type Read = (url: string, token: string, origin: string) => Promise<any>;
+/**
+ * Cloud Identity rejects customers/<id> for DWD calls (INVALID_ARGUMENT); my_customer resolves to the
+ * impersonated admin's organization. Tenant binding stays: the connection's customer_id must be valid
+ * and the admin was validated against it (OAuth) before the credential was saved.
+ */
 const customerOf = (id: string) => {
   if (!/^[A-Za-z0-9]{4,40}$/.test(id)) throw new DelegatedError("organization_changed");
-  return `customers/${id}`;
+  return "customers/my_customer";
 };
 
 /** One-page probe used before enabling the credential. */

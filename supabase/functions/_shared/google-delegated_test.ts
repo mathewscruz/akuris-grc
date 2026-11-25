@@ -73,7 +73,7 @@ Deno.test("collects both views with pagination, fixed customer and dedup by devi
     urls.push(url);
     const u = new URL(url);
     assertEquals(u.origin, "https://cloudidentity.googleapis.com");
-    assertEquals(u.searchParams.get("customer"), "customers/C0abc123");
+    assertEquals(u.searchParams.get("customer"), "customers/my_customer");
     const view = u.searchParams.get("view");
     if (view === "USER_ASSIGNED_DEVICES")
       return u.searchParams.get("pageToken") ? { devices: [{ name: "devices/2", serialNumber: "SER-2", deviceType: "WINDOWS" }] }
@@ -83,6 +83,8 @@ Deno.test("collects both views with pagination, fixed customer and dedup by devi
   const r = await collectCloudDevices(read, "tok", "C0abc123");
   assertEquals(r.resources.map((x) => x.externalId).sort(), ["device:google:cloud:devices/1", "device:google:cloud:devices/2", "device:google:cloud:devices/3"]);
   assertEquals(urls.length, 3);
+  assertEquals(urls.map((x) => new URL(x).searchParams.get("view")).sort(), ["COMPANY_INVENTORY", "USER_ASSIGNED_DEVICES", "USER_ASSIGNED_DEVICES"]);
+  assertEquals(urls.filter((x) => new URL(x).searchParams.get("pageToken") === "p2").length, 1);
   const a = ativoDoGoogle(r.resources.find((x) => x.externalId.endsWith("/1"))!)!;
   assertEquals(a.google_device_id, "cloud:devices/1");
   assertEquals(a.atributos.numero_serie, "SER-1");
@@ -117,4 +119,15 @@ Deno.test("Cloud Identity failure or foreign organisation leaves other modules i
   const ok = await collectCloudIdentity(async () => ({ devices: [{ name: "devices/9" }] }), { key: {}, admin_email: "a@b.com", customer_id: "C0abc1" }, "C0abc1", out, async () => "t");
   assertEquals(ok, { status: "active", count: 1 });
   assertEquals(out.resources.length, 2);
+});
+
+Deno.test("probe uses my_customer, one page, company inventory, and still validates the tenant customer id", async () => {
+  const { probeDevices } = await import("./google-delegated.ts");
+  const urls: string[] = [];
+  await probeDevices(async (u: string) => { urls.push(u); return {}; }, "tok", "C01e4o1h0");
+  const u = new URL(urls[0]);
+  assertEquals(u.searchParams.get("customer"), "customers/my_customer");
+  assertEquals(u.searchParams.get("pageSize"), "1");
+  assertEquals(u.searchParams.get("view"), "COMPANY_INVENTORY");
+  await assertRejects(() => probeDevices(async () => ({}), "tok", ""), DelegatedError, "organization_changed");
 });

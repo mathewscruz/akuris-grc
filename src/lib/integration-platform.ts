@@ -183,6 +183,7 @@ export function integrationErrorKey(code: string): string {
     "system_required",
   ];
   if (code === "provider_http_429") return "collectionHub.errors.rate_limited";
+  if (/^provider_http_4\d\d$/.test(code)) return "collectionHub.errors.provider_query_failed";
   return `collectionHub.errors.${known.includes(code) ? code : "collection_failed"}`;
 }
 

@@ -252,6 +252,8 @@ export const integrationPlatform = {
           "Alguns recursos selecionados não foram retornados. Verifique acesso e existência na origem.",
         lease_exhausted:
           "A coleta não terminou após as tentativas automáticas. Verifique a conexão e tente novamente.",
+        provider_query_failed:
+          "A ferramenta recusou a consulta de leitura. Confirme a delegação e o administrador informado e tente novamente.",
         rate_limited:
           "O limite temporário de consultas foi atingido. Aguarde antes de tentar novamente.",
         invalid_aws_account: "Informe os 12 dígitos do ID da conta AWS.",
@@ -518,6 +520,8 @@ export const integrationPlatform = {
           "Some selected resources were not returned. Check access and existence at the source.",
         lease_exhausted:
           "Collection did not finish after automatic retries. Check the connection and try again.",
+        provider_query_failed:
+          "The tool rejected the read query. Check the delegation and the admin account, then try again.",
         rate_limited:
           "A temporary request limit was reached. Wait before retrying.",
         invalid_aws_account: "Enter the 12-digit AWS account ID.",
