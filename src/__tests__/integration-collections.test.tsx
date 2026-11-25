@@ -100,6 +100,7 @@ describe("collection connections", () => {
     invoke.mockResolvedValue({ data: { connections: [], availability: {}, scheduler_ready: false }, error: null });
     mount();
     await screen.findByText("GitHub");
+    await new Promise((r) => setTimeout(r, 100));
     const before = invoke.mock.calls.length;
     window.dispatchEvent(new MessageEvent("message", { origin: "https://evil.example", data: { type: "akuris-oauth", result: "authorized" } }));
     await new Promise((r) => setTimeout(r, 50));

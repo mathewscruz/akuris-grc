@@ -144,6 +144,11 @@ export const revisaoAcessosComp = {
         semPermissaoMfa: 'Sem permissão para ler o registro de MFA no Entra ID. Os acessos vieram; a coluna de segundo fator ficou vazia por falta de permissão, não por todos estarem em dia.',
       },
       usuariosList: {
+        colSinais: 'Sinais do provedor',
+        sinalMfa: 'MFA',
+        sinalSemMfa: 'Sem MFA',
+        sinalAdmin: 'Admin',
+        sinalLogin: 'Último login',
         filterPlaceholder: 'Filtrar por sistema',
         filterAllSystems: 'Todos os Sistemas',
         buttonNovo: 'Novo Usuário',
@@ -330,6 +335,11 @@ export const revisaoAcessosComp = {
         semPermissaoMfa: 'No permission to read MFA registration in Entra ID. Accounts came through; the second-factor column is empty for lack of permission, not because everyone is covered.',
       },
       usuariosList: {
+        colSinais: 'Provider signals',
+        sinalMfa: 'MFA',
+        sinalSemMfa: 'No MFA',
+        sinalAdmin: 'Admin',
+        sinalLogin: 'Last login',
         filterPlaceholder: 'Filter by system',
         filterAllSystems: 'All Systems',
         buttonNovo: 'New User',

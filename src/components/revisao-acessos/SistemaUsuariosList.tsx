@@ -53,7 +53,10 @@ interface SistemaUsuario {
   /** De onde veio a linha: 'entra_id', ou null quando foi escrita à mão. */
   origem: string | null;
   sincronizado_em: string | null;
+  /** Sinais lidos do provedor (MFA, admin, último login); ausente = desconhecido. */
+  integration_signals?: unknown;
 }
+const ORIGENS = ["manual", "entra_id", "google_workspace", "conta_privilegiada"];
 
 export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: string | null }) {
   const { empresaId } = useEmpresaId();
@@ -232,13 +235,13 @@ export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: s
       key: "email_usuario",
       label: t("revisaoAcessosComp.usuariosList.columnEmail"),
       sortable: true,
-      render: (row) => row.email_usuario || "-",
+      render: (_value: unknown, row: SistemaUsuario) => row.email_usuario || "-",
     },
     {
       key: "sistema.nome_sistema",
       label: t("revisaoAcessosComp.usuariosList.columnSistema"),
       sortable: true,
-      render: (row) => row.sistema?.nome_sistema || "-",
+      render: (_value: unknown, row: SistemaUsuario) => row.sistema?.nome_sistema || "-",
     },
     {
       /*
@@ -249,10 +252,10 @@ export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: s
       key: "origem",
       label: t("revisaoAcessosComp.usuariosList.columnOrigem"),
       sortable: true,
-      render: (row) =>
+      render: (_value: unknown, row: SistemaUsuario) =>
         row.origem ? (
           <StatusBadge tone="info">
-            {t(`revisaoAcessosComp.usuariosList.origem.${row.origem}`)}
+            {ORIGENS.includes(row.origem) ? t(`revisaoAcessosComp.usuariosList.origem.${row.origem}`) : row.origem}
           </StatusBadge>
         ) : (
           <span className="text-muted-foreground">
@@ -261,16 +264,36 @@ export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: s
         ),
     },
     {
+      key: "integration_signals",
+      label: t("revisaoAcessosComp.usuariosList.colSinais"),
+      render: (_value: unknown, row: SistemaUsuario) => {
+        const raw = row.integration_signals;
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return <span className="text-muted-foreground">—</span>;
+        const sg = raw as Record<string, unknown>;
+        const mfa = sg.mfa_registered;
+        const login = typeof sg.last_login_at === "string" ? sg.last_login_at : null;
+        return (
+          <div className="flex flex-wrap items-center gap-1 text-xs">
+            {typeof mfa === "boolean" && (
+              <StatusBadge tone={mfa ? "success" : "warning"}>{t(mfa ? "revisaoAcessosComp.usuariosList.sinalMfa" : "revisaoAcessosComp.usuariosList.sinalSemMfa")}</StatusBadge>
+            )}
+            {sg.privileged === true && <StatusBadge tone="info">{t("revisaoAcessosComp.usuariosList.sinalAdmin")}</StatusBadge>}
+            {login && <span className="text-muted-foreground">{t("revisaoAcessosComp.usuariosList.sinalLogin")}: {formatDateOnly(login)}</span>}
+          </div>
+        );
+      },
+    },
+    {
       key: "departamento",
       label: t("revisaoAcessosComp.usuariosList.columnDepartamento"),
       sortable: true,
-      render: (row) => row.departamento || "-",
+      render: (_value: unknown, row: SistemaUsuario) => row.departamento || "-",
     },
     {
       key: "tipo_acesso",
       label: t("revisaoAcessosComp.usuariosList.columnTipoAcesso"),
       sortable: true,
-      render: (row) => (
+      render: (_value: unknown, row: SistemaUsuario) => (
         <StatusBadge {...resolveTipoAcessoTone(row.tipo_acesso)}>
           {formatStatus(row.tipo_acesso)}
         </StatusBadge>
@@ -280,13 +303,13 @@ export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: s
       key: "data_concessao",
       label: t("revisaoAcessosComp.usuariosList.columnConcessao"),
       sortable: true,
-      render: (row) => formatDateOnly(row.data_concessao) || "-",
+      render: (_value: unknown, row: SistemaUsuario) => formatDateOnly(row.data_concessao) || "-",
     },
     {
       key: "ativo",
       label: t("revisaoAcessosComp.usuariosList.columnStatus"),
       sortable: true,
-      render: (row) => (
+      render: (_value: unknown, row: SistemaUsuario) => (
         <StatusBadge {...resolveAtivoTone(row.ativo)}>
           {row.ativo ? t("revisaoAcessosComp.usuariosList.statusAtivo") : t("revisaoAcessosComp.usuariosList.statusInativo")}
         </StatusBadge>
@@ -295,7 +318,7 @@ export function SistemaUsuariosList({ sistemaIdInicial }: { sistemaIdInicial?: s
     {
       key: "actions",
       label: t("revisaoAcessosComp.usuariosList.columnAcoes"),
-      render: (row) => (
+      render: (_value: unknown, row: SistemaUsuario) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-sm" aria-label={t('layout.moreActions')} title={t('layout.moreActions')}>
