@@ -5,7 +5,7 @@ import {
   validRoleArn,
 } from "./integration-model.ts";
 import { collectGoogleWorkspace, GOOGLE_MODULES } from "./google-workspace.ts";
-import { collectCloudDevices, delegatedErrorCode, delegatedToken } from "./google-delegated.ts";
+import { type AdminIdentity, checkPlatformDevices, collectCloudDevices, delegatedErrorCode, delegatedToken, type ServiceAccountKey } from "./google-delegated.ts";
 
 export class ProviderError extends Error {
   constructor(
@@ -20,7 +20,7 @@ export interface Collection {
   resources: CollectedResource[];
   warnings: string[];
   /** Cloud Identity computers capability: separate from mobile/ChromeOS, never "0 devices" when unavailable. */
-  cloudIdentity?: { status: "not_configured" | "active" | "error"; error?: string; count?: number };
+  cloudIdentity?: { status: string; error?: string; count?: number };
 }
 type Credentials = Record<string, any>;
 const GRAPH = "https://graph.microsoft.com/v1.0";
@@ -568,20 +568,22 @@ async function collectAws(settings: Record<string, any>): Promise<Collection> {
 /** Isolated: any delegated failure only marks Cloud Identity unavailable; other modules are untouched. */
 export async function collectCloudIdentity(
   read: typeof providerJson,
-  delegated: { key?: any; admin_email?: string; customer_id?: string } | null | undefined,
+  ctx: { key?: ServiceAccountKey | null; identity?: AdminIdentity | null; oauthToken?: string } | null | undefined,
   customerId: string,
   out: Collection,
   tokenFn: typeof delegatedToken = delegatedToken,
 ): Promise<NonNullable<Collection["cloudIdentity"]>> {
-  if (!delegated?.key || !delegated.admin_email) return { status: "not_configured" };
-  // Credential bound to another organisation is never used.
-  if (delegated.customer_id !== customerId) return { status: "error", error: "organization_changed" };
+  // Platform key + admin identity validated for THIS connection; re-checked via OAuth before DWD.
+  const r = await checkPlatformDevices(read, ctx?.oauthToken ?? "", customerId, ctx?.key ?? null, ctx?.identity, { requireSaved: true, tokenFn });
+  if (r.state.status !== "active" || !r.token) {
+    if (r.state.status === "error") out.warnings.push(`cloud_identity:${r.state.error}`);
+    return r.state;
+  }
   try {
-    const token = await tokenFn(delegated.key, delegated.admin_email);
-    const r = await collectCloudDevices(read, token, customerId);
-    if (r.partial) out.warnings.push("cloud_identity:collection_limit");
-    out.resources.push(...r.resources);
-    return { status: "active", count: r.resources.length };
+    const c = await collectCloudDevices(read, r.token, customerId);
+    if (c.partial) out.warnings.push("cloud_identity:collection_limit");
+    out.resources.push(...c.resources);
+    return c.partial ? { status: "error", error: "collection_limit", count: c.resources.length } : { status: "active", count: c.resources.length };
   } catch (e) {
     const error = delegatedErrorCode(e);
     out.warnings.push(`cloud_identity:${error}`);

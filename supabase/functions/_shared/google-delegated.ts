@@ -127,6 +127,89 @@ export async function collectCloudDevices(read: Read, token: string, customerId:
   return { resources, partial };
 }
 
+// ---- Platform-managed credential (Akuris service account, backend env only) ----
+// Customers never upload keys: each organisation's admin authorises this public Client ID for the single
+// read-only scope in its own Admin console. The key lives only in the Edge secret below.
+export const PLATFORM_CLIENT_ID = "110121051822981322395";
+export const PLATFORM_SERVICE_ACCOUNT = "akuris-devices-readonly@akuris-integrations.iam.gserviceaccount.com";
+export const PLATFORM_SECRET_NAME = "GOOGLE_DEVICES_SERVICE_ACCOUNT_JSON";
+
+/** Reads the platform key; anything other than the fixed Akuris account is treated as absent. */
+export function platformServiceAccount(raw: string | undefined = Deno.env.get(PLATFORM_SECRET_NAME)): ServiceAccountKey | null {
+  if (!raw) return null;
+  try {
+    const k = parseServiceAccount(raw);
+    return k.client_id === PLATFORM_CLIENT_ID && k.client_email === PLATFORM_SERVICE_ACCOUNT ? k : null;
+  } catch { return null; }
+}
+
+export interface AdminIdentity { email: string; sub: string; customer_id: string; validated_at?: string }
+export type DeviceStatus =
+  | { status: "unavailable" }
+  | { status: "reauthorization_required" }
+  | { status: "delegation_pending" }
+  | { status: "active"; count?: number }
+  | { status: "error"; error: string };
+
+const OIDC = "https://openidconnect.googleapis.com";
+const ADMIN_API = "https://admin.googleapis.com";
+
+/**
+ * The impersonated subject is ALWAYS the admin who granted OAuth, derived server-side from Google:
+ * verified e-mail (userinfo) + Directory record in the connection's customer, active and admin,
+ * with the Directory id equal to the OIDC subject. Nothing from the browser is trusted.
+ */
+export async function verifyConnectingAdmin(read: Read, oauthToken: string, customerId: string): Promise<AdminIdentity> {
+  if (!/^[A-Za-z0-9]{4,40}$/.test(customerId)) throw new DelegatedError("organization_changed");
+  let info: any;
+  try { info = await read(`${OIDC}/v1/userinfo`, oauthToken, OIDC); }
+  catch (e) {
+    const c = (e as { code?: string })?.code;
+    if (c === "authorization_expired" || c === "permission_missing") throw new DelegatedError("reauthorization_required");
+    throw new DelegatedError("provider_unavailable");
+  }
+  const email = typeof info?.email === "string" ? info.email.trim().toLowerCase() : "";
+  const sub = typeof info?.sub === "string" ? info.sub : "";
+  if (!email || !sub) throw new DelegatedError("reauthorization_required");
+  if (info.email_verified !== true || !ADMIN_EMAIL.test(email) || !/^\d{5,40}$/.test(sub)) throw new DelegatedError("invalid_admin");
+  let user: any;
+  try { user = await read(`${ADMIN_API}/admin/directory/v1/users/${encodeURIComponent(email)}?projection=basic`, oauthToken, ADMIN_API); }
+  catch { throw new DelegatedError("invalid_admin"); }
+  if (user?.customerId !== customerId) throw new DelegatedError("organization_changed");
+  if (String(user?.id) !== sub) throw new DelegatedError("invalid_admin");
+  if (user.suspended || user.archived || !(user.isAdmin || user.isDelegatedAdmin)) throw new DelegatedError("admin_required");
+  return { email, sub, customer_id: customerId };
+}
+
+/**
+ * Re-validates tenant/admin via OAuth and then proves delegation. `saved` (worker) must match the
+ * freshly verified admin and organisation, so an admin moved to another tenant is never impersonated.
+ */
+export async function checkPlatformDevices(
+  read: Read, oauthToken: string, customerId: string, key: ServiceAccountKey | null,
+  saved: AdminIdentity | null | undefined, opts: { requireSaved: boolean; tokenFn?: typeof delegatedToken } ,
+): Promise<{ state: DeviceStatus; identity: AdminIdentity | null; token?: string }> {
+  if (!key) return { state: { status: "unavailable" }, identity: null };
+  if (opts.requireSaved && !saved?.email) return { state: { status: "reauthorization_required" }, identity: null };
+  let identity: AdminIdentity;
+  try { identity = await verifyConnectingAdmin(read, oauthToken, customerId); }
+  catch (e) {
+    const code = delegatedErrorCode(e);
+    return { state: code === "reauthorization_required" ? { status: code } : { status: "error", error: code }, identity: null };
+  }
+  if (saved && (saved.customer_id !== customerId || saved.customer_id !== identity.customer_id))
+    return { state: { status: "error", error: "organization_changed" }, identity: null };
+  if (saved && (saved.sub !== identity.sub || saved.email !== identity.email))
+    return { state: { status: "reauthorization_required" }, identity: null };
+  try {
+    const token = await (opts.tokenFn ?? delegatedToken)(key, identity.email);
+    return { state: { status: "active" }, identity, token };
+  } catch (e) {
+    const code = delegatedErrorCode(e);
+    return { state: code === "delegation_missing" ? { status: "delegation_pending" } : { status: "error", error: code }, identity };
+  }
+}
+
 export function delegatedErrorCode(e: unknown): string {
   if (e instanceof DelegatedError) return e.code;
   const c = (e as { code?: string })?.code;

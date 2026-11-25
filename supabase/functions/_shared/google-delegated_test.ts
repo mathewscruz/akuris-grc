@@ -98,27 +98,94 @@ Deno.test("cloud namespace never collides with mobile/ChromeOS ids", () => {
   assert(cloud.google_device_id !== mobile.google_device_id);
 });
 
-Deno.test("Cloud Identity failure or foreign organisation leaves other modules intact", async () => {
-  const base = (): Collection => ({ resources: [{ externalId: "device:google:mobile:1", kind: "device", name: "Pixel", signals: {} }], warnings: [] });
-  const read = async () => ({ devices: [] });
-  let out = base();
-  assertEquals((await collectCloudIdentity(read, null, "C0abc1", out)).status, "not_configured");
-  assertEquals(out.resources.length, 1);
+// Fake Google: userinfo + Directory per OAuth token; Cloud Identity for the DWD token.
+const ADMIN = { email: "admin@a.com", sub: "1111111", customer_id: "C0abc1" };
+function google(opts: { userinfo?: any; user?: any; revoked?: boolean } = {}) {
+  const calls: string[] = [];
+  const read = async (url: string, token: string) => {
+    calls.push(url);
+    const u = new URL(url);
+    if (u.origin === "https://openidconnect.googleapis.com") {
+      if (opts.revoked) { const e: any = new Error("x"); e.code = "authorization_expired"; throw e; }
+      return opts.userinfo ?? { email: "admin@a.com", email_verified: true, sub: "1111111" };
+    }
+    if (u.origin === "https://admin.googleapis.com")
+      return opts.user ?? { id: "1111111", customerId: "C0abc1", isAdmin: true, suspended: false };
+    assertEquals(token, "dwd");
+    return u.searchParams.get("view") === "USER_ASSIGNED_DEVICES"
+      ? (u.searchParams.get("pageToken") ? { devices: [{ name: "devices/2" }] } : { devices: [{ name: "devices/1" }], nextPageToken: "n" })
+      : { devices: [{ name: "devices/1" }, { name: "devices/3" }] };
+  };
+  return { read, calls };
+}
+const base = (): Collection => ({ resources: [{ externalId: "device:google:mobile:1", kind: "device", name: "Pixel", signals: {} }], warnings: [] });
+
+Deno.test("platform credential: missing secret is unavailable, never zero devices", async () => {
+  const g = google(); const out = base();
+  assertEquals(await collectCloudIdentity(g.read, { key: null, identity: ADMIN, oauthToken: "o" }, "C0abc1", out), { status: "unavailable" });
+  assertEquals(out.resources.length, 1); assertEquals(g.calls.length, 0);
+});
+
+Deno.test("platform secret must be the fixed Akuris account", async () => {
+  const { platformServiceAccount } = await import("./google-delegated.ts");
+  assertEquals(platformServiceAccount(undefined), null);
+  assertEquals(platformServiceAccount((await keyJson({ client_id: "999999999999" })).text), null);
+  assertEquals(platformServiceAccount((await keyJson()).text)?.client_id, "110121051822981322395");
+});
+
+Deno.test("old connection without validated identity asks to re-authorise and never impersonates", async () => {
+  let called = false; const g = google();
+  const r = await collectCloudIdentity(g.read, { key: {} as any, identity: null, oauthToken: "o" }, "C0abc1", base(), async () => { called = true; return "dwd"; });
+  assertEquals(r, { status: "reauthorization_required" }); assert(!called);
+});
+
+Deno.test("admin moved to another tenant, forged subject or revoked OAuth block DWD", async () => {
+  for (const [g, expected] of [
+    [google({ user: { id: "1111111", customerId: "C0OTHER", isAdmin: true } }), { status: "error", error: "organization_changed" }],
+    [google({ user: { id: "1111111", customerId: "C0abc1", isAdmin: false } }), { status: "error", error: "admin_required" }],
+    [google({ user: { id: "2222222", customerId: "C0abc1", isAdmin: true } }), { status: "error", error: "invalid_admin" }],
+    [google({ userinfo: { email: "admin@a.com", email_verified: false, sub: "1111111" } }), { status: "error", error: "invalid_admin" }],
+    [google({ revoked: true }), { status: "reauthorization_required" }],
+  ] as const) {
+    let called = false;
+    const r = await collectCloudIdentity(g.read, { key: {} as any, identity: ADMIN, oauthToken: "o" }, "C0abc1", base(), async () => { called = true; return "dwd"; });
+    assertEquals(r, expected); assert(!called);
+  }
+  // Saved identity from company B can never be used on company A's connection.
   let called = false;
-  out = base();
-  const foreign = await collectCloudIdentity(read, { key: {}, admin_email: "a@b.com", customer_id: "C0abc2" }, "C0abc1", out, async () => { called = true; return "t"; });
-  assertEquals(foreign, { status: "error", error: "organization_changed" });
-  assert(!called);
-  out = base();
-  const failed = await collectCloudIdentity(read, { key: {}, admin_email: "a@b.com", customer_id: "C0abc1" }, "C0abc1", out,
+  const r = await collectCloudIdentity(google().read, { key: {} as any, identity: { ...ADMIN, customer_id: "C0bbb2" }, oauthToken: "o" }, "C0abc1", base(),
+    async () => { called = true; return "dwd"; });
+  assertEquals(r, { status: "error", error: "organization_changed" }); assert(!called);
+  // A different admin than the one validated at consent requires re-authorisation.
+  const other = await collectCloudIdentity(google().read, { key: {} as any, identity: { ...ADMIN, sub: "3333333" }, oauthToken: "o" }, "C0abc1", base(), async () => "dwd");
+  assertEquals(other, { status: "reauthorization_required" });
+});
+
+Deno.test("delegation not authorised yet is pending, other modules intact", async () => {
+  const out = base();
+  const r = await collectCloudIdentity(google().read, { key: {} as any, identity: ADMIN, oauthToken: "o" }, "C0abc1", out,
     async () => { throw new DelegatedError("delegation_missing"); });
-  assertEquals(failed, { status: "error", error: "delegation_missing" });
-  assertEquals(out.resources.length, 1);
-  assertEquals(out.warnings, ["cloud_identity:delegation_missing"]);
-  out = base();
-  const ok = await collectCloudIdentity(async () => ({ devices: [{ name: "devices/9" }] }), { key: {}, admin_email: "a@b.com", customer_id: "C0abc1" }, "C0abc1", out, async () => "t");
-  assertEquals(ok, { status: "active", count: 1 });
-  assertEquals(out.resources.length, 2);
+  assertEquals(r, { status: "delegation_pending" }); assertEquals(out.resources.length, 1);
+});
+
+Deno.test("authorised: subject is the verified admin, both views paginated, idempotent ids", async () => {
+  let subject = "";
+  const run = async () => { const out = base();
+    const r = await collectCloudIdentity(google().read, { key: {} as any, identity: ADMIN, oauthToken: "o" }, "C0abc1", out, async (_k, s) => { subject = s; return "dwd"; });
+    return { r, ids: out.resources.map((x) => x.externalId).sort() }; };
+  const a = await run(), b = await run();
+  assertEquals(subject, "admin@a.com");
+  assertEquals(a.r, { status: "active", count: 3 });
+  assertEquals(a.ids, b.ids);
+  assertEquals(a.ids.length, 4);
+});
+
+Deno.test("identity scopes: openid + email only; partial grant detected", async () => {
+  const { identityGranted, GOOGLE_IDENTITY_SCOPES } = await import("./google-workspace.ts");
+  assertEquals(GOOGLE_IDENTITY_SCOPES, ["openid", "email"]);
+  assert(identityGranted("openid https://www.googleapis.com/auth/userinfo.email"));
+  assert(!identityGranted("https://www.googleapis.com/auth/userinfo.email"));
+  assert(!identityGranted("openid"));
 });
 
 Deno.test("probe uses my_customer, one page, company inventory, and still validates the tenant customer id", async () => {

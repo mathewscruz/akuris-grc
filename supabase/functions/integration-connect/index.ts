@@ -19,14 +19,14 @@ import {
   TENANT_ID,
 } from "../_shared/integration-oauth.ts";
 import { ProviderError, providerJson } from "../_shared/integration-providers.ts";
-import { customerChange, GOOGLE_MODULES, missingScopes } from "../_shared/google-workspace.ts";
+import { customerChange, GOOGLE_MODULES, identityGranted, missingScopes } from "../_shared/google-workspace.ts";
 // Module lists per provider with optional per-module import/purge.
 const MODULES: Record<string, readonly string[]> = {
   microsoft: ["intune", "entra", "documentos"],
   google_workspace: GOOGLE_MODULES,
 };
 import { connectionCredentials } from "../_shared/integration-oauth.ts";
-import { ADMIN_EMAIL, DelegatedError, delegatedErrorCode, delegatedToken, parseServiceAccount, probeDevices } from "../_shared/google-delegated.ts";
+import { type AdminIdentity, checkPlatformDevices, type DeviceStatus, platformServiceAccount, probeDevices, verifyConnectingAdmin } from "../_shared/google-delegated.ts";
 import { processIntegrationRun } from "../_shared/integration-runner.ts";
 import { integrationReleaseResponse } from "../_shared/integration-release.ts";
 
@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
     )
       return json({ error: "authorization_required" }, 403);
     let result = "authorized";
+    let enqueueAfter = false;
     try {
       let update: Record<string, unknown>;
       if (connection.data.provider === "microsoft") {
@@ -162,11 +163,18 @@ Deno.serve(async (req) => {
           // Never silently switch Workspace organisation on reconnect.
           if (customerChange(connection.data.settings?.customer_id, customer.id) === "changed")
             throw new ProviderError("organization_changed");
+          // Computers: platform key + the admin who just consented (derived server-side). A failure here
+          // only affects computers; users/Drive/mobile/ChromeOS keep working.
+          const devices = await googleDevicesState(credentials.access_token, customer.id, identityGranted(credentials.scope), null);
           update.settings = {
             ...(connection.data.settings || {}),
             customer_id: customer.id,
             customer_domain: typeof customer.customerDomain === "string" ? customer.customerDomain.slice(0, 255) : null,
+            admin_identity: devices.identity,
+            cloud_identity: devices.state,
           };
+          if (devices.state.status === "active" && (connection.data.settings?.imported_modules ?? []).includes("dispositivos"))
+            enqueueAfter = true;
         }
       }
       const completed = await client
@@ -179,6 +187,15 @@ Deno.serve(async (req) => {
         .maybeSingle();
       checked(completed);
       if (!completed.data) throw new ProviderError("consent_superseded");
+      if (enqueueAfter) {
+        // Devices already imported and delegation proven: collect computers now (same Ativos import path).
+        const run = await client.rpc("integration_enqueue", { p_id: saved.connection_id, p_empresa: tenant });
+        if (!run.error && run.data) {
+          const work = processIntegrationRun(client, run.data, { allowRetry: false }).catch(() => undefined);
+          const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+          if (rt) rt.waitUntil(work);
+        }
+      }
     } catch (error) {
       result =
         error instanceof ProviderError ? error.code : "authorization_failed";
@@ -432,57 +449,26 @@ Deno.serve(async (req) => {
         runs: runs.data,
       });
     }
-    if (["delegated_status", "delegated_save", "delegated_remove"].includes(action)) {
+    // Customer key upload is retired: computers use only the platform credential. Legacy rows are kept untouched.
+    if (["delegated_save", "delegated_remove"].includes(action)) return json({ error: "upload_disabled" }, 410);
+    if (action === "delegated_status") return json({ delegated: null });
+    if (action === "verify_devices") {
       if (connection.provider !== "google_workspace") return json({ error: "invalid_configuration" }, 400);
-      const meta = async () => {
-        const r = await client.from("integration_delegated_credentials")
-          .select("client_email,project_id,key_id_suffix,admin_email,status,error_code,validated_at,last_used_at")
-          .eq("connection_id", connection.id).eq("empresa_id", empresa).maybeSingle();
-        checked(r);
-        return r.data;
-      };
-      if (action === "delegated_status") return json({ delegated: await meta() });
-      if (action === "delegated_remove") {
-        checked(await client.from("integration_delegated_credentials").delete()
-          .eq("connection_id", connection.id).eq("empresa_id", empresa));
-        checked(await client.from("integration_connections")
-          .update({ settings: { ...connection.settings, cloud_identity: { status: "not_configured" } } })
-          .eq("id", connection.id).eq("empresa_id", empresa));
-        return json({ delegated: null });
-      }
-      // delegated_save: validate everything before storing; responses carry only codes/metadata.
-      try {
-        const customerId = connection.settings?.customer_id;
-        if (typeof customerId !== "string" || !["authorized", "connected", "partial"].includes(connection.status))
-          throw new DelegatedError("connection_not_authorized");
-        const key = parseServiceAccount(body.service_account);
-        const admin = typeof body.admin_email === "string" ? body.admin_email.trim().toLowerCase() : "";
-        if (!ADMIN_EMAIL.test(admin)) throw new DelegatedError("invalid_admin");
-        // The delegated subject must be an administrator of THIS connection's organisation.
-        const oauth = await connectionCredentials(client, connection);
-        let user: any;
-        try {
-          user = await providerJson(`https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(admin)}?projection=basic`,
-            oauth.access_token, "https://admin.googleapis.com");
-        } catch { throw new DelegatedError("invalid_admin"); }
-        if (user?.customerId !== customerId) throw new DelegatedError("organization_changed");
-        if (!(user?.isAdmin || user?.isDelegatedAdmin) || user?.suspended) throw new DelegatedError("admin_required");
-        const token = await delegatedToken(key, admin);
-        try { await probeDevices(providerJson, token, customerId); }
-        catch (e) { throw new DelegatedError(delegatedErrorCode(e)); }
-        checked(await client.from("integration_delegated_credentials").upsert({
-          empresa_id: empresa, connection_id: connection.id, purpose: "cloud_identity_devices",
-          credentials: JSON.stringify(key), client_email: key.client_email, project_id: key.project_id,
-          key_id_suffix: key.private_key_id.slice(-6), admin_email: admin, customer_id: customerId,
-          status: "active", error_code: null, validated_at: new Date().toISOString(), created_by: ctx.userId,
-        }, { onConflict: "connection_id,purpose" }));
-        checked(await client.from("integration_connections")
-          .update({ settings: { ...connection.settings, cloud_identity: { status: "active" } } })
-          .eq("id", connection.id).eq("empresa_id", empresa));
-        return json({ delegated: await meta() });
-      } catch (e) {
-        return json({ error: e instanceof DelegatedError ? e.code : e instanceof ProviderError ? e.code : "request_failed" }, 400);
-      }
+      const customerId = connection.settings?.customer_id;
+      if (typeof customerId !== "string" || !["authorized", "connected", "partial"].includes(connection.status))
+        return json({ error: "connection_not_authorized" }, 400);
+      const oauth = await connectionCredentials(client, connection);
+      // Re-validates OAuth, tenant and admin before any impersonation; never accepts admin/customer from the body.
+      const devices = await googleDevicesState(oauth.access_token, customerId, !!connection.settings?.admin_identity,
+        connection.settings?.admin_identity ?? null);
+      const settings = { ...connection.settings, cloud_identity: devices.state,
+        ...(devices.state.status === "error" && devices.state.error === "organization_changed" ? { admin_identity: null } : {}) };
+      checked(await client.from("integration_connections").update({ settings })
+        .eq("id", connection.id).eq("empresa_id", empresa));
+      connection = { ...connection, settings };
+      if (devices.state.status !== "active" || !(connection.settings.imported_modules ?? []).includes("dispositivos"))
+        return json({ cloud_identity: devices.state });
+      body.action = "collect";
     }
     if (action === "configure") {
       if (
@@ -552,7 +538,9 @@ Deno.serve(async (req) => {
       for (const m of MODULES[connection.provider])
         checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
       checked(await client.from("integration_connections")
-        .update({ settings: { ...connection.settings, imported_modules: [] } })
+        .update({ settings: { ...connection.settings, imported_modules: [],
+          // Stop computers too; the platform key itself is shared and never touched here.
+          ...(connection.provider === "google_workspace" ? { admin_identity: null, cloud_identity: null } : {}) } })
         .eq("id", connection.id).eq("empresa_id", empresa));
     }
     if (["pause", "resume", "disconnect"].includes(action)) {
@@ -587,7 +575,7 @@ Deno.serve(async (req) => {
       checked(fresh);
       connection = fresh.data;
     }
-    if (action === "collect" || action === "import_module") {
+    if (body.action === "collect" || action === "collect" || action === "import_module") {
       if (
         connection.provider === "aws" &&
         connection.status === "pending" &&
@@ -633,3 +621,25 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+/** Server-side computers state for a Google connection (verified admin, platform key, DWD probe). */
+async function googleDevicesState(oauthToken: string, customerId: string, identityOk: boolean, saved: any) {
+  if (!identityOk) return { state: { status: "reauthorization_required" } as DeviceStatus, identity: saved ?? null };
+  const key = platformServiceAccount();
+  const stamp = (i: AdminIdentity | null) => i && { ...i, validated_at: new Date().toISOString() };
+  if (!key) {
+    // Still bind the verified admin now, so computers work as soon as the platform key is configured.
+    try { return { state: { status: "unavailable" } as DeviceStatus, identity: stamp(await verifyConnectingAdmin(providerJson, oauthToken, customerId)) }; }
+    catch { return { state: { status: "unavailable" } as DeviceStatus, identity: null }; }
+  }
+  const r = await checkPlatformDevices(providerJson, oauthToken, customerId, key, saved, { requireSaved: false });
+  if (r.token) {
+    try { await probeDevices(providerJson, r.token, customerId); }
+    catch (e) {
+      const c = (e as { code?: string })?.code;
+      return { state: { status: "error", error: c === "permission_missing" ? "license_or_permission" : "provider_query_failed" } as DeviceStatus,
+        identity: stamp(r.identity) };
+    }
+  }
+  return { state: r.state, identity: stamp(r.identity) ?? (r.state.status === "reauthorization_required" ? saved ?? null : null) };
+}

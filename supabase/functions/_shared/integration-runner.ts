@@ -9,6 +9,7 @@ import {
 } from "./integration-model.ts";
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
+import { platformServiceAccount } from "./google-delegated.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -174,9 +175,11 @@ export async function processIntegrationRun(
   try {
     const credentials = await connectionCredentials(db, connection);
     if (connection.provider === "google_workspace") {
-      // Optional delegated credential for Cloud Identity computers, read server-side only.
-      const d = await db.rpc("integration_read_delegated", { p_connection: connection.id, p_empresa: run.empresa_id });
-      credentials.cloud_identity = d.error ? null : d.data;
+      // Platform-managed key (env only) + admin identity validated for this connection at OAuth time.
+      // Legacy per-tenant uploaded keys are no longer read.
+      credentials.cloud_identity = {
+        key: platformServiceAccount(), identity: connection.settings?.admin_identity ?? null, oauthToken: credentials.access_token,
+      };
     }
     const collection = await collectProvider(connection.provider, credentials, {
       ...connection.settings,
@@ -199,11 +202,6 @@ export async function processIntegrationRun(
         .update({ settings: { ...connection.settings, module_status: moduleStatus, module_status_at: new Date().toISOString(),
           ...(collection.cloudIdentity ? { cloud_identity: collection.cloudIdentity } : {}) } })
         .eq("id", connection.id).eq("empresa_id", run.empresa_id);
-      if (collection.cloudIdentity && collection.cloudIdentity.status !== "not_configured") {
-        await db.from("integration_delegated_credentials")
-          .update({ status: collection.cloudIdentity.status, error_code: collection.cloudIdentity.error ?? null, last_used_at: new Date().toISOString() })
-          .eq("connection_id", connection.id).eq("empresa_id", run.empresa_id);
-      }
     }
     const intuneSync = connection.provider === "intune" ||
       (connection.provider === "microsoft" &&

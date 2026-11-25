@@ -25,6 +25,13 @@ export const LOGIN_WINDOW_DAYS = 30;
 const MAX_PAGES = 40;
 export const MEMBERS_LIST_LIMIT = 500;
 
+/** Identity only, to derive the connecting admin server-side (no extra data access). */
+export const GOOGLE_IDENTITY_SCOPES = ["openid", "email"];
+/** True when openid + email were granted (Google may echo email as userinfo.email). */
+export function identityGranted(granted: string | undefined): boolean {
+  const have = new Set((granted || "").split(/\s+/).filter(Boolean));
+  return have.has("openid") && (have.has("email") || have.has(S + "userinfo.email"));
+}
 /** Scopes granted on the token response must include every requested one. */
 export function missingScopes(granted: string | undefined): string[] {
   const have = new Set((granted || "").split(/\s+/).filter(Boolean));

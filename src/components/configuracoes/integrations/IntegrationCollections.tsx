@@ -772,11 +772,9 @@ function ConnectionManager({
                       </span>
                       {connection.provider === "google_workspace" && m === "dispositivos" && (
                         <span className="mt-1 block text-xs text-muted-foreground">
-                          {t(connection.settings.cloud_identity?.status === "active"
-                            ? "collectionHub.cloudIdentity.activeShort"
-                            : connection.settings.cloud_identity?.status === "error"
-                              ? "collectionHub.cloudIdentity.errorShort"
-                              : "collectionHub.errors.cloud_identity_pending")}
+                          {t(`collectionHub.cloudIdentity.state.${connection.settings.cloud_identity?.status === "active" ? "active"
+                            : connection.settings.cloud_identity?.status === "delegation_pending" ? "delegation_pending"
+                            : connection.settings.cloud_identity?.status === "unavailable" ? "unavailable" : "reauthorization_required"}`)}
                         </span>
                       )}
                       {connection.settings.module_status?.[m] && (
@@ -789,9 +787,6 @@ function ConnectionManager({
                 ))}
               </div>
             </section>
-          )}
-          {connection.provider === "google_workspace" && (
-            <GoogleCloudIdentityCredential connectionId={connection.id} onChange={() => void reload()} />
           )}
           <section className="space-y-3">
             <div>
@@ -1240,6 +1235,9 @@ function ConnectionActions({ connection, state, reload, extra }: {
   type Purge = { module: string; removidos: number; arquivados: number; limpos: number };
   const [purge, setPurge] = useState<Purge[] | null>(null);
   const unified = connection.provider === "microsoft" || connection.provider === "google_workspace";
+  // Old Google connections lack the verified admin identity needed for computers: offer re-authorisation, keeping data.
+  const needsReauth = connection.provider === "google_workspace" && state !== "error" &&
+    (!connection.settings.cloud_identity || ["reauthorization_required", "not_configured"].includes(connection.settings.cloud_identity.status));
   async function openConfirm() {
     setConfirm(true);
     if (!unified) return;
@@ -1262,7 +1260,7 @@ function ConnectionActions({ connection, state, reload, extra }: {
   async function reconnect() {
     const popup = window.open("about:blank", "akuris-oauth", "popup,width=520,height=680");
     try {
-      const r = await integrationRequest<{ authorize_url?: string }>({ action: "start", connection_id: connection.id, return_origin: window.location.origin });
+      const r = await integrationRequest<{ authorize_url?: string }>({ action: "start", connection_id: connection.id, provider: connection.provider, name: connection.name, return_origin: window.location.origin });
       if (!r.authorize_url) { popup?.close(); return; }
       if (popup && !popup.closed) popup.location.href = r.authorize_url;
       else window.open(r.authorize_url, "_blank", "noopener");
@@ -1273,8 +1271,8 @@ function ConnectionActions({ connection, state, reload, extra }: {
   }
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {state === "error" && connection.provider !== "aws" && connection.provider !== "github" && (
-        <Button size="sm" onClick={() => void reconnect()}>{t("collectionHub.reconnect")}</Button>
+      {(state === "error" || needsReauth) && connection.provider !== "aws" && connection.provider !== "github" && (
+        <Button size="sm" onClick={() => void reconnect()}>{t(needsReauth ? "collectionHub.cloudIdentity.reauthorize" : "collectionHub.reconnect")}</Button>
       )}
       <Button size="sm" variant="outline" onClick={() => void openConfirm()}>{t("collectionHub.disconnect")}</Button>
       {connection.provider === "google_workspace" && (
@@ -1296,7 +1294,7 @@ function ConnectionActions({ connection, state, reload, extra }: {
       </DialogShell>
       {devices && (
         <DialogShell open onOpenChange={setDevices} title={t("collectionHub.addComputers")} size="md">
-          <GoogleCloudIdentityCredential connectionId={connection.id} onChange={() => void reload()} />
+          <GoogleCloudIdentityCredential connection={connection} onChange={() => void reload()} onReauthorize={() => { setDevices(false); void reconnect(); }} />
         </DialogShell>
       )}
     </div>
