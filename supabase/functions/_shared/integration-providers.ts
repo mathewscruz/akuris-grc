@@ -4,6 +4,7 @@ import {
   safeSourceUrl,
   validRoleArn,
 } from "./integration-model.ts";
+import { collectGoogleWorkspace, GOOGLE_MODULES } from "./google-workspace.ts";
 
 export class ProviderError extends Error {
   constructor(
@@ -120,6 +121,19 @@ export async function collectProvider(
   };
   const pages = (path: string, accessToken: string, notes: string[]) =>
     graphPages(path, accessToken, notes, read);
+  if (provider === "google_workspace") {
+    if (typeof settings.customer_id !== "string") throw new ProviderError("authorization_required");
+    // Own budget: group membership needs one request per group; hitting it is a partial module, not a failure.
+    let googleRequests = 0;
+    const googleRead: typeof providerJson = (url, accessToken, origin) => {
+      if (Date.now() - started > 90000 || ++googleRequests > 400) throw new ProviderError("collection_limit");
+      return providerJson(url, accessToken, origin);
+    };
+    return collectGoogleWorkspace(
+      googleRead, token, settings.customer_id,
+      Array.isArray(settings.modules) ? settings.modules : [...GOOGLE_MODULES],
+    );
+  }
   const modules: string[] = Array.isArray(settings.modules)
     ? settings.modules
     : ["intune", "entra"];

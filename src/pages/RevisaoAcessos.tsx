@@ -1,3 +1,4 @@
+import { ImportarIntegracaoBadge } from '@/components/integracoes/ImportarIntegracaoBadge';
 import { OwnerCell } from '@/components/ui/owner-cell';
 import { matchesSearch as matchesText } from '@/lib/search-utils';
 import { compareReviewRows } from '@/lib/access-review-sort';
@@ -348,6 +349,8 @@ export default function RevisaoAcessos() {
         title={t('modules.revisaoAcessos.title')}
         description={t('modules.revisaoAcessos.description')}
         actions={
+          <div className="flex items-center gap-3">
+          <ImportarIntegracaoBadge pagina="acessos" />
           <Button onClick={() => {
             setSelectedReview(null);
             setReviewDialogOpen(true);
@@ -355,6 +358,7 @@ export default function RevisaoAcessos() {
             <IconAdd className="mr-2 h-4 w-4" />
             {t('sweepDenuncias.revisao.novaRevisao')}
           </Button>
+          </div>
         }
         secondaryActions={[
         ]}

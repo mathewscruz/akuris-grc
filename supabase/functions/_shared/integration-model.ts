@@ -8,6 +8,7 @@ export const PROVIDERS = [
   "sharepoint",
   "onedrive",
   "google_drive",
+  "google_workspace",
 ] as const;
 export type Provider = (typeof PROVIDERS)[number];
 export type Signals = Record<string, string | number | boolean | null>;
@@ -112,7 +113,7 @@ export function identityImportRow(
     tipo_acesso: resource.signals.privileged ? "administracao" : "leitura",
     nivel_privilegio: resource.signals.privileged ? "administrador" : "usuario",
     ativo: resource.signals.enabled !== false,
-    origem: "entra_id",
+    origem: resource.signals.source === "google_workspace" ? "google_workspace" : "entra_id",
     origem_id: resource.externalId.replace(/^user:/, ""),
     integration_signals: resource.signals,
     integration_connection_id: connectionId,

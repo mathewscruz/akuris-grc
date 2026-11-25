@@ -40,6 +40,12 @@ export const COLLECTION_PROVIDERS = [
     family: "documents",
   },
   {
+    id: "google_workspace",
+    name: "Google Workspace",
+    logo: "google-workspace.svg",
+    family: "identity",
+  },
+  {
     id: "google_drive",
     name: "Google Drive",
     logo: "google-drive.png",
@@ -55,6 +61,14 @@ export const LEGACY_MICROSOFT_PROVIDERS: ReadonlySet<string> = new Set([
   "onedrive",
 ]);
 export const MICROSOFT_MODULES = ["intune", "entra", "documentos"] as const;
+export const GOOGLE_MODULES = ["usuarios", "dispositivos", "auditoria", "drive"] as const;
+/** Providers with optional modules (each imported only from its module page). */
+export const PROVIDER_MODULES: Partial<Record<string, readonly string[]>> = {
+  microsoft: MICROSOFT_MODULES,
+  google_workspace: GOOGLE_MODULES,
+};
+/** Superseded by the unified Google Workspace card; shown only when already connected. */
+export const LEGACY_GOOGLE_PROVIDERS: ReadonlySet<string> = new Set(["google_drive"]);
 export type CollectionProvider = (typeof COLLECTION_PROVIDERS)[number]["id"];
 export interface CollectionConnection {
   id: string;
@@ -64,7 +78,7 @@ export interface CollectionConnection {
     "pending" | "authorized" | "connected" | "partial" | "error" | "paused";
   frequency: "manual" | "daily" | "weekly";
   scope_ids: string[];
-  settings: { system_id?: string; role_arn?: string; region?: string; modules?: string[]; tenant_id?: string };
+  settings: { system_id?: string; role_arn?: string; region?: string; modules?: string[]; tenant_id?: string; imported_modules?: string[]; customer_domain?: string | null; module_status?: Record<string, string> };
   last_success_at: string | null;
   next_run_at: string | null;
   error_code: string | null;
@@ -161,6 +175,9 @@ export function integrationErrorKey(code: string): string {
     "service_unavailable",
     "worker_not_ready",
     "connection_busy",
+    "scopes_missing",
+    "organization_changed",
+    "system_required",
   ];
   if (code === "provider_http_429") return "collectionHub.errors.rate_limited";
   return `collectionHub.errors.${known.includes(code) ? code : "collection_failed"}`;

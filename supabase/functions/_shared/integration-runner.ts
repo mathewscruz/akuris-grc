@@ -8,6 +8,7 @@ import {
   identityImportRow,
 } from "./integration-model.ts";
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
+import { ativoDoGoogle } from "./google-workspace.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -64,6 +65,46 @@ async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], co
   }
 }
 
+// Google devices: match by Google id, then by a trustworthy serial on an asset not yet
+// linked to Google. Existing MeshCentral/Intune/manual fields are never overwritten.
+async function syncGoogleAtivos(db: any, empresaId: string, resources: any[], connectionId: string) {
+  const rows = resources.map(ativoDoGoogle).filter(Boolean) as any[];
+  let novos = 0;
+  for (const a of rows) {
+    let atual = (await db.from("ativos").select("id,atributos")
+      .eq("empresa_id", empresaId).eq("google_device_id", a.google_device_id).maybeSingle()).data;
+    const serial = serialConfiavel(a.atributos.numero_serie);
+    if (!atual && serial)
+      atual = (await db.from("ativos").select("id,atributos")
+        .eq("empresa_id", empresaId).is("google_device_id", null)
+        .eq("atributos->>numero_serie", serial).limit(1).maybeSingle()).data;
+    if (atual) {
+      const prev = atual.atributos ?? {};
+      const fill = Object.fromEntries(Object.entries(a.atributos).filter(([k, v]) => v != null && (prev[k] == null || k.startsWith("google_"))));
+      await db.from("ativos").update({
+        google_device_id: a.google_device_id, google_connection_id: connectionId,
+        atributos: { ...prev, ...fill, google_nao_visto: false },
+      }).eq("id", atual.id).eq("empresa_id", empresaId);
+    } else {
+      const ins = await db.from("ativos").insert({
+        ...a, empresa_id: empresaId, google_connection_id: connectionId, status: "pendente", tags: ["descoberto-google"],
+      });
+      if (!ins.error) novos++;
+    }
+  }
+  if (novos) {
+    const { data: admins } = await db.from("profiles").select("user_id")
+      .eq("empresa_id", empresaId).in("role", ["admin", "super_admin"]).eq("ativo", true);
+    if (admins?.length)
+      await db.from("notifications").insert(admins.map((p: any) => ({
+        user_id: p.user_id, title: "Novos ativos do Google Workspace",
+        message: `${novos} dispositivo(s) do Google Workspace entraram na Gestão de Ativos.`,
+        type: "info", link_to: "/ativos",
+      })));
+  }
+  return novos;
+}
+
 function checked(result: { error?: any }) {
   if (result.error) throw new ProviderError("storage_write_failed");
 }
@@ -93,9 +134,24 @@ export async function processIntegrationRun(
       scope_ids: connection.scope_ids,
     });
     const collectedAt = new Date().toISOString();
-    const selected = inScope(collection.resources, connection.scope_ids || []);
+    let selected = inScope(collection.resources, connection.scope_ids || []);
     if (selected.length < new Set(connection.scope_ids || []).size)
       collection.warnings.push("scope_unavailable");
+    const googleImported: string[] = connection.settings.imported_modules ?? [];
+    if (connection.provider === "google_workspace") {
+      // Module data only after the user imported it; per-module status stays visible.
+      selected = selected.filter((r) =>
+        r.kind === "document" ? googleImported.includes("drive")
+          : r.kind === "identity" ? googleImported.includes("usuarios") : false);
+      const moduleStatus: Record<string, string> = {};
+      for (const w of collection.warnings) {
+        const m = /^module:([a-z]+):(.+)$/.exec(w);
+        if (m && !moduleStatus[m[1]]) moduleStatus[m[1]] = m[2];
+      }
+      await db.from("integration_connections")
+        .update({ settings: { ...connection.settings, module_status: moduleStatus, module_status_at: new Date().toISOString() } })
+        .eq("id", connection.id).eq("empresa_id", run.empresa_id);
+    }
     // Discovery is visible in settings; only explicitly scoped observations
     // become evidence. No collection can change conformity_status.
     for (let offset = 0; offset < collection.resources.length; offset += 200) {
@@ -145,10 +201,14 @@ export async function processIntegrationRun(
       const devices = collection.resources.filter((r) => r.kind === "device");
       if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices, connection.id);
     }
+    if (connection.provider === "google_workspace" && googleImported.includes("dispositivos")) {
+      const devices = collection.resources.filter((r) => r.kind === "device");
+      if (devices.length) await syncGoogleAtivos(db, run.empresa_id, devices, connection.id);
+    }
     // Imported accounts feed the existing access review, in the chosen system.
     // Do not revoke disappeared accounts on a partial or filtered collection.
     if (connection.settings.system_id) {
-      const identities = selected.filter((item) => item.kind === "identity");
+      const identities = selected.filter((item) => item.kind === "identity" && item.signals.type !== "group");
       const rows = identities
         .map((item) => identityImportRow(item, connection.id))
         .filter(Boolean);

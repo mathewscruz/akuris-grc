@@ -1,9 +1,19 @@
 import { microsoftScopes, ProviderError } from "./integration-providers.ts";
 import type { Provider } from "./integration-model.ts";
 import { integrationCollectionsEnabled } from "./integration-release.ts";
+import { GOOGLE_WORKSPACE_SCOPES } from "./google-workspace.ts";
 
 export function oauthConfig(provider: Provider) {
   const callback = `${Deno.env.get("SUPABASE_URL")}/functions/v1/integration-connect`;
+  if (provider === "google_workspace")
+    return {
+      clientId: Deno.env.get("GOOGLE_INTEGRATION_CLIENT_ID"),
+      secret: Deno.env.get("GOOGLE_INTEGRATION_CLIENT_SECRET"),
+      authorization: "https://accounts.google.com/o/oauth2/v2/auth",
+      token: "https://oauth2.googleapis.com/token",
+      scopes: GOOGLE_WORKSPACE_SCOPES,
+      callback,
+    };
   if (provider === "google_drive")
     return {
       clientId: Deno.env.get("GOOGLE_INTEGRATION_CLIENT_ID"),
@@ -92,7 +102,7 @@ export async function authorizationUrl(
         ),
       ),
     ),
-    ...(provider === "google_drive"
+    ...(provider === "google_drive" || provider === "google_workspace"
       ? {
           access_type: "offline",
           prompt: "consent",
@@ -136,6 +146,7 @@ async function exchange(
     access_token: token.access_token as string,
     refresh_token: token.refresh_token as string | undefined,
     expires_at: Date.now() + Number(token.expires_in || 28800) * 1000,
+    ...(typeof token.scope === "string" ? { scope: token.scope as string } : {}),
   };
 }
 export function exchangeCode(

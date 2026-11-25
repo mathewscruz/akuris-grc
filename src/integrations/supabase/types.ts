@@ -632,6 +632,8 @@ export type Database = {
           descricao: string | null
           empresa_id: string
           fornecedor: string | null
+          google_connection_id: string | null
+          google_device_id: string | null
           id: string
           imei: string | null
           integration_connection_id: string | null
@@ -659,6 +661,8 @@ export type Database = {
           descricao?: string | null
           empresa_id: string
           fornecedor?: string | null
+          google_connection_id?: string | null
+          google_device_id?: string | null
           id?: string
           imei?: string | null
           integration_connection_id?: string | null
@@ -686,6 +690,8 @@ export type Database = {
           descricao?: string | null
           empresa_id?: string
           fornecedor?: string | null
+          google_connection_id?: string | null
+          google_device_id?: string | null
           id?: string
           imei?: string | null
           integration_connection_id?: string | null

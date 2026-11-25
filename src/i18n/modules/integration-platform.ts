@@ -34,6 +34,7 @@ export const integrationPlatform = {
       account: "ID da conta AWS (12 dígitos)",
       authorize: "Autorizar conexão",
       authorizedLink: "Continuar no fornecedor",
+      connectedBack: "Conectado. Os módulos com dados disponíveis mostram o ícone para importar.",
       awsReturn:
         "Após criar a função de leitura na AWS, volte aqui e execute a descoberta para validar o acesso.",
       authReturn:
@@ -116,7 +117,7 @@ export const integrationPlatform = {
       stale: "Coleta desatualizada",
       status: {
         pending: "Aguardando autorização",
-        authorized: "Autorizada · falta coletar",
+        authorized: "Conectado",
         connected: "Coleta completa",
         partial: "Coleta parcial",
         error: "Precisa de atenção",
@@ -146,10 +147,15 @@ export const integrationPlatform = {
         purgeTitle: "Remover dados dos módulos desligados?",
         purgeHelp: "Os dados que vieram da Microsoft nesses módulos serão removidos. O que foi criado à mão fica.",
         purgeCounts: "{removidos} removido(s) · {arquivados} arquivado(s) por terem ligações",
-        module: { intune: "Dispositivos do Intune", entra: "Usuários e grupos (Entra ID)", documentos: "Documentos (SharePoint)" },
-        moduleDest: { intune: "Preenche a Gestão de Ativos", entra: "Alimenta a Revisão de acessos", documentos: "Vira evidência reutilizável" },
+        module: { intune: "Dispositivos do Intune", entra: "Usuários e grupos (Entra ID)", documentos: "Documentos (SharePoint)", usuarios: "Usuários, grupos e papéis", dispositivos: "Dispositivos (móveis, ChromeOS, computadores)", auditoria: "Auditoria de login", drive: "Metadados do Drive" },
+        moduleDest: { intune: "Preenche a Gestão de Ativos", entra: "Alimenta a Revisão de acessos", documentos: "Vira evidência reutilizável", usuarios: "Alimenta a Revisão de acessos (MFA, suspenso, admins)", dispositivos: "Preenche a Gestão de Ativos", auditoria: "Último login e falhas nos últimos 30 dias (só logins explícitos/SAML)", drive: "Nome, link, datas e versão; o conteúdo não é lido" },
+      },
+      google: {
+        modulesTitle: "O que trazer do Google Workspace",
       },
       provider: {
+        google_workspace:
+          "Um administrador do Google Workspace autoriza só leitura: usuários, MFA e papéis para revisão de acessos, dispositivos para Ativos, auditoria de login e metadados do Drive.",
         microsoft:
           "Um clique do administrador do seu tenant conecta tudo: dispositivos do Intune para Ativos, usuários do Entra ID para revisão de acessos e documentos do SharePoint como evidência.",
         microsoft365:
@@ -180,6 +186,9 @@ export const integrationPlatform = {
         permission_missing:
           "A conta não concedeu uma permissão necessária. Revise o consentimento com seu administrador.",
         consent_revoked: "O administrador do tenant retirou a autorização do Akuris. Conecte de novo.",
+        scopes_missing: "Nem todas as permissões de leitura foram aceitas. Clique em Reautorizar e aceite todas.",
+        organization_changed: "Essa conta é de outra organização Google. Reconecte com uma conta da mesma organização ou crie uma nova conexão.",
+        system_required: "Escolha o sistema de destino nas configurações da conexão antes de importar os usuários.",
         consent_denied:
           "A autorização não foi concluída. Você pode tentar novamente.",
         mfa_permission_missing:
@@ -252,6 +261,7 @@ export const integrationPlatform = {
       account: "AWS account ID (12 digits)",
       authorize: "Authorize connection",
       authorizedLink: "Continue to provider",
+      connectedBack: "Connected. Modules with data available show the icon to import.",
       awsReturn:
         "After creating the read-only role in AWS, return here and run discovery to validate access.",
       authReturn:
@@ -330,7 +340,7 @@ export const integrationPlatform = {
       stale: "Outdated collection",
       status: {
         pending: "Awaiting authorization",
-        authorized: "Authorized · collection pending",
+        authorized: "Connected",
         connected: "Complete collection",
         partial: "Partial collection",
         error: "Needs attention",
@@ -360,10 +370,15 @@ export const integrationPlatform = {
         purgeCounts: "{removidos} removed · {arquivados} archived because they are linked",
         modulesHelp: "Turn on only what your company wants to use in Akuris. Access is always read-only.",
         teams: "Teams notifications",
-        module: { intune: "Intune devices", entra: "Users and groups (Entra ID)", documentos: "Documents (SharePoint)" },
-        moduleDest: { intune: "Fills Asset Management", entra: "Feeds access reviews", documentos: "Becomes reusable evidence" },
+        module: { intune: "Intune devices", entra: "Users and groups (Entra ID)", documentos: "Documents (SharePoint)", usuarios: "Users, groups and roles", dispositivos: "Devices (mobile, ChromeOS, computers)", auditoria: "Login audit", drive: "Drive metadata" },
+        moduleDest: { intune: "Fills Asset Management", entra: "Feeds access reviews", documentos: "Becomes reusable evidence", usuarios: "Feeds access reviews (MFA, suspended, admins)", dispositivos: "Fills Asset Management", auditoria: "Last login and failures in the last 30 days (explicit/SAML logins only)", drive: "Name, link, dates and version; content is not read" },
+      },
+      google: {
+        modulesTitle: "What to bring from Google Workspace",
       },
       provider: {
+        google_workspace:
+          "A Google Workspace admin grants read-only access: users, MFA and roles for access reviews, devices for Assets, login audit and Drive metadata.",
         microsoft:
           "One click from your tenant admin connects everything: Intune devices to Assets, Entra ID users to access reviews and SharePoint documents as evidence.",
         microsoft365:
@@ -394,6 +409,9 @@ export const integrationPlatform = {
         permission_missing:
           "A required permission was not granted. Review consent with your administrator.",
         consent_revoked: "Your tenant admin removed Akuris authorization. Connect again.",
+        scopes_missing: "Not all read permissions were accepted. Click Reauthorize and accept them all.",
+        organization_changed: "This account belongs to another Google organisation. Reconnect with an account from the same organisation or create a new connection.",
+        system_required: "Choose the target system in the connection settings before importing users.",
         consent_denied: "Authorization was not completed. You can try again.",
         mfa_permission_missing:
           "The provider did not allow reading MFA registration. This signal remains unknown.",

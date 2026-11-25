@@ -32,7 +32,8 @@ import { resolveItemStatusTone } from "@/lib/status-tone";
 import {
   COLLECTION_PROVIDERS,
   LEGACY_MICROSOFT_PROVIDERS,
-  MICROSOFT_MODULES,
+  PROVIDER_MODULES,
+  LEGACY_GOOGLE_PROVIDERS,
   connectionNeedsAttention,
   integrationErrorKey,
   integrationRequest,
@@ -189,9 +190,11 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
     const id = searchParams.get("connection");
     if (!id || !query.data) return;
     const result = searchParams.get("integration_result");
-    setActiveId(id);
+    // Back from OAuth: show "Connected" in the list; config opens only on click.
+    setView("connected");
     if (result && result !== "authorized")
       toast.error(t(integrationErrorKey(result)));
+    else toast.success(t("collectionHub.connectedBack"));
     const next = new URLSearchParams(searchParams);
     next.delete("connection");
     next.delete("integration_result");
@@ -208,7 +211,7 @@ function AvailableIntegrationCollections({ empresaId }: { empresaId: string }) {
     .filter((c) => view !== "attention" || connectionNeedsAttention(c));
   const providers = COLLECTION_PROVIDERS.filter(
     (p) =>
-      !LEGACY_MICROSOFT_PROVIDERS.has(p.id) ||
+      !(LEGACY_MICROSOFT_PROVIDERS.has(p.id) || LEGACY_GOOGLE_PROVIDERS.has(p.id)) ||
       connections.some((c) => c.provider === p.id),
   ).filter((p) =>
     matches(`${p.name} ${t(`collectionHub.family.${p.family}`)}`),
@@ -588,7 +591,9 @@ function ConnectionManager({
   const [region, setRegion] = useState(
     connection.settings.region || "us-east-1",
   );
-  const savedModules = connection.settings.modules || ["intune", "entra"];
+  const moduleList = PROVIDER_MODULES[connection.provider] || [];
+  const savedModules = connection.settings.modules || (connection.provider === "microsoft" ? ["intune", "entra"] : [...moduleList]);
+  const moduleNs = connection.provider === "google_workspace" ? "google" : "microsoft";
   const [modules, setModules] = useState(new Set(savedModules));
   const [busy, setBusy] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -680,10 +685,10 @@ function ConnectionManager({
       return next;
     });
   const locked = busy || running;
-  const unified = connection.provider === "microsoft";
+  const unified = moduleList.length > 0;
   const identity =
     ["microsoft365", "entra_id"].includes(connection.provider) ||
-    (unified && modules.has("entra"));
+    (unified && (modules.has("entra") || modules.has("usuarios")));
   return (
     <>
       <DialogShell
@@ -778,13 +783,13 @@ function ConnectionManager({
           {unified && (
             <section className="space-y-3">
               <div>
-                <h4 className="font-semibold">{t("collectionHub.microsoft.modulesTitle")}</h4>
+                <h4 className="font-semibold">{t(`collectionHub.${moduleNs}.modulesTitle`)}</h4>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {t("collectionHub.microsoft.modulesHelp")}
                 </p>
               </div>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {MICROSOFT_MODULES.map((m) => (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {moduleList.map((m) => (
                   <label
                     key={m}
                     className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm"
@@ -808,6 +813,11 @@ function ConnectionManager({
                       <span className="mt-0.5 block text-xs text-muted-foreground">
                         {t(`collectionHub.microsoft.moduleDest.${m}`)}
                       </span>
+                      {connection.settings.module_status?.[m] && (
+                        <span className="mt-1 block text-xs text-destructive">
+                          {t(integrationErrorKey(moduleStatusCode(connection.settings.module_status[m])))}
+                        </span>
+                      )}
                     </span>
                   </label>
                 ))}
@@ -1169,6 +1179,15 @@ function ConnectionManager({
       </DialogShell>
     </>
   );
+}
+
+/** Per-module warning (e.g. "cloud_permission_missing") → simple actionable message. */
+function moduleStatusCode(raw: string): string {
+  if (/limit|partial/.test(raw)) return "collection_limit";
+  if (/permission|403/.test(raw)) return "permission_missing";
+  if (/authorization/.test(raw)) return "authorization_expired";
+  if (/429/.test(raw)) return "rate_limited";
+  return raw;
 }
 
 function PurgeSummary({

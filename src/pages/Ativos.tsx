@@ -526,7 +526,7 @@ const Ativos = () => {
         description={t('modules.ativos.description')}
         actions={
           <div className="flex items-center gap-3">
-          <ImportarIntegracaoBadge modulo="intune" />
+          <ImportarIntegracaoBadge pagina="ativos" />
           <Button size="sm" onClick={() => {
             setEditingAtivo(null);
             setFormData(initialFormData);

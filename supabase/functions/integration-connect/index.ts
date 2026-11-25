@@ -18,7 +18,13 @@ import {
   digest,
   TENANT_ID,
 } from "../_shared/integration-oauth.ts";
-import { ProviderError } from "../_shared/integration-providers.ts";
+import { ProviderError, providerJson } from "../_shared/integration-providers.ts";
+import { customerChange, GOOGLE_MODULES, missingScopes } from "../_shared/google-workspace.ts";
+// Module lists per provider with optional per-module import/purge.
+const MODULES: Record<string, readonly string[]> = {
+  microsoft: ["intune", "entra", "documentos"],
+  google_workspace: GOOGLE_MODULES,
+};
 import { processIntegrationRun } from "../_shared/integration-runner.ts";
 import { integrationReleaseResponse } from "../_shared/integration-release.ts";
 
@@ -140,6 +146,24 @@ Deno.serve(async (req) => {
           status: "authorized",
           error_code: null,
         };
+        if (connection.data.provider === "google_workspace") {
+          // Every read-only scope must be granted; otherwise ask to re-authorise.
+          if (missingScopes(credentials.scope).length) throw new ProviderError("scopes_missing");
+          const customer = await providerJson(
+            "https://admin.googleapis.com/admin/directory/v1/customers/my_customer",
+            credentials.access_token, "https://admin.googleapis.com",
+          );
+          if (typeof customer?.id !== "string" || !/^[A-Za-z0-9]{4,40}$/.test(customer.id))
+            throw new ProviderError("permission_missing");
+          // Never silently switch Workspace organisation on reconnect.
+          if (customerChange(connection.data.settings?.customer_id, customer.id) === "changed")
+            throw new ProviderError("organization_changed");
+          update.settings = {
+            ...(connection.data.settings || {}),
+            customer_id: customer.id,
+            customer_domain: typeof customer.customerDomain === "string" ? customer.customerDomain.slice(0, 255) : null,
+          };
+        }
       }
       const completed = await client
         .from("integration_connections")
@@ -249,6 +273,8 @@ Deno.serve(async (req) => {
             ? { external_id: randomSecret() }
             : provider === "microsoft"
               ? { modules: ["intune", "entra"] }
+              : provider === "google_workspace"
+                ? { modules: [...GOOGLE_MODULES], imported_modules: [] }
               : {};
         const created = await client
           .from("integration_connections")
@@ -407,8 +433,8 @@ Deno.serve(async (req) => {
         return json({ error: "invalid_configuration" }, 400);
       if (body.frequency !== "manual" && !(await schedulerReady(client)))
         return json({ error: "scheduler_setup_required" }, 409);
-      if (connection.provider === "microsoft") {
-        const allowed = ["intune", "entra", "documentos"];
+      if (MODULES[connection.provider]) {
+        const allowed = MODULES[connection.provider];
         if (
           !Array.isArray(body.modules) ||
           body.modules.some((m: unknown) => !allowed.includes(m as string))
@@ -423,7 +449,7 @@ Deno.serve(async (req) => {
             .eq("id", connection.id)
             .eq("empresa_id", empresa),
         );
-        const antes: string[] = connection.settings.modules ?? ["intune"];
+        const antes: string[] = connection.settings.modules ?? (connection.provider === "microsoft" ? ["intune"] : [...allowed]);
         for (const m of antes.filter((m) => !body.modules.includes(m)))
           checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
         const imported = (connection.settings.imported_modules ?? []).filter((m: string) => body.modules.includes(m));
@@ -444,9 +470,10 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
     if (action === "purge_preview") {
-      const mods = connection.provider === "microsoft"
-        ? (Array.isArray(body.modules) ? body.modules : (connection.settings.modules ?? ["intune"]))
-            .filter((m: unknown) => ["intune", "entra", "documentos"].includes(m as string))
+      const allowedMods = MODULES[connection.provider];
+      const mods = allowedMods
+        ? (Array.isArray(body.modules) ? body.modules : (connection.settings.modules ?? [...allowedMods]))
+            .filter((m: unknown) => allowedMods.includes(m as string))
         : [];
       const out = [];
       for (const m of mods)
@@ -457,8 +484,8 @@ Deno.serve(async (req) => {
       }
       return json({ modules: out });
     }
-    if (action === "disconnect" && connection.provider === "microsoft") {
-      for (const m of ["intune", "entra", "documentos"])
+    if (action === "disconnect" && MODULES[connection.provider]) {
+      for (const m of MODULES[connection.provider])
         checked(await client.rpc("integration_purge_module", { p_id: connection.id, p_empresa: empresa, p_module: m, p_dry_run: false }));
       checked(await client.from("integration_connections")
         .update({ settings: { ...connection.settings, imported_modules: [] } })
@@ -476,9 +503,11 @@ Deno.serve(async (req) => {
     }
     if (action === "import_module") {
       // User accepted importing this module's data: mark it and keep it in sync.
-      const mods: string[] = connection.settings.modules ?? ["intune"];
-      if (connection.provider !== "microsoft" || !mods.includes(body.module))
+      const mods: string[] = connection.settings.modules ?? [...(MODULES[connection.provider] || [])];
+      if (!MODULES[connection.provider] || !mods.includes(body.module))
         return json({ error: "invalid_configuration" }, 400);
+      if (["usuarios", "entra"].includes(body.module) && !connection.settings.system_id)
+        return json({ error: "system_required" }, 409);
       const imported = [...new Set([...(connection.settings.imported_modules ?? []), body.module])];
       const periodic = connection.frequency === "manual" && (await schedulerReady(client));
       checked(await client.from("integration_connections").update({

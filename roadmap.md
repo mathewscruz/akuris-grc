@@ -10,3 +10,6 @@
 ## Microsoft 365 unificado
 - [ ] Registrar o aplicativo multi-tenant no Entra ID da Akuris e salvar MICROSOFT_INTEGRATION_CLIENT_ID / _SECRET (aguarda usuário)
 - [ ] Testar com um tenant real: consentimento e dispositivos do Intune entrando em Ativos (depende do item acima)
+- [x] Voltar do OAuth como "Conectado" sem abrir configurações; ícone do módulo aparece logo após autorizar
+- [x] Google Workspace somente leitura (cartão único): usuários/grupos/papéis, dispositivos → Ativos, auditoria de login, metadados Drive; importar só pelo ícone no módulo
+- [ ] Validar autorização e coleta real do Google Workspace com a conta da Akuris (aguarda configuração no Google Console)
