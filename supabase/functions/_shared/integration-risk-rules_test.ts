@@ -360,3 +360,31 @@ Deno.test("grouped incidents: member vanishing from the filter stays pending unt
   const d = await decideLifecycle(open, evaluateSecurity(sec).findings, (r, id) => sec.proveFixed!(r, id));
   assertEquals(d.findings.find((f) => f.regra_id === "alerta_malware")!.evidencia.prova_ids, ["29", "30"]);
 });
+
+
+// ---- Google Cloud Identity encryptionState (same authorised devices.readonly read).
+const gCloud = (o: Record<string, unknown>) => googleDeviceResource("cloud", { name: "devices/c1", model: "Pixel", deviceType: "ANDROID", lastSyncTime: "2026-11-24T00:00:00Z", ...o })!;
+Deno.test("google cloud encryptionState maps only explicit values", () => {
+  assertEquals(gCloud({ encryptionState: "ENCRYPTED" }).signals.encrypted, true);
+  assertEquals(gCloud({ encryptionState: "NOT_ENCRYPTED" }).signals.encrypted, false);
+  for (const v of [undefined, "ENCRYPTION_STATE_UNSPECIFIED", "UNSUPPORTED_BY_DEVICE"]) assertEquals(gCloud({ encryptionState: v }).signals.encrypted, null);
+});
+Deno.test("google encryption feeds the existing rule; unknown never fires", () => {
+  assertEquals(ids([gCloud({ encryptionState: "NOT_ENCRYPTED" })]), ["dispositivos_sem_criptografia"]);
+  assertEquals(ids([gCloud({ encryptionState: "UNSUPPORTED_BY_DEVICE" })]), []);
+  assertEquals(gCloud({ encryptionState: "ENCRYPTED" }).signals.compliance, "unknown", "no Intune-style compliance invented");
+});
+Deno.test("google encryption coverage: all known ok, some known partial, none not evaluated (not permission)", () => {
+  const cov = (r: unknown[]) => riskCoverage("google_workspace", r as never, true, null).dispositivos_sem_criptografia;
+  assertEquals(cov([gCloud({ encryptionState: "ENCRYPTED" })]), { status: "ok" });
+  assertEquals(cov([gCloud({ encryptionState: "ENCRYPTED" }), gCloud({ name: "devices/c2" })]), { status: "partial", motivo: "campos_parciais" });
+  assertEquals(cov([gCloud({})]), { status: "not_evaluated", motivo: "campos_nao_coletados" });
+  assertEquals("google_criptografia" in riskCoverage("google_workspace", [], true, null), false);
+});
+Deno.test("google encryption resolution needs explicit ENCRYPTED on the same device", () => {
+  const id = gCloud({}).externalId;
+  assertEquals(configFixed([gCloud({ encryptionState: "ENCRYPTED" })] as never, "dispositivos_sem_criptografia", id), true);
+  for (const v of [undefined, "ENCRYPTION_STATE_UNSPECIFIED", "UNSUPPORTED_BY_DEVICE", "NOT_ENCRYPTED"])
+    assertEquals(configFixed([gCloud({ encryptionState: v })] as never, "dispositivos_sem_criptografia", id), false);
+  assertEquals(configFixed([gCloud({ name: "devices/other", encryptionState: "ENCRYPTED" })] as never, "dispositivos_sem_criptografia", id), false);
+});

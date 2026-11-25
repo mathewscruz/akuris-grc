@@ -138,16 +138,19 @@ export function evaluateSecurity(sec: SecurityCollection | null): { findings: Ri
 
 export type CoverageEntry = { status: "ok" | "partial" | "permission_missing" | "unavailable" | "not_evaluated"; motivo?: string };
 /** Checks Akuris never collects for Google (no read-only scope authorised): always shown as not evaluated. */
-export const GOOGLE_NOT_COLLECTED = ["google_alert_center", "google_drive_compartilhamento", "google_criptografia", "google_politicas"];
+export const GOOGLE_NOT_COLLECTED = ["google_alert_center", "google_drive_compartilhamento", "google_politicas"];
 
 /** Per-rule coverage shown in the UI: what was evaluated, what was not and why. No result never means "no risk". */
 export function riskCoverage(provider: string, resources: Res[], clean: boolean, sec: SecurityCollection | null): Record<string, CoverageEntry> {
   const out: Record<string, CoverageEntry> = {};
   const covered = new Set(coveredConfigRules(resources));
-  const rules = provider === "google_workspace" ? ["admin_sem_mfa", "excesso_admins", "dispositivos_sem_sincronizar"]
+  const rules = provider === "google_workspace" ? ["admin_sem_mfa", "excesso_admins", "dispositivos_sem_sincronizar", "dispositivos_sem_criptografia"]
     : ["dispositivos_nao_conformes", "dispositivos_sem_criptografia", "dispositivos_sem_sincronizar", "admin_sem_mfa", "excesso_admins"];
   for (const r of rules) out[r] = !clean ? { status: "partial", motivo: "coleta_com_avisos" }
-    : covered.has(r) ? { status: "ok" } : { status: "not_evaluated", motivo: "campos_nao_coletados" };
+    : covered.has(r) ? { status: "ok" }
+    // Encryption: some devices with an explicit value = partial (known fields only); none = data not provided, not a permission gap.
+    : r === "dispositivos_sem_criptografia" && resources.some((x) => x.kind === "device" && typeof x.signals.encrypted === "boolean")
+      ? { status: "partial", motivo: "campos_parciais" } : { status: "not_evaluated", motivo: "campos_nao_coletados" };
   if (provider === "google_workspace") for (const r of GOOGLE_NOT_COLLECTED) out[r] = { status: "not_evaluated", motivo: "nao_coletado" };
   if (provider === "microsoft") for (const [src, regras] of Object.entries(SOURCE_RULES)) {
     const d = sec?.detalhes?.[src as keyof NonNullable<SecurityCollection["detalhes"]>];

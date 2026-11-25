@@ -136,7 +136,9 @@ export function googleDeviceResource(kind: "mobile" | "chromeos" | "cloud", d: a
       owner_email: (kind === "mobile" ? d.email?.[0] : kind === "chromeos" ? d.annotatedUser : null) ?? null,
       provider_last_sync: (kind === "mobile" ? d.lastSync : kind === "chromeos" ? d.lastSync : d.lastSyncTime) ?? null,
       device_status: (kind === "mobile" ? d.status : kind === "chromeos" ? d.status : d.managementState) ?? null,
-      ...(kind === "cloud" ? { device_type: d.deviceType ?? null, owner_type: d.ownerType ?? null } : {}),
+      ...(kind === "cloud" ? { device_type: d.deviceType ?? null, owner_type: d.ownerType ?? null,
+        // Cloud Identity encryptionState: only explicit values count; unspecified/unsupported/absent stay unknown.
+        encrypted: d.encryptionState === "ENCRYPTED" ? true : d.encryptionState === "NOT_ENCRYPTED" ? false : null } : {}),
     },
   };
 }
