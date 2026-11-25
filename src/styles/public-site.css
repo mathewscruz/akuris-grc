@@ -39,6 +39,8 @@
 .site-muted { color:#a9b5c7; font-size:14px; }
 .site-hero .site-muted { font-size:13px!important; }
 .site-text-link { color:#cfc4ff; font-size:14px; padding-block:8px; display:inline-block; }
+/* Links inside policy/legal prose must stay visibly clickable over the .lp-root a reset. */
+.lp-root a.site-inline-link { color:hsl(var(--info)); text-decoration:underline; text-underline-offset:3px; }
 .site-guides { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .site-guide { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:22px; border:1px solid #233149; border-radius:8px; color:#e2e7ef; }
 .site-guide:hover { background:#16243d; border-color:#7552ff; }

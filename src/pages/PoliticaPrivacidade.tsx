@@ -121,6 +121,23 @@ const PoliticaPrivacidade = () => {
                 ))}
               </ul>
               <p className="leading-relaxed mt-4">{p("s6p2")}</p>
+
+              <div className="bg-white/5 rounded-lg p-5 border border-white/10 mt-6">
+                <h3 className="font-semibold text-white mb-2">{p("googleTitulo")}</h3>
+                <p className="text-sm leading-relaxed">{p("googleP1")}</p>
+                <p className="text-sm leading-relaxed mt-3">
+                  {p("googleP2Pre")}
+                  <a
+                    href="https://developers.google.com/terms/api-services-user-data-policy"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="site-inline-link"
+                  >
+                    {p("googleP2Link")}
+                  </a>
+                  {p("googleP2Post")}
+                </p>
+              </div>
             </section>
 
             <section>
@@ -160,6 +177,19 @@ const PoliticaPrivacidade = () => {
                 ))}
               </ul>
               <p className="leading-relaxed mt-4">{p("s10p2")}</p>
+              <p className="leading-relaxed mt-4">
+                {p("s10p3a")}
+                <a
+                  href="https://lovable.dev/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="site-inline-link"
+                >
+                  {p("s10p3Link")}
+                </a>
+                {p("s10p3b")}
+              </p>
+              <p className="leading-relaxed mt-4">{p("s10p4")}</p>
             </section>
 
             <section>
