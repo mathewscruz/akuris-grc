@@ -3,6 +3,11 @@ export const integrationPlatform = {
     entidades: { sistema: "Sistema" },
     collectionHub: {
       btnReview: "Revisar",
+      cardModules: "Módulos importados",
+      cardLastRun: "Última coleta",
+      cardNotConnected: "Não conectado",
+      cardFailed: "Falhou",
+      cardEdit: "Configurar",
       schedulerInactive: "A atualização agendada ainda não está ativa: os dados das integrações só são atualizados quando você clica em Coletar agora.",
       btnFix: "Erro · Corrigir",
       conectadas: { titulo: "Conectadas", conectado: "Conectado", ultimoScan: "Último scan", recursos: "recursos encontrados", historico: "Últimos scans", nenhum: "Nenhum scan registrado", sucesso: "Concluído", falha: "Falhou" },
@@ -237,6 +242,11 @@ export const integrationPlatform = {
     entidades: { sistema: "System" },
     collectionHub: {
       btnReview: "Review",
+      cardModules: "Imported modules",
+      cardLastRun: "Last collection",
+      cardNotConnected: "Not connected",
+      cardFailed: "Failed",
+      cardEdit: "Configure",
       schedulerInactive: "Scheduled refresh is not active yet: integration data is refreshed only when you click Collect now.",
       btnFix: "Error · Fix",
       conectadas: { titulo: "Connected", conectado: "Connected", ultimoScan: "Last scan", recursos: "resources found", historico: "Recent scans", nenhum: "No scans recorded", sucesso: "Completed", falha: "Failed" },

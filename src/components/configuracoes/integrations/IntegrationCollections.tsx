@@ -1,6 +1,7 @@
 import { formatDateTime } from '@/lib/date-utils';
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { IntegrationStatusButton, type IntegrationState } from "./IntegrationStatusButton";
+import { type IntegrationState } from "./IntegrationStatusButton";
+import { IntegrationCard } from "./IntegrationCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -44,7 +45,7 @@ import {
 function ProviderLogo({ provider }: { provider: CollectionProvider }) {
   const item = COLLECTION_PROVIDERS.find((p) => p.id === provider)!;
   return (
-    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border bg-white p-2.5">
+    <span className="flex h-12 w-12 shrink-0 items-center justify-center p-1">
       <img
         src={`/integrations/${item.logo}`}
         alt=""
@@ -116,22 +117,15 @@ function ComingSoonCollections({ empresaId, extraCards, toolbar }: { empresaId: 
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {providers.map((provider) => (
-          <article key={provider.id} className="flex flex-col rounded-lg border bg-card p-5">
-            <div className="flex items-center gap-3">
-              <ProviderLogo provider={provider.id} />
-              <div>
-                <h4 className="font-semibold">{provider.name}</h4>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t(`collectionHub.family.${provider.family}`)}
-                </p>
-              </div>
-            </div>
-            <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
-              {t(`collectionHub.provider.${provider.id}`)}
-            </p>
-            {provider.id === "microsoft" && <TeamsAvisosButton empresaId={empresaId} />}
-            <IntegrationStatusButton name={provider.name} state={connectedProviders.has(provider.id) ? "connected" : "unavailable"} />
-          </article>
+          <IntegrationCard
+            key={provider.id}
+            logo={<ProviderLogo provider={provider.id} />}
+            name={provider.name}
+            category={t(`collectionHub.family.${provider.family}`)}
+            description={t(`collectionHub.provider.${provider.id}`)}
+            state={connectedProviders.has(provider.id) ? "connected" : "unavailable"}
+            extra={provider.id === "microsoft" ? <TeamsAvisosButton empresaId={empresaId} /> : undefined}
+          />
         ))}
         {extraCards}
       </div>
@@ -249,25 +243,18 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
           {ordered.map((provider) => {
             const { state, conn } = stateOf(provider.id);
             return (
-              <article key={provider.id} className="flex flex-col rounded-lg border bg-card p-5 transition-shadow hover:shadow-sm">
-                <div className="flex items-center gap-3">
-                  <ProviderLogo provider={provider.id} />
-                  <div>
-                    <h4 className="font-semibold">{provider.name}</h4>
-                    <p className="mt-1 text-xs text-muted-foreground">{t(`collectionHub.family.${provider.family}`)}</p>
-                  </div>
-                </div>
-                <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
-                  {t(`collectionHub.provider.${provider.id}`)}
-                </p>
-                {provider.id === "microsoft" && <TeamsAvisosButton empresaId={empresaId} />}
-                <IntegrationStatusButton
-                  name={provider.name}
-                  state={state}
-                  title={conn ? `${t("collectionHub.lastSuccess")}: ${conn.last_success_at ? formatDateTime(conn.last_success_at) : t("collectionHub.never")}` : undefined}
-                  onClick={() => (conn ? setActiveId(conn.id) : setNewProvider(provider.id))}
-                />
-              </article>
+              <IntegrationCard
+                key={provider.id}
+                logo={<ProviderLogo provider={provider.id} />}
+                name={provider.name}
+                category={t(`collectionHub.family.${provider.family}`)}
+                description={t(`collectionHub.provider.${provider.id}`)}
+                state={state}
+                modules={conn?.settings?.imported_modules?.length ? conn.settings.imported_modules.map((m) => t(`collectionHub.microsoft.module.${m}`)).join(", ") : undefined}
+                lastRun={conn ? (conn.last_success_at ? formatDateTime(conn.last_success_at) : t("collectionHub.never")) : undefined}
+                onOpen={() => (conn ? setActiveId(conn.id) : setNewProvider(provider.id))}
+                extra={provider.id === "microsoft" && conn ? <TeamsAvisosButton empresaId={empresaId} /> : undefined}
+              />
             );
           })}
           {extraCards}

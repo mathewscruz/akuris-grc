@@ -18,7 +18,7 @@ import { IntegrationLogViewer } from './integrations/IntegrationLogViewer';
 import { ApiKeysManager } from './ApiKeysManager';
 import { InboundWebhooksManager } from './InboundWebhooksManager';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IntegrationStatusButton } from './integrations/IntegrationStatusButton';
+import { IntegrationCard } from './integrations/IntegrationCard';
 import { IntegrationCollections } from './integrations/IntegrationCollections';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -360,21 +360,15 @@ export function IntegrationHub() {
     const status = getIntegrationStatus(integration.tipo);
     const Logo = integration.Logo;
     return (
-      <article key={integration.id} className="flex flex-col rounded-lg border bg-card p-5 transition-shadow hover:shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border bg-background"><Logo /></span>
-          <div>
-            <h4 className="font-semibold">{integration.nome}</h4>
-            <p className="mt-1 text-xs text-muted-foreground">{CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome}</p>
-          </div>
-        </div>
-        <p className="mb-5 mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">{integration.descricao}</p>
-        <IntegrationStatusButton
-          name={integration.nome}
-          state={!integration.disponivel ? 'unavailable' : status === 'conectado' ? 'connected' : status === 'erro' ? 'error' : 'disconnected'}
-          onClick={() => handleConfigureClick(integration)}
-        />
-      </article>
+      <IntegrationCard
+        key={integration.id}
+        logo={<Logo />}
+        name={integration.nome}
+        category={CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome ?? ''}
+        description={integration.descricao}
+        state={!integration.disponivel ? 'unavailable' : status === 'conectado' ? 'connected' : status === 'erro' ? 'error' : 'disconnected'}
+        onOpen={() => handleConfigureClick(integration)}
+      />
     );
   };
 
