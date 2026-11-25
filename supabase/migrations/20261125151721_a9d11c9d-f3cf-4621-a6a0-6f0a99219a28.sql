@@ -1,0 +1,1 @@
+REVOKE ALL ON public.integracao_riscos_sugeridos FROM anon;

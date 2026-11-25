@@ -13,10 +13,11 @@ import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { RiscosIcon, IconGrid, IconShieldCheck } from '@/components/icons';
+import { RiscosSugeridos } from './RiscosSugeridos';
 
-export type RiscosView = 'matrix' | 'table' | 'aceite';
+export type RiscosView = 'matrix' | 'table' | 'aceite' | 'sugeridos';
 const STORAGE_KEY = 'akuris.riscos.view';
-const VALID: RiscosView[] = ['matrix', 'table', 'aceite'];
+const VALID: RiscosView[] = ['matrix', 'table', 'aceite', 'sugeridos'];
 
 export function resolveRiscosView(requested: string | null, _stored: string | null): RiscosView {
   if (requested) return VALID.includes(requested as RiscosView) ? requested as RiscosView : 'table';
@@ -85,10 +86,15 @@ export function RiscosTabs({ matrix, table, aceite, riskCount, acceptedCount, ma
           <IconShieldCheck />
           {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
+        <TabsTrigger value="sugeridos" className="text-xs">
+          <IconShieldCheck />
+          {t('riscosSugeridos.tab')}
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="table">{table}</TabsContent>
       <TabsContent value="matrix">{matrix}</TabsContent>
       <TabsContent value="aceite">{aceite}</TabsContent>
+      <TabsContent value="sugeridos"><RiscosSugeridos /></TabsContent>
     </Tabs>
   );
 }

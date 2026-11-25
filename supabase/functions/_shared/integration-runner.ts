@@ -10,6 +10,7 @@ import {
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
 import { platformServiceAccount } from "./google-delegated.ts";
+import { coveredRules, evaluateRiskRules, RISK_PROVIDERS } from "./integration-risk-rules.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -319,6 +320,14 @@ export async function processIntegrationRun(
         hash: await digest(snapshot),
         size: new TextEncoder().encode(snapshot).length,
       };
+    }
+    // Configuration risks: only after a successful collection, over the full (unfiltered) result.
+    if (RISK_PROVIDERS.includes(connection.provider) && collection.warnings.length === 0) {
+      checked(await db.rpc("integracao_registrar_riscos", {
+        p_empresa: run.empresa_id, p_connection: connection.id, p_provider: connection.provider,
+        p_achados: evaluateRiskRules(collection.resources),
+        p_cobertas: coveredRules(collection.resources),
+      }));
     }
     await progress.finish();
     const partial = collection.warnings.length > 0;

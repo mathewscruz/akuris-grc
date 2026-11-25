@@ -7236,6 +7236,91 @@ export type Database = {
         }
         Relationships: []
       }
+      integracao_riscos_sugeridos: {
+        Row: {
+          connection_id: string
+          corrigida_em: string | null
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          empresa_id: string
+          estado: string
+          evidencia: Json
+          id: string
+          impacto: number
+          motivo_descarte: string | null
+          primeira_deteccao: string
+          probabilidade: number
+          provider: string
+          regra_id: string
+          risco_id: string | null
+          ultima_deteccao: string
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          corrigida_em?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          empresa_id: string
+          estado?: string
+          evidencia?: Json
+          id?: string
+          impacto: number
+          motivo_descarte?: string | null
+          primeira_deteccao?: string
+          probabilidade: number
+          provider: string
+          regra_id: string
+          risco_id?: string | null
+          ultima_deteccao?: string
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          corrigida_em?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          empresa_id?: string
+          estado?: string
+          evidencia?: Json
+          id?: string
+          impacto?: number
+          motivo_descarte?: string | null
+          primeira_deteccao?: string
+          probabilidade?: number
+          provider?: string
+          regra_id?: string
+          risco_id?: string | null
+          ultima_deteccao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integracao_riscos_sugeridos_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integracao_riscos_sugeridos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integracao_riscos_sugeridos_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integracoes_config: {
         Row: {
           configuracoes: Json | null
@@ -12717,6 +12802,10 @@ export type Database = {
       }
     }
     Functions: {
+      aceitar_risco_sugerido: {
+        Args: { p_descricao: string; p_id: string; p_nome: string }
+        Returns: string
+      }
       activate_mfa_code_issue: {
         Args: { p_code_id: string; p_user_id: string }
         Returns: boolean
@@ -13091,6 +13180,10 @@ export type Database = {
           denuncia_id: string
         }[]
       }
+      descartar_risco_sugerido: {
+        Args: { p_id: string; p_motivo: string }
+        Returns: undefined
+      }
       destinatario_do_aviso_ao_denunciante: {
         Args: { p_denuncia_id: string }
         Returns: Json
@@ -13338,6 +13431,16 @@ export type Database = {
         Returns: boolean
       }
       iniciar_rotina_agendada: { Args: { p_rotina: string }; Returns: string }
+      integracao_registrar_riscos: {
+        Args: {
+          p_achados: Json
+          p_cobertas: string[]
+          p_connection: string
+          p_empresa: string
+          p_provider: string
+        }
+        Returns: number
+      }
       integration_change_state: {
         Args: { p_action: string; p_empresa: string; p_id: string }
         Returns: undefined

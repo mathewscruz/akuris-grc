@@ -17,6 +17,7 @@ import { riscosDialogs } from "./riscos-dialogs";
 import { riscosDetalhe } from "./riscos-detalhe";
 import { riscosControles } from "./riscos-controles";
 import { riscosBiblioteca } from "./riscos-biblioteca";
+import { riscosSugeridos } from "./riscos-sugeridos";
 import { documentos } from "./documentos";
 import { documentosExtras } from "./documentos-extras";
 import { docgen } from "./docgen";
@@ -149,6 +150,7 @@ const modules: Record<string, ModuleDict> = {
   riscosDetalhe,
   riscosControles,
   riscosBiblioteca,
+  riscosSugeridos,
   documentos,
   documentosExtras,
   docgen,
