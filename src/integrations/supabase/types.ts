@@ -7554,6 +7554,8 @@ export type Database = {
           finished_at: string | null
           id: string
           lease_until: string | null
+          progress_done: number | null
+          progress_total: number | null
           resource_count: number
           started_at: string | null
           status: string
@@ -7569,6 +7571,8 @@ export type Database = {
           finished_at?: string | null
           id?: string
           lease_until?: string | null
+          progress_done?: number | null
+          progress_total?: number | null
           resource_count?: number
           started_at?: string | null
           status?: string
@@ -7584,6 +7588,8 @@ export type Database = {
           finished_at?: string | null
           id?: string
           lease_until?: string | null
+          progress_done?: number | null
+          progress_total?: number | null
           resource_count?: number
           started_at?: string | null
           status?: string
@@ -13271,6 +13277,8 @@ export type Database = {
           finished_at: string | null
           id: string
           lease_until: string | null
+          progress_done: number | null
+          progress_total: number | null
           resource_count: number
           started_at: string | null
           status: string

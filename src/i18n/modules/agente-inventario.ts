@@ -4,6 +4,7 @@ export const agenteInventario = {
     disponivel: 'Há dados do {fonte} para importar. Clique para importar e manter sincronizado.',
     sincronizado: 'Sincronizado com {fonte} automaticamente.',
     iniciado: 'Importação do {fonte} iniciada. Os dados serão atualizados todos os dias.',
+    importando: 'Importando do {fonte}… {pct}%',
   }, agenteInventario: {
     menu: 'Agente de inventário', titulo: 'Agente de inventário Akuris',
     descricao: 'Instale o Akuris Agent nas máquinas da empresa. Elas aparecem em Ativos com hardware, sistema e programas, e são atualizadas de hora em hora.',
@@ -18,6 +19,7 @@ export const agenteInventario = {
     disponivel: '{fonte} data is ready to import. Click to import and keep it in sync.',
     sincronizado: 'Automatically synced with {fonte}.',
     iniciado: '{fonte} import started. Data will refresh every day.',
+    importando: 'Importing from {fonte}… {pct}%',
   }, agenteInventario: {
     menu: 'Inventory agent', titulo: 'Akuris inventory agent',
     descricao: 'Install the Akuris Agent on company machines. They appear in Assets with hardware, OS and software, refreshed every hour.',

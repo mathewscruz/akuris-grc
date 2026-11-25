@@ -1,0 +1,1 @@
+ALTER TABLE public.integration_runs ADD COLUMN IF NOT EXISTS progress_total integer, ADD COLUMN IF NOT EXISTS progress_done integer;

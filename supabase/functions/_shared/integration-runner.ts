@@ -12,10 +12,11 @@ import { ativoDoGoogle } from "./google-workspace.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
-async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], connectionId: string) {
+async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], connectionId: string, tick: () => Promise<void> = async () => {}) {
   const rows = resources.map(ativoDoIntune).filter(Boolean) as any[];
   let novos = 0;
   for (const a of rows) {
+    await tick();
     let atual = (
       await db.from("ativos").select("id,atributos")
         .eq("empresa_id", empresaId).eq("intune_device_id", a.intune_device_id).maybeSingle()
@@ -67,10 +68,11 @@ async function syncIntuneAtivos(db: any, empresaId: string, resources: any[], co
 
 // Google devices: match by Google id, then by a trustworthy serial on an asset not yet
 // linked to Google. Existing MeshCentral/Intune/manual fields are never overwritten.
-async function syncGoogleAtivos(db: any, empresaId: string, resources: any[], connectionId: string) {
+async function syncGoogleAtivos(db: any, empresaId: string, resources: any[], connectionId: string, tick: () => Promise<void> = async () => {}) {
   const rows = resources.map(ativoDoGoogle).filter(Boolean) as any[];
   let novos = 0;
   for (const a of rows) {
+    await tick();
     let atual = (await db.from("ativos").select("id,atributos")
       .eq("empresa_id", empresaId).eq("google_device_id", a.google_device_id).maybeSingle()).data;
     const serial = serialConfiavel(a.atributos.numero_serie);
@@ -103,6 +105,21 @@ async function syncGoogleAtivos(db: any, empresaId: string, resources: any[], co
       })));
   }
   return novos;
+}
+
+/** Measured import progress: done never exceeds total; written every `every` steps and at the end. */
+export function createProgress(write: (done: number, total: number) => Promise<unknown>, total: number, every = 10) {
+  let done = 0;
+  return {
+    total,
+    async add(n = 1) {
+      const before = done;
+      done = Math.min(total, done + n);
+      if (done === before) return;
+      if (done === total || Math.floor(done / every) > Math.floor(before / every)) await write(done, total);
+    },
+    finish: () => write(total, total),
+  };
 }
 
 function checked(result: { error?: any }) {
@@ -152,6 +169,17 @@ export async function processIntegrationRun(
         .update({ settings: { ...connection.settings, module_status: moduleStatus, module_status_at: new Date().toISOString() } })
         .eq("id", connection.id).eq("empresa_id", run.empresa_id);
     }
+    const intuneSync = connection.provider === "intune" ||
+      (connection.provider === "microsoft" &&
+        (connection.settings.modules ?? ["intune"]).includes("intune") &&
+        (connection.settings.imported_modules ?? []).includes("intune"));
+    const googleSync = connection.provider === "google_workspace" && googleImported.includes("dispositivos");
+    const deviceCount = intuneSync || googleSync ? collection.resources.filter((r) => r.kind === "device").length : 0;
+    const writeProgress = (done: number, total: number) =>
+      db.from("integration_runs").update({ progress_done: done, progress_total: total })
+        .eq("id", run.id).eq("empresa_id", run.empresa_id);
+    const progress = createProgress(writeProgress, collection.resources.length + deviceCount);
+    await writeProgress(0, progress.total);
     // Discovery is visible in settings; only explicitly scoped observations
     // become evidence. No collection can change conformity_status.
     for (let offset = 0; offset < collection.resources.length; offset += 200) {
@@ -190,6 +218,7 @@ export async function processIntegrationRun(
           { onConflict: "run_id,resource_id" },
         ),
       );
+      await progress.add(batch.length);
     }
     if (
       connection.provider === "intune" ||
@@ -199,11 +228,11 @@ export async function processIntegrationRun(
         (connection.settings.imported_modules ?? []).includes("intune"))
     ) {
       const devices = collection.resources.filter((r) => r.kind === "device");
-      if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices, connection.id);
+      if (devices.length) await syncIntuneAtivos(db, run.empresa_id, devices, connection.id, () => progress.add());
     }
     if (connection.provider === "google_workspace" && googleImported.includes("dispositivos")) {
       const devices = collection.resources.filter((r) => r.kind === "device");
-      if (devices.length) await syncGoogleAtivos(db, run.empresa_id, devices, connection.id);
+      if (devices.length) await syncGoogleAtivos(db, run.empresa_id, devices, connection.id, () => progress.add());
     }
     // Imported accounts feed the existing access review, in the chosen system.
     // Do not revoke disappeared accounts on a partial or filtered collection.
@@ -257,6 +286,7 @@ export async function processIntegrationRun(
         size: new TextEncoder().encode(snapshot).length,
       };
     }
+    await progress.finish();
     const partial = collection.warnings.length > 0;
     checked(
       await db.rpc("integration_finish_run", {

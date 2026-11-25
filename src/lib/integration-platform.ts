@@ -182,3 +182,9 @@ export function integrationErrorKey(code: string): string {
   if (code === "provider_http_429") return "collectionHub.errors.rate_limited";
   return `collectionHub.errors.${known.includes(code) ? code : "collection_failed"}`;
 }
+
+/** Measured import progress (0–100); null total means the tool is still being read → 0%. */
+export function importProgressPct(done: number | null | undefined, total: number | null | undefined): number {
+  if (!total || total <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.floor(((done ?? 0) / total) * 100)));
+}

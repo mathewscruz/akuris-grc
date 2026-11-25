@@ -2527,5 +2527,10 @@ input:-webkit-autofill:focus {
 .akuris-import-ring{position:absolute;inset:-4px;border-radius:9999px;pointer-events:none}
 .akuris-import-badge.is-pending .akuris-import-ring{background:conic-gradient(from 0deg,hsl(var(--primary)) 0 25%,transparent 25% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));animation:akurisImportRing 1.6s linear infinite}
 .akuris-import-badge.is-synced{opacity:.85}
+.akuris-import-badge.is-importing{cursor:progress}
+.akuris-import-badge.is-importing img{opacity:.35}
+.akuris-import-pct{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-size:.625rem;font-weight:700;font-variant-numeric:tabular-nums;color:#0a1628}
+.akuris-import-badge.is-waiting .akuris-import-pct{animation:akurisImportPulse 1.4s ease-in-out infinite}
+@keyframes akurisImportPulse{50%{opacity:.45}}
 @keyframes akurisImportRing{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.akuris-import-badge.is-pending .akuris-import-ring{animation:none;background:hsl(var(--primary))}}
+@media (prefers-reduced-motion:reduce){.akuris-import-badge.is-pending .akuris-import-ring{animation:none;background:hsl(var(--primary))}.akuris-import-badge.is-waiting .akuris-import-pct{animation:none}}
