@@ -101,6 +101,25 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    if (!chamadaInterna) {
+      // Sending to a supplier needs the module permission, and a linked supplier's registered e-mail.
+      const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '', { global: { headers: { Authorization: authHeader } } });
+      const { data: allowed } = await userClient.rpc('usuario_tem_permissao_modulo', { p_modulo: 'due-diligence', p_acao: 'create' });
+      if (allowed !== true) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: full } = await supabase.from('due_diligence_assessments').select('status, fornecedor_id').eq('id', assessment.id).maybeSingle();
+      if (!full || full.status === 'concluido') {
+        return new Response(JSON.stringify({ error: 'Assessment closed' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (full.fornecedor_id) {
+        const { data: forn } = await supabase.from('fornecedores').select('email').eq('id', full.fornecedor_id).eq('empresa_id', assessment.empresa_id).maybeSingle();
+        if (forn?.email && forn.email.trim().toLowerCase() !== String(assessment.fornecedor_email ?? '').trim().toLowerCase()) {
+          return new Response(JSON.stringify({ error: 'Recipient does not match supplier' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+    }
+
     if (!assessment.fornecedor_email) {
       return new Response(JSON.stringify({ error: 'Fornecedor sem e-mail' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

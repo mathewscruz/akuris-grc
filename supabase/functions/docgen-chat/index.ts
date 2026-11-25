@@ -546,7 +546,7 @@ serve(async (req) => {
       empresa_id: requested_empresa_id,
       action = 'chat',
       doc_type_hint,
-      framework_context,
+      framework_context: rawFrameworkContext,
       /* `company_context` NÃO se aceita do corpo: é lido no servidor.
          Ver `lerContextoDaEmpresa` e `contextoDaEmpresa`. */
       // Onda 3
@@ -643,7 +643,23 @@ serve(async (req) => {
       return result.value;
     };
 
-    console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
+    // Framework context: only validated ids are accepted; the name comes from the database, never from the request.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const fwIds = [
+      ...(Array.isArray(rawFrameworkContext?.framework_ids) ? rawFrameworkContext.framework_ids : []),
+    ].filter((v: unknown): v is string => typeof v === 'string' && UUID_RE.test(v)).slice(0, 20);
+    const fwId = typeof rawFrameworkContext?.framework_id === 'string' && UUID_RE.test(rawFrameworkContext.framework_id)
+      ? rawFrameworkContext.framework_id : null;
+    let framework_context: { framework_id?: string; framework_ids?: string[]; framework_name?: string } | undefined;
+    if (fwId || fwIds.length) {
+      framework_context = { ...(fwId ? { framework_id: fwId } : {}), ...(fwIds.length ? { framework_ids: fwIds } : {}) };
+      if (fwId) {
+        const { data: fw } = await supabase.from('gap_analysis_frameworks').select('nome, empresa_id').eq('id', fwId).maybeSingle();
+        if (fw && (fw.empresa_id === null || fw.empresa_id === empresa_id)) framework_context.framework_name = String(fw.nome).slice(0, 120);
+      }
+    }
+
+    console.log('DocGen Chat request:', { conversation_id, action, user_id, empresa_id, framework_id: fwId });
 
     // ============ ACTION: load_company_context (sem custo de IA) ============
     if (action === 'load_company_context') {

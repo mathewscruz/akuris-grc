@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
     let userId = 'platform-cron';
+    let callerEmpresa: string | null = null;
     if (!scheduled) {
       const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
       if (claimsError || !userData?.user?.id) return json({ error: 'Unauthorized' }, 401);
@@ -52,6 +53,7 @@ Deno.serve(async (req) => {
       const { data: profile, error: profileError } = await supabase.from('profiles')
         .select('empresa_id').eq('user_id', userData.user.id).eq('ativo', true).single();
       if (profileError || !profile?.empresa_id) return json({ error: 'Forbidden' }, 403);
+      callerEmpresa = profile.empresa_id;
     }
 
     // Catálogo global: traduz títulos/descrições/categorias que ainda não têm inglês.
@@ -84,6 +86,14 @@ Deno.serve(async (req) => {
     if (!scheduled && (force || !requirementId)) {
       const { data: isSuper, error: roleError } = await userClient.rpc('has_super_admin_role');
       if (roleError || isSuper !== true) return json({ error: 'Forbidden: super admin required' }, 403);
+    }
+    // A single requirement may only be touched when its framework is global or belongs to the caller's company.
+    if (!scheduled && requirementId) {
+      const { data: req, error: reqErr } = await supabase.from('gap_analysis_requirements')
+        .select('framework_id, gap_analysis_frameworks!inner(empresa_id)').eq('id', requirementId).maybeSingle();
+      // deno-lint-ignore no-explicit-any
+      const owner = (req as any)?.gap_analysis_frameworks?.empresa_id ?? null;
+      if (reqErr || !req || (owner !== null && owner !== callerEmpresa)) return json({ error: 'Forbidden' }, 403);
     }
     const selectCols = `id, codigo, titulo, descricao, categoria, ${cols.orientacao}, ${cols.evidencias}, ${cols.perguntas}` +
       (locale === 'en' ? `, ${COLS.pt.orientacao}, ${COLS.pt.evidencias}, ${COLS.pt.perguntas}` : '');

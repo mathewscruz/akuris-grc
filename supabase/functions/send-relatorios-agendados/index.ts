@@ -35,7 +35,13 @@ Deno.serve(async (req) => {
         .eq("id", a.relatorio_id).eq("empresa_id", a.empresa_id).maybeSingle();
       if (!rel || rel.status === "arquivado") continue;
       const url = `${APP}/relatorios?abrir=${rel.id}`;
-      const dest = (a.destinatarios ?? []).filter((e: string) => EMAIL_RE.test(e));
+      // Only active users of the same company may receive the report.
+      const pedidos = (a.destinatarios ?? []).filter((e: string) => EMAIL_RE.test(e)).map((e: string) => e.trim().toLowerCase());
+      const { data: membros } = pedidos.length
+        ? await db.from("profiles").select("email").eq("empresa_id", a.empresa_id).eq("ativo", true)
+        : { data: [] };
+      const permitidos = new Set((membros ?? []).map((m: { email: string | null }) => (m.email ?? "").toLowerCase()));
+      const dest = pedidos.filter((e: string) => permitidos.has(e));
       let ok = false;
       if (key && dest.length) {
         const html = notificationEmail({

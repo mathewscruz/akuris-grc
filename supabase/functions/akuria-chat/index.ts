@@ -303,7 +303,7 @@ const ROUTE_LABELS: Record<string, string> = {
 function describeRoute(route: string | undefined): string {
   if (!route) return 'Não informado';
   const matched = Object.keys(ROUTE_LABELS).find(k => route.startsWith(k));
-  return matched ? ROUTE_LABELS[matched] : route;
+  return matched ? ROUTE_LABELS[matched] : 'Outra tela';
 }
 
 serve(async (req) => {
@@ -339,7 +339,9 @@ serve(async (req) => {
     if (!profile?.empresa_id) throw new Error('Empresa not found');
 
     const empresaId = profile.empresa_id;
-    const { messages: suppliedMessages, currentRoute, locale } = await req.json();
+    const { messages: suppliedMessages, currentRoute: rawRoute, locale } = await req.json();
+    // Only a plain app path reaches the prompt; anything else is dropped.
+    const currentRoute = typeof rawRoute === 'string' && /^\/[A-Za-z0-9\-_/]{0,120}$/.test(rawRoute) ? rawRoute : undefined;
     const messages = (Array.isArray(suppliedMessages) ? suppliedMessages : []).filter(m => m && ['user','assistant'].includes(m.role) && typeof m.content==='string').slice(-20).map(m => ({role:m.role,content:m.content.slice(0,8000)}));
     if (!messages.length) throw new Error('Mensagem obrigatória');
     const scopedDb = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, { global:{headers:{Authorization:authHeader}} });
