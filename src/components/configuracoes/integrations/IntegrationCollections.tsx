@@ -312,8 +312,7 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
                     : provider.id === "aws" || provider.id === "github" ? () => setNewProvider(provider.id) : () => void connectDirect(provider.id)
                 }
                 extra={conn ? (
-                  <ConnectionActions connection={conn} state={state} reload={reload}
-                    extra={provider.id === "microsoft" ? <TeamsAvisosButton empresaId={empresaId} /> : undefined} />
+                  <ConnectionActions connection={conn} state={state} reload={reload} />
                 ) : undefined}
               />
             );
@@ -1278,9 +1277,6 @@ function ConnectionActions({ connection, state, reload, extra }: {
         <Button size="sm" onClick={() => void reconnect()}>{t(needsReauth ? "collectionHub.cloudIdentity.reauthorize" : "collectionHub.reconnect")}</Button>
       )}
       <Button size="sm" variant="outline" onClick={() => void openConfirm()}>{t("collectionHub.disconnect")}</Button>
-      {connection.provider === "google_workspace" && (
-        <Button size="sm" variant="ghost" onClick={() => setDevices(true)}>{t("collectionHub.addComputers")}</Button>
-      )}
       {extra}
       <DialogShell
         open={confirm}

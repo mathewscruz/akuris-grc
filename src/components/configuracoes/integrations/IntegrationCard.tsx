@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconEdit } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { IntegrationState } from "./IntegrationStatusButton";
 
@@ -75,22 +76,16 @@ export function IntegrationCard({
         </div>
       </div>
       <div className="flex items-center gap-4 border-t bg-muted/40 px-5 py-3 text-sm">
-        <div className="min-w-0 flex-1" title={modules}>
-          <p className="text-xs text-muted-foreground">{t("collectionHub.cardModules")}</p>
-          <p className="mt-0.5 truncate">{shortModules(modules)}</p>
-        </div>
-        <div className="min-w-0 flex-1 border-l pl-4">
+        <div className="min-w-0 flex-1">
           <p className="text-xs text-muted-foreground">{t("collectionHub.cardLastRun")}</p>
           <p className="mt-0.5 truncate">{lastRun || "—"}</p>
         </div>
+        {!extra && state === "disconnected" && onOpen && (
+          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onOpen(); }}>{t("collectionHub.connect")}</Button>
+        )}
         {extra && <div className="flex shrink-0 flex-wrap items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>{extra}</div>}
       </div>
     </article>
   );
 }
 
-function shortModules(modules?: string) {
-  if (!modules) return "—";
-  const parts = modules.split(", ");
-  return parts.length > 1 ? `${parts[0]} +${parts.length - 1}` : parts[0];
-}
