@@ -122,7 +122,6 @@ function ComingSoonCollections({ empresaId, extraCards, toolbar }: { empresaId: 
             key={provider.id}
             logo={<ProviderLogo provider={provider.id} />}
             name={provider.name}
-            category={t(`collectionHub.family.${provider.family}`)}
             description={t(`collectionHub.provider.${provider.id}`)}
             state={connectedProviders.has(provider.id) ? "connected" : "unavailable"}
             extra={provider.id === "microsoft" ? <TeamsAvisosButton empresaId={empresaId} /> : undefined}
@@ -300,7 +299,6 @@ function AvailableIntegrationCollections({ empresaId, extraCards, toolbar }: { e
                 key={provider.id}
                 logo={<ProviderLogo provider={provider.id} />}
                 name={provider.name}
-                category={t(`collectionHub.family.${provider.family}`)}
                 description={provider.id === "google_workspace" && !conn
                   ? `${t("collectionHub.provider.google_workspace")} ${t(query.data?.scheduler_ready === true ? "collectionHub.googleDevicesAuto" : "collectionHub.googleDevicesAutoNoSchedule")}`
                   : t(`collectionHub.provider.${provider.id}`)}

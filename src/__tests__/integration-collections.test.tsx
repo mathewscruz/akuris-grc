@@ -117,33 +117,35 @@ describe("collection connections", () => {
   it("card button reflects each connection state", async () => {
     invoke.mockResolvedValue({
       data: {
-        connections: [{ ...connection, status: "error" }],
-        availability: { github: true, aws: true },
+        connections: [{ ...connection, provider: "google_workspace", status: "error" }],
+        availability: { google_workspace: true, github: true },
         scheduler_ready: false,
       },
       error: null,
     });
     mount();
-    await waitFor(async () => expect(await cardOf("GitHub")).toHaveAttribute("data-state", "error"));
+    await waitFor(async () => expect(await cardOf("Google Workspace")).toHaveAttribute("data-state", "error"));
+    const gw = await cardOf("Google Workspace");
+    expect(gw).toHaveTextContent("Falhou");
+    expect(gw).toHaveTextContent("Desconectar"); // connected cards only offer Disconnect
+    // Only Google/Microsoft are live: other brands stay "Em breve" even with a stored connection.
     const gh = await cardOf("GitHub");
-    expect(gh).toHaveTextContent("Falhou");
-    expect(gh).toHaveTextContent("Desconectar"); // connected cards only offer Disconnect
-    const aws = await cardOf("Amazon Web Services");
-    expect(aws).toHaveAttribute("data-state", "disconnected");
+    expect(gh).toHaveAttribute("data-state", "unavailable");
+    expect(gh).toHaveTextContent("Em breve");
   });
   it("authorized does not display as a complete collection", async () => {
     invoke.mockResolvedValue({
       data: {
-        connections: [connection],
-        availability: { github: true },
+        connections: [{ ...connection, provider: "google_workspace" }],
+        availability: { google_workspace: true },
         scheduler_ready: false,
       },
       error: null,
     });
     mount();
-    await waitFor(async () => expect(await cardOf("GitHub")).toHaveAttribute("data-state", "connected"));
-    const gh = await cardOf("GitHub");
-    expect(gh).toHaveTextContent("Conectado");
+    await waitFor(async () => expect(await cardOf("Google Workspace")).toHaveAttribute("data-state", "connected"));
+    const gw = await cardOf("Google Workspace");
+    expect(gw).toHaveTextContent("Conectado");
     expect(screen.queryByText("Coleta completa")).toBeNull();
   });
   it("failures do not look like an empty successful account", async () => {

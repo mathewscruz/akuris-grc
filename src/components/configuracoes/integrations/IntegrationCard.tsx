@@ -21,11 +21,11 @@ const DOT: Record<IntegrationState, string> = {
   unavailable: "bg-muted-foreground/30",
 };
 
-/** Shared integration card: logo, name, category chip, status dot + text and a two-column footer. */
+/** Shared integration card: logo, name, status dot + text and a two-column footer. */
 export function IntegrationCard({
-  logo, name, category, description, state, modules, lastRun, onOpen, onEdit, extra,
+  logo, name, description, state, modules, lastRun, onOpen, onEdit, extra,
 }: {
-  logo: ReactNode; name: string; category: string; description?: string; state: IntegrationState;
+  logo: ReactNode; name: string; description?: string; state: IntegrationState;
   modules?: string; lastRun?: string; onOpen?: () => void; onEdit?: () => void; extra?: ReactNode;
 }) {
   const { t } = useLanguage();
@@ -68,7 +68,6 @@ export function IntegrationCard({
           )}
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2">
-          <span className="inline-flex rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">{category}</span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium">
             <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", DOT[state])} />
             <span className={cn(state === "error" && "text-destructive")}>{label}</span>

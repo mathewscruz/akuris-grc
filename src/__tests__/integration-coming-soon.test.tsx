@@ -67,7 +67,9 @@ describe("integration release hold", () => {
   it("shows every catalog brand as coming soon without starting queries or OAuth", () => {
     const { container } = mount();
     expect(screen.getAllByRole("article")).toHaveLength(N);
-    expect(screen.getAllByText("Em breve")).toHaveLength(N);
+    const emBreve = screen.getAllByRole("button", { name: "Em breve" });
+    expect(emBreve).toHaveLength(N);
+    emBreve.forEach((b) => expect(b).toBeDisabled());
     for (const provider of COLLECTION_PROVIDERS) {
       expect(screen.getByText(provider.name)).toBeVisible();
       const card = screen.getByText(provider.name).closest("article")!;
@@ -96,7 +98,9 @@ describe("integration release hold", () => {
   it("translates the unavailable state for English users", () => {
     persistExplicitLocale("en");
     mount();
-    expect(screen.getAllByText("Coming soon")).toHaveLength(N);
+    const comingSoon = screen.getAllByRole("button", { name: "Coming soon" });
+    expect(comingSoon).toHaveLength(N);
+    comingSoon.forEach((b) => expect(b).toBeDisabled());
     expect(screen.getByText(/Connections and collections are not available yet/)).toBeVisible();
     expect(invoke.mock.calls.every(([, o]) => o.body.action === "list")).toBe(true);
   });

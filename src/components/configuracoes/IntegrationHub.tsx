@@ -245,18 +245,9 @@ const buildIntegracoesDisponiveis = (t: (k: string) => string): Integration[] =>
   },
 ];
 
-const buildCategorias = (t: (k: string) => string) => ({
-  comunicacao: { nome: t('configIntegrations.hub.categorias.comunicacao.nome'), descricao: t('configIntegrations.hub.categorias.comunicacao.descricao') },
-  automacao: { nome: t('configIntegrations.hub.categorias.automacao.nome'), descricao: t('configIntegrations.hub.categorias.automacao.descricao') },
-  itsm: { nome: t('configIntegrations.hub.categorias.itsm.nome'), descricao: t('configIntegrations.hub.categorias.itsm.descricao') },
-  cloud: { nome: t('configIntegrations.hub.categorias.cloud.nome'), descricao: t('configIntegrations.hub.categorias.cloud.descricao') },
-  dados_publicos: { nome: t('configIntegrations.hub.categorias.dados_publicos.nome'), descricao: t('configIntegrations.hub.categorias.dados_publicos.descricao') },
-});
-
 export function IntegrationHub() {
   const { t } = useLanguage();
   const INTEGRACOES_DISPONIVEIS = buildIntegracoesDisponiveis(t);
-  const CATEGORIAS = buildCategorias(t);
   const [loading, setLoading] = useState(true);
   const [configuredIntegrations, setConfiguredIntegrations] = useState<IntegrationConfig[]>([]);
   const [empresaId, setEmpresaId] = useState<string | null>(null);
@@ -375,7 +366,6 @@ export function IntegrationHub() {
     const live = /google|microsoft|azure|intune|teams|sharepoint/i.test(integration.tipo);
     if (!live) return (
       <IntegrationCard key={integration.id} logo={<integration.Logo />} name={integration.nome}
-        category={CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome ?? ''}
         description={integration.descricao} state="unavailable" />
     );
     const Logo = integration.Logo;
@@ -384,7 +374,6 @@ export function IntegrationHub() {
         key={integration.id}
         logo={<Logo />}
         name={integration.nome}
-        category={CATEGORIAS[integration.categoria as keyof typeof CATEGORIAS]?.nome ?? ''}
         description={integration.descricao}
         state={!integration.disponivel ? 'unavailable' : status === 'conectado' ? 'connected' : status === 'erro' ? 'error' : 'disconnected'}
         onOpen={status === 'conectado' ? undefined : () => handleConfigureClick(integration)}
