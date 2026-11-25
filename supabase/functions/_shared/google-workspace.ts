@@ -128,6 +128,8 @@ export function googleDeviceResource(kind: "mobile" | "chromeos" | "cloud", d: a
       serial_number: trusted(d.serialNumber),
       owner_email: (kind === "mobile" ? d.email?.[0] : kind === "chromeos" ? d.annotatedUser : null) ?? null,
       provider_last_sync: (kind === "mobile" ? d.lastSync : kind === "chromeos" ? d.lastSync : d.lastSyncTime) ?? null,
+      device_status: (kind === "mobile" ? d.status : kind === "chromeos" ? d.status : d.managementState) ?? null,
+      ...(kind === "cloud" ? { device_type: d.deviceType ?? null, owner_type: d.ownerType ?? null } : {}),
     },
   };
 }
@@ -288,6 +290,7 @@ export function ativoDoGoogle(r: CollectedResource) {
       usuario: s.owner_email ?? null,
       google_origem: s.google_kind,
       google_ultimo_sync: s.provider_last_sync ?? null,
+      google_estado: s.device_status ?? null,
     },
   };
 }

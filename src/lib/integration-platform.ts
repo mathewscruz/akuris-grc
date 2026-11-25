@@ -78,7 +78,7 @@ export interface CollectionConnection {
     "pending" | "authorized" | "connected" | "partial" | "error" | "paused";
   frequency: "manual" | "daily" | "weekly";
   scope_ids: string[];
-  settings: { system_id?: string; role_arn?: string; region?: string; modules?: string[]; tenant_id?: string; imported_modules?: string[]; customer_domain?: string | null; module_status?: Record<string, string> };
+  settings: { system_id?: string; role_arn?: string; region?: string; modules?: string[]; tenant_id?: string; imported_modules?: string[]; customer_domain?: string | null; module_status?: Record<string, string>; cloud_identity?: { status: "not_configured" | "active" | "error"; error?: string; count?: number } };
   last_success_at: string | null;
   next_run_at: string | null;
   error_code: string | null;

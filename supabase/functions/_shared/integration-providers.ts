@@ -5,6 +5,7 @@ import {
   validRoleArn,
 } from "./integration-model.ts";
 import { collectGoogleWorkspace, GOOGLE_MODULES } from "./google-workspace.ts";
+import { collectCloudDevices, delegatedErrorCode, delegatedToken } from "./google-delegated.ts";
 
 export class ProviderError extends Error {
   constructor(
@@ -18,6 +19,8 @@ export class ProviderError extends Error {
 export interface Collection {
   resources: CollectedResource[];
   warnings: string[];
+  /** Cloud Identity computers capability: separate from mobile/ChromeOS, never "0 devices" when unavailable. */
+  cloudIdentity?: { status: "not_configured" | "active" | "error"; error?: string; count?: number };
 }
 type Credentials = Record<string, any>;
 const GRAPH = "https://graph.microsoft.com/v1.0";
@@ -129,10 +132,10 @@ export async function collectProvider(
       if (Date.now() - started > 90000 || ++googleRequests > 400) throw new ProviderError("collection_limit");
       return providerJson(url, accessToken, origin);
     };
-    return collectGoogleWorkspace(
-      googleRead, token, settings.customer_id,
-      Array.isArray(settings.modules) ? settings.modules : [...GOOGLE_MODULES],
-    );
+    const gModules: string[] = Array.isArray(settings.modules) ? settings.modules : [...GOOGLE_MODULES];
+    const out: Collection = await collectGoogleWorkspace(googleRead, token, settings.customer_id, gModules);
+    if (gModules.includes("dispositivos")) out.cloudIdentity = await collectCloudIdentity(googleRead, credentials.cloud_identity, settings.customer_id, out);
+    return out;
   }
   const modules: string[] = Array.isArray(settings.modules)
     ? settings.modules
@@ -560,4 +563,28 @@ async function collectAws(settings: Record<string, any>): Promise<Collection> {
     warnings.push("collection_limit");
   }
   return { resources, warnings: [...new Set(warnings)] };
+}
+
+/** Isolated: any delegated failure only marks Cloud Identity unavailable; other modules are untouched. */
+export async function collectCloudIdentity(
+  read: typeof providerJson,
+  delegated: { key?: any; admin_email?: string; customer_id?: string } | null | undefined,
+  customerId: string,
+  out: Collection,
+  tokenFn: typeof delegatedToken = delegatedToken,
+): Promise<NonNullable<Collection["cloudIdentity"]>> {
+  if (!delegated?.key || !delegated.admin_email) return { status: "not_configured" };
+  // Credential bound to another organisation is never used.
+  if (delegated.customer_id !== customerId) return { status: "error", error: "organization_changed" };
+  try {
+    const token = await tokenFn(delegated.key, delegated.admin_email);
+    const r = await collectCloudDevices(read, token, customerId);
+    if (r.partial) out.warnings.push("cloud_identity:collection_limit");
+    out.resources.push(...r.resources);
+    return { status: "active", count: r.resources.length };
+  } catch (e) {
+    const error = delegatedErrorCode(e);
+    out.warnings.push(`cloud_identity:${error}`);
+    return { status: "error", error };
+  }
 }

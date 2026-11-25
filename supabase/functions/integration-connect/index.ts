@@ -25,6 +25,8 @@ const MODULES: Record<string, readonly string[]> = {
   microsoft: ["intune", "entra", "documentos"],
   google_workspace: GOOGLE_MODULES,
 };
+import { connectionCredentials } from "../_shared/integration-oauth.ts";
+import { ADMIN_EMAIL, DelegatedError, delegatedErrorCode, delegatedToken, parseServiceAccount, probeDevices } from "../_shared/google-delegated.ts";
 import { processIntegrationRun } from "../_shared/integration-runner.ts";
 import { integrationReleaseResponse } from "../_shared/integration-release.ts";
 
@@ -429,6 +431,58 @@ Deno.serve(async (req) => {
         count: resources.count,
         runs: runs.data,
       });
+    }
+    if (["delegated_status", "delegated_save", "delegated_remove"].includes(action)) {
+      if (connection.provider !== "google_workspace") return json({ error: "invalid_configuration" }, 400);
+      const meta = async () => {
+        const r = await client.from("integration_delegated_credentials")
+          .select("client_email,project_id,key_id_suffix,admin_email,status,error_code,validated_at,last_used_at")
+          .eq("connection_id", connection.id).eq("empresa_id", empresa).maybeSingle();
+        checked(r);
+        return r.data;
+      };
+      if (action === "delegated_status") return json({ delegated: await meta() });
+      if (action === "delegated_remove") {
+        checked(await client.from("integration_delegated_credentials").delete()
+          .eq("connection_id", connection.id).eq("empresa_id", empresa));
+        checked(await client.from("integration_connections")
+          .update({ settings: { ...connection.settings, cloud_identity: { status: "not_configured" } } })
+          .eq("id", connection.id).eq("empresa_id", empresa));
+        return json({ delegated: null });
+      }
+      // delegated_save: validate everything before storing; responses carry only codes/metadata.
+      try {
+        const customerId = connection.settings?.customer_id;
+        if (typeof customerId !== "string" || !["authorized", "connected", "partial"].includes(connection.status))
+          throw new DelegatedError("connection_not_authorized");
+        const key = parseServiceAccount(body.service_account);
+        const admin = typeof body.admin_email === "string" ? body.admin_email.trim().toLowerCase() : "";
+        if (!ADMIN_EMAIL.test(admin)) throw new DelegatedError("invalid_admin");
+        // The delegated subject must be an administrator of THIS connection's organisation.
+        const oauth = await connectionCredentials(client, connection);
+        let user: any;
+        try {
+          user = await providerJson(`https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(admin)}?projection=basic`,
+            oauth.access_token, "https://admin.googleapis.com");
+        } catch { throw new DelegatedError("invalid_admin"); }
+        if (user?.customerId !== customerId) throw new DelegatedError("organization_changed");
+        if (!(user?.isAdmin || user?.isDelegatedAdmin) || user?.suspended) throw new DelegatedError("admin_required");
+        const token = await delegatedToken(key, admin);
+        try { await probeDevices(providerJson, token, customerId); }
+        catch (e) { throw new DelegatedError(delegatedErrorCode(e)); }
+        checked(await client.from("integration_delegated_credentials").upsert({
+          empresa_id: empresa, connection_id: connection.id, purpose: "cloud_identity_devices",
+          credentials: JSON.stringify(key), client_email: key.client_email, project_id: key.project_id,
+          key_id_suffix: key.private_key_id.slice(-6), admin_email: admin, customer_id: customerId,
+          status: "active", error_code: null, validated_at: new Date().toISOString(), created_by: ctx.userId,
+        }, { onConflict: "connection_id,purpose" }));
+        checked(await client.from("integration_connections")
+          .update({ settings: { ...connection.settings, cloud_identity: { status: "active" } } })
+          .eq("id", connection.id).eq("empresa_id", empresa));
+        return json({ delegated: await meta() });
+      } catch (e) {
+        return json({ error: e instanceof DelegatedError ? e.code : e instanceof ProviderError ? e.code : "request_failed" }, 400);
+      }
     }
     if (action === "configure") {
       if (

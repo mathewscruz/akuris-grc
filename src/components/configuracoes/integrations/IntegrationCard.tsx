@@ -48,16 +48,16 @@ export function IntegrationCard({
             <span className={cn(state === "error" && "text-destructive")}>{label}</span>
           </p>
         </div>
-        {clickable && (
-          <button
-            type="button"
-            className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label={`${name}: ${t("collectionHub.cardEdit")}`}
-            onClick={(e) => { e.stopPropagation(); onOpen?.(); }}
-          >
-            <IconEdit className="h-4 w-4" />
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={!clickable}
+          className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-0"
+          aria-label={`${name}: ${label}`}
+          title={t("collectionHub.cardEdit")}
+          onClick={(e) => { e.stopPropagation(); onOpen?.(); }}
+        >
+          <IconEdit className="h-4 w-4" />
+        </button>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
         <div className="min-w-0">

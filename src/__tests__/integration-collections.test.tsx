@@ -74,7 +74,7 @@ describe("collection connections", () => {
     const github = await screen.findByText("GitHub");
     const button = github.closest("article")!.querySelector("button")!;
     expect(button).toBeDisabled();
-    expect(button).toHaveTextContent("Em breve");
+    expect(button).toHaveAccessibleName("GitHub: Em breve");
     fireEvent.click(button);
     expect(
       screen.queryByRole("button", { name: "Autorizar conexão" }),
@@ -93,8 +93,8 @@ describe("collection connections", () => {
       error: null,
     });
     mount();
-    expect(await screen.findByRole("button", { name: "GitHub: Erro · Corrigir" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Amazon Web Services: Conectar" })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "GitHub: Falhou" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Amazon Web Services: Não conectado" })).toBeEnabled();
   });
   it("authorized does not display as a complete collection", async () => {
     invoke.mockResolvedValue({

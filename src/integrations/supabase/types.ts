@@ -7405,6 +7405,81 @@ export type Database = {
           },
         ]
       }
+      integration_delegated_credentials: {
+        Row: {
+          admin_email: string
+          client_email: string
+          connection_id: string
+          created_at: string
+          created_by: string | null
+          credentials: string
+          customer_id: string
+          empresa_id: string
+          error_code: string | null
+          id: string
+          key_id_suffix: string | null
+          last_used_at: string | null
+          project_id: string
+          purpose: string
+          status: string
+          updated_at: string
+          validated_at: string | null
+        }
+        Insert: {
+          admin_email: string
+          client_email: string
+          connection_id: string
+          created_at?: string
+          created_by?: string | null
+          credentials: string
+          customer_id: string
+          empresa_id: string
+          error_code?: string | null
+          id?: string
+          key_id_suffix?: string | null
+          last_used_at?: string | null
+          project_id: string
+          purpose?: string
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Update: {
+          admin_email?: string
+          client_email?: string
+          connection_id?: string
+          created_at?: string
+          created_by?: string | null
+          credentials?: string
+          customer_id?: string
+          empresa_id?: string
+          error_code?: string | null
+          id?: string
+          key_id_suffix?: string | null
+          last_used_at?: string | null
+          project_id?: string
+          purpose?: string
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_delegated_credentials_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_delegated_credentials_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_oauth_states: {
         Row: {
           connection_id: string
@@ -13345,6 +13420,10 @@ export type Database = {
       }
       integration_read_credentials: {
         Args: { p_empresa: string; p_id: string }
+        Returns: Json
+      }
+      integration_read_delegated: {
+        Args: { p_connection: string; p_empresa: string }
         Returns: Json
       }
       integration_schedule_due: { Args: never; Returns: number }

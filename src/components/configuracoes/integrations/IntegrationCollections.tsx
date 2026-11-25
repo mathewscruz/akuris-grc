@@ -2,6 +2,7 @@ import { formatDateTime } from '@/lib/date-utils';
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { type IntegrationState } from "./IntegrationStatusButton";
 import { IntegrationCard } from "./IntegrationCard";
+import { GoogleCloudIdentityCredential } from "./GoogleCloudIdentityCredential";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -703,7 +704,11 @@ function ConnectionManager({
                       </span>
                       {connection.provider === "google_workspace" && m === "dispositivos" && (
                         <span className="mt-1 block text-xs text-muted-foreground">
-                          {t("collectionHub.errors.cloud_identity_pending")}
+                          {t(connection.settings.cloud_identity?.status === "active"
+                            ? "collectionHub.cloudIdentity.activeShort"
+                            : connection.settings.cloud_identity?.status === "error"
+                              ? "collectionHub.cloudIdentity.errorShort"
+                              : "collectionHub.errors.cloud_identity_pending")}
                         </span>
                       )}
                       {connection.settings.module_status?.[m] && (
@@ -716,6 +721,9 @@ function ConnectionManager({
                 ))}
               </div>
             </section>
+          )}
+          {connection.provider === "google_workspace" && (
+            <GoogleCloudIdentityCredential connectionId={connection.id} onChange={() => void reload()} />
           )}
           <section className="space-y-3">
             <div>

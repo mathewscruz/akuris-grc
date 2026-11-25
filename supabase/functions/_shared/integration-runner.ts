@@ -78,7 +78,7 @@ export async function syncIntuneAtivos(db: any, empresaId: string, resources: an
 // Google devices: match by Google id, then by a serial that matches exactly ONE asset not yet
 // linked to Google. Assets the integration created get Google-managed fields refreshed;
 // MeshCentral/Intune/manual assets only get empty fields filled. DB errors abort the run.
-const GOOGLE_MANAGED = ["numero_serie", "sistema_operacional", "modelo", "fabricante", "usuario", "google_origem", "google_ultimo_sync"];
+const GOOGLE_MANAGED = ["numero_serie", "sistema_operacional", "modelo", "fabricante", "usuario", "google_origem", "google_ultimo_sync", "google_estado"];
 function must<T extends { error?: any }>(r: T): T {
   if (r?.error) throw new ProviderError("storage_write_failed");
   return r;
@@ -173,6 +173,11 @@ export async function processIntegrationRun(
   const connection = connectionResult.data;
   try {
     const credentials = await connectionCredentials(db, connection);
+    if (connection.provider === "google_workspace") {
+      // Optional delegated credential for Cloud Identity computers, read server-side only.
+      const d = await db.rpc("integration_read_delegated", { p_connection: connection.id, p_empresa: run.empresa_id });
+      credentials.cloud_identity = d.error ? null : d.data;
+    }
     const collection = await collectProvider(connection.provider, credentials, {
       ...connection.settings,
       scope_ids: connection.scope_ids,
@@ -191,8 +196,14 @@ export async function processIntegrationRun(
         if (m && !moduleStatus[m[1]]) moduleStatus[m[1]] = m[2];
       }
       await db.from("integration_connections")
-        .update({ settings: { ...connection.settings, module_status: moduleStatus, module_status_at: new Date().toISOString() } })
+        .update({ settings: { ...connection.settings, module_status: moduleStatus, module_status_at: new Date().toISOString(),
+          ...(collection.cloudIdentity ? { cloud_identity: collection.cloudIdentity } : {}) } })
         .eq("id", connection.id).eq("empresa_id", run.empresa_id);
+      if (collection.cloudIdentity && collection.cloudIdentity.status !== "not_configured") {
+        await db.from("integration_delegated_credentials")
+          .update({ status: collection.cloudIdentity.status, error_code: collection.cloudIdentity.error ?? null, last_used_at: new Date().toISOString() })
+          .eq("connection_id", connection.id).eq("empresa_id", run.empresa_id);
+      }
     }
     const intuneSync = connection.provider === "intune" ||
       (connection.provider === "microsoft" &&
