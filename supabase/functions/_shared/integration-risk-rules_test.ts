@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { configFixed, coveredConfigRules, evaluateRiskRules, evaluateSecurity, provenRules } from "./integration-risk-rules.ts";
+import { configFixed, coveredConfigRules, decideLifecycle, evaluateRiskRules, evaluateSecurity, provenRules } from "./integration-risk-rules.ts";
 import { collectMicrosoftSecurity, incidentCategory } from "./integration-security.ts";
 import { ProviderError } from "./integration-providers.ts";
 import { riskCoverage } from "./integration-risk-rules.ts";
@@ -287,4 +287,76 @@ Deno.test("config: scope change (old ids absent) not fixed; all old ids present 
   assertEquals(await provenRules(open, evaluateRiskRules(unknown as never, NOW), (r, id) => configFixed(unknown as never, r, id, NOW)), []);
   const fixed = [iDev({ id: "d1" }), iDev({ id: "d2" })];
   assertEquals(await provenRules(open, evaluateRiskRules(fixed as never, NOW), (r, id) => configFixed(fixed as never, r, id, NOW)), ["dispositivos_sem_criptografia"]);
+});
+
+
+// ---- Multi-scan lifecycle through decideLifecycle (the function the runner uses) + a store mirroring integracao_registrar_riscos.
+type Row = { regra_id: string; chave: string; estado: string; evidencia: Record<string, unknown> };
+const scanStore = () => {
+  const rows = new Map<string, Row>(); let avisos = 0;
+  const scan = async (resources: unknown[]) => {
+    const open = [...rows.values()].filter((r) => ["aberta", "aceita", "descartada"].includes(r.estado)).map((r) => ({
+      regra_id: r.regra_id, chave: r.chave, estado: r.estado, ids: (r.evidencia.ids as string[]) ?? null,
+      prova_ids: (r.evidencia.prova_ids as string[]) ?? null, sem_prova: r.evidencia.sem_prova === true }));
+    const achados = evaluateRiskRules(resources as never, NOW);
+    const d = await decideLifecycle(open, achados, (r, id) => configFixed(resources as never, r, id, NOW));
+    const keys = new Set<string>();
+    for (const f of d.findings) {
+      const k = `${f.regra_id}|${f.chave}`; keys.add(k); const prev = rows.get(k);
+      if (!prev) { rows.set(k, { regra_id: f.regra_id, chave: f.chave, estado: "aberta", evidencia: f.evidencia }); avisos++; continue; }
+      if (prev.estado === "corrigida") { prev.estado = "aberta"; avisos++; }
+      prev.evidencia = f.evidencia;
+    }
+    for (const r of rows.values()) if (["aberta", "aceita"].includes(r.estado) && d.resolved.includes(r.regra_id) && !keys.has(`${r.regra_id}|${r.chave}`)) r.estado = "corrigida";
+    return [...rows.values()];
+  };
+  return { scan, rows, avisos: () => avisos };
+};
+const A = (o: Record<string, unknown> = {}) => iDev({ id: "A", deviceName: "PC-A", complianceState: "noncompliant", ...o });
+const B = (o: Record<string, unknown> = {}) => iDev({ id: "B", deviceName: "PC-B", complianceState: "noncompliant", ...o });
+
+Deno.test("3 scans: A+B bad -> A vanishes/B bad -> B fixed/A absent keeps the suggestion open", async () => {
+  const st = scanStore();
+  await st.scan([A(), B()]);
+  let r = await st.scan([B()]);
+  assertEquals(r[0].evidencia.ids, ["device:B"], "UI shows current members");
+  assertEquals(r[0].evidencia.prova_ids, ["device:A", "device:B"], "A not forgotten");
+  r = await st.scan([B({ complianceState: "compliant" })]);
+  assertEquals(r[0].estado, "aberta");
+  r = await st.scan([B({ complianceState: "compliant" })]);
+  assertEquals(r[0].estado, "aberta", "repeating never resolves without A");
+  assertEquals(st.avisos(), 1, "no renotification");
+});
+Deno.test("A+B proven fixed resolves once; repeat neither duplicates nor renotifies; new cycle starts fresh", async () => {
+  const st = scanStore();
+  await st.scan([A(), B()]);
+  await st.scan([B()]);
+  let r = await st.scan([A({ complianceState: "compliant" }), B({ complianceState: "compliant" })]);
+  assertEquals([r.length, r[0].estado], [1, "corrigida"]);
+  r = await st.scan([A({ complianceState: "compliant" }), B({ complianceState: "compliant" })]);
+  assertEquals([r.length, r[0].estado, st.avisos()], [1, "corrigida", 1]);
+  r = await st.scan([B()]);
+  assertEquals([r[0].estado, r[0].evidencia.prova_ids, st.avisos()], ["aberta", ["device:B"], 2], "reopened cycle uses current ids only");
+  r = await st.scan([B({ complianceState: "compliant" })]);
+  assertEquals(r[0].estado, "corrigida");
+});
+Deno.test("A proven fixed while B still bad drops A from the pending set", async () => {
+  const st = scanStore();
+  await st.scan([A(), B()]);
+  const r = await st.scan([A({ complianceState: "compliant" }), B()]);
+  assertEquals(r[0].evidencia.prova_ids, ["device:B"]);
+});
+Deno.test("legacy row without ids is never promoted to provable by a later finding", async () => {
+  const st = scanStore();
+  st.rows.set("dispositivos_nao_conformes|", { regra_id: "dispositivos_nao_conformes", chave: "", estado: "aberta", evidencia: { total: 1, itens: ["PC-A"] } });
+  let r = await st.scan([B()]);
+  assertEquals(r[0].evidencia.sem_prova, true);
+  r = await st.scan([B({ complianceState: "compliant" })]);
+  assertEquals(r[0].estado, "aberta");
+});
+Deno.test("grouped incidents: member vanishing from the filter stays pending until GET proves resolved", async () => {
+  const open = [{ regra_id: "alerta_malware", chave: "ms_incidents:malware", estado: "aberta", ids: ["29", "30"], prova_ids: ["29", "30"] }];
+  const { sec } = await run(ALL_OK({ "/security/incidents": (u: string) => u.includes("/incidents/30") ? new ProviderError("not_found") : { value: [INCIDENT()] } }));
+  const d = await decideLifecycle(open, evaluateSecurity(sec).findings, (r, id) => sec.proveFixed!(r, id));
+  assertEquals(d.findings.find((f) => f.regra_id === "alerta_malware")!.evidencia.prova_ids, ["29", "30"]);
 });

@@ -11,7 +11,7 @@ import {
 import { ativoDoIntune, serialConfiavel } from "./intune-ativos.ts";
 import { ativoDoGoogle, googleSelected } from "./google-workspace.ts";
 import { platformServiceAccount } from "./google-delegated.ts";
-import { configFixed, evaluateRiskRules, evaluateSecurity, provenRules, RISK_PROVIDERS, riskCoverage } from "./integration-risk-rules.ts";
+import { configFixed, decideLifecycle, evaluateRiskRules, evaluateSecurity, RISK_PROVIDERS, riskCoverage } from "./integration-risk-rules.ts";
 
 // Intune devices feed Gestão de Ativos (discovery, not evidence scope).
 // Match by Intune id first, then by a trustworthy serial (e.g. MeshCentral asset).
@@ -335,20 +335,22 @@ export async function processIntegrationRun(
       const sec = evaluateSecurity(security);
       const achados = [...(clean ? evaluateRiskRules(collection.resources) : []), ...sec.findings];
       // Read coverage (UI) never authorises a lifecycle change: resolve only rules whose previously affected ids are proven fixed.
-      const abertas = await db.from("integracao_riscos_sugeridos").select("regra_id,evidencia")
-        .eq("empresa_id", run.empresa_id).eq("connection_id", connection.id).in("estado", ["aberta", "aceita"]);
+      const abertas = await db.from("integracao_riscos_sugeridos").select("regra_id,chave,estado,evidencia")
+        .eq("empresa_id", run.empresa_id).eq("connection_id", connection.id).in("estado", ["aberta", "aceita", "descartada"]);
       checked(abertas);
       const cfg = new Set(["admin_sem_mfa", "excesso_admins", "dispositivos_nao_conformes", "dispositivos_sem_criptografia", "dispositivos_sem_sincronizar"]);
-      const resolvidas = await provenRules(
+      const decisao = await decideLifecycle(
         // deno-lint-ignore no-explicit-any
-        (abertas.data ?? []).map((r: any) => ({ regra_id: r.regra_id, ids: Array.isArray(r.evidencia?.ids) ? r.evidencia.ids : null })),
+        (abertas.data ?? []).map((r: any) => ({ regra_id: r.regra_id, chave: r.chave, estado: r.estado,
+          ids: Array.isArray(r.evidencia?.ids) ? r.evidencia.ids : null,
+          prova_ids: Array.isArray(r.evidencia?.prova_ids) ? r.evidencia.prova_ids : null, sem_prova: r.evidencia?.sem_prova === true })),
         achados,
         (regra, id) => cfg.has(regra) ? clean && configFixed(collection.resources, regra, id)
           : security?.proveFixed ? security.proveFixed(regra, id) : false,
       );
       checked(await db.rpc("integracao_registrar_riscos", {
         p_empresa: run.empresa_id, p_connection: connection.id, p_provider: connection.provider,
-        p_achados: achados, p_cobertas: resolvidas,
+        p_achados: decisao.findings, p_cobertas: decisao.resolved,
       }));
 
       // Per-rule coverage with time and reason, so the UI never shows "no result" as "no risk".

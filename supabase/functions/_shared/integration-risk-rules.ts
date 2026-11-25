@@ -6,7 +6,7 @@ type Res = { kind: string; name?: string; externalId?: string; signals: Record<s
 export type RiskFinding = {
   regra_id: string; chave: string; fonte: string; severidade: string | null; relevancia: number;
   probabilidade: number; impacto: number; alcance: Record<string, unknown>;
-  evidencia: { total: number; itens: string[]; ids?: string[]; refs?: { id: string; nome: string; url: string | null }[]; alvos?: string[] };
+  evidencia: { total: number; itens: string[]; ids?: string[]; prova_ids?: string[]; sem_prova?: boolean; refs?: { id: string; nome: string; url: string | null }[]; alvos?: string[] };
 };
 
 export const MAX_ADMINS = 4;
@@ -178,22 +178,45 @@ export function configFixed(resources: Res[], regra: string, id: string, now = n
   return false;
 }
 
-export type OpenSuggestion = { regra_id: string; ids: string[] | null };
+export type OpenSuggestion = { regra_id: string; chave?: string; estado?: string; ids: string[] | null; prova_ids?: string[] | null; sem_prova?: boolean };
+type Prove = (regra: string, id: string) => Promise<boolean> | boolean;
+/** Ids still awaiting remediation proof in a stored row's open cycle; null = no reliable ids (legacy). */
+const pending = (o: OpenSuggestion) => o.sem_prova ? null
+  : Array.isArray(o.prova_ids) && o.prova_ids.length ? o.prova_ids : o.ids?.length ? o.ids : null;
+
 /**
- * Lifecycle authorisation (separate from read coverage): a rule may resolve only when it has no current finding
- * and every previously affected id of every open suggestion is positively proven remediated. Legacy rows
- * without ids, unknown, 403/404 or absence never resolve.
+ * Lifecycle authorisation (separate from read coverage). Per stored open/accepted/dismissed row:
+ * - with a current finding (same rule+key): the proof set becomes current ids ∪ old pending ids not yet proven
+ *   fixed, so a member that merely vanished is never forgotten; legacy rows without ids carry sem_prova forever
+ *   in this cycle and can never be resolved automatically;
+ * - without a current finding in the rule: the rule resolves only when every pending id of every row is proven.
+ * Corrected rows are not passed in, so a reopened cycle starts from the current ids only.
  */
-export async function provenRules(open: OpenSuggestion[], findings: RiskFinding[], prove: (regra: string, id: string) => Promise<boolean> | boolean): Promise<string[]> {
+export async function decideLifecycle(open: OpenSuggestion[], findings: RiskFinding[], prove: Prove): Promise<{ findings: RiskFinding[]; resolved: string[] }> {
+  const key = (r: string, c?: string) => `${r}|${c ?? ""}`;
+  const stored = new Map(open.map((o) => [key(o.regra_id, o.chave), o]));
+  const out: RiskFinding[] = [];
+  for (const f of findings) {
+    const prev = stored.get(key(f.regra_id, f.chave));
+    const cur = f.evidencia.ids ?? [];
+    const legacy = !!prev && pending(prev) === null;
+    const carry: string[] = [];
+    if (prev && !legacy) for (const id of pending(prev)!) if (!cur.includes(id) && !(await prove(f.regra_id, id))) carry.push(id);
+    const prova = [...new Set([...cur, ...carry])].sort();
+    out.push({ ...f, evidencia: { ...f.evidencia, prova_ids: prova, ...(legacy || !f.evidencia.ids ? { sem_prova: true } : {}) } });
+  }
   const active = new Set(findings.map((f) => f.regra_id));
   const byRule = new Map<string, OpenSuggestion[]>();
-  for (const o of open) byRule.set(o.regra_id, [...(byRule.get(o.regra_id) ?? []), o]);
-  const out: string[] = [];
+  for (const o of open) if (o.estado !== "descartada") byRule.set(o.regra_id, [...(byRule.get(o.regra_id) ?? []), o]);
+  const resolved: string[] = [];
   for (const [regra, rows] of byRule) {
-    if (active.has(regra) || rows.some((r) => !r.ids?.length)) continue;
+    if (active.has(regra) || rows.some((r) => pending(r) === null)) continue;
     let ok = true;
-    for (const id of new Set(rows.flatMap((r) => r.ids!))) if (!(await prove(regra, id))) { ok = false; break; }
-    if (ok) out.push(regra);
+    for (const id of new Set(rows.flatMap((r) => pending(r)!))) if (!(await prove(regra, id))) { ok = false; break; }
+    if (ok) resolved.push(regra);
   }
-  return out;
+  return { findings: out, resolved };
 }
+/** Rules allowed to resolve (see decideLifecycle). */
+export const provenRules = async (open: OpenSuggestion[], findings: RiskFinding[], prove: Prove) =>
+  (await decideLifecycle(open, findings, prove)).resolved;
