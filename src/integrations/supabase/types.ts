@@ -5023,8 +5023,10 @@ export type Database = {
           fornecedor_id: string | null
           fornecedor_nome: string
           ia_avaliado_em: string | null
+          ia_iniciado_em: string | null
           ia_nivel_risco: string | null
           ia_parecer: Json | null
+          ia_status: string | null
           id: string
           link_token: string
           observacoes: string | null
@@ -5046,8 +5048,10 @@ export type Database = {
           fornecedor_id?: string | null
           fornecedor_nome: string
           ia_avaliado_em?: string | null
+          ia_iniciado_em?: string | null
           ia_nivel_risco?: string | null
           ia_parecer?: Json | null
+          ia_status?: string | null
           id?: string
           link_token: string
           observacoes?: string | null
@@ -5069,8 +5073,10 @@ export type Database = {
           fornecedor_id?: string | null
           fornecedor_nome?: string
           ia_avaliado_em?: string | null
+          ia_iniciado_em?: string | null
           ia_nivel_risco?: string | null
           ia_parecer?: Json | null
+          ia_status?: string | null
           id?: string
           link_token?: string
           observacoes?: string | null
@@ -13180,6 +13186,10 @@ export type Database = {
         Args: { dados_id: string }
         Returns: boolean
       }
+      dd_eh_nao_aplicavel: {
+        Args: { p_config: Json; p_resposta: string }
+        Returns: boolean
+      }
       dd_nota_da_resposta: {
         Args: {
           p_arquivo: string
@@ -13189,6 +13199,10 @@ export type Database = {
           p_tipo: string
         }
         Returns: number
+      }
+      dd_reivindicar_parecer: {
+        Args: { p_assessment_id: string }
+        Returns: boolean
       }
       denuncia_pertence_empresa: {
         Args: { denuncia_id: string }

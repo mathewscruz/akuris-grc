@@ -117,7 +117,7 @@ function textos(pt: boolean) {
         idFornecedor: 'Identificação do fornecedor', cnpj: 'CNPJ', categoria: 'Categoria', contato: 'Contato',
         email: 'E-mail', telefone: 'Telefone', situacao: 'Situação na Receita', avaliacao: 'Avaliação',
         validade: 'Válida até', status: 'Estado', sumario: 'Sumário executivo', riscoResultante: 'Risco resultante',
-        classes: { baixo: 'Risco baixo', moderado: 'Risco moderado', elevado: 'Risco elevado', critico: 'Risco crítico' } as Record<Classificacao, string>,
+        classes: { baixo: 'Excelente', moderado: 'Bom', elevado: 'Regular', critico: 'Ruim' } as Record<Classificacao, string>,
         kRespostas: 'Respostas', kEvidencia: 'Com comprovativo', kLacunas: 'Lacunas', kCriticas: 'Lacunas críticas', kPrazo: 'Prazo de resposta', dias: 'dias',
         exigemAcao: 'Pontos que exigem ação', semLacunas: 'Nenhuma resposta abaixo do limite (nota 6/10).',
         alertaTitulo: 'Atenção: o score não está sustentado',
@@ -132,13 +132,13 @@ function textos(pt: boolean) {
         decisaoOpcoes: ['Aprovado', 'Aprovado com ressalvas', 'Reprovado'],
         responsavel: 'Responsável pela decisão', data: 'Data', assinatura: 'Assinatura', justificativa: 'Justificativa / ressalvas',
         metodologia: 'Metodologia',
-        metodologiaTxt: 'Cada resposta recebe uma nota de 0 a 10, multiplicada pelo peso da pergunta. O score é a soma dos pontos obtidos dividida pelo máximo possível, em percentagem; perguntas não aplicáveis ficam fora do cálculo. Uma resposta com nota inferior a 6 é tratada como lacuna; é crítica quando o peso da pergunta é 3 ou mais. Faixas: 80% ou mais risco baixo, 60-79% moderado, 40-59% elevado, abaixo de 40% crítico. A leitura da IA é interpretação e não altera o score.',
+        metodologiaTxt: 'Cada resposta recebe uma nota de 0 a 10. O score é a média dessas notas ponderada pelo peso de cada pergunta, em percentagem; respostas "Não se aplica", texto livre e perguntas sem resposta ficam fora do cálculo. Uma resposta com nota inferior a 6 é tratada como lacuna; é crítica quando o peso da pergunta é 3 ou mais. Faixas: 80% ou mais Excelente, 60-79% Bom, 40-59% Regular, abaixo de 40% Ruim. A leitura da IA é interpretação e não altera o score.',
       }
     : {
         idFornecedor: 'Supplier identification', cnpj: 'Tax ID', categoria: 'Category', contato: 'Contact',
         email: 'E-mail', telefone: 'Phone', situacao: 'Registry status', avaliacao: 'Assessment',
         validade: 'Valid until', status: 'Status', sumario: 'Executive summary', riscoResultante: 'Resulting risk',
-        classes: { baixo: 'Low risk', moderado: 'Moderate risk', elevado: 'High risk', critico: 'Critical risk' } as Record<Classificacao, string>,
+        classes: { baixo: 'Excellent', moderado: 'Good', elevado: 'Regular', critico: 'Poor' } as Record<Classificacao, string>,
         kRespostas: 'Answers', kEvidencia: 'With evidence', kLacunas: 'Gaps', kCriticas: 'Critical gaps', kPrazo: 'Response time', dias: 'days',
         exigemAcao: 'Items requiring action', semLacunas: 'No answer below the threshold (score 6/10).',
         alertaTitulo: 'Warning: the score is not supported',
@@ -530,7 +530,7 @@ export async function gerarRelatorioFornecedor(dados: DadosDoRelatorio, r: Rotul
         body.push([
           pergunta,
           x.resposta ?? '—',
-          nota === null ? '—' : `${Number(x.pontuacao).toFixed(0)}/${maximoDe(rr)}`,
+          nota === null ? '—' : `${nota.toFixed(nota % 1 ? 1 : 0)}/${maximoDe(rr)}`,
           x.temAnexo ? T.sim : T.nao,
         ]);
       }

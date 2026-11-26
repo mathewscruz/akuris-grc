@@ -2,7 +2,7 @@
  * Regras puras da leitura de uma avaliação de fornecedor, partilhadas pelo
  * ecrã e pelo PDF para que os dois nunca digam coisas diferentes.
  *
- * `pontuacao` gravada = nota (0–10) × peso da pergunta.
+ * `pontuacao` gravada = nota pura da resposta (0–10); o peso entra só na média.
  */
 
 /** Abaixo desta nota (0–10) a resposta é uma lacuna. */
@@ -20,12 +20,19 @@ export interface RespostaAvaliada {
 
 export function notaDe(r: RespostaAvaliada): number | null {
   if (r.pontuacao === null || r.pontuacao === undefined) return null;
-  const peso = Number(r.peso ?? 1) || 1;
-  return Math.max(0, Math.min(10, Number(r.pontuacao) / peso));
+  const n = Number(r.pontuacao);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(10, n));
 }
 
-export function maximoDe(r: RespostaAvaliada): number {
-  return (Number(r.peso ?? 1) || 1) * 10;
+export function maximoDe(_r?: RespostaAvaliada): number {
+  return 10;
+}
+
+/** Pontos ponderados perdidos por uma resposta: peso × (10 − nota). */
+export function pontosPerdidos(r: RespostaAvaliada): number {
+  const n = notaDe(r);
+  return n === null ? 0 : (Number(r.peso ?? 1) || 1) * (10 - n);
 }
 
 export function ehLacuna(r: RespostaAvaliada): boolean {
@@ -68,6 +75,5 @@ export function alertasDeCoerencia(score: number | null | undefined, rs: Respost
 
 /** Lacunas ordenadas por impacto (pontos perdidos), piores primeiro. */
 export function lacunasPorImpacto<T extends RespostaAvaliada>(rs: T[]): T[] {
-  const perdido = (r: T) => maximoDe(r) - Number(r.pontuacao ?? 0);
-  return rs.filter(ehLacuna).sort((a, b) => perdido(b) - perdido(a));
+  return rs.filter(ehLacuna).sort((a, b) => pontosPerdidos(b) - pontosPerdidos(a));
 }

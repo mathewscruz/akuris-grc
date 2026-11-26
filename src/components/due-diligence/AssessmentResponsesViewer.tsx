@@ -300,11 +300,11 @@ export function AssessmentResponsesViewer({
                                     {formatResponse(response!, question)}
                                   </p>
                                 </div>
-                                {response?.pontuacao && (
+                                {response?.pontuacao != null && (
                                   <div className="text-right">
                                     <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.scoreLabel')}</span>
                                     <p className="font-semibold text-primary">
-                                      {response.pontuacao.toFixed(1)}
+                                      {Number(response.pontuacao).toFixed(1)}
                                     </p>
                                   </div>
                                 )}

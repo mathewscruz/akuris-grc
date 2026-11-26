@@ -131,6 +131,8 @@ Deno.serve(async (req) => {
         .upload(path, bytes, { contentType: file.type, upsert: false });
       if (uploadError) throw uploadError;
 
+      const { data: anterior } = await admin.from('due_diligence_responses').select('arquivo_url')
+        .eq('assessment_id', assessment.data.id).eq('question_id', question.id).maybeSingle();
       const { error: responseError } = await admin.from('due_diligence_responses').upsert({
         assessment_id: assessment.data.id,
         question_id: question.id,
@@ -141,6 +143,10 @@ Deno.serve(async (req) => {
       if (responseError) {
         await admin.storage.from('due-diligence-evidencias').remove([path]);
         throw responseError;
+      }
+      const antigo = anterior?.arquivo_url ? normalizeStoragePath(anterior.arquivo_url) : null;
+      if (antigo && antigo !== path && antigo.startsWith(`${assessment.data.id}/`)) {
+        await admin.storage.from('due-diligence-evidencias').remove([antigo]);
       }
 
       const { data: signed } = await admin.storage.from('due-diligence-evidencias').createSignedUrl(path, 3600);
@@ -281,13 +287,14 @@ Deno.serve(async (req) => {
       if (error) throw error;
     }
     const completedAt = new Date().toISOString();
-    const { error: completeError } = await admin.from('due_diligence_assessments').update({
+    const { data: concluidas, error: completeError } = await admin.from('due_diligence_assessments').update({
       status: 'concluido', data_conclusao: completedAt, updated_at: completedAt,
-    }).eq('id', assessment.data.id).in('status', ['enviado', 'em_andamento']);
+    }).eq('id', assessment.data.id).in('status', ['enviado', 'em_andamento']).select('id');
     if (completeError) throw completeError;
-
-    const { error: scoreError } = await admin.rpc('calculate_due_diligence_score', { assessment_id_param: assessment.data.id });
-    if (scoreError) console.warn('[public-assessment] score calculation deferred', scoreError.message);
+    // Outro envio simultâneo já concluiu: não se repete a análise.
+    if (!concluidas?.length) return respond({ success: true, completedAt, alreadyCompleted: true });
+    // O score é recalculado pelo trigger da conclusão; aqui só se confirma.
+    const scoreError = null;
 
     /*
       Terminado o questionário, o Akuris lê-o.
@@ -300,19 +307,21 @@ Deno.serve(async (req) => {
       seria absurdo devolver-lhe um erro porque a nossa análise não correu. Fica
       registada, e o ecrã interno mostra um botão para reavaliar.
     */
-    const { error: erroParecer } = await admin.functions.invoke('avaliar-fornecedor-ia', {
+    // Em segundo plano: o fornecedor não espera pela IA.
+    const parecer = admin.functions.invoke('avaliar-fornecedor-ia', {
       body: { assessment_id: assessment.data.id },
       headers: { Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
-    });
-    if (erroParecer) {
-      console.warn('[public-assessment] parecer da IA adiado', erroParecer.message ?? String(erroParecer));
-    }
+    }).then(({ error }: any) => {
+      if (error) console.warn('[public-assessment] parecer da IA adiado', error.message ?? String(error));
+    }).catch(() => {});
+    // @ts-ignore EdgeRuntime existe no runtime do Supabase
+    if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(parecer);
 
     return respond({
       success: true,
       completedAt,
       scoreCalculated: !scoreError,
-      parecerGerado: !erroParecer,
+      parecerEmAndamento: true,
     });
   } catch (error) {
     console.error('[public-assessment] request failed', error instanceof Error ? error.message : String(error));

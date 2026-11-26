@@ -129,13 +129,25 @@ Deno.serve(async (req: Request) => {
 
     const { data: respostas, error: erroResp } = await admin
       .from('due_diligence_responses')
-      .select('resposta, justificativa, pontuacao, evidencia, arquivo_url, resposta_arquivo_url, resposta_arquivo_nome, due_diligence_questions!inner(titulo, descricao, tipo, peso, secao, obrigatoria)')
+      .select('question_id, resposta, justificativa, pontuacao, evidencia, arquivo_url, resposta_arquivo_url, resposta_arquivo_nome, due_diligence_questions!inner(titulo, descricao, tipo, peso, secao, obrigatoria)')
       .eq('assessment_id', assessment_id);
     if (erroResp) throw erroResp;
 
     if (!respostas?.length) {
       return json({ error: 'Sem respostas para avaliar', code: 'NO_RESPONSES' }, 422);
     }
+    if (avaliacao.status !== 'concluido') {
+      return json({ error: 'Avaliação ainda não concluída', code: 'NOT_COMPLETED' }, 409);
+    }
+
+    // Perguntas que ficaram sem resposta também contam para o parecer.
+    const { data: todasPerguntas } = await admin
+      .from('due_diligence_questions')
+      .select('id, titulo, secao, peso, obrigatoria')
+      .eq('template_id', avaliacao.template_id)
+      .limit(1000);
+    const respondidas = new Set(respostas.map((r: any) => r.question_id));
+    const semResposta = (todasPerguntas || []).filter((q: any) => !respondidas.has(q.id));
 
     const apiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!apiKey) return json({ error: 'LOVABLE_API_KEY não configurada' }, 500);
@@ -164,6 +176,8 @@ Deno.serve(async (req: Request) => {
       ].filter(Boolean).join('\n');
     }).join('\n\n');
 
+    const anexos = await lerAnexos(admin, respostas);
+
     const prompt = [
       `Fornecedor: ${avaliacao.fornecedor_nome}`,
       avaliacao.score_final !== null ? `Score calculado das respostas: ${Number(avaliacao.score_final).toFixed(0)}%` : null,
@@ -171,6 +185,10 @@ Deno.serve(async (req: Request) => {
       'Respostas ao questionário de due diligence:',
       '',
       material,
+      semResposta.length
+        ? '\nPerguntas SEM resposta:\n' + semResposta.map((q: any) => `- [${q.secao || 'Geral'} | Peso ${q.peso ?? 1}${q.obrigatoria ? ' | OBRIGATÓRIA' : ''}] ${q.titulo}`).join('\n')
+        : null,
+      anexos.length ? `\nSeguem em anexo ${anexos.length} comprovativo(s) enviados pelo fornecedor. Lê o conteúdo e diz se sustentam a resposta à pergunta indicada.` : null,
       '',
       'Avalia este fornecedor. Regras:',
       '- Sê concreto: cita a resposta ou a lacuna que sustenta cada ponto. Nada de generalidades.',
@@ -187,6 +205,10 @@ Deno.serve(async (req: Request) => {
     // em que sai. Ver `_shared/creditos.ts`.
     if (!(await temCreditoIA(admin, avaliacao.empresa_id))) return semCreditoIA(corsHeaders);
 
+    const { data: reivindicado } = await admin.rpc('dd_reivindicar_parecer', { p_assessment_id: assessment_id });
+    if (!reivindicado) return json({ error: 'Análise já em andamento', code: 'IN_PROGRESS' }, 409);
+    const marcarErro = () => admin.from('due_diligence_assessments').update({ ia_status: 'erro' }).eq('id', assessment_id);
+
     const aiResp = await fetchAnaliseComReserva('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -201,7 +223,7 @@ Deno.serve(async (req: Request) => {
               'eles próprios responderam e das evidências que juntaram. Não inflacionas nem dramatizas: ' +
               'uma resposta boa é boa, uma lacuna é uma lacuna. Respondes APENAS com o JSON pedido.',
           },
-          { role: 'user', content: prompt },
+          { role: 'user', content: anexos.length ? [{ type: 'text', text: prompt }, ...anexos] : prompt },
         ],
         response_format: ESQUEMA_DO_PARECER,
       }),
@@ -211,20 +233,8 @@ Deno.serve(async (req: Request) => {
       const detalhe = await aiResp.text().catch(() => '');
       console.error('[avaliar-fornecedor-ia] gateway recusou', aiResp.status, detalhe.slice(0, 300));
       // 429/402 do gateway são transitórios ou de saldo: quem chama distingue.
+      await marcarErro();
       return json({ error: 'Serviço de IA indisponível', code: 'AI_UNAVAILABLE' }, aiResp.status === 429 ? 429 : 502);
-    }
-
-    // Só se debita depois do gateway aceitar — não se cobra o que não veio.
-    if (avaliacao.empresa_id) {
-      const { data: creditoOk } = await admin.rpc('consume_ai_credit', {
-        p_empresa_id: avaliacao.empresa_id,
-        p_user_id: chamador.userId,
-        p_funcionalidade: 'avaliar_fornecedor_ia',
-        p_descricao: `Parecer de due diligence · ${avaliacao.fornecedor_nome}`,
-      });
-      /* Franquia esgotada entre a pergunta e o débito: quem chega
-         a seguir não leva a resposta. */
-      if (creditoOk === false) return semCreditoIA(corsHeaders);
     }
 
     const dados = await aiResp.json();
@@ -234,6 +244,7 @@ Deno.serve(async (req: Request) => {
       parecer = JSON.parse(bruto.replace(/```json\s*|\s*```/g, '').trim());
     } catch {
       console.error('[avaliar-fornecedor-ia] resposta não era JSON', bruto.slice(0, 200));
+      await marcarErro();
       return json({ error: 'Parecer ilegível', code: 'BAD_AI_RESPONSE' }, 502);
     }
 
@@ -244,8 +255,10 @@ Deno.serve(async (req: Request) => {
     const documento = {
       ...parecer,
       nivelRisco: nivel,
-      modelo: MODELOS.ANALISE,
+      modelo: typeof dados?.model === 'string' ? dados.model : MODELOS.ANALISE,
       respostasAnalisadas: respostas.length,
+      perguntasSemResposta: semResposta.length,
+      anexosLidos: anexos.length,
     };
 
     const { error: erroGravar } = await admin
@@ -254,9 +267,34 @@ Deno.serve(async (req: Request) => {
         ia_parecer: documento,
         ia_nivel_risco: nivel,
         ia_avaliado_em: new Date().toISOString(),
+        ia_status: null,
       })
       .eq('id', assessment_id);
-    if (erroGravar) throw erroGravar;
+    if (erroGravar) { await marcarErro(); throw erroGravar; }
+
+    // Só se debita depois de o parecer estar gravado — não se cobra o que não ficou.
+    if (avaliacao.empresa_id) {
+      const { error: erroCredito } = await admin.rpc('consume_ai_credit', {
+        p_empresa_id: avaliacao.empresa_id,
+        p_user_id: chamador.userId,
+        p_funcionalidade: 'avaliar_fornecedor_ia',
+        p_descricao: `Parecer de due diligence · ${avaliacao.fornecedor_nome}`,
+      });
+      if (erroCredito) console.error('[avaliar-fornecedor-ia] débito falhou', erroCredito.message);
+    }
+
+    // Aviso no sino para quem criou a avaliação.
+    const { data: dono } = await admin.from('due_diligence_assessments').select('created_by').eq('id', assessment_id).maybeSingle();
+    if (dono?.created_by) {
+      await admin.from('notifications').insert({
+        user_id: dono.created_by,
+        title: 'Parecer do fornecedor pronto',
+        message: `A análise da avaliação de ${avaliacao.fornecedor_nome} está disponível.`,
+        type: 'info',
+        link_to: '/due-diligence',
+        metadata: { module: 'due_diligence', assessment_id },
+      });
+    }
 
     return json({ success: true, parecer: documento });
   } catch (erro) {
@@ -265,6 +303,35 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Não foi possível avaliar', code: 'INTERNAL_ERROR' }, 500);
   }
 });
+
+const MAX_ANEXOS = 6;
+const MAX_BYTES = 4 * 1024 * 1024;
+const TIPOS_LIDOS: Record<string, string> = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg' };
+
+/** Descarrega os comprovativos legíveis (PDF/imagem, até 4 MB, no máximo 6) para o modelo ler. */
+async function lerAnexos(admin: any, respostas: any[]) {
+  const partes: any[] = [];
+  for (const r of respostas) {
+    if (partes.length >= MAX_ANEXOS) break;
+    const caminho: string | null = r.arquivo_url || r.resposta_arquivo_url;
+    if (!caminho || /^https?:/i.test(caminho)) continue;
+    const ext = caminho.split('.').pop()?.toLowerCase() ?? '';
+    const mime = TIPOS_LIDOS[ext];
+    if (!mime) continue;
+    try {
+      const { data } = await admin.storage.from('due-diligence-evidencias').download(caminho);
+      if (!data || data.size > MAX_BYTES) continue;
+      const bytes = new Uint8Array(await data.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      partes.push({ type: 'text', text: `Comprovativo da pergunta "${r.due_diligence_questions?.titulo ?? ''}" (${r.resposta_arquivo_nome || 'ficheiro'}):` });
+      partes.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${btoa(bin)}` } });
+    } catch (e) {
+      console.warn('[avaliar-fornecedor-ia] anexo ignorado', e instanceof Error ? e.message : String(e));
+    }
+  }
+  return partes;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

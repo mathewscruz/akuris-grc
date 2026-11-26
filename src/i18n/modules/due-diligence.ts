@@ -196,6 +196,9 @@ export const dueDiligence = {
         deleteCancel: 'Cancelar',
         scoreDialogTitle: 'Resultado da Avaliação — {fornecedor}',
         scoreNotCalculated: 'Score ainda não calculado para esta avaliação.',
+        semNota: 'Sem nota',
+        semNotaDescricao: 'Nenhuma resposta desta avaliação tem critério mensurável (ex.: só texto livre ou "Não se aplica").',
+        iaEmAndamento: 'Análise da IA em andamento. O parecer aparece aqui assim que ficar pronto.',
       },
       fornecedorSelector: {
         pickLabel: 'Fornecedor do cadastro',
@@ -883,6 +886,9 @@ export const dueDiligence = {
         deleteCancel: 'Cancel',
         scoreDialogTitle: 'Assessment Result — {fornecedor}',
         scoreNotCalculated: 'Score not yet calculated for this assessment.',
+        semNota: 'No score',
+        semNotaDescricao: 'No answer in this assessment has a measurable criterion (e.g. only free text or "Not applicable").',
+        iaEmAndamento: 'AI analysis in progress. The opinion will appear here once ready.',
       },
       fornecedorSelector: {
         pickLabel: 'Supplier from registry',

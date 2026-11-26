@@ -100,7 +100,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
 
       const assessmentLink = `${window.location.origin}/assessment/${assessment.link_token}`;
 
-      await supabase.functions.invoke('send-due-diligence-email', {
+      const { error: erroEnvio } = await supabase.functions.invoke('send-due-diligence-email', {
         body: {
           type: 'reminder',
           assessment_id: assessment.id,
@@ -113,6 +113,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
           empresa_logo_url: empresaLogoUrl
         }
       });
+      if (erroEnvio) throw erroEnvio;
 
       await exigirEscrita(supabase
         .from('due_diligence_assessments')
@@ -510,7 +511,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
 
     if (statusFilter && statusFilter !== 'all') {
       filtered = filtered.filter(assessment => statusFilter === 'expirado'
-        ? !['concluido', 'finalizado'].includes(assessment.status) && assessment.data_expiracao && parseDataLocal(assessment.data_expiracao) < startOfDay(new Date())
+        ? !['concluido', 'finalizado'].includes(assessment.status) && assessment.data_expiracao && new Date(assessment.data_expiracao) < new Date()
         : assessment.status === statusFilter);
     }
 
@@ -712,8 +713,9 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
   const isExpired = (dateString: string) => {
     // Expira no fim do dia do prazo, e `parseDataLocal` evita perder um dia
     // por fuso quando a coluna não tem hora.
+    // Mesma regra do link público: expira no instante gravado.
     if (!dateString) return false;
-    return startOfDay(new Date()) > startOfDay(parseDataLocal(dateString));
+    return new Date() > new Date(dateString);
   };
 
   const isExpiringSoon = (dateString: string) => {
@@ -759,7 +761,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
 
       const assessmentLink = `${window.location.origin}/assessment/${assessment.link_token}`;
 
-      await supabase.functions.invoke('send-due-diligence-email', {
+      const { error: erroEnvio } = await supabase.functions.invoke('send-due-diligence-email', {
         body: {
           type: 'send',
           assessment_id: assessment.id,
@@ -772,6 +774,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
           empresa_logo_url: empresaLogoUrl
         }
       });
+      if (erroEnvio) throw erroEnvio;
 
       toast({
         title: t('dueDiligence.assessmentsManagerEnhanced.toastResentTitle'),
@@ -1132,17 +1135,35 @@ function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
     );
   }
 
+  // Sem nenhuma resposta mensurável não há nota: não se mostra 0% "Ruim".
+  if (assessment.score_final == null || !scoreData.classificacao) {
+    return (
+      <div className="text-center py-8 space-y-1">
+        <p className="font-medium">{t('dueDiligence.assessmentsManagerEnhanced.semNota')}</p>
+        <p className="text-sm text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.semNotaDescricao')}</p>
+      </div>
+    );
+  }
+
   return (
+    <>
+    {(assessment as any).ia_status === 'em_andamento' && (
+      <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+        <AkurisPulse size={16} />
+        {t('dueDiligence.assessmentsManagerEnhanced.iaEmAndamento')}
+      </div>
+    )}
     <RelatorioDoFornecedor
       fornecedor={assessment.fornecedor_nome}
       template={assessment.template?.nome}
       concluidoEm={assessment.data_conclusao ?? null}
       scoreTotal={Number(scoreData.score_total ?? 0)}
-      classificacao={scoreData.classificacao ?? 'ruim'}
+      classificacao={scoreData.classificacao}
       breakdown={scoreData.score_breakdown ?? null}
       cobertura={scoreData.observacoes_ia ?? null}
       respostas={respostas}
       parecer={(assessment.ia_parecer as ParecerDaIA) ?? null}
     />
+    </>
   );
 }

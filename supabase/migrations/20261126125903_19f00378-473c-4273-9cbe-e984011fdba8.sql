@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.dd_resposta_pergunta_do_template() FROM PUBLIC, anon, authenticated;

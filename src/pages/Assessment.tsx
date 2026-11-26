@@ -368,7 +368,9 @@ export default function Assessment() {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<{ title: string; message: string } | null>(null);
   const [canRetryLoad, setCanRetryLoad] = useState(false);
-  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Um temporizador por campo: mudar de pergunta não cancela a gravação da anterior.
+  const saveTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const [saveError, setSaveError] = useState(false);
 
   const questionsPerPage = 5;
 
@@ -419,9 +421,10 @@ export default function Assessment() {
   }, [responses]);
 
   const calculateProgress = () => {
-    if (questions.length === 0) return 0;
-    const answeredQuestions = questions.filter(q => isAnswered(q.id)).length;
-    return (answeredQuestions / questions.length) * 100;
+    // O progresso mede o que falta para poder enviar: só as obrigatórias.
+    const base = questions.some(q => q.obrigatoria) ? questions.filter(q => q.obrigatoria) : questions;
+    if (base.length === 0) return 0;
+    return (base.filter(q => isAnswered(q.id)).length / base.length) * 100;
   };
 
   const totalRequired = useMemo(() => questions.filter(q => q.obrigatoria).length, [questions]);
@@ -563,7 +566,9 @@ export default function Assessment() {
       const normalizedValue = field === 'pontuacao' ? (String(value).trim() === '' ? null : Number(value)) : value;
       await invokePublicAssessment({ action: 'save', token, questionId: baseQuestionId, field, value: normalizedValue });
       setSavedAt(new Date());
+      setSaveError(false);
     } catch (error) {
+      setSaveError(true);
       assessmentLogger.error('Erro ao salvar resposta:', error);
     } finally {
       setSaving(false);
@@ -581,10 +586,13 @@ export default function Assessment() {
 
   const handleResponseChange = useCallback((questionId: string, value: any) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
+    const timers = saveTimersRef.current;
+    const anterior = timers.get(questionId);
+    if (anterior) clearTimeout(anterior);
+    timers.set(questionId, setTimeout(() => {
+      timers.delete(questionId);
       saveResponse(questionId, value);
-    }, 1000);
+    }, 1000));
   }, [saveResponse]);
 
   const submitAssessment = useCallback(async () => {
@@ -824,7 +832,9 @@ export default function Assessment() {
                             {t('publicPortal.assessment.lastSave')}
                           </span>
                           <span className="font-semibold text-foreground text-right">
-                            {savedAt
+                            {saveError
+                              ? <span className="text-destructive">{t('publicPortal.assessment.saveError')}</span>
+                              : savedAt
                               ? savedAt.toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
                               : '—'}
                           </span>
