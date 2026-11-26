@@ -39,6 +39,12 @@ describe('cabeçalhos de segurança', () => {
     expect(csp).not.toMatch(/connect-src[^;]*\*(?!\.supabase)/); // sem curinga aberto
   });
 
+  it('PDFs pré-visualizados como blob podem ser embutidos, sem abrir frames externos', () => {
+    const csp = politicaCsp();
+    expect(csp).toMatch(/frame-src[^;]*blob:/);
+    expect(csp).not.toMatch(/frame-src[^;]*(https:|\*)/);
+  });
+
   it('o `<meta>` não inclui `frame-ancestors` (que o navegador ignora aí)', () => {
     /* Deixar `frame-ancestors` no meta faz o navegador emitir um aviso e não
        protege nada — a proteção real está no header e no frame-buster. */

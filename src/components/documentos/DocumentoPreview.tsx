@@ -288,14 +288,24 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
 
     if (objectUrl && (kind === 'pdf' || kind === 'unknown')) {
       return (
-        <object data={objectUrl} type="application/pdf" className="h-full w-full">
-          <iframe src={objectUrl} className="h-full w-full border-0" title={documento.nome} />
-        </object>
+        <iframe src={objectUrl} className="h-full w-full border-0" title={documento.nome} />
       );
     }
 
     if (externalUrl) {
-      return <iframe src={externalUrl} className="h-full w-full border-0" title={documento.nome} />;
+      // Sites externos (SharePoint, Drive…) recusam ser embutidos e a política
+      // de segurança só permite frames da própria origem/blob: — abre-se em nova aba.
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
+          <IconExternal className="h-10 w-10 opacity-60" />
+          <p className="text-sm font-medium text-foreground">{t('documentosExtras.preview.linkExternoTitulo')}</p>
+          <p className="text-xs">{t('documentosExtras.preview.linkExternoDesc')}</p>
+          <Button variant="outline" onClick={openInNewTab}>
+            <IconExternal className="h-4 w-4 mr-2" />
+            {t('documentosExtras.preview.abrirNovaAba')}
+          </Button>
+        </div>
+      );
     }
 
     if (wordHtml !== null) {

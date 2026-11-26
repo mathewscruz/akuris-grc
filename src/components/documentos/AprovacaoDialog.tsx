@@ -99,38 +99,50 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
     }
   }, [open, documento.id]);
 
-  // Preview lazy: só carrega quando o usuário abre o sub-dialog
+  // Preview lazy: só carrega quando o usuário abre o sub-dialog.
+  // O arquivo é baixado e mostrado como blob local: a política de segurança do
+  // site só permite embutir conteúdo da própria origem ou blob:, nunca uma URL
+  // assinada do storage (outro domínio).
   useEffect(() => {
     if (!previewOpen || !documento?.arquivo_url) return;
+    let cancelled = false;
+    let blobUrl: string | null = null;
+    const original = documento.arquivo_url;
 
     const loadPreview = async () => {
       setLoadingPreview(true);
       try {
-        if (documento.arquivo_url!.includes('supabase')) {
-          const path = documento.arquivo_url!.split('/documentos/')[1];
-          if (path) {
-            const { data, error } = await supabase.storage.from('documentos').createSignedUrl(path, 3600);
-            if (!error && data?.signedUrl) {
-              setPreviewUrl(data.signedUrl);
-            } else {
-              setPreviewUrl(documento.arquivo_url!);
-            }
-          } else {
-            setPreviewUrl(documento.arquivo_url!);
-          }
-        } else {
-          setPreviewUrl(documento.arquivo_url!);
+        const path = original.includes('/documentos/')
+          ? original.split('/documentos/')[1]?.split('?')[0]
+          : /^https?:\/\//i.test(original) ? null : original;
+        if (!path) {
+          if (!cancelled) setPreviewUrl(original);
+          return;
         }
+        const { data, error } = await supabase.storage.from('documentos').download(path);
+        if (error || !data) throw error ?? new Error('empty file');
+        const tipo = (documento.arquivo_tipo || '').toLowerCase();
+        const nome = (documento.arquivo_nome || path).toLowerCase();
+        const blob = tipo.includes('pdf') || nome.endsWith('.pdf')
+          ? new Blob([data], { type: 'application/pdf' })
+          : data;
+        blobUrl = URL.createObjectURL(blob);
+        if (!cancelled) setPreviewUrl(blobUrl);
       } catch (error) {
         logger.error('Erro ao carregar preview:', error);
-        setPreviewUrl(documento.arquivo_url!);
+        if (!cancelled) setPreviewUrl(null);
       } finally {
-        setLoadingPreview(false);
+        if (!cancelled) setLoadingPreview(false);
       }
     };
 
     loadPreview();
-  }, [previewOpen, documento?.arquivo_url]);
+    return () => {
+      cancelled = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      setPreviewUrl(null);
+    };
+  }, [previewOpen, documento?.arquivo_url, documento?.arquivo_tipo, documento?.arquivo_nome]);
 
   // ============ Helpers ============
   const canPreview = () => {

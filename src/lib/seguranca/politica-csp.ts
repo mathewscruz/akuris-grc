@@ -47,6 +47,10 @@ export const DIRETIVAS_CSP: Array<[string, string]> = [
   ['worker-src', "'self' blob:"],
   ['manifest-src', "'self'"],
   ['media-src', "'self' blob:"],
+  // Pré-visualização de PDFs: o arquivo é baixado e embutido como blob local.
+  // Sem isto o frame cai em `default-src 'self'` e o Chrome mostra "conteúdo
+  // bloqueado". Nunca `https:` — URLs externas abrem em nova aba.
+  ['frame-src', "'self' blob:"],
   // Clickjacking: ninguém embute o Akuris num iframe. Só vale como header —
   // o navegador ignora `frame-ancestors` vindo de `<meta>` —, por isso há
   // também o `X-Frame-Options` nos ficheiros de header e a proteção complementar
