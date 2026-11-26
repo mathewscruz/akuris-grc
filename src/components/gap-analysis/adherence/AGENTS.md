@@ -1,0 +1,1 @@
+- Analysed documents open in the in-app DocumentoAnalisadoViewer (structure from pure estrutura-documento.ts, UTF-8 download), never a raw storage tab, so policies render in the Akuris reading layout.
