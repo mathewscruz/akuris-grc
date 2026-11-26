@@ -1057,6 +1057,8 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
             open={responsesDialog.open}
             onOpenChange={(open) => setResponsesDialog({ open, assessment: null })}
             assessment={responsesDialog.assessment}
+            onExport={gerarRelatorio}
+            exporting={aGerarRelatorio}
           />
         </div>
       </div>

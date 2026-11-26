@@ -116,7 +116,7 @@ function textos(pt: boolean) {
     ? {
         idFornecedor: 'Identificação do fornecedor', cnpj: 'CNPJ', categoria: 'Categoria', contato: 'Contato',
         email: 'E-mail', telefone: 'Telefone', situacao: 'Situação na Receita', avaliacao: 'Avaliação',
-        validade: 'Válida até', status: 'Estado', sumario: 'Sumário executivo', riscoResultante: 'Risco resultante',
+        validade: 'Válida até', status: 'Estado', sumario: 'Sumário executivo', riscoResultante: 'Classificação',
         classes: { baixo: 'Excelente', moderado: 'Bom', elevado: 'Regular', critico: 'Ruim' } as Record<Classificacao, string>,
         kRespostas: 'Respostas', kEvidencia: 'Com comprovativo', kLacunas: 'Lacunas', kCriticas: 'Lacunas críticas', kPrazo: 'Prazo de resposta', dias: 'dias',
         exigemAcao: 'Pontos que exigem ação', semLacunas: 'Nenhuma resposta abaixo do limite (nota 6/10).',
@@ -137,7 +137,7 @@ function textos(pt: boolean) {
     : {
         idFornecedor: 'Supplier identification', cnpj: 'Tax ID', categoria: 'Category', contato: 'Contact',
         email: 'E-mail', telefone: 'Phone', situacao: 'Registry status', avaliacao: 'Assessment',
-        validade: 'Valid until', status: 'Status', sumario: 'Executive summary', riscoResultante: 'Resulting risk',
+        validade: 'Valid until', status: 'Status', sumario: 'Executive summary', riscoResultante: 'Rating',
         classes: { baixo: 'Excellent', moderado: 'Good', elevado: 'Regular', critico: 'Poor' } as Record<Classificacao, string>,
         kRespostas: 'Answers', kEvidencia: 'With evidence', kLacunas: 'Gaps', kCriticas: 'Critical gaps', kPrazo: 'Response time', dias: 'days',
         exigemAcao: 'Items requiring action', semLacunas: 'No answer below the threshold (score 6/10).',
@@ -350,7 +350,7 @@ export async function gerarRelatorioFornecedor(dados: DadosDoRelatorio, r: Rotul
     doc.setFontSize(8.5);
     doc.setTextColor(127, 29, 29);
     linhas.forEach((l, i) => doc.text(l, MARGEM + 6, y + 11 + i * 4.2));
-    y += h + 6;
+    y += h + 10;
   }
 
   // Pontos que exigem ação
@@ -463,8 +463,18 @@ export async function gerarRelatorioFornecedor(dados: DadosDoRelatorio, r: Rotul
   }
 
   // ── 5. Leitura da IA ───────────────────────────────────────────────────
-  doc.addPage();
-  y = addAkurisHeader(doc, logo);
+  // Continua na mesma página quando ainda cabe um bloco razoável: evita
+  // páginas com 4 linhas de tabela seguidas de uma página quase vazia.
+  {
+    const fimTabela = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
+    const alturaPagina = doc.internal.pageSize.getHeight();
+    if (fimTabela + 70 > alturaPagina - 25) {
+      doc.addPage();
+      y = addAkurisHeader(doc, logo);
+    } else {
+      y = fimTabela + 12;
+    }
+  }
   y = addSectionTitle(doc, r.seccaoParecer, y, MARGEM);
   if (!dados.parecer) {
     y = paragrafo(doc, r.semParecer, y, logo);

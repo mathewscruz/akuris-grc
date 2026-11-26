@@ -54,12 +54,17 @@ interface AssessmentResponsesViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   assessment: Assessment | null;
+  /** Gera o relatório completo (mesmo PDF da tela de resultado). */
+  onExport?: (assessment: any) => void | Promise<void>;
+  exporting?: boolean;
 }
 
 export function AssessmentResponsesViewer({
   open,
   onOpenChange,
-  assessment
+  assessment,
+  onExport,
+  exporting = false,
 }: AssessmentResponsesViewerProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -174,9 +179,7 @@ export function AssessmentResponsesViewer({
   };
 
   const exportToPDF = () => {
-    // Funcionalidade para exportar respostas como PDF
-    // Implementar posteriormente se necessário
-    logger.debug('Exportar avaliação para PDF: por implementar');
+    if (assessment && onExport) void onExport(assessment);
   };
 
   if (!assessment) return null;
@@ -342,7 +345,8 @@ export function AssessmentResponsesViewer({
                   variant="outline"
                   onClick={exportToPDF}
                   className="flex items-center gap-2"
-                  disabled // Implementar posteriormente
+                  disabled={!onExport || exporting || responses.length === 0}
+                  loading={exporting}
                 >
                   <IconDownload className="h-4 w-4" />
                   {t('dueDiligence.assessmentResponsesViewer.exportPdf')}
