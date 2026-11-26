@@ -389,11 +389,17 @@ export async function processIntegrationRun(
         p_attempt: run.attempt,
         p_status: retry ? "queued" : "error",
         p_count: 0,
-        p_error: failure.code,
+        p_error: runErrorCode(failure),
         p_retry_at: new Date(
           Date.now() + retryDelay(run.attempt, failure.retryAfter) * 1000,
         ).toISOString(),
       }),
     );
   }
+}
+
+/** A 403 is only an unproven refusal: never record it as "missing permission" unless the provider says license. */
+export function runErrorCode(failure: ProviderError): string {
+  if (failure.code !== "permission_missing") return failure.code;
+  return failure.reason === "license_missing" ? "license_missing" : "provider_access_denied";
 }

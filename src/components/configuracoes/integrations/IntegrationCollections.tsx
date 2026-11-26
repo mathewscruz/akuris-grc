@@ -1153,7 +1153,7 @@ function ConnectionManager({
 function moduleStatusCode(raw: string): string {
   if (["incomplete_search", "members_partial", "members_list_limit"].includes(raw)) return raw;
   if (/limit|partial/.test(raw)) return "collection_limit";
-  if (/permission|403/.test(raw)) return "permission_missing";
+  if (/permission|403/.test(raw)) return "provider_access_denied";
   if (/authorization/.test(raw)) return "authorization_expired";
   if (/429/.test(raw)) return "rate_limited";
   return raw;

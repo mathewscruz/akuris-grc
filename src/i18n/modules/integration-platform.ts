@@ -228,6 +228,8 @@ export const integrationPlatform = {
           "O aplicativo deste fornecedor ainda precisa ser configurado pelo administrador do Akuris.",
         scheduler_setup_required:
           "O processamento automático ainda não foi ativado. Escolha coleta manual.",
+        provider_access_denied: "Acesso recusado pelo provedor. Verifique o consentimento no app e a licença necessária.",
+        license_missing: "O provedor informou que falta uma licença para esta consulta.",
         permission_missing:
           "A conta não concedeu uma permissão necessária. Revise o consentimento com seu administrador.",
         consent_revoked: "O administrador do tenant retirou a autorização do Akuris. Conecte de novo.",
@@ -240,12 +242,9 @@ export const integrationPlatform = {
         system_required: "Escolha o sistema de destino nas configurações da conexão antes de importar os usuários.",
         consent_denied:
           "A autorização não foi concluída. Você pode tentar novamente.",
-        mfa_permission_missing:
-          "O fornecedor não permitiu consultar o cadastro de MFA. Este sinal permanece desconhecido.",
-        roles_permission_missing:
-          "Não foi possível consultar atribuições de função. Revise os privilégios antes de importar contas.",
-        intune_permission_missing:
-          "A consulta do Intune não foi autorizada. Usuários podem ter sido coletados, mas dispositivos não.",
+        mfa_permission_missing: "O fornecedor recusou a consulta do cadastro de MFA (verifique consentimento e licença). Este sinal permanece desconhecido.",
+        roles_permission_missing: "O fornecedor recusou a consulta de atribuições de função (verifique consentimento e licença). Revise os privilégios antes de importar contas.",
+        intune_permission_missing: "O fornecedor recusou a consulta do Intune (verifique consentimento e licença). Usuários podem ter sido coletados, mas dispositivos não.",
         branch_unavailable:
           "A proteção de algumas branches não pôde ser consultada.",
         bucket_policy_unavailable:
@@ -502,6 +501,8 @@ export const integrationPlatform = {
           "An Akuris administrator must configure this provider application first.",
         scheduler_setup_required:
           "Automatic processing is not active yet. Choose manual collection.",
+        provider_access_denied: "Access refused by the provider. Check app consent and the required license.",
+        license_missing: "The provider reported a missing license for this query.",
         permission_missing:
           "A required permission was not granted. Review consent with your administrator.",
         consent_revoked: "Your tenant admin removed Akuris authorization. Connect again.",
@@ -513,12 +514,9 @@ export const integrationPlatform = {
         organization_changed: "This account belongs to another Google organisation. Reconnect with an account from the same organisation or create a new connection.",
         system_required: "Choose the target system in the connection settings before importing users.",
         consent_denied: "Authorization was not completed. You can try again.",
-        mfa_permission_missing:
-          "The provider did not allow reading MFA registration. This signal remains unknown.",
-        roles_permission_missing:
-          "Role assignments could not be read. Review privileges before importing accounts.",
-        intune_permission_missing:
-          "Intune access was not authorized. Users may have been collected, but devices were not.",
+        mfa_permission_missing: "The provider refused reading MFA registration (check consent and license). This signal remains unknown.",
+        roles_permission_missing: "The provider refused reading role assignments (check consent and license). Review privileges before importing accounts.",
+        intune_permission_missing: "The provider refused Intune access (check consent and license). Users may have been collected, but devices were not.",
         branch_unavailable:
           "Some branch protection settings could not be read.",
         bucket_policy_unavailable: "Some bucket settings could not be read.",

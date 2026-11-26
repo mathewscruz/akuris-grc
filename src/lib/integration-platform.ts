@@ -157,6 +157,8 @@ export function integrationErrorKey(code: string): string {
     "platform_setup_required",
     "scheduler_setup_required",
     "permission_missing",
+    "provider_access_denied",
+    "license_missing",
     "consent_denied",
     "consent_revoked",
     "mfa_permission_missing",
