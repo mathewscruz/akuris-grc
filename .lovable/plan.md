@@ -33,13 +33,22 @@
 ```
 Visual: identidade Akuris (navy/roxo só em títulos e ação, severidade com as cores próprias), tabelas compactas, cabeçalho e rodapé consistentes, tudo em PT ou EN conforme o idioma do usuário.
 
-## Outras melhorias no Due Diligence (propostas, escolha quais entram)
-1. **Decisão formal da avaliação**: botão Aprovar / Aprovar com ressalvas / Reprovar com justificativa, registrada e impressa no relatório.
-2. **Pedir evidências ao fornecedor** a partir das lacunas: um clique reabre só as perguntas fracas e envia o link, com aviso no sino quando ele responde.
-3. **Score ajustado por evidência**: mostrar, ao lado do score, quanto dele está comprovado por anexo.
-4. **Lacunas viram plano de ação** no hub de Planos de Ação, ligadas ao fornecedor.
-5. **Reavaliação periódica** pela criticidade do fornecedor (ex.: alta = anual), com lembrete no sino.
-6. **Histórico/tendência**: comparar com a avaliação anterior no relatório ("Backup piorou desde 2025").
+## Melhorias na tela da avaliação (Due Diligence)
+Hoje a tela de resultado mostra score, barras por seção, análise da IA e uma recomendação fixa por faixa; a tela de respostas é uma lista longa. Proposta:
+
+1. **Cabeçalho da avaliação**: score + classificação + "% comprovado por evidência" lado a lado, para não ler 81% como 81% verificado.
+2. **Indicadores clicáveis** (KPIs): respostas, lacunas críticas, sem comprovativo, prazo de resposta, validade — cada um filtra a lista abaixo.
+3. **Mapa por seção ordenado do pior para o melhor**, com nº de lacunas e clique que leva às perguntas daquela seção.
+4. **Aba "Lacunas"**: só as respostas fracas, com o que pedir ao fornecedor (vindo da leitura da IA) e ação "Criar plano de ação".
+5. **Respostas agrupadas por seção**, em tabela compacta: resposta em chip, nota/máximo, comprovativo, observação; busca e filtro Sim/Não/sem evidência.
+6. **Alerta de coerência**: aviso quando score alto convive com lacunas críticas ou zero comprovativos.
+7. **Recomendação real** no lugar do texto fixo por faixa: usa lacunas e leitura da IA.
+8. **Decisão formal**: Aprovar / Aprovar com ressalvas / Reprovar com justificativa, registrada, aviso no sino e impressa no relatório.
+9. **Pedir evidências**: reenviar ao fornecedor só as perguntas fracas, com aviso no sino quando ele responder.
+10. **Comparação com a avaliação anterior** do mesmo fornecedor (subiu/desceu por seção).
+11. **Painel do Due Diligence**: distribuição por classificação, avaliações vencidas/a vencer e fornecedores críticos sem avaliação válida.
+
+Ordem de entrega: relatório PDF → itens 1–7 (só tela) → 8–9 (precisam de dados novos) → 10–11.
 
 ## Detalhes técnicos
 - Reescrever `src/components/due-diligence/relatorio-fornecedor.ts` (jsPDF, helpers de `@/lib/pdf-utils`); corrigir rótulo da capa passando idioma a `addAkurisCover`.
