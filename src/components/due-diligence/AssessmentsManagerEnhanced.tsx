@@ -999,6 +999,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
             open={scoreDialog.open}
             onOpenChange={(open) => setScoreDialog({ open, assessment: null, scoreData: null })}
             icon={IconAward}
+            eyebrow={`${t('dueDiligence.relatorioFornecedor.breadcrumb')} › ${scoreDialog.assessment?.fornecedor_nome ?? ''}`}
             title={t('dueDiligence.assessmentsManagerEnhanced.scoreDialogTitle', { fornecedor: scoreDialog.assessment?.fornecedor_nome ?? '' })}
             size="xl"
             hideFooter
@@ -1013,21 +1014,19 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
                   a mesma leitura do mesmo material -- so que uma e aritmetica e
                   a outra e interpretacao, e ficam rotuladas como tal.
                 */}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2 flex-row-reverse">
                   {scoreDialog.assessment && (
                     <Button
-                      variant="outline"
                       size="sm"
                       disabled={aGerarRelatorio}
                       onClick={() => scoreDialog.assessment && gerarRelatorio(scoreDialog.assessment)}
                     >
-                      <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                      {aGerarRelatorio ? t('dueDiligence.relatorio.aGerar') : t('dueDiligence.relatorio.botao')}
+                      {aGerarRelatorio ? t('dueDiligence.relatorio.aGerar') : t('dueDiligence.relatorioFornecedor.baixarRelatorio')}
                     </Button>
                   )}
                   {scoreDialog.assessment && (
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       disabled={aReavaliar}
                       onClick={() => scoreDialog.assessment && reavaliarComIA(scoreDialog.assessment.id)}

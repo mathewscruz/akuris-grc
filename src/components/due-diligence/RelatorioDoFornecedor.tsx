@@ -41,6 +41,7 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { AkurisAIIcon } from '@/components/icons';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Progress } from '@/components/ui/progress';
 import { AnimatedMetricValue } from '@/components/ui/stat-strip';
@@ -236,9 +237,6 @@ export function RelatorioDoFornecedor({
     : /alto|elevado|high/.test(risco) ? 'orange' : 'destructive';
 
   const lacunas = lacunasPorImpacto(respostas);
-  const secoesComLacuna = Array.from(new Set(lacunas.map((r) => r.secao).filter(Boolean)));
-  const [filtro, setFiltro] = React.useState<string | null>(null);
-  const lacunasVisiveis = filtro ? lacunas.filter((r) => r.secao === filtro) : lacunas;
   const leiturasPorSecao = secoes
     .map((s) => ({ nome: s.nome, leitura: parecerPorSecao.get(s.nome.trim().toLowerCase()) }))
     .filter((x) => x.leitura && (x.leitura.pontosFortes?.length || x.leitura.pontosAtencao?.length || x.leitura.oQuePedir?.length));
@@ -246,7 +244,7 @@ export function RelatorioDoFornecedor({
   const kpis: { k: string; v: React.ReactNode; extra?: React.ReactNode; tom?: Tom }[] = [
     {
       k: t('dueDiligence.relatorioFornecedor.kpiPontuacao'),
-      v: (<><AnimatedMetricValue value={scoreTotal.toFixed(0)} /><span className="text-base font-normal text-muted-foreground">/100</span></>),
+      v: (<><AnimatedMetricValue value={scoreTotal.toFixed(0)} /><span className="font-normal">/100</span></>),
       extra: (
         <StatusBadge {...resolveScoreDueDiligenceTone(scoreTotal)}>
           {t(`dueDiligence.scoreVisualization.classification${chaveClasse}`)}
@@ -257,7 +255,7 @@ export function RelatorioDoFornecedor({
       k: t('dueDiligence.relatorioFornecedor.kpiRiscoIa'),
       v: risco ? (
         <span className="inline-flex items-center gap-2 capitalize">
-          <span aria-hidden className={cn('h-2.5 w-2.5 rounded-full', BARRA[tomRisco])} />
+          <span aria-hidden className={cn('h-5 w-5 rounded-full', BARRA[tomRisco])} />
           {parecer?.nivelRisco}
         </span>
       ) : '—',
@@ -269,17 +267,12 @@ export function RelatorioDoFornecedor({
 
   return (
     <div className="space-y-5">
-      <header>
-        <h3 className="text-base font-semibold text-foreground">{fornecedor}</h3>
-        {template && <p className="text-xs text-muted-foreground">{template}</p>}
-      </header>
-
       {/* ── faixa executiva ─────────────────────────────────────────────── */}
       <dl className="grid grid-cols-2 lg:grid-cols-5 rounded-lg border border-border bg-card divide-y lg:divide-y-0 lg:divide-x divide-border/60">
         {kpis.map((m, i) => (
-          <div key={m.k} className={cn('px-5 py-4', i === 0 && 'col-span-2 lg:col-span-1')}>
-            <dt className="text-xs text-muted-foreground">{m.k}</dt>
-            <dd className={cn('mt-1.5 text-2xl font-semibold tabular-nums text-foreground', m.tom && TEXTO[m.tom])}>{m.v}</dd>
+          <div key={m.k} className={cn('px-6 py-5', i === 0 && 'col-span-2 lg:col-span-1')}>
+            <dt className="text-sm text-muted-foreground">{m.k}</dt>
+            <dd className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{m.v}</dd>
             {m.extra && <div className="mt-2">{m.extra}</div>}
           </div>
         ))}
@@ -298,18 +291,16 @@ export function RelatorioDoFornecedor({
 
       {/* ── seções + leitura da IA ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h4 className="text-sm font-semibold text-foreground mb-4">{t('dueDiligence.relatorioFornecedor.desempenhoPorSecao')}</h4>
-          <ul className="space-y-3">
+        <section className="rounded-lg border border-border bg-card p-6">
+          <h4 className="text-base font-semibold text-foreground mb-6">{t('dueDiligence.relatorioFornecedor.desempenhoPorSecao')}</h4>
+          <ul className="space-y-5">
             {secoes.map((s) => {
               const tomS = tomDoScore(s.score);
               return (
-                <li key={s.nome} className="grid grid-cols-[minmax(0,10rem)_1fr_3.5rem] items-center gap-3 text-sm">
+                <li key={s.nome} className="grid grid-cols-[minmax(0,11rem)_1fr_4.5rem] items-center gap-4 text-sm">
                   <span className="truncate text-foreground" title={s.nome}>{s.nome}</span>
-                  <Progress value={s.score} indicatorClassName={BARRA[tomS]} className="h-1.5" />
-                  <span className="text-right tabular-nums text-muted-foreground">
-                    <span className={cn('font-semibold', TEXTO[tomS])}>{s.score.toFixed(0)}</span>/100
-                  </span>
+                  <Progress value={s.score} indicatorClassName={cn(BARRA[tomS], 'rounded-full')} className="h-2.5 rounded-full" />
+                  <span className="tabular-nums text-muted-foreground">{s.score.toFixed(0)}/100</span>
                 </li>
               );
             })}
@@ -317,60 +308,45 @@ export function RelatorioDoFornecedor({
           {cobertura && <p className="mt-4 text-micro text-muted-foreground leading-relaxed">{cobertura}</p>}
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h4 className="text-sm font-semibold text-foreground mb-3">{t('dueDiligence.relatorioFornecedor.leituraDaIa')}</h4>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {parecer?.resumo || t('dueDiligence.relatorioFornecedor.semParecer')}
-          </p>
+        <section className="rounded-lg border border-border bg-card p-6">
+          <h4 className="text-base font-semibold text-foreground mb-6">{t('dueDiligence.relatorioFornecedor.leituraDaIa')}</h4>
+          <div className="flex gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <AkurisAIIcon className="h-5 w-5" />
+            </span>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {parecer?.resumo || t('dueDiligence.relatorioFornecedor.semParecer')}
+            </p>
+          </div>
         </section>
       </div>
 
       {/* ── respostas que custaram pontos ────────────────────────────────── */}
       {lacunas.length > 0 && (
         <section className="rounded-lg border border-border bg-card">
-          <div className="px-5 pt-5 pb-3">
-            <h4 className="text-sm font-semibold text-foreground">{t('dueDiligence.relatorioFornecedor.custaramPontos')}</h4>
+          <div className="px-6 pt-6 pb-3">
+            <h4 className="text-base font-semibold text-foreground">{t('dueDiligence.relatorioFornecedor.custaramPontos')}</h4>
             <p className="text-xs text-muted-foreground">{t('dueDiligence.relatorioFornecedor.custaramPontosDesc')}</p>
-            {secoesComLacuna.length > 1 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {[null, ...secoesComLacuna].map((s) => (
-                  <button
-                    key={s ?? '__todas'}
-                    type="button"
-                    onClick={() => setFiltro(s)}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs transition-colors',
-                      filtro === s ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-accent',
-                    )}
-                  >
-                    {s ?? t('dueDiligence.relatorioFornecedor.todas')}
-                    <span className="ml-1 tabular-nums">({s ? lacunas.filter((r) => r.secao === s).length : lacunas.length})</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-          <div className="overflow-x-auto px-5 pb-4">
+          <div className="overflow-x-auto px-6 pb-4">
             <table className="akuris-table w-full text-sm">
               <thead>
                 <tr className="text-xs text-muted-foreground">
-                  <th className="text-left font-medium py-2">{t('dueDiligence.relatorioFornecedor.colPergunta')}</th>
-                  <th className="text-left font-medium py-2 w-28">{t('dueDiligence.relatorioFornecedor.colRespondeu')}</th>
-                  <th className="text-right font-medium py-2 w-16">{t('dueDiligence.relatorioFornecedor.colNota')}</th>
-                  <th className="text-right font-medium py-2 w-14">{t('dueDiligence.relatorioFornecedor.colPeso')}</th>
-                  <th className="text-left font-medium py-2 pl-4 w-44">{t('dueDiligence.relatorioFornecedor.colSecao')}</th>
+                  <th className="text-left font-medium py-3">{t('dueDiligence.relatorioFornecedor.colPergunta')}</th>
+                  <th className="text-left font-medium py-3 w-40">{t('dueDiligence.relatorioFornecedor.colResposta')}</th>
+                  <th className="text-left font-medium py-3 w-36">{t('dueDiligence.relatorioFornecedor.colPontuacao')}</th>
+                  <th className="text-left font-medium py-3 w-20">{t('dueDiligence.relatorioFornecedor.colPeso')}</th>
+                  <th className="text-left font-medium py-3 w-48">{t('dueDiligence.relatorioFornecedor.colSecao')}</th>
                 </tr>
               </thead>
               <tbody>
-                {lacunasVisiveis.map((r) => (
+                {lacunas.map((r) => (
                   <tr key={r.question_id} className="border-t border-border/50">
-                    <td className="py-2.5 pr-3 text-foreground">{r.titulo}</td>
-                    <td className="py-2.5 pr-3 text-muted-foreground">{r.resposta || '—'}</td>
-                    <td className={cn('py-2.5 text-right tabular-nums font-semibold', TEXTO[tomDoScore((notaDe(r) ?? 0) * 10)])}>
-                      {(notaDe(r) ?? 0).toFixed(0)}/10
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums text-muted-foreground">×{r.peso}</td>
-                    <td className="py-2.5 pl-4 text-xs text-muted-foreground truncate">{r.secao || '—'}</td>
+                    <td className="py-3 pr-3 text-foreground">{r.titulo}</td>
+                    <td className="py-3 pr-3">{r.resposta ? <StatusBadge tone="destructive" variant="soft">{r.resposta}</StatusBadge> : '—'}</td>
+                    <td className="py-3 tabular-nums text-foreground">{(notaDe(r) ?? 0).toFixed(0)}/10</td>
+                    <td className="py-3 tabular-nums text-foreground">{r.peso}</td>
+                    <td className="py-3">{r.secao ? <StatusBadge tone="destructive" variant="soft">{r.secao}</StatusBadge> : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -379,55 +355,6 @@ export function RelatorioDoFornecedor({
         </section>
       )}
 
-      {/* ── leitura da IA por seção (quando existe) ──────────────────────── */}
-      {leiturasPorSecao.map(({ nome, leitura }) => (
-        <section key={nome} id={idDaSecao(nome)} className="rounded-lg border border-border bg-card overflow-hidden scroll-mt-4">
-          <div className="px-4 py-3 border-b border-border/60">
-            <h4 className="text-sm font-semibold text-foreground">{nome}</h4>
-          </div>
-          <Bloco titulo={t('dueDiligence.relatorioFornecedor.oQueEstaBem')} itens={leitura!.pontosFortes} tom="success" />
-          <Bloco titulo={t('dueDiligence.relatorioFornecedor.oQuePrecisaAtencao')} itens={leitura!.pontosAtencao} tom="warning" />
-          {leitura!.oQuePedir && leitura!.oQuePedir.length > 0 && (
-            <div className="px-4 py-3 border-t border-border/60">
-              <Rotulo tom="info">{t('dueDiligence.relatorioFornecedor.oQuePedir')}</Rotulo>
-              <div className="mt-2 space-y-3">
-                {leitura!.oQuePedir.map((p, i) => (
-                  <div key={i} className="rounded-md border border-border overflow-hidden">
-                    <p className="px-3 py-1.5 text-xs font-medium text-foreground bg-muted/40 border-b border-border/60">{p.pergunta}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border/60">
-                      <div className="p-3">
-                        <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1">{t('dueDiligence.relatorioFornecedor.colRespondeu')}</p>
-                        <p className="text-xs leading-relaxed text-muted-foreground">{p.respondeu}</p>
-                      </div>
-                      <div className="p-3">
-                        <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1">{t('dueDiligence.relatorioFornecedor.colPedir')}</p>
-                        <p className="text-xs leading-relaxed text-foreground">{p.pedir}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-      ))}
-
-      {/* ── plano de acção ─────────────────────────────────────────────── */}
-      {plano.map((p) => (
-        <section key={p.id} id={p.id} className="rounded-lg border border-border bg-card scroll-mt-4">
-          <div className="px-4 py-3 border-b border-border/60">
-            <h4 className="text-sm font-semibold text-foreground">{p.rotulo}</h4>
-          </div>
-          <ul className="p-4 space-y-1.5">
-            {p.itens!.map((item, i) => (
-              <li key={i} className="text-sm leading-relaxed text-foreground flex gap-2">
-                <span aria-hidden className="text-muted-foreground shrink-0">·</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
     </div>
   );
 }
