@@ -394,17 +394,18 @@ Weights: 1 (normal), 2 (high), 3 (critical). Exactly 5 items.
 /** Cron body: Portuguese first, then English; a fixed batch per run. */
 // deno-lint-ignore no-explicit-any
 async function scheduledBody(supabase: any): Promise<Record<string, unknown> | null> {
+  // limit(1) probes instead of exact counts: the cron runs often and the catalogue is usually complete.
   for (const locale of ['pt', 'en'] as const) {
     const col = COLS[locale].orientacao;
-    const { count } = await supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
-      .or(`${col}.is.null,${col}.eq.`);
-    if ((count ?? 0) > 0) return { locale, batch_size: 8, offset: Math.floor(Math.random() * Math.min(count, 40)) };
+    const { data } = await supabase.from('gap_analysis_requirements').select('id')
+      .or(`${col}.is.null,${col}.eq.`).limit(40);
+    if (data?.length) return { locale, batch_size: 8, offset: Math.floor(Math.random() * data.length) };
   }
   for (const locale of ['pt', 'en'] as const) {
     const col = COLS[locale].orientacao;
-    const { count } = await supabase.from('gap_analysis_requirements').select('id', { count: 'exact', head: true })
-      .not(col, 'ilike', `%${PASSOS[locale]}%`).not(col, 'is', null).neq(col, '');
-    if ((count ?? 0) > 0) return { locale, batch_size: 6, legacy: true };
+    const { data } = await supabase.from('gap_analysis_requirements').select('id')
+      .not(col, 'ilike', `%${PASSOS[locale]}%`).not(col, 'is', null).neq(col, '').limit(1);
+    if (data?.length) return { locale, batch_size: 6, legacy: true };
   }
   return null;
 }

@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS idx_gar_orientacao_vazia ON public.gap_analysis_requirements (id) WHERE orientacao_implementacao IS NULL OR orientacao_implementacao = '';
+CREATE INDEX IF NOT EXISTS idx_gar_orientacao_en_vazia ON public.gap_analysis_requirements (id) WHERE orientacao_implementacao_en IS NULL OR orientacao_implementacao_en = '';
