@@ -77,3 +77,14 @@ export function alertasDeCoerencia(score: number | null | undefined, rs: Respost
 export function lacunasPorImpacto<T extends RespostaAvaliada>(rs: T[]): T[] {
   return rs.filter(ehLacuna).sort((a, b) => pontosPerdidos(b) - pontosPerdidos(a));
 }
+
+export type ClasseDaNota = 'excelente' | 'bom' | 'regular' | 'ruim';
+
+/** Classe exibida, derivada sempre da nota (mesmas faixas 80/60/40). */
+export function classeDaNota(score: number | null | undefined): ClasseDaNota | null {
+  if (score === null || score === undefined || Number.isNaN(Number(score))) return null;
+  if (score >= 80) return 'excelente';
+  if (score >= 60) return 'bom';
+  if (score >= 40) return 'regular';
+  return 'ruim';
+}
