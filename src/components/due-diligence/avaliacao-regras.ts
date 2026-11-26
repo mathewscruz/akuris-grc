@@ -88,3 +88,36 @@ export function classeDaNota(score: number | null | undefined): ClasseDaNota | n
   if (score >= 40) return 'regular';
   return 'ruim';
 }
+
+export type Recomendacao = 'aprovar' | 'aprovar_com_condicoes' | 'reprovar';
+
+/**
+ * Recomendação do relatório executivo, derivada só de cálculo:
+ * - abaixo de 40 → reprovar;
+ * - 80+ sem lacunas críticas e com pelo menos metade das respostas comprovadas → aprovar;
+ * - o resto → aprovar com condições.
+ */
+export function recomendacaoDe(
+  score: number | null | undefined,
+  lacunasCriticas: number,
+  coberturaPct: number,
+): Recomendacao | null {
+  if (score === null || score === undefined || Number.isNaN(Number(score))) return null;
+  if (score < 40) return 'reprovar';
+  if (score >= 80 && lacunasCriticas === 0 && coberturaPct >= 50) return 'aprovar';
+  return 'aprovar_com_condicoes';
+}
+
+export type FaixaPeso = 'alto' | 'medio' | 'baixo';
+export type FaixaResultado = 'nao_atende' | 'parcial' | 'atende';
+
+/** Célula da matriz peso × resultado; null para respostas sem nota. */
+export function celulaDaMatriz(r: RespostaAvaliada): { peso: FaixaPeso; resultado: FaixaResultado } | null {
+  const n = notaDe(r);
+  if (n === null) return null;
+  const p = Number(r.peso ?? 1) || 1;
+  return {
+    peso: p >= PESO_CRITICO ? 'alto' : p >= 2 ? 'medio' : 'baixo',
+    resultado: n < 4 ? 'nao_atende' : n < NOTA_LACUNA ? 'parcial' : 'atende',
+  };
+}
