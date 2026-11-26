@@ -173,21 +173,23 @@ export function RecordDetailDrawer({
               <SheetTitle className="text-xl leading-tight">{title || t('detalheRegisto.titulo')}</SheetTitle>
               {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
             </div>
-            {(onPrev || onNext) && (
-              <div className="flex shrink-0 gap-1">
+            {(actions || onPrev || onNext) && (
+              <div className="flex shrink-0 items-center gap-1">
+                {actions && (
+                  <div className="mr-1 flex items-center gap-1.5 [&>div]:flex [&>div]:items-center [&>div]:gap-1.5 [&_button]:h-8 [&_button]:px-3 [&_button]:text-sm [&_svg]:h-4 [&_svg]:w-4">{actions}</div>
+                )}
+                {(onPrev || onNext) && (<>
                 <Button variant="outline" size="icon" className="h-8 w-8" disabled={!onPrev} onClick={() => onPrev?.()} aria-label={t('detalheRegisto.anterior')}>
                   <IconChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="icon" className="h-8 w-8" disabled={!onNext} onClick={() => onNext?.()} aria-label={t('detalheRegisto.proximo')}>
                   <IconChevronLeft className="h-4 w-4 rotate-180" />
                 </Button>
+                </>)}
               </div>
             )}
           </div>
           {badges && <div className={cn('flex flex-wrap items-center gap-2.5 pb-1 pt-3.5', Icon && 'sm:pl-14')}>{badges}</div>}
-          {actions && (
-            <div className="mt-5 border-t border-border/60 pt-4 [&>div]:flex [&>div]:w-full [&>div]:flex-wrap [&>div]:gap-2">{actions}</div>
-          )}
         </SheetHeader>
 
         <ScrollArea className="flex-1">
