@@ -188,7 +188,7 @@ Deno.serve(async (req: Request) => {
       semResposta.length
         ? '\nPerguntas SEM resposta:\n' + semResposta.map((q: any) => `- [${q.secao || 'Geral'} | Peso ${q.peso ?? 1}${q.obrigatoria ? ' | OBRIGATÓRIA' : ''}] ${q.titulo}`).join('\n')
         : null,
-      anexos.length ? `\nSeguem em anexo ${anexos.length} comprovativo(s) enviados pelo fornecedor. Lê o conteúdo e diz se sustentam a resposta à pergunta indicada.` : null,
+      anexos.length ? `\nSeguem em anexo ${anexos.length / 2} comprovativo(s) enviados pelo fornecedor. Lê o conteúdo e diz se sustentam a resposta à pergunta indicada.` : null,
       '',
       'Avalia este fornecedor. Regras:',
       '- Sê concreto: cita a resposta ou a lacuna que sustenta cada ponto. Nada de generalidades.',
@@ -258,7 +258,7 @@ Deno.serve(async (req: Request) => {
       modelo: typeof dados?.model === 'string' ? dados.model : MODELOS.ANALISE,
       respostasAnalisadas: respostas.length,
       perguntasSemResposta: semResposta.length,
-      anexosLidos: anexos.length,
+      anexosLidos: anexos.length / 2,
     };
 
     const { error: erroGravar } = await admin

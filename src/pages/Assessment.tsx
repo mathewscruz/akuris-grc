@@ -413,6 +413,15 @@ export default function Assessment() {
   }, [questions]);
 
   const totalPages = paginas.length;
+
+  // Página e número de cada pergunta conforme as páginas reais (por seção),
+  // não pelo corte fixo de cinco.
+  const posicaoDaPergunta = useMemo(() => {
+    const mapa = new Map<string, { pagina: number; numero: number }>();
+    let n = 0;
+    paginas.forEach((pg, i) => pg.perguntas.forEach((q) => mapa.set(q.id, { pagina: i, numero: ++n })));
+    return mapa;
+  }, [paginas]);
   const currentQuestions = paginas[currentPage]?.perguntas ?? [];
 
   const isAnswered = useCallback((qId: string) => {
@@ -933,7 +942,7 @@ export default function Assessment() {
                       <ul className="space-y-1 pr-2">
                         {missingRequiredList.map((q) => {
                           const qIdx = questions.findIndex(x => x.id === q.id);
-                          const pageOfQ = Math.floor(qIdx / questionsPerPage);
+                          const pageOfQ = posicaoDaPergunta.get(q.id)?.pagina ?? Math.floor(qIdx / questionsPerPage);
                           return (
                             <li key={q.id}>
                               <button
@@ -992,7 +1001,7 @@ export default function Assessment() {
             <div className="space-y-4">
               {currentQuestions.map((question, index) => {
                 const answered = isAnswered(question.id);
-                const questionNumber = currentPage * questionsPerPage + index + 1;
+                const questionNumber = posicaoDaPergunta.get(question.id)?.numero ?? currentPage * questionsPerPage + index + 1;
 
                 return (
                   <Card
@@ -1425,7 +1434,7 @@ export default function Assessment() {
                       <ul className="space-y-1.5 pr-2">
                         {missingRequiredList.slice(0, 10).map((q) => {
                           const qIdx = questions.findIndex(x => x.id === q.id);
-                          const pageOfQ = Math.floor(qIdx / questionsPerPage);
+                          const pageOfQ = posicaoDaPergunta.get(q.id)?.pagina ?? Math.floor(qIdx / questionsPerPage);
                           return (
                             <li key={q.id}>
                               <button
