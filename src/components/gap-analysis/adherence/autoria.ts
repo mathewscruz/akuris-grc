@@ -27,12 +27,16 @@ export async function abrirDocumentoAnalisado(analise: any, t: (k: string) => st
   const caminho = analise?.metadados_analise?.arquivo_storage as string | undefined;
   if (!caminho) return;
   const janela = window.open('', '_blank');
-  const { data, error } = await supabase.storage.from('adherence-documents').createSignedUrl(caminho, 300);
-  if (error || !data?.signedUrl) {
+  // Baixa e reembala como UTF-8: os .txt antigos foram gravados sem charset e
+  // o navegador lia os acentos como Windows-1252 ("PolÃtica").
+  const { data, error } = await supabase.storage.from('adherence-documents').download(caminho);
+  if (error || !data) {
     janela?.close();
     logger.error('Falha ao abrir documento analisado', { error: error?.message });
     toast.error(t('gapAnalysis.adherenceUi.view.openDocumentError'));
     return;
   }
-  if (janela) janela.location.href = data.signedUrl; else window.location.href = data.signedUrl;
+  const url = URL.createObjectURL(new Blob([await data.arrayBuffer()], { type: 'text/plain;charset=utf-8' }));
+  if (janela) janela.location.href = url; else window.location.href = url;
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

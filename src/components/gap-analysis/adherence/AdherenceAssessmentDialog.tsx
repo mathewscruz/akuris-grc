@@ -366,7 +366,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
 
       // Criar arquivo TXT com o texto extraído
       const originalFileName = uploadedFile.name.split('.').slice(0, -1).join('.');
-      const txtFile = new File([textContent], `${originalFileName}.txt`, { type: 'text/plain' });
+      const txtFile = new File([textContent], `${originalFileName}.txt`, { type: 'text/plain;charset=utf-8' });
       const fileExt = 'txt';
       
       // Sanitizar nome do arquivo - remover espaços, acentos e caracteres especiais
@@ -380,7 +380,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
       
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('adherence-documents')
-        .upload(txtFileName, txtFile);
+        .upload(txtFileName, txtFile, { contentType: 'text/plain; charset=utf-8' });
 
       if (uploadError) throw uploadError;
 
