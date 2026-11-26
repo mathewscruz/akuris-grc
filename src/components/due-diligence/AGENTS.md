@@ -1,0 +1,1 @@
+- Supplier-assessment reading rules (score band, gap = nota<6 where nota = pontuacao÷peso, critical gap = peso≥3, evidence coverage, score-coherence alerts) live in components/due-diligence/avaliacao-regras.ts and are used by both the screen and the PDF, so they never disagree.

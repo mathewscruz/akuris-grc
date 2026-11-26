@@ -1,23 +1,7 @@
-- [x] Fix selected spreadsheet and campaign injection findings.
-- [x] Restrict selected Google directory actions, requirement diagnostics, framework assignment and new audit risk acceptance; existing decisions unchanged.
-- [x] Deploy four functions; confirm unsigned calls return 401 and database guards are installed. Regression tests and browser sanitization verified; signed-in external-service flows unavailable here.
-- [ ] Confirm approved destinations before restricting scan and webhook targets (four selected findings).
-## Agente de inventário (MeshCentral)
-- [ ] Servidor MeshCentral no ar + segredos MESH_URL/MESH_USER/MESH_PASSWORD (aguarda usuário)
-- [ ] Agendar sincronização de hora em hora (após o servidor existir)
-- [ ] Teste real: instalar numa máquina e ver o ativo aparecer
-
-## Microsoft 365 unificado
-- [ ] Registrar o aplicativo multi-tenant no Entra ID da Akuris e salvar MICROSOFT_INTEGRATION_CLIENT_ID / _SECRET (aguarda usuário)
-- [ ] Testar com um tenant real: consentimento e dispositivos do Intune entrando em Ativos (depende do item acima)
-- [x] Voltar do OAuth como "Conectado" sem abrir configurações; ícone do módulo aparece logo após autorizar
-- [x] Google Workspace somente leitura (cartão único): usuários/grupos/papéis, dispositivos → Ativos, auditoria de login, metadados Drive; importar só pelo ícone no módulo
-- [ ] Validar autorização e coleta real do Google Workspace com a conta da Akuris (aguarda configuração no Google Console)
-
-## Riscos sugeridos (revisão técnica)
-- [x] Remover apps.alerts do OAuth Google (não autorizado) e reimplantar
-- [x] Defender: incidentes /security/incidents, Secure Score por controle, recomendações MDE /api/recommendations
-- [x] Chave estável por origem, severidade técnica separada, supressão com prazo/recorrência, sem corte que esconda achados
-- [x] Cobertura: parcial/403/timeout nunca marca corrigido; desconectar preserva histórico
-- [x] Regras Google só com campos explícitos (sem falhas de login como ataque; inatividade só com lastLoginTime)
-- [x] Plano consolidado + lista de permissões
+# Roadmap — Due Diligence
+- [x] Novo relatório PDF da avaliação do fornecedor
+- [x] Tela: comprovativos, lacunas, lacunas críticas e alerta de coerência; correção da nota por pergunta
+- [ ] Decisão formal (aprovar/ressalvas/reprovar) gravada — precisa de novos campos na base
+- [ ] Pedir evidências só das perguntas fracas, com aviso no sino
+- [ ] Comparação com a avaliação anterior
+- [ ] Painel: avaliações vencidas/a vencer e críticos sem avaliação válida

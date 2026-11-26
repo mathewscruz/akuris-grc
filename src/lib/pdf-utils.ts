@@ -4,7 +4,7 @@ import { getAppLocale } from '@/lib/i18n-locale';
 
 /** Textos fixos dos PDFs em PT/EN. */
 export function pdfTxt(k: 'plataforma' | 'pagina' | 'as' | 'empresa' | 'geradoEm', a?: number, b?: number): string {
-  const pt = getAppLocale() === 'pt';
+  const pt = getAppLocale().startsWith('pt');
   switch (k) {
     case 'plataforma': return pt ? 'Plataforma GRC' : 'GRC Platform';
     case 'pagina': return pt ? `Página ${a} de ${b}` : `Page ${a} of ${b}`;

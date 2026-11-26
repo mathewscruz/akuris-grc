@@ -228,7 +228,7 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
     try {
       const { data: respostas, error } = await supabase
         .from('due_diligence_responses')
-        .select('resposta, pontuacao, arquivo_url, resposta_arquivo_url, due_diligence_questions!inner(titulo, peso, ordem)')
+        .select('resposta, pontuacao, justificativa, arquivo_url, resposta_arquivo_url, due_diligence_questions!inner(titulo, peso, ordem, secao)')
         .eq('assessment_id', assessment.id);
       if (error) throw error;
 
@@ -250,6 +250,8 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
       const ordenadas = (respostas ?? [])
         .map((r: any) => ({
           pergunta: r.due_diligence_questions?.titulo ?? '-',
+          secao: r.due_diligence_questions?.secao ?? null,
+          justificativa: r.justificativa ?? null,
           resposta: r.resposta ?? null,
           peso: r.due_diligence_questions?.peso ?? null,
           pontuacao: r.pontuacao ?? null,
@@ -258,8 +260,34 @@ export function AssessmentsManagerEnhanced({ filter, focoId }: AssessmentsManage
         }))
         .sort((a, b) => a._ordem - b._ordem);
 
+      /* Identificação do fornecedor para a capa e o sumário. */
+      const { data: base } = await supabase
+        .from('due_diligence_assessments')
+        .select('fornecedor_id, data_expiracao')
+        .eq('id', assessment.id)
+        .eq('empresa_id', empresaId!)
+        .maybeSingle();
+      const { data: forn } = base?.fornecedor_id
+        ? await supabase
+            .from('fornecedores')
+            .select('cnpj, categoria, contato_responsavel, email, telefone, receita_situacao')
+            .eq('id', base.fornecedor_id)
+            .eq('empresa_id', empresaId!)
+            .maybeSingle()
+        : { data: null };
+
       await gerarRelatorioFornecedor(
         {
+          avaliacaoId: assessment.id,
+          dataExpiracao: base?.data_expiracao ?? assessment.data_expiracao ?? null,
+          fornecedor: {
+            cnpj: forn?.cnpj ?? null,
+            categoria: forn?.categoria ?? null,
+            contato: forn?.contato_responsavel ?? null,
+            email: forn?.email ?? assessment.fornecedor_email ?? null,
+            telefone: forn?.telefone ?? null,
+            situacaoReceita: forn?.receita_situacao ?? null,
+          },
           fornecedorNome: assessment.fornecedor_nome,
           templateNome: (assessment as any).due_diligence_templates?.nome ?? null,
           scoreFinal: assessment.score_final ?? null,
@@ -1047,7 +1075,7 @@ function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
   useEffect(() => {
     supabase
       .from('due_diligence_responses')
-      .select('question_id, resposta, pontuacao, due_diligence_questions!inner(titulo, peso, secao)')
+      .select('question_id, resposta, pontuacao, arquivo_url, resposta_arquivo_url, due_diligence_questions!inner(titulo, peso, secao)')
       .eq('assessment_id', assessment.id)
       .then(({ data }) => {
         setRespostas(
@@ -1058,6 +1086,7 @@ function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
             peso: Number(r.due_diligence_questions?.peso ?? 1),
             resposta: r.resposta,
             pontuacao: r.pontuacao === null || r.pontuacao === undefined ? null : Number(r.pontuacao),
+            temAnexo: !!(r.arquivo_url || r.resposta_arquivo_url),
           })),
         );
       });

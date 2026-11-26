@@ -48,6 +48,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateShort } from '@/lib/date-utils';
 import { resolveScoreDueDiligenceTone } from '@/lib/status-tone';
 import type { ParecerDaIA, SecaoDoParecer } from './parecer-ia-types';
+import { alertasDeCoerencia, coberturaDeEvidencia, ehLacuna, ehLacunaCritica, notaDe } from './avaliacao-regras';
 
 /** Uma secção como o cálculo a devolve. */
 export interface SecaoDoScore {
@@ -63,6 +64,7 @@ export interface RespostaPontuada {
   resposta: string | null;
   pontuacao: number | null;
   peso: number;
+  temAnexo?: boolean;
 }
 
 interface Props {
@@ -78,8 +80,6 @@ interface Props {
   parecer: ParecerDaIA | null;
 }
 
-/** Abaixo disto uma resposta entra na lista do que custou pontos. */
-const NOTA_QUE_PREOCUPA = 6;
 
 /*
    A escala do score vem de `resolveScoreDueDiligenceTone`, e não daqui.
@@ -197,18 +197,23 @@ export function RelatorioDoFornecedor({
   const custaramPontos = React.useMemo(() => {
     const porSecao = new Map<string, RespostaPontuada[]>();
     for (const r of respostas) {
-      if (r.pontuacao === null || r.pontuacao >= NOTA_QUE_PREOCUPA) continue;
+      // `pontuacao` = nota × peso: comparar a NOTA, não o valor bruto.
+      if (!ehLacuna(r)) continue;
       const chave = r.secao || t('dueDiligence.relatorioFornecedor.semSecao');
       porSecao.set(chave, [...(porSecao.get(chave) ?? []), r]);
     }
     // Dentro da secção, o que mais pesa primeiro: é por onde se começa.
     for (const lista of porSecao.values()) {
-      lista.sort((a, b) => b.peso * (10 - (b.pontuacao ?? 0)) - a.peso * (10 - (a.pontuacao ?? 0)));
+      lista.sort((a, b) => b.peso * (10 - (notaDe(b) ?? 0)) - a.peso * (10 - (notaDe(a) ?? 0)));
     }
     return porSecao;
   }, [respostas, t]);
 
   const tom = tomDoScore(scoreTotal);
+  const coberturaEvid = coberturaDeEvidencia(respostas);
+  const totalLacunas = respostas.filter(ehLacuna).length;
+  const totalCriticas = respostas.filter(ehLacunaCritica).length;
+  const alertas = alertasDeCoerencia(scoreTotal, respostas);
 
   const irPara = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -302,6 +307,32 @@ export function RelatorioDoFornecedor({
           {template && <p className="text-xs text-muted-foreground">{template}</p>}
         </header>
 
+        {respostas.length > 0 && (
+          <dl className="grid grid-cols-3 rounded-lg border border-border bg-card divide-x divide-border/60">
+            {[
+              { k: t('dueDiligence.relatorioFornecedor.kpiEvidencia'), v: `${coberturaEvid}%`, tom: coberturaEvid === 0 ? 'destructive' : coberturaEvid < 50 ? 'warning' : 'success' },
+              { k: t('dueDiligence.relatorioFornecedor.kpiLacunas'), v: String(totalLacunas), tom: totalLacunas ? 'warning' : 'neutral' },
+              { k: t('dueDiligence.relatorioFornecedor.kpiCriticas'), v: String(totalCriticas), tom: totalCriticas ? 'destructive' : 'neutral' },
+            ].map((m) => (
+              <div key={m.k} className="px-4 py-3">
+                <dt className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">{m.k}</dt>
+                <dd className={cn('mt-1 text-xl font-semibold tabular-nums', m.tom === 'neutral' ? 'text-foreground' : TEXTO[m.tom as Tom])}>{m.v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {alertas.length > 0 && (
+          <div role="alert" className="rounded-lg border border-destructive/40 border-l-2 border-l-destructive bg-destructive/5 p-4">
+            <p className="text-sm font-semibold text-foreground">{t('dueDiligence.relatorioFornecedor.alertaTitulo')}</p>
+            <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              {alertas.map((a) => (
+                <li key={a}>{t(a === 'lacunas_criticas' ? 'dueDiligence.relatorioFornecedor.alertaCriticas' : 'dueDiligence.relatorioFornecedor.alertaEvidencia')}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {parecer?.resumo && (
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
@@ -391,8 +422,8 @@ export function RelatorioDoFornecedor({
                           <tr key={r.question_id} className="border-t border-border/50">
                             <td className="py-1.5 pr-3 text-foreground">{r.titulo}</td>
                             <td className="py-1.5 pr-3 text-muted-foreground">{r.resposta || '—'}</td>
-                            <td className={cn('py-1.5 text-right tabular-nums font-semibold', TEXTO[tomDoScore((r.pontuacao ?? 0) * 10)])}>
-                              {(r.pontuacao ?? 0).toFixed(0)}/10
+                            <td className={cn('py-1.5 text-right tabular-nums font-semibold', TEXTO[tomDoScore((notaDe(r) ?? 0) * 10)])}>
+                              {(notaDe(r) ?? 0).toFixed(0)}/10
                             </td>
                             <td className="py-1.5 text-right tabular-nums text-muted-foreground">×{r.peso}</td>
                           </tr>
