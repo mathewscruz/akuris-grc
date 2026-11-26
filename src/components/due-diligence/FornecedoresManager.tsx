@@ -627,23 +627,19 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
             onOpenChange={handleOpenChange}
             icon={IconOrg}
             title={editingFornecedor ? t('dueDiligence.fornecedoresManager.editTitle') : t('dueDiligence.fornecedoresManager.createTitle')}
-            description={t('layout.dialogDescription', { title: t('dueDiligence.fornecedoresManager.fieldName') })}
+            description={editingFornecedor ? t('dueDiligence.fornecedoresManager.editDescription') : t('dueDiligence.fornecedoresManager.createDescription')}
             size="md"
             onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
             submitLabel={editingFornecedor ? t('dueDiligence.fornecedoresManager.update') : t('dueDiligence.fornecedoresManager.create')}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
           >
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">{t('dueDiligence.fornecedoresManager.fieldName')}</Label>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <section className="space-y-3">
+                  <h3 className="border-b border-border/60 pb-2 text-micro font-semibold uppercase tracking-[0.11em] text-muted-foreground">{t('dueDiligence.fornecedoresManager.secaoIdentificacao')}</h3>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="sm:col-span-2 space-y-2">
+                    <Label htmlFor="nome">{t('dueDiligence.fornecedoresManager.fieldName').replace(' *', '')} <span className="ml-0.5 text-primary">*</span></Label>
                     <Input id="nome" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t('dueDiligence.fornecedoresManager.fieldEmail')}</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                  </div>
-                  <div className="col-span-2">
+                  </div><div className="sm:col-span-2">
                     <ConsultaReceita
                       cnpj={formData.cnpj}
                       onCnpjChange={(cnpj) => setFormData((f) => ({ ...f, cnpj }))}
@@ -665,12 +661,7 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
                         }))
                       }
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telefone">{t('dueDiligence.fornecedoresManager.fieldPhone')}</Label>
-                    <Input id="telefone" value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
+                  </div><div className="space-y-2">
                     <Label htmlFor="categoria">{t('dueDiligence.fornecedoresManager.fieldCategory')}</Label>
                     <Select value={formData.categoria} onValueChange={(value) => setFormData({ ...formData, categoria: value })}>
                       <SelectTrigger><SelectValue placeholder={t('dueDiligence.fornecedoresManager.selectCategoryPlaceholder')} /></SelectTrigger>
@@ -680,18 +671,36 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
+                  </div><div className="space-y-2">
                     <Label htmlFor="tipo">{t('dueDiligence.fornecedoresManager.fieldTipo')}</Label>
                     <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('dueDiligence.fornecedoresManager.selectTipoPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pessoa_juridica">{t('dueDiligence.fornecedoresManager.tipoPJ')}</SelectItem>
                         <SelectItem value="pessoa_fisica">{t('dueDiligence.fornecedoresManager.tipoPF')}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
+                  </div></div>
+                </section>
+                <section className="space-y-3">
+                  <h3 className="border-b border-border/60 pb-2 text-micro font-semibold uppercase tracking-[0.11em] text-muted-foreground">{t('dueDiligence.fornecedoresManager.secaoContato')}</h3>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="space-y-2">
+                    <Label htmlFor="contato_responsavel">{t('dueDiligence.fornecedoresManager.fieldResponsibleContact')}</Label>
+                    <Input id="contato_responsavel" value={formData.contato_responsavel} onChange={(e) => setFormData({ ...formData, contato_responsavel: e.target.value })} />
+                  </div><div className="space-y-2">
+                    <Label htmlFor="email">{t('dueDiligence.fornecedoresManager.fieldEmail')}</Label>
+                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  </div><div className="space-y-2">
+                    <Label htmlFor="telefone">{t('dueDiligence.fornecedoresManager.fieldPhone')}</Label>
+                    <Input id="telefone" value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} />
+                  </div><div className="sm:col-span-2 space-y-2">
+                    <Label htmlFor="endereco">{t('dueDiligence.fornecedoresManager.fieldAddress')}</Label>
+                    <Input id="endereco" value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} />
+                  </div></div>
+                </section>
+                <section className="space-y-3">
+                  <h3 className="border-b border-border/60 pb-2 text-micro font-semibold uppercase tracking-[0.11em] text-muted-foreground">{t('dueDiligence.fornecedoresManager.secaoClassificacao')}</h3>
+                  <div className="space-y-4"><div className="space-y-2 sm:max-w-[50%]">
                     <Label htmlFor="avaliacao_risco">{t('dueDiligence.fornecedoresManager.fieldRisco')}</Label>
                     <Select value={formData.avaliacao_risco} onValueChange={(value) => setFormData({ ...formData, avaliacao_risco: value })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -703,21 +712,11 @@ export const FornecedoresManager = forwardRef<FornecedoresManagerHandle, Props>(
                         <SelectItem value="critico">{t('campos.opcoes.critico')}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contato_responsavel">{t('dueDiligence.fornecedoresManager.fieldResponsibleContact')}</Label>
-                    <Input id="contato_responsavel" value={formData.contato_responsavel} onChange={(e) => setFormData({ ...formData, contato_responsavel: e.target.value })} />
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="endereco">{t('dueDiligence.fornecedoresManager.fieldAddress')}</Label>
-                    <Input id="endereco" value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} />
-                  </div>
-                  <div className="col-span-2 space-y-2">
+                  </div><div className="space-y-2">
                     <Label htmlFor="observacoes">{t('dueDiligence.fornecedoresManager.fieldObservations')}</Label>
                     <Textarea id="observacoes" value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} rows={3} />
-                  </div>
-                </div>
-                
+                  </div></div>
+                </section>
               </form>
           </DialogShell>
           

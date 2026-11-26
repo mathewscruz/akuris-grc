@@ -131,7 +131,7 @@ export function ConsultaReceita({
           </Button>
         </div>
         {digitadoErrado && (
-          <p className="mt-1 text-xs text-destructive">{t('dueDiligence.receita.digitoInvalido')}</p>
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-destructive"><IconWarning className="h-3.5 w-3.5 shrink-0" />{t('dueDiligence.receita.digitoInvalido')}</p>
         )}
         {erro && <p className="mt-1 text-xs text-destructive">{erro}</p>}
       </div>
