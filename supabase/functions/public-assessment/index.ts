@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
         await admin.storage.from('due-diligence-evidencias').remove([antigo]);
       }
 
-      const { data: signed } = await admin.storage.from('due-diligence-evidencias').createSignedUrl(path, 3600);
+      const { data: signed } = await admin.storage.from('due-diligence-evidencias').createSignedUrl(path, 120);
       return respond({ path, fileName: file.name, signedUrl: signed?.signedUrl || null });
     }
 
