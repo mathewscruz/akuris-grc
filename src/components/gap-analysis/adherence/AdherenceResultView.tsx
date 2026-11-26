@@ -4,7 +4,8 @@ import { VeredictoBadge } from './VeredictoBadge';
 import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AjustesMasterDetail } from './AjustesMasterDetail';
-import { useAutoresDaEmpresa, abrirDocumentoAnalisado } from './autoria';
+import { useAutoresDaEmpresa } from './autoria';
+import { DocumentoAnalisadoViewer } from './DocumentoAnalisadoViewer';
 import type { Json } from '@/integrations/supabase/types';
 import { IconDownload, IconSuccess, IconWarning, IconRefresh, IconFile, IconIdea, IconArrowLeft, IconTrendUp } from '@/components/icons';
 import { Card } from '@/components/ui/card';
@@ -70,6 +71,7 @@ interface AdherenceResultViewProps {
 
 export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied }: AdherenceResultViewProps) {
   const { t, locale } = useLanguage();
+  const [documentoAberto, setDocumentoAberto] = useState<any | null>(null);
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
   const autores = useAutoresDaEmpresa(empresaId, [assessment as { created_by?: string | null }]);
@@ -369,6 +371,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
 
   return (
     <div className="space-y-6">
+      <DocumentoAnalisadoViewer analise={documentoAberto} open={!!documentoAberto} onOpenChange={(o) => !o && setDocumentoAberto(null)} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>
@@ -386,7 +389,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
             </Button>
           )}
           {meta.arquivo_storage && (
-            <Button variant="outline" onClick={() => abrirDocumentoAnalisado(assessment, t)}>
+            <Button variant="outline" onClick={() => setDocumentoAberto(assessment)}>
               <IconFile className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.view.openDocument')}
             </Button>
           )}

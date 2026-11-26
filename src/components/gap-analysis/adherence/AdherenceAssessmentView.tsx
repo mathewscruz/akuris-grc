@@ -23,7 +23,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { agruparAjustes } from './ajustes';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/AuthProvider';
-import { useAutoresDaEmpresa, abrirDocumentoAnalisado } from './autoria';
+import { useAutoresDaEmpresa } from './autoria';
+import { DocumentoAnalisadoViewer } from './DocumentoAnalisadoViewer';
 
 const TOM_VEREDITO = { em_compliance: 'success', com_ressalvas: 'warning', nao_compliance: 'destructive' } as const;
 function veredictoDe(a: any): keyof typeof TOM_VEREDITO | null {
@@ -64,6 +65,7 @@ interface AdherenceAssessmentViewProps {
 
 export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome, embedded, openSignal, initialFile }: AdherenceAssessmentViewProps) {
   const { t, tList } = useLanguage();
+  const [documentoAberto, setDocumentoAberto] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -241,6 +243,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
   return (
     <div className="space-y-6">
+      <DocumentoAnalisadoViewer analise={documentoAberto} open={!!documentoAberto} onOpenChange={(o) => !o && setDocumentoAberto(null)} />
       {/* Guidance Card — escondido quando embutido (o DocumentsHero já explica) */}
       {!embedded && (
       <Card className="p-4">
@@ -338,7 +341,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenuItem disabled={!assessment.metadados_analise?.arquivo_storage} onClick={() => abrirDocumentoAnalisado(assessment, t)}>
+                      <DropdownMenuItem disabled={!assessment.metadados_analise?.arquivo_storage} onClick={() => setDocumentoAberto(assessment)}>
                         <IconFileCheck className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('gapAnalysis.adherenceUi.view.openDocument')}
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => setAssessmentToDelete(assessment.id)}>
