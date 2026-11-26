@@ -112,6 +112,14 @@ const handler = async (req: Request): Promise<Response> => {
       if (!full || full.status === 'concluido') {
         return new Response(JSON.stringify({ error: 'Assessment closed' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      if (!full.fornecedor_id) {
+        // Free-typed recipients (no registered supplier) are limited to company admins.
+        const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', userData!.user.id);
+        const roles = (roleRows || []).map((r: any) => r.role);
+        if (!roles.includes('admin') && !roles.includes('super_admin')) {
+          return new Response(JSON.stringify({ error: 'Link a registered supplier before sending' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
       if (full.fornecedor_id) {
         const { data: forn } = await supabase.from('fornecedores').select('email').eq('id', full.fornecedor_id).eq('empresa_id', assessment.empresa_id).maybeSingle();
         if (forn?.email && forn.email.trim().toLowerCase() !== String(assessment.fornecedor_email ?? '').trim().toLowerCase()) {

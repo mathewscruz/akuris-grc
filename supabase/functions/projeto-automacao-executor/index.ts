@@ -83,6 +83,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!rotina) {
+      const cliente = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader! } } });
+      const { data: podeAcessar } = await cliente.rpc('can_access_projeto', { _projeto_id: projeto_id });
+      if (podeAcessar !== true) {
+        return new Response(JSON.stringify({ error: 'Sem acesso ao projeto' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // A tarefa vem da base, ligada ao projeto já autorizado: o id do pedido
     // nunca alcança tarefas de outro projeto ou empresa.
     const { data: tarefa } = await supabase

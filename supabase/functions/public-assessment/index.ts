@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         if (!storagePath.startsWith(`${current.id}/`)) {
           return { ...response, arquivo_url: null, arquivo_signed_url: null };
         }
-        const { data: signed } = await admin.storage.from('due-diligence-evidencias').createSignedUrl(storagePath, 3600);
+        const { data: signed } = await admin.storage.from('due-diligence-evidencias').createSignedUrl(storagePath, 120);
         return { ...response, arquivo_url: storagePath, arquivo_signed_url: signed?.signedUrl || null };
       }));
 
